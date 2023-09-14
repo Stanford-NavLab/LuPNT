@@ -1,0 +1,26 @@
+# system
+.urs_cookies
+*.asv
+*/*/*/codegen
+.vscode
+.VSCodeCounter
+.DS_Store
+.venv*
+venv
+**/.DS_Store
+**/__pycache__
+
+# 3rdparty
+lupnt/3rdparty/Eigen
+lupnt/3rdparty/cspice
+lupnt/3rdparty/autodiff
+
+# internal
+build
+doc
+local
+pybind11
+output
+data/ephemeris
+examples/figures
+lupnt.egg-info
