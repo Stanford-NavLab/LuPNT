@@ -1,0 +1,12 @@
+#Excluding VS Code files
+.vscode/*
+*/.vscode/
+
+.git/*
+
+.vscode
+.VSCodeCounter
+.DS_Store
+.venv*
+venv
+**/.DS_Store
