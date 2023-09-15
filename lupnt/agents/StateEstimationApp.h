@@ -1,7 +1,7 @@
 /**
  * @file StateEstimationApp.h
- * @author
- * @brief
+ * @author Stanford NAV LAB
+ * @brief Base class for State Estimation Application
  * @version 0.1
  * @date 2023-09-14
  *

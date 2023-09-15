@@ -1,7 +1,7 @@
 /**
  * @file Agent.h
  * @author Stanford NAV LAB
- * @brief Last of t
+ * @brief List of agents
  * @version 0.1
  * @date 2023-09-14
  *

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <lupnt/numerics/eigenmvn.h>
-
 #include <Eigen/Dense>
 #include <tuple>
 
@@ -92,21 +90,16 @@ class ClockState : public IState {
 class ClockDynamics {
  private:
   ClockModel clk_model_;
-  std::unique_ptr<Eigen::EigenMultivariateNormal<double>> mvrnd_clk_;
   double dt_;
 
  public:
   ClockDynamics(ClockModel clk_model) {
     clk_model_ = clk_model;
-    mvrnd_clk_ = std::make_unique<Eigen::EigenMultivariateNormal<double>>(
-        Eigen::Vector2d::Zero(), Eigen::Matrix2d::Identity());
     dt_ = 0;
   }
 
   ClockDynamics(const ClockDynamics& other) {
     clk_model_ = other.clk_model_;
-    mvrnd_clk_ = std::make_unique<Eigen::EigenMultivariateNormal<double>>(
-        Eigen::Vector2d::Zero(), Eigen::Matrix2d::Identity());
     dt_ = 0;
   }
 
@@ -114,10 +107,9 @@ class ClockDynamics {
     if (dt.val() != dt_) {
       dt_ = dt.val();
       auto Q_clk = GetClockProcessNoise(clk_model_, dt.val());
-      mvrnd_clk_->setCovar(Q_clk);
+      Eigen::Matrix2d Phi_clk_{{1, dt.val()}, {0, 1}};
+      clk = Phi_clk_ * clk + SampleMVN(Eigen::Vector2d::Zero(), Q_clk, 1);
     }
-    Eigen::Matrix2d Phi_clk_{{1, dt.val()}, {0, 1}};
-    clk = Phi_clk_ * clk + mvrnd_clk_->samples(1);
   }
 };
 }  // namespace LPT

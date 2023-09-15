@@ -1,9 +1,9 @@
 /**
  * @file GNSSTransmitter.cpp
- * @author your name (you@domain.com)
- * @brief
+ * @author Stanford NAV LAB
+ * @brief Handles GNSS transmit
  * @version 0.1
- * @date 2023-09-10
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *

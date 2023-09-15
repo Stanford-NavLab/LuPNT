@@ -1,7 +1,7 @@
 /**
  * @file GNSSStateEstimationApp.h
- * @author
- * @brief
+ * @author Stanford NAV LAB
+ * @brief State Estimation Application Using GNSS Measurement
  * @version 0.1
  * @date 2023-09-14
  *

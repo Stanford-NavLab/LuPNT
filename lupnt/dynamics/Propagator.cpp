@@ -1,3 +1,13 @@
+/**
+ * @file Propagator.cpp
+ * @author Stanford NAV LAB
+ * @brief Propagator class
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #include "Propagator.h"
 
 #include <autodiff/forward/real.hpp>

@@ -7,7 +7,6 @@
 #include <lupnt/measurements/GNSSMeasurement.h>
 #include <lupnt/measurements/GNSSReceiver.h>
 #include <lupnt/numerics/MathUtils.h>
-#include <lupnt/numerics/eigenmvn.h>
 #include <lupnt/physics/CoordConverter.h>
 #include <lupnt/physics/OrbitState.h>
 #include <lupnt/physics/SpiceInterface.h>

@@ -1,14 +1,13 @@
 /**
- * @file NumericalPropagator.h
- * @author Keidai Iiyama
- * @brief Base class for the Dynamics Model
+ * @file Propagator.h
+ * @author Stanford NAV LAB
+ * @brief Numerical Propagator
  * @version 0.1
- * @date 2023-02-12
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *
  */
-
 #pragma once
 
 #include <autodiff/forward/real.hpp>

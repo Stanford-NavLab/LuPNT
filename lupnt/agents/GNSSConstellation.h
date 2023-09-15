@@ -1,3 +1,13 @@
+/**
+ * @file GNSSConstellation.h
+ * @author Stanford NAV LAB
+ * @brief
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #pragma once
 
 #include <lupnt/agents/Agent.h>

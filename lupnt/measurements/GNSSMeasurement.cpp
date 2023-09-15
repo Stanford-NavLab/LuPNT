@@ -1,3 +1,13 @@
+/**
+ * @file GNSSMeasurement.cpp
+ * @author Stanford NAV LAB
+ * @brief Class that constructs GPS measurement data from channel observables
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #include "GNSSMeasurement.h"
 
 #include <lupnt/numerics/MathUtils.h>

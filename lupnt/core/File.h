@@ -1,3 +1,13 @@
+/**
+ * @file File.h
+ * @author Stanford NAV LAB
+ * @brief File access utils
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #pragma once
 
 #include <lupnt/numerics/MathUtils.h>

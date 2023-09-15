@@ -1,9 +1,9 @@
 /**
  * @file SpaceChannel.h
- * @author Guillem Casadesus Vila
- * @brief Space channel
+ * @author Stanford NAV LAB
+ * @brief Base spacechannel class (Under devlopment )
  * @version 0.1
- * @date 2023-03-07
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *
@@ -71,7 +71,7 @@ class SpaceChannel {
    *
    */
   void computeLinkBudget(std::shared_ptr<ICommDevice> &tx,
-                         std::shared_ptr<ICommDevice> &rx, double t_tx, double t_rx,
-                         Transmission &transmission);
+                         std::shared_ptr<ICommDevice> &rx, double t_tx,
+                         double t_rx, Transmission &transmission);
 };
 }  // namespace LPT

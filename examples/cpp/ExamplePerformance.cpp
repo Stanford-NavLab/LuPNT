@@ -1,12 +1,11 @@
 // lupnt includes
 #include <lupnt/core/File.h>
-#include <lupnt/numerics/MathUtils.h>
-#include <lupnt/physics/SpiceInterface.h>
-#include <lupnt/numerics/eigenmvn.h>
 #include <lupnt/dynamics/Dynamics.h>
 #include <lupnt/dynamics/GravityField.h>
+#include <lupnt/numerics/MathUtils.h>
 #include <lupnt/physics/CoordConverter.h>
 #include <lupnt/physics/OrbitState.h>
+#include <lupnt/physics/SpiceInterface.h>
 
 // Autodiff includes
 #include <autodiff/forward/real.hpp>

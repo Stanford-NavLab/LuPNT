@@ -1,9 +1,8 @@
 /**
  * @file RadioMeasurement.cpp
- * @author your name (you@domain.com)
- * @brief
- * @version 0.1
- * @date 2023-09-13
+ * @author Stanford NAV LAB
+ * @brief Radio measurement functions
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *

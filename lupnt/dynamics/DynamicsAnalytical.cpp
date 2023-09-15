@@ -1,3 +1,13 @@
+/**
+ * @file DynamicsAnalytical.cpp
+ * @author Stanford NAV LAB
+ * @brief Analytical orbit dynamics implementation
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #include <Eigen/QR>
 
 #include "Dynamics.h"
@@ -117,7 +127,8 @@ ad::MatrixXreal ClohessyWiltshireDynamics::ComputeMatrix(ad::real t) {
 
 YamanakaAnkersenDynamics::YamanakaAnkersenDynamics()
     : a(0.0), n(0.0), e(0.0), M0(0.0){};
-void YamanakaAnkersenDynamics::Propagate(CartesianOrbitState &state, ad::real tEnd) {
+void YamanakaAnkersenDynamics::Propagate(CartesianOrbitState &state,
+                                         ad::real tEnd) {
   if (state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN) {
     ad::VectorXreal xEnd = ComputeMatrix(tEnd) * K;
     state.SetVector(xEnd);

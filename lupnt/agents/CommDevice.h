@@ -1,14 +1,13 @@
 /**
- * @file CommDevice.cpp
- * @author Guillem Casadesus Vila
- * @brief Communication device
+ * @file CommDevice.h
+ * @author Stanford NAV Lab
+ * @brief Communication devices
  * @version 0.1
- * @date 2023-03-07
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *
  */
-
 #pragma once
 
 #include <autodiff/forward/real.hpp>

@@ -1,3 +1,13 @@
+/**
+ * @file NBodyDynamics.cpp
+ * @author Stanford NAV LAB
+ * @brief Multiple-body dynamics
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #include <autodiff/forward/real.hpp>
 
 #include "Dynamics.h"

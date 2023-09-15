@@ -1,14 +1,13 @@
 /**
  * @file StateEstimationApp.cpp
- * @author Stanford University NAV Lab
- * @brief Base class for state estimation applications
- * @version
- * @date
+ * @author Stanford NAV LAB
+ * @brief Base class for State Estimation Application
+ * @version 0.1
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *
  */
-
 #include "StateEstimationApp.h"
 
 namespace LPT {

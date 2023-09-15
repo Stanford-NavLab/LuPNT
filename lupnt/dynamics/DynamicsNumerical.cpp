@@ -1,3 +1,14 @@
+/**
+ * @file DynamicsNumerical.cpp
+ * @author Stanford NAV LAB
+ * @brief List of Numerical Dynamics
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #include "Dynamics.h"
 #include "lupnt/core/Constants.h"
 

@@ -9,7 +9,6 @@
 #include <lupnt/measurements/Transmission.h>
 #include <lupnt/numerics/Filters.h>
 #include <lupnt/numerics/MathUtils.h>
-#include <lupnt/numerics/eigenmvn.h>
 #include <lupnt/physics/Clock.h>
 #include <lupnt/physics/CoordConverter.h>
 #include <lupnt/physics/OrbitState.h>
@@ -127,12 +126,10 @@ int main() {
 
   // Initial estimates
   auto zero6 = Eigen::Vector6d::Zero();
-  Eigen::EigenMultivariateNormal<double> mvrnd_rv(zero6, P_rv);
-  ad::Vector6real rv_est = rv + mvrnd_rv.samples(1);
+  ad::Vector6real rv_est = rv + SampleMVN(zero6, P_rv, 1);
 
   auto zero2 = Eigen::Vector2d::Zero();
-  Eigen::EigenMultivariateNormal<double> mvrnd_clk(zero2, P_clk);
-  ad::Vector2real clk_est = clk;  // + mvrnd_clk.samples(1);
+  ad::Vector2real clk_est = clk + SampleMVN(zero2, P_clk, 1);
 
   auto rv_pred_only = rv_est;
   auto clk_pred_only = clk_est;
