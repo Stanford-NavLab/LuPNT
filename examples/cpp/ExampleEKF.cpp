@@ -71,9 +71,9 @@ int main() {
   std::cout << "Initial Epoch: " << epoch_string << std::endl;
 
   double t0 = 0;
-  double tf = t0 + 6.0 * SECS_PER_HOUR;  // 6 hours
-  double dt = 1.0;                       // Integration time step [s]
-  double Dt = 10.0;                      // Propagation time step [s]
+  double tf = t0 + 24.0 * SECS_PER_HOUR;  // 6 hours
+  double dt = 1.0;                        // Integration time step [s]
+  double Dt = 10.0;                       // Propagation time step [s]
   double print_every = 1.0 * SECS_PER_HOUR;
   double save_every = Dt;
 
@@ -81,8 +81,8 @@ int main() {
   ad::real a = 6541.4;
   ad::real e = 0.6;
   ad::real i = 65.5 * RAD_PER_DEG;
-  ad::real Omega = 90 * RAD_PER_DEG;
-  ad::real w = 0.0 * RAD_PER_DEG;
+  ad::real Omega = 0.0 * RAD_PER_DEG;
+  ad::real w = 90.0 * RAD_PER_DEG;
   ad::real M = 0.0 * RAD_PER_DEG;
   ClassicalOE coe_moon(a, e, i, Omega, w, M);
   coe_moon.SetCoordSystem(CoordSystem::MI);

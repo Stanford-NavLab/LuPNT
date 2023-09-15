@@ -2,7 +2,7 @@
 
 # Welcome to the LuPNT Library
 
-`LuPNT` is an open-source C++/Python library for Lunar Positioning, Navigation, and Timing Analysis (LuPNT).
+`LuPNT` is an open-source C++/Python library for Lunar Positioning, Navigation, and Timing Research.
 
 > **Note**: This project is under active development.
 
@@ -17,7 +17,7 @@ The documentation is available at at [stanford-navlab.github.io/LuPNT/](https://
 This project is a product of the [Stanford NAV Lab](https://navlab.stanford.edu/).
 If using this project in your own work please cite the following:
 
-```bash
+```
 @inproceedings{IiyamaCasadesus2023,
   title = {LuPNT: Open-Souce Simulator for Lunar Positioning, Navigation, and Timing},
   author={Iiyama, Keidai and Casadesus Vila, Guillem and Gao, Grace},
@@ -181,5 +181,12 @@ $ python3 -m pytest test_python
 ```
 - A useful command for the debug console is `p` to print a variable or expression. For example, `$p rv_rx_gcrf->x_`, where `rv_rx_gcrf` is a `std::shared_ptr<State>`, results in:
 ```
-(autodiff::VectorXreal) $2 = ([0] = 291587.67232231156, [1] = 269354.82986367267, [2] = 76112.184704362284, [3] = -1.3616218570959222, [4] = 0.66603497742054196, [5] = 1.8768878200960224)
+(autodiff::VectorXreal) $2 = (
+  [0] = 291587.67232231156, 
+  [1] = 269354.82986367267, 
+  [2] = 76112.184704362284, 
+  [3] = -1.3616218570959222, 
+  [4] = 0.66603497742054196, 
+  [5] = 1.8768878200960224
+)
 ```
