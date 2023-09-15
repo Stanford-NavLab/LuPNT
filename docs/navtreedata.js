@@ -26,7 +26,7 @@ var NAVTREE =
 [
   [ "LuPNT", "index.html", [
     [ "Welcome to the LuPNT Library", "index.html#autotoc_md0", [
-      [ "Source Code", "index.html#autotoc_md1", null ],
+      [ "Source Code and Documentation", "index.html#autotoc_md1", null ],
       [ "Attribution", "index.html#autotoc_md2", null ],
       [ "Installation", "index.html#autotoc_md3", [
         [ "Step 1: Install Required Packages and Files", "index.html#autotoc_md4", null ],
