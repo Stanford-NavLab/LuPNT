@@ -1,9 +1,9 @@
 /**
  * @file CoordConverter.cpp
- * @author Guillem Casadesus Vila
- * @brief Coordinate converter
+ * @author Stanford NAV LAB
+ * @brief Coordinate conversion functions
  * @version 0.1
- * @date 2023-03-11
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *

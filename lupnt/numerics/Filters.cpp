@@ -1,7 +1,7 @@
 /**
  * @file Filters.cpp
- * @author your name (you@domain.com)
- * @brief
+ * @author Stanford NAVLAB
+ * @brief Implementation of Filters
  * @version 0.1
  * @date 2023-09-09
  *

@@ -1,9 +1,9 @@
 /**
  * @file Occultation.h
- * @author Guillem Casadesus Vila
- * @brief Occultation between Earth and Moon
+ * @author Stanford NAV LAB
+ * @brief Signal blockage model
  * @version 0.1
- * @date 2023-03-07
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *

@@ -1,9 +1,9 @@
 /**
  * @file GNSSReceiver.cpp
- * @author Guillem Casadesus Vila
- * @brief GNSS Receiver Class
+ * @author Stanford NAV LAB
+ * @brief GNSS Receiver class
  * @version 0.1
- * @date 2023-03-07
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *

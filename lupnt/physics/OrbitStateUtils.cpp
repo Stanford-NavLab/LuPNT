@@ -1,3 +1,14 @@
+/**
+ * @file OrbitStateUtils.cpp
+ * @author Stanford NAV LAB
+ * @brief Util functions for state conversions
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #include "lupnt/physics/OrbitStateUtils.h"
 
 #include <Eigen/Dense>
@@ -289,8 +300,9 @@ ad::Vector6real InertialToRtn(const ad::Vector6real &rtnOrigin,
   return rtnVec;
 }
 
-CartesianOrbitState InertialToRtn(const CartesianOrbitState &rtnOrigin,
-                             const CartesianOrbitState &inertialOrbitState) {
+CartesianOrbitState InertialToRtn(
+    const CartesianOrbitState &rtnOrigin,
+    const CartesianOrbitState &inertialOrbitState) {
   ad::Vector6real rtnOriginVec = rtnOrigin.GetVector();
   ad::Vector6real inertialVec = inertialOrbitState.GetVector();
   ad::Vector6real rtnVec = InertialToRtn(rtnOriginVec, inertialVec);
@@ -307,7 +319,7 @@ ad::Vector6real CoeToRtn(const ad::Vector6real &coe_c,
 }
 
 CartesianOrbitState CoeToRtn(const ClassicalOE &coe_c, const ClassicalOE &coe_d,
-                        double mu) {
+                             double mu) {
   ad::Vector6real rtnVec = CoeToRtn(coe_c.GetVector(), coe_d.GetVector(), mu);
   return CartesianOrbitState(rtnVec);
 }

@@ -1,3 +1,13 @@
+/**
+ * @file ExampleFrozenOrbits.cpp
+ * @author Stanford NAV LAB
+ * @brief Example of frozen orbits
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 
 #include <lupnt/core/Constants.h>
 #include <lupnt/core/UserFilePath.h>

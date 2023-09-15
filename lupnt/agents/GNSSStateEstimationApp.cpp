@@ -1,7 +1,7 @@
 /**
  * @file GNSSStateEstimationApp.cpp
- * @author
- * @brief
+ * @author Stanford NAVLAB
+ * @brief State Estimation Application Using GNSS Measurement
  * @version 0.1
  * @date 2023-09-14
  *
@@ -32,12 +32,10 @@ void GNSSStateEstimationApp::Setup() {
 
   // Initial estimates
   auto zero6 = Eigen::Vector6d::Zero();
-  Eigen::EigenMultivariateNormal<double> mvrnd_rv(zero6, P_rv);
-  rv_est = rv + mvrnd_rv.samples(1);
+  rv_est = rv + SampleMVN(zero6, P_rv, 1);
 
   auto zero2 = Eigen::Vector2d::Zero();
-  Eigen::EigenMultivariateNormal<double> mvrnd_clk(zero2, P_clk);
-  clk_est = clk;  // + mvrnd_clk.samples(1);
+  clk_est = clk + SampleMVN(zero2, P_clk, 1);
 
   rv_pred_only = rv_est;
   clk_pred_only = clk_est;

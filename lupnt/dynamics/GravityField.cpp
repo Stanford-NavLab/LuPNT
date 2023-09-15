@@ -1,3 +1,13 @@
+/**
+ * @file GravityField.cpp
+ * @author Stanford NAV LAB
+ * @brief Gravity Field Implementations
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #include "GravityField.h"
 
 namespace LPT {

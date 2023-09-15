@@ -1,9 +1,9 @@
 /**
- * @file MathUtils.h
- * @author Keidai Iiyama
- * @brief Utility Mathematical Functions
+ * @file MathUtils.cpp
+ * @author Stanford NAV LAB
+ * @brief Math util functions
  * @version 0.1
- * @date 2023-02-07
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *
@@ -11,6 +11,9 @@
 
 #include "lupnt/numerics/MathUtils.h"
 
+#include <Eigen/Cholesky>
+#include <Eigen/Eigenvalues>
+#include <Eigen/SVD>
 #include <autodiff/forward/real.hpp>
 #include <autodiff/forward/real/eigen.hpp>
 
@@ -163,5 +166,45 @@ double LinearInterp2d(Eigen::VectorXd x, Eigen::VectorXd y,
                   data(ix1, iy0) * dx0 * dy1 + data(ix1, iy1) * dx0 * dy0;
   return result;
 }
+
+/**
+ * @brief Sample from a multivariate normal distribution
+ *
+ * @param mean
+ * @param cov
+ * @param nn
+ * @return Eigen::MatrixXd
+ */
+Eigen::MatrixXd SampleMVN(const Eigen::VectorXd mean,
+                          const Eigen::MatrixXd covar, int nn) {
+  // Define random generator with Gaussian distribution
+  int xsize = mean.size();
+  auto dist = std::bind(std::normal_distribution<double>{0.0, 1.0},
+                        std::mt19937(std::random_device{}()));
+
+  // Transform Matrix
+  Eigen::MatrixXd normTransform(xsize, xsize);
+  Eigen::LLT<Eigen::MatrixXd> cholSolver(covar);
+
+  if (cholSolver.info() == Eigen::Success) {
+    // Use cholesky solver
+    normTransform = cholSolver.matrixL();
+  } else {
+    std::runtime_error(
+        "The covariance matrix must be symmetric and pos-definite.");
+  }
+
+  Eigen::MatrixXd randN(xsize, nn);
+  Eigen::MatrixXd mean_samples(xsize, nn);
+  for (int i = 0; i < xsize; i++) {
+    for (int j = 0; j < xsize; j++) {
+      randN(i, j) = dist();
+      mean_samples(i, j) = mean(i);
+    }
+  }
+
+  Eigen::MatrixXd samples = normTransform * randN + mean_samples;
+  return samples;
+};
 
 }  // namespace LPT

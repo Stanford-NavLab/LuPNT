@@ -1,14 +1,13 @@
 /**
- * @file SpiceExample.cpp
- * @author your name (you@domain.com)
- * @brief
+ * @file ExampleSpice.cpp
+ * @author Stanford NAV LAB
+ * @brief Example of using the SpiceInterface class
  * @version 0.1
- * @date 2023-04-15
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *
  */
-
 #include <lupnt/core/Constants.h>
 #include <lupnt/physics/SpiceInterface.h>
 

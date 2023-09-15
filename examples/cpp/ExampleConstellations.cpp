@@ -1,3 +1,14 @@
+/**
+ * @file ExampleConstellations.cpp
+ * @author Stanford NAVLAB
+ * @brief Setup GNSS Constellation
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 // lupnt includes
 #include <lupnt/agents/Agent.h>
 #include <lupnt/agents/GNSSConstellation.h>
@@ -9,7 +20,6 @@
 #include <lupnt/measurements/Transmission.h>
 #include <lupnt/numerics/Filters.h>
 #include <lupnt/numerics/MathUtils.h>
-#include <lupnt/numerics/eigenmvn.h>
 #include <lupnt/physics/CoordConverter.h>
 #include <lupnt/physics/OrbitState.h>
 #include <lupnt/physics/SpiceInterface.h>

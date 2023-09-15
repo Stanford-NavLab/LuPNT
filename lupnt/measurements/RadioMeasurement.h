@@ -1,3 +1,14 @@
+/**
+ * @file RadioMeasurement.cpp
+ * @author Stanford NAV LAB
+ * @brief Class for Radionavigation measurements
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #pragma once
 
 #include <lupnt/numerics/MathUtils.h>

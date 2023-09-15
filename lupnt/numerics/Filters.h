@@ -1,9 +1,9 @@
 /**
  * @file Filters.h
- * @author your name (you@domain.com)
- * @brief
+ * @author Stanford NAV LAB
+ * @brief List of Filters
  * @version 0.1
- * @date 2023-09-09
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *
@@ -40,12 +40,12 @@ typedef std::function<ad::VectorXreal(const ad::VectorXreal, ad::real t_curr,
 
 /**
  * @brief Process noise function
- * 
+ *
  * @param x State
  * @param t_curr Current time
  * @param t_end End time
  * @return Eigen::MatrixXd Process noise covariance
- * 
+ *
  */
 typedef std::function<Eigen::MatrixXd(const ad::VectorXreal, ad::real t_curr,
                                       ad::real t_end)>
@@ -53,11 +53,11 @@ typedef std::function<Eigen::MatrixXd(const ad::VectorXreal, ad::real t_curr,
 
 /**
  * @brief Measurement function
- * 
+ *
  * @param x State
  * @param H Measurement matrix
  * @param R Measurement noise covariance
- * 
+ *
  */
 typedef std::function<ad::VectorXreal(const ad::VectorXreal, Eigen::MatrixXd &,
                                       Eigen::MatrixXd &)>

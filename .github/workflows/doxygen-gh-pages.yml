@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - development
-  workflow_dispatch:
 
 jobs:
   deploy:
@@ -15,4 +14,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: gh-pages
           folder: docs/html
-          config_file: docs/Doxyfile
+          config_fil: docs/Doxyfile

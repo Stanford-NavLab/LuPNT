@@ -1,9 +1,9 @@
 /**
  * @file GNSSConstellation.cpp
- * @author your name (you@domain.com)
- * @brief
+ * @author Stanford NAV LAB
+ * @brief GNSS Constellation
  * @version 0.1
- * @date 2023-09-12
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *

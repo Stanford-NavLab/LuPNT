@@ -1,0 +1,13 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$class_l_p_t_1_1_i_comm_device.html" title=" " alt="" coords="5,55,141,80"/>
+<area shape="rect" id="Node000001" href="$class_l_p_t_1_1_receiver.html" title=" " alt="" coords="196,5,299,31"/>
+<area shape="poly" id="edge8_Node000000_Node000001" title=" " alt="" coords="134,48,198,29,200,34,135,53"/>
+<area shape="rect" id="Node000003" href="$class_l_p_t_1_1_tranceiver.html" title=" " alt="" coords="191,55,304,80"/>
+<area shape="poly" id="edge10_Node000000_Node000003" title=" " alt="" coords="156,65,191,65,191,70,156,70"/>
+<area shape="rect" id="Node000004" href="$class_l_p_t_1_1_transmitter.html" title=" " alt="" coords="189,104,306,130"/>
+<area shape="poly" id="edge11_Node000000_Node000004" title=" " alt="" coords="135,82,200,101,198,106,134,87"/>
+<area shape="rect" id="Node000002" href="$class_l_p_t_1_1_g_n_s_s_receiver.html" title=" " alt="" coords="361,5,502,31"/>
+<area shape="poly" id="edge9_Node000001_Node000002" title=" " alt="" coords="314,16,361,16,361,21,314,21"/>
+<area shape="rect" id="Node000005" href="$class_l_p_t_1_1_g_n_s_s_transmitter.html" title=" " alt="" coords="354,104,509,130"/>
+<area shape="poly" id="edge12_Node000004_Node000005" title=" " alt="" coords="321,114,354,114,354,120,321,120"/>
+</map>

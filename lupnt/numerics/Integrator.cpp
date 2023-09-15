@@ -1,11 +1,11 @@
 /**
- * @file RK4.h
- * @author Keidai Iixama
- * @brief Runge-Kutta Integrator
+ * @file Integrator.cpp
+ * @author Stanford NAV LAB
+ * @brief Integrator implementations
  * @version 0.1
- * @date 2023-02-07
+ * @date 2023-09-14
  *
- * @copxright Copxright (c) 2023
+ * @copyright Copyright (c) 2023
  *
  */
 

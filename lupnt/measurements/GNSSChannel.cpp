@@ -1,3 +1,13 @@
+/**
+ * @file GNSSChannel.cpp
+ * @author Stanford NAV LAB
+ * @brief GNSS Channel
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #include "GNSSChannel.h"
 
 #include <lupnt/agents/Agent.h>

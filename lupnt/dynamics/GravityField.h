@@ -1,3 +1,13 @@
+/**
+ * @file GravityField.h
+ * @author Stanford NAVLAB
+ * @brief Gravity field model and acceleration calculation
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #pragma once
 
 // C++ includes
@@ -13,8 +23,8 @@
 #include <autodiff/forward/real/eigen.hpp>
 
 // lupnt includes
-#include <lupnt/numerics/MathUtils.h>
 #include <lupnt/core/UserFilePath.h>
+#include <lupnt/numerics/MathUtils.h>
 
 namespace ad = autodiff;
 

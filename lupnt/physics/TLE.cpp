@@ -1,3 +1,14 @@
+/**
+ * @file TLE.cpp
+ * @author Stanford NAV LAB
+ * @brief  Routines to process TLE files
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #include <fstream>
 #include <iostream>
 #include <memory>

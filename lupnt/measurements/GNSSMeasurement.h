@@ -1,9 +1,9 @@
 /**
  * @file GNSSMeasurement.h
- * @author Guillem Casadesus Vila
- * @brief GNSSMeasurement
+ * @author Stanford NAV LAB
+ * @brief Class that constructs GPS measurement data from channel observables
  * @version 0.1
- * @date 2023-03-07
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *

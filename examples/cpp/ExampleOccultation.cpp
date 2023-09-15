@@ -1,5 +1,15 @@
-#include <lupnt/numerics/MathUtils.h>
+/**
+ * @file ExampleOccultation.cpp
+ * @author Stanford NAV LAB
+ * @brief Example of occultation computation
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #include <lupnt/measurements/Occultation.h>
+#include <lupnt/numerics/MathUtils.h>
 #include <lupnt/physics/CoordConverter.h>
 
 #include <memory>

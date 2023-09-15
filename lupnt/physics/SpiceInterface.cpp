@@ -1,9 +1,9 @@
 /**
  * @file SpiceInterface.cpp
- * @author your name (you@domain.com)
- * @brief
+ * @author Stanford NAV LAB
+ * @brief  SPICE Interface functions
  * @version 0.1
- * @date 2023-02-13
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *

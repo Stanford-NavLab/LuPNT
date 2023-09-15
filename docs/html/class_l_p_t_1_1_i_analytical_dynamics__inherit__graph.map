@@ -1,0 +1,9 @@
+<map id="LPT::IAnalyticalDynamics" name="LPT::IAnalyticalDynamics">
+<area shape="rect" id="Node000001" title=" " alt="" coords="268,5,431,151"/>
+<area shape="rect" id="Node000002" href="$class_l_p_t_1_1_clohessy_wiltshire_dynamics.html" title=" " alt="" coords="5,209,213,334"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="258,155,188,211,185,207,255,151"/>
+<area shape="rect" id="Node000003" href="$class_l_p_t_1_1_roe_geometric_mapping_dynamics.html" title=" " alt="" coords="237,201,461,341"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="352,165,352,201,347,201,347,165"/>
+<area shape="rect" id="Node000004" href="$class_l_p_t_1_1_yamanaka_ankersen_dynamics.html" title=" " alt="" coords="486,199,703,344"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="443,149,505,197,501,201,440,153"/>
+</map>

@@ -1,18 +1,13 @@
-/*******************************************************************************
+/**
+ * @file SpiceInterface.h
+ * @author Stanford NAV LAB
+ * @brief  SPICE Interface functions
+ * @version 0.1
+ * @date 2023-09-14
  *
- * SpiceInterface.h
+ * @copyright Copyright (c) 2023
  *
- * Description:
- *
- *   Provides interface for cspice
- *
- * Log:
- *
- *   2023/02/7 GCV created
- *
- * (c) 2023 NavLab
- *
- ******************************************************************************/
+ */
 
 #pragma once
 

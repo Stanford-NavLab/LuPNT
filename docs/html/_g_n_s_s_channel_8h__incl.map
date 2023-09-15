@@ -1,0 +1,35 @@
+<map id="GNSSChannel.h" name="GNSSChannel.h">
+<area shape="rect" id="Node000001" title="GNSS Channel class." alt="" coords="623,5,742,31"/>
+<area shape="rect" id="Node000002" href="$_occultation_8h.html" title="Signal blockage model." alt="" coords="506,168,646,208"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="659,34,629,53,603,80,588,117,580,153,575,152,582,115,599,78,626,49,656,29"/>
+<area shape="rect" id="Node000014" href="$_space_channel_8h.html" title="Base spacechannel class (Under devlopment )" alt="" coords="613,79,752,120"/>
+<area shape="poly" id="edge14_Node000001_Node000014" title=" " alt="" coords="685,31,685,64,680,64,680,31"/>
+<area shape="rect" id="Node000016" title=" " alt="" coords="777,87,834,112"/>
+<area shape="poly" id="edge17_Node000001_Node000016" title=" " alt="" coords="703,29,776,76,773,81,700,34"/>
+<area shape="rect" id="Node000003" href="$_constants_8h.html" title="List of constants." alt="" coords="270,264,423,290"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="525,211,393,261,391,256,523,206"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="448,256,584,297"/>
+<area shape="poly" id="edge11_Node000002_Node000011" title=" " alt="" coords="564,210,540,246,535,243,560,207"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="609,264,666,290"/>
+<area shape="poly" id="edge12_Node000002_Node000012" title=" " alt="" coords="592,207,623,250,618,253,588,210"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="690,264,736,290"/>
+<area shape="poly" id="edge13_Node000002_Node000013" title=" " alt="" coords="608,207,683,253,680,258,606,211"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="5,345,184,371"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="308,293,148,343,146,338,307,288"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="207,345,369,371"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="340,292,307,335,303,331,335,288"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="380,419,433,444"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="356,289,382,344,402,404,397,405,377,346,351,291"/>
+<area shape="rect" id="Node000007" href="$_user_file_path_8h.html" title="File access utils." alt="" coords="444,345,553,371"/>
+<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="371,288,464,336,461,340,368,292"/>
+<area shape="poly" id="edge10_Node000007_Node000006" title=" " alt="" coords="485,373,435,412,432,407,481,369"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="458,419,539,444"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="501,371,501,404,496,404,496,371"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="563,419,634,444"/>
+<area shape="poly" id="edge8_Node000007_Node000009" title=" " alt="" coords="517,369,571,407,568,412,514,373"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="659,419,725,444"/>
+<area shape="poly" id="edge9_Node000007_Node000010" title=" " alt="" coords="532,369,646,411,645,416,530,374"/>
+<area shape="poly" id="edge15_Node000014_Node000002" title=" " alt="" coords="660,122,613,160,610,156,657,118"/>
+<area shape="rect" id="Node000015" title=" " alt="" coords="670,175,738,201"/>
+<area shape="poly" id="edge16_Node000014_Node000015" title=" " alt="" coords="690,120,700,160,695,162,685,121"/>
+</map>

@@ -24,6 +24,4 @@ output
 data/ephemeris
 examples/figures
 lupnt.egg-info
-docs/Sphinx/_build
-docs/Sphinx/api
-docs/Doxygen/_build
+docs/html

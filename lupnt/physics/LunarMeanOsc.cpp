@@ -1,3 +1,15 @@
+/**
+ * @file LunarMeanOsc.cpp
+ * @author Stanford NAV LAB
+ * @brief  Lunar Mean and Osculating Elements
+ * @version 0.1
+ * @date 2023-09-14
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
+
 #include <array>
 
 #include "lupnt/core/Constants.h"

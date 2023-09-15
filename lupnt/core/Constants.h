@@ -1,3 +1,13 @@
+/**
+ * @file Constants.h
+ * @author Stanford NAV LAB
+ * @brief List of constants
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #pragma once
 
 #include <autodiff/common/eigen.hpp>

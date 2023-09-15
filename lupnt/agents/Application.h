@@ -1,3 +1,14 @@
+/**
+ * @file Application.h
+ * @author Stanford NAVLab
+ * @brief Base class for Application
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #pragma once
 
 #include <memory>
