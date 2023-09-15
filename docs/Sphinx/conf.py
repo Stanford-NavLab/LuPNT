@@ -39,7 +39,7 @@ extensions = [
 source_suffix = {
     ".rst": "restructuredtext",
     ".txt": "restructuredtext",
-    ".md": "markdown",
+    # ".md": "markdown",
 }
 
 # Setup the breathe extension
