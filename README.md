@@ -6,9 +6,11 @@
 
 > **Note**: This project is under active development.
 
-## Source Code
+## Source Code and Documentation
 
 All source code is available on GitHub at [github.com/stanford-navlab/LuPNT](https://github.com/stanford-navlab/LuPNT).
+
+The documentation is available at at [stanford-navlab.github.io/LuPNT/](https://stanford-navlab.github.io/LuPNT/).
 
 ## Attribution
 
