@@ -30,8 +30,8 @@ var NAVTREE =
       [ "Attribution", "index.html#autotoc_md2", null ],
       [ "Installation", "index.html#autotoc_md3", [
         [ "Step 1: Install Required Packages and Files", "index.html#autotoc_md4", null ],
-        [ "Step2: Do Additional Setups", "index.html#autotoc_md5", null ],
-        [ "Step3: Build the LuPNT Library", "index.html#autotoc_md6", [
+        [ "Step 2: Do Additional Setups", "index.html#autotoc_md5", null ],
+        [ "Step 3: Build the LuPNT Library", "index.html#autotoc_md6", [
           [ "Option 1: From VScode", "index.html#autotoc_md7", null ],
           [ "Option 2: From Terminal", "index.html#autotoc_md8", null ]
         ] ],
