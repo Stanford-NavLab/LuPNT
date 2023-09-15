@@ -1,12 +1,12 @@
 /**
- * @file cheby.h
- * @author your name (you@domain.com)
- * @brief
+ * @file cheby.c
+ * @author Mark Adler
+ * @brief    This illustrates how the coefficients may be extracted once using
+ the SPICE library, and then used after that without the SPICE library.
+   Extracted from
  * @version 0.1
- * @date 2023-02-13
- *
- * @copyright Copyright (c) 2023
- *
+ * @date 2015-08-15
+ * @copyright Mark Adler (c) 2023
  */
 
 #pragma once

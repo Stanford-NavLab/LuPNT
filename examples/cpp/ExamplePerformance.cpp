@@ -1,3 +1,14 @@
+/**
+ * @file ExamplePerformance.cpp
+ * @author Stanford NAV LAB
+ * @brief Example for performance testing of spherical harmonics computation
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 // lupnt includes
 #include <lupnt/core/File.h>
 #include <lupnt/dynamics/Dynamics.h>

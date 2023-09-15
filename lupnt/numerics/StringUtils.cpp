@@ -1,3 +1,15 @@
+
+/**
+ * @file StringUtils.cpp
+ * @author Stanford NAV LAB
+ * @brief Util functions for strings
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #include "StringUtils.h"
 
 #include <fstream>

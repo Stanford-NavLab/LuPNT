@@ -1,9 +1,9 @@
 /**
- * @file MathUtils.h
- * @author Keidai Iiyama
- * @brief Utility Mathematical Functions
+ * @file MathUtils.cpp
+ * @author Stanford NAV LAB
+ * @brief Math util functions
  * @version 0.1
- * @date 2023-02-07
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *

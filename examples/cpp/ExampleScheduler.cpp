@@ -1,3 +1,13 @@
+/**
+ * @file ExampleScheduler.cpp
+ * @author Stanford NAV LAB
+ * @brief Example of using the Scheduler class
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #include <lupnt/core/Event.h>
 #include <lupnt/core/Scheduler.h>
 

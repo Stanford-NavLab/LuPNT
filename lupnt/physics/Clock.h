@@ -1,3 +1,14 @@
+/**
+ * @file Clock.h
+ * @author Stanford NAV LAB
+ * @brief Clock class
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #pragma once
 
 #include <Eigen/Dense>

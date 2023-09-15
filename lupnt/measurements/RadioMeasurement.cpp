@@ -1,7 +1,8 @@
 /**
  * @file RadioMeasurement.cpp
  * @author Stanford NAV LAB
- * @brief Radio measurement functions
+ * @brief Class for Radionavigation measurements
+ * @version 0.1
  * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023

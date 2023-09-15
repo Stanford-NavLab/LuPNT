@@ -1,3 +1,14 @@
+/**
+ * @file OrbitState.cpp
+ * @author Stanford NAV LAB
+ * @brief  Orbit states
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #include "lupnt/physics/OrbitState.h"
 
 #include <memory>
@@ -9,7 +20,8 @@
 namespace LPT {
 
 std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
-    std::shared_ptr<OrbitState> fromOrbitState, OrbitStateRepres toRepres, double mu) {
+    std::shared_ptr<OrbitState> fromOrbitState, OrbitStateRepres toRepres,
+    double mu) {
   OrbitStateRepres fromRepres = fromOrbitState->GetOrbitStateRepres();
   if (fromRepres == toRepres) return fromOrbitState;
   if (fromRepres == OrbitStateRepres::CARTESIAN &&

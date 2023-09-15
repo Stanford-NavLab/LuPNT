@@ -1,13 +1,14 @@
 /**
  * @file State.h
- * @author your name (you@domain.com)
- * @brief
+ * @author Stanford NAV LAB
+ * @brief  SPICE Interface functions
  * @version 0.1
- * @date 2023-09-13
+ * @date 2023-09-14
  *
  * @copyright Copyright (c) 2023
  *
  */
+
 #pragma once
 
 #include <autodiff/forward/real.hpp>

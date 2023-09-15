@@ -1,3 +1,14 @@
+/**
+ * @file ExamplePropagation.cpp
+ * @author Stanford NAV LAB
+ * @brief Example propagating both GPS constellation and Lunar Satellite
+ * @version 0.1
+ * @date 2023-09-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 // lupnt includes
 #include <lupnt/agents/Agent.h>
 #include <lupnt/agents/GNSSConstellation.h>
