@@ -1,0 +1,36 @@
+<map id="ExampleOccultation.cpp" name="ExampleOccultation.cpp">
+<area shape="rect" id="Node000001" title="Example of occultation computation." alt="" coords="546,5,710,31"/>
+<area shape="rect" id="Node000002" href="$_occultation_8h.html" title="Signal blockage model." alt="" coords="357,79,496,120"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="598,34,491,76,489,71,596,29"/>
+<area shape="rect" id="Node000014" href="$_math_utils_8h.html" title=" " alt="" coords="539,87,717,112"/>
+<area shape="poly" id="edge14_Node000001_Node000014" title=" " alt="" coords="631,31,631,72,625,72,625,31"/>
+<area shape="rect" id="Node000016" title=" " alt="" coords="740,87,809,112"/>
+<area shape="poly" id="edge18_Node000001_Node000016" title=" " alt="" coords="651,29,741,77,738,82,649,34"/>
+<area shape="rect" id="Node000003" href="$_constants_8h.html" title="List of constants." alt="" coords="145,175,298,201"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="381,123,264,172,262,167,379,118"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="474,168,611,208"/>
+<area shape="poly" id="edge11_Node000002_Node000011" title=" " alt="" coords="454,118,506,156,503,161,451,122"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="322,175,379,201"/>
+<area shape="poly" id="edge12_Node000002_Node000012" title=" " alt="" coords="411,122,373,166,369,162,407,118"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="403,175,450,201"/>
+<area shape="poly" id="edge13_Node000002_Node000013" title=" " alt="" coords="429,120,429,161,424,161,424,120"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="5,256,184,282"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="203,204,128,250,125,246,201,199"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="479,256,641,282"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="274,199,494,250,493,255,273,204"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="195,330,248,356"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="224,201,224,315,219,315,219,201"/>
+<area shape="rect" id="Node000007" href="$_user_file_path_8h.html" title="File access utils." alt="" coords="259,256,367,282"/>
+<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="237,199,290,245,286,249,233,203"/>
+<area shape="poly" id="edge10_Node000007_Node000006" title=" " alt="" coords="299,285,250,323,246,319,296,280"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="273,330,354,356"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="316,282,316,315,311,315,311,282"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="378,330,449,356"/>
+<area shape="poly" id="edge8_Node000007_Node000009" title=" " alt="" coords="332,280,386,319,383,323,329,285"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="473,330,540,356"/>
+<area shape="poly" id="edge9_Node000007_Node000010" title=" " alt="" coords="347,280,461,322,459,327,345,285"/>
+<area shape="poly" id="edge15_Node000014_Node000005" title=" " alt="" coords="633,112,636,156,633,183,625,209,610,231,592,249,588,245,606,228,620,207,628,182,630,156,627,113"/>
+<area shape="poly" id="edge16_Node000014_Node000011" title=" " alt="" coords="618,115,573,159,570,156,614,111"/>
+<area shape="rect" id="Node000015" title=" " alt="" coords="685,175,749,201"/>
+<area shape="poly" id="edge17_Node000014_Node000015" title=" " alt="" coords="642,111,696,163,693,167,638,115"/>
+</map>

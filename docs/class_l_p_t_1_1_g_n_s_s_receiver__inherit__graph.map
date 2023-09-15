@@ -1,0 +1,7 @@
+<map id="LPT::GNSSReceiver" name="LPT::GNSSReceiver">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,332,185,617"/>
+<area shape="rect" id="Node000002" href="$class_l_p_t_1_1_receiver.html" title=" " alt="" coords="48,159,143,284"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="98,298,98,332,93,332,93,298"/>
+<area shape="rect" id="Node000003" href="$class_l_p_t_1_1_i_comm_device.html" title=" " alt="" coords="32,5,159,111"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="98,125,98,159,93,159,93,125"/>
+</map>

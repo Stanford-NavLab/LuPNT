@@ -1,0 +1,4 @@
+<map id="LPT::SpiceInterface::StringToTDB" name="LPT::SpiceInterface::StringToTDB">
+<area shape="rect" id="node1" title="Convert a string to ephemeris time." alt="" coords="5,29,151,71"/>
+<area shape="rect" id="node2" href="$SpiceInterface_8cpp.html#a37ef193d9d9c280ca90a4dcfc6c42002" title="load the Spice kernels" alt="" coords="199,29,344,71"/>
+</map>

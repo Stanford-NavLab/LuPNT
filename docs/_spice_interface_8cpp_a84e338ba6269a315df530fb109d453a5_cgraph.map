@@ -1,0 +1,15 @@
+<map id="LPT::SpiceInterface::TAItoStringUTC" name="LPT::SpiceInterface::TAItoStringUTC">
+<area shape="rect" id="Node000001" title="Convert TAI to string UTC." alt="" coords="5,87,141,127"/>
+<area shape="poly" id="edge6_Node000001_Node000001" title=" " alt="" coords="38,87,36,77,42,68,54,62,73,60,94,63,105,69,103,74,92,68,73,65,56,67,45,72,41,78,43,86"/>
+<area shape="rect" id="Node000002" href="$_spice_interface_8cpp.html#af325f617b7e3d6a65c37b6ca4dfd52b3" title="Convert time from one time system to another." alt="" coords="189,29,324,70"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="139,84,175,72,176,77,141,89"/>
+<area shape="rect" id="Node000003" href="$_spice_interface_8cpp.html#a37ef193d9d9c280ca90a4dcfc6c42002" title="load the Spice kernels" alt="" coords="372,87,507,127"/>
+<area shape="poly" id="edge5_Node000001_Node000003" title=" " alt="" coords="141,104,357,104,357,110,141,110"/>
+<area shape="rect" id="Node000004" href="$_spice_interface_8cpp.html#ac8cf7eb28832a7be8ba1834844c74247" title="Convert string to UTC." alt="" coords="189,168,324,209"/>
+<area shape="poly" id="edge7_Node000001_Node000004" title=" " alt="" coords="122,126,197,159,194,164,120,130"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="221,29,220,19,225,10,238,5,256,3,277,5,289,12,286,16,275,10,256,8,239,10,229,14,225,20,226,28"/>
+<area shape="poly" id="edge3_Node000002_Node000003" title=" " alt="" coords="324,68,359,79,358,84,323,73"/>
+<area shape="poly" id="edge4_Node000003_Node000003" title=" " alt="" coords="405,87,403,77,409,68,421,62,440,60,460,63,472,69,470,74,459,68,440,65,422,67,412,72,408,78,410,86"/>
+<area shape="poly" id="edge8_Node000004_Node000003" title=" " alt="" coords="303,165,378,131,380,136,305,170"/>
+<area shape="poly" id="edge9_Node000004_Node000004" title=" " alt="" coords="221,168,220,158,225,149,238,143,256,141,277,144,289,151,286,155,275,149,256,147,239,149,229,153,225,159,226,167"/>
+</map>
