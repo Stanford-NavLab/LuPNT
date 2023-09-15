@@ -22,7 +22,6 @@ Simulator Structure
 --------------------
 
 
-
 Installation
 ------------
 For directions to install the :code:`LuPNT` library, please refer to the :ref:`install instructions<install>`.
@@ -62,5 +61,7 @@ All source code is available on GitHub at `github.com/stanford-navlab/gnss_lib_p
    :hidden:
 
    install
-   reference/reference.rst
+   reference/reference
+   api/library_root
+
 
