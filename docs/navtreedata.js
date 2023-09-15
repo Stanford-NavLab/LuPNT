@@ -46,7 +46,6 @@ var NAVTREE =
       [ "How to add a new python bindings", "md_bindings_readme.html#autotoc_md15", null ],
       [ "References and Examples", "md_bindings_readme.html#autotoc_md16", null ]
     ] ],
-    [ "Todo List", "todo.html", null ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
       [ "Class Index", "classes.html", null ],
