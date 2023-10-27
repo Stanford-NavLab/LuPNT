@@ -28,7 +28,12 @@
 // SOFTWARE.
 
 // pybind11 includes
-#include "pybind11.hxx"
+#include <pybind11/eigen.h>
+
+#include <Eigen/Core>
+#include <Eigen/Dense>
+
+#include "../pybind11.hxx"
 
 void export_dual1st(py::module& m);
 void export_dual2nd(py::module& m);

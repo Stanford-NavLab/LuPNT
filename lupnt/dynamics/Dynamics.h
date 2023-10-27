@@ -187,7 +187,7 @@ class MoonMeanDynamics : public NumericalDynamics {
 
 class ClohessyWiltshireDynamics : public IAnalyticalDynamics {
  private:
-  double a, n;
+  ad::real a, n;
   ad::VectorXreal K;
   ad::real tInit;
 
@@ -200,7 +200,7 @@ class ClohessyWiltshireDynamics : public IAnalyticalDynamics {
 
 class YamanakaAnkersenDynamics : public IAnalyticalDynamics {
  private:
-  double a, n, e, M0;
+  ad::real a, n, e, M0;
   ad::VectorXreal K;
   ad::real tInit;
 
@@ -215,7 +215,7 @@ class YamanakaAnkersenDynamics : public IAnalyticalDynamics {
 
 class RoeGeometricMappingDynamics : public IAnalyticalDynamics {
  private:
-  double a, e, i, w, M0, ex, ey, n;
+  ad::real a, e, i, w, M0, ex, ey, n;
   ad::VectorXreal K;
   ad::real tInit;
 

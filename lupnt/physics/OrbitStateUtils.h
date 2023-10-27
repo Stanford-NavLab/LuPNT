@@ -29,8 +29,8 @@ namespace LPT {
 CartesianOrbitState CoeToCart(const ClassicalOE coe, double mu);
 // ad::Vector6real CoeToCart(const ad::Vector6real &coeVec, double mu);
 template <typename T>
-Eigen::Matrix<T, 6, 1> CoeToCart(const Eigen::Matrix<T, 6, 1> &coeVec,
-                                 double mu);
+Eigen::Matrix<T, 6, 1, 0, 6, 1> CoeToCart(
+    const Eigen::Matrix<T, 6, 1, 0, 6, 1> &coeVec, double mu);
 
 ClassicalOE CartToCoe(const CartesianOrbitState cartOrbitState, double mu);
 ad::Vector6real CartToCoe(const ad::Vector6real &cartVec, double mu);
@@ -97,12 +97,18 @@ std::array<double, 6> ComputeCorrectionMediumPeriod(ad::Vector6real &coe,
                                                     ad::Vector6real &doe);
 
 // Anomaly conversions
-ad::real EccentricAnomToTrueAnom(const ad::real E, const ad::real e);
-ad::real EccentricAnomToMeanAnom(const ad::real E, const ad::real e);
-ad::real MeanAnomToEccentricAnom(const ad::real M, const ad::real e);
-ad::real MeanAnomToTrueAnom(const ad::real M, const ad::real e);
-ad::real TrueAnomToEccentricAnom(const ad::real nu, const ad::real e);
-ad::real TrueAnomToMeanAnom(const ad::real f, const ad::real e);
+template <typename T>
+T EccentricAnomToTrueAnom(T E, T e);
+template <typename T>
+T EccentricAnomToMeanAnom(T E, T e);
+template <typename T>
+T MeanAnomToEccentricAnom(T M, T e);
+template <typename T>
+T MeanAnomToTrueAnom(T M, T e);
+template <typename T>
+T TrueAnomToEccentricAnom(T nu, T e);
+template <typename T>
+T TrueAnomToMeanAnom(T f, T e);
 
 class TLE {
  public:

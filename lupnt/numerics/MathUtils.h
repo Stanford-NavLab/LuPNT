@@ -59,7 +59,8 @@ ad::real norm(ad::VectorXreal x);
  * @param angle
  * @return ad::real
  */
-ad::real wrapToPi(ad::real angle);
+template <typename T>
+T wrapToPi(T angle);
 
 /**
  * @brief Convert degree to radian

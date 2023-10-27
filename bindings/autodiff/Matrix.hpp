@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "pybind11.hxx"
+#include "../pybind11.hxx"
 #include <Eigen/Core>
 #include <iostream>
 

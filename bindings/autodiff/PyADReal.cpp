@@ -28,7 +28,7 @@
 // SOFTWARE.
 
 // pybind11 includes
-#include "pybind11.hxx"
+#include "../pybind11.hxx"
 
 // C++ includes
 #include <sstream>

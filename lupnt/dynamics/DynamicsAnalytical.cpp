@@ -90,7 +90,7 @@ ad::MatrixXreal ClohessyWiltshireDynamics::ComputeMatrix(ad::real t) {
   ad::real sin_nt = sin(n * t);
   ad::real cos_nt = cos(n * t);
 
-  Eigen::Matrix<double, 6, 6> A = Eigen::MatrixXd::Zero(6, 6);
+  ad::MatrixXreal A = ad::MatrixXreal::Zero(6, 6);
   A.block(0, 0, 3, 3) = a * Eigen::MatrixXd::Identity(3, 3);
   A.block(3, 3, 3, 3) = a * n * Eigen::MatrixXd::Identity(3, 3);
 
@@ -156,10 +156,10 @@ ad::MatrixXreal YamanakaAnkersenDynamics::ComputeMatrix(ad::real t) {
   ad::real cos_f = cos(f);
   ad::real k = 1.0 + e * cos(f);
   ad::real kp = -e * sin(f);
-  double eta = sqrt(1.0 - e * e);
+  ad::real eta = sqrt(1.0 - e * e);
   ad::real tau = n * t / pow(eta, 3.0);
 
-  Eigen::Matrix<double, 6, 6> A = Eigen::MatrixXd::Zero(6, 6);
+  ad::MatrixXreal A = ad::MatrixXreal::Zero(6, 6);
   A.block(0, 0, 3, 3) = a * eta * eta * Eigen::MatrixXd::Identity(3, 3);
   A.block(3, 3, 3, 3) = a * n / eta * Eigen::MatrixXd::Identity(3, 3);
 
@@ -198,10 +198,10 @@ ad::MatrixXreal YamanakaAnkersenDynamics::ComputeInverseMatrix(ad::real t) {
   ad::real cos_f = cos(f);
   ad::real k = 1.0 + e * cos(f);
   ad::real kp = -e * sin(f);
-  double eta = sqrt(1.0 - e * e);
+  ad::real eta = sqrt(1.0 - e * e);
   ad::real tau = n * t / pow(eta, 3.0);
 
-  Eigen::Matrix<double, 6, 6> A = Eigen::MatrixXd::Zero(6, 6);
+  ad::MatrixXreal A = ad::MatrixXreal::Zero(6, 6);
   A.block(0, 0, 3, 3) = 1.0 / a / (eta * eta) * Eigen::MatrixXd::Identity(3, 3);
   A.block(3, 3, 3, 3) = eta / a / n * Eigen::MatrixXd::Identity(3, 3);
 
@@ -287,9 +287,9 @@ ad::MatrixXreal RoeGeometricMappingDynamics::ComputeMatrix(ad::real t) {
   ad::real cot_i = 1 / tan(i);
   ad::real k = 1.0 + ex * cos(u) + ey * sin(u);
   ad::real kp = -ex * sin(u) + ey * cos(u);
-  double eta = sqrt(1.0 - e * e);
+  ad::real eta = sqrt(1.0 - e * e);
 
-  Eigen::Matrix<double, 6, 6> A = Eigen::MatrixXd::Zero(6, 6);
+  ad::MatrixXreal A = ad::MatrixXreal::Zero(6, 6);
   A.block(0, 0, 3, 3) = a * eta * eta * Eigen::MatrixXd::Identity(3, 3);
   A.block(3, 3, 3, 3) = a * n / eta * Eigen::MatrixXd::Identity(3, 3);
 

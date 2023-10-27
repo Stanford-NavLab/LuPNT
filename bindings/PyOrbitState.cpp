@@ -4,11 +4,10 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
+#include <Eigen/Core>
 #include <Eigen/Dense>
 #include <autodiff/forward/real.hpp>
 #include <autodiff/forward/real/eigen.hpp>
-
-#include "eigen.hxx"
 
 namespace py = pybind11;
 using namespace LPT;
@@ -17,20 +16,20 @@ class PyOrbitState : public OrbitState {
  public:
   /* inherit the constructors*/
   PyOrbitState(const ad::Vector6real &vec, const CoordSystem cs,
-          const OrbitStateRepres sr)
+               const OrbitStateRepres sr)
       : OrbitState(vec, cs, sr) {}
   PyOrbitState(const ad::real x, const ad::real y, const ad::real z,
-          const ad::real vx, const ad::real vy, const ad::real vz,
-          const CoordSystem cs, const OrbitStateRepres sr)
+               const ad::real vx, const ad::real vy, const ad::real vz,
+               const CoordSystem cs, const OrbitStateRepres sr)
       : OrbitState(x, y, z, vx, vy, vz, cs, sr) {}
 
   /* Trampoline (need one for each virtual functions)*/
   void Print(const bool deg) const override {
     PYBIND11_OVERLOAD_PURE(
-        void,  /* Return type */
+        void,       /* Return type */
         OrbitState, /* Parent class */
-        Print, /* Name of function in C++ (must match Python name) */
-        deg    /* Argument(s) */
+        Print,      /* Name of function in C++ (must match Python name) */
+        deg         /* Argument(s) */
     );
   }
 
@@ -61,8 +60,9 @@ void init_state(py::module &m) {
       .def(py::init<const ad::real, const ad::real, const ad::real,
                     const ad::real, const ad::real, const ad::real,
                     const CoordSystem, const OrbitStateRepres>())
-
-      .def("get_vector", &OrbitState::GetVector)
+      // Force ad::Vector6real return type
+      .def("get_vector",
+           [](const OrbitState &s) -> ad::Vector6real { return s.GetVector(); })
       .def("set_vector", &OrbitState::SetVector)
       .def("get_coord_system", &OrbitState::GetCoordSystem)
       .def("set_coord_system", &OrbitState::SetCoordSystem)
@@ -73,7 +73,8 @@ void init_state(py::module &m) {
       .def("print", &OrbitState::Print, py::arg("deg") = true)
       .def("clone", &OrbitState::Clone)
       .def("__repr__", [](const OrbitState &s) {
-        return "<pylupnt.OrbitState " + std::to_string(s.GetVector().size()) + ">";
+        return "<pylupnt.OrbitState " + std::to_string(s.GetVector().size()) +
+               ">";
       });
 
   py::class_<CartesianOrbitState, OrbitState>(m, "CartesianOrbitState")
@@ -85,8 +86,9 @@ void init_state(py::module &m) {
       .def("v", &CartesianOrbitState::v)
       .def("set_r", &CartesianOrbitState::Set_r)
       .def("set_v", &CartesianOrbitState::Set_v)
-      .def("__repr__",
-           [](const CartesianOrbitState &s) { return "<pylupnt.CartesianOrbitState>"; });
+      .def("__repr__", [](const CartesianOrbitState &s) {
+        return "<pylupnt.CartesianOrbitState>";
+      });
 
   py::class_<ClassicalOE, OrbitState>(m, "ClassicalOE")
       .def(py::init<const ad::Vector6real &, const CoordSystem>(),
@@ -207,7 +209,6 @@ void init_state(py::module &m) {
         return CoeToCart(coe, mu);
       },
       py::arg("coe"), py::arg("mu"));
-
   m.def(
       "coe_to_cart",
       [](const ad::Vector6real &coeVec, double mu) -> ad::Vector6real {
@@ -222,8 +223,8 @@ void init_state(py::module &m) {
       py::arg("coe"), py::arg("mu"));
 
   //   m.def("cart_to_coe",
-  //         py::overload_cast<const CartesianOrbitState, const double>(&CartToCoe),
-  //         py::arg("cart"), py::arg("mu"));
+  //         py::overload_cast<const CartesianOrbitState, const
+  //         double>(&CartToCoe), py::arg("cart"), py::arg("mu"));
   //   //   m.def("cart_to_coe",
   //         py::overload_cast<const ad::Vector6real &, const
   //         double>(&CartToCoe), py::arg("cart"), py::arg("mu"));
@@ -238,8 +239,8 @@ void init_state(py::module &m) {
         py::arg("coe_chief"), py::arg("roe"));
 
   m.def("inertial_to_rtn",
-        py::overload_cast<const CartesianOrbitState &, const CartesianOrbitState &>(
-            &InertialToRtn),
+        py::overload_cast<const CartesianOrbitState &,
+                          const CartesianOrbitState &>(&InertialToRtn),
         py::arg("cart_orig"), py::arg("cart"));
   m.def("inertial_to_rtn",
         py::overload_cast<const ad::Vector6real &, const ad::Vector6real &>(
@@ -258,14 +259,22 @@ void init_state(py::module &m) {
   // Todo: add overloads for other conversions
 
   // Anomaly Conversions
-  m.def("eccentric_to_true", &EccentricAnomToTrueAnom, py::arg("E"),
-        py::arg("e"));
-  m.def("eccentric_to_mean", &EccentricAnomToMeanAnom, py::arg("E"),
-        py::arg("e"));
-  m.def("mean_to_eccentric", &MeanAnomToEccentricAnom, py::arg("M"),
-        py::arg("e"));
-  m.def("mean_to_true", &MeanAnomToTrueAnom, py::arg("M"), py::arg("e"));
-  m.def("true_to_eccentric", &TrueAnomToEccentricAnom, py::arg("f"),
-        py::arg("e"));
-  m.def("true_to_mean", &TrueAnomToMeanAnom, py::arg("f"), py::arg("e"));
+  m.def("eccentric_to_true", [](double E, double e) -> double {
+    return EccentricAnomToTrueAnom(E, e);
+  });
+  m.def("eccentric_to_true", [](ad::real E, ad::real e) -> ad::real {
+    return EccentricAnomToTrueAnom(E, e);
+  });
+  //   m.def("eccentric_to_true", &EccentricAnomToTrueAnom, py::arg("E"),
+  //         py::arg("e"));
+  //   m.def("eccentric_to_mean", &EccentricAnomToMeanAnom, py::arg("E"),
+  //         py::arg("e"));
+  //   m.def("mean_to_eccentric", &MeanAnomToEccentricAnom, py::arg("M"),
+  //         py::arg("e"));
+  //   m.def("mean_to_true", &MeanAnomToTrueAnom, py::arg("M"),
+  //   py::arg("e")); m.def("true_to_eccentric", &TrueAnomToEccentricAnom,
+  //   py::arg("f"),
+  //         py::arg("e"));
+  //   m.def("true_to_mean", &TrueAnomToMeanAnom, py::arg("f"),
+  //   py::arg("e"));
 }

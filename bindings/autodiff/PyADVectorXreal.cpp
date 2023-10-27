@@ -27,18 +27,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// pybind11 includes
-#include "pybind11.hxx"
-
 // autodiff includes
+#include <pybind11/eigen.h>
+
+#include <Eigen/Core>
+#include <Eigen/Dense>
 #include <autodiff/forward/real/eigen.hpp>
 #include <autodiff/forward/real/real.hpp>
 
-#include "eigen.hxx"
-using namespace autodiff;
+#include "../eigen.hxx"
+#include "../pybind11.hxx"
 
+using namespace autodiff;
+using Array66real = Eigen::Array<real, 6, 6>;
+using Array6real = Eigen::Array<real, 6, 1>;
 using Matrix6real = Eigen::Matrix<real, 6, 6, 0, 6, 6>;
 using Vector6real = Eigen::Matrix<real, 6, 1, 0, 6, 1>;
+using RowVector6real = Eigen::Matrix<real, 1, 6, 1, 1, 6>;
 
 void exportVectorXreal0th(py::module& m) {
   exportVector<VectorXreal0th, real0th, isarray(false), isconst(false),
@@ -119,4 +124,6 @@ void exportVector6real(py::module& m) {
                isview(true)>(m, "Vector6realRef");
   exportVector<Eigen::Ref<const Vector6real>, real, isarray(false),
                isconst(true), isview(true)>(m, "Vector6realConstRef");
+  // Print type of Vector6real
+  std::cout << typeid(Vector6real).name() << std::endl;
 }

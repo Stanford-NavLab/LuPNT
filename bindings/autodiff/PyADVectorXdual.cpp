@@ -28,12 +28,12 @@
 // SOFTWARE.
 
 // pybind11 includes
-#include "pybind11.hxx"
+#include "../pybind11.hxx"
 
 // autodiff includes
 #include <autodiff/forward/dual/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
-#include "eigen.hxx"
+#include "../eigen.hxx"
 using namespace autodiff;
 
 void exportVectorXdual0th(py::module& m)

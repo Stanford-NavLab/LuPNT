@@ -28,20 +28,14 @@
 // SOFTWARE.
 
 // pybind11 includes
-#include "pybind11.hxx"
+#include "../pybind11.hxx"
 
 // autodiff includes
 #include <autodiff/forward/real/eigen.hpp>
 #include <autodiff/forward/real/real.hpp>
 
-#include "eigen.hxx"
+#include "../eigen.hxx"
 using namespace autodiff;
-
-using Vector2real = Eigen::Matrix<real, 2, 1>;
-using Vector3real = Eigen::Matrix<real, 3, 1>;
-using Vector4real = Eigen::Matrix<real, 4, 1>;
-using Vector5real = Eigen::Matrix<real, 5, 1>;
-using Vector6real = Eigen::Matrix<real, 6, 1>;
 
 void exportArrayXreal0th(py::module& m) {
   exportVector<ArrayXreal0th, real0th, isarray(true), isconst(false),
