@@ -18,7 +18,8 @@
 
 namespace LPT {
 // set here the absolute path to your lunanet simulator
-static const std::filesystem::path BASEPATH("/path/to/this/LuPNT");
+static const std::filesystem::path BASEPATH(
+    "/Users/keidaiiiyama/Documents/sw_navlab/LuPNT");
 
 static std::optional<std::filesystem::path> FindFileInDir(
     const std::filesystem::path& basePath, const std::string& filename) {

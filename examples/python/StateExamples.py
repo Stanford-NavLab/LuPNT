@@ -9,7 +9,11 @@ def degToRad(deg):
     return deg * np.pi / 180
 
 x = ad.realvec([6524.834, 6862.875, 6448.296, 4.901327, 5.533756, -1.976341])
-cart = pnt.CartesianState(x, pnt.CoordSystem.ITRF)
+
+# currently this does not work
+# cart = pnt.CartesianOrbitState(x, pnt.CoordSystem.ITRF)
+
+cart = pnt.CartesianOrbitState(x[0], x[1], x[2], x[3], x[4], x[5], cs=pnt.CoordSystem.ITRF)
 print(" ")
 print("Cartesian state:")
 cart.print()
@@ -23,6 +27,7 @@ w = degToRad(53.38)
 nu = degToRad(92.335)
 M = pnt.true_to_mean(nu, e)
 
+oe_vec = ad.realvec([a, e, i, Omega, w, M])
 x_oe = pnt.ClassicalOE(a, e, i, Omega, w, M, cs=pnt.CoordSystem.ITRF)
 print(" ")
 print("Classical orbital elements:")

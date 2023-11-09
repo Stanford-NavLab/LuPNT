@@ -57,9 +57,5 @@ class CoordConverter {
 
  private:
   static ad::MatrixXreal ComputeITRFtoGCRF(const ad::real tai);
-  static ad::Matrix3real R1(ad::real phi);
-  static ad::Matrix3real R2(ad::real phi);
-  static ad::Matrix3real R3(ad::real phi);
-  static ad::Matrix3real Skew(ad::Vector3real vec);
 };
 }  // namespace LPT

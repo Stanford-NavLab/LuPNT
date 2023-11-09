@@ -6,10 +6,8 @@ import sys
 sys.path.append("pylupntutil")
 import pntautodiff as ad
 
-
 def degToRad(deg):
     return deg * np.pi / 180
-
 
 p = 11067.790
 e = 0.83285

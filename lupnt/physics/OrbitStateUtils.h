@@ -28,9 +28,7 @@ namespace LPT {
 // COE <-> Cart
 CartesianOrbitState CoeToCart(const ClassicalOE coe, double mu);
 // ad::Vector6real CoeToCart(const ad::Vector6real &coeVec, double mu);
-template <typename T>
-Eigen::Matrix<T, 6, 1> CoeToCart(const Eigen::Matrix<T, 6, 1> &coeVec,
-                                 double mu);
+ad::Vector6real CoeToCart(const ad::Vector6real &coeVec, double mu);
 
 ClassicalOE CartToCoe(const CartesianOrbitState cartOrbitState, double mu);
 ad::Vector6real CartToCoe(const ad::Vector6real &cartVec, double mu);
@@ -46,6 +44,10 @@ CartesianOrbitState InertialToRtn(
     const CartesianOrbitState &inertialOrbitState);
 ad::Vector6real InertialToRtn(const ad::Vector6real &rtnOrigin,
                               const ad::Vector6real &inertialVec);
+ad::Matrix3real InertialToRtnRot(const ad::Vector6real &rtnOrigin,
+                                 const ad::Vector6real &inertialVec);
+ad::Matrix6real InertialToRtnRotRV(const ad::Vector6real &rtnOrigin,
+                                   const ad::Vector6real &inertialVec);
 
 // COE <-> RTN
 CartesianOrbitState CoeToRtn(const ClassicalOE &coeChief,

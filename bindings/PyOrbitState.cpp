@@ -13,24 +13,37 @@
 namespace py = pybind11;
 using namespace LPT;
 
+// util funcions
+static ad::Vector6real VecXToVec6(const ad::VectorXreal &vec) {
+  ad::Vector6real vec6 = ad::VectorXreal::Zero(6);
+  vec6 << vec(0), vec(1), vec(2), vec(3), vec(4), vec(5);
+  return vec6;
+}
+
+static ad::VectorXreal Vec6ToVecX(const ad::Vector6real &vec6) {
+  ad::VectorXreal vecx = ad::VectorXreal::Zero(6);
+  vecx << vec6(0), vec6(1), vec6(2), vec6(3), vec6(4), vec6(5);
+  return vecx;
+}
+
 class PyOrbitState : public OrbitState {
  public:
   /* inherit the constructors*/
-  PyOrbitState(const ad::Vector6real &vec, const CoordSystem cs,
-          const OrbitStateRepres sr)
-      : OrbitState(vec, cs, sr) {}
+  PyOrbitState(const ad::VectorXreal &vec, const CoordSystem cs,
+               const OrbitStateRepres sr)
+      : OrbitState(vec(0), vec(1), vec(2), vec(3), vec(4), vec(5), cs, sr) {}
   PyOrbitState(const ad::real x, const ad::real y, const ad::real z,
-          const ad::real vx, const ad::real vy, const ad::real vz,
-          const CoordSystem cs, const OrbitStateRepres sr)
+               const ad::real vx, const ad::real vy, const ad::real vz,
+               const CoordSystem cs, const OrbitStateRepres sr)
       : OrbitState(x, y, z, vx, vy, vz, cs, sr) {}
 
   /* Trampoline (need one for each virtual functions)*/
   void Print(const bool deg) const override {
     PYBIND11_OVERLOAD_PURE(
-        void,  /* Return type */
+        void,       /* Return type */
         OrbitState, /* Parent class */
-        Print, /* Name of function in C++ (must match Python name) */
-        deg    /* Argument(s) */
+        Print,      /* Name of function in C++ (must match Python name) */
+        deg         /* Argument(s) */
     );
   }
 
@@ -56,7 +69,7 @@ void init_state(py::module &m) {
       .export_values();
 
   py::class_<OrbitState, PyOrbitState>(m, "OrbitState")
-      .def(py::init<const ad::Vector6real &, const CoordSystem,
+      .def(py::init<const ad::VectorXreal &, const CoordSystem,
                     const OrbitStateRepres>())
       .def(py::init<const ad::real, const ad::real, const ad::real,
                     const ad::real, const ad::real, const ad::real,
@@ -73,23 +86,30 @@ void init_state(py::module &m) {
       .def("print", &OrbitState::Print, py::arg("deg") = true)
       .def("clone", &OrbitState::Clone)
       .def("__repr__", [](const OrbitState &s) {
-        return "<pylupnt.OrbitState " + std::to_string(s.GetVector().size()) + ">";
+        return "<pylupnt.OrbitState " + std::to_string(s.GetVector().size()) +
+               ">";
       });
 
   py::class_<CartesianOrbitState, OrbitState>(m, "CartesianOrbitState")
-      .def(py::init<const ad::Vector6real &, const CoordSystem>(),
+      .def(py::init<const ad::VectorXreal &, const CoordSystem>(),
            py::arg("rv"), py::arg("cs") = CoordSystem::NONE)
+      .def(py::init<const ad::real, const ad::real, const ad::real,
+                    const ad::real, const ad::real, const ad::real,
+                    const CoordSystem>(),
+           py::arg("rx"), py::arg("ry"), py::arg("rz"), py::arg("vx"),
+           py::arg("vy"), py::arg("vz"), py::arg("cs") = CoordSystem::NONE)
       .def("print", &CartesianOrbitState::Print, py::arg("deg") = true)
       .def("clone", &CartesianOrbitState::Clone)
       .def("r", &CartesianOrbitState::r)
       .def("v", &CartesianOrbitState::v)
       .def("set_r", &CartesianOrbitState::Set_r)
       .def("set_v", &CartesianOrbitState::Set_v)
-      .def("__repr__",
-           [](const CartesianOrbitState &s) { return "<pylupnt.CartesianOrbitState>"; });
+      .def("__repr__", [](const CartesianOrbitState &s) {
+        return "<pylupnt.CartesianOrbitState>";
+      });
 
   py::class_<ClassicalOE, OrbitState>(m, "ClassicalOE")
-      .def(py::init<const ad::Vector6real &, const CoordSystem>(),
+      .def(py::init<const ad::VectorXreal &, const CoordSystem>(),
            py::arg("oe"), py::arg("cs") = CoordSystem::NONE)
       .def(py::init<const ad::real, const ad::real, const ad::real,
                     const ad::real, const ad::real, const ad::real,
@@ -109,7 +129,7 @@ void init_state(py::module &m) {
            [](const ClassicalOE &s) { return "<pylupnt.ClassicalOE>"; });
 
   py::class_<QuasiNonsingularOE, OrbitState>(m, "QuasiNonsingularOE")
-      .def(py::init<const ad::Vector6real &, const CoordSystem>())
+      .def(py::init<const ad::VectorXreal &, const CoordSystem>())
       .def(py::init<const ad::real, const ad::real, const ad::real,
                     const ad::real, const ad::real, const ad::real,
                     const CoordSystem>(),
@@ -125,7 +145,7 @@ void init_state(py::module &m) {
       .def("Omega", &QuasiNonsingularOE::Omega);
 
   py::class_<NonsingularOE, OrbitState>(m, "NonsingularOE")
-      .def(py::init<const ad::Vector6real &, const CoordSystem>())
+      .def(py::init<const ad::VectorXreal &, const CoordSystem>())
       .def(py::init<const ad::real, const ad::real, const ad::real,
                     const ad::real, const ad::real, const ad::real,
                     const CoordSystem>(),
@@ -141,7 +161,7 @@ void init_state(py::module &m) {
       .def("e5", &NonsingularOE::e5);
 
   py::class_<EquinoctialOE, OrbitState>(m, "EquinoctialOE")
-      .def(py::init<const ad::Vector6real &, const CoordSystem>())
+      .def(py::init<const ad::VectorXreal &, const CoordSystem>())
       .def(py::init<const ad::real, const ad::real, const ad::real,
                     const ad::real, const ad::real, const ad::real,
                     const CoordSystem>(),
@@ -174,7 +194,7 @@ void init_state(py::module &m) {
   //     .def("dOmega", &SingularROE::dOmega);
 
   py::class_<QuasiNonsingularROE, OrbitState>(m, "QuasiNonsingularROE")
-      .def(py::init<const ad::Vector6real &, const CoordSystem>())
+      .def(py::init<const ad::VectorXreal &, const CoordSystem>())
       .def(py::init<const ad::real, const ad::real, const ad::real,
                     const ad::real, const ad::real, const ad::real,
                     const CoordSystem>(),
@@ -210,50 +230,64 @@ void init_state(py::module &m) {
 
   m.def(
       "coe_to_cart",
-      [](const ad::Vector6real &coeVec, double mu) -> ad::Vector6real {
-        return CoeToCart(coeVec, mu);
+      [](const ad::VectorXreal &coeVec, double mu) -> ad::VectorXreal {
+        return CoeToCart(VecXToVec6(coeVec), mu);
       },
       py::arg("coe"), py::arg("mu"));
+
   m.def(
-      "coe_to_cart",
-      [](const Eigen::Vector6d &coeVec, double mu) -> Eigen::Vector6d {
-        return CoeToCart(coeVec, mu);
+      "cart_to_coe",
+      [](const CartesianOrbitState &cart, double mu) -> ClassicalOE {
+        return CartToCoe(cart, mu);
       },
-      py::arg("coe"), py::arg("mu"));
+      py::arg("cart"), py::arg("mu"));
 
-  //   m.def("cart_to_coe",
-  //         py::overload_cast<const CartesianOrbitState, const double>(&CartToCoe),
-  //         py::arg("cart"), py::arg("mu"));
-  //   //   m.def("cart_to_coe",
-  //         py::overload_cast<const ad::Vector6real &, const
-  //         double>(&CartToCoe), py::arg("cart"), py::arg("mu"));
+  m.def(
+      "cart_to_coe",
+      [](const ad::VectorXreal &cartVec, double mu) -> ad::VectorXreal {
+        return Vec6ToVecX(CartToCoe(VecXToVec6(cartVec), mu));
+      },
+      py::arg("cart"), py::arg("mu"));
 
+  // ROE conversions
   m.def("roe_to_coe",
         py::overload_cast<const ClassicalOE, const QuasiNonsingularROE>(
             &RoeToCoe),
         py::arg("coe_chief"), py::arg("roe"));
-  m.def("roe_to_coe",
-        py::overload_cast<const ad::Vector6real &, const ad::Vector6real &>(
-            &RoeToCoe),
-        py::arg("coe_chief"), py::arg("roe"));
+  m.def(
+      "roe_to_coe",
+      [](const ad::VectorXreal &coeVec,
+         const ad::VectorXreal &roeVec) -> ad::VectorXreal {
+        return Vec6ToVecX(RoeToCoe(VecXToVec6(coeVec), VecXToVec6(roeVec)));
+      },
+      py::arg("coe_chief"), py::arg("roe"));
 
+  // RTN conversions
   m.def("inertial_to_rtn",
-        py::overload_cast<const CartesianOrbitState &, const CartesianOrbitState &>(
-            &InertialToRtn),
+        py::overload_cast<const CartesianOrbitState &,
+                          const CartesianOrbitState &>(&InertialToRtn),
         py::arg("cart_orig"), py::arg("cart"));
-  m.def("inertial_to_rtn",
-        py::overload_cast<const ad::Vector6real &, const ad::Vector6real &>(
-            &InertialToRtn),
-        py::arg("cart_orig"), py::arg("cart"));
+  m.def(
+      "inertial_to_rtn",
+      [](const ad::VectorXreal &rtn_origin,
+         const ad::VectorXreal &inertial_vec) {
+        return Vec6ToVecX(
+            InertialToRtn(VecXToVec6(rtn_origin), VecXToVec6(inertial_vec)));
+      },
+      py::arg("cart_orig"), py::arg("cart"));
 
   m.def("coe_to_rtn",
         py::overload_cast<const ClassicalOE &, const ClassicalOE &, double>(
             &CoeToRtn),
         py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
-  m.def("coe_to_rtn",
-        py::overload_cast<const ad::Vector6real &, const ad::Vector6real &,
-                          double>(&CoeToRtn),
-        py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
+  m.def(
+      "coe_to_rtn",
+      [](const ad::VectorXreal &coe_chief, const ad::VectorXreal &coe_deputy,
+         double mu) {
+        return Vec6ToVecX(
+            CoeToRtn(VecXToVec6(coe_chief), VecXToVec6(coe_deputy), mu));
+      },
+      py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
 
   // Todo: add overloads for other conversions
 

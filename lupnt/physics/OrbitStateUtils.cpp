@@ -39,24 +39,23 @@ CartesianOrbitState CoeToCart(const ClassicalOE coe, double mu) {
   cartOrbitState.SetCoordSystem(coe.GetCoordSystem());
   return cartOrbitState;
 }
-template <typename T>
-Eigen::Matrix<T, 6, 1> CoeToCart(const Eigen::Matrix<T, 6, 1> &coeVec,
-                                 double mu) {
-  T a = coeVec(0);
-  T e = coeVec(1);
-  T i = coeVec(2);
-  T Omega = coeVec(3);
-  T w = coeVec(4);
-  T M = coeVec(5);
 
-  T p = a * (1.0 - pow(e, 2.0));
-  T nu = MeanAnomToTrueAnom(M, e);
-  T pev = p / (1 + e * cos(nu));
-  T mu_p = sqrt(mu / p);
+ad::Vector6real CoeToCart(const ad::Vector6real &coeVec, double mu) {
+  ad::real a = coeVec(0);
+  ad::real e = coeVec(1);
+  ad::real i = coeVec(2);
+  ad::real Omega = coeVec(3);
+  ad::real w = coeVec(4);
+  ad::real M = coeVec(5);
 
-  Eigen::Matrix<T, 3, 1> r_PQW;
+  ad::real p = a * (1.0 - pow(e, 2.0));
+  ad::real nu = MeanAnomToTrueAnom(M, e);
+  ad::real pev = p / (1 + e * cos(nu));
+  ad::real mu_p = sqrt(mu / p);
+
+  ad::Vector3real r_PQW;
   r_PQW << pev * cos(nu), pev * sin(nu), 0;
-  Eigen::Matrix<T, 3, 1> v_PQW;
+  ad::Vector3real v_PQW;
   v_PQW << -mu_p * sin(nu), mu_p * (e + cos(nu)), 0;
 
   ad::MatrixXreal rot(3, 3);
@@ -66,10 +65,10 @@ Eigen::Matrix<T, 6, 1> CoeToCart(const Eigen::Matrix<T, 6, 1> &coeVec,
       -sin(Omega) * sin(w) + cos(Omega) * cos(w) * cos(i), -cos(Omega) * sin(i);
   rot.row(2) << sin(w) * sin(i), cos(w) * sin(i), cos(i);
 
-  Eigen::Matrix<T, 3, 1> r = rot * r_PQW;
-  Eigen::Matrix<T, 3, 1> v = rot * v_PQW;
+  ad::Vector3real r = rot * r_PQW;
+  ad::Vector3real v = rot * v_PQW;
 
-  Eigen::Matrix<T, 6, 1> cartVec;
+  ad::Vector6real cartVec;
   cartVec << r, v;
   return cartVec;
 }
@@ -275,8 +274,8 @@ ClassicalOE RoeToCoe(const ClassicalOE coe_c, const QuasiNonsingularROE roe) {
   return ClassicalOE(coe_d);
 }
 
-ad::Vector6real InertialToRtn(const ad::Vector6real &rtnOrigin,
-                              const ad::Vector6real &inertialVec) {
+ad::Matrix3real InertialToRtnRot(const ad::Vector6real &rtnOrigin,
+                                 const ad::Vector6real &inertialVec) {
   ad::Vector3real rInertial = inertialVec.head(3);
   ad::Vector3real vInertial = inertialVec.tail(3);
   ad::Vector3real rOrigin = rtnOrigin.head(3);
@@ -289,6 +288,35 @@ ad::Vector6real InertialToRtn(const ad::Vector6real &rtnOrigin,
 
   ad::Matrix3real R_Inertial_Rtn;  // Rotation matrix from inertial to RTN
   R_Inertial_Rtn << uR.transpose(), uT.transpose(), uN.transpose();
+  return R_Inertial_Rtn;
+}
+
+ad::Matrix6real InertialToRtnRotRV(const ad::Vector6real &rtnOrigin,
+                                   const ad::Vector6real &inertialVec) {
+  ad::Matrix3real R_Inertial_Rtn = InertialToRtnRot(rtnOrigin, inertialVec);
+  ad::Vector3real w;
+  ad::Vector3real rOrigin = rtnOrigin.head(3);
+  ad::Vector3real vOrigin = rtnOrigin.tail(3);
+  w = rOrigin.cross(vOrigin) / rOrigin.squaredNorm();
+  ad::Matrix3real skew_M = Skew(w);
+  ad::Matrix6real R_Inertial_Rtn_RV;
+  R_Inertial_Rtn_RV.block(0, 0, 3, 3) = R_Inertial_Rtn;
+  R_Inertial_Rtn_RV.block(0, 3, 3, 3) = ad::Matrix3real::Zero();
+  R_Inertial_Rtn_RV.block(3, 0, 3, 3) = -R_Inertial_Rtn * skew_M;
+  R_Inertial_Rtn_RV.block(3, 3, 3, 3) = R_Inertial_Rtn;
+
+  return R_Inertial_Rtn_RV;
+}
+
+ad::Vector6real InertialToRtn(const ad::Vector6real &rtnOrigin,
+                              const ad::Vector6real &inertialVec) {
+  ad::Vector3real rInertial = inertialVec.head(3);
+  ad::Vector3real vInertial = inertialVec.tail(3);
+  ad::Vector3real rOrigin = rtnOrigin.head(3);
+  ad::Vector3real vOrigin = rtnOrigin.tail(3);
+
+  ad::Matrix3real R_Inertial_Rtn = InertialToRtnRot(
+      rtnOrigin, inertialVec);  // Rotation matrix from inertial to RTN
 
   ad::Vector3real w, rRtn, vRtn;
   w = rOrigin.cross(vOrigin) / rOrigin.squaredNorm();

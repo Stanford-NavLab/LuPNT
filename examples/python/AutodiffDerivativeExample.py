@@ -1,4 +1,5 @@
 import pylupnt as pnt
+import sys
 
 sys.path.append("pylupntutil")
 import pntautodiff as ad

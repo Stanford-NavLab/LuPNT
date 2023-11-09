@@ -88,4 +88,10 @@ double LinearInterp2d(Eigen::VectorXd x, Eigen::VectorXd y,
 Eigen::MatrixXd SampleMVN(const Eigen::VectorXd mean, const Eigen::MatrixXd cov,
                           int nn);
 
+/* Rotation Matricies*/
+ad::Matrix3real R1(ad::real phi);
+ad::Matrix3real R2(ad::real phi);
+ad::Matrix3real R3(ad::real phi);
+ad::Matrix3real Skew(ad::Vector3real vec);
+
 }  // namespace LPT

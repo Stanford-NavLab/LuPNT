@@ -56,6 +56,17 @@ class OrbitState : public IState {
   OrbitState(const ad::Vector6real &x, const CoordSystem sys,
              const OrbitStateRepres rep)
       : x_(x), coord_sys_(sys), state_repres_(rep){};
+
+  OrbitState(const ad::VectorXreal &x, const CoordSystem sys,
+             const OrbitStateRepres rep)
+      : coord_sys_(sys), state_repres_(rep) {
+    if (x.size() != 6) {
+      throw std::invalid_argument(
+          "OrbitState::OrbitState: Input vector size must be 6");
+    }
+    x_ << x(0), x(1), x(2), x(3), x(4), x(5);
+  };
+
   OrbitState(const ad::real x0, const ad::real x1, const ad::real x2,
              const ad::real x3, const ad::real x4, const ad::real x5,
              const CoordSystem sys, const OrbitStateRepres rep)
@@ -90,6 +101,15 @@ class CartesianOrbitState : public OrbitState {
                       CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::CARTESIAN) {}
 
+  CartesianOrbitState(const ad::VectorXreal &x,
+                      CoordSystem sys = CoordSystem::NONE)
+      : OrbitState(x, sys, OrbitStateRepres::CARTESIAN) {}
+
+  CartesianOrbitState(const ad::real rx, const ad::real ry, const ad::real rz,
+                      const ad::real vx, const ad::real vy, const ad::real vz,
+                      CoordSystem sys = CoordSystem::NONE)
+      : OrbitState(rx, ry, rz, vx, vy, vz, sys, OrbitStateRepres::CARTESIAN) {}
+
   void Print(const bool deg = true) const override;
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<CartesianOrbitState>(*this);
@@ -112,6 +132,11 @@ class ClassicalOE : public OrbitState {
   ClassicalOE(const ad::Vector6real &x,
               const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::CLASSICAL_OE) {}
+
+  ClassicalOE(const ad::VectorXreal &x,
+              const CoordSystem sys = CoordSystem::NONE)
+      : OrbitState(x, sys, OrbitStateRepres::CLASSICAL_OE) {}
+
   ClassicalOE(const ad::real a, const ad::real e, const ad::real i,
               const ad::real Omega, const ad::real w, const ad::real M,
               const CoordSystem sys = CoordSystem::NONE)
@@ -136,6 +161,11 @@ class QuasiNonsingularOE : public OrbitState {
   QuasiNonsingularOE(const ad::Vector6real &x,
                      const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::QUASI_NONSINGULAR_OE) {}
+
+  QuasiNonsingularOE(const ad::VectorXreal &x,
+                     const CoordSystem sys = CoordSystem::NONE)
+      : OrbitState(x, sys, OrbitStateRepres::QUASI_NONSINGULAR_OE) {}
+
   QuasiNonsingularOE(const ad::real a, const ad::real u, const ad::real ex,
                      const ad::real ey, const ad::real i, const ad::real Omega,
                      const CoordSystem sys = CoordSystem::NONE)
@@ -159,6 +189,9 @@ class NonsingularOE : public OrbitState {
  public:
   // a, e1, e2, e3, e4, e5;
   NonsingularOE(const ad::Vector6real &x,
+                const CoordSystem sys = CoordSystem::NONE)
+      : OrbitState(x, sys, OrbitStateRepres::NONSINGULAR_OE) {}
+  NonsingularOE(const ad::VectorXreal &x,
                 const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::NONSINGULAR_OE) {}
   NonsingularOE(const ad::real a, const ad::real e1, const ad::real e2,
@@ -186,6 +219,9 @@ class DelaunayOE : public OrbitState {
   DelaunayOE(const ad::Vector6real &x,
              const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::DELAUNAY_OE) {}
+  DelaunayOE(const ad::VectorXreal &x,
+             const CoordSystem sys = CoordSystem::NONE)
+      : OrbitState(x, sys, OrbitStateRepres::DELAUNAY_OE) {}
   DelaunayOE(const ad::real l, const ad::real g, const ad::real h,
              const ad::real L, const ad::real G, const ad::real H,
              const CoordSystem sys = CoordSystem::NONE)
@@ -208,6 +244,9 @@ class EquinoctialOE : public OrbitState {
  public:
   // a, h, k, p, q, lon
   EquinoctialOE(const ad::Vector6real &x,
+                const CoordSystem sys = CoordSystem::NONE)
+      : OrbitState(x, sys, OrbitStateRepres::EQUINOCTIAL_OE) {}
+  EquinoctialOE(const ad::VectorXreal &x,
                 const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::EQUINOCTIAL_OE) {}
   EquinoctialOE(const ad::real a, const ad::real h, const ad::real k,
@@ -234,6 +273,9 @@ class SingularROE : public OrbitState {
   SingularROE(const ad::Vector6real &x,
               const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::SINGULAR_ROE) {}
+  SingularROE(const ad::VectorXreal &x,
+              const CoordSystem sys = CoordSystem::NONE)
+      : OrbitState(x, sys, OrbitStateRepres::SINGULAR_ROE) {}
   SingularROE(const ad::real da, const ad::real dM, const ad::real de,
               const ad::real dw, const ad::real di, const ad::real dOmega,
               const CoordSystem sys = CoordSystem::NONE)
@@ -257,6 +299,9 @@ class QuasiNonsingularROE : public OrbitState {
  public:
   // da, dl, dex, dey, dix, diy
   QuasiNonsingularROE(const ad::Vector6real &x,
+                      const CoordSystem sys = CoordSystem::NONE)
+      : OrbitState(x, sys, OrbitStateRepres::QUASINONSINGULAR_ROE) {}
+  QuasiNonsingularROE(const ad::VectorXreal &x,
                       const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::QUASINONSINGULAR_ROE) {}
   QuasiNonsingularROE(const ad::real da, const ad::real dl, const ad::real dex,
