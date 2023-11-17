@@ -10,21 +10,25 @@
  */
 #pragma once
 
-#include <autodiff/common/eigen.hpp>
+#include <Eigen/Core>
+#include <Eigen/Dense>
 #include <autodiff/forward/real.hpp>
 #include <string>
 
 #include "UserFilePath.h"
 
 namespace Eigen {
-typedef Matrix<double, 6, 6> Matrix6d;
-typedef Matrix<double, 6, 1> Vector6d;
+using Matrix6d = Matrix<double, 6, 6>;
+using Vector6d = Matrix<double, 6, 1>;
 
 }  // namespace Eigen
 
 namespace autodiff {
-using Matrix6real = Eigen::Matrix<real1st, 6, 6, 0, 6, 6>;
-using Vector6real = Eigen::Matrix<real1st, 6, 1, 0, 6, 1>;
+using Array66real = Eigen::Array<real, 6, 6>;
+using Array6real = Eigen::Array<real, 6, 1>;
+using Matrix6real = Eigen::Matrix<real, 6, 6, 0, 6, 6>;
+using Vector6real = Eigen::Matrix<real, 6, 1, 0, 6, 1>;
+using RowVector6real = Eigen::Matrix<real, 1, 6, 1, 1, 6>;
 }  // namespace autodiff
 
 namespace LPT {

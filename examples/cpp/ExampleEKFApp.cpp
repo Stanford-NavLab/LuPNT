@@ -80,8 +80,8 @@ int main() {
   ad::real a = 6541.4;
   ad::real e = 0.6;
   ad::real i = 65.5 * RAD_PER_DEG;
-  ad::real Omega = 90 * RAD_PER_DEG;
-  ad::real w = 0.0 * RAD_PER_DEG;
+  ad::real Omega = 0.0 * RAD_PER_DEG;
+  ad::real w = 90.0 * RAD_PER_DEG;
   ad::real M = 0.0 * RAD_PER_DEG;
   ClassicalOE coe_moon(a, e, i, Omega, w, M);
   coe_moon.SetCoordSystem(CoordSystem::MI);

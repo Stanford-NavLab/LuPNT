@@ -39,39 +39,45 @@ CartesianOrbitState CoeToCart(const ClassicalOE coe, double mu) {
   cartOrbitState.SetCoordSystem(coe.GetCoordSystem());
   return cartOrbitState;
 }
+template <typename T>
+Eigen::Matrix<T, 6, 1, 0, 6, 1> CoeToCart(
+    const Eigen::Matrix<T, 6, 1, 0, 6, 1> &coeVec, double mu) {
+  T a = coeVec(0);
+  T e = coeVec(1);
+  T i = coeVec(2);
+  T Omega = coeVec(3);
+  T w = coeVec(4);
+  T M = coeVec(5);
 
-ad::Vector6real CoeToCart(const ad::Vector6real &coeVec, double mu) {
-  ad::real a = coeVec(0);
-  ad::real e = coeVec(1);
-  ad::real i = coeVec(2);
-  ad::real Omega = coeVec(3);
-  ad::real w = coeVec(4);
-  ad::real M = coeVec(5);
+  T p = a * (1.0 - pow(e, 2.0));
+  T nu = MeanAnomToTrueAnom(M, e);
+  T pev = p / (1 + e * cos(nu));
+  T mu_p = sqrt(mu / p);
 
-  ad::real p = a * (1.0 - pow(e, 2.0));
-  ad::real nu = MeanAnomToTrueAnom(M, e);
-  ad::real pev = p / (1 + e * cos(nu));
-  ad::real mu_p = sqrt(mu / p);
-
-  ad::Vector3real r_PQW;
+  Eigen::Matrix<T, 3, 1> r_PQW;
   r_PQW << pev * cos(nu), pev * sin(nu), 0;
-  ad::Vector3real v_PQW;
+  Eigen::Matrix<T, 3, 1> v_PQW;
   v_PQW << -mu_p * sin(nu), mu_p * (e + cos(nu)), 0;
 
-  ad::MatrixXreal rot(3, 3);
+  Eigen::Matrix<T, 3, 3> rot;
   rot.row(0) << cos(Omega) * cos(w) - sin(Omega) * sin(w) * cos(i),
       -cos(Omega) * sin(w) - sin(Omega) * cos(w) * cos(i), sin(Omega) * sin(i);
   rot.row(1) << sin(Omega) * cos(w) + cos(Omega) * sin(w) * cos(i),
       -sin(Omega) * sin(w) + cos(Omega) * cos(w) * cos(i), -cos(Omega) * sin(i);
   rot.row(2) << sin(w) * sin(i), cos(w) * sin(i), cos(i);
 
-  ad::Vector3real r = rot * r_PQW;
-  ad::Vector3real v = rot * v_PQW;
+  Eigen::Matrix<T, 3, 1, 0, 3, 1> r = rot * r_PQW;
+  Eigen::Matrix<T, 3, 1, 0, 3, 1> v = rot * v_PQW;
 
-  ad::Vector6real cartVec;
+  Eigen::Matrix<T, 6, 1, 0, 6, 1> cartVec;
   cartVec << r, v;
   return cartVec;
 }
+
+template Eigen::Matrix<double, 6, 1, 0, 6, 1> LPT::CoeToCart<double>(
+    const Eigen::Matrix<double, 6, 1, 0, 6, 1> &coeVec, double mu);
+template Eigen::Matrix<ad::real, 6, 1, 0, 6, 1> LPT::CoeToCart<ad::real>(
+    const Eigen::Matrix<ad::real, 6, 1, 0, 6, 1> &coeVec, double mu);
 
 /**
  * @brief Convert Cartesian to classical orbital elements
@@ -158,9 +164,10 @@ ad::Vector6real CartToCoe(const ad::Vector6real &cartVec, double mu) {
  * @param e          Eccentricity
  * @return ad::real  True anomaly [rad]
  */
-ad::real EccentricAnomToTrueAnom(const ad::real E, const ad::real e) {
+template <typename T>
+T EccentricAnomToTrueAnom(T E, T e) {
   return atan2(sqrt(1 - pow(e, 2)) * sin(E), cos(E) - e);
-  // ad::real beta = e / (1.0 + sqrt(1.0 - pow(e, 2)));
+  // T beta = e / (1.0 + sqrt(1.0 - pow(e, 2)));
   // return E + 2.0 * atan2(beta * sin(E), 1.0 + beta * cos(E));
 }
 
@@ -169,9 +176,10 @@ ad::real EccentricAnomToTrueAnom(const ad::real E, const ad::real e) {
  *
  * @param E          Eccentric anomaly [rad]
  * @param e          Eccentricity
- * @return ad::real  Mean anomaly [rad]
+ * @return T  Mean anomaly [rad]
  */
-ad::real EccentricAnomToMeanAnom(const ad::real E, const ad::real e) {
+template <typename T>
+T EccentricAnomToMeanAnom(T E, T e) {
   return wrapToPi(E - e * sin(E));
 }
 
@@ -179,20 +187,21 @@ ad::real EccentricAnomToMeanAnom(const ad::real E, const ad::real e) {
  * @brief Compute mean anomaly from the Eccentric anomaly
  * @param M          Mean anomaly [rad]
  * @param e          Eccentricity
- * @return ad::real  Eccentric anomaly [rad]
+ * @return T  Eccentric anomaly [rad]
  */
-ad::real MeanAnomToEccentricAnom(const ad::real M, const ad::real e) {
-  ad::real MM = wrapToPi(M);
+template <typename T>
+T MeanAnomToEccentricAnom(T M, T e) {
+  T MM = wrapToPi(M);
 
   // Initial estimate of E
-  ad::real E = MM;
-  ad::real Eest = E - (E - e * sin(E) - MM) / (1.0 - e * cos(E));
+  T E = MM;
+  T Eest = E - (E - e * sin(E) - MM) / (1.0 - e * cos(E));
 
   double tol = 1e-9;
   int max_itr = 100;
   int itr = 0;
 
-  while ((abs(Eest - E).val() >= tol) && (itr <= max_itr)) {
+  while ((abs(Eest - E) >= tol) && (itr <= max_itr)) {
     E = Eest;
     Eest = E - (E - e * sin(E) - M) / (1.0 - e * cos(E));
     itr++;
@@ -206,12 +215,12 @@ ad::real MeanAnomToEccentricAnom(const ad::real M, const ad::real e) {
  * @brief Compute mean anomaly from the Eccentric anomaly
  * @param M          Mean anomaly [rad]
  * @param e          Eccentricity
- * @return ad::real  True anomaly [rad]
+ * @return T  True anomaly [rad]
  */
-ad::real MeanAnomToTrueAnom(const ad::real M, const ad::real e) {
-  ad::real E = MeanAnomToEccentricAnom(M, e);
-  ad::real nu = EccentricAnomToTrueAnom(E, e);
-
+template <typename T>
+T MeanAnomToTrueAnom(T M, T e) {
+  T E = MeanAnomToEccentricAnom(M, e);
+  T nu = EccentricAnomToTrueAnom(E, e);
   return wrapToPi(nu);
 }
 
@@ -219,10 +228,11 @@ ad::real MeanAnomToTrueAnom(const ad::real M, const ad::real e) {
  * @brief Compute true anomaly from the Eccentric anomaly
  * @param nu         True anomaly [rad]
  * @param e          Eccentricity
- * @return ad::real  Eccentric anomaly [rad]
+ * @return T  Eccentric anomaly [rad]
  */
-ad::real TrueAnomToEccentricAnom(const ad::real nu, const ad::real e) {
-  ad::real E = 2 * atan(sqrt((1 - e) / (1 + e)) * tan(nu / 2));
+template <typename T>
+T TrueAnomToEccentricAnom(T nu, T e) {
+  T E = 2 * atan(sqrt((1 - e) / (1 + e)) * tan(nu / 2));
   return E;
 }
 
@@ -231,11 +241,12 @@ ad::real TrueAnomToEccentricAnom(const ad::real nu, const ad::real e) {
  *
  * @param nu         True anomaly [rad]
  * @param e          Eccentricity
- * @return ad::real  Mean anomaly [rad]
+ * @return T  Mean anomaly [rad]
  */
-ad::real TrueAnomToMeanAnom(const ad::real nu, const ad::real e) {
-  ad::real E = TrueAnomToEccentricAnom(nu, e);
-  ad::real M = EccentricAnomToMeanAnom(E, e);
+template <typename T>
+T TrueAnomToMeanAnom(T nu, T e) {
+  T E = TrueAnomToEccentricAnom(nu, e);
+  T M = EccentricAnomToMeanAnom(E, e);
   return M;
 }
 
@@ -274,8 +285,8 @@ ClassicalOE RoeToCoe(const ClassicalOE coe_c, const QuasiNonsingularROE roe) {
   return ClassicalOE(coe_d);
 }
 
-ad::Matrix3real InertialToRtnRot(const ad::Vector6real &rtnOrigin,
-                                 const ad::Vector6real &inertialVec) {
+ad::Vector6real InertialToRtn(const ad::Vector6real &rtnOrigin,
+                              const ad::Vector6real &inertialVec) {
   ad::Vector3real rInertial = inertialVec.head(3);
   ad::Vector3real vInertial = inertialVec.tail(3);
   ad::Vector3real rOrigin = rtnOrigin.head(3);
@@ -288,35 +299,6 @@ ad::Matrix3real InertialToRtnRot(const ad::Vector6real &rtnOrigin,
 
   ad::Matrix3real R_Inertial_Rtn;  // Rotation matrix from inertial to RTN
   R_Inertial_Rtn << uR.transpose(), uT.transpose(), uN.transpose();
-  return R_Inertial_Rtn;
-}
-
-ad::Matrix6real InertialToRtnRotRV(const ad::Vector6real &rtnOrigin,
-                                   const ad::Vector6real &inertialVec) {
-  ad::Matrix3real R_Inertial_Rtn = InertialToRtnRot(rtnOrigin, inertialVec);
-  ad::Vector3real w;
-  ad::Vector3real rOrigin = rtnOrigin.head(3);
-  ad::Vector3real vOrigin = rtnOrigin.tail(3);
-  w = rOrigin.cross(vOrigin) / rOrigin.squaredNorm();
-  ad::Matrix3real skew_M = Skew(w);
-  ad::Matrix6real R_Inertial_Rtn_RV;
-  R_Inertial_Rtn_RV.block(0, 0, 3, 3) = R_Inertial_Rtn;
-  R_Inertial_Rtn_RV.block(0, 3, 3, 3) = ad::Matrix3real::Zero();
-  R_Inertial_Rtn_RV.block(3, 0, 3, 3) = -R_Inertial_Rtn * skew_M;
-  R_Inertial_Rtn_RV.block(3, 3, 3, 3) = R_Inertial_Rtn;
-
-  return R_Inertial_Rtn_RV;
-}
-
-ad::Vector6real InertialToRtn(const ad::Vector6real &rtnOrigin,
-                              const ad::Vector6real &inertialVec) {
-  ad::Vector3real rInertial = inertialVec.head(3);
-  ad::Vector3real vInertial = inertialVec.tail(3);
-  ad::Vector3real rOrigin = rtnOrigin.head(3);
-  ad::Vector3real vOrigin = rtnOrigin.tail(3);
-
-  ad::Matrix3real R_Inertial_Rtn = InertialToRtnRot(
-      rtnOrigin, inertialVec);  // Rotation matrix from inertial to RTN
 
   ad::Vector3real w, rRtn, vRtn;
   w = rOrigin.cross(vOrigin) / rOrigin.squaredNorm();

@@ -41,3 +41,9 @@ def test_ad_jacobian_2():
     J = pnt.jacobian(myfunc2, x)
     Jnum = ad.numerical_jacobian(myfunc2, x)
     np.testing.assert_array_almost_equal(J, Jnum)
+
+
+if __name__ == "__main__":
+    test_ad_jacobian_1()
+    test_ad_jacobian_2()
+    print("All tests passed")

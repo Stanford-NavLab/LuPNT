@@ -7,8 +7,6 @@
 #include <autodiff/forward/real.hpp>
 #include <autodiff/forward/real/eigen.hpp>
 
-#include "eigen.hxx"
-
 namespace py = pybind11;
 using namespace LPT;
 
