@@ -77,6 +77,7 @@ void init_orbit_state(py::module &m) {
         return ss.str();
       });
 
+  // ClassicalOE
   py::class_<ClassicalOE, OrbitState>(m, "ClassicalOE")
       .def(py::init<Eigen::Vector6d, CoordSystem>(), py::arg("oe"),
            py::arg("cs") = CoordSystem::NONE)
@@ -89,12 +90,13 @@ void init_orbit_state(py::module &m) {
 
       .def("print", &ClassicalOE::Print, py::arg("deg") = true)
       .def("clone", &ClassicalOE::Clone)
-      .def("a", &ClassicalOE::a)
-      .def("e", &ClassicalOE::e)
-      .def("i", &ClassicalOE::i)
-      .def("Omega", &ClassicalOE::Omega)
-      .def("w", &ClassicalOE::w)
-      .def("M", &ClassicalOE::M)
+      // .def_property("a", &ClassicalOE::Get_a, &ClassicalOE::Set_a)
+      // .def_property("e", &ClassicalOE::Get_e, &ClassicalOE::Set_e)
+      // .def_property("i", &ClassicalOE::Get_i, &ClassicalOE::Set_i)
+      // .def_property("Omega", &ClassicalOE::Get_Omega,
+      // &ClassicalOE::Set_Omega) .def_property("w", &ClassicalOE::Get_w,
+      // &ClassicalOE::Set_w) .def_property("M", &ClassicalOE::Get_M,
+      // &ClassicalOE::Set_M)
       .def("__repr__",
            [](const ClassicalOE &s) { return "<pylupnt.ClassicalOE>"; });
 
