@@ -9,7 +9,4 @@ void init_math_utils(py::module &m) {
   m.def(
       "wrapToPi", [](double angle) -> double { return wrapToPi(angle); },
       "Wrap angle to [-pi, pi]");
-  m.def(
-      "wrapToPi", [](ad::real angle) -> ad::real { return wrapToPi(angle); },
-      "Wrap angle to [-pi, pi]");
 }

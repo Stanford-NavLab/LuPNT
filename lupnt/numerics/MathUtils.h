@@ -19,11 +19,6 @@ namespace ad = autodiff;
 
 namespace LPT {
 
-template <typename... Args>
-ad::VectorXreal toAdVector(Args... args) {
-  return ad::VectorXreal(sizeof...(args), args...);
-}
-
 // Convert autodiff vector to Eigen vector
 Eigen::VectorXd toEigen(ad::VectorXreal x);
 

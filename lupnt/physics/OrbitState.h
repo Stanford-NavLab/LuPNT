@@ -89,7 +89,10 @@ class CartesianOrbitState : public OrbitState {
   CartesianOrbitState(const ad::Vector6real &x,
                       CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::CARTESIAN) {}
-
+  CartesianOrbitState(ad::real rx, ad::real ry, ad::real rz, ad::real vx,
+                      ad::real vy, ad::real vz,
+                      CoordSystem sys = CoordSystem::NONE)
+      : OrbitState(rx, ry, rz, vx, vy, vz, sys, OrbitStateRepres::CARTESIAN) {}
   void Print(const bool deg = true) const override;
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<CartesianOrbitState>(*this);
