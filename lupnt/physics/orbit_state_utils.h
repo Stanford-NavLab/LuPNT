@@ -142,3 +142,5 @@ static std::shared_ptr<CartesianOrbitState> ConvertOrbitStateCoordSystem(
 }
 
 }  // namespace lupnt
+
+#include "orbit_state_utils.cc"

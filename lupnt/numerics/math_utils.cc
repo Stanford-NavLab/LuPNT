@@ -58,6 +58,7 @@ template <typename T>
 T wrapToPi(T angle) {
   return atan2(sin(angle), cos(angle));
 }
+
 template ad::real wrapToPi(ad::real angle);
 template double wrapToPi(double angle);
 
