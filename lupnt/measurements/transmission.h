@@ -27,7 +27,7 @@ struct Transmission {
   double freq;
   std::string freq_label;
 
-  // Clock offset from GNSS time [s]
+  // Clock offset from Gnss time [s]
   double dt_tx;
   double dt_rx;
 

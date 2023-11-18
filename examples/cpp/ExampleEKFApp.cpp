@@ -12,13 +12,13 @@
 // lupnt includes
 #include <lupnt/agents/agent.h>
 #include <lupnt/agents/gnss_constellation.h>
-#include <lupnt/agents/GNSSStateEstimationApp.h>
+#include <lupnt/agents/state_estimation_app_gnss.h>
 #include <lupnt/core/file.h>
 #include <lupnt/core/scheduler.h>
-#include <lupnt/dynamics/Dynamics.h>
+#include <lupnt/dynamics/dynamics.h>
 #include <lupnt/measurements/gnss_channel.h>
 #include <lupnt/measurements/gnss_receiver.h>
-#include <lupnt/numerics/MathUtils.h>
+#include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/clock.h>
 #include <lupnt/physics/coord_converter.h>
 #include <lupnt/physics/orbit_state.h>
@@ -89,7 +89,7 @@ int main() {
   auto cart_state_moon =
       std::make_shared<CartesianOrbitState>(CoeToCart(coe_moon, MU_MOON));
   auto moon_sat = std::make_shared<Spacecraft>();
-  auto receiver = std::make_shared<GNSSReceiver>("moongpsr");
+  auto receiver = std::make_shared<GnssReceiver>("moongpsr");
 
   moon_sat->AddDevice(receiver);
   moon_sat->SetDynamics(dyn_moon_nb);
@@ -108,7 +108,7 @@ int main() {
   FileWriter writer(output_path, true);
 
   // OrbitState estimation app
-  auto est_app = GNSSStateEstimationApp();
+  auto est_app = GnssStateEstimationApp();
   est_app.SetAgent(moon_sat);
   est_app.SetDynamics(dyn_moon_tb);
   est_app.SetReceiver(receiver);

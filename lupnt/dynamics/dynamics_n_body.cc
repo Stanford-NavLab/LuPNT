@@ -10,7 +10,7 @@
  */
 #include <autodiff/forward/real.hpp>
 
-#include "Dynamics.h"
+#include "dynamics.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/dynamics/gravity_field.h"
 #include "lupnt/physics/spice_interface.h"

@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <lupnt/numerics/MathUtils.h>
+#include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/coord_converter.h>
 
 namespace lupnt {

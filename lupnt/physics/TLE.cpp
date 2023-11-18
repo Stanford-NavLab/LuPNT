@@ -17,9 +17,9 @@
 #include "orbit_state.h"
 #include "orbit_state_utils.h"
 #include "spice_interface.h"
-#include "lupnt/numerics/string_utilss.h"
+#include "lupnt/numerics/string_utils.h"
 
-namespace sp = LPT::SpiceInterface;
+namespace sp = lupnt::SpiceInterface;
 
 namespace lupnt {
 TLE TLE::FromLines(const std::string &line1, const std::string &line2,
@@ -38,7 +38,7 @@ TLE TLE::FromLines(const std::string &line1, const std::string &line2,
     }
   } else if (line1.substr(0, 3) == "GSA") {
     tle.name = "GALILEO";
-    tle.prn = stod(SplitString(w, '(')[1].substr(5, 2));
+    tle.prn = stod(SplitString(line1, '(')[1].substr(5, 2));
   } else if (line1.substr(0, 3) == "COS") {
     tle.name = "GLONASS";
     tle.prn = stod(SplitString(line1, '(')[1].substr(0, 3));

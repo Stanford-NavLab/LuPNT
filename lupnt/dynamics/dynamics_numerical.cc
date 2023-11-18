@@ -9,7 +9,7 @@
  *
  */
 
-#include "Dynamics.h"
+#include "dynamics.h"
 #include "lupnt/core/constants.h"
 
 namespace lupnt {

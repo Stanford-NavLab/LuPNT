@@ -8,8 +8,8 @@
  * @copyright Copyright (c) 2023
  *
  */
-#include <lupnt/measurements/Occultation.h>
-#include <lupnt/numerics/MathUtils.h>
+#include <lupnt/measurements/occultation.h>
+#include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/coord_converter.h>
 
 #include <memory>

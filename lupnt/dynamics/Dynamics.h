@@ -1,5 +1,5 @@
 /**
- * @file Dynamics.h
+ * @file dynamics.h
  * @author Stanford NAV LAB
  * @brief Interface for Dynamics
  * @version 0.1
@@ -12,7 +12,7 @@
 
 #include <autodiff/forward/real.hpp>
 
-#include "lupnt/dynamics/Propagator.h"
+#include "lupnt/dynamics/propagator.h"
 #include "lupnt/dynamics/gravity_field.h"
 #include "lupnt/numerics/integrator.h"
 #include "lupnt/physics/orbit_state.h"

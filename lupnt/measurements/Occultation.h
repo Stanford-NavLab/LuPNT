@@ -1,5 +1,5 @@
 /**
- * @file Occultation.h
+ * @file occultation.h
  * @author Stanford NAV LAB
  * @brief Signal blockage model
  * @version 0.1

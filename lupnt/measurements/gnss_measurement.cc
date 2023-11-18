@@ -10,14 +10,14 @@
  */
 #include "gnss_measurement.h"
 
-#include <lupnt/numerics/MathUtils.h>
+#include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/coord_converter.h>
 
 #include "radio_measurement.h"
 
 namespace lupnt {
 
-GNSSMeasurement::GNSSMeasurement(const std::vector<Transmission> trans)
+GnssMeasurement::GnssMeasurement(const std::vector<Transmission> trans)
     : trans_store(trans),
       f(trans.size()),
       dt_tx(trans.size()),
@@ -76,9 +76,9 @@ GNSSMeasurement::GNSSMeasurement(const std::vector<Transmission> trans)
  * @brief Create another measurement class instance with certain band
  *
  * @param freq_label
- * @return GNSSMeasurement
+ * @return GnssMeasurement
  */
-GNSSMeasurement GNSSMeasurement::ExtractSignal(std::string freq_label) {
+GnssMeasurement GnssMeasurement::ExtractSignal(std::string freq_label) {
   std::vector<Transmission> transmissions_freq;
   for (auto &tx : trans_store) {
     if (tx.freq_label == freq_label) {
@@ -86,10 +86,10 @@ GNSSMeasurement GNSSMeasurement::ExtractSignal(std::string freq_label) {
     }
   }
 
-  return GNSSMeasurement(transmissions_freq);
+  return GnssMeasurement(transmissions_freq);
 }
 
-ad::VectorXreal GNSSMeasurement::ComputePseudorange(ad::VectorXreal r_rx,
+ad::VectorXreal GnssMeasurement::ComputePseudorange(ad::VectorXreal r_rx,
                                                     ad::real dt_rx) const {
   // P_rx = rho_rx + c*(dt_rx(t_rx) - dt_tx(t_tx)) + I_rx + T_rx + eps_P
   ad::VectorXreal P_rx(r_tx.cols());
@@ -100,11 +100,11 @@ ad::VectorXreal GNSSMeasurement::ComputePseudorange(ad::VectorXreal r_rx,
   return P_rx;
 }
 
-ad::VectorXreal GNSSMeasurement::GetPseudorange() {
+ad::VectorXreal GnssMeasurement::GetPseudorange() {
   return ComputePseudorange(r_rx, dt_rx);
 }
 
-ad::VectorXreal GNSSMeasurement::GetPseudorange(double epoch,
+ad::VectorXreal GnssMeasurement::GetPseudorange(double epoch,
                                                 ad::Vector6real rv_pred,
                                                 ad::Vector2real clk_pred,
                                                 Eigen::MatrixXd &H_pr) {
@@ -126,7 +126,7 @@ ad::VectorXreal GNSSMeasurement::GetPseudorange(double epoch,
   return z_pr_pred;
 }
 
-ad::VectorXreal GNSSMeasurement::GetCarrierPhase() {
+ad::VectorXreal GnssMeasurement::GetCarrierPhase() {
   // phi_rx = c / lambda * (t_rx - t_tx) + c / lambda * (dt_rx(t_rx) -
   // dt_tx(t_tx)) + phi_rx_0 - phi_0 + N_rx + eps_phi
 
@@ -136,7 +136,7 @@ ad::VectorXreal GNSSMeasurement::GetCarrierPhase() {
   return phi_rx;
 }
 
-ad::VectorXreal GNSSMeasurement::GetPhaseRange() {
+ad::VectorXreal GnssMeasurement::GetPhaseRange() {
   // Phi_rx = c * (t_rx - t_tx) + c*(dt_rx(t_rx)  dt_tx(t_tx)) + lambda *
   // (phi_rx_0 - phi_0 + N_rx) + lambda*eps_Phi
 
@@ -145,7 +145,7 @@ ad::VectorXreal GNSSMeasurement::GetPhaseRange() {
   return Phi_rx;
 };
 
-ad::VectorXreal GNSSMeasurement::GetDopplerShift() {
+ad::VectorXreal GnssMeasurement::GetDopplerShift() {
   // f_D = - f/c*((v_tx(t_tx) - v_rx(t_rx))^T * e_rx + c * dt_rx_dot(t_rx) -
   // c* dt_tx_dot(t_tx))) + eps_D
 
@@ -157,7 +157,7 @@ ad::VectorXreal GNSSMeasurement::GetDopplerShift() {
   return f_D;
 }
 
-ad::VectorXreal GNSSMeasurement::GetPseudorangeRate(
+ad::VectorXreal GnssMeasurement::GetPseudorangeRate(
     const ad::VectorXreal &r_rx_, const ad::VectorXreal &v_rx_) {
   // f_D = - f/c*((v_tx(t_tx) - v_rx(t_rx))^T * e_rx + c * dt_rx_dot(t_rx) -
   // c* dt_tx_dot(t_tx))) + eps_D

@@ -1,7 +1,7 @@
 /**
  * @file gnss_receiver.cpp
  * @author Stanford NAV LAB
- * @brief GNSS Receiver class
+ * @brief Gnss Receiver class
  * @version 0.1
  * @date 2023-09-14
  *
@@ -16,9 +16,9 @@
 
 namespace lupnt {
 
-void GNSSReceiver::InitializeReceiverParams() {
+void GnssReceiver::InitializeReceiverParams() {
   if (receiver_name_ == "moongpsr") {
-    // Lunar GNSS Receiver
+    // Lunar Gnss Receiver
     rx_param_.Ts = 190.0;  // System noise temp [K]
     rx_param_.Ae =
         0.0;  // Attenuation due to atmosphere (should be negative) [dB]
@@ -39,7 +39,7 @@ void GNSSReceiver::InitializeReceiverParams() {
  * @param r_rx_gcrf
  * @return Eigen::Vector3d
  */
-std::vector<Eigen::Vector3d> GNSSReceiver::GetReceiverOrientation(
+std::vector<Eigen::Vector3d> GnssReceiver::GetReceiverOrientation(
     double t, Eigen::Vector3d& r_rx_gcrf, std::string mode) {
   auto r_sat2sun =
       SpiceInterface::GetBodyPos("SUN", t, "J2000", "EARTH", "NONE") -
@@ -65,10 +65,10 @@ std::vector<Eigen::Vector3d> GNSSReceiver::GetReceiverOrientation(
  * @brief Get the
  *
  */
-double GNSSReceiver::GetReceiverAntennaGain(double t, Eigen::Vector3d r_tx_gcrf,
+double GnssReceiver::GetReceiverAntennaGain(double t, Eigen::Vector3d r_tx_gcrf,
                                             Eigen::Vector3d r_rx_gcrf,
                                             std::string mode) {
-  auto e_sat = GNSSReceiver::GetReceiverOrientation(t, r_rx_gcrf, mode);
+  auto e_sat = GnssReceiver::GetReceiverOrientation(t, r_rx_gcrf, mode);
   auto e_x = e_sat[0];
   auto e_y = e_sat[1];
   auto e_z = e_sat[2];
@@ -76,17 +76,17 @@ double GNSSReceiver::GetReceiverAntennaGain(double t, Eigen::Vector3d r_tx_gcrf,
   auto u_rx_tx = (r_tx_gcrf - r_rx_gcrf).normalized();
   double theta_rx = acos(u_rx_tx.dot(e_z));
   double phi_rx = atan2(u_rx_tx.dot(e_y), u_rx_tx.dot(e_x));
-  double Ar = GNSSReceiver::GetAntennaGain(theta_rx * DEG_PER_RAD,
+  double Ar = GnssReceiver::GetAntennaGain(theta_rx * DEG_PER_RAD,
                                            phi_rx * DEG_PER_RAD);
   return Ar;
 }
 
-GNSSMeasurement GNSSReceiver::GetMeasurement(double t) {
-  // Revieve GNSS signals
+GnssMeasurement GnssReceiver::GetMeasurement(double t) {
+  // Revieve Gnss signals
   std::vector<Transmission> transmissions = channel->Receive(*this, t);
 
-  // Generate a measurement from the GNSS transmissions
-  GNSSMeasurement measurement = GNSSMeasurement(transmissions);
+  // Generate a measurement from the Gnss transmissions
+  GnssMeasurement measurement = GnssMeasurement(transmissions);
   return measurement;
 }
 

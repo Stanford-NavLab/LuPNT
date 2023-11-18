@@ -1,7 +1,7 @@
 /**
  * @file gnssChannel.cpp
  * @author Stanford NAV LAB
- * @brief GNSS Channel
+ * @brief Gnss Channel
  * @version 0.1
  * @date 2023-09-14
  *
@@ -27,16 +27,16 @@ namespace ad = autodiff;
 
 namespace lupnt {
 /**
- * @brief Receiver receives all available GNSS signals
+ * @brief Receiver receives all available Gnss signals
  *
  * @param rx
  * @param t
  * @return std::vector<Transmission>
  */
-std::vector<Transmission> gnssChannel::Receive(GNSSReceiver &rx, double t) {
+std::vector<Transmission> gnssChannel::Receive(GnssReceiver &rx, double t) {
   std::vector<Transmission> received_transs;
 
-  // Messages from other comms systems that can generate GNSS messages
+  // Messages from other comms systems that can generate Gnss messages
   for (auto &tx : tx_devices) {
     // Transmitter and receiver positions and velocities
     double tau = 0.0;  // light time delay

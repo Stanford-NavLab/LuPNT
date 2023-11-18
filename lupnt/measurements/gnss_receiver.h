@@ -1,7 +1,7 @@
 /**
  * @file gnss_receiver.h
  * @author Stanford NAV LAB
- * @brief GNSS receiver class
+ * @brief Gnss receiver class
  * @version 0.1
  * @date 2023-09-14
  *
@@ -25,12 +25,12 @@ namespace lupnt {
 
 class GnssChannel;
 
-class GNSSReceiver : public Receiver {
+class GnssReceiver : public Receiver {
  public:
   Antenna antenna_;
   std::string receiver_name_;  // Name of the receiver system
 
-  GNSSReceiver(std::string receiver_name) : receiver_name_(receiver_name) {
+  GnssReceiver(std::string receiver_name) : receiver_name_(receiver_name) {
     antenna_ = Antenna(receiver_name_);
     InitializeReceiverParams();
   };
@@ -47,7 +47,7 @@ class GNSSReceiver : public Receiver {
   };
 
   // Generate Measurement
-  GNSSMeasurement GetMeasurement(double t);
+  GnssMeasurement GetMeasurement(double t);
   void SetChannel(std::shared_ptr<GnssChannel> ch) { channel = ch; };
 
   // Getters and Setters

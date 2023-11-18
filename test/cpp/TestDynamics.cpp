@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <lupnt/core/constants.h>
-#include <lupnt/dynamics/Dynamics.h>
+#include <lupnt/dynamics/dynamics.h>
 #include <lupnt/physics/orbit_state.h>
 #include <lupnt/physics/orbit_state_utils.h>
 

@@ -17,7 +17,7 @@
 
 #include "lupnt/measurements/antenna.h"
 #include "lupnt/measurements/transmission.h"
-#include "lupnt/numerics/MathUtils.h"
+#include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/orbit_state.h"
 
 namespace ad = autodiff;

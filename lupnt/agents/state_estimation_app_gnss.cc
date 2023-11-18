@@ -1,7 +1,7 @@
 /**
- * @file GNSSStateEstimationApp.cpp
+ * @file GnssStateEstimationApp.cpp
  * @author Stanford NAVLAB
- * @brief State Estimation Application Using GNSS Measurement
+ * @brief State Estimation Application Using Gnss Measurement
  * @version 0.1
  * @date 2023-09-14
  *
@@ -13,7 +13,7 @@
 
 namespace lupnt {
 
-void GNSSStateEstimationApp::Setup() {
+void GnssStateEstimationApp::Setup() {
   ad::Vector6real rv = agent->GetOrbitState()->GetVector();
   ad::Vector2real clk = ad::Vector2real::Zero();
 
@@ -66,7 +66,7 @@ void GNSSStateEstimationApp::Setup() {
   Q.block(6, 6, 2, 2) = Q_clk;
 }
 
-void GNSSStateEstimationApp::Step(double t) {
+void GnssStateEstimationApp::Step(double t) {
   epoch = epoch0 + t;
 
   auto rv_pred = rv_est;

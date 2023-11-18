@@ -9,7 +9,7 @@
  *
  */
 
-#include "lupnt/numerics/MathUtils.h"
+#include "lupnt/numerics/math_utils.h"
 
 #include <Eigen/Cholesky>
 #include <Eigen/Eigenvalues>

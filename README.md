@@ -21,7 +21,7 @@ If using this project in your own work please cite the following:
 @inproceedings{IiyamaCasadesus2023,
   title = {LuPNT: Open-Souce Simulator for Lunar Positioning, Navigation, and Timing},
   author={Iiyama, Keidai and Casadesus Vila, Guillem and Gao, Grace},
-  booktitle={Proceedings of the Institute of Navigation GNSS+ conference (ION GNSS+ 2023)},
+  booktitle={Proceedings of the Institute of Navigation Gnss+ conference (ION Gnss+ 2023)},
   institution = {Stanford University},
   year = {2023},
   url = {https://github.com/Stanford-NavLab/LuPNT},

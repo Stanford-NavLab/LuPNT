@@ -74,9 +74,9 @@ Eigen::Matrix<T, 6, 1, 0, 6, 1> CoeToCart(
   return cartVec;
 }
 
-template Eigen::Matrix<double, 6, 1, 0, 6, 1> LPT::CoeToCart<double>(
+template Eigen::Matrix<double, 6, 1, 0, 6, 1> lupnt::CoeToCart<double>(
     const Eigen::Matrix<double, 6, 1, 0, 6, 1> &coeVec, double mu);
-template Eigen::Matrix<ad::real, 6, 1, 0, 6, 1> LPT::CoeToCart<ad::real>(
+template Eigen::Matrix<ad::real, 6, 1, 0, 6, 1> lupnt::CoeToCart<ad::real>(
     const Eigen::Matrix<ad::real, 6, 1, 0, 6, 1> &coeVec, double mu);
 
 /**

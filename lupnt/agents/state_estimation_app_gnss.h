@@ -1,7 +1,7 @@
 /**
- * @file GNSSStateEstimationApp.h
+ * @file GnssStateEstimationApp.h
  * @author Stanford NAV LAB
- * @brief State Estimation Application Using GNSS Measurement
+ * @brief State Estimation Application Using Gnss Measurement
  * @version 0.1
  * @date 2023-09-14
  *
@@ -21,7 +21,7 @@
 
 namespace lupnt {
 
-class GNSSStateEstimationApp : public Application {
+class GnssStateEstimationApp : public Application {
  private:
   double epoch0;     // start epoch in TAU
   double epoch;      // curent e
@@ -61,7 +61,7 @@ class GNSSStateEstimationApp : public Application {
 
   std::shared_ptr<Agent> agent;
   std::shared_ptr<IOrbitDynamics> dyn;
-  std::shared_ptr<GNSSReceiver> receiver;
+  std::shared_ptr<GnssReceiver> receiver;
   std::shared_ptr<IFilter> filter;
   MeasurementFunction meas_func;
 
@@ -73,7 +73,7 @@ class GNSSStateEstimationApp : public Application {
  public:
   void SetAgent(std::shared_ptr<Agent> agent) { this->agent = agent; }
   void SetDynamics(std::shared_ptr<IOrbitDynamics> dyn) { this->dyn = dyn; }
-  void SetReceiver(std::shared_ptr<GNSSReceiver> receiver) {
+  void SetReceiver(std::shared_ptr<GnssReceiver> receiver) {
     this->receiver = receiver;
   }
   void SetDataHistory(std::shared_ptr<DataHistory> data_history) {

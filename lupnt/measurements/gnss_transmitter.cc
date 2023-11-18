@@ -1,7 +1,7 @@
 /**
- * @file GNSSTransmitter.cpp
+ * @file GnssTransmitter.cpp
  * @author Stanford NAV LAB
- * @brief Handles GNSS transmit
+ * @brief Handles Gnss transmit
  * @version 0.1
  * @date 2023-09-14
  *
@@ -19,7 +19,7 @@
 
 namespace lupnt {
 
-void GNSSTransmitter::InitializeGNSSTransmitter() {
+void GnssTransmitter::InitializeGnssTransmitter() {
   if (gnss_type_ == "GPS") {
     InitializeGPSTransmitter();
   } else if (gnss_type_ == "GLONASS") {
@@ -29,7 +29,7 @@ void GNSSTransmitter::InitializeGNSSTransmitter() {
   } else if (gnss_type_ == "BEIDOU") {
     InitializeBEIDOUTransmitter();
   } else {
-    std::cout << "GNSS type not recognized" << std::endl;
+    std::cout << "Gnss type not recognized" << std::endl;
   }
 }
 
@@ -37,7 +37,7 @@ void GNSSTransmitter::InitializeGNSSTransmitter() {
  * @brief Initialize the GPS transmitter
  *
  */
-void GNSSTransmitter::InitializeGPSTransmitter() {
+void GnssTransmitter::InitializeGPSTransmitter() {
   std::filesystem::path csvpath(BASEPATH / "data" / "gnss" / "gps_table.csv");
   std::vector<std::vector<std::string>> gps_table = ReadCSV(csvpath.string());
 
@@ -84,7 +84,7 @@ void GNSSTransmitter::InitializeGPSTransmitter() {
  * @brief   Initialize the GLONASS transmitter
  *
  */
-void GNSSTransmitter::InitializeGLONASSTransmitter() {
+void GnssTransmitter::InitializeGLONASSTransmitter() {
   std::cout << "Antenna type not implemented yet for " << gnss_type_
             << std::endl;
 }
@@ -93,7 +93,7 @@ void GNSSTransmitter::InitializeGLONASSTransmitter() {
  * @brief Initialize the GALILEO transmitter
  *
  */
-void GNSSTransmitter::InitializeGALILEOTransmitter() {
+void GnssTransmitter::InitializeGALILEOTransmitter() {
   std::cout << "Antenna type not implemented yet for " << gnss_type_
             << std::endl;
 }
@@ -101,7 +101,7 @@ void GNSSTransmitter::InitializeGALILEOTransmitter() {
 /**
  * @brief Initialize the BEIDOU transmitter
  */
-void GNSSTransmitter::InitializeBEIDOUTransmitter() {
+void GnssTransmitter::InitializeBEIDOUTransmitter() {
   std::cout << "Antenna type not implemented yet for " << gnss_type_
             << std::endl;
 }
@@ -114,7 +114,7 @@ void GNSSTransmitter::InitializeBEIDOUTransmitter() {
  * @param r_tx_gcrf
  * @return Eigen::Vector3d
  */
-std::vector<Eigen::Vector3d> GNSSTransmitter::GetTransmitterOrientation(
+std::vector<Eigen::Vector3d> GnssTransmitter::GetTransmitterOrientation(
     double t, Eigen::Vector3d& r_tx_gcrf) {
   auto r_sat2sun = SpiceInterface::GetBodyPos("SUN", t, "J2000", "EARTH",
                                               "NONE") -
@@ -131,17 +131,17 @@ std::vector<Eigen::Vector3d> GNSSTransmitter::GetTransmitterOrientation(
  * @brief Get the
  *
  */
-double GNSSTransmitter::GetTransmittionAntennaGain(double t,
+double GnssTransmitter::GetTransmittionAntennaGain(double t,
                                                    Eigen::Vector3d r_tx_gcrf,
                                                    Eigen::Vector3d r_rx_gcrf) {
-  auto e_gnss = GNSSTransmitter::GetTransmitterOrientation(t, r_tx_gcrf);
+  auto e_gnss = GnssTransmitter::GetTransmitterOrientation(t, r_tx_gcrf);
   Eigen::Vector3d e_x_gnss = e_gnss[0];
   Eigen::Vector3d e_y_gnss = e_gnss[1];
   Eigen::Vector3d e_z_gnss = e_gnss[2];
   auto u_tx_rx = (r_rx_gcrf - r_tx_gcrf).normalized();
   double theta_tx = acos(u_tx_rx.dot(e_z_gnss));
   double phi_tx = atan2(u_tx_rx.dot(e_y_gnss), u_tx_rx.dot(e_x_gnss));
-  double At = GNSSTransmitter::GetAntennaGain(theta_tx * DEG_PER_RAD,
+  double At = GnssTransmitter::GetAntennaGain(theta_tx * DEG_PER_RAD,
                                               phi_tx * DEG_PER_RAD);
   return At;
 }
@@ -152,7 +152,7 @@ double GNSSTransmitter::GetTransmittionAntennaGain(double t,
  * @param t
  * @return Transmission
  */
-Transmission GNSSTransmitter::GenerateTransmission(double t) {
+Transmission GnssTransmitter::GenerateTransmission(double t) {
   auto cart_state = agent->GetCartesianGCRFStateAtEpoch(t);
   ConvertOrbitStateCoordSystem(cart_state, t, CoordSystem::GCRF);
 

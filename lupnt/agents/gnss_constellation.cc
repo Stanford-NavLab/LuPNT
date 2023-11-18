@@ -1,7 +1,7 @@
 /**
  * @file gnss_constellation.cpp
  * @author Stanford NAV LAB
- * @brief GNSS Constellation
+ * @brief Gnss Constellation
  * @version 0.1
  * @date 2023-09-14
  *
@@ -52,7 +52,7 @@ void GnssConstellation::LoadTleFile(std::string filename) {
     sat->SetBodyId(BodyId::EARTH);
 
     if (channel_) {
-      auto transmitter = std::make_shared<GNSSTransmitter>(tle.name, tle.prn);
+      auto transmitter = std::make_shared<GnssTransmitter>(tle.name, tle.prn);
       sat->AddDevice(transmitter);
       transmitter->SetAgent(sat);
       channel_->AddTransmitter(transmitter);

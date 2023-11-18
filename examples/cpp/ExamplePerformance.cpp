@@ -11,9 +11,9 @@
 
 // lupnt includes
 #include <lupnt/core/file.h>
-#include <lupnt/dynamics/Dynamics.h>
+#include <lupnt/dynamics/dynamics.h>
 #include <lupnt/dynamics/gravity_field.h>
-#include <lupnt/numerics/MathUtils.h>
+#include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/coord_converter.h>
 #include <lupnt/physics/orbit_state.h>
 #include <lupnt/physics/spice_interface.h>

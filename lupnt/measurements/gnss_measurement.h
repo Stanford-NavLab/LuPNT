@@ -22,8 +22,8 @@ namespace ad = autodiff;
 
 namespace lupnt {
 
-class GNSSMeasurement {
-  // Implemenation based on GNSS SDR Observables block:
+class GnssMeasurement {
+  // Implemenation based on Gnss SDR Observables block:
   // https://gnss-sdr.org/docs/sp-blocks/observables/
  private:
   int n_meas;                             // Number of measurements
@@ -48,9 +48,9 @@ class GNSSMeasurement {
   Eigen::VectorXd rho_rx;  // True range from the transmitter to the receiver’s
                            // antenna [km] (n_meas)
 
-  double dt_rx;  // Receiver clock offset from GNSS time [s]
+  double dt_rx;  // Receiver clock offset from Gnss time [s]
   Eigen::VectorXd
-      dt_tx;  // Transmitter clock offset from GNSS time [s] (n_meas)
+      dt_tx;  // Transmitter clock offset from Gnss time [s] (n_meas)
 
   Eigen::VectorXd I_rx;   // Ionospheric delay [km] (n_meas * n_bands)
   Eigen::VectorXd T_rx;   // Tropospheric delay [km] (n_meas)
@@ -126,9 +126,9 @@ class GNSSMeasurement {
   Eigen::VectorXd CN0;  // Carrier‐to‐noise density [dB‐Hz] (n_meas * n_bands)
 
  public:
-  GNSSMeasurement(const std::vector<Transmission> transmissions);
+  GnssMeasurement(const std::vector<Transmission> transmissions);
 
-  GNSSMeasurement ExtractSignal(std::string freq_label);
+  GnssMeasurement ExtractSignal(std::string freq_label);
 
   // Transmission data
   int GetNumMeasurements() const { return n_meas; }

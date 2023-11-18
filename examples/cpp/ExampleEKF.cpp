@@ -13,7 +13,7 @@
 #include <lupnt/agents/agent.h>
 #include <lupnt/agents/gnss_constellation.h>
 #include <lupnt/core/file.h>
-#include <lupnt/dynamics/Dynamics.h>
+#include <lupnt/dynamics/dynamics.h>
 #include <lupnt/measurements/gnss_channel.h>
 #include <lupnt/measurements/gnss_measurement.h>
 #include <lupnt/measurements/gnss_receiver.h>
@@ -90,7 +90,7 @@ int main() {
   auto cart_state_moon =
       std::make_shared<CartesianOrbitState>(CoeToCart(coe_moon, MU_MOON));
   auto moon_sat = std::make_shared<Spacecraft>();
-  auto receiver = std::make_shared<GNSSReceiver>("moongpsr");
+  auto receiver = std::make_shared<GnssReceiver>("moongpsr");
 
   moon_sat->AddDevice(receiver);
   moon_sat->SetDynamics(dyn_moon_nb);

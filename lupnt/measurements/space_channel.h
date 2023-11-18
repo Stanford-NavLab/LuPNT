@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <lupnt/measurements/Occultation.h>
+#include <lupnt/measurements/occultation.h>
 
 #include <memory>
 

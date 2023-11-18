@@ -12,7 +12,7 @@
 
 #include <Eigen/QR>
 
-#include "Dynamics.h"
+#include "dynamics.h"
 
 namespace lupnt {
 

@@ -1,4 +1,4 @@
-#include <lupnt/numerics/MathUtils.h>
+#include <lupnt/numerics/math_utils.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;

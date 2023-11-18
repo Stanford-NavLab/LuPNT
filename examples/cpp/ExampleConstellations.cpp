@@ -1,7 +1,7 @@
 /**
  * @file ExampleConstellations.cpp
  * @author Stanford NAVLAB
- * @brief Setup GNSS Constellation
+ * @brief Setup Gnss Constellation
  * @version 0.1
  * @date 2023-09-14
  *
@@ -13,7 +13,7 @@
 #include <lupnt/agents/agent.h>
 #include <lupnt/agents/gnss_constellation.h>
 #include <lupnt/core/file.h>
-#include <lupnt/dynamics/Dynamics.h>
+#include <lupnt/dynamics/dynamics.h>
 #include <lupnt/measurements/gnss_channel.h>
 #include <lupnt/measurements/gnss_measurement.h>
 #include <lupnt/measurements/gnss_receiver.h>
@@ -48,7 +48,7 @@ int main() {
 
   auto channel = std::make_shared<GnssChannel>();
 
-  // GNSS constellation
+  // Gnss constellation
   for (std::string const_name : {"gps", "galileo", "beidou", "glonass"}) {
     auto gnss_const = GnssConstellation();
     gnss_const.SetDynamics(cartesian_two_body);

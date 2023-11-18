@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 #include <lupnt/core/constants.h>
-#include <lupnt/numerics/MathUtils.h>
+#include <lupnt/numerics/math_utils.h>
 
 #include <Eigen/Dense>
 #include <autodiff/forward/real.hpp>
@@ -66,6 +66,6 @@ static void NumericalJacobian(
     propagate_function(vec_p, dt);
     propagate_function(vec_m, dt);
 
-    jacobian.col(i) = LPT::toEigen(vec_p - vec_m) / (2.0 * eps);
+    jacobian.col(i) = lupnt::toEigen(vec_p - vec_m) / (2.0 * eps);
   }
 }

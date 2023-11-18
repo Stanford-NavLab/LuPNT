@@ -1,5 +1,5 @@
 #include <lupnt/core/constants.h>
-#include <lupnt/dynamics/Dynamics.h>
+#include <lupnt/dynamics/dynamics.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 

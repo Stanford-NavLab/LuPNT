@@ -1,7 +1,7 @@
 /**
  * @file gnss_transmitter.h
  * @author Stanford NAV LAB
- * @brief  Handles GNSS transmit
+ * @brief  Handles Gnss transmit
  * @version 0.1
  * @date 2023-09-14
  *
@@ -24,7 +24,7 @@ namespace lupnt {
 
 class GnssChannel;
 
-class GNSSTransmitter : public Transmitter {
+class GnssTransmitter : public Transmitter {
  public:
   Antenna antenna_;                    // Antenna gain pattern [deg & dB]
   std::string gnss_type_;              // Name of the atenna system
@@ -35,16 +35,16 @@ class GNSSTransmitter : public Transmitter {
   std::map<std::string, double> freq_map;  // map string to frequencies
   // Tramsmitter
 
-  GNSSTransmitter(std::string gnss_type, int prn)
+  GnssTransmitter(std::string gnss_type, int prn)
       : gnss_type_(gnss_type), prn_(prn) {
     freq_map = {{"L1", 1575.42e6},  {"L2", 1227.60e6}, {"L5", 1176.45e6},
                 {"E1", 1575.42e6},  {"E6", 1278.75e6}, {"E5", 1191.795e6},
                 {"E5a", 1176.45e6}, {"E5b", 1207.14e6}};  // frequency maps
-    InitializeGNSSTransmitter();
+    InitializeGnssTransmitter();
   }
 
   // Transmitter Initializations
-  void InitializeGNSSTransmitter();
+  void InitializeGnssTransmitter();
   void InitializeGPSTransmitter();
   void InitializeGLONASSTransmitter();
   void InitializeGALILEOTransmitter();
@@ -63,7 +63,7 @@ class GNSSTransmitter : public Transmitter {
   void SetChannel(std::shared_ptr<GnssChannel> ch) { channel = ch; };
   int GetPRN() { return prn_; };
   void SetFreq(double freq) { freq_tx = freq; };
-  std::string GetGNSSType() { return gnss_type_; };
+  std::string GetGnssType() { return gnss_type_; };
   inline std::shared_ptr<Agent> GetAgent() const override { return agent; };
   inline void SetAgent(const std::shared_ptr<Agent>& agent) override {
     this->agent = agent;

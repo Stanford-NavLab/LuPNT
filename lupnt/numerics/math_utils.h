@@ -1,5 +1,5 @@
 /**
- * @file MathUtils.h
+ * @file math_utils.h
  * @author Stanford NAV LAB
  * @brief
  * @version 0.1

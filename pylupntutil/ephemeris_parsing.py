@@ -4,13 +4,13 @@ from datetime import datetime, timedelta
 import numpy as np
 
 def parsing_routine(start_time, end_time, dt, constellations, sv_ids, verb = False):
-    """Retrieve high precision ephemeris of GNSS constellations with gnss-lib-py (https://gnss-lib-py.readthedocs.io/en/latest/index.html)
+    """Retrieve high precision ephemeris of Gnss constellations with gnss-lib-py (https://gnss-lib-py.readthedocs.io/en/latest/index.html)
 
     Args:
         start_time (datetime.datetime): start time of parsing in UTC
         end_time (datetime.datetime): end time of parsing in UTC
         dt (float): time interval (seconds)
-        constellations (list): GNSS constellations to parse
+        constellations (list): Gnss constellations to parse
         sv_ids (list): list of SV ids to parse
         verb (bool, optional): enables verbose. Defaults to False.
 
@@ -50,7 +50,7 @@ def parsing_routine(start_time, end_time, dt, constellations, sv_ids, verb = Fal
 def main():
     parser = argparse.ArgumentParser(
                     prog='Ephemeris Parsing ft. gnss lib py',
-                    description='Gathers necessary ephemeris files of GNSS constellations in a CSV file for LuPNT usage')
+                    description='Gathers necessary ephemeris files of Gnss constellations in a CSV file for LuPNT usage')
     #add arguments to parse
     parser.add_argument('start', type= datetime.fromisoformat, help ='ISOformat - YYYY-MM-DD:HH:mm:ss')
     parser.add_argument('end', type= datetime.fromisoformat, help = 'ISOformat - YYYY-MM-DD:HH:mm:ss')

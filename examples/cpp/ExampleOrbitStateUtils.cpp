@@ -1,5 +1,5 @@
 #include <lupnt/core/constants.h>
-#include <lupnt/numerics/MathUtils.h>
+#include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/orbit_state_utils.h>
 
 using namespace lupnt;
