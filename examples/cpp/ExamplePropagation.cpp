@@ -10,17 +10,17 @@
  */
 
 // lupnt includes
-#include <lupnt/agents/Agent.h>
-#include <lupnt/agents/GNSSConstellation.h>
-#include <lupnt/core/File.h>
+#include <lupnt/agents/agent.h>
+#include <lupnt/agents/gnss_constellation.h>
+#include <lupnt/core/file.h>
 #include <lupnt/dynamics/Dynamics.h>
-#include <lupnt/measurements/GNSSChannel.h>
-#include <lupnt/measurements/GNSSMeasurement.h>
-#include <lupnt/measurements/GNSSReceiver.h>
+#include <lupnt/measurements/gnss_channel.h>
+#include <lupnt/measurements/gnss_measurement.h>
+#include <lupnt/measurements/gnss_receiver.h>
 #include <lupnt/numerics/MathUtils.h>
-#include <lupnt/physics/CoordConverter.h>
-#include <lupnt/physics/OrbitState.h>
-#include <lupnt/physics/SpiceInterface.h>
+#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/orbit_state.h>
+#include <lupnt/physics/spice_interface.h>
 
 // Autodiff includes
 #include <autodiff/forward/real.hpp>
@@ -37,7 +37,7 @@
 #include <memory>
 #include <string>
 
-using namespace LPT;
+using namespace lupnt;
 
 // Define the data structure for the TLE information
 
@@ -47,10 +47,10 @@ int main() {
   auto moonDynamics = std::make_shared<CartesianTwoBodyDynamics>(MU_MOON);
 
   double epoch = 0.0;
-  auto channel = std::make_shared<GNSSChannel>();
+  auto channel = std::make_shared<GnssChannel>();
 
   // GPS constellation
-  auto gpsConstellation = GNSSConstellation();
+  auto gpsConstellation = GnssConstellation();
   gpsConstellation.SetChannel(channel);
   gpsConstellation.SetDynamics(earthDynamics);
   gpsConstellation.SetEpoch(epoch);

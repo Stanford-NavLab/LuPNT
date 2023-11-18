@@ -1,8 +1,8 @@
-#include <lupnt/core/Constants.h>
+#include <lupnt/core/constants.h>
 #include <lupnt/numerics/MathUtils.h>
-#include <lupnt/physics/OrbitStateUtils.h>
+#include <lupnt/physics/orbit_state_utils.h>
 
-using namespace LPT;
+using namespace lupnt;
 
 int main() {
   double a = 6541.4;

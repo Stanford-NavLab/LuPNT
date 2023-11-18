@@ -1,5 +1,5 @@
 /**
- * @file Constants.h
+ * @file constants.h
  * @author Stanford NAV LAB
  * @brief List of constants
  * @version 0.1
@@ -15,7 +15,7 @@
 #include <autodiff/forward/real.hpp>
 #include <string>
 
-#include "UserFilePath.h"
+#include "user_file_path.h"
 
 namespace Eigen {
 using Matrix6d = Matrix<double, 6, 6>;
@@ -31,7 +31,7 @@ using Vector6real = Eigen::Matrix<real, 6, 1, 0, 6, 1>;
 using RowVector6real = Eigen::Matrix<real, 1, 6, 1, 1, 6>;
 }  // namespace autodiff
 
-namespace LPT {
+namespace lupnt {
 
 // Math constants --------------------------------------------------------------
 static constexpr double PI_DEG = 180.0;
@@ -133,4 +133,4 @@ static const std::filesystem::path CSPICE_KER_DIR =
 
 // Moon mean elements
 
-}  // namespace LPT
+}  // namespace lupnt

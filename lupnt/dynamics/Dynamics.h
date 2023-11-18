@@ -12,15 +12,15 @@
 
 #include <autodiff/forward/real.hpp>
 
-#include "lupnt/dynamics/GravityField.h"
 #include "lupnt/dynamics/Propagator.h"
-#include "lupnt/numerics/Integrator.h"
-#include "lupnt/physics/OrbitState.h"
-#include "lupnt/physics/State.h"
+#include "lupnt/dynamics/gravity_field.h"
+#include "lupnt/numerics/integrator.h"
+#include "lupnt/physics/orbit_state.h"
+#include "lupnt/physics/state.h"
 
 namespace ad = autodiff;
 
-namespace LPT {
+namespace lupnt {
 
 /**
  * @brief Interface for Dynamics
@@ -63,15 +63,15 @@ class NumericalDynamics : public IOrbitDynamics {
  private:
   ODE odefunc_;
   double dt_;
-  OrbitStateRepres stateRepres_;
-  NumericalPropagator propagator_;
+  OrbitStateRepres state_representation_;
+  NumericalPropagator integrator_;
 
  public:
-  NumericalDynamics(ODE odefunc, OrbitStateRepres stateRepres,
-                    std::string integratorType = "RK4")
-      : stateRepres_(stateRepres),
+  NumericalDynamics(ODE odefunc, OrbitStateRepres state_representation,
+                    std::string integrator = "RK4")
+      : state_representation_(state_representation),
         odefunc_(odefunc),
-        propagator_(integratorType){};
+        integrator_(integrator){};
 
   // with dt
   void SetDt(double dt) { dt_ = dt; };
@@ -113,10 +113,10 @@ class IAnalyticalDynamics {
  */
 class KeplerianDynamics {
  private:
-  double mu;
+  double mu_;
 
  public:
-  KeplerianDynamics(double mu_in);
+  KeplerianDynamics(double mu);
 
   // ClassicalOE
   void Propagate(ClassicalOE &state, ad::real dt);
@@ -137,19 +137,19 @@ class KeplerianDynamics {
 
 class MoonFixedDynamics : public NumericalDynamics {
  private:
-  double mu;
+  double mu_;
 
  public:
-  MoonFixedDynamics(double mu_in, std::string integratorType = "RK4");
+  MoonFixedDynamics(double mu, std::string integrator = "RK4");
   ad::VectorXreal ComputeRates(ad::real t, const ad::VectorXreal &x) const;
 };
 
 class CartesianTwoBodyDynamics : public NumericalDynamics {
  private:
-  double mu;
+  double mu_;
 
  public:
-  CartesianTwoBodyDynamics(double mu_in, std::string integratorType = "RK4");
+  CartesianTwoBodyDynamics(double mu, std::string integrator = "RK4");
   ad::VectorXreal ComputeRates(ad::real t, const ad::VectorXreal &x) const;
 };
 
@@ -158,8 +158,8 @@ class J2CartesianTwoBodyDynamics : public NumericalDynamics {
   double mu, J2, Rbody;
 
  public:
-  J2CartesianTwoBodyDynamics(double mu_in, double J2_in, double Rbody_in,
-                             std::string integratorType = "RK4");
+  J2CartesianTwoBodyDynamics(double mu, double J2_in, double Rbody_in,
+                             std::string integrator = "RK4");
   ad::VectorXreal ComputeRates(ad::real t, const ad::VectorXreal &x) const;
 };
 
@@ -168,8 +168,8 @@ class J2KeplerianDynamics : public NumericalDynamics {
   double mu, J2, Rbody;
 
  public:
-  J2KeplerianDynamics(double mu_in, double J2_in, double Rbody_in,
-                      std::string integratorType = "RK4");
+  J2KeplerianDynamics(double mu, double J2_in, double Rbody_in,
+                      std::string integrator = "RK4");
   ad::VectorXreal ComputeRates(ad::real t, const ad::VectorXreal &x) const;
 };
 
@@ -181,7 +181,7 @@ class MoonMeanDynamics : public NumericalDynamics {
   double k = 0.98785;
 
  public:
-  MoonMeanDynamics(std::string integratorType = "RK4");
+  MoonMeanDynamics(std::string integrator = "RK4");
   ad::VectorXreal ComputeRates(ad::real t, const ad::VectorXreal &x) const;
 };
 
@@ -229,7 +229,7 @@ class RoeGeometricMappingDynamics : public IAnalyticalDynamics {
 
 struct Body {
   std::string name;
-  double mu;
+  double mu_;
   double R;
   BodyId id;
   bool sphericalHarmonics;
@@ -251,7 +251,7 @@ class NBodyDynamics : public NumericalDynamics {
   ODE odefunc;
 
  public:
-  NBodyDynamics(std::string integratorType = "RK4");
+  NBodyDynamics(std::string integrator = "RK4");
   ad::VectorXreal ComputeRates(ad::real t, const ad::VectorXreal &x) const;
 
   void AddBody(const Body &body);
@@ -264,4 +264,4 @@ class NBodyDynamics : public NumericalDynamics {
       double R_body, double R_SUN, double m, double CR, double area) const;
 };
 
-}  // namespace LPT
+}  // namespace lupnt

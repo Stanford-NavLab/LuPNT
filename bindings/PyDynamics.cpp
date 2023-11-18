@@ -1,4 +1,4 @@
-#include <lupnt/core/Constants.h>
+#include <lupnt/core/constants.h>
 #include <lupnt/dynamics/Dynamics.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
@@ -8,7 +8,7 @@
 #include <autodiff/forward/real/eigen.hpp>
 
 namespace py = pybind11;
-using namespace LPT;
+using namespace lupnt;
 
 void init_dynamics(py::module &m) {
   // KeplerianDynamics

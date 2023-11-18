@@ -1,5 +1,5 @@
 /**
- * @file Propagator.h
+ * @file propagator.h
  * @author Stanford NAV LAB
  * @brief Numerical Propagator
  * @version 0.1
@@ -15,11 +15,11 @@
 #include <memory>
 #include <string>
 
-#include "lupnt/numerics/Integrator.h"
+#include "lupnt/numerics/integrator.h"
 
 namespace ad = autodiff;
 
-namespace LPT {
+namespace lupnt {
 class NumericalPropagator {
  public:
   std::unique_ptr<IIntegrator> integrator;  // integrator type
@@ -34,4 +34,4 @@ class NumericalPropagator {
                                    Eigen::MatrixXd &J);
 };
 
-}  // namespace LPT
+}  // namespace lupnt

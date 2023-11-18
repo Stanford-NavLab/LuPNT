@@ -1,8 +1,8 @@
-#include <lupnt/physics/CoordConverter.h>
+#include <lupnt/physics/coord_converter.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
-using namespace LPT;
+using namespace lupnt;
 
 void init_coord_converter(py::module &m) {
   py::enum_<CoordSystem>(m, "CoordSystem")

@@ -1,5 +1,5 @@
 /**
- * @file File.h
+ * @file file.h
  * @author Stanford NAV LAB
  * @brief File access utils
  * @version 0.1
@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include <lupnt/numerics/MathUtils.h>
+#include "lupnt/numerics/math_utils.h"
 
 #include <Eigen/Dense>
 #include <autodiff/forward/real/eigen.hpp>
@@ -23,7 +23,7 @@
 
 namespace ad = autodiff;
 
-namespace LPT {
+namespace lupnt {
 
 class File {
  private:
@@ -155,4 +155,4 @@ class FileWriter {
   Eigen::IOFormat fmt{Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n"};
 };
 
-}  // namespace LPT
+}  // namespace lupnt

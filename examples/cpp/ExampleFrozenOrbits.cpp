@@ -9,8 +9,8 @@
  *
  */
 
-#include <lupnt/core/Constants.h>
-#include <lupnt/core/UserFilePath.h>
+#include <lupnt/core/constants.h>
+#include <lupnt/core/user_file_path.h>
 #include <lupnt/dynamics/Dynamics.h>
 
 #include <autodiff/forward/real.hpp>
@@ -19,7 +19,7 @@
 #include <lupnt/physics/LunarMeanOsc.cpp>
 #include <string>
 
-using namespace LPT;
+using namespace lupnt;
 using namespace std;
 
 typedef ad::VectorXreal Vec;

@@ -1,8 +1,8 @@
 #include <pybind11/pybind11.h>
-#include <lupnt/core/Constants.h>
+#include <lupnt/core/constants.h>
 
 namespace py = pybind11;
-using namespace LPT;
+using namespace lupnt;
 
 void init_constants(py::module &m)
 {

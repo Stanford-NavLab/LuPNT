@@ -8,16 +8,16 @@
  * @copyright Copyright (c) 2023
  *
  */
-#include "Antenna.h"
+#include "antenna.h"
 
 #include <filesystem>
 #include <iostream>
 #include <sstream>
 
-#include "../core/File.h"
-#include "../numerics/MathUtils.h"
+#include "../core/file.h"
+#include "../numerics/math_utils.h"
 
-namespace LPT {
+namespace lupnt {
 
 /**
  * @brief Set the Antenna Pattern object
@@ -211,4 +211,4 @@ double Antenna::GetAntennaGain(Eigen::Vector3d direction) {
   return GetAntennaGain(theta, phi);
 }
 
-}  // namespace LPT
+}  // namespace lupnt

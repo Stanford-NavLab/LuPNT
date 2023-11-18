@@ -12,7 +12,7 @@ Suppose you want to add the python bindings to "XXX.cpp" and "XXX.h"
     #include <lupnt/path/to/XXX.h>
 
     namespace py = pybind11;
-    using namespace LPT;
+    using namespace lupnt;
 
     void init_state(py::module &m){
         /* define your bindings here */

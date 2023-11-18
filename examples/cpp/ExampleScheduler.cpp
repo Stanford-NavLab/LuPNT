@@ -8,14 +8,14 @@
  * @copyright Copyright (c) 2023
  *
  */
-#include <lupnt/core/Event.h>
-#include <lupnt/core/Scheduler.h>
+#include <lupnt/core/event.h>
+#include <lupnt/core/scheduler.h>
 
 #include <functional>
 #include <iostream>
 #include <queue>
 
-using namespace LPT;
+using namespace lupnt;
 
 void eventFunction(double time) {
   std::cout << "Event executed at time: " << time << std::endl;

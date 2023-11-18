@@ -8,14 +8,14 @@
  * @copyright Copyright (c) 2023
  *
  */
-#include <lupnt/core/Constants.h>
-#include <lupnt/physics/SpiceInterface.h>
+#include <lupnt/core/constants.h>
+#include <lupnt/physics/spice_interface.h>
 
 #include <fstream>
 #include <iostream>
 #include <string>
 
-using namespace LPT;
+using namespace lupnt;
 namespace ad = autodiff;
 namespace sp = SpiceInterface;
 

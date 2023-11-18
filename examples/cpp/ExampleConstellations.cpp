@@ -10,19 +10,19 @@
  */
 
 // lupnt includes
-#include <lupnt/agents/Agent.h>
-#include <lupnt/agents/GNSSConstellation.h>
-#include <lupnt/core/File.h>
+#include <lupnt/agents/agent.h>
+#include <lupnt/agents/gnss_constellation.h>
+#include <lupnt/core/file.h>
 #include <lupnt/dynamics/Dynamics.h>
-#include <lupnt/measurements/GNSSChannel.h>
-#include <lupnt/measurements/GNSSMeasurement.h>
-#include <lupnt/measurements/GNSSReceiver.h>
-#include <lupnt/measurements/Transmission.h>
-#include <lupnt/numerics/Filters.h>
-#include <lupnt/numerics/MathUtils.h>
-#include <lupnt/physics/CoordConverter.h>
-#include <lupnt/physics/OrbitState.h>
-#include <lupnt/physics/SpiceInterface.h>
+#include <lupnt/measurements/gnss_channel.h>
+#include <lupnt/measurements/gnss_measurement.h>
+#include <lupnt/measurements/gnss_receiver.h>
+#include <lupnt/measurements/transmission.h>
+#include <lupnt/numerics/filters.h>
+#include <lupnt/numerics/math_utils.h>
+#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/orbit_state.h>
+#include <lupnt/physics/spice_interface.h>
 
 // Autodiff includes
 #include <autodiff/forward/real.hpp>
@@ -39,18 +39,18 @@
 #include <memory>
 #include <string>
 
-using namespace LPT;
+using namespace lupnt;
 namespace sp = SpiceInterface;
 
 int main() {
   auto cartesian_two_body =
       std::make_shared<CartesianTwoBodyDynamics>(MU_EARTH);
 
-  auto channel = std::make_shared<GNSSChannel>();
+  auto channel = std::make_shared<GnssChannel>();
 
   // GNSS constellation
   for (std::string const_name : {"gps", "galileo", "beidou", "glonass"}) {
-    auto gnss_const = GNSSConstellation();
+    auto gnss_const = GnssConstellation();
     gnss_const.SetDynamics(cartesian_two_body);
     gnss_const.SetChannel(channel);
     gnss_const.LoadTleFile(const_name);

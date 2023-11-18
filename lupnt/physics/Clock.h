@@ -1,5 +1,5 @@
 /**
- * @file Clock.h
+ * @file clock.h
  * @author Stanford NAV LAB
  * @brief Clock class
  * @version 0.1
@@ -14,9 +14,9 @@
 #include <Eigen/Dense>
 #include <tuple>
 
-#include "State.h"
+#include "state.h"
 
-namespace LPT {
+namespace lupnt {
 
 enum class ClockModel {
   kMicrosemiCsac,
@@ -123,4 +123,4 @@ class ClockDynamics {
     }
   }
 };
-}  // namespace LPT
+}  // namespace lupnt

@@ -1,8 +1,8 @@
 // lupnt
-#include <lupnt/core/Constants.h>
+#include <lupnt/core/constants.h>
 #include <lupnt/numerics/MathUtils.h>
-#include <lupnt/physics/OrbitState.h>
-#include <lupnt/physics/OrbitStateUtils.h>
+#include <lupnt/physics/orbit_state.h>
+#include <lupnt/physics/orbit_state_utils.h>
 
 // pybind11
 #include <pybind11/eigen.h>
@@ -12,7 +12,7 @@
 #include <Eigen/Dense>
 
 namespace py = pybind11;
-using namespace LPT;
+using namespace lupnt;
 
 class PyOrbitState : public OrbitState {
  public:

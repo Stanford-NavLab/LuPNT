@@ -1,5 +1,5 @@
 /**
- * @file Integrator.h
+ * @file integrator.h
  * @author Stanford NAV LAB
  * @brief Integrator interfaces
  * @version 0.1
@@ -16,7 +16,7 @@
 
 namespace ad = autodiff;
 
-namespace LPT {
+namespace lupnt {
 
 typedef std::function<ad::VectorXreal(const ad::real, const ad::VectorXreal &)>
     ODE;
@@ -40,4 +40,4 @@ class RK8 : public IIntegrator {
                        const ad::real dt);
 };
 
-}  // namespace LPT
+}  // namespace lupnt

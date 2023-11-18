@@ -14,14 +14,14 @@
 #include <memory>
 #include <string>
 
-#include "OrbitState.h"
-#include "OrbitStateUtils.h"
-#include "SpiceInterface.h"
-#include "lupnt/numerics/StringUtils.h"
+#include "orbit_state.h"
+#include "orbit_state_utils.h"
+#include "spice_interface.h"
+#include "lupnt/numerics/string_utilss.h"
 
 namespace sp = LPT::SpiceInterface;
 
-namespace LPT {
+namespace lupnt {
 TLE TLE::FromLines(const std::string &line1, const std::string &line2,
                    const std::string &line3) {
   TLE tle;
@@ -38,7 +38,7 @@ TLE TLE::FromLines(const std::string &line1, const std::string &line2,
     }
   } else if (line1.substr(0, 3) == "GSA") {
     tle.name = "GALILEO";
-    tle.prn = stod(SplitString(line1, '(')[1].substr(5, 2));
+    tle.prn = stod(SplitString(w, '(')[1].substr(5, 2));
   } else if (line1.substr(0, 3) == "COS") {
     tle.name = "GLONASS";
     tle.prn = stod(SplitString(line1, '(')[1].substr(0, 3));
@@ -80,4 +80,4 @@ std::vector<TLE> TLE::FromFile(const std::string &filename) {
   };
   return tles;
 };
-}  // namespace LPT
+}  // namespace lupnt

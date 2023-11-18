@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
-#include <lupnt/physics/SpiceInterface.h>
+#include <lupnt/physics/spice_interface.h>
 
 #include <iostream>
 
 #include "TestUtils.h"
 
-using namespace LPT;
+using namespace lupnt;
 namespace ad = autodiff;
 namespace sp = SpiceInterface;
 

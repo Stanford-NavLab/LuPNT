@@ -11,13 +11,13 @@
 
 #pragma once
 
-#include <lupnt/core/Constants.h>
+#include <lupnt/core/constants.h>
 
 #include <autodiff/forward/real/eigen.hpp>
 #include <cmath>
 #include <map>
 
-namespace LPT {
+namespace lupnt {
 
 class Occultation {
  private:
@@ -102,4 +102,4 @@ class Occultation {
             {"moon", occ_moon}};
   }
 };
-}  // namespace LPT
+}  // namespace lupnt

@@ -1,5 +1,5 @@
 /**
- * @file Filters.cpp
+ * @file filters.cpp
  * @author Stanford NAVLAB
  * @brief Implementation of Filters
  * @version 0.1
@@ -9,9 +9,9 @@
  *
  */
 
-#include "Filters.h"
+#include "filters.h"
 
-namespace LPT {
+namespace lupnt {
 
 // Extended Kalman Filter
 void EKF::Predict(ad::real t_end) {
@@ -39,4 +39,4 @@ void EKF::Update(ad::VectorXreal z_obs) {
       K * R * K.transpose();  // Joseph form
 }
 
-}  // namespace LPT
+}  // namespace lupnt

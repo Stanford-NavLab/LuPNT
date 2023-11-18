@@ -24,7 +24,7 @@
 
 namespace ad = autodiff;
 
-namespace LPT {
+namespace lupnt {
 /**
 * @brief Evaluate the given Chebyshev polynomial at x, returning both the
 evaluated polynomial in *f, and the evaluated derivative of the polymonial in
@@ -92,4 +92,4 @@ segment_t *spk_extract(char const *path, long *segs);
  * Free the resources of an SPK structure created by spk_extract(). */
 void spk_free(segment_t *s, long n);
 
-}  // namespace LPT
+}  // namespace lupnt

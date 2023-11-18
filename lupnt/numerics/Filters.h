@@ -1,5 +1,5 @@
 /**
- * @file Filters.h
+ * @file filters.h
  * @author Stanford NAV LAB
  * @brief List of Filters
  * @version 0.1
@@ -22,7 +22,7 @@
 #include <autodiff/forward/real/eigen.hpp>
 
 namespace ad = autodiff;
-namespace LPT {
+namespace lupnt {
 
 // Dynamics and Measurement Function
 
@@ -125,4 +125,4 @@ class EKF : public IFilter {
   }
 };
 
-}  // namespace LPT
+}  // namespace lupnt

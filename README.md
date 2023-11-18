@@ -62,10 +62,10 @@ Todo: Create a bashfile to do the installation
   - Place the files under `/data/spherical_harmonics`
 
 ### Step 2: Do Additional Setups
-1. Add the path to the base of this Simulator to UserFilePath.h
+1. Add the path to the base of this Simulator to user_file_path.h
 2. In the project directory, execute following command to prohibit comitting your path changes
 ```
-git update-index --assume-unchanged lupnt/core/UserFilePath.h
+git update-index --assume-unchanged lupnt/core/user_file_path.h
 ```
 3. If you are using VSCode (recommended), do the additional setups as listed [here](#working-with-vscode)
 

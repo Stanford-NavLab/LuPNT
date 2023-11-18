@@ -10,13 +10,13 @@
  */
 
 // lupnt includes
-#include <lupnt/core/File.h>
+#include <lupnt/core/file.h>
 #include <lupnt/dynamics/Dynamics.h>
-#include <lupnt/dynamics/GravityField.h>
+#include <lupnt/dynamics/gravity_field.h>
 #include <lupnt/numerics/MathUtils.h>
-#include <lupnt/physics/CoordConverter.h>
-#include <lupnt/physics/OrbitState.h>
-#include <lupnt/physics/SpiceInterface.h>
+#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/orbit_state.h>
+#include <lupnt/physics/spice_interface.h>
 
 // Autodiff includes
 #include <autodiff/forward/real.hpp>
@@ -34,7 +34,7 @@
 #include <memory>
 #include <string>
 
-using namespace LPT;
+using namespace lupnt;
 using namespace std::chrono;
 namespace sp = SpiceInterface;
 

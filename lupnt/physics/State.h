@@ -1,5 +1,5 @@
 /**
- * @file State.h
+ * @file state.h
  * @author Stanford NAV LAB
  * @brief  SPICE Interface functions
  * @version 0.1
@@ -17,7 +17,7 @@
 
 namespace ad = autodiff;
 
-namespace LPT {
+namespace lupnt {
 
 /**
  * @brief Interface for States
@@ -66,4 +66,4 @@ class JointState {
   };
 };
 
-}  // namespace LPT
+}  // namespace lupnt

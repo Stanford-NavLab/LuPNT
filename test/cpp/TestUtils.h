@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <lupnt/core/Constants.h>
+#include <lupnt/core/constants.h>
 #include <lupnt/numerics/MathUtils.h>
 
 #include <Eigen/Dense>

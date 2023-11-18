@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include <lupnt/core/Constants.h>
+#include <lupnt/core/constants.h>
 #include <lupnt/dynamics/Dynamics.h>
-#include <lupnt/physics/OrbitState.h>
-#include <lupnt/physics/OrbitStateUtils.h>
+#include <lupnt/physics/orbit_state.h>
+#include <lupnt/physics/orbit_state_utils.h>
 
 #include <Eigen/Dense>
 #include <autodiff/forward/real.hpp>
@@ -11,7 +11,7 @@
 
 #include "TestUtils.h"
 
-using namespace LPT;
+using namespace lupnt;
 namespace ad = autodiff;
 
 // Keplerian Dynamics with Classical Orbital Elements

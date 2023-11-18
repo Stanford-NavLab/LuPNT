@@ -10,19 +10,19 @@
  */
 
 // lupnt includes
-#include <lupnt/agents/Agent.h>
-#include <lupnt/agents/GNSSConstellation.h>
+#include <lupnt/agents/agent.h>
+#include <lupnt/agents/gnss_constellation.h>
 #include <lupnt/agents/GNSSStateEstimationApp.h>
-#include <lupnt/core/File.h>
-#include <lupnt/core/Scheduler.h>
+#include <lupnt/core/file.h>
+#include <lupnt/core/scheduler.h>
 #include <lupnt/dynamics/Dynamics.h>
-#include <lupnt/measurements/GNSSChannel.h>
-#include <lupnt/measurements/GNSSReceiver.h>
+#include <lupnt/measurements/gnss_channel.h>
+#include <lupnt/measurements/gnss_receiver.h>
 #include <lupnt/numerics/MathUtils.h>
-#include <lupnt/physics/Clock.h>
-#include <lupnt/physics/CoordConverter.h>
-#include <lupnt/physics/OrbitState.h>
-#include <lupnt/physics/SpiceInterface.h>
+#include <lupnt/physics/clock.h>
+#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/orbit_state.h>
+#include <lupnt/physics/spice_interface.h>
 
 // Autodiff includes
 #include <autodiff/forward/real.hpp>
@@ -39,7 +39,7 @@
 #include <memory>
 #include <string>
 
-using namespace LPT;
+using namespace lupnt;
 namespace sp = SpiceInterface;
 
 int main() {
@@ -65,8 +65,8 @@ int main() {
   auto dyn_clk = ClockDynamics(ClockModel::kMicrosemiCsac);
 
   // GPS constellation
-  auto channel = std::make_shared<GNSSChannel>();
-  auto gps_const = GNSSConstellation();
+  auto channel = std::make_shared<GnssChannel>();
+  auto gps_const = GnssConstellation();
   gps_const.SetChannel(channel);
   gps_const.SetDynamics(dyn_earth_tb);
   gps_const.LoadTleFile("gps");

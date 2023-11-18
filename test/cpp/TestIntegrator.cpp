@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <lupnt/numerics/Integrator.h>
+#include <lupnt/numerics/integrator.h>
 
-using namespace LPT;
+using namespace lupnt;
 
 namespace {
 

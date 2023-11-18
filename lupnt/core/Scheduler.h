@@ -1,5 +1,5 @@
 /**
- * @file Scheduler.h
+ * @file scheduler.h
  * @author Stanford NAV LAB
  * @brief Event scheduler class
  * @version 0.1
@@ -16,10 +16,10 @@
 #include <queue>
 #include <vector>
 
-#include "lupnt/agents/Application.h"
-#include "lupnt/core/Event.h"
+#include "lupnt/agents/application.h"
+#include "lupnt/core/event.h"
 
-namespace LPT {
+namespace lupnt {
 class Scheduler {
  private:
   std::priority_queue<Event> events;
@@ -51,4 +51,4 @@ class Scheduler {
     }
   }
 };
-};  // namespace LPT
+};  // namespace lupnt

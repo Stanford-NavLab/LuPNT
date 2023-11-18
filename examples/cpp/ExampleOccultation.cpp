@@ -10,11 +10,11 @@
  */
 #include <lupnt/measurements/Occultation.h>
 #include <lupnt/numerics/MathUtils.h>
-#include <lupnt/physics/CoordConverter.h>
+#include <lupnt/physics/coord_converter.h>
 
 #include <memory>
 
-using namespace LPT;
+using namespace lupnt;
 
 void printOccultation(ad::VectorXreal state_tx_vec,
                       ad::VectorXreal state_rx_vec, std::string seg_planet) {

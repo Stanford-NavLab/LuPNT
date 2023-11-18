@@ -1,5 +1,5 @@
 /**
- * @file Antenna.h
+ * @file antenna.h
  * @author Stanford NAV LAB
  * @brief Antenna class
  * @version 0.1
@@ -14,9 +14,9 @@
 #include <autodiff/forward/real/eigen.hpp>
 #include <string>
 
-#include "lupnt/core/Constants.h"
+#include "lupnt/core/constants.h"
 
-namespace LPT {
+namespace lupnt {
 class Antenna {
  public:
   std::string comms_name_;           // Name of the antenna
@@ -34,4 +34,4 @@ class Antenna {
   double GetAntennaGain(Eigen::Vector3d direction);
 };
 
-}  // namespace LPT
+}  // namespace lupnt
