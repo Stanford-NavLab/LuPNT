@@ -98,22 +98,22 @@ ad::Vector6real CartToCoe(const ad::Vector6real &cartVec, double mu) {
   ad::Vector3real r = cartVec.head(3);
   ad::Vector3real v = cartVec.tail(3);
 
-  ad::real rnorm = norm(r);
-  ad::real vnorm = norm(v);
+  ad::real rnorm = r.squaredNorm();
+  ad::real vnorm = v.squaredNorm();
 
   ad::Vector3real K;
   K << 0, 0, 1.0;
 
   ad::Vector3real h;
-  h = cross(r, v);
+  h = r.cross(v);
   ad::Vector3real n;
-  n = cross(K, h);
+  n = K.cross(h);
 
-  ad::real hnorm = norm(h);
-  ad::real nnorm = norm(n);
+  ad::real hnorm = h.squaredNorm();
+  ad::real nnorm = n.squaredNorm();
 
   ad::Vector3real evec =
-      ((pow(vnorm, 2.0) - mu / rnorm) * r - dot(r, v) * v) / mu;
+      ((pow(vnorm, 2.0) - mu / rnorm) * r - r.dot(v) * v) / mu;
   e = norm(evec);
 
   ad::real xi = pow(vnorm, 2.0) / 2.0 - mu / rnorm;
@@ -132,13 +132,13 @@ ad::Vector6real CartToCoe(const ad::Vector6real &cartVec, double mu) {
     Omega = 2 * M_PI - Omega;
   }
 
-  ad::real ndote = dot(n, evec);
+  ad::real ndote = n.dot(evec);
   w = acos(ndote / (nnorm * e));
   if (evec(2).val() < 0) {
     w = 2 * M_PI - w;
   }
 
-  ad::real edotr = dot(evec, r);
+  ad::real edotr = evec.dot(r);
   if (edotr / e / rnorm >= 1.0) {
     nu = acos((1.0 - 1.0e-12) * abs(edotr / e / rnorm));
   } else if (edotr / e / rnorm <= -1.0) {
