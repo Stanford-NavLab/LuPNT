@@ -11,14 +11,10 @@
 
 #pragma once
 
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
 #include <memory>
 
 #include "cheby.h"
 #include "lupnt/core/constants.h"
-
-namespace ad = autodiff;
 
 namespace lupnt {
 
@@ -44,16 +40,9 @@ class CoordConverter {
  public:
   static const std::string COORD_SYSTEM_TEXT[CoordSystemCount];
 
-  static CoordSystem GetCoordTypeID(const std::string &str);
-
-  static VectorXreal Convert(const VectorXreal rv_in,
-                                 const real epoch,
-                                 const std::string coord_sys_in,
-                                 const std::string coord_sys_out);
-  static VectorXreal Convert(const VectorXreal rv_in,
-                                 const real epoch,
-                                 const CoordSystem coord_sys_in,
-                                 const CoordSystem coord_sys_out);
+  static Vector6real Convert(const Vector6real rv_in, const real epoch,
+                             const CoordSystem coord_sys_in,
+                             const CoordSystem coord_sys_out);
 
  private:
   static MatrixXreal ComputeITRFtoGCRF(const real tai);
@@ -62,4 +51,5 @@ class CoordConverter {
   static Matrix3real R3(real phi);
   static Matrix3real Skew(Vector3real vec);
 };
+
 }  // namespace lupnt

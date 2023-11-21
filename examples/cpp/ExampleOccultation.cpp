@@ -18,17 +18,17 @@ using namespace lupnt;
 
 void printOccultation(Vector6real state_tx_vec, Vector6real state_rx_vec,
                       std::string seg_planet) {
-  Vector6real tmp_ad(6);
+  Vector6real tmp_ad;
   Vector3d segment_eci, segment_mi, user_eci, user_mi;
   double t = 0.0;
 
-  tmp_ad = CoordConverter::Convert(state_tx_vec, t, "GCRF", "MI");
+  tmp_ad = CoordConverter::Convert(state_tx_vec, t, CoordSystem::GCRF, CoordSystem::MI);
   segment_mi = toEigen(tmp_ad.segment(0, 3));
-  tmp_ad = CoordConverter::Convert(state_tx_vec, t, "GCRF", "GCRF");
+  tmp_ad = CoordConverter::Convert(state_tx_vec, t, CoordSystem::GCRF,CoordSystem::GCRF);
   segment_eci = toEigen(tmp_ad.segment(0, 3));
-  tmp_ad = CoordConverter::Convert(state_rx_vec, t, "MI", "GCRF");
+  tmp_ad = CoordConverter::Convert(state_rx_vec, t, CoordSystem::MI, CoordSystem::GCRF);
   user_mi = toEigen(tmp_ad.segment(0, 3));
-  tmp_ad = CoordConverter::Convert(state_rx_vec, t, "MI", "GCRF");
+  tmp_ad = CoordConverter::Convert(state_rx_vec, t, CoordSystem::MI, CoordSystem::GCRF);
   user_eci = toEigen(tmp_ad.segment(0, 3));
 
   std::map<std::string, bool> occ = Occultation::ComputeOccultation(

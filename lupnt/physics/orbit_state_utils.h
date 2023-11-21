@@ -28,8 +28,8 @@ namespace lupnt {
 // COE <-> Cart
 CartesianOrbitState CoeToCart(const ClassicalOE coe, double mu);
 // Vector6real CoeToCart(const Vector6real &coeVec, double mu);
-template <typename T>
-Vector6<T> CoeToCart(const Vector6<T> &coeVec, double mu);
+
+Vector6real CoeToCart(const Vector6real &coeVec, double mu);
 
 ClassicalOE CartToCoe(const CartesianOrbitState cartOrbitState, double mu);
 Vector6real CartToCoe(const Vector6real &cartVec, double mu);
@@ -94,18 +94,13 @@ std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6real &coe,
                                                     Vector6real &doe);
 
 // Anomaly conversions
-template <typename T>
-T EccentricAnomToTrueAnom(T E, T e);
-template <typename T>
-T EccentricAnomToMeanAnom(T E, T e);
-template <typename T>
-T MeanAnomToEccentricAnom(T M, T e);
-template <typename T>
-T MeanAnomToTrueAnom(T M, T e);
-template <typename T>
-T TrueAnomToEccentricAnom(T nu, T e);
-template <typename T>
-T TrueAnomToMeanAnom(T f, T e);
+
+real EccentricAnomToTrueAnom(real E, real e);
+real EccentricAnomToMeanAnom(real E, real e);
+real MeanAnomToEccentricAnom(real M, real e);
+real MeanAnomToTrueAnom(real M, real e);
+real TrueAnomToEccentricAnom(real nu, real e);
+real TrueAnomToMeanAnom(real f, real e);
 
 class TLE {
  public:

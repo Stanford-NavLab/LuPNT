@@ -7,6 +7,6 @@ using namespace lupnt;
 void init_math_utils(py::module &m) {
   // m.def("wrapToPi", &wrapToPi, "Wrap angle to [-pi, pi]");
   m.def(
-      "wrapToPi", [](double angle) -> double { return wrapToPi(angle); },
+      "wrapToPi", [](double angle) -> double { return wrapToPi(angle).val(); },
       "Wrap angle to [-pi, pi]");
 }

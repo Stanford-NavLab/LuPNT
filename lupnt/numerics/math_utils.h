@@ -27,8 +27,7 @@ VectorXd toEigen(VectorXreal x);
  * @param angle
  * @return real
  */
-template <typename T>
-T wrapToPi(T angle);
+real wrapToPi(real angle);
 
 /**
  * @brief Convert degree to radian

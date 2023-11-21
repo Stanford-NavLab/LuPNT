@@ -33,8 +33,7 @@ real StringToTDB(std::string str);
 real StringToTAI(std::string str);
 std::string TAItoStringUTC(real tai, int prec);
 std::string TDBtoStringUTC(real tdb, int prec);
-real ConvertTime(real t, std::string from_time_type,
-                     std::string to_time_type);
+real ConvertTime(real t, std::string from_time_type, std::string to_time_type);
 VectorXreal GetBodyPosVel(const real tai, int center, int target);
 Vector3d GetBodyPos(std::string targetName, real epoch,
                            std::string refFrame, std::string obsName,

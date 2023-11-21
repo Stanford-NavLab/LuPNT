@@ -24,17 +24,12 @@ void init_coord_converter(py::module &m) {
       .export_values();
 
   py::class_<CoordConverter>(m, "CoordConverter")
-      .def_static("convert",
-                  py::overload_cast<const VectorXreal, const real,
-                                    const std::string, const std::string>(
-                      &CoordConverter::Convert),
-                  "Convert Frame (String Input)")
-      .def_static("convert",
-                  py::overload_cast<const VectorXreal, const real,
-                                    const CoordSystem, const CoordSystem>(
-                      &CoordConverter::Convert),
-                  "Convert frame (Frame ID input)")
-      .def_static("get_coord_type_id", &CoordConverter::GetCoordTypeID)
+      .def_static("convert", [](const VectorXreal &rv_in, const real epoch,
+                                 const CoordSystem coord_sys_in,
+                                 const CoordSystem coord_sys_out) {
+        return CoordConverter::Convert(rv_in, epoch, coord_sys_in,
+                                       coord_sys_out);
+        }, "Convert frame (Frame ID input)")
       .def_readonly_static("coord_system_text",
                            &CoordConverter::COORD_SYSTEM_TEXT);
 }

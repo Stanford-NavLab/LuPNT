@@ -147,9 +147,8 @@ void ExtractPckCoeffs() {
   //    pckr02_c(handle, target)
 }
 
-Vector3d GetBodyPos(std::string targetName, real epoch,
-                           std::string refFrame, std::string obsName,
-                           std::string abCorrection) {
+Vector3d GetBodyPos(std::string targetName, real epoch, std::string refFrame,
+                    std::string obsName, std::string abCorrection) {
   LoadSpiceKernel();
 
   SpiceDouble ptarg[3];
@@ -187,7 +186,7 @@ Vector3d GetBodyPos(std::string targetName, real epoch,
  * @return MatrixXd
  */
 MatrixXd GetFrameConversionMatrix(real et, std::string from_frame,
-                                         std::string to_frame) {
+                                  std::string to_frame) {
   LoadSpiceKernel();
   SpiceInt bodyname;
   SpiceDouble et_spice =
@@ -338,8 +337,7 @@ std::string TAItoStringUTC(real tai, int prec = 3) {
  * @param to_time_type  to time system
  * @return real     out time in seconds
  */
-real ConvertTime(real t, std::string from_time_type,
-                     std::string to_time_type) {
+real ConvertTime(real t, std::string from_time_type, std::string to_time_type) {
   LoadSpiceKernel();
   SpiceDouble t_in = t.val();
 

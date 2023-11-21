@@ -54,13 +54,9 @@ real norm(VectorXreal x) { return sqrt(dot(x, x)); }
  * @param angle
  * @return real
  */
-template <typename T>
-T wrapToPi(T angle) {
+real wrapToPi(real angle) {
   return atan2(sin(angle), cos(angle));
 }
-
-template real wrapToPi(real angle);
-template double wrapToPi(double angle);
 
 /**
  * @brief Wrap the angle between 0 and 2pi

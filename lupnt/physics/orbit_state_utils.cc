@@ -39,42 +39,37 @@ CartesianOrbitState CoeToCart(const ClassicalOE coe, double mu) {
   cartOrbitState.SetCoordSystem(coe.GetCoordSystem());
   return cartOrbitState;
 }
-template <typename T>
-Vector6<T> CoeToCart(const Vector6<T> &coeVec, double mu) {
-  T a = coeVec(0);
-  T e = coeVec(1);
-  T i = coeVec(2);
-  T Omega = coeVec(3);
-  T w = coeVec(4);
-  T M = coeVec(5);
 
-  T p = a * (1.0 - pow(e, 2.0));
-  T nu = MeanAnomToTrueAnom(M, e);
-  T pev = p / (1 + e * cos(nu));
-  T mu_p = sqrt(mu / p);
+Vector6real CoeToCart(const Vector6real &coeVec, double mu) {
+  real a = coeVec(0);
+  real e = coeVec(1);
+  real i = coeVec(2);
+  real Omega = coeVec(3);
+  real w = coeVec(4);
+  real M = coeVec(5);
 
-  Vector3<T> r_PQW = {pev * cos(nu), pev * sin(nu), 0};
-  Vector3<T> v_PQW = {-mu_p * sin(nu), mu_p * (e + cos(nu)), 0};
+  real p = a * (1.0 - pow(e, 2.0));
+  real nu = MeanAnomToTrueAnom(M, e);
+  real pev = p / (1 + e * cos(nu));
+  real mu_p = sqrt(mu / p);
 
-  Matrix3<T> rot;
+  Vector3real r_PQW = {pev * cos(nu), pev * sin(nu), 0};
+  Vector3real v_PQW = {-mu_p * sin(nu), mu_p * (e + cos(nu)), 0};
+
+  Matrix3real rot;
   rot.row(0) << cos(Omega) * cos(w) - sin(Omega) * sin(w) * cos(i),
       -cos(Omega) * sin(w) - sin(Omega) * cos(w) * cos(i), sin(Omega) * sin(i);
   rot.row(1) << sin(Omega) * cos(w) + cos(Omega) * sin(w) * cos(i),
       -sin(Omega) * sin(w) + cos(Omega) * cos(w) * cos(i), -cos(Omega) * sin(i);
   rot.row(2) << sin(w) * sin(i), cos(w) * sin(i), cos(i);
 
-  Vector3<T> r = rot * r_PQW;
-  Vector3<T> v = rot * v_PQW;
+  Vector3real r = rot * r_PQW;
+  Vector3real v = rot * v_PQW;
 
-  Vector6<T> cartVec;
+  Vector6real cartVec;
   cartVec << r, v;
   return cartVec;
 }
-
-template Vector6<double> lupnt::CoeToCart<double>(const Vector6<double> &coeVec,
-                                                  double mu);
-template Vector6<real> lupnt::CoeToCart<real>(const Vector6<real> &coeVec,
-                                              double mu);
 
 /**
  * @brief Convert Cartesian to classical orbital elements
@@ -160,10 +155,10 @@ Vector6real CartToCoe(const Vector6real &cartVec, double mu) {
  * @param e          Eccentricity
  * @return real  True anomaly [rad]
  */
-template <typename T>
-T EccentricAnomToTrueAnom(T E, T e) {
+
+real EccentricAnomToTrueAnom(real E, real e) {
   return atan2(sqrt(1 - pow(e, 2)) * sin(E), cos(E) - e);
-  // T beta = e / (1.0 + sqrt(1.0 - pow(e, 2)));
+  // real beta = e / (1.0 + sqrt(1.0 - pow(e, 2)));
   // return E + 2.0 * atan2(beta * sin(E), 1.0 + beta * cos(E));
 }
 
@@ -172,10 +167,10 @@ T EccentricAnomToTrueAnom(T E, T e) {
  *
  * @param E          Eccentric anomaly [rad]
  * @param e          Eccentricity
- * @return T  Mean anomaly [rad]
+ * @return real  Mean anomaly [rad]
  */
-template <typename T>
-T EccentricAnomToMeanAnom(T E, T e) {
+
+real EccentricAnomToMeanAnom(real E, real e) {
   return wrapToPi(E - e * sin(E));
 }
 
@@ -183,15 +178,15 @@ T EccentricAnomToMeanAnom(T E, T e) {
  * @brief Compute mean anomaly from the Eccentric anomaly
  * @param M          Mean anomaly [rad]
  * @param e          Eccentricity
- * @return T  Eccentric anomaly [rad]
+ * @return real  Eccentric anomaly [rad]
  */
-template <typename T>
-T MeanAnomToEccentricAnom(T M, T e) {
-  T MM = wrapToPi(M);
+
+real MeanAnomToEccentricAnom(real M, real e) {
+  real MM = wrapToPi(M);
 
   // Initial estimate of E
-  T E = MM;
-  T Eest = E - (E - e * sin(E) - MM) / (1.0 - e * cos(E));
+  real E = MM;
+  real Eest = E - (E - e * sin(E) - MM) / (1.0 - e * cos(E));
 
   double tol = 1e-9;
   int max_itr = 100;
@@ -211,12 +206,12 @@ T MeanAnomToEccentricAnom(T M, T e) {
  * @brief Compute mean anomaly from the Eccentric anomaly
  * @param M          Mean anomaly [rad]
  * @param e          Eccentricity
- * @return T  True anomaly [rad]
+ * @return real  True anomaly [rad]
  */
-template <typename T>
-T MeanAnomToTrueAnom(T M, T e) {
-  T E = MeanAnomToEccentricAnom(M, e);
-  T nu = EccentricAnomToTrueAnom(E, e);
+
+real MeanAnomToTrueAnom(real M, real e) {
+  real E = MeanAnomToEccentricAnom(M, e);
+  real nu = EccentricAnomToTrueAnom(E, e);
   return wrapToPi(nu);
 }
 
@@ -224,11 +219,11 @@ T MeanAnomToTrueAnom(T M, T e) {
  * @brief Compute true anomaly from the Eccentric anomaly
  * @param nu         True anomaly [rad]
  * @param e          Eccentricity
- * @return T  Eccentric anomaly [rad]
+ * @return real  Eccentric anomaly [rad]
  */
-template <typename T>
-T TrueAnomToEccentricAnom(T nu, T e) {
-  T E = 2 * atan(sqrt((1 - e) / (1 + e)) * tan(nu / 2));
+
+real TrueAnomToEccentricAnom(real nu, real e) {
+  real E = 2 * atan(sqrt((1 - e) / (1 + e)) * tan(nu / 2));
   return E;
 }
 
@@ -237,12 +232,12 @@ T TrueAnomToEccentricAnom(T nu, T e) {
  *
  * @param nu         True anomaly [rad]
  * @param e          Eccentricity
- * @return T  Mean anomaly [rad]
+ * @return real  Mean anomaly [rad]
  */
-template <typename T>
-T TrueAnomToMeanAnom(T nu, T e) {
-  T E = TrueAnomToEccentricAnom(nu, e);
-  T M = EccentricAnomToMeanAnom(E, e);
+
+real TrueAnomToMeanAnom(real nu, real e) {
+  real E = TrueAnomToEccentricAnom(nu, e);
+  real M = EccentricAnomToMeanAnom(E, e);
   return M;
 }
 

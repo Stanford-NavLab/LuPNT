@@ -34,10 +34,10 @@ void init_spice_interface(py::module &m) {
                     return lupnt::SpiceInterface::GetBodyPosVel(ta, center,
                                                                 target);
                   })
-      .def_static("get_body_pos",
-                  [](std::string targetName, real epoch, std::string refFrame,
-                     std::string obsName, std::string abCorrection) {
-                    return lupnt::SpiceInterface::GetBodyPos(
-                        targetName, epoch, refFrame, obsName, abCorrection);
-                  });
+      .def_static("get_body_pos", [](std::string targetName, lupnt::real epoch,
+                                     std::string refFrame, std::string obsName,
+                                     std::string abCorrection) {
+        return lupnt::SpiceInterface::GetBodyPos(targetName, epoch, refFrame,
+                                                 obsName, abCorrection);
+      });
 }
