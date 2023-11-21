@@ -21,21 +21,21 @@ namespace ad = autodiff;
 
 namespace lupnt {
 
-Eigen::VectorXd toEigen(ad::VectorXreal x) {
-  Eigen::VectorXd v(x.size());
+VectorXd toEigen(VectorXreal x) {
+  VectorXd v(x.size());
   for (int i = 0; i < x.size(); i++) {
     v[i] = x[i].val();
   }
   return v;
 }
 
-ad::real dot(ad::VectorXreal v1, ad::VectorXreal v2) {
+real dot(VectorXreal v1, VectorXreal v2) {
   return (v1.transpose() * v2).sum();
 }
 
-ad::VectorXreal cross(ad::VectorXreal v1, ad::VectorXreal v2) {
+VectorXreal cross(VectorXreal v1, VectorXreal v2) {
   int n = v1.size();
-  ad::VectorXreal vout(3);
+  VectorXreal vout(3);
 
   if (n == 3)
     vout << v1(1) * v2(2) - v1(2) * v2(1), v1(2) * v2(0) - v1(0) * v2(2),
@@ -46,29 +46,29 @@ ad::VectorXreal cross(ad::VectorXreal v1, ad::VectorXreal v2) {
   return vout;
 }
 
-ad::real norm(ad::VectorXreal x) { return sqrt(dot(x, x)); }
+real norm(VectorXreal x) { return sqrt(dot(x, x)); }
 
 /**
  * @brief Wrap the angle between -pi and pi
  *
  * @param angle
- * @return ad::real
+ * @return real
  */
 template <typename T>
 T wrapToPi(T angle) {
   return atan2(sin(angle), cos(angle));
 }
 
-template ad::real wrapToPi(ad::real angle);
+template real wrapToPi(real angle);
 template double wrapToPi(double angle);
 
 /**
  * @brief Wrap the angle between 0 and 2pi
  *
  * @param angle
- * @return ad::real
+ * @return real
  */
-ad::real wrapTo2Pi(ad::real angle) {
+real wrapTo2Pi(real angle) {
   return atan2(sin(angle), cos(angle)) + M_PI;
 }
 
@@ -76,17 +76,17 @@ ad::real wrapTo2Pi(ad::real angle) {
  * @brief Convert degree to radian
  *
  * @param deg
- * @return ad::real
+ * @return real
  */
-ad::real degToRad(ad::real deg) { return (M_PI / 180) * deg; }
+real degToRad(real deg) { return (M_PI / 180) * deg; }
 
 /**
  * @brief Convert radian to degree
  *
  * @param rad
- * @return ad::real
+ * @return real
  */
-ad::real radToDeg(ad::real rad) { return (180 / M_PI) * rad; }
+real radToDeg(real rad) { return (180 / M_PI) * rad; }
 
 double degToRad(double deg) { return (M_PI / 180) * deg; }
 
@@ -100,7 +100,7 @@ double radToDeg(double rad) { return (180 / M_PI) * rad; }
  * @param ix  interpolation point x
  * @return double  data at the interpolation point
  */
-double LinearInterp1d(Eigen::VectorXd x, Eigen::VectorXd data, double ix) {
+double LinearInterp1d(VectorXd x, VectorXd data, double ix) {
   int ix0 = 0;
   int ix1 = 0;
   for (int i = 0; i < x.size() - 1; i++) {
@@ -134,8 +134,8 @@ double LinearInterp1d(Eigen::VectorXd x, Eigen::VectorXd data, double ix) {
  * @param iy  interpolation point y
  * @return double  data at the interpolation point
  */
-double LinearInterp2d(Eigen::VectorXd x, Eigen::VectorXd y,
-                      Eigen::MatrixXd data, double ix, double iy) {
+double LinearInterp2d(VectorXd x, VectorXd y,
+                      MatrixXd data, double ix, double iy) {
   int ix0 = 0;
   int ix1 = 0;
   for (int i = 0; i < x.size() - 1; i++) {
@@ -179,20 +179,20 @@ double LinearInterp2d(Eigen::VectorXd x, Eigen::VectorXd y,
  * @param mean
  * @param cov
  * @param nn
- * @return Eigen::MatrixXd
+ * @return MatrixXd
  */
-Eigen::MatrixXd SampleMVN(const Eigen::VectorXd mean,
-                          const Eigen::MatrixXd covar, int nn) {
+MatrixXd SampleMVN(const VectorXd mean,
+                          const MatrixXd covar, int nn) {
   // Define random generator with Gaussian distribution
   int xsize = mean.size();
   auto dist = std::bind(std::normal_distribution<double>{0.0, 1.0},
                         std::mt19937(std::random_device{}()));
 
   // Transform Matrix
-  Eigen::MatrixXd normTransform(xsize, xsize);
-  Eigen::LLT<Eigen::MatrixXd> cholSolver(covar);
+  MatrixXd normTransform(xsize, xsize);
+  LLT<MatrixXd> cholSolver(covar);
 
-  if (cholSolver.info() == Eigen::Success) {
+  if (cholSolver.info() == Success) {
     // Use cholesky solver
     normTransform = cholSolver.matrixL();
   } else {
@@ -200,8 +200,8 @@ Eigen::MatrixXd SampleMVN(const Eigen::VectorXd mean,
         "The covariance matrix must be symmetric and pos-definite.");
   }
 
-  Eigen::MatrixXd randN(xsize, nn);
-  Eigen::MatrixXd mean_samples(xsize, nn);
+  MatrixXd randN(xsize, nn);
+  MatrixXd mean_samples(xsize, nn);
   for (int i = 0; i < xsize; i++) {
     for (int j = 0; j < xsize; j++) {
       randN(i, j) = dist();
@@ -209,7 +209,7 @@ Eigen::MatrixXd SampleMVN(const Eigen::VectorXd mean,
     }
   }
 
-  Eigen::MatrixXd samples = normTransform * randN + mean_samples;
+  MatrixXd samples = normTransform * randN + mean_samples;
   return samples;
 };
 

@@ -36,10 +36,10 @@ class GnssReceiver : public Receiver {
   };
 
   // Receiver Gain Calculators
-  std::vector<Eigen::Vector3d> GetReceiverOrientation(
-      double t, Eigen::Vector3d& r_rx_gcrf, std::string mode);
-  double GetReceiverAntennaGain(double t, Eigen::Vector3d r_tx_gcrf,
-                                Eigen::Vector3d r_rx_gcrf, std::string mode);
+  std::vector<Vector3d> GetReceiverOrientation(
+      double t, Vector3d& r_rx_gcrf, std::string mode);
+  double GetReceiverAntennaGain(double t, Vector3d r_tx_gcrf,
+                                Vector3d r_rx_gcrf, std::string mode);
 
   void InitializeReceiverParams();
   void SetCN0Threshold(double CN0threshold) {
@@ -55,7 +55,7 @@ class GnssReceiver : public Receiver {
   inline void SetAgent(const std::shared_ptr<Agent>& agent) override {
     this->agent = agent;
   };
-  double GetAntennaGain(Eigen::Vector3d direction) {
+  double GetAntennaGain(Vector3d direction) {
     return antenna_.GetAntennaGain(direction);
   };
   double GetAntennaGain(double theta, double phi) {

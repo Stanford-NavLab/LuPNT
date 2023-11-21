@@ -15,17 +15,17 @@ TEST(SpiceTest, StringToTDB) {
   EXPECT_STRNE("hello", "world");
 
   // 1.StringToTDB
-  ad::real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
+  real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
   EXPECT_EQ(et.val(), 734788800);
 }
 
 TEST(SpiceTest, StringToTAI) {
-  ad::real tai = sp::StringToTAI("2023-04-15 00:00:00 TDB");
+  real tai = sp::StringToTAI("2023-04-15 00:00:00 TDB");
   EXPECT_EQ(tai.val(), 7.347887678143708e+08);
 }
 
 TEST(SpiceTest, TDBtoStringUTC) {
-  ad::real et = sp::StringToTDB("2023-04-15 00:00:00 UTC");
+  real et = sp::StringToTDB("2023-04-15 00:00:00 UTC");
   int prec = 3;
   std::string str = sp::TDBtoStringUTC(et, prec);
   //   std::cout << str << std::endl;
@@ -33,14 +33,14 @@ TEST(SpiceTest, TDBtoStringUTC) {
 }
 
 TEST(SpiceTest, GetBodyPos) {
-  ad::real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
+  real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
   // 2. GetBodyPos: Get Body Position via SPICE
   std::string target = "MOON";
   std::string observer = "EARTH";
   std::string refframe = "J2000";
   std::string abcorr = "NONE";
 
-  Eigen::Vector3d pos = sp::GetBodyPos(target, et, refframe, observer, abcorr);
+  Vector3d pos = sp::GetBodyPos(target, et, refframe, observer, abcorr);
   // std::cout <<  std::setprecision (15) << "Moon Position from Earth at
   // 2023-04-15 00:00:00 TDB (J2000): " << pos[0] << " " << pos[1] << " " <<
   // pos[2] << std::endl;
@@ -52,11 +52,11 @@ TEST(SpiceTest, GetBodyPos) {
 }
 
 TEST(SpiceTest, GetFrameConversionMatrix) {
-  ad::real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
+  real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
 
   // 3: GetFrameConversionMatrix
-  ad::MatrixXreal xform(6, 6);
-  ad::MatrixXreal xform_expected(6, 6);
+  MatrixXreal xform(6, 6);
+  MatrixXreal xform_expected(6, 6);
   xform_expected << -0.925133587090201, -0.379635996326334, 0.00208718253372858,
       0, 0, 0, 0.379635104286875, -0.925135941018640, -0.000823546386013230, 0,
       0, 0, 0.00224357543019373, 3.04773366301969e-05, 0.999997482717042, 0, 0,
@@ -72,7 +72,7 @@ TEST(SpiceTest, GetFrameConversionMatrix) {
 }
 
 TEST(SpiceTest, GetBodyPosVel) {
-  ad::real tai = sp::StringToTAI("2023-04-15 00:00:00 TDB");
+  real tai = sp::StringToTAI("2023-04-15 00:00:00 TDB");
 
   // 4. GetBodyPosVel
   std::string target = "MOON";
@@ -81,10 +81,10 @@ TEST(SpiceTest, GetBodyPosVel) {
   int center_id = 399;
   int target_id = 301;
 
-  ad::VectorXreal posvel(6);
+  VectorXreal posvel(6);
   posvel = sp::GetBodyPosVel(tai, center_id, target_id);
 
-  ad::VectorXreal posvel_expected(6);
+  VectorXreal posvel_expected(6);
   posvel_expected << 263638.289944174, -221028.422146322, -131883.110768214,
       0.734154922271287, 0.697461344892098, 0.325673181901724;
 

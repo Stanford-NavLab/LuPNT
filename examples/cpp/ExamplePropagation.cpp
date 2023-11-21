@@ -57,12 +57,12 @@ int main() {
   gpsConstellation.LoadTleFile("gps");
 
   // Moon spacecraft
-  ad::real a = 6541.4;
-  ad::real e = 0.6;
-  ad::real i = 65.5 * RAD_PER_DEG;
-  ad::real Omega = 90 * RAD_PER_DEG;
-  ad::real w = 0.0 * RAD_PER_DEG;
-  ad::real M = 0.0 * RAD_PER_DEG;
+  real a = 6541.4;
+  real e = 0.6;
+  real i = 65.5 * RAD_PER_DEG;
+  real Omega = 90 * RAD_PER_DEG;
+  real w = 0.0 * RAD_PER_DEG;
+  real M = 0.0 * RAD_PER_DEG;
   ClassicalOE coeMoon(a, e, i, Omega, w, M);
   coeMoon.SetCoordSystem(CoordSystem::MI);
 
@@ -132,11 +132,11 @@ int main() {
     // Bodies
     dataHistory.AddData(
         "earthMi", t,
-        CoordConverter::Convert(ad::VectorXreal::Zero(6), t, CoordSystem::GCRF,
+        CoordConverter::Convert(VectorXreal::Zero(6), t, CoordSystem::GCRF,
                                 CoordSystem::MI));
     dataHistory.AddData(
         "moonGcrf", t,
-        CoordConverter::Convert(ad::VectorXreal::Zero(6), t, CoordSystem::MI,
+        CoordConverter::Convert(VectorXreal::Zero(6), t, CoordSystem::MI,
                                 CoordSystem::GCRF));
 
     // Print progress

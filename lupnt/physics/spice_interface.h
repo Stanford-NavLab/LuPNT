@@ -27,16 +27,16 @@ static segment_t *cheby_s;
 static long cheby_n;
 void LoadSpiceKernel(void);
 void ExtractPckCoeffs(void);
-Eigen::MatrixXd GetFrameConversionMatrix(ad::real et, std::string from_frame,
+MatrixXd GetFrameConversionMatrix(real et, std::string from_frame,
                                          std::string to_frame);
-ad::real StringToTDB(std::string str);
-ad::real StringToTAI(std::string str);
-std::string TAItoStringUTC(ad::real tai, int prec);
-std::string TDBtoStringUTC(ad::real tdb, int prec);
-ad::real ConvertTime(ad::real t, std::string from_time_type,
+real StringToTDB(std::string str);
+real StringToTAI(std::string str);
+std::string TAItoStringUTC(real tai, int prec);
+std::string TDBtoStringUTC(real tdb, int prec);
+real ConvertTime(real t, std::string from_time_type,
                      std::string to_time_type);
-ad::VectorXreal GetBodyPosVel(const ad::real tai, int center, int target);
-Eigen::Vector3d GetBodyPos(std::string targetName, ad::real epoch,
+VectorXreal GetBodyPosVel(const real tai, int center, int target);
+Vector3d GetBodyPos(std::string targetName, real epoch,
                            std::string refFrame, std::string obsName,
                            std::string abCorrection);
 

@@ -16,10 +16,10 @@
 
 using namespace lupnt;
 
-void printOccultation(ad::Vector6real state_tx_vec,
-                      ad::Vector6real state_rx_vec, std::string seg_planet) {
-  ad::Vector6real tmp_ad(6);
-  Eigen::Vector3d segment_eci, segment_mi, user_eci, user_mi;
+void printOccultation(Vector6real state_tx_vec, Vector6real state_rx_vec,
+                      std::string seg_planet) {
+  Vector6real tmp_ad(6);
+  Vector3d segment_eci, segment_mi, user_eci, user_mi;
   double t = 0.0;
 
   tmp_ad = CoordConverter::Convert(state_tx_vec, t, "GCRF", "MI");
@@ -41,8 +41,8 @@ void printOccultation(ad::Vector6real state_tx_vec,
 }
 
 int main() {
-  Eigen::Vector3d segment_eci, segment_mi, user_eci, user_mi;
-  ad::Vector6real state_tx_vec, state_rx_vec, tmp_ad;
+  Vector3d segment_eci, segment_mi, user_eci, user_mi;
+  Vector6real state_tx_vec, state_rx_vec, tmp_ad;
   double t = 0.0;
 
   double RE = 6378.0, RM = 1737.0, hGps = 20200.0, hLnss = 5000.0;

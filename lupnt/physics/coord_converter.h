@@ -46,20 +46,20 @@ class CoordConverter {
 
   static CoordSystem GetCoordTypeID(const std::string &str);
 
-  static ad::VectorXreal Convert(const ad::VectorXreal rv_in,
-                                 const ad::real epoch,
+  static VectorXreal Convert(const VectorXreal rv_in,
+                                 const real epoch,
                                  const std::string coord_sys_in,
                                  const std::string coord_sys_out);
-  static ad::VectorXreal Convert(const ad::VectorXreal rv_in,
-                                 const ad::real epoch,
+  static VectorXreal Convert(const VectorXreal rv_in,
+                                 const real epoch,
                                  const CoordSystem coord_sys_in,
                                  const CoordSystem coord_sys_out);
 
  private:
-  static ad::MatrixXreal ComputeITRFtoGCRF(const ad::real tai);
-  static ad::Matrix3real R1(ad::real phi);
-  static ad::Matrix3real R2(ad::real phi);
-  static ad::Matrix3real R3(ad::real phi);
-  static ad::Matrix3real Skew(ad::Vector3real vec);
+  static MatrixXreal ComputeITRFtoGCRF(const real tai);
+  static Matrix3real R1(real phi);
+  static Matrix3real R2(real phi);
+  static Matrix3real R3(real phi);
+  static Matrix3real Skew(Vector3real vec);
 };
 }  // namespace lupnt

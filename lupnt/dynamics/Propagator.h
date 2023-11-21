@@ -27,11 +27,11 @@ class NumericalPropagator {
   NumericalPropagator();
   NumericalPropagator(std::string integratorType);
 
-  ad::VectorXreal Propagate(ODE odefunc, ad::real t0, ad::real tf,
-                            ad::VectorXreal x0, ad::real dt);
-  ad::VectorXreal PropagateWithStm(ODE odefunc, ad::real t0, ad::real tf,
-                                   ad::VectorXreal x0, ad::real dt,
-                                   Eigen::MatrixXd &J);
+  VectorXreal Propagate(ODE odefunc, real t0, real tf,
+                            VectorXreal x0, real dt);
+  VectorXreal PropagateWithStm(ODE odefunc, real t0, real tf,
+                                   VectorXreal x0, real dt,
+                                   MatrixXd &J);
 };
 
 }  // namespace lupnt

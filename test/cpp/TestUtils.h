@@ -4,22 +4,18 @@
 #include <lupnt/core/constants.h>
 #include <lupnt/numerics/math_utils.h>
 
-#include <Eigen/Dense>
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+using namespace lupnt;
 
-namespace ad = autodiff;
-
-static void EXPECT_NEAR_ADVEC(const ad::VectorXreal& a,
-                              const ad::VectorXreal& b, double abs_error) {
+static void EXPECT_NEAR_ADVEC(const VectorXreal& a, const VectorXreal& b,
+                              double abs_error) {
   EXPECT_EQ(a.size(), b.size());
   for (int i = 0; i < a.size(); ++i) {
     EXPECT_NEAR(a[i].val(), b[i].val(), abs_error);
   }
 }
 
-static void EXPECT_NEAR_ADMAT(const ad::MatrixXreal& a,
-                              const ad::MatrixXreal& b, double abs_error) {
+static void EXPECT_NEAR_ADMAT(const MatrixXreal& a, const MatrixXreal& b,
+                              double abs_error) {
   EXPECT_EQ(a.rows(), b.rows());
   EXPECT_EQ(a.cols(), b.cols());
   for (int i = 0; i < a.rows(); ++i) {
@@ -29,16 +25,16 @@ static void EXPECT_NEAR_ADMAT(const ad::MatrixXreal& a,
   }
 }
 
-static void EXPECT_NEAR_EIGENVEC(const Eigen::VectorXd& a,
-                                 const Eigen::VectorXd& b, double abs_error) {
+static void EXPECT_NEAR_EIGENVEC(const VectorXd& a, const VectorXd& b,
+                                 double abs_error) {
   EXPECT_EQ(a.size(), b.size());
   for (int i = 0; i < a.size(); ++i) {
     EXPECT_NEAR(a[i], b[i], abs_error);
   }
 }
 
-static void EXPECT_NEAR_EIGENMAT(const Eigen::MatrixXd& a,
-                                 const Eigen::MatrixXd& b, double abs_error) {
+static void EXPECT_NEAR_EIGENMAT(const MatrixXd& a, const MatrixXd& b,
+                                 double abs_error) {
   EXPECT_EQ(a.rows(), b.rows());
   EXPECT_EQ(a.cols(), b.cols());
   for (int i = 0; i < a.rows(); ++i) {
@@ -50,12 +46,11 @@ static void EXPECT_NEAR_EIGENMAT(const Eigen::MatrixXd& a,
 
 // inputs: vector, function(vector), jacobian
 static void NumericalJacobian(
-    std::function<void(ad::VectorXreal&, ad::real)> propagate_function,
-    const ad::VectorXreal& vec, ad::real dt, Eigen::Matrix6d& jacobian,
-    double eps = 1e-6) {
+    std::function<void(VectorXreal&, real)> propagate_function,
+    const VectorXreal& vec, real dt, Matrix6d& jacobian, double eps = 1e-6) {
   int n = vec.size();
-  ad::VectorXreal vec_p;
-  ad::VectorXreal vec_m;
+  VectorXreal vec_p;
+  VectorXreal vec_m;
 
   for (int i = 0; i < n; i++) {
     vec_p = vec;

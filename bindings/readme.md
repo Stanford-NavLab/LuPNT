@@ -47,8 +47,8 @@ Suppose you want to add the python bindings to "XXX.cpp" and "XXX.h"
         - For overwriting constructors, you can do it as follows
             ```
                 py::class_<State>(m, "State")
-                    .def(py::init<const ad::VectorXreal &>())
-                    .def(py::init<const ad::real, const ad::real, const ad::real>())
+                    .def(py::init<const VectorXreal &>())
+                    .def(py::init<const real, const real, const real>())
             ```
     - [operators](https://pybind11.readthedocs.io/en/stable/advanced/classes.html#operator-overloading)
 - Defining Global Variables

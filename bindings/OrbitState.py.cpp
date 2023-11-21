@@ -17,7 +17,7 @@ using namespace lupnt;
 class PyOrbitState : public OrbitState {
  public:
   /* inherit the constructors*/
-  PyOrbitState(const Eigen::Vector6d &vec, const CoordSystem cs,
+  PyOrbitState(const Vector6d &vec, const CoordSystem cs,
                const OrbitStateRepres sr)
       : OrbitState(vec, cs, sr) {}
   PyOrbitState(double x, double y, double z, double vx, double vy, double vz,
@@ -56,7 +56,7 @@ void init_orbit_state(py::module &m) {
       .export_values();
 
   py::class_<OrbitState, PyOrbitState>(m, "OrbitState")
-      .def(py::init<const Eigen::Vector6d &, const CoordSystem,
+      .def(py::init<const Vector6d &, const CoordSystem,
                     const OrbitStateRepres>())
       .def(py::init<double, double, double, double, double, double,
                     const CoordSystem, const OrbitStateRepres>())
@@ -64,7 +64,7 @@ void init_orbit_state(py::module &m) {
       .def("get_vector",
            [](const OrbitState &s) { return toEigen(s.GetVector()); })
       .def("set_vector",
-           [](OrbitState &s, const Eigen::Vector6d &vec) { s.SetVector(vec); })
+           [](OrbitState &s, const Vector6d &vec) { s.SetVector(vec); })
       .def("get_coord_system", &OrbitState::GetCoordSystem)
       .def("set_coord_system", &OrbitState::SetCoordSystem)
       .def("get_state_repres", &OrbitState::GetOrbitStateRepres)
@@ -79,9 +79,9 @@ void init_orbit_state(py::module &m) {
 
   // ClassicalOE
   py::class_<ClassicalOE, OrbitState>(m, "ClassicalOE")
-      .def(py::init<Eigen::Vector6d, CoordSystem>(), py::arg("oe"),
+      .def(py::init<Vector6d, CoordSystem>(), py::arg("oe"),
            py::arg("cs") = CoordSystem::NONE)
-      .def(py::init<Eigen::Vector6d, CoordSystem>(), py::arg("oe"),
+      .def(py::init<Vector6d, CoordSystem>(), py::arg("oe"),
            py::arg("cs") = CoordSystem::NONE)
       .def(py::init<double, double, double, double, double, double,
                     CoordSystem>(),
@@ -101,7 +101,7 @@ void init_orbit_state(py::module &m) {
            [](const ClassicalOE &s) { return "<pylupnt.ClassicalOE>"; });
 
   py::class_<CartesianOrbitState, OrbitState>(m, "CartesianOrbitState")
-      .def(py::init<const Eigen::Vector6d &, const CoordSystem>(),
+      .def(py::init<const Vector6d &, const CoordSystem>(),
            py::arg("rv"), py::arg("cs") = CoordSystem::NONE)
       .def("print", &CartesianOrbitState::Print, py::arg("deg") = true)
       .def("clone", &CartesianOrbitState::Clone)
@@ -114,7 +114,7 @@ void init_orbit_state(py::module &m) {
       });
 
   py::class_<QuasiNonsingularOE, OrbitState>(m, "QuasiNonsingularOE")
-      .def(py::init<const Eigen::Vector6d &, const CoordSystem>())
+      .def(py::init<const Vector6d &, const CoordSystem>())
       .def(py::init<double, double, double, double, double, double,
                     const CoordSystem>(),
            py::arg("a"), py::arg("u"), py::arg("ex"), py::arg("ey"),
@@ -129,7 +129,7 @@ void init_orbit_state(py::module &m) {
       .def("Omega", &QuasiNonsingularOE::Omega);
 
   py::class_<NonsingularOE, OrbitState>(m, "NonsingularOE")
-      .def(py::init<const Eigen::Vector6d &, const CoordSystem>())
+      .def(py::init<const Vector6d &, const CoordSystem>())
       .def(py::init<double, double, double, double, double, double,
                     const CoordSystem>(),
            py::arg("a"), py::arg("e1"), py::arg("e2"), py::arg("e3"),
@@ -144,7 +144,7 @@ void init_orbit_state(py::module &m) {
       .def("e5", &NonsingularOE::e5);
 
   py::class_<EquinoctialOE, OrbitState>(m, "EquinoctialOE")
-      .def(py::init<const Eigen::Vector6d &, const CoordSystem>())
+      .def(py::init<const Vector6d &, const CoordSystem>())
       .def(py::init<double, double, double, double, double, double,
                     const CoordSystem>(),
            py::arg("a"), py::arg("h"), py::arg("k"), py::arg("p"), py::arg("q"),
@@ -159,9 +159,9 @@ void init_orbit_state(py::module &m) {
       .def("lon", &EquinoctialOE::lon);
 
   // py::class_<SingularROE, OrbitState>(m, "SingularROE")
-  //     .def(py::init<const Eigen::Vector6d &, const CoordSystem>())
+  //     .def(py::init<const Vector6d &, const CoordSystem>())
   //     .def(py::init<double, double, double, const
-  //     ad::real,
+  //     real,
   //          double, double, const CoordSystem>(),
   //          py::arg("da"), py::arg("dM"), py::arg("de"), py::arg("dw"),
   //          py::arg("di"), py::arg("dOmega"), py::arg("cs") =
@@ -176,7 +176,7 @@ void init_orbit_state(py::module &m) {
   //     .def("dOmega", &SingularROE::dOmega);
 
   py::class_<QuasiNonsingularROE, OrbitState>(m, "QuasiNonsingularROE")
-      .def(py::init<const Eigen::Vector6d &, const CoordSystem>())
+      .def(py::init<const Vector6d &, const CoordSystem>())
       .def(py::init<double, double, double, double, double, double,
                     const CoordSystem>(),
            py::arg("da"), py::arg("dl"), py::arg("dex"), py::arg("dey"),
@@ -210,13 +210,13 @@ void init_orbit_state(py::module &m) {
       py::arg("coe"), py::arg("mu"));
   m.def(
       "coe_to_cart",
-      [](const Eigen::Vector6d &coeVec, double mu) -> Eigen::Vector6d {
+      [](const Vector6d &coeVec, double mu) -> Vector6d {
         return CoeToCart(coeVec, mu);
       },
       py::arg("coe"), py::arg("mu"));
   m.def(
       "coe_to_cart",
-      [](const Eigen::Vector6d &coeVec, double mu) -> Eigen::Vector6d {
+      [](const Vector6d &coeVec, double mu) -> Vector6d {
         return CoeToCart(coeVec, mu);
       },
       py::arg("coe"), py::arg("mu"));
@@ -225,7 +225,7 @@ void init_orbit_state(py::module &m) {
   //         py::overload_cast<const CartesianOrbitState, const
   //         double>(&CartToCoe), py::arg("cart"), py::arg("mu"));
   //   //   m.def("cart_to_coe",
-  //         py::overload_cast<const Eigen::Vector6d &, const
+  //         py::overload_cast<const Vector6d &, const
   //         double>(&CartToCoe), py::arg("cart"), py::arg("mu"));
 
   m.def(
@@ -236,7 +236,7 @@ void init_orbit_state(py::module &m) {
       py::arg("coe_chief"), py::arg("roe"));
   m.def(
       "roe_to_coe",
-      [](const Eigen::Vector6d &coe_chief, const Eigen::Vector6d &roe) {
+      [](const Vector6d &coe_chief, const Vector6d &roe) {
         return RoeToCoe(coe_chief, roe);
       },
       py::arg("coe_chief"), py::arg("roe"));
@@ -250,7 +250,7 @@ void init_orbit_state(py::module &m) {
       py::arg("cart_orig"), py::arg("cart"));
   m.def(
       "inertial_to_rtn",
-      [](const Eigen::Vector6d &cart_orig, const Eigen::Vector6d &cart) {
+      [](const Vector6d &cart_orig, const Vector6d &cart) {
         return InertialToRtn(cart_orig, cart);
       },
       py::arg("cart_orig"), py::arg("cart"));
@@ -262,7 +262,7 @@ void init_orbit_state(py::module &m) {
       py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
   m.def(
       "coe_to_rtn",
-      [](const Eigen::Vector6d &coe_chief, const Eigen::Vector6d &coe_deputy,
+      [](const Vector6d &coe_chief, const Vector6d &coe_deputy,
          double mu) { return CoeToRtn(coe_chief, coe_deputy, mu); },
       py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
 

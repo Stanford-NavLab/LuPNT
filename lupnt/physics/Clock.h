@@ -62,10 +62,10 @@ static std::tuple<double, double, double> GetClockSigma(ClockModel clk_model) {
   return std::make_tuple(sigma1, sigma2, sigma3);
 }
 
-static Eigen::Matrix2d GetClockProcessNoise(ClockModel clk_model, double dt) {
+static Matrix2d GetClockProcessNoise(ClockModel clk_model, double dt) {
   double sig1, sig2, sig3;
   std::tie(sig1, sig2, sig3) = GetClockSigma(clk_model);
-  Eigen::Matrix2d Q;
+  Matrix2d Q;
   Q(0, 0) = std::pow(sig1, 2) * dt + std::pow(sig2, 2) * std::pow(dt, 3) / 3;
   Q(0, 1) = std::pow(sig2, 2) * std::pow(dt, 2) / 2;
   Q(1, 0) = std::pow(sig2, 2) * std::pow(dt, 2) / 2;
@@ -79,23 +79,23 @@ static Eigen::Matrix2d GetClockProcessNoise(ClockModel clk_model, double dt) {
  */
 class ClockState : public IState {
  private:
-  ad::VectorXreal x_;
+  VectorXreal x_;
   int state_size_;  // it can be 2 or 3
 
  public:
   ClockState(int state_size) {
     state_size_ = state_size;
-    x_ = ad::VectorXreal::Zero(state_size_);
+    x_ = VectorXreal::Zero(state_size_);
   }
-  ClockState(ad::VectorXreal clock_vec) {
+  ClockState(VectorXreal clock_vec) {
     x_ = clock_vec;
     state_size_ = clock_vec.size();
   }
-  ad::VectorXreal GetVector() const { return x_; }
-  ad::real GetValue(int i) const { return x_(i); }
+  VectorXreal GetVector() const { return x_; }
+  real GetValue(int i) const { return x_(i); }
   int GetStateSize() { return state_size_; };
-  inline void SetValue(const ad::real val, const int idx) { x_(idx) = val; }
-  void SetVector(const ad::VectorXreal& x) { x_ = x; }
+  inline void SetValue(const real val, const int idx) { x_(idx) = val; }
+  void SetVector(const VectorXreal& x) { x_ = x; }
 };
 
 class ClockDynamics {
@@ -114,12 +114,12 @@ class ClockDynamics {
     dt_ = 0;
   }
 
-  void Propagate(ad::Vector2real& clk, ad::real dt) {
+  void Propagate(Vector2real& clk, real dt) {
     if (dt.val() != dt_) {
       dt_ = dt.val();
       auto Q_clk = GetClockProcessNoise(clk_model_, dt.val());
-      Eigen::Matrix2d Phi_clk_{{1, dt.val()}, {0, 1}};
-      clk = Phi_clk_ * clk + SampleMVN(Eigen::Vector2d::Zero(), Q_clk, 1);
+      Matrix2d Phi_clk_{{1, dt.val()}, {0, 1}};
+      clk = Phi_clk_ * clk + SampleMVN(Vector2d::Zero(), Q_clk, 1);
     }
   }
 };

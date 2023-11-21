@@ -32,13 +32,19 @@
   template <typename T>                                       \
   using RowVector##size = Eigen::Matrix<T, 1, size>;
 
-#define DEFINE_DYNAMIC_VECTORS_MATRIXES                                    \
+#define DEFINE_DYNAMIC_VECTORS_MATRICES                                    \
   using VectorXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;               \
   using MatrixXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;  \
   using RowVectorXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;            \
   using VectorXreal = Eigen::Matrix<real, Eigen::Dynamic, 1>;              \
   using MatrixXreal = Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>; \
-  using RowVectorXreal = Eigen::Matrix<real, 1, Eigen::Dynamic>;
+  using RowVectorXreal = Eigen::Matrix<real, 1, Eigen::Dynamic>;           \
+  template <typename T>                                                    \
+  using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1>;                     \
+  template <typename T>                                                    \
+  using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;        \
+  template <typename T>                                                    \
+  using RowVectorX = Eigen::Matrix<T, 1, Eigen::Dynamic>;
 
 #define DEFINE_VECTORS_MATRICES      \
   DEFINE_STATIC_VECTORS_MATRICES(1)  \
@@ -51,7 +57,7 @@
   DEFINE_STATIC_VECTORS_MATRICES(8)  \
   DEFINE_STATIC_VECTORS_MATRICES(9)  \
   DEFINE_STATIC_VECTORS_MATRICES(10) \
-  DEFINE_DYNAMIC_VECTORS_MATRIXES
+  DEFINE_DYNAMIC_VECTORS_MATRICES
 
 namespace lupnt {
 

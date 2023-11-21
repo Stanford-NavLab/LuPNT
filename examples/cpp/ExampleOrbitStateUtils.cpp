@@ -12,10 +12,10 @@ int main() {
   double w = 90.0 * RAD_PER_DEG;
   double M = 0.0 * RAD_PER_DEG;
 
-  ad::Vector6real coe;
+  Vector6real coe;
   coe << a, e, i, Omega, w, M;
 
-  Eigen::Vector6d coe_d;
+  Vector6d coe_d;
   coe_d << a, e, i, Omega, w, M;
 
   auto cart = CoeToCart(coe, MU_EARTH);

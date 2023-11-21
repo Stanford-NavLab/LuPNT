@@ -1,10 +1,10 @@
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+#include <lupnt/core/constants.h>
 
-namespace ad = autodiff;
+using namespace lupnt;
+
 int main() {
-  ad::Vector3real a{1, 2, 3};
-  ad::Vector3real b(a);
+  Vector3real a{1, 2, 3};
+  Vector3real b(a);
   b(2) += 1;
   auto c = a.transpose() * b;
   auto d = b.norm();

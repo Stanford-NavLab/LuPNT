@@ -98,7 +98,7 @@ void ReadData(const std::string &filepath, int N, int headerlines,
   file.close();
 }
 
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXd> LoadGravityCoefficients(
+std::tuple<MatrixXd, MatrixXd> LoadGravityCoefficients(
     BodyData bd, int nmax) {
   // read text file
   int N = nmax * nmax + 10;
@@ -111,8 +111,8 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXd> LoadGravityCoefficients(
   ReadData(harmonicsPath / bd.filepath, N, bd.headerlines, bd.delimiter, idN,
            idM, C, S, sigC, sigS);
 
-  Eigen::MatrixXd Cnm = Eigen::MatrixXd::Zero(nmax + 2, nmax + 2);
-  Eigen::MatrixXd Snm = Eigen::MatrixXd::Zero(nmax + 2, nmax + 2);
+  MatrixXd Cnm = MatrixXd::Zero(nmax + 2, nmax + 2);
+  MatrixXd Snm = MatrixXd::Zero(nmax + 2, nmax + 2);
 
   Cnm(0, 0) = 1.0;
   Cnm(1, 0) = 0.0;
@@ -131,10 +131,10 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXd> LoadGravityCoefficients(
 }
 
 std::tuple<double, double> spharm_vwmm(int m_in, double Vm_1m_1, double Wm_1m_1,
-                                       const Eigen::Vector3d &x_R, double Re) {
+                                       const Vector3d &x_R, double Re) {
   double m = m_in;
 
-  Eigen::Vector3d a = x_R;
+  Vector3d a = x_R;
   int kdel0, kdel1;
   if (m_in > 1) {
     kdel0 = 2;
@@ -156,7 +156,7 @@ std::tuple<double, double> spharm_vwmm(int m_in, double Vm_1m_1, double Wm_1m_1,
 }
 
 std::tuple<double, double> spharm_vwm1m(int m_in, double Vmm, double Wmm,
-                                        const Eigen::Vector3d &x_R, double Re) {
+                                        const Vector3d &x_R, double Re) {
   double m = m_in;
 
   double r2 = x_R.dot(x_R);
@@ -167,11 +167,11 @@ std::tuple<double, double> spharm_vwm1m(int m_in, double Vmm, double Wmm,
 
 std::tuple<double, double> spharm_vwnm(int n_in, int m_in, double Vn_1m,
                                        double Vn_2m, double Wn_1m, double Wn_2m,
-                                       const Eigen::Vector3d &x_R, double Re) {
+                                       const Vector3d &x_R, double Re) {
   double n = n_in;
   double m = m_in;
 
-  Eigen::Vector3d a = x_R;
+  Vector3d a = x_R;
   double r2 = a.dot(a);
   double anm = sqrt(((2 * n + 1) * (2 * n - 1)) / ((n + m) * (n - m)));
   double bnm = -sqrt(((2 * n + 1) * (n + m - 1) * (n - m - 1)) /
@@ -182,17 +182,17 @@ std::tuple<double, double> spharm_vwnm(int n_in, int m_in, double Vn_1m,
   return {Vnm, Wnm};
 }
 
-Eigen::Vector3d Facc_j(const Eigen::Vector3d &facc_R,
-                       const Eigen::Matrix3d &Ur2j) {
-  Eigen::Vector3d acc_j = Ur2j * facc_R;
+Vector3d Facc_j(const Vector3d &facc_R,
+                       const Matrix3d &Ur2j) {
+  Vector3d acc_j = Ur2j * facc_R;
   return acc_j;
 }
 
-std::tuple<Eigen::Vector3d, Eigen::Vector3d> spharm_dvwdx(
+std::tuple<Vector3d, Vector3d> spharm_dvwdx(
     int n_in, int m_in, double Vn1m, double Vn1m1, double Vn1m_1, double Wn1m,
     double Wn1m1, double Wn1m_1, double Re) {
-  Eigen::Vector3d dVdX = Eigen::Vector3d::Zero();
-  Eigen::Vector3d dWdX = Eigen::Vector3d::Zero();
+  Vector3d dVdX = Vector3d::Zero();
+  Vector3d dWdX = Vector3d::Zero();
 
   double Ca;
   int kdel;
@@ -230,17 +230,17 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d> spharm_dvwdx(
   return {dVdX, dWdX};
 }
 
-std::tuple<Eigen::Matrix3d, Eigen::Matrix3d> spharm_d2vwdx2(
+std::tuple<Matrix3d, Matrix3d> spharm_d2vwdx2(
     int n_in, int m_in, double Vn2m, double Vn2m1, double Vn2m2, double Vn2m_1,
     double Vn2m_2, double Wn2m, double Wn2m1, double Wn2m2, double Wn2m_1,
     double Wn2m_2, double Re) {
   double n = n_in;
   double m = m_in;
 
-  Eigen::Matrix3d d2VdX2 = Eigen::Matrix3d::Zero();
-  Eigen::Matrix3d d2WdX2 = Eigen::Matrix3d::Zero();
-  Eigen::VectorXd cf(11);
-  Eigen::Vector2i kdel;
+  Matrix3d d2VdX2 = Matrix3d::Zero();
+  Matrix3d d2WdX2 = Matrix3d::Zero();
+  VectorXd cf(11);
+  Vector2i kdel;
 
   cf(0) = 1 / (Re * Re) * sqrt((2 * n + 1) / (2 * n + 5));
   cf(1) = sqrt((n + m + 2) * (n + m + 1) * (n - m + 2) * (n - m + 1));
@@ -322,20 +322,20 @@ std::tuple<Eigen::Matrix3d, Eigen::Matrix3d> spharm_d2vwdx2(
   d2WdX2(2, 0) = d2WdX2(0, 2);
   d2WdX2(2, 1) = d2WdX2(1, 2);
 
-  return std::tuple<Eigen::Matrix3d, Eigen::Matrix3d>(d2VdX2, d2WdX2);
+  return std::tuple<Matrix3d, Matrix3d>(d2VdX2, d2WdX2);
 }
 
-Eigen::Vector3d spharm_acc_ecr(int nmax, int mmax,
-                               const ad::Vector3real &x_R_in, double Re,
-                               double GMe, const Eigen::MatrixXd &Cnm,
-                               const Eigen::MatrixXd &Snm) {
-  Eigen::Vector3d x_R = toEigen(x_R_in);
-  Eigen::Vector3d accECR(0, 0, 0);
-  Eigen::MatrixXd V = Eigen::MatrixXd::Zero(nmax + 3, mmax + 3);
-  Eigen::MatrixXd W = Eigen::MatrixXd::Zero(nmax + 3, mmax + 3);
+Vector3d spharm_acc_ecr(int nmax, int mmax,
+                               const Vector3real &x_R_in, double Re,
+                               double GMe, const MatrixXd &Cnm,
+                               const MatrixXd &Snm) {
+  Vector3d x_R = toEigen(x_R_in);
+  Vector3d accECR(0, 0, 0);
+  MatrixXd V = MatrixXd::Zero(nmax + 3, mmax + 3);
+  MatrixXd W = MatrixXd::Zero(nmax + 3, mmax + 3);
   V(0, 0) = Re / x_R.norm();
 
-  Eigen::Vector3d a, b;
+  Vector3d a, b;
 
   for (int n = 1; n < nmax + 3; ++n) {
     for (int m = 0; m < std::min(n + 1, mmax + 3); ++m) {

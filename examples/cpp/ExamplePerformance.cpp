@@ -53,7 +53,7 @@ int main() {
     dynamics.SetCentralBody(moon);
 
     // State
-    ad::VectorXreal rv0(6);
+    VectorXreal rv0(6);
     rv0 << -1.540113643726188e3, -0.179443941906269e3, 1.128341549807345e3,
         -0.000291469032495e3, -0.001449961303523e3, -0.000628428693161e3;
     CartesianOrbitState cart_state(rv0);
@@ -67,19 +67,19 @@ int main() {
     // NBodyRates
     int n = 100;
     int m = 24 * 60;
-    Eigen::ArrayXd times(n);
-    ad::VectorXreal a;
-    Eigen::MatrixXd J;
-    // std::function<ad::VectorXreal(ad::real, ad::VectorXreal &, NBodyDynamics
+    VectorXd times(n);
+    VectorXreal a;
+    MatrixXd J;
+    // std::function<VectorXreal(real, VectorXreal &, NBodyDynamics
     // &)>
-    //     func = [=](ad::real t, ad::VectorXreal &xs, NBodyDynamics &dyn) {
+    //     func = [=](real t, VectorXreal &xs, NBodyDynamics &dyn) {
     //       return dyn.ComputeRates(t, xs);
     //     };
 
     for (int i = 0; i < n; i++) {
       auto start = high_resolution_clock::now();
       for (int j = 0; j < m; j++) {
-        // J = ad::jacobian(func, wrt(rv0), at(tStart, rv0, dynamics), a);
+        // J = jacobian(func, wrt(rv0), at(tStart, rv0, dynamics), a);
         dynamics.ComputeRates(tStart, rv0);
       }
       auto end = high_resolution_clock::now();
@@ -89,9 +89,10 @@ int main() {
       // s"
       //           << std::endl;
     }
-    double mean = times.sum() / (double)times.size();
-    double std_dev = std::sqrt((times - times.mean()).square().sum() /
-                               (double)(times.size() - 1.0));
+    double n_double = n;
+    double mean = times.sum() / n_double;
+    double std_dev = std::sqrt((times.array() - times.mean()).square().sum() /
+                               (n_double - 1.0));
 
     std::cout << "NBodyRates: " << h << std::endl;
     std::cout << "Mean, Std: " << mean / 1e6 << ", " << std_dev / 1e6 << " s"

@@ -1,3 +1,4 @@
+#include <lupnt/core/constants.h>
 #include <lupnt/physics/spice_interface.h>
 #include <pybind11/pybind11.h>
 
@@ -8,7 +9,8 @@ class SpiceInterface {};  // dummy class
 void init_spice_interface(py::module &m) {
   py::class_<SpiceInterface>(m, "SpiceInterface")
       .def_static("load_spice_kernel", &lupnt::SpiceInterface::LoadSpiceKernel)
-      .def_static("extract_pck_coeffs", &lupnt::SpiceInterface::ExtractPckCoeffs)
+      .def_static("extract_pck_coeffs",
+                  &lupnt::SpiceInterface::ExtractPckCoeffs)
       .def_static("get_frame_conversion_matrix",
                   [](double et, std::string from, std::string to) {
                     return lupnt::SpiceInterface::GetFrameConversionMatrix(
@@ -30,12 +32,12 @@ void init_spice_interface(py::module &m) {
       .def_static("get_body_pos_vel",
                   [](double ta, int center, int target) {
                     return lupnt::SpiceInterface::GetBodyPosVel(ta, center,
-                                                              target);
+                                                                target);
                   })
-      .def_static("get_body_pos", [](std::string targetName, ad::real epoch,
-                                     std::string refFrame, std::string obsName,
-                                     std::string abCorrection) {
-        return lupnt::SpiceInterface::GetBodyPos(targetName, epoch, refFrame,
-                                               obsName, abCorrection);
-      });
+      .def_static("get_body_pos",
+                  [](std::string targetName, real epoch, std::string refFrame,
+                     std::string obsName, std::string abCorrection) {
+                    return lupnt::SpiceInterface::GetBodyPos(
+                        targetName, epoch, refFrame, obsName, abCorrection);
+                  });
 }

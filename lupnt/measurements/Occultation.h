@@ -41,16 +41,16 @@ class Occultation {
    * @return std::map<std::string, bool>
    */
   static std::map<std::string, bool> ComputeOccultation(
-      const Eigen::Vector3d tx_eci, const Eigen::Vector3d tx_mci,
-      const Eigen::Vector3d rx_eci, const Eigen::Vector3d rx_mci,
+      const Vector3d tx_eci, const Vector3d tx_mci,
+      const Vector3d rx_eci, const Vector3d rx_mci,
       const std::string tx_planet) {
-    Eigen::Vector3d tx2usr = rx_eci - tx_eci;
+    Vector3d tx2usr = rx_eci - tx_eci;
     double tx2usr_norm = tx2usr.norm();
 
     // COMPUTE EARTH OCCULTATION
 
     // Compute angle between (tx->Earth center) and (tx->rx)
-    Eigen::Vector3d tx2earth = -tx_eci;
+    Vector3d tx2earth = -tx_eci;
     double tx2earth_norm = tx2earth.norm();
     double alpha_earth =
         acos(tx2usr.dot(tx2earth) / (tx2earth_norm * tx2usr_norm));
@@ -79,7 +79,7 @@ class Occultation {
     // COMPUTE MOON OCCULTATION
 
     // Compute angle between (tx->Moon center) and (tx->rx)
-    Eigen::Vector3d tx2moon = -tx_mci;
+    Vector3d tx2moon = -tx_mci;
     double tx2moon_norm = tx2moon.norm();
     double alpha_moon =
         acos(tx2moon.dot(tx2usr) / (tx2moon_norm * tx2usr_norm));

@@ -109,7 +109,7 @@ void Antenna::LoadAntennaPattern() {
     }
 
     // Create the pattern
-    antenna_pattern_ = Eigen::MatrixXd(2, angles.size());
+    antenna_pattern_ = MatrixXd(2, angles.size());
     for (int i = 0; i < angles.size(); i++) {
       antenna_pattern_(0, i) = angles[i];
       antenna_pattern_(1, i) = gains[i];
@@ -139,7 +139,7 @@ void Antenna::LoadAntennaPattern() {
     }
 
     // Create the pattern
-    antenna_pattern_ = Eigen::MatrixXd(thetas.size() + 1, phis.size() + 2);
+    antenna_pattern_ = MatrixXd(thetas.size() + 1, phis.size() + 2);
     antenna_pattern_(0, 0) = -50;
     for (int i = 0; i < phis.size(); i++) {
       antenna_pattern_(0, i + 1) = phis[i];
@@ -181,19 +181,19 @@ double Antenna::GetAntennaGain(double theta, double phi) {
   if (antenna_pattern_.cols() > 2) {
     // Use both transmitter azimuth and elevation to compute gain from a 2D
     // antenna model
-    Eigen::VectorXd x =
+    VectorXd x =
         antenna_pattern_.col(0).segment(1, antenna_pattern_.rows() - 1);
-    Eigen::VectorXd y =
+    VectorXd y =
         antenna_pattern_.row(0).segment(1, antenna_pattern_.cols() - 1);
-    Eigen::MatrixXd z = antenna_pattern_.block(
-        1, 1, antenna_pattern_.rows() - 1, antenna_pattern_.cols() - 1);
+    MatrixXd z = antenna_pattern_.block(1, 1, antenna_pattern_.rows() - 1,
+                                        antenna_pattern_.cols() - 1);
     double res = LinearInterp2d(x, y, z, theta, phi + 180.0);
     gain = res;
   } else if (antenna_pattern_.cols() == 2) {
     // Use only transmitter elevation angle to compute gain from a 1D antenna
     // model
-    Eigen::VectorXd x = antenna_pattern_.col(0);
-    Eigen::VectorXd y = antenna_pattern_.col(1);
+    VectorXd x = antenna_pattern_.col(0);
+    VectorXd y = antenna_pattern_.col(1);
     double res = LinearInterp1d(x, y, theta);
     gain = res;
   }
@@ -201,11 +201,11 @@ double Antenna::GetAntennaGain(double theta, double phi) {
   return gain;
 }
 
-double Antenna::GetAntennaGain(Eigen::Vector3d direction) {
+double Antenna::GetAntennaGain(Vector3d direction) {
   direction.normalize();
 
   // Compute elevation and azimuth angles
-  double theta = acos(direction.dot(Eigen::Vector3d::UnitZ())) * DEG_PER_RAD;
+  double theta = acos(direction.dot(Vector3d::UnitZ())) * DEG_PER_RAD;
   double phi = atan2(direction.y(), direction.x()) * DEG_PER_RAD;
 
   return GetAntennaGain(theta, phi);

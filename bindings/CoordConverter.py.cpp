@@ -25,12 +25,12 @@ void init_coord_converter(py::module &m) {
 
   py::class_<CoordConverter>(m, "CoordConverter")
       .def_static("convert",
-                  py::overload_cast<const ad::VectorXreal, const ad::real,
+                  py::overload_cast<const VectorXreal, const real,
                                     const std::string, const std::string>(
                       &CoordConverter::Convert),
                   "Convert Frame (String Input)")
       .def_static("convert",
-                  py::overload_cast<const ad::VectorXreal, const ad::real,
+                  py::overload_cast<const VectorXreal, const real,
                                     const CoordSystem, const CoordSystem>(
                       &CoordConverter::Convert),
                   "Convert frame (Frame ID input)")

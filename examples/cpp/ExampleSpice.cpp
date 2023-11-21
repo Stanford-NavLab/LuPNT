@@ -22,17 +22,17 @@ namespace sp = SpiceInterface;
 int main() {
   sp::LoadSpiceKernel();
 
-  ad::real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
+  real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
 
   int prec = 3;
   std::string str = sp::TDBtoStringUTC(et, prec);
   std::cout << "TDB: " << et << std::endl;
 
-  ad::real tai = sp::ConvertTime(et, "TDB", "TAI");
+  real tai = sp::ConvertTime(et, "TDB", "TAI");
 
   std::cout << "TAI: " << tai << std::endl;
 
-  ad::MatrixXreal xform(6, 6);
+  MatrixXreal xform(6, 6);
 
   xform = sp::GetFrameConversionMatrix(et, "J2000", "ITRF93");
   std::cout << "XFORM_ITRF: " << std::endl << xform << std::endl;

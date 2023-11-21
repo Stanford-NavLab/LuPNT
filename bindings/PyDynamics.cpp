@@ -15,49 +15,49 @@ void init_dynamics(py::module &m) {
   py::class_<KeplerianDynamics>(m, "KeplerianDynamics")
       .def(py::init<const double>())
       .def("propagate",
-           py::overload_cast<ClassicalOE &, ad::real>(
+           py::overload_cast<ClassicalOE &, real>(
                &KeplerianDynamics::Propagate),
            py::arg("state"), py::arg("dt"))
       .def("propagate",
-           py::overload_cast<QuasiNonsingularOE &, ad::real>(
+           py::overload_cast<QuasiNonsingularOE &, real>(
                &KeplerianDynamics::Propagate),
            py::arg("state"), py::arg("dt"))
       .def("propagate",
-           py::overload_cast<NonsingularOE &, ad::real>(
+           py::overload_cast<NonsingularOE &, real>(
                &KeplerianDynamics::Propagate),
            py::arg("state"), py::arg("dt"))
       .def("propagate",
-           py::overload_cast<EquinoctialOE &, ad::real>(
+           py::overload_cast<EquinoctialOE &, real>(
                &KeplerianDynamics::Propagate),
            py::arg("state"), py::arg("dt"))
       .def(
           "propagate_with_stm",
-          [](KeplerianDynamics &dyn, ClassicalOE &state, ad::real dt) {
-            Eigen::Matrix6d stm;
+          [](KeplerianDynamics &dyn, ClassicalOE &state, real dt) {
+            Matrix6d stm;
             dyn.PropagateWithStm(state, dt, stm);
             return stm;
           },
           py::arg("state"), py::arg("dt"), py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](KeplerianDynamics &dyn, QuasiNonsingularOE &state, ad::real dt) {
-            Eigen::Matrix6d stm;
+          [](KeplerianDynamics &dyn, QuasiNonsingularOE &state, real dt) {
+            Matrix6d stm;
             dyn.PropagateWithStm(state, dt, stm);
             return stm;
           },
           py::arg("state"), py::arg("dt"), py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](KeplerianDynamics &dyn, NonsingularOE &state, ad::real dt) {
-            Eigen::Matrix6d stm;
+          [](KeplerianDynamics &dyn, NonsingularOE &state, real dt) {
+            Matrix6d stm;
             dyn.PropagateWithStm(state, dt, stm);
             return stm;
           },
           py::arg("state"), py::arg("dt"), py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](KeplerianDynamics &dyn, EquinoctialOE &state, ad::real dt) {
-            Eigen::Matrix6d stm;
+          [](KeplerianDynamics &dyn, EquinoctialOE &state, real dt) {
+            Matrix6d stm;
             dyn.PropagateWithStm(state, dt, stm);
             return stm;
           },
@@ -69,18 +69,18 @@ void init_dynamics(py::module &m) {
   // NumericalDynamics
   py::class_<NumericalDynamics>(m, "NumericalDynamics")
       .def("propagate",
-           py::overload_cast<OrbitState &, ad::real, ad::real, ad::real>(
+           py::overload_cast<OrbitState &, real, real, real>(
                &NumericalDynamics::Propagate),
            py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
       .def("propagate",
-           py::overload_cast<ad::Vector6real &, ad::real, ad::real, ad::real>(
+           py::overload_cast<Vector6real &, real, real, real>(
                &NumericalDynamics::Propagate),
            py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
       .def(
           "propagate_with_stm",
-          [](NumericalDynamics &dyn, CartesianOrbitState &state, ad::real t0,
-             ad::real tf, ad::real dt) {
-            Eigen::Matrix6d stm;
+          [](NumericalDynamics &dyn, CartesianOrbitState &state, real t0,
+             real tf, real dt) {
+            Matrix6d stm;
             dyn.PropagateWithStm(state, t0, tf, dt, stm);
             return stm;
           },
@@ -88,9 +88,9 @@ void init_dynamics(py::module &m) {
           py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](NumericalDynamics &dyn, ad::Vector6real &state, ad::real t0,
-             ad::real tf, ad::real dt) {
-            Eigen::Matrix6d stm;
+          [](NumericalDynamics &dyn, Vector6real &state, real t0,
+             real tf, real dt) {
+            Matrix6d stm;
             dyn.PropagateWithStm(state, t0, tf, dt, stm);
             return stm;
           },

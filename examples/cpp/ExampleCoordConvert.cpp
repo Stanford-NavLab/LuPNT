@@ -28,19 +28,16 @@ int main() {
   // body
   std::string from = "GCRF";  // J2000
   std::string to = "ITRF";    // Earth fixed frame
-  Eigen::Matrix3d abc;
-  Eigen::Matrix<double, 3, 3, 0, 3, 3> dcm;
 
   // Vallado, p87
-  ad::Vector6real posvel_GCRF;
-  ad::Vector3real pos, vel;
+  Vector6real posvel_GCRF;
+  Vector3real pos, vel;
   pos << 5102.5096, 6123.01152, 6378.1368;
   vel << -4.7432196, 0.7905366, 5.553375619;
   posvel_GCRF << pos, vel;
-  ad::real tai = sp::StringToTAI("2001/04/06 07:51:28.788 UTC");
+  real tai = sp::StringToTAI("2001/04/06 07:51:28.788 UTC");
 
-  ad::VectorXreal posvel_ITRF =
-      CoordConverter::Convert(posvel_GCRF, tai, from, to);
+  VectorXreal posvel_ITRF = CoordConverter::Convert(posvel_GCRF, tai, from, to);
 
   std::cout << "Posvel at J2000 = " << posvel_GCRF << std::endl;
   std::cout << "Posvel at ITRF = " << posvel_ITRF << std::endl;

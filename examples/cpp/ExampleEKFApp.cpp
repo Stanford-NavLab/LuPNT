@@ -77,12 +77,12 @@ int main() {
   std::cout << "Initial Epoch: " << epoch_string << std::endl;
 
   // Moon spacecraft
-  ad::real a = 6541.4;
-  ad::real e = 0.6;
-  ad::real i = 65.5 * RAD_PER_DEG;
-  ad::real Omega = 0.0 * RAD_PER_DEG;
-  ad::real w = 90.0 * RAD_PER_DEG;
-  ad::real M = 0.0 * RAD_PER_DEG;
+  real a = 6541.4;
+  real e = 0.6;
+  real i = 65.5 * RAD_PER_DEG;
+  real Omega = 0.0 * RAD_PER_DEG;
+  real w = 90.0 * RAD_PER_DEG;
+  real M = 0.0 * RAD_PER_DEG;
   ClassicalOE coe_moon(a, e, i, Omega, w, M);
   coe_moon.SetCoordSystem(CoordSystem::MI);
 
@@ -147,11 +147,11 @@ int main() {
     // Bodies
     data_history->AddData(
         "earth_mi", t,
-        CoordConverter::Convert(ad::VectorXreal::Zero(6), epoch,
+        CoordConverter::Convert(VectorXreal::Zero(6), epoch,
                                 CoordSystem::GCRF, CoordSystem::MI));
     data_history->AddData(
         "moon_gcrf", t,
-        CoordConverter::Convert(ad::VectorXreal::Zero(6), epoch,
+        CoordConverter::Convert(VectorXreal::Zero(6), epoch,
                                 CoordSystem::MI, CoordSystem::GCRF));
 
     // Print progress

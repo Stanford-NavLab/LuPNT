@@ -41,23 +41,23 @@ class GnssStateEstimationApp : public Application {
   double sigma_range = 5e-3;       // Range measurement noise [km]
   double sigma_range_rate = 1e-6;  // Range rate measurement noise [km/s]
 
-  ad::Vector6real rv_est;
-  ad::Vector2real clk_est;
-  ad::Vector6real rv_pred_only;
-  ad::Vector2real clk_pred_only;
+  Vector6real rv_est;
+  Vector2real clk_est;
+  Vector6real rv_pred_only;
+  Vector2real clk_pred_only;
 
-  Eigen::MatrixXd P;
-  Eigen::MatrixXd P_pred_only;
+  MatrixXd P;
+  MatrixXd P_pred_only;
 
-  Eigen::Matrix6d Q_rv;
-  Eigen::Matrix2d Q_clk;
-  Eigen::MatrixXd Q;
+  Matrix6d Q_rv;
+  Matrix2d Q_clk;
+  MatrixXd Q;
 
   // State transition matrices
-  Eigen::Matrix6d Phi_rv;
-  Eigen::Matrix6d Phi_rv_pred_only;
-  Eigen::Matrix2d Phi_clk;
-  Eigen::Matrix2d Phi_clk_pred_only;
+  Matrix6d Phi_rv;
+  Matrix6d Phi_rv_pred_only;
+  Matrix2d Phi_clk;
+  Matrix2d Phi_clk_pred_only;
 
   std::shared_ptr<Agent> agent;
   std::shared_ptr<IOrbitDynamics> dyn;
@@ -65,8 +65,8 @@ class GnssStateEstimationApp : public Application {
   std::shared_ptr<IFilter> filter;
   MeasurementFunction meas_func;
 
-  ad::VectorXreal x_est;
-  ad::VectorXreal P_est;
+  VectorXreal x_est;
+  VectorXreal P_est;
 
   std::shared_ptr<DataHistory> data_history;
 

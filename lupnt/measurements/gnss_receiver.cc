@@ -37,26 +37,26 @@ void GnssReceiver::InitializeReceiverParams() {
  *
  * @param t
  * @param r_rx_gcrf
- * @return Eigen::Vector3d
+ * @return Vector3d
  */
-std::vector<Eigen::Vector3d> GnssReceiver::GetReceiverOrientation(
-    double t, Eigen::Vector3d& r_rx_gcrf, std::string mode) {
+std::vector<Vector3d> GnssReceiver::GetReceiverOrientation(
+    double t, Vector3d& r_rx_gcrf, std::string mode) {
   auto r_sat2sun =
       SpiceInterface::GetBodyPos("SUN", t, "J2000", "EARTH", "NONE") -
       r_rx_gcrf;  // (SUN-Earth) - (Sat-Earth) = (Sun-Sat)
 
-  Eigen::Vector3d e_zero = Eigen::Vector3d::Zero();
+  Vector3d e_zero = Vector3d::Zero();
 
   if (mode == "PZ_EarthPoint") {
     auto e_z = -r_rx_gcrf.normalized();  // Face towards Earth center
     auto e_y = r_sat2sun.cross(r_rx_gcrf).normalized();
     auto e_x = e_y.cross(e_z).normalized();
 
-    std::vector<Eigen::Vector3d> e_sat = {e_x, e_y, e_z};
+    std::vector<Vector3d> e_sat = {e_x, e_y, e_z};
     return e_sat;
   } else {
     std::runtime_error("Receiver mode not implemented yet");
-    std::vector<Eigen::Vector3d> e_sat = {e_zero, e_zero, e_zero};
+    std::vector<Vector3d> e_sat = {e_zero, e_zero, e_zero};
     return e_sat;
   }
 }
@@ -65,8 +65,8 @@ std::vector<Eigen::Vector3d> GnssReceiver::GetReceiverOrientation(
  * @brief Get the
  *
  */
-double GnssReceiver::GetReceiverAntennaGain(double t, Eigen::Vector3d r_tx_gcrf,
-                                            Eigen::Vector3d r_rx_gcrf,
+double GnssReceiver::GetReceiverAntennaGain(double t, Vector3d r_tx_gcrf,
+                                            Vector3d r_rx_gcrf,
                                             std::string mode) {
   auto e_sat = GnssReceiver::GetReceiverOrientation(t, r_rx_gcrf, mode);
   auto e_x = e_sat[0];

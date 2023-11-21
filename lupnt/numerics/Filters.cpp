@@ -14,9 +14,9 @@
 namespace lupnt {
 
 // Extended Kalman Filter
-void EKF::Predict(ad::real t_end) {
-  Eigen::MatrixXd Phi(x.size(), x.size());
-  Eigen::MatrixXd Q(x.size(), x.size());
+void EKF::Predict(real t_end) {
+  MatrixXd Phi(x.size(), x.size());
+  MatrixXd Q(x.size(), x.size());
   x = this->dynamics(x, t_curr, t_end, Phi);
   Q = this->process_noise(x, t_curr, t_end);
   P = Phi * P * Phi.transpose() + Q;
@@ -24,17 +24,17 @@ void EKF::Predict(ad::real t_end) {
   Pbar = P;
 }
 
-void EKF::Update(ad::VectorXreal z_obs) {
+void EKF::Update(VectorXreal z_obs) {
   int n = x.size();
   int m = z_obs.size();
-  Eigen::MatrixXd H(m, n);
-  Eigen::MatrixXd R(m, m);
-  ad::VectorXreal z_predict = this->measurement(xbar, H, R);
+  MatrixXd H(m, n);
+  MatrixXd R(m, m);
+  VectorXreal z_predict = this->measurement(xbar, H, R);
   S = R + H * P * H.transpose();
   K = P * H.transpose() * S.inverse();
   dx = K * (z_obs - z_predict);
   x = x + dx;
-  I = Eigen::MatrixXd::Identity(x.size(), x.size());
+  I = MatrixXd::Identity(x.size(), x.size());
   P = (I - K * H) * P * (I - K * H).transpose() +
       K * R * K.transpose();  // Joseph form
 }

@@ -30,12 +30,12 @@ NumericalPropagator::NumericalPropagator(std::string integratorType) {
     throw std::invalid_argument("Invalid Integrator Type");
 };
 
-ad::VectorXreal NumericalPropagator::Propagate(ODE odefunc, ad::real t0,
-                                               ad::real tf, ad::VectorXreal x0,
-                                               ad::real dt) {
-  ad::VectorXreal x = x0;
-  ad::real t = t0;
-  ad::real step;
+VectorXreal NumericalPropagator::Propagate(ODE odefunc, real t0,
+                                               real tf, VectorXreal x0,
+                                               real dt) {
+  VectorXreal x = x0;
+  real t = t0;
+  real step;
   while (t <= tf) {
     step = std::min(dt, tf - t);
     x = integrator->Step(odefunc, t, x, step);
@@ -44,12 +44,12 @@ ad::VectorXreal NumericalPropagator::Propagate(ODE odefunc, ad::real t0,
   return x;
 };
 
-ad::VectorXreal NumericalPropagator::PropagateWithStm(ODE odefunc, ad::real t0,
-                                                      ad::real tf,
-                                                      ad::VectorXreal x0,
-                                                      ad::real dt,
-                                                      Eigen::MatrixXd &J) {
-  auto func = [=, this](ad::VectorXreal &x) {
+VectorXreal NumericalPropagator::PropagateWithStm(ODE odefunc, real t0,
+                                                      real tf,
+                                                      VectorXreal x0,
+                                                      real dt,
+                                                      MatrixXd &J) {
+  auto func = [=, this](VectorXreal &x) {
     return Propagate(odefunc, t0, tf, x, dt);
   };
 
@@ -57,8 +57,8 @@ ad::VectorXreal NumericalPropagator::PropagateWithStm(ODE odefunc, ad::real t0,
   for (int i = 0; i < x0.size(); i++) {
     x0(i) = double(x0(i));
   }
-  ad::VectorXreal xf;
-  J = ad::jacobian(func, wrt(x0), at(x0), xf);
+  VectorXreal xf;
+  J = jacobian(func, wrt(x0), at(x0), xf);
   return xf;
 };
 

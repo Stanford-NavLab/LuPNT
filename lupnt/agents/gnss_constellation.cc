@@ -29,14 +29,14 @@ void GnssConstellation::LoadTleFile(std::string filename) {
     double T = SECS_PER_DAY / tle.meanMotion;
 
     // Classical orbital elements
-    ad::real a = pow((T * T * MU_EARTH) / (4.0 * PI * PI), 1.0 / 3.0);
-    ad::real e = tle.eccentricity;
-    ad::real i = tle.inclination * RAD_PER_DEG;
-    ad::real Omega = tle.raan * RAD_PER_DEG;
-    ad::real w = tle.argPerigee * RAD_PER_DEG;
-    ad::real rad_per_sec = tle.meanMotion * 2 * PI /
+    real a = pow((T * T * MU_EARTH) / (4.0 * PI * PI), 1.0 / 3.0);
+    real e = tle.eccentricity;
+    real i = tle.inclination * RAD_PER_DEG;
+    real Omega = tle.raan * RAD_PER_DEG;
+    real w = tle.argPerigee * RAD_PER_DEG;
+    real rad_per_sec = tle.meanMotion * 2 * PI /
                            SECS_PER_DAY;  // TLE mean motion is in revs/day
-    ad::real M =
+    real M =
         tle.meanAnomaly * RAD_PER_DEG + dt_epoch * rad_per_sec;  // in radians
 
     ClassicalOE coe(a, e, i, Omega, w, M);

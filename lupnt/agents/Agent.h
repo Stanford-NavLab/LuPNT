@@ -41,30 +41,30 @@ class Agent {
   std::string name_;
 
   BodyId bodyId_;
-  ad::real epoch_;
+  real epoch_;
   std::shared_ptr<OrbitState> state_;
   std::shared_ptr<IOrbitDynamics> dynamics_;
   std::vector<std::shared_ptr<ICommDevice>> devices_;
 
-  ad::Vector2real clock_;
+  Vector2real clock_;
   std::unique_ptr<ClockDynamics> clock_dynamics_;
 
  public:
   Agent() : id_(id_counter_++) {}
 
   // Getters
-  ad::real GetEpoch() { return epoch_; }
+  real GetEpoch() { return epoch_; }
   BodyId GetBodyId() { return bodyId_; }
   std::shared_ptr<OrbitState> GetOrbitState() { return state_; }
   std::shared_ptr<IOrbitDynamics> GetDynamics() { return dynamics_; }
-  ad::Vector2real GetClock() { return clock_; }
+  Vector2real GetClock() { return clock_; }
 
   // Setters
   void SetOrbitState(std::shared_ptr<OrbitState> state) { state_ = state; }
   void SetDynamics(std::shared_ptr<IOrbitDynamics> dyn) { dynamics_ = dyn; }
-  void SetEpoch(ad::real epoch) { epoch_ = epoch; }
+  void SetEpoch(real epoch) { epoch_ = epoch; }
   void SetBodyId(BodyId bodyId) { bodyId_ = bodyId; }
-  void SetClock(ad::Vector2real clk) { clock_ = clk; }
+  void SetClock(Vector2real clk) { clock_ = clk; }
   void SetClockDynamics(ClockDynamics& clock_dyn) {
     clock_dynamics_ = std::make_unique<ClockDynamics>(clock_dyn);
   }
@@ -75,9 +75,9 @@ class Agent {
 
   // Cartesian OrbitState at epoch in GCRF frame
   std::shared_ptr<CartesianOrbitState> GetCartesianGCRFStateAtEpoch(
-      ad::real epoch, CoordSystem coord_sys = CoordSystem::GCRF);
+      real epoch, CoordSystem coord_sys = CoordSystem::GCRF);
 
-  void Propagate(const ad::real epoch) {
+  void Propagate(const real epoch) {
     if (epoch == epoch_) return;
 
     dynamics_->Propagate(*state_, epoch_, epoch, 1.0 * SECS_PER_MINUTE);

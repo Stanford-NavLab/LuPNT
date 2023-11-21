@@ -147,13 +147,13 @@ void ExtractPckCoeffs() {
   //    pckr02_c(handle, target)
 }
 
-Eigen::Vector3d GetBodyPos(std::string targetName, ad::real epoch,
+Vector3d GetBodyPos(std::string targetName, real epoch,
                            std::string refFrame, std::string obsName,
                            std::string abCorrection) {
   LoadSpiceKernel();
 
   SpiceDouble ptarg[3];
-  Eigen::Vector3d targetPos;
+  Vector3d targetPos;
 
   SpiceDouble et =
       (SpiceDouble)
@@ -184,9 +184,9 @@ Eigen::Vector3d GetBodyPos(std::string targetName, ad::real epoch,
  * @param et
  * @param from_frame
  * @param to_frame
- * @return Eigen::MatrixXd
+ * @return MatrixXd
  */
-Eigen::MatrixXd GetFrameConversionMatrix(ad::real et, std::string from_frame,
+MatrixXd GetFrameConversionMatrix(real et, std::string from_frame,
                                          std::string to_frame) {
   LoadSpiceKernel();
   SpiceInt bodyname;
@@ -194,7 +194,7 @@ Eigen::MatrixXd GetFrameConversionMatrix(ad::real et, std::string from_frame,
       (SpiceDouble)
           et.val();  // ToDO: this cuts the relatonship between et and matrix
   double xform[6][6];
-  Eigen::MatrixXd M_rot(6, 6);
+  MatrixXd M_rot(6, 6);
 
   const char *from_frame_char =
       strcpy(new char[from_frame.length() + 1], from_frame.c_str());
@@ -266,9 +266,9 @@ Julian Date Strings.
    2451515.2981 (JD)             Julian Date 2451515.2981
    2451515.2981 JD               Julian Date 2451515.2981
 
- * @return ad::real     ephemeris time (TDB) (seconds past the J2000 epoch)
+ * @return real     ephemeris time (TDB) (seconds past the J2000 epoch)
  */
-ad::real StringToTDB(std::string str) {
+real StringToTDB(std::string str) {
   LoadSpiceKernel();
   SpiceDouble et;
   str2et_c(str.c_str(), &et);
@@ -279,12 +279,12 @@ ad::real StringToTDB(std::string str) {
  * @brief Convert string to TAI
  *
  * @param str time string
- * @return ad::real
+ * @return real
  */
-ad::real StringToTAI(std::string str) {
+real StringToTAI(std::string str) {
   LoadSpiceKernel();
-  ad::real et = StringToTDB(str);
-  ad::real tai = ConvertTime(et, "TDB", "TAI");
+  real et = StringToTDB(str);
+  real tai = ConvertTime(et, "TDB", "TAI");
   return tai;
 }
 
@@ -295,7 +295,7 @@ ad::real StringToTAI(std::string str) {
  * @param prec precision of the output string (default 3)
  * @return std::string
  */
-std::string TDBtoStringUTC(ad::real tdb, int prec = 3) {
+std::string TDBtoStringUTC(real tdb, int prec = 3) {
   LoadSpiceKernel();
   SpiceDouble et = tdb.val();
   SpiceChar str[100];
@@ -311,9 +311,9 @@ std::string TDBtoStringUTC(ad::real tdb, int prec = 3) {
  * @param prec precision of the output string (default 3)
  * @return std::string
  */
-std::string TAItoStringUTC(ad::real tai, int prec = 3) {
+std::string TAItoStringUTC(real tai, int prec = 3) {
   LoadSpiceKernel();
-  ad::real et_tdb = ConvertTime(tai, "TAI", "TDB");
+  real et_tdb = ConvertTime(tai, "TAI", "TDB");
   std::string str = TDBtoStringUTC(et_tdb, prec);
   return str;
 }
@@ -336,9 +336,9 @@ std::string TAItoStringUTC(ad::real tai, int prec = 3) {
    GPS         Global Positioning System Time
 
  * @param to_time_type  to time system
- * @return ad::real     out time in seconds
+ * @return real     out time in seconds
  */
-ad::real ConvertTime(ad::real t, std::string from_time_type,
+real ConvertTime(real t, std::string from_time_type,
                      std::string to_time_type) {
   LoadSpiceKernel();
   SpiceDouble t_in = t.val();
@@ -348,7 +348,7 @@ ad::real ConvertTime(ad::real t, std::string from_time_type,
 
   double offset = t_out_spice - t_in;  // offset in seconds
 
-  ad::real t_out = t + offset;  // this is to convert to ad::real
+  real t_out = t + offset;  // this is to convert to real
 
   return t_out;
 }
@@ -359,19 +359,19 @@ ad::real ConvertTime(ad::real t, std::string from_time_type,
  * @param tai_MJD TAI in MJD (with the origin as JD_NOV_17_1858)
  * @param center  center body id
  * @param target  target body id
- * @return ad::VectorXreal  6x1 vector of position and velocity of target body
+ * @return VectorXreal  6x1 vector of position and velocity of target body
  * in center body J2000 frame
  */
-ad::VectorXreal GetBodyPosVel(const ad::real tai, int center, int target) {
+VectorXreal GetBodyPosVel(const real tai, int center, int target) {
   LoadSpiceKernel();
 
   bool load_cent = false;
   bool load_targ = false;
-  ad::VectorXreal rv_center(6);
-  ad::VectorXreal rv_target(6);
+  VectorXreal rv_center(6);
+  VectorXreal rv_target(6);
 
   // convert TAI to TDB past J2000
-  ad::real t_s = ConvertTime(tai, "TAI", "TDB");
+  real t_s = ConvertTime(tai, "TAI", "TDB");
 
   // find the segment for the center and target body
   for (int i = 0; i < cheby_n; i++) {
@@ -388,7 +388,7 @@ ad::VectorXreal GetBodyPosVel(const ad::real tai, int center, int target) {
     }
   }
 
-  ad::VectorXreal retState(6);
+  VectorXreal retState(6);
   retState = rv_target - rv_center;
 
   return retState;

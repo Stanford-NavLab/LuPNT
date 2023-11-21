@@ -22,7 +22,7 @@
 using namespace lupnt;
 using namespace std;
 
-typedef ad::Vector6real Vec6;
+typedef Vector6real Vec6;
 
 int main() {
   MoonMeanDynamics moonMeanDynamics;

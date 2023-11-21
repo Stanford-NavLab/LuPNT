@@ -27,7 +27,7 @@ class IState {
  public:
   virtual ~IState() = default;
   virtual inline int GetStateSize() = 0;
-  virtual inline ad::real GetValue(int idx) = 0;
+  virtual inline real GetValue(int idx) = 0;
 };
 
 /**
@@ -54,8 +54,8 @@ class JointState {
 
   std::vector<IState*> GetJointState() { return state_vec_; };
 
-  ad::VectorXreal GetJointStateValue() {
-    ad::VectorXreal advec(state_vec_size_);
+  VectorXreal GetJointStateValue() {
+    VectorXreal advec(state_vec_size_);
     int cur_idx = 0;
     for (int i = 0; state_vec_.size(); i++) {
       for (int j = 0; j < state_vec_[i]->GetStateSize(); j++) {

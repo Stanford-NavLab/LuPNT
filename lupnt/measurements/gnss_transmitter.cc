@@ -112,10 +112,10 @@ void GnssTransmitter::InitializeBEIDOUTransmitter() {
  *
  * @param t
  * @param r_tx_gcrf
- * @return Eigen::Vector3d
+ * @return Vector3d
  */
-std::vector<Eigen::Vector3d> GnssTransmitter::GetTransmitterOrientation(
-    double t, Eigen::Vector3d& r_tx_gcrf) {
+std::vector<Vector3d> GnssTransmitter::GetTransmitterOrientation(
+    double t, Vector3d& r_tx_gcrf) {
   auto r_sat2sun = SpiceInterface::GetBodyPos("SUN", t, "J2000", "EARTH",
                                               "NONE") -
                    r_tx_gcrf;               // (Sun-Earth) - (Sat-Earth)
@@ -123,7 +123,7 @@ std::vector<Eigen::Vector3d> GnssTransmitter::GetTransmitterOrientation(
   auto e_y_gnss = r_sat2sun.cross(r_tx_gcrf).normalized();
   auto e_x_gnss = e_y_gnss.cross(e_z_gnss).normalized();
 
-  std::vector<Eigen::Vector3d> e_gnss = {e_x_gnss, e_y_gnss, e_z_gnss};
+  std::vector<Vector3d> e_gnss = {e_x_gnss, e_y_gnss, e_z_gnss};
   return e_gnss;
 }
 
@@ -132,12 +132,12 @@ std::vector<Eigen::Vector3d> GnssTransmitter::GetTransmitterOrientation(
  *
  */
 double GnssTransmitter::GetTransmittionAntennaGain(double t,
-                                                   Eigen::Vector3d r_tx_gcrf,
-                                                   Eigen::Vector3d r_rx_gcrf) {
+                                                   Vector3d r_tx_gcrf,
+                                                   Vector3d r_rx_gcrf) {
   auto e_gnss = GnssTransmitter::GetTransmitterOrientation(t, r_tx_gcrf);
-  Eigen::Vector3d e_x_gnss = e_gnss[0];
-  Eigen::Vector3d e_y_gnss = e_gnss[1];
-  Eigen::Vector3d e_z_gnss = e_gnss[2];
+  Vector3d e_x_gnss = e_gnss[0];
+  Vector3d e_y_gnss = e_gnss[1];
+  Vector3d e_z_gnss = e_gnss[2];
   auto u_tx_rx = (r_rx_gcrf - r_tx_gcrf).normalized();
   double theta_tx = acos(u_tx_rx.dot(e_z_gnss));
   double phi_tx = atan2(u_tx_rx.dot(e_y_gnss), u_tx_rx.dot(e_x_gnss));

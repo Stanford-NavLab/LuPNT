@@ -15,7 +15,7 @@ namespace lupnt {
 int Agent::id_counter_ = 0;
 
 std::shared_ptr<CartesianOrbitState> Agent::GetCartesianGCRFStateAtEpoch(
-    ad::real epoch, CoordSystem coord_sys) {
+    real epoch, CoordSystem coord_sys) {
   auto state = state_->Clone();
   if (epoch != epoch_)
     dynamics_->Propagate(*state, epoch_, epoch, 1.0 * SECS_PER_MINUTE);

@@ -58,7 +58,7 @@ TLE TLE::FromLines(const std::string &line1, const std::string &line2,
 
   // compute TAI from epoch
   std::string fullyear_string = "20" + line2.substr(18, 2);
-  ad::real epochYearStartTAI =
+  real epochYearStartTAI =
       sp::StringToTAI(fullyear_string + "/01/01 00:00:00 UTC");
   double epochTAI = epochYearStartTAI.val() + tle.epochDay * SECS_PER_DAY;
   tle.epochTAI = epochTAI;

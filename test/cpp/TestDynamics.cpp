@@ -17,23 +17,23 @@ namespace ad = autodiff;
 // Keplerian Dynamics with Classical Orbital Elements
 TEST(Test_Dynamics, Test_KeplerianDynamics_ClassicalOE) {
   // Classical orbital elements
-  ad::real a = 6541.4;                  // [km]
-  ad::real e = 0.6;                     // [-]
-  ad::real i = 65.5 * RAD_PER_DEG;      // [rad]
-  ad::real Omega = 90.0 * RAD_PER_DEG;  // [rad]
-  ad::real w = 0.0 * RAD_PER_DEG;       // [rad]
-  ad::real M = 0.0 * RAD_PER_DEG;       // [rad]
+  real a = 6541.4;                  // [km]
+  real e = 0.6;                     // [-]
+  real i = 65.5 * RAD_PER_DEG;      // [rad]
+  real Omega = 90.0 * RAD_PER_DEG;  // [rad]
+  real w = 0.0 * RAD_PER_DEG;       // [rad]
+  real M = 0.0 * RAD_PER_DEG;       // [rad]
 
   double mu = MU_MOON;
   ClassicalOE coe_state(a, e, i, Omega, w, M, CoordSystem::MI);
-  ad::Vector6real coe_analytical = coe_state.GetVector();
+  Vector6real coe_analytical = coe_state.GetVector();
 
   // Keplerian dynamics
   auto kep_dyn = KeplerianDynamics(mu);
 
   // Propagation
-  ad::real dt = 10.0;                   // [s]
-  ad::real n = sqrt(mu / pow(a, 3.0));  // [rad/s]
+  real dt = 10.0;                   // [s]
+  real n = sqrt(mu / pow(a, 3.0));  // [rad/s]
   for (int i = 0; i < 100; i++) {
     kep_dyn.Propagate(coe_state, dt);
     coe_analytical(5) = wrapToPi(coe_analytical(5) + n * dt);
@@ -43,15 +43,15 @@ TEST(Test_Dynamics, Test_KeplerianDynamics_ClassicalOE) {
   }
 
   // Propagation with STM
-  auto propagate_function = [&](ad::VectorXreal &vec, ad::real dt) {
+  auto propagate_function = [&](VectorXreal &vec, real dt) {
     ClassicalOE state(vec, CoordSystem::MI);
     kep_dyn.Propagate(state, dt);
     vec = state.GetVector();
   };
 
   // Propagation with STM
-  Eigen::Matrix6d stm;
-  Eigen::Matrix6d stm_numerical;
+  Matrix6d stm;
+  Matrix6d stm_numerical;
   for (int i = 0; i < 100; i++) {
     NumericalJacobian(propagate_function, coe_state.GetVector(), dt,
                       stm_numerical, 1e-6);
@@ -65,25 +65,25 @@ TEST(Test_Dynamics, Test_KeplerianDynamics_ClassicalOE) {
 // CartesianTwoBodyDynamics
 TEST(Test_Dynamics, Test_CartesianTwoBodyDynamics) {
   // Classical orbital elements
-  ad::real a = 6541.4;                  // [km]
-  ad::real e = 0.6;                     // [-]
-  ad::real i = 65.5 * RAD_PER_DEG;      // [rad]
-  ad::real Omega = 90.0 * RAD_PER_DEG;  // [rad]
-  ad::real w = 0.0 * RAD_PER_DEG;       // [rad]
-  ad::real M = 0.0 * RAD_PER_DEG;       // [rad]
+  real a = 6541.4;                  // [km]
+  real e = 0.6;                     // [-]
+  real i = 65.5 * RAD_PER_DEG;      // [rad]
+  real Omega = 90.0 * RAD_PER_DEG;  // [rad]
+  real w = 0.0 * RAD_PER_DEG;       // [rad]
+  real M = 0.0 * RAD_PER_DEG;       // [rad]
 
   double mu = MU_MOON;
   ClassicalOE coe_state(a, e, i, Omega, w, M, CoordSystem::MI);
   CartesianOrbitState cart_state = CoeToCart(coe_state, mu);
-  ad::Vector6real cart_vector = cart_state.GetVector();
-  ad::VectorXreal cart_vector_kep;
+  Vector6real cart_vector = cart_state.GetVector();
+  VectorXreal cart_vector_kep;
 
   // Two body dynamics
   auto kep_dyn = KeplerianDynamics(mu);
   auto tb_dyn = CartesianTwoBodyDynamics(mu);
 
   // Propagation
-  ad::real dt = 10.0;  // [s]
+  real dt = 10.0;  // [s]
   for (int i = 0; i < 5; i++) {
     kep_dyn.Propagate(coe_state, dt);
     tb_dyn.Propagate(cart_state, 0.0, dt, 1.0);
@@ -95,15 +95,15 @@ TEST(Test_Dynamics, Test_CartesianTwoBodyDynamics) {
   }
 
   // Propagation with STM
-  auto propagate_function = [&](ad::VectorXreal &vec, ad::real dt) {
+  auto propagate_function = [&](VectorXreal &vec, real dt) {
     CartesianOrbitState state(vec, CoordSystem::MI);
     tb_dyn.Propagate(state, 0.0, dt, 0.1);
     vec = state.GetVector();
   };
 
   // Propagation with STM
-  Eigen::Matrix6d stm_state, stm_vector, stm_numerical;
-  ad::Vector6real cart_numerical = cart_vector;
+  Matrix6d stm_state, stm_vector, stm_numerical;
+  Vector6real cart_numerical = cart_vector;
 
   for (int i = 0; i < 5; i++) {
     NumericalJacobian(propagate_function, cart_numerical, dt, stm_numerical);

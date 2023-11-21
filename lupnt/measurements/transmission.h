@@ -45,6 +45,6 @@ struct Transmission {
   bool vis_ionos;
 
   int ID_tx;
-  Eigen::Vector3d r_tx, v_tx, r_rx, v_rx;
+  Vector3d r_tx, v_tx, r_rx, v_rx;
 };
 }  // namespace lupnt
