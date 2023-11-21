@@ -28,9 +28,12 @@ int main() {
   // body
   std::string from = "GCRF";  // J2000
   std::string to = "ITRF";    // Earth fixed frame
+  Eigen::Matrix3d abc;
+  Eigen::Matrix<double, 3, 3, 0, 3, 3> dcm;
 
   // Vallado, p87
-  ad::VectorXreal posvel_GCRF(6), pos(3), vel(3);
+  ad::Vector6real posvel_GCRF;
+  ad::Vector3real pos, vel;
   pos << 5102.5096, 6123.01152, 6378.1368;
   vel << -4.7432196, 0.7905366, 5.553375619;
   posvel_GCRF << pos, vel;

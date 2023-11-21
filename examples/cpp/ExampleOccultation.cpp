@@ -16,9 +16,9 @@
 
 using namespace lupnt;
 
-void printOccultation(ad::VectorXreal state_tx_vec,
-                      ad::VectorXreal state_rx_vec, std::string seg_planet) {
-  ad::VectorXreal tmp_ad(6);
+void printOccultation(ad::Vector6real state_tx_vec,
+                      ad::Vector6real state_rx_vec, std::string seg_planet) {
+  ad::Vector6real tmp_ad(6);
   Eigen::Vector3d segment_eci, segment_mi, user_eci, user_mi;
   double t = 0.0;
 
@@ -42,7 +42,7 @@ void printOccultation(ad::VectorXreal state_tx_vec,
 
 int main() {
   Eigen::Vector3d segment_eci, segment_mi, user_eci, user_mi;
-  ad::VectorXreal state_tx_vec(6), state_rx_vec(6), tmp_ad(6);
+  ad::Vector6real state_tx_vec, state_rx_vec, tmp_ad;
   double t = 0.0;
 
   double RE = 6378.0, RM = 1737.0, hGps = 20200.0, hLnss = 5000.0;
