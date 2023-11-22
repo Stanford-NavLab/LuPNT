@@ -28,7 +28,11 @@
 // SOFTWARE.
 
 // pybind11 includes
-#include "pybind11.hxx"
+#include <pybind11/pybind11.h>
+#include <pybind11/operators.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h>
+namespace py = pybind11;
 
 // C++ includes
 #include <sstream>

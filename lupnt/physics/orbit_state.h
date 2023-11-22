@@ -13,9 +13,9 @@
 
 #include "coord_converter.h"
 
-#include <Eigen/Dense>
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+
+
+
 #include <boost/preprocessor.hpp>
 #include <stdexcept>
 
@@ -25,7 +25,7 @@
   inline real name() const { return GetVector()(idx); } \
   inline void Set_##name(const real val) { SetValue(val, idx); }
 
-namespace ad = autodiff;
+
 
 namespace lupnt {
 

@@ -14,7 +14,7 @@
 #include <lupnt/core/constants.h>
 #include <random>
 
-namespace ad = autodiff;
+
 
 namespace lupnt {
 

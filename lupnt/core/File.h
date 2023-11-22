@@ -10,8 +10,6 @@
  */
 #pragma once
 
-#include <Eigen/Dense>
-#include <autodiff/forward/real/eigen.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -21,7 +19,7 @@
 
 #include "lupnt/numerics/math_utils.h"
 
-namespace ad = autodiff;
+
 
 namespace lupnt {
 

@@ -11,13 +11,8 @@
 
 #include "lupnt/physics/cheby.h"
 
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
-
 #include "../3rdparty/cspice/include/SpiceUsr.h"
 #include "lupnt/numerics/math_utils.h"
-
-namespace ad = autodiff;
 
 namespace lupnt {
 /*

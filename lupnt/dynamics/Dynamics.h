@@ -10,15 +10,11 @@
  */
 #pragma once
 
-#include <autodiff/forward/real.hpp>
-
 #include "lupnt/dynamics/gravity_field.h"
 #include "lupnt/dynamics/propagator.h"
 #include "lupnt/numerics/integrator.h"
 #include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/state.h"
-
-namespace ad = autodiff;
 
 namespace lupnt {
 
@@ -62,14 +58,14 @@ class NumericalDynamics : public IOrbitDynamics {
   ODE odefunc_;
   double dt_;
   OrbitStateRepres state_representation_;
-  NumericalPropagator integrator_;
+  NumericalPropagator propagator_;
 
  public:
   NumericalDynamics(ODE odefunc, OrbitStateRepres state_representation,
                     std::string integrator = "RK4")
       : state_representation_(state_representation),
         odefunc_(odefunc),
-        integrator_(integrator){};
+        propagator_(integrator){};
 
   // with dt
   void SetDt(double dt) { dt_ = dt; };
@@ -145,7 +141,7 @@ class CartesianTwoBodyDynamics : public NumericalDynamics {
 
 class J2CartesianTwoBodyDynamics : public NumericalDynamics {
  private:
-  double mu, J2, Rbody;
+  double mu_, J2_, Rbody_;
 
  public:
   J2CartesianTwoBodyDynamics(double mu, double J2_in, double Rbody_in,
@@ -219,7 +215,7 @@ class RoeGeometricMappingDynamics : public IAnalyticalDynamics {
 
 struct Body {
   std::string name;
-  double mu_;
+  double mu;
   double R;
   BodyId id;
   bool sphericalHarmonics;

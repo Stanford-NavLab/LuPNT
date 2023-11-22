@@ -10,14 +10,13 @@
  */
 #pragma once
 
-#include <autodiff/forward/real.hpp>
 #include <iostream>
 #include <memory>
 #include <string>
 
 #include "lupnt/numerics/integrator.h"
 
-namespace ad = autodiff;
+
 
 namespace lupnt {
 class NumericalPropagator {

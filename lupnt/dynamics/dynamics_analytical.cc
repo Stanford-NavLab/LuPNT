@@ -20,18 +20,18 @@ namespace lupnt {
 // KeplerianDynamics
 // ****************************************************************************
 
-KeplerianDynamics::KeplerianDynamics(double mu_in) : mu(mu_in){};
+KeplerianDynamics::KeplerianDynamics(double mu) : mu_(mu){};
 
 // ClassicalOE
 void KeplerianDynamics::Propagate(ClassicalOE &state, real dt) {
   real a = state.a();
-  real n = sqrt(mu / pow(a, 3));
+  real n = sqrt(mu_ / pow(a, 3));
   state.Set_M(wrapToPi(state.M() + n * dt));
 }
 void KeplerianDynamics::PropagateWithStm(ClassicalOE &state, real dt,
                                          Matrix6d &stm) {
   real a = state.a();
-  real n = sqrt(mu / pow(a, 3));
+  real n = sqrt(mu_ / pow(a, 3));
   state.Set_M(wrapToPi(state.M() + n * dt));
   stm = Matrix6d::Identity(6, 6);
   stm(5, 0) = -3.0 / 2.0 * (n / a * dt).val();
@@ -39,7 +39,7 @@ void KeplerianDynamics::PropagateWithStm(ClassicalOE &state, real dt,
 
 // QuasiNonsingularOE
 void KeplerianDynamics::Propagate(QuasiNonsingularOE &state, real dt) {
-  state.Set_u(state.u() + sqrt(mu / pow(state.a(), 3)) * dt);
+  state.Set_u(state.u() + sqrt(mu_ / pow(state.a(), 3)) * dt);
 }
 void KeplerianDynamics::PropagateWithStm(QuasiNonsingularOE &state, real dt,
                                          Matrix6d &stm) {
@@ -48,7 +48,7 @@ void KeplerianDynamics::PropagateWithStm(QuasiNonsingularOE &state, real dt,
 
 // NonsingularOE
 void KeplerianDynamics::Propagate(NonsingularOE &state, real dt) {
-  state.Set_e5(state.e5() + sqrt(mu / pow(state.a(), 3)) * dt);
+  state.Set_e5(state.e5() + sqrt(mu_ / pow(state.a(), 3)) * dt);
 }
 void KeplerianDynamics::PropagateWithStm(NonsingularOE &state, real dt,
                                          Matrix6d &stm) {
@@ -57,7 +57,7 @@ void KeplerianDynamics::PropagateWithStm(NonsingularOE &state, real dt,
 
 // EquinoctialOE
 void KeplerianDynamics::Propagate(EquinoctialOE &state, real dt) {
-  state.Set_lon(state.lon() + sqrt(mu / pow(state.a(), 3)) * dt);
+  state.Set_lon(state.lon() + sqrt(mu_ / pow(state.a(), 3)) * dt);
 }
 void KeplerianDynamics::PropagateWithStm(EquinoctialOE &state, real dt,
                                          Matrix6d &stm) {
@@ -68,8 +68,7 @@ void KeplerianDynamics::PropagateWithStm(EquinoctialOE &state, real dt,
   ClohessyWiltshireDynamics
   ************************************************************************** */
 
-ClohessyWiltshireDynamics::ClohessyWiltshireDynamics(real a_in,
-                                                     real n_in)
+ClohessyWiltshireDynamics::ClohessyWiltshireDynamics(real a_in, real n_in)
     : a(a_in), n(n_in){};
 
 void ClohessyWiltshireDynamics::Propagate(OrbitState &state, real tEnd) {

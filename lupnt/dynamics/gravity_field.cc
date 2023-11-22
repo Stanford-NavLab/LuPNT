@@ -240,7 +240,7 @@ std::tuple<Matrix3d, Matrix3d> spharm_d2vwdx2(
   Matrix3d d2VdX2 = Matrix3d::Zero();
   Matrix3d d2WdX2 = Matrix3d::Zero();
   VectorXd cf(11);
-  Vector2i kdel;
+  Vector2d kdel;
 
   cf(0) = 1 / (Re * Re) * sqrt((2 * n + 1) / (2 * n + 5));
   cf(1) = sqrt((n + m + 2) * (n + m + 1) * (n - m + 2) * (n - m + 1));

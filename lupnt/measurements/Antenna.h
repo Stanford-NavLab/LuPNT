@@ -10,8 +10,6 @@
  */
 #pragma once
 
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
 #include <string>
 
 #include "lupnt/core/constants.h"

@@ -11,7 +11,6 @@
 
 #include "coord_converter.h"
 
-#include <autodiff/forward/real/eigen.hpp>
 #include <filesystem>
 
 #include "../core/constants.h"
@@ -32,18 +31,18 @@ using namespace SpiceInterface;
  * @param coord_sys_out Coordinate system of the converted state vector
  * @return Vector6real  State vector in the converted coordinate system
  */
-Vector6real CoordConverter::Convert(const Vector6real rv_in, const double epoch,
-                                   const CoordSystem coord_sys_in,
-                                   const CoordSystem coord_sys_out) {
+Vector6real CoordConverter::Convert(Vector6real rv_in, real epoch,
+                                    CoordSystem coord_sys_in,
+                                    CoordSystem coord_sys_out) {
   if (coord_sys_in == coord_sys_out) return rv_in;
 
-  Vector6<T> rv_out;
+  Vector6real rv_out;
 
   if (coord_sys_in == ITRF)  /// Earth fixed frame
   {
     if (coord_sys_out == GCRF) {  // Earth fixed -> Inertial Frame
       // Convert to GCRF
-      Matrix6<T> Rrv_GCRF_ITRF;
+      Matrix6real Rrv_GCRF_ITRF;
       Rrv_GCRF_ITRF = ComputeITRFtoGCRF(epoch);
       rv_out = Rrv_GCRF_ITRF * rv_in;
       return rv_out;
@@ -58,19 +57,19 @@ Vector6real CoordConverter::Convert(const Vector6real rv_in, const double epoch,
   if (coord_sys_in == ME) {
     if (coord_sys_out == PA) {
       // Convert to PA
-      Vector3<T> r_ME = rv_in.head(3);
-      Vector3<T> v_ME = rv_in.tail(3);
+      Vector3real r_ME = rv_in.head(3);
+      Vector3real v_ME = rv_in.tail(3);
 
       // Rotation Matrix ME (in DE421) -> PA (in DE440)
       // Reference:
       // https://iopscience.iop.org/article/10.3847/1538-3881/abd414/pdf
-      Matrix3<T> B_M = R1(-0.2785 * DEG_PER_ARCSEC) *
-                       R2(-78.6944 * DEG_PER_ARCSEC) *
-                       R3(-67.8526 * DEG_PER_ARCSEC);
-      Matrix3<T> B_M_inv = B_M.transpose();
+      Matrix3real B_M = R1(-0.2785 * DEG_PER_ARCSEC) *
+                        R2(-78.6944 * DEG_PER_ARCSEC) *
+                        R3(-67.8526 * DEG_PER_ARCSEC);
+      Matrix3real B_M_inv = B_M.transpose();
 
-      Vector3<T> r_PA = B_M * r_ME;
-      Vector3<T> v_PA = B_M * v_ME;
+      Vector3real r_PA = B_M * r_ME;
+      Vector3real v_PA = B_M * v_ME;
       rv_out << r_PA, v_PA;
       return rv_out;
     } else  // first convert to PA and then to the desired frame
@@ -86,18 +85,18 @@ Vector6real CoordConverter::Convert(const Vector6real rv_in, const double epoch,
       // Rotation Matrix ME (in DE421) -> PA (in DE440)
       // Reference:
       // https://iopscience.iop.org/article/10.3847/1538-3881/abd414/pdf
-      Vector3<T> r_PA = rv_in.head(3);
-      Vector3<T> v_PA = rv_in.tail(3);
-      Matrix3<T> B_M = R1(-0.2785 * DEG_PER_ARCSEC) *
-                       R2(-78.6944 * DEG_PER_ARCSEC) *
-                       R3(-67.8526 * DEG_PER_ARCSEC);
-      Vector3<T> r_ME = B_M * r_PA;
-      Vector3<T> v_ME = B_M * v_PA;
+      Vector3real r_PA = rv_in.head(3);
+      Vector3real v_PA = rv_in.tail(3);
+      Matrix3real B_M = R1(-0.2785 * DEG_PER_ARCSEC) *
+                        R2(-78.6944 * DEG_PER_ARCSEC) *
+                        R3(-67.8526 * DEG_PER_ARCSEC);
+      Vector3real r_ME = B_M * r_PA;
+      Vector3real v_ME = B_M * v_PA;
       rv_out << r_ME, v_ME;
       return rv_out;
     } else if (coord_sys_out == MI)  // Convert to Moon Inertial
     {
-      Matrix3<T> Mrot = GetFrameConversionMatrix(epoch, "MOON_PA", "J2000");
+      Matrix6real Mrot = GetFrameConversionMatrix(epoch, "MOON_PA", "J2000");
       rv_out = Mrot * rv_in;
       return rv_out;
     } else {  // first convert to MI and then to the desired frame
@@ -109,20 +108,20 @@ Vector6real CoordConverter::Convert(const Vector6real rv_in, const double epoch,
 
   if (coord_sys_in == GCRF)  // Earth centered Inertial Frame
   {
-    Vector3<T> r_GCRF_E_p = rv_in.head(3);
-    Vector3<T> v_GCRF_E_p = rv_in.tail(3);
+    Vector3real r_GCRF_E_p = rv_in.head(3);
+    Vector3real v_GCRF_E_p = rv_in.tail(3);
 
     switch (coord_sys_out) {
       case ICRF: {
         // Get position and velocity of the Solar System Barycenter (SSB) with
         // respect to Earth (E) in ICRF frame
-        VectorX<T> rv_ICRF_SSB_E = GetBodyPosVel(epoch, 399, 0);
+        VectorXreal rv_ICRF_SSB_E = GetBodyPosVel(epoch, 399, 0);
         rv_out = rv_in + rv_ICRF_SSB_E;
         return rv_out;
       }
       case ITRF: {
         // Convert to GCRF
-        Matrix6<T> Rrv_GCRF_ITRF;
+        Matrix6real Rrv_GCRF_ITRF;
         Rrv_GCRF_ITRF = ComputeITRFtoGCRF(epoch);
         rv_out = Rrv_GCRF_ITRF.transpose() * rv_in;
 
@@ -131,7 +130,7 @@ Vector6real CoordConverter::Convert(const Vector6real rv_in, const double epoch,
       case MI: {
         // Get position and velocity of the SMoon with respect to Earth (E) in
         // ICRF frame
-        Vector6<T> rv_ICRF_Moon_E = GetBodyPosVel(epoch, 399, 301);
+        Vector6real rv_ICRF_Moon_E = GetBodyPosVel(epoch, 399, 301);
         rv_out = rv_in + rv_ICRF_Moon_E;  // (sc - E) + (E - Moon) = (sc - Moon)
         return rv_out;
       }
@@ -144,12 +143,12 @@ Vector6real CoordConverter::Convert(const Vector6real rv_in, const double epoch,
     if (coord_sys_out == GCRF) {
       // Get position and velocity of the SMoon with respect to Earth (E) in
       // ICRF frame
-      Vector6<T> rv_ICRF_E_Moon = GetBodyPosVel(epoch, 301, 399);
+      Vector6real rv_ICRF_E_Moon = GetBodyPosVel(epoch, 301, 399);
       rv_out = rv_in + rv_ICRF_E_Moon;  // (sc - M) + (Moon - E) = (sc - Moon)
       return rv_out;
     } else if (coord_sys_out == PA) {  //  Convert to PA
       // convert TAI to TDB past J2000
-      Matrix6<T> Mrot = GetFrameConversionMatrix(epoch, "J2000", "MOON_PA");
+      Matrix6real Mrot = GetFrameConversionMatrix(epoch, "J2000", "MOON_PA");
       rv_out = Mrot * rv_in;
       return rv_out;
     } else if (coord_sys_out == ME) {  // first convert to PA and then to ME
@@ -172,17 +171,17 @@ Vector6real CoordConverter::Convert(const Vector6real rv_in, const double epoch,
  * systems
  *
  * @param epoch  tai in JD
- * @return Matrix3<T> 3x3 rotation matrix
+ * @return Matrix3real 3x3 rotation matrix
  * @ref NASA/TP–20220014814 page 31-36, GMAT Math Spec page 19, GMAT
  * ITRFAxes::CalculateRotationMatrix
  */
-Matrix6<T> CoordConverter::ComputeITRFtoGCRF(const double tai) {
+Matrix6real CoordConverter::ComputeITRFtoGCRF(real tai) {
   // Get the rotation matrix using SPICE
   auto tdb_s = ConvertTime(tai, "TAI", "TDB");
   double et =
       tdb_s
           .val();  // this cuts of the relationship between t and Mrot temporaly
-  Matrix6<T> Mrot = GetFrameConversionMatrix(et, "ITRF93", "J2000");
+  Matrix6real Mrot = GetFrameConversionMatrix(et, "ITRF93", "J2000");
 
   return Mrot;
 }
@@ -192,14 +191,17 @@ Matrix6<T> CoordConverter::ComputeITRFtoGCRF(const double tai) {
  * the first axis in a system
  *
  * @param phi angle of rotation
- * @return Matrix3<T> 3x3 rotation matrix
+ * @return Matrix3real 3x3 rotation matrix
  * @ref NASA/TP–20220014814 page 30
  */
-Matrix3<T> CoordConverter::R1(real phi) {
-  Matrix3<T> R1;
-  double c = cos(phi);
-  double s = sin(phi);
-  R1 << 1.0, 0.0, 0.0, 0.0, c, s, 0.0, -s, c;
+Matrix3real CoordConverter::R1(real phi) {
+  real c = cos(phi);
+  real s = sin(phi);
+  Matrix3real R1{
+      {1.0, 0.0, 0.0},
+      {0.0, c, s},
+      {0.0, -s, c},
+  };
   return R1;
 }
 
@@ -208,14 +210,17 @@ Matrix3<T> CoordConverter::R1(real phi) {
  * the second axis in a system
  *
  * @param phi angle of rotation
- * @return Matrix3<T> 3x3 rotation matrix
+ * @return Matrix3real 3x3 rotation matrix
  * @ref NASA/TP–20220014814 page 30
  */
-Matrix3<T> CoordConverter::R2(real phi) {
-  Matrix3<T> R2;
-  double c = cos(phi);
-  double s = sin(phi);
-  R2 << c, 0.0, -s, 0.0, 1.0, 0.0, s, 0.0, c;
+Matrix3real CoordConverter::R2(real phi) {
+  real c = cos(phi);
+  real s = sin(phi);
+  Matrix3real R2{
+      {c, 0.0, -s},
+      {0.0, 1.0, 0.0},
+      {s, 0.0, c},
+  };
   return R2;
 }
 
@@ -224,14 +229,17 @@ Matrix3<T> CoordConverter::R2(real phi) {
  * the third axis in a system
  *
  * @param phi angle of rotation
- * @return Matrix3<T> 3x3 rotation matrix
+ * @return Matrix3real 3x3 rotation matrix
  * @ref NASA/TP–20220014814 page 30
  */
-Matrix3<T> CoordConverter::R3(real phi) {
-  Matrix3<T> R3;
-  double c = cos(phi);
-  double s = sin(phi);
-  R3 << c, s, 0.0, -s, c, 0.0, 0.0, 0.0, 1.0;
+Matrix3real CoordConverter::R3(real phi) {
+  real c = cos(phi);
+  real s = sin(phi);
+  Matrix3real R3{
+      {c, s, 0.0},
+      {-s, c, 0.0},
+      {0.0, 0.0, 1.0},
+  };
   return R3;
 }
 
@@ -239,10 +247,14 @@ Matrix3<T> CoordConverter::R3(real phi) {
  * @brief Compute the rotation matrix specified by the input skew vector.
  *
  * @param v
- * @return Matrix3<T>
+ * @return Matrix3real
  */
-Matrix3<T> Skew(Vector3<T> v) {
-  Matrix3<T> skew;
-  skew << 0.0, -v(2), v(1), v(2), 0.0, -v(0), -v(1), v(0), 0.0;
+Matrix3real CoordConverter::Skew(Vector3real x)
+{
+  Matrix3real skew{
+      {0.0, -x(2), x(1)},
+      {x(2), 0.0, -x(0)},
+      {-x(1), x(0), 0.0},
+  };
   return skew;
 }

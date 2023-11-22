@@ -20,7 +20,7 @@
 #include "../3rdparty/cspice/include/SpiceUsr.h"
 #include "lupnt/core/constants.h"
 
-namespace ad = autodiff;
+
 
 namespace lupnt {
 /**

@@ -27,7 +27,7 @@ real RadioMeasurement::ComputePseudorangerate(
     VectorXreal v_rx, real dt_tx_dot, real dt_rx_dot,
     real offset) {
   VectorXreal e_rx = (r_tx - r_rx).normalized();
-  real prr = dot(e_rx, v_tx - v_rx) + C * (dt_rx_dot - dt_tx_dot) + offset;
+  real prr = e_rx.dot(v_tx - v_rx) + C * (dt_rx_dot - dt_tx_dot) + offset;
   return prr;
 };
 

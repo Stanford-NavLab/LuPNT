@@ -3,9 +3,9 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
-#include <Eigen/Dense>
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+
+
+
 
 namespace py = pybind11;
 using namespace lupnt;

@@ -8,14 +8,14 @@
  * @copyright Copyright (c) 2023
  *
  */
-#include <autodiff/forward/real.hpp>
+
 
 #include "dynamics.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/dynamics/gravity_field.h"
 #include "lupnt/physics/spice_interface.h"
 
-namespace ad = autodiff;
+
 
 namespace lupnt {
 

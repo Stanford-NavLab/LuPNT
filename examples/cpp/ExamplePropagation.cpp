@@ -23,11 +23,11 @@
 #include <lupnt/physics/spice_interface.h>
 
 // Autodiff includes
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+
+
 
 // Eigen includes
-#include <Eigen/Dense>
+
 #include <Eigen/QR>
 
 // C++ includes

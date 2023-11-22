@@ -12,17 +12,16 @@
 #include "spice_interface.h"
 
 #include <string.h>
-
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 
-#include "../3rdparty/cspice/include/SpiceUsr.h"
-#include "../3rdparty/cspice/include/SpiceZfc.h"
-#include "../physics/cheby.h"
 #include "lupnt/core/user_file_path.h"
+#include "lupnt/3rdparty/cspice/include/SpiceUsr.h"
+#include "lupnt/3rdparty/cspice/include/SpiceZfc.h"
+#include "lupnt/physics/cheby.h"
 
-namespace ad = autodiff;
+
 
 namespace lupnt {
 namespace SpiceInterface {

@@ -11,10 +11,10 @@
 
 #include "lupnt/numerics/integrator.h"
 
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
 
-namespace ad = autodiff;
+
+
+
 
 namespace lupnt {
 /**

@@ -14,7 +14,7 @@
 #include <lupnt/dynamics/dynamics.h>
 #include <lupnt/physics/orbit_state_utils.h>
 
-#include <autodiff/forward/real.hpp>
+
 #include <fstream>
 #include <iostream>
 #include <string>

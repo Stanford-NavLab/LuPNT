@@ -3,7 +3,7 @@ set(groupName "examples")
 set(linkLibraries "lupnt")
 
 # Get all script files
-file(GLOB script_files "*.cpp" "**/*.cpp")
+file(GLOB script_files "*.cc" "**/*.cc")
 
 # Separate into source files and headers (allows for adding headers to show up in
 # MSVC and Xcode projects).

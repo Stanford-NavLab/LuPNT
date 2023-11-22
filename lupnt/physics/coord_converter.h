@@ -40,16 +40,15 @@ class CoordConverter {
  public:
   static const std::string COORD_SYSTEM_TEXT[CoordSystemCount];
 
-  static Vector6real Convert(const Vector6real rv_in, const real epoch,
-                             const CoordSystem coord_sys_in,
-                             const CoordSystem coord_sys_out);
+  static Vector6real Convert(Vector6real rv_in, real epoch,
+                             CoordSystem coord_sys_in,
+                             CoordSystem coord_sys_out);
 
  private:
-  static MatrixXreal ComputeITRFtoGCRF(const real tai);
+  static Matrix6real ComputeITRFtoGCRF(real tai);
   static Matrix3real R1(real phi);
   static Matrix3real R2(real phi);
   static Matrix3real R3(real phi);
-  static Matrix3real Skew(Vector3real vec);
+  static Matrix3real Skew(Vector3real x);
 };
-
 }  // namespace lupnt

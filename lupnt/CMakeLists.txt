@@ -38,7 +38,7 @@ set(3rdparty_srcs
 # assemble core libaries
 foreach(subdir ${LPT_subdirs})
   # Build convenience libraries
-  file(GLOB_RECURSE subdir_srcs "${subdir}/*.cpp" "${subdir}/*.h") # Include header files so they show up in Visual Studio
+  file(GLOB_RECURSE subdir_srcs "${subdir}/*.cc" "${subdir}/*.h") # Include header files so they show up in Visual Studio
   set(${subdir}_srcs ${subdir_srcs})
 
   # Build local library and tests

@@ -6,7 +6,7 @@
 #include "TestUtils.h"
 
 using namespace lupnt;
-namespace ad = autodiff;
+
 namespace sp = SpiceInterface;
 
 // Demonstrate some basic assertions.

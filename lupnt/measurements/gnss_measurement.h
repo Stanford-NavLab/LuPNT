@@ -13,12 +13,12 @@
 #include <lupnt/core/constants.h>
 #include <lupnt/measurements/transmission.h>
 
-#include <Eigen/Dense>
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+
+
+
 #include <memory>
 
-namespace ad = autodiff;
+
 
 namespace lupnt {
 

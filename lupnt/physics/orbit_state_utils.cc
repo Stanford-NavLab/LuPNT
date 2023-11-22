@@ -9,21 +9,11 @@
  *
  */
 
-#include "lupnt/physics/orbit_state_utils.h"
+#include "orbit_state_utils.h"
 
-#include <Eigen/Dense>
-
-#include "lupnt/core/constants.h"
 #include "lupnt/numerics/math_utils.h"
 
 namespace lupnt {
-
-/* *********************************************************************************************
- */
-/* **********************************  OrbitStateUtils
- * ********************************************** */
-/* *********************************************************************************************
- */
 
 /**
  * @brief Convert classical orbital elements to Cartesian
@@ -32,7 +22,7 @@ namespace lupnt {
  * @return Vector6real
  * @ref Vallado "Fudamentals of Astrodynamics and Applications " p146 (ELORB)
  */
-CartesianOrbitState CoeToCart(const ClassicalOE coe, double mu) {
+CartesianOrbitState CoeToCart(const ClassicalOE &coe, double mu) {
   Vector6real coeVec = coe.GetVector();
   Vector6real cartVec = CoeToCart(coeVec, mu);
   CartesianOrbitState cartOrbitState(cartVec);
@@ -78,7 +68,7 @@ Vector6real CoeToCart(const Vector6real &coeVec, double mu) {
  * @return Vector6real
  * @ref Vallado "Fudamentals of Astrodynamics and Applications " p146 (ELORB)
  */
-ClassicalOE CartToCoe(const CartesianOrbitState cartOrbitState, double mu) {
+ClassicalOE CartToCoe(const CartesianOrbitState &cartOrbitState, double mu) {
   Vector6real cartVec = cartOrbitState.GetVector();
   Vector6real coeVec = CartToCoe(cartVec, mu);
   ClassicalOE coe(coeVec);
@@ -270,7 +260,7 @@ Vector6real RoeToCoe(const Vector6real &coe_c, const Vector6real &roe) {
   return coe_d;
 }
 
-ClassicalOE RoeToCoe(const ClassicalOE coe_c, const QuasiNonsingularROE roe) {
+ClassicalOE RoeToCoe(const ClassicalOE &coe_c, const QuasiNonsingularROE &roe) {
   Vector6real coe_d = RoeToCoe(coe_c.GetVector(), roe.GetVector());
   return ClassicalOE(coe_d);
 }

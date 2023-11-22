@@ -13,7 +13,7 @@
 
 #include "lupnt/core/constants.h"
 
-namespace ad = autodiff;
+
 
 namespace lupnt {
 

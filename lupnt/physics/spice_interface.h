@@ -13,16 +13,12 @@
 
 #include <string.h>
 
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
-
 #include "../physics/cheby.h"
 #include "lupnt/core/constants.h"
 
-namespace ad = autodiff;
-
 namespace lupnt {
 namespace SpiceInterface {
+
 static segment_t *cheby_s;
 static long cheby_n;
 void LoadSpiceKernel(void);
@@ -39,6 +35,6 @@ Vector3d GetBodyPos(std::string targetName, real epoch,
                            std::string refFrame, std::string obsName,
                            std::string abCorrection);
 
-}  // namespace  SpiceInterface
+}  // namespace SpiceInterface
 
 }  // namespace lupnt

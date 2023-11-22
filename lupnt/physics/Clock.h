@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include <Eigen/Dense>
 #include <tuple>
 
 #include "state.h"

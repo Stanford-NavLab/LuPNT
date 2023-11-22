@@ -10,18 +10,12 @@
  */
 #include "gnss_channel.h"
 
-#include <lupnt/agents/agent.h>
-#include <lupnt/physics/orbit_state.h>
-
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
-
-#include "gnss_receiver.h"
-#include "gnss_transmitter.h"
+#include "lupnt/agents/agent.h"
 #include "lupnt/core/constants.h"
+#include "lupnt/measurements/gnss_receiver.h"
+#include "lupnt/measurements/gnss_transmitter.h"
+#include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/spice_interface.h"
-
-namespace ad = autodiff;
 
 #define DEBUG_TRANSMISSIONS 0
 
@@ -33,7 +27,7 @@ namespace lupnt {
  * @param t
  * @return std::vector<Transmission>
  */
-std::vector<Transmission> gnssChannel::Receive(GnssReceiver &rx, double t) {
+std::vector<Transmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
   std::vector<Transmission> received_transs;
 
   // Messages from other comms systems that can generate Gnss messages

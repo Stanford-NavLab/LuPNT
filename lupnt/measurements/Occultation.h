@@ -13,7 +13,6 @@
 
 #include <lupnt/core/constants.h>
 
-#include <autodiff/forward/real/eigen.hpp>
 #include <cmath>
 #include <map>
 

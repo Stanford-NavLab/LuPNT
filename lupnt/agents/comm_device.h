@@ -10,8 +10,8 @@
  */
 #pragma once
 
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+
+
 #include <map>
 #include <memory>
 
@@ -20,7 +20,7 @@
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/orbit_state.h"
 
-namespace ad = autodiff;
+
 
 namespace lupnt {
 

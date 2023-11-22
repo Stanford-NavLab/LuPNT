@@ -20,7 +20,7 @@ endif (APPLE)
 ##############
 enable_testing()
 
-file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES false *.h *.cpp)
+file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES false *.h *.cc)
 set(SOURCES ${TEST_SOURCES})
 add_executable(runUnitTests  ${TEST_SOURCES})
 

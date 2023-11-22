@@ -16,7 +16,7 @@
 #include <string>
 
 using namespace lupnt;
-namespace ad = autodiff;
+
 namespace sp = SpiceInterface;
 
 int main() {

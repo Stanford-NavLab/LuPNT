@@ -8,9 +8,6 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
-// Eigen
-#include <Eigen/Dense>
-
 namespace py = pybind11;
 using namespace lupnt;
 
@@ -101,8 +98,8 @@ void init_orbit_state(py::module &m) {
            [](const ClassicalOE &s) { return "<pylupnt.ClassicalOE>"; });
 
   py::class_<CartesianOrbitState, OrbitState>(m, "CartesianOrbitState")
-      .def(py::init<const Vector6d &, const CoordSystem>(),
-           py::arg("rv"), py::arg("cs") = CoordSystem::NONE)
+      .def(py::init<const Vector6d &, const CoordSystem>(), py::arg("rv"),
+           py::arg("cs") = CoordSystem::NONE)
       .def("print", &CartesianOrbitState::Print, py::arg("deg") = true)
       .def("clone", &CartesianOrbitState::Clone)
       .def("r", &CartesianOrbitState::r)
@@ -262,15 +259,16 @@ void init_orbit_state(py::module &m) {
       py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
   m.def(
       "coe_to_rtn",
-      [](const Vector6d &coe_chief, const Vector6d &coe_deputy,
-         double mu) { return CoeToRtn(coe_chief, coe_deputy, mu); },
+      [](const Vector6d &coe_chief, const Vector6d &coe_deputy, double mu) {
+        return CoeToRtn(coe_chief, coe_deputy, mu);
+      },
       py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
 
   // Todo: add overloads for other conversions
 
   // Anomaly Conversions
   m.def("eccentric_to_true", [](double E, double e) -> double {
-    return EccentricAnomToTrueAnom(E, e);
+    return EccentricAnomToTrueAnom(E, e).val();
   });
   //   m.def("eccentric_to_true", &EccentricAnomToTrueAnom, py::arg("E"),
   //         py::arg("e"));

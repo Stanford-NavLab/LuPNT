@@ -14,10 +14,10 @@
 #include <memory>
 #include <string>
 
+#include "lupnt/numerics/string_utils.h"
+#include "lupnt/physics/spice_interface.h"
 #include "orbit_state.h"
 #include "orbit_state_utils.h"
-#include "spice_interface.h"
-#include "lupnt/numerics/string_utils.h"
 
 namespace sp = lupnt::SpiceInterface;
 

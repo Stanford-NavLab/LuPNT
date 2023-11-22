@@ -14,10 +14,6 @@
 #include <Eigen/Cholesky>
 #include <Eigen/Eigenvalues>
 #include <Eigen/SVD>
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
-
-namespace ad = autodiff;
 
 namespace lupnt {
 
@@ -29,34 +25,13 @@ VectorXd toEigen(VectorXreal x) {
   return v;
 }
 
-real dot(VectorXreal v1, VectorXreal v2) {
-  return (v1.transpose() * v2).sum();
-}
-
-VectorXreal cross(VectorXreal v1, VectorXreal v2) {
-  int n = v1.size();
-  VectorXreal vout(3);
-
-  if (n == 3)
-    vout << v1(1) * v2(2) - v1(2) * v2(1), v1(2) * v2(0) - v1(0) * v2(2),
-        v1(0) * v2(1) - v1(1) * v2(0);
-  else
-    throw std::invalid_argument(
-        "Currently the cross product is only implemetef for n=3");
-  return vout;
-}
-
-real norm(VectorXreal x) { return sqrt(dot(x, x)); }
-
 /**
  * @brief Wrap the angle between -pi and pi
  *
  * @param angle
  * @return real
  */
-real wrapToPi(real angle) {
-  return atan2(sin(angle), cos(angle));
-}
+real wrapToPi(real angle) { return atan2(sin(angle), cos(angle)); }
 
 /**
  * @brief Wrap the angle between 0 and 2pi
@@ -64,9 +39,7 @@ real wrapToPi(real angle) {
  * @param angle
  * @return real
  */
-real wrapTo2Pi(real angle) {
-  return atan2(sin(angle), cos(angle)) + M_PI;
-}
+real wrapTo2Pi(real angle) { return atan2(sin(angle), cos(angle)) + M_PI; }
 
 /**
  * @brief Convert degree to radian
@@ -130,8 +103,8 @@ double LinearInterp1d(VectorXd x, VectorXd data, double ix) {
  * @param iy  interpolation point y
  * @return double  data at the interpolation point
  */
-double LinearInterp2d(VectorXd x, VectorXd y,
-                      MatrixXd data, double ix, double iy) {
+double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
+                      double iy) {
   int ix0 = 0;
   int ix1 = 0;
   for (int i = 0; i < x.size() - 1; i++) {
@@ -177,8 +150,7 @@ double LinearInterp2d(VectorXd x, VectorXd y,
  * @param nn
  * @return MatrixXd
  */
-MatrixXd SampleMVN(const VectorXd mean,
-                          const MatrixXd covar, int nn) {
+MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn) {
   // Define random generator with Gaussian distribution
   int xsize = mean.size();
   auto dist = std::bind(std::normal_distribution<double>{0.0, 1.0},
@@ -186,9 +158,9 @@ MatrixXd SampleMVN(const VectorXd mean,
 
   // Transform Matrix
   MatrixXd normTransform(xsize, xsize);
-  LLT<MatrixXd> cholSolver(covar);
+  Eigen::LLT<MatrixXd> cholSolver(covar);
 
-  if (cholSolver.info() == Success) {
+  if (cholSolver.info() == Eigen::Success) {
     // Use cholesky solver
     normTransform = cholSolver.matrixL();
   } else {

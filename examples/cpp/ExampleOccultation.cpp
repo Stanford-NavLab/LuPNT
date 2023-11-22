@@ -9,6 +9,7 @@
  *
  */
 #include <lupnt/measurements/occultation.h>
+#include <lupnt/core/constants.h>
 #include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/coord_converter.h>
 

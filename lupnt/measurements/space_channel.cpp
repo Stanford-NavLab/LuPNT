@@ -14,7 +14,7 @@
 #include <lupnt/agents/agent.h>
 #include <lupnt/agents/comm_device.h>
 
-#include <autodiff/forward/real.hpp>
+
 #include <iomanip>
 #include <iostream>
 #include <string>

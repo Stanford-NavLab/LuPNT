@@ -12,18 +12,18 @@
 #pragma once
 
 // Autodiff includes
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+
+
 
 // Eigen includes
 #include <lupnt/core/constants.h>
 
-#include <Eigen/Dense>
-#include <Eigen/QR>
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
 
-namespace ad = autodiff;
+#include <Eigen/QR>
+
+
+
+
 namespace lupnt {
 
 // Dynamics and Measurement Function

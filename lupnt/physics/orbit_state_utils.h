@@ -10,32 +10,25 @@
  */
 
 #pragma once
-#include <Eigen/Dense>
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+
 #include <boost/preprocessor.hpp>
 
-#include "coord_converter.h"
 #include "lupnt/core/constants.h"
-#include "orbit_state.h"
-
-#pragma once
-
-namespace ad = autodiff;
+#include "lupnt/physics/coord_converter.h"
+#include "lupnt/physics/orbit_state.h"
 
 namespace lupnt {
 
 // COE <-> Cart
-CartesianOrbitState CoeToCart(const ClassicalOE coe, double mu);
-// Vector6real CoeToCart(const Vector6real &coeVec, double mu);
-
+CartesianOrbitState CoeToCart(const ClassicalOE &coe, double mu);
 Vector6real CoeToCart(const Vector6real &coeVec, double mu);
 
-ClassicalOE CartToCoe(const CartesianOrbitState cartOrbitState, double mu);
+ClassicalOE CartToCoe(const CartesianOrbitState &cartOrbitState, double mu);
 Vector6real CartToCoe(const Vector6real &cartVec, double mu);
 
 // ROE <-> COE
-ClassicalOE RoeToCoe(const ClassicalOE coeChief, const QuasiNonsingularROE roe);
+ClassicalOE RoeToCoe(const ClassicalOE &coeChief,
+                     const QuasiNonsingularROE &roe);
 Vector6real RoeToCoe(const Vector6real &coeChiefVec, const Vector6real &roeVec);
 
 // Inertial <-> RTN
@@ -134,5 +127,3 @@ static std::shared_ptr<CartesianOrbitState> ConvertOrbitStateCoordSystem(
 }
 
 }  // namespace lupnt
-
-#include "orbit_state_utils.cc"

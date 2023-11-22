@@ -10,12 +10,9 @@
  */
 #pragma once
 
-#include <Eigen/Dense>
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
 #include <string>
 
-namespace ad = autodiff;
+
 
 namespace lupnt {
 struct Transmission {

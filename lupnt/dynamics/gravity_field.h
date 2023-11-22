@@ -18,15 +18,9 @@
 #include <string>
 #include <vector>
 
-// autodiff includes
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
-
 // lupnt includes
 #include "lupnt/core/user_file_path.h"
 #include "lupnt/numerics/math_utils.h"
-
-namespace ad = autodiff;
 
 namespace lupnt {
 

@@ -4,15 +4,15 @@
 #include <lupnt/physics/orbit_state.h>
 #include <lupnt/physics/orbit_state_utils.h>
 
-#include <Eigen/Dense>
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+
+
+
 #include <iostream>
 
 #include "TestUtils.h"
 
 using namespace lupnt;
-namespace ad = autodiff;
+
 
 // Keplerian Dynamics with Classical Orbital Elements
 TEST(Test_Dynamics, Test_KeplerianDynamics_ClassicalOE) {
