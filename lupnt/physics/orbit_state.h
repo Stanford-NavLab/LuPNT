@@ -53,7 +53,7 @@ class OrbitState : public IState {
   virtual ~OrbitState(){};
 
   Vector6real GetVector() const { return x_; }
-  inline int GetStateSize() const { return 6; }
+  inline int GetSize() const { return x_.size(); }
   inline real GetValue(int i) const { return x_(i); }
   inline OrbitStateRepres GetOrbitStateRepres() const { return state_repres_; }
   inline CoordSystem GetCoordSystem() const { return coord_sys_; }

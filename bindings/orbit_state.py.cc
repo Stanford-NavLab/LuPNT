@@ -11,6 +11,22 @@
 namespace py = pybind11;
 using namespace lupnt;
 
+#define DEFINE_GETSET(class, name) &class ::Get##name, &class ::Set##name
+
+#define DEFINE_GETSET_REAL(class, name) \
+  [](const class &s) -> double { return s.name().val(); }, &class ::Set_##name
+
+#define DEFINE_GETSET_REALVEC(class, name, type)                       \
+  [](const class &s) -> type { return s.Get##name().cast<double>(); }, \
+      &class ::Set##name
+
+#define DEFINE_REPR(class)                                                    \
+  [](const class &s) {                                                        \
+    std::stringstream ss;                                                     \
+    ss << "<pylupnt." << #class << " [" << s.GetVector().transpose() << "]>"; \
+    return ss.str();                                                          \
+  }
+
 class PyOrbitState : public OrbitState {
  public:
   /* inherit the constructors*/
@@ -37,15 +53,8 @@ class PyOrbitState : public OrbitState {
   }
 };
 
-Vector6d ToEigen(const Vector6real &vec) {
-  Vector6d vec_eigen;
-  for (int i = 0; i < 6; i++) {
-    vec_eigen(i) = vec(i).val();
-  }
-  return vec_eigen;
-}
-
 void init_orbit_state(py::module &m) {
+  // OrbitStateRepres
   py::enum_<OrbitStateRepres>(m, "OrbitStateRepres")
       .value("CARTESIAN", OrbitStateRepres::CARTESIAN)
       .value("CLASSICAL_OE", OrbitStateRepres::CLASSICAL_OE)
@@ -57,6 +66,7 @@ void init_orbit_state(py::module &m) {
       .value("DELAUNAY_OE", OrbitStateRepres::DELAUNAY_OE)
       .export_values();
 
+  // OrbitState
   py::class_<OrbitState, PyOrbitState>(m, "OrbitState")
       .def(py::init<const Vector6d &, const CoordSystem,
                     const OrbitStateRepres>())
@@ -70,120 +80,112 @@ void init_orbit_state(py::module &m) {
                     &OrbitState::SetCoordSystem)
       .def_property("state_repres", &OrbitState::GetOrbitStateRepres,
                     &OrbitState::SetOrbitStateRepres)
+      .def_property_readonly("size", &OrbitState::GetSize)
       .def("__copy__", &OrbitState::Clone)
       .def("__repr__", [](const OrbitState &s) {
         std::stringstream ss;
-        ss << "<OrbitState " << s.GetVector().transpose() << ">";
+        ss << "<pylupnt.OrbitState [" << s.GetVector().transpose() << "]>";
         return ss.str();
       });
 
   // ClassicalOE
   py::class_<ClassicalOE, OrbitState>(m, "ClassicalOE")
       .def(py::init<const Vector6d &, const CoordSystem>(),
-           py::arg("Orbital Elements"),
-           py::arg("Coordinate System") = CoordSystem::NONE)
+           py::arg("[a, e, i, Omega, w, M]"),
+           py::arg("coord_sys") = CoordSystem::NONE)
       .def("print", &ClassicalOE::Print, py::arg("deg") = true)
       .def("clone", &ClassicalOE::Clone)
-      .def_property("a", &ClassicalOE::a, &ClassicalOE::Set_a)
-      .def_property("e", &ClassicalOE::e, &ClassicalOE::Set_e)
-      .def_property("i", &ClassicalOE::i, &ClassicalOE::Set_i)
-      .def_property("Omega", &ClassicalOE::Omega, &ClassicalOE::Set_Omega)
-      .def_property("w", &ClassicalOE::w, &ClassicalOE::Set_w)
-      .def_property("M", &ClassicalOE::M, &ClassicalOE::Set_M)
-      .def("__repr__",
-           [](const ClassicalOE &s) { return "<pylupnt.ClassicalOE>"; });
+      .def_property("a", DEFINE_GETSET_REAL(ClassicalOE, a))
+      .def_property("e", DEFINE_GETSET_REAL(ClassicalOE, e))
+      .def_property("i", DEFINE_GETSET_REAL(ClassicalOE, i))
+      .def_property("Omega", DEFINE_GETSET_REAL(ClassicalOE, Omega))
+      .def_property("W", DEFINE_GETSET_REAL(ClassicalOE, w))
+      .def("__repr__", DEFINE_REPR(ClassicalOE));
 
-  //   py::class_<CartesianOrbitState, OrbitState>(m, "CartesianOrbitState")
-  //       .def(py::init<const Vector6d &, const CoordSystem>(), py::arg("rv"),
-  //            py::arg("cs") = CoordSystem::NONE)
-  //       .def("print", &CartesianOrbitState::Print, py::arg("deg") = true)
-  //       .def("clone", &CartesianOrbitState::Clone)
-  //       .def("r", &CartesianOrbitState::r)
-  //       .def("v", &CartesianOrbitState::v)
-  //       .def("set_r", &CartesianOrbitState::Set_r)
-  //       .def("set_v", &CartesianOrbitState::Set_v)
-  //       .def("__repr__", [](const CartesianOrbitState &s) {
-  //         return "<pylupnt.CartesianOrbitState>";
-  //       });
+  // CartesianOrbitState
+  py::class_<CartesianOrbitState, OrbitState>(m, "CartesianOrbitState")
+      .def(py::init<const Vector6d &, const CoordSystem>(), py::arg("rv"),
+           py::arg("coord_sys") = CoordSystem::NONE)
+      .def("print", &CartesianOrbitState::Print, py::arg("deg") = true)
+      .def("clone", &CartesianOrbitState::Clone)
+      .def_property(
+          "r",
+          [](const CartesianOrbitState &s) -> Vector3d {
+            return s.r().cast<double>();
+          },
+          &CartesianOrbitState::Set_r)
+      .def_property(
+          "v",
+          [](const CartesianOrbitState &s) -> Vector3d {
+            return s.v().cast<double>();
+          },
+          &CartesianOrbitState::Set_v)
+      .def("__repr__", DEFINE_REPR(CartesianOrbitState));
 
-  //   py::class_<QuasiNonsingularOE, OrbitState>(m, "QuasiNonsingularOE")
-  //       .def(py::init<const Vector6d &, const CoordSystem>())
-  //       .def(py::init<double, double, double, double, double, double,
-  //                     const CoordSystem>(),
-  //            py::arg("a"), py::arg("u"), py::arg("ex"), py::arg("ey"),
-  //            py::arg("i"), py::arg("Omega"), py::arg("cs") =
-  //            CoordSystem::NONE)
-  //       .def("print", &QuasiNonsingularOE::Print, py::arg("deg") = true)
-  //       .def("clone", &QuasiNonsingularOE::Clone)
-  //       .def("a", &QuasiNonsingularOE::a)
-  //       .def("u", &QuasiNonsingularOE::u)
-  //       .def("ex", &QuasiNonsingularOE::ex)
-  //       .def("ey", &QuasiNonsingularOE::ey)
-  //       .def("i", &QuasiNonsingularOE::i)
-  //       .def("Omega", &QuasiNonsingularOE::Omega);
+  // QuasiNonsingularOE
+  py::class_<QuasiNonsingularOE, OrbitState>(m, "QuasiNonsingularOE")
+      .def(py::init<const Vector6d &, const CoordSystem>())
+      .def("print", &QuasiNonsingularOE::Print, py::arg("deg") = true)
+      .def("clone", &QuasiNonsingularOE::Clone)
+      .def_property("a", DEFINE_GETSET_REAL(QuasiNonsingularOE, a))
+      .def_property("u", DEFINE_GETSET_REAL(QuasiNonsingularOE, u))
+      .def_property("ex", DEFINE_GETSET_REAL(QuasiNonsingularOE, ex))
+      .def_property("ey", DEFINE_GETSET_REAL(QuasiNonsingularOE, ey))
+      .def_property("i", DEFINE_GETSET_REAL(QuasiNonsingularOE, i))
+      .def_property("Omega", DEFINE_GETSET_REAL(QuasiNonsingularOE, Omega))
+      .def("__repr__", DEFINE_REPR(QuasiNonsingularOE));
 
-  //   py::class_<NonsingularOE, OrbitState>(m, "NonsingularOE")
-  //       .def(py::init<const Vector6d &, const CoordSystem>())
-  //       .def(py::init<double, double, double, double, double, double,
-  //                     const CoordSystem>(),
-  //            py::arg("a"), py::arg("e1"), py::arg("e2"), py::arg("e3"),
-  //            py::arg("e4"), py::arg("e5"), py::arg("cs") = CoordSystem::NONE)
-  //       .def("print", &NonsingularOE::Print, py::arg("deg") = true)
-  //       .def("clone", &NonsingularOE::Clone)
-  //       .def("a", &NonsingularOE::a)
-  //       .def("e1", &NonsingularOE::e1)
-  //       .def("e2", &NonsingularOE::e2)
-  //       .def("e3", &NonsingularOE::e3)
-  //       .def("e4", &NonsingularOE::e4)
-  //       .def("e5", &NonsingularOE::e5);
+  // NonsingularOE
+  py::class_<NonsingularOE, OrbitState>(m, "NonsingularOE")
+      .def(py::init<const Vector6d &, const CoordSystem>())
+      .def("print", &NonsingularOE::Print, py::arg("deg") = true)
+      .def("clone", &NonsingularOE::Clone)
+      .def_property("a", DEFINE_GETSET_REAL(NonsingularOE, a))
+      .def_property("e1", DEFINE_GETSET_REAL(NonsingularOE, e1))
+      .def_property("e2", DEFINE_GETSET_REAL(NonsingularOE, e2))
+      .def_property("e3", DEFINE_GETSET_REAL(NonsingularOE, e3))
+      .def_property("e4", DEFINE_GETSET_REAL(NonsingularOE, e4))
+      .def_property("e5", DEFINE_GETSET_REAL(NonsingularOE, e5))
+      .def("__repr__", DEFINE_REPR(NonsingularOE));
 
-  //   py::class_<EquinoctialOE, OrbitState>(m, "EquinoctialOE")
-  //       .def(py::init<const Vector6d &, const CoordSystem>())
-  //       .def(py::init<double, double, double, double, double, double,
-  //                     const CoordSystem>(),
-  //            py::arg("a"), py::arg("h"), py::arg("k"), py::arg("p"),
-  //            py::arg("q"), py::arg("lon"), py::arg("cs") = CoordSystem::NONE)
-  //       .def("print", &EquinoctialOE::Print, py::arg("deg") = true)
-  //       .def("clone", &EquinoctialOE::Clone)
-  //       .def("a", &EquinoctialOE::a)
-  //       .def("h", &EquinoctialOE::h)
-  //       .def("k", &EquinoctialOE::k)
-  //       .def("p", &EquinoctialOE::p)
-  //       .def("q", &EquinoctialOE::q)
-  //       .def("lon", &EquinoctialOE::lon);
+  // EquinoctialOE
+  py::class_<EquinoctialOE, OrbitState>(m, "EquinoctialOE")
+      .def(py::init<const Vector6d &, const CoordSystem>())
+      .def("print", &EquinoctialOE::Print, py::arg("deg") = true)
+      .def("clone", &EquinoctialOE::Clone)
+      .def_property("a", DEFINE_GETSET_REAL(EquinoctialOE, a))
+      .def_property("h", DEFINE_GETSET_REAL(EquinoctialOE, h))
+      .def_property("k", DEFINE_GETSET_REAL(EquinoctialOE, k))
+      .def_property("p", DEFINE_GETSET_REAL(EquinoctialOE, p))
+      .def_property("q", DEFINE_GETSET_REAL(EquinoctialOE, q))
+      .def_property("lon", DEFINE_GETSET_REAL(EquinoctialOE, lon))
+      .def("__repr__", DEFINE_REPR(EquinoctialOE));
 
-  //   // py::class_<SingularROE, OrbitState>(m, "SingularROE")
-  //   //     .def(py::init<const Vector6d &, const CoordSystem>())
-  //   //     .def(py::init<double, double, double, const
-  //   //     real,
-  //   //          double, double, const CoordSystem>(),
-  //   //          py::arg("da"), py::arg("dM"), py::arg("de"), py::arg("dw"),
-  //   //          py::arg("di"), py::arg("dOmega"), py::arg("cs") =
-  //   //          CoordSystem::NONE)
-  //   //     .def("print", &SingularROE::Print, py::arg("deg") = true)
-  //   //     .def("clone", &SingularROE::Clone)
-  //   //     .def("da", &SingularROE::da)
-  //   //     .def("dM", &SingularROE::dM)
-  //   //     .def("de", &SingularROE::de)
-  //   //     .def("dw", &SingularROE::dw)
-  //   //     .def("di", &SingularROE::di)
-  //   //     .def("dOmega", &SingularROE::dOmega);
+  // SingularROE
+  py::class_<SingularROE, OrbitState>(m, "SingularROE")
+      .def(py::init<const Vector6d &, const CoordSystem>())
+      .def("print", &SingularROE::Print, py::arg("deg") = true)
+      .def("clone", &SingularROE::Clone)
+      .def_property("da", DEFINE_GETSET_REAL(SingularROE, da))
+      .def_property("dM", DEFINE_GETSET_REAL(SingularROE, dM))
+      .def_property("de", DEFINE_GETSET_REAL(SingularROE, de))
+      .def_property("dw", DEFINE_GETSET_REAL(SingularROE, dw))
+      .def_property("di", DEFINE_GETSET_REAL(SingularROE, di))
+      .def_property("dOmega", DEFINE_GETSET_REAL(SingularROE, dOmega))
+      .def("__repr__", DEFINE_REPR(SingularROE));
 
-  //   py::class_<QuasiNonsingularROE, OrbitState>(m, "QuasiNonsingularROE")
-  //       .def(py::init<const Vector6d &, const CoordSystem>())
-  //       .def(py::init<double, double, double, double, double, double,
-  //                     const CoordSystem>(),
-  //            py::arg("da"), py::arg("dl"), py::arg("dex"), py::arg("dey"),
-  //            py::arg("dix"), py::arg("diy"), py::arg("cs") =
-  //            CoordSystem::NONE)
-  //       .def("print", &QuasiNonsingularROE::Print, py::arg("deg") = true)
-  //       .def("clone", &QuasiNonsingularROE::Clone)
-  //       .def("da", &QuasiNonsingularROE::da)
-  //       .def("dl", &QuasiNonsingularROE::dl)
-  //       .def("dex", &QuasiNonsingularROE::dex)
-  //       .def("dey", &QuasiNonsingularROE::dey)
-  //       .def("dix", &QuasiNonsingularROE::dix)
-  //       .def("diy", &QuasiNonsingularROE::diy);
+  // QuasiNonsingularROE
+  py::class_<QuasiNonsingularROE, OrbitState>(m, "QuasiNonsingularROE")
+      .def(py::init<const Vector6d &, const CoordSystem>())
+      .def("print", &QuasiNonsingularROE::Print, py::arg("deg") = true)
+      .def("clone", &QuasiNonsingularROE::Clone)
+      .def_property("da", DEFINE_GETSET_REAL(QuasiNonsingularROE, da))
+      .def_property("dl", DEFINE_GETSET_REAL(QuasiNonsingularROE, dl))
+      .def_property("dex", DEFINE_GETSET_REAL(QuasiNonsingularROE, dex))
+      .def_property("dey", DEFINE_GETSET_REAL(QuasiNonsingularROE, dey))
+      .def_property("dix", DEFINE_GETSET_REAL(QuasiNonsingularROE, dix))
+      .def_property("diy", DEFINE_GETSET_REAL(QuasiNonsingularROE, diy))
+      .def("__repr__", DEFINE_REPR(QuasiNonsingularROE));
 
   //   py::class_<TLE>(m, "TLE")
   //       .def("FromLines", &TLE::FromLines)
@@ -196,89 +198,91 @@ void init_orbit_state(py::module &m) {
   //   m.def("convert_state_coord_system", &ConvertOrbitStateCoordSystem,
   //         py::arg("state"), py::arg("epoch"), py::arg("to"));
 
-  //   // OrbitState Conversion Functions
-  //   m.def(
-  //       "coe_to_cart",
-  //       [](const ClassicalOE &coe, double mu) -> CartesianOrbitState {
-  //         return CoeToCart(coe, mu);
-  //       },
-  //       py::arg("coe"), py::arg("mu"));
-  //   m.def(
-  //       "coe_to_cart",
-  //       [](const Vector6d &coeVec, double mu) -> Vector6d {
-  //         return CoeToCart(coeVec, mu);
-  //       },
-  //       py::arg("coe"), py::arg("mu"));
-  //   m.def(
-  //       "coe_to_cart",
-  //       [](const Vector6d &coeVec, double mu) -> Vector6d {
-  //         return CoeToCart(coeVec, mu);
-  //       },
-  //       py::arg("coe"), py::arg("mu"));
+  // coe <-> cart
+  m.def(
+      "coe_to_cart",
+      [](const ClassicalOE &coe, double mu) -> CartesianOrbitState {
+        return CoeToCart(coe, mu);
+      },
+      py::arg("coe"), py::arg("mu"));
+  m.def(
+      "coe_to_cart",
+      [](const Vector6d &coeVec, double mu) -> Vector6d {
+        return CoeToCart(coeVec, mu).cast<double>();
+      },
+      py::arg("coe"), py::arg("mu"));
+  m.def(
+      "cart_to_coe",
+      [](const CartesianOrbitState &cart, double mu) -> ClassicalOE {
+        return CartToCoe(cart, mu);
+      },
+      py::arg("cart"), py::arg("mu"));
+  m.def(
+      "cart_to_coe",
+      [](const Vector6d &cartVec, double mu) -> Vector6d {
+        return CartToCoe(cartVec, mu).cast<double>();
+      },
+      py::arg("cart"), py::arg("mu"));
 
-  //   //   m.def("cart_to_coe",
-  //   //         py::overload_cast<const CartesianOrbitState, const
-  //   //         double>(&CartToCoe), py::arg("cart"), py::arg("mu"));
-  //   //   //   m.def("cart_to_coe",
-  //   //         py::overload_cast<const Vector6d &, const
-  //   //         double>(&CartToCoe), py::arg("cart"), py::arg("mu"));
+  // coe <-> roe
+  m.def(
+      "roe_to_coe",
+      [](const ClassicalOE &coe_chief, const QuasiNonsingularROE &roe) {
+        return RoeToCoe(coe_chief, roe);
+      },
+      py::arg("coe_chief"), py::arg("roe"));
+  m.def(
+      "roe_to_coe",
+      [](const Vector6d &coe_chief, const Vector6d &roe) -> Vector6d {
+        return RoeToCoe(coe_chief, roe).cast<double>();
+      },
+      py::arg("coe_chief"), py::arg("roe"));
 
-  //   m.def(
-  //       "roe_to_coe",
-  //       [](const ClassicalOE &coe_chief, const QuasiNonsingularROE &roe) {
-  //         return RoeToCoe(coe_chief, roe);
-  //       },
-  //       py::arg("coe_chief"), py::arg("roe"));
-  //   m.def(
-  //       "roe_to_coe",
-  //       [](const Vector6d &coe_chief, const Vector6d &roe) {
-  //         return RoeToCoe(coe_chief, roe);
-  //       },
-  //       py::arg("coe_chief"), py::arg("roe"));
+  // inertial <-> rtn
+  m.def(
+      "inertial_to_rtn",
+      [](const CartesianOrbitState &rv_chief,
+         const CartesianOrbitState &rv_deputy) {
+        return InertialToRtn(rv_chief, rv_deputy);
+      },
+      py::arg("cart_orig"), py::arg("cart"));
+  m.def(
+      "inertial_to_rtn",
+      [](const Vector6d &cart_orig, const Vector6d &cart) -> Vector6d {
+        return InertialToRtn(cart_orig, cart).cast<double>();
+      },
+      py::arg("cart_orig"), py::arg("cart"));
 
-  //   m.def(
-  //       "inertial_to_rtn",
-  //       [](const CartesianOrbitState &rv_chief,
-  //          const CartesianOrbitState &rv_deputy) {
-  //         return InertialToRtn(rv_chief, rv_deputy);
-  //       },
-  //       py::arg("cart_orig"), py::arg("cart"));
-  //   m.def(
-  //       "inertial_to_rtn",
-  //       [](const Vector6d &cart_orig, const Vector6d &cart) {
-  //         return InertialToRtn(cart_orig, cart);
-  //       },
-  //       py::arg("cart_orig"), py::arg("cart"));
+  m.def(
+      "coe_to_rtn",
+      [](const ClassicalOE &coe_chief, const ClassicalOE &coe_deputy,
+         double mu) { return CoeToRtn(coe_chief, coe_deputy, mu); },
+      py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
+  m.def(
+      "coe_to_rtn",
+      [](const Vector6d &coe_chief, const Vector6d &coe_deputy,
+         double mu) -> Vector6d {
+        return CoeToRtn(coe_chief, coe_deputy, mu).cast<double>();
+      },
+      py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
 
-  //   m.def(
-  //       "coe_to_rtn",
-  //       [](const ClassicalOE &coe_chief, const ClassicalOE &coe_deputy,
-  //          double mu) { return CoeToRtn(coe_chief, coe_deputy, mu); },
-  //       py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
-  //   m.def(
-  //       "coe_to_rtn",
-  //       [](const Vector6d &coe_chief, const Vector6d &coe_deputy, double mu)
-  //       {
-  //         return CoeToRtn(coe_chief, coe_deputy, mu);
-  //       },
-  //       py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
-
-  //   // Todo: add overloads for other conversions
-
-  //   // Anomaly Conversions
-  //   m.def("eccentric_to_true", [](double E, double e) -> double {
-  //     return EccentricAnomToTrueAnom(E, e).val();
-  //   });
-  //   //   m.def("eccentric_to_true", &EccentricAnomToTrueAnom, py::arg("E"),
-  //   //         py::arg("e"));
-  //   //   m.def("eccentric_to_mean", &EccentricAnomToMeanAnom, py::arg("E"),
-  //   //         py::arg("e"));
-  //   //   m.def("mean_to_eccentric", &MeanAnomToEccentricAnom, py::arg("M"),
-  //   //         py::arg("e"));
-  //   //   m.def("mean_to_true", &MeanAnomToTrueAnom, py::arg("M"),
-  //   //   py::arg("e")); m.def("true_to_eccentric", &TrueAnomToEccentricAnom,
-  //   //   py::arg("f"),
-  //   //         py::arg("e"));
-  //   //   m.def("true_to_mean", &TrueAnomToMeanAnom, py::arg("f"),
-  //   //   py::arg("e"));
+  // Anomaly Conversions
+  m.def("eccentric_to_true", [](double E, double e) -> double {
+    return EccentricAnomToTrueAnom(E, e).val();
+  });
+  m.def("eccentric_to_mean", [](double E, double e) -> double {
+    return EccentricAnomToMeanAnom(E, e).val();
+  });
+  m.def("mean_to_eccentric", [](double M, double e) -> double {
+    return MeanAnomToEccentricAnom(M, e).val();
+  });
+  m.def("mean_to_true", [](double M, double e) -> double {
+    return MeanAnomToTrueAnom(M, e).val();
+  });
+  m.def("true_to_eccentric", [](double nu, double e) -> double {
+    return TrueAnomToEccentricAnom(nu, e).val();
+  });
+  m.def("true_to_mean", [](double f, double e) -> double {
+    return TrueAnomToMeanAnom(f, e).val();
+  });
 }

@@ -92,7 +92,7 @@ class ClockState : public IState {
   }
   VectorXreal GetVector() const { return x_; }
   real GetValue(int i) const { return x_(i); }
-  int GetStateSize() { return state_size_; };
+  int GetSize() { return state_size_; };
   inline void SetValue(const real val, const int idx) { x_(idx) = val; }
   void SetVector(const VectorXreal& x) { x_ = x; }
 };
