@@ -20,11 +20,14 @@ using namespace lupnt;
   [](const class &s) -> type { return s.Get##name().cast<double>(); }, \
       &class ::Set##name
 
-#define DEFINE_REPR(class)                                                    \
-  [](const class &s) {                                                        \
-    std::stringstream ss;                                                     \
-    ss << "<pylupnt." << #class << " [" << s.GetVector().transpose() << "]>"; \
-    return ss.str();                                                          \
+#define DEFINE_REPR(class)                                         \
+  [](const class &s) -> std::string {                              \
+    std::stringstream ss;                                          \
+    ss << "<pylupnt." << #class << " ["                            \
+       << s.GetVector().transpose().format(Eigen::IOFormat(        \
+              Eigen::StreamPrecision, Eigen::DontAlignCols, ", ")) \
+       << "]";                                                     \
+    return ss.str();                                               \
   }
 
 class PyOrbitState : public OrbitState {

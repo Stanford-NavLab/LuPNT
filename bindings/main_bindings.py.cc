@@ -3,7 +3,7 @@
 namespace py = pybind11;
 
 int add(int i, int j) { return i + j; }
-void init_autodiff(py::module &m);
+// void init_autodiff(py::module &m);
 void init_coord_converter(py::module &m);
 // // void init_constants(py::module &m);
 void init_orbit_state(py::module &m);
@@ -12,9 +12,7 @@ void init_orbit_state(py::module &m);
 // void init_spice_interface(py::module &m);
 
 PYBIND11_MODULE(pylupnt, m) {
-  m.doc() = "Python bindings for lupnt";
-  m.def("add", &add, "A function that adds two numbers");
-  init_autodiff(m);
+  // init_autodiff(m);
   init_coord_converter(m);
   // // init_constants(m);
   init_orbit_state(m);

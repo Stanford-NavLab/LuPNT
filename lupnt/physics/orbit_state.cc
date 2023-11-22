@@ -65,6 +65,16 @@ void ClassicalOE::Print(bool deg) const {
   }
 }
 
+void SingularROE::Print(bool deg) const {
+  std::cout << "da     = " << da().val() << " km" << std::endl;
+  std::cout << "dM     = " << dM().val() * DEG_PER_RAD << " deg" << std::endl;
+  std::cout << "de     = " << de().val() << std::endl;
+  std::cout << "dw     = " << dw().val() * DEG_PER_RAD << " deg" << std::endl;
+  std::cout << "di     = " << di().val() * DEG_PER_RAD << " deg" << std::endl;
+  std::cout << "dOmega = " << dOmega().val() * DEG_PER_RAD << " deg"
+            << std::endl;
+}
+
 void QuasiNonsingularOE::Print(bool deg) const {
   if (!deg) {
     std::cout << "a     = " << a().val() << " km" << std::endl;
