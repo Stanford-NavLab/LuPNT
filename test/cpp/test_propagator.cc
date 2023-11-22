@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <lupnt/dynamics/propagator.h>
 
-#include "TestUtils.h"
+#include "test_utils.h"
 using namespace lupnt;
 
 namespace {

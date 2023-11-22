@@ -84,7 +84,7 @@ int main() {
   real Omega = 0.0 * RAD_PER_DEG;
   real w = 90.0 * RAD_PER_DEG;
   real M = 0.0 * RAD_PER_DEG;
-  ClassicalOE coe_moon(a, e, i, Omega, w, M);
+  ClassicalOE coe_moon({a, e, i, Omega, w, M});
   coe_moon.SetCoordSystem(CoordSystem::MI);
 
   auto cart_state_moon =

@@ -11,21 +11,15 @@
 
 #pragma once
 
-#include "coord_converter.h"
-
-
-
-
 #include <boost/preprocessor.hpp>
 #include <stdexcept>
 
+#include "coord_converter.h"
 #include "state.h"
 
-#define GETSET_ELEM(name, idx)                              \
+#define GETSET_ELEM(name, idx)                          \
   inline real name() const { return GetVector()(idx); } \
-  inline void Set_##name(const real val) { SetValue(val, idx); }
-
-
+  inline void Set_##name(real val) { SetValue(val, idx); }
 
 namespace lupnt {
 
@@ -56,51 +50,39 @@ class OrbitState : public IState {
   OrbitState(const Vector6real &x, const CoordSystem sys,
              const OrbitStateRepres rep)
       : x_(x), coord_sys_(sys), state_repres_(rep){};
-  OrbitState(const real x0, const real x1, const real x2,
-             const real x3, const real x4, const real x5,
-             const CoordSystem sys, const OrbitStateRepres rep)
-      : x_(Vector6real::Zero()), coord_sys_(sys), state_repres_(rep) {
-    x_ << x0, x1, x2, x3, x4, x5;
-  };
   virtual ~OrbitState(){};
 
   Vector6real GetVector() const { return x_; }
-  int GetStateSize() { return 6; }
-  real GetValue(int i) { return x_(i); }
+  inline int GetStateSize() const { return 6; }
+  inline real GetValue(int i) const { return x_(i); }
   inline OrbitStateRepres GetOrbitStateRepres() const { return state_repres_; }
   inline CoordSystem GetCoordSystem() const { return coord_sys_; }
 
-  inline void SetValue(const real val, const int idx) { x_(idx) = val; }
-  void SetVector(const Vector6real &x) { x_ = x; }
+  inline void SetValue(real val, int idx) { x_(idx) = val; }
+  inline void SetVector(const Vector6real &x) { x_ = x; }
   inline void SetOrbitStateRepres(const OrbitStateRepres rep) {
     state_repres_ = rep;
   }
-  inline void SetCoordSystem(const CoordSystem sys) { coord_sys_ = sys; }
+  inline void SetCoordSystem(CoordSystem sys) { coord_sys_ = sys; }
 
-  inline real operator()(const int idx) const { return x_(idx); }
+  inline real operator()(int idx) const { return x_(idx); }
 
-  virtual void Print(const bool deg = true) const = 0;
+  virtual void Print(bool deg = true) const = 0;
   virtual std::shared_ptr<OrbitState> Clone() const = 0;
 };
 
 class CartesianOrbitState : public OrbitState {
  public:
   // rx, ry, rz, vx, vy, vz
-  CartesianOrbitState(const Vector6real &x,
-                      CoordSystem sys = CoordSystem::NONE)
+  CartesianOrbitState(const Vector6real &x, CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::CARTESIAN) {}
-  CartesianOrbitState(real rx, real ry, real rz, real vx,
-                      real vy, real vz,
-                      CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(rx, ry, rz, vx, vy, vz, sys, OrbitStateRepres::CARTESIAN) {}
-  void Print(const bool deg = true) const override;
+  void Print(bool deg = true) const override;
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<CartesianOrbitState>(*this);
   }
 
   inline Vector3real r() const { return GetVector().head(3); }
   inline Vector3real v() const { return GetVector().tail(3); }
-
   inline void Set_r(const Vector3real &r) {
     for (int i = 0; i < 3; i++) SetValue(r(i), i);
   }
@@ -112,15 +94,9 @@ class CartesianOrbitState : public OrbitState {
 class ClassicalOE : public OrbitState {
  public:
   // a, e, i, Omega, w, M;
-  ClassicalOE(const Vector6real &x,
-              const CoordSystem sys = CoordSystem::NONE)
+  ClassicalOE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::CLASSICAL_OE) {}
-  ClassicalOE(const real a, const real e, const real i,
-              const real Omega, const real w, const real M,
-              const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(a, e, i, Omega, w, M, sys, OrbitStateRepres::CLASSICAL_OE) {}
-
-  void Print(const bool deg = true) const override;
+  void Print(bool deg = true) const override;
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<ClassicalOE>(*this);
   }
@@ -139,13 +115,7 @@ class QuasiNonsingularOE : public OrbitState {
   QuasiNonsingularOE(const Vector6real &x,
                      const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::QUASI_NONSINGULAR_OE) {}
-  QuasiNonsingularOE(const real a, const real u, const real ex,
-                     const real ey, const real i, const real Omega,
-                     const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(a, u, ex, ey, i, Omega, sys,
-                   OrbitStateRepres::QUASI_NONSINGULAR_OE) {}
-
-  void Print(const bool deg = true) const override;
+  void Print(bool deg = true) const override;
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<QuasiNonsingularOE>(*this);
   }
@@ -161,16 +131,9 @@ class QuasiNonsingularOE : public OrbitState {
 class NonsingularOE : public OrbitState {
  public:
   // a, e1, e2, e3, e4, e5;
-  NonsingularOE(const Vector6real &x,
-                const CoordSystem sys = CoordSystem::NONE)
+  NonsingularOE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::NONSINGULAR_OE) {}
-  NonsingularOE(const real a, const real e1, const real e2,
-                const real e3, const real e4, const real e5,
-                const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(a, e1, e2, e3, e4, e5, sys,
-                   OrbitStateRepres::NONSINGULAR_OE) {}
-
-  void Print(const bool deg = true) const override;
+  void Print(bool deg = true) const override;
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<NonsingularOE>(*this);
   }
@@ -186,15 +149,9 @@ class NonsingularOE : public OrbitState {
 class DelaunayOE : public OrbitState {
  public:
   // l, g, h, L, G, H
-  DelaunayOE(const Vector6real &x,
-             const CoordSystem sys = CoordSystem::NONE)
+  DelaunayOE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::DELAUNAY_OE) {}
-  DelaunayOE(const real l, const real g, const real h,
-             const real L, const real G, const real H,
-             const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(l, g, h, L, G, H, sys, OrbitStateRepres::DELAUNAY_OE){};
-
-  void Print(const bool deg = true) const override;
+  void Print(bool deg = true) const override;
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<DelaunayOE>(*this);
   }
@@ -210,15 +167,9 @@ class DelaunayOE : public OrbitState {
 class EquinoctialOE : public OrbitState {
  public:
   // a, h, k, p, q, lon
-  EquinoctialOE(const Vector6real &x,
-                const CoordSystem sys = CoordSystem::NONE)
+  EquinoctialOE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::EQUINOCTIAL_OE) {}
-  EquinoctialOE(const real a, const real h, const real k,
-                const real p, const real q, const real lon,
-                const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(a, h, k, p, q, lon, sys, OrbitStateRepres::EQUINOCTIAL_OE){};
-
-  void Print(const bool deg = true) const override;
+  void Print(bool deg = true) const override;
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<EquinoctialOE>(*this);
   }
@@ -234,16 +185,9 @@ class EquinoctialOE : public OrbitState {
 class SingularROE : public OrbitState {
  public:
   // da, dM, de, dw, di, dOmega
-  SingularROE(const Vector6real &x,
-              const CoordSystem sys = CoordSystem::NONE)
+  SingularROE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, OrbitStateRepres::SINGULAR_ROE) {}
-  SingularROE(const real da, const real dM, const real de,
-              const real dw, const real di, const real dOmega,
-              const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(da, dM, de, dw, di, dOmega, sys,
-                   OrbitStateRepres::SINGULAR_ROE) {}
-
-  void Print(const bool deg = true) const override;
+  void Print(bool deg = true) const override;
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<SingularROE>(*this);
   }
@@ -261,15 +205,9 @@ class QuasiNonsingularROE : public OrbitState {
   // da, dl, dex, dey, dix, diy
   QuasiNonsingularROE(const Vector6real &x,
                       const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(x, sys, OrbitStateRepres::QUASINONSINGULAR_ROE) {}
-  QuasiNonsingularROE(const real da, const real dl, const real dex,
-                      const real dey, const real dix,
-                      const real diy,
-                      const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(da, dl, dex, dey, dix, diy, sys,
-                   OrbitStateRepres::QUASINONSINGULAR_ROE){};
+      : OrbitState(x, sys, OrbitStateRepres::QUASINONSINGULAR_ROE){};
 
-  void Print(const bool deg = true) const override;
+  void Print(bool deg = true) const override;
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<QuasiNonsingularROE>(*this);
   }

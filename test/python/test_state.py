@@ -16,8 +16,8 @@ def test_StateUtils():
     w = np.deg2rad(0.0)
     M = np.deg2rad(0.0)
 
-    coe_state = pnt.ClassicalOE(a, e, i, Omega, w, M, cs=pnt.CoordSystem.MI)
-    coe_state.get_vector()
+    coe_state = pnt.ClassicalOE([a, e, i, Omega, w, M], pnt.CoordSystem.MI)
+    coe_state.vector
     tmp = pnt.Vector3real([1, 2, 3])
 
     mu = pnt.MU_MOON

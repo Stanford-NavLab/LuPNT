@@ -15,8 +15,7 @@ int main() {
   Vector6real coe;
   coe << a, e, i, Omega, w, M;
 
-  Vector6d coe_d;
-  coe_d << a, e, i, Omega, w, M;
+  Vector6real coe_d{a, e, i, Omega, w, M};
 
   auto cart = CoeToCart(coe, MU_EARTH);
   auto cart_d = CoeToCart(coe_d, MU_EARTH);

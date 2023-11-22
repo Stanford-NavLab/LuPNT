@@ -12,4 +12,14 @@ int main() {
   std::cout << b << std::endl;
   std::cout << c << std::endl;
   std::cout << d << std::endl;
+
+  real x = 1.0;
+  double y = static_cast<double>(x);
+  std::cout << x << std::endl;
+  std::cout << y << std::endl;
+
+  Vector3d e = a.cast<double>();
+  std::cout << e.transpose() << std::endl;
+  Vector3real f = e.cast<real>();
+  std::cout << f.transpose() << std::endl;
 }

@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#include "TestUtils.h"
+#include "test_utils.h"
 
 using namespace lupnt;
 

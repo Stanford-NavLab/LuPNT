@@ -23,7 +23,7 @@
   using RowVector##size##d = Eigen::Matrix<double, 1, size>;  \
   using Vector##size##real = Eigen::Matrix<real, size, 1>;    \
   using Matrix##size##real = Eigen::Matrix<real, size, size>; \
-  using RowVector##size##real = Eigen::Matrix<real, 1, size>; 
+  using RowVector##size##real = Eigen::Matrix<real, 1, size>;
 
 #define DEFINE_DYNAMIC_VECTORS_MATRICES                                    \
   using VectorXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;               \
@@ -31,7 +31,7 @@
   using RowVectorXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;            \
   using VectorXreal = Eigen::Matrix<real, Eigen::Dynamic, 1>;              \
   using MatrixXreal = Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>; \
-  using RowVectorXreal = Eigen::Matrix<real, 1, Eigen::Dynamic>;           
+  using RowVectorXreal = Eigen::Matrix<real, 1, Eigen::Dynamic>;
 
 #define DEFINE_VECTORS_MATRICES      \
   DEFINE_STATIC_VECTORS_MATRICES(1)  \

@@ -14,7 +14,6 @@
 #include <lupnt/dynamics/dynamics.h>
 #include <lupnt/physics/orbit_state_utils.h>
 
-
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -26,10 +25,10 @@ typedef Vector6real Vec6;
 
 int main() {
   MoonMeanDynamics moonMeanDynamics;
-  ClassicalOE coeMean_1(3738, 0.1, 48.0689 * RAD_PER_DEG, 0, 90 * RAD_PER_DEG,
-                        0);
-  ClassicalOE coeMean_2(13738, 0.1, 39.6024 * RAD_PER_DEG, 0, 90 * RAD_PER_DEG,
-                        0);
+  ClassicalOE coeMean_1(
+      {3738, 0.1, 48.0689 * RAD_PER_DEG, 0, 90 * RAD_PER_DEG, 0});
+  ClassicalOE coeMean_2(
+      {13738, 0.1, 39.6024 * RAD_PER_DEG, 0, 90 * RAD_PER_DEG, 0});
 
   Vec6 coeMeanVec_1 = coeMean_1.GetVector();
   Vec6 coeMeanVec_2 = coeMean_2.GetVector();

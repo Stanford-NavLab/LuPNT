@@ -24,8 +24,8 @@ namespace lupnt {
 class IState {
  public:
   virtual ~IState() = default;
-  virtual inline int GetStateSize() = 0;
-  virtual inline real GetValue(int idx) = 0;
+  virtual inline int GetStateSize() const = 0;
+  virtual inline real GetValue(int idx) const = 0;
 };
 
 /**

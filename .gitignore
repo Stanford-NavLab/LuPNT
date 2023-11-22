@@ -19,7 +19,6 @@ lupnt/3rdparty/autodiff
 build
 doc
 local
-pybind11
 output
 data/ephemeris
 examples/figures

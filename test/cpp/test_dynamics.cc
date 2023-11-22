@@ -4,15 +4,11 @@
 #include <lupnt/physics/orbit_state.h>
 #include <lupnt/physics/orbit_state_utils.h>
 
-
-
-
 #include <iostream>
 
-#include "TestUtils.h"
+#include "test_utils.h"
 
 using namespace lupnt;
-
 
 // Keplerian Dynamics with Classical Orbital Elements
 TEST(Test_Dynamics, Test_KeplerianDynamics_ClassicalOE) {
@@ -25,7 +21,7 @@ TEST(Test_Dynamics, Test_KeplerianDynamics_ClassicalOE) {
   real M = 0.0 * RAD_PER_DEG;       // [rad]
 
   double mu = MU_MOON;
-  ClassicalOE coe_state(a, e, i, Omega, w, M, CoordSystem::MI);
+  ClassicalOE coe_state({a, e, i, Omega, w, M}, CoordSystem::MI);
   Vector6real coe_analytical = coe_state.GetVector();
 
   // Keplerian dynamics
@@ -73,7 +69,7 @@ TEST(Test_Dynamics, Test_CartesianTwoBodyDynamics) {
   real M = 0.0 * RAD_PER_DEG;       // [rad]
 
   double mu = MU_MOON;
-  ClassicalOE coe_state(a, e, i, Omega, w, M, CoordSystem::MI);
+  ClassicalOE coe_state({a, e, i, Omega, w, M}, CoordSystem::MI);
   CartesianOrbitState cart_state = CoeToCart(coe_state, mu);
   Vector6real cart_vector = cart_state.GetVector();
   VectorXreal cart_vector_kep;

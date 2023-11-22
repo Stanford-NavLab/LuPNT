@@ -39,7 +39,7 @@ void GnssConstellation::LoadTleFile(std::string filename) {
     real M =
         tle.meanAnomaly * RAD_PER_DEG + dt_epoch * rad_per_sec;  // in radians
 
-    ClassicalOE coe(a, e, i, Omega, w, M);
+    ClassicalOE coe({a, e, i, Omega, w, M});
     coe.SetCoordSystem(CoordSystem::GCRF);
     auto cartOrbitState =
         std::make_shared<CartesianOrbitState>(CoeToCart(coe, MU_EARTH));
