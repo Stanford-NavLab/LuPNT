@@ -157,7 +157,7 @@ int main() {
 
   // Output
   auto data_history = std::make_shared<DataHistory>();
-  auto output_path = BASEPATH / "output" / "ExampleEKF";
+  auto output_path = std::filesystem::current_path() / "output" / "ExampleEKF";
   FileWriter writer(output_path, true);
 
   // Main loop

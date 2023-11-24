@@ -21,6 +21,9 @@ namespace sp = SpiceInterface;
 
 int main() {
   sp::LoadSpiceKernel();
+  // Print directory from which the executable is being run
+  std::cout << "Current working directory: " << std::filesystem::current_path()
+            << std::endl;
 
   real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
 

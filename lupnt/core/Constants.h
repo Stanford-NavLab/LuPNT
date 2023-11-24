@@ -148,7 +148,7 @@ static constexpr double P_SUN =
 
 // File Pathes -----------------------------------------------------------------
 static const std::filesystem::path CSPICE_KER_DIR =
-    BASEPATH / "data" / "ephemeris";
+   GetDataPath() / "ephemeris";
 
 // Moon mean elements
 

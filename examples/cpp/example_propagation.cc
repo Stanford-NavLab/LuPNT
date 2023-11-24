@@ -24,8 +24,6 @@
 
 // Autodiff includes
 
-
-
 // Eigen includes
 
 #include <Eigen/QR>
@@ -90,7 +88,8 @@ int main() {
 
   // Output
   DataHistory dataHistory;
-  FileWriter writer(BASEPATH / "output" / "ExamplePropagation", true);
+  FileWriter writer(
+      std::filesystem::current_path() / "output" / "ExamplePropagation", true);
 
   // Main loop
   while (t < tf) {

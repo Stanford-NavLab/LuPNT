@@ -98,16 +98,14 @@ void ReadData(const std::string &filepath, int N, int headerlines,
   file.close();
 }
 
-std::tuple<MatrixXd, MatrixXd> LoadGravityCoefficients(
-    BodyData bd, int nmax) {
+std::tuple<MatrixXd, MatrixXd> LoadGravityCoefficients(BodyData bd, int nmax) {
   // read text file
   int N = nmax * nmax + 10;
 
   std::vector<int> idN(N), idM(N);
   std::vector<double> C(N), S(N), sigC(N), sigS(N);
 
-  std::filesystem::path harmonicsPath =
-      BASEPATH / "data" / "spherical_harmonics";
+  std::filesystem::path harmonicsPath = GetDataPath() / "spherical_harmonics";
   ReadData(harmonicsPath / bd.filepath, N, bd.headerlines, bd.delimiter, idN,
            idM, C, S, sigC, sigS);
 
@@ -182,15 +180,15 @@ std::tuple<double, double> spharm_vwnm(int n_in, int m_in, double Vn_1m,
   return {Vnm, Wnm};
 }
 
-Vector3d Facc_j(const Vector3d &facc_R,
-                       const Matrix3d &Ur2j) {
+Vector3d Facc_j(const Vector3d &facc_R, const Matrix3d &Ur2j) {
   Vector3d acc_j = Ur2j * facc_R;
   return acc_j;
 }
 
-std::tuple<Vector3d, Vector3d> spharm_dvwdx(
-    int n_in, int m_in, double Vn1m, double Vn1m1, double Vn1m_1, double Wn1m,
-    double Wn1m1, double Wn1m_1, double Re) {
+std::tuple<Vector3d, Vector3d> spharm_dvwdx(int n_in, int m_in, double Vn1m,
+                                            double Vn1m1, double Vn1m_1,
+                                            double Wn1m, double Wn1m1,
+                                            double Wn1m_1, double Re) {
   Vector3d dVdX = Vector3d::Zero();
   Vector3d dWdX = Vector3d::Zero();
 
@@ -230,10 +228,12 @@ std::tuple<Vector3d, Vector3d> spharm_dvwdx(
   return {dVdX, dWdX};
 }
 
-std::tuple<Matrix3d, Matrix3d> spharm_d2vwdx2(
-    int n_in, int m_in, double Vn2m, double Vn2m1, double Vn2m2, double Vn2m_1,
-    double Vn2m_2, double Wn2m, double Wn2m1, double Wn2m2, double Wn2m_1,
-    double Wn2m_2, double Re) {
+std::tuple<Matrix3d, Matrix3d> spharm_d2vwdx2(int n_in, int m_in, double Vn2m,
+                                              double Vn2m1, double Vn2m2,
+                                              double Vn2m_1, double Vn2m_2,
+                                              double Wn2m, double Wn2m1,
+                                              double Wn2m2, double Wn2m_1,
+                                              double Wn2m_2, double Re) {
   double n = n_in;
   double m = m_in;
 
@@ -325,10 +325,9 @@ std::tuple<Matrix3d, Matrix3d> spharm_d2vwdx2(
   return std::tuple<Matrix3d, Matrix3d>(d2VdX2, d2WdX2);
 }
 
-Vector3d spharm_acc_ecr(int nmax, int mmax,
-                               const Vector3real &x_R_in, double Re,
-                               double GMe, const MatrixXd &Cnm,
-                               const MatrixXd &Snm) {
+Vector3d spharm_acc_ecr(int nmax, int mmax, const Vector3real &x_R_in,
+                        double Re, double GMe, const MatrixXd &Cnm,
+                        const MatrixXd &Snm) {
   Vector3d x_R = toEigen(x_R_in);
   Vector3d accECR(0, 0, 0);
   MatrixXd V = MatrixXd::Zero(nmax + 3, mmax + 3);

@@ -26,8 +26,6 @@
 
 // Autodiff includes
 
-
-
 // Eigen includes
 
 #include <Eigen/QR>
@@ -64,8 +62,9 @@ int main() {
 
     // Output
     DataHistory data_history;
-    FileWriter writer(
-        BASEPATH / "output" / "ExampleConstellations" / const_name, true);
+    FileWriter writer(std::filesystem::current_path() / "output" /
+                          "ExampleConstellations" / const_name,
+                      true);
 
     // Main loop
     while (t < tf) {

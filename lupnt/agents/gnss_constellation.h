@@ -27,7 +27,7 @@ class GnssConstellation {
   std::shared_ptr<IOrbitDynamics> dynamics_;
   std::shared_ptr<GnssChannel> channel_;
   double epoch_;  // in TAI
-  const std::filesystem::path kTlePath = BASEPATH / "data" / "tle";
+  const std::filesystem::path kTlePath = GetDataPath() / "tle";
 
  public:
   // Setters

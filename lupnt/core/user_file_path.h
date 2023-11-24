@@ -17,8 +17,16 @@
 #include <string>
 
 namespace lupnt {
-// set here the absolute path to your lunanet simulator
-static const std::filesystem::path BASEPATH("/path/to/this/LuPNT");
+
+static std::filesystem::path GetDataPath() {
+  const char* dataPathEnv = std::getenv("LUPNT_DATA_PATH");
+  if (dataPathEnv != nullptr) {
+    return std::filesystem::path(dataPathEnv);
+  } else {
+    throw std::runtime_error(
+        "Environment variable LUPNT_DATA_PATH is not set.");
+  }
+}
 
 static std::optional<std::filesystem::path> FindFileInDir(
     const std::filesystem::path& basePath, const std::string& filename) {

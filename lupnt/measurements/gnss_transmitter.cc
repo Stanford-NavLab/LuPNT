@@ -38,7 +38,7 @@ void GnssTransmitter::InitializeGnssTransmitter() {
  *
  */
 void GnssTransmitter::InitializeGPSTransmitter() {
-  std::filesystem::path csvpath(BASEPATH / "data" / "gnss" / "gps_table.csv");
+  std::filesystem::path csvpath(GetDataPath() / "gnss" / "gps_table.csv");
   std::vector<std::vector<std::string>> gps_table = ReadCSV(csvpath.string());
 
   for (int i = 0; i < gps_table.size(); i++) {
@@ -131,8 +131,7 @@ std::vector<Vector3d> GnssTransmitter::GetTransmitterOrientation(
  * @brief Get the
  *
  */
-double GnssTransmitter::GetTransmittionAntennaGain(double t,
-                                                   Vector3d r_tx_gcrf,
+double GnssTransmitter::GetTransmittionAntennaGain(double t, Vector3d r_tx_gcrf,
                                                    Vector3d r_rx_gcrf) {
   auto e_gnss = GnssTransmitter::GetTransmitterOrientation(t, r_tx_gcrf);
   Vector3d e_x_gnss = e_gnss[0];

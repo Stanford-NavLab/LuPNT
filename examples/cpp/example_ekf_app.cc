@@ -104,7 +104,7 @@ int main() {
 
   // Output
   auto data_history = std::make_shared<DataHistory>();
-  auto output_path = BASEPATH / "output" / "ExampleEKFApp";
+  auto output_path = std::filesystem::current_path() / "output" / "ExampleEKFApp";
   FileWriter writer(output_path, true);
 
   // OrbitState estimation app
