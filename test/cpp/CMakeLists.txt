@@ -54,7 +54,18 @@ target_link_libraries(tests PRIVATE Catch2::Catch2WithMain lupnt)
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(CTest)
 include(Catch)
-catch_discover_tests(tests
-  PROPERTIES ENVIRONMENT "LUPNT_DATA_PATH=${LUPNT_DATA_PATH}"
+catch_discover_tests(tests)
+
+add_custom_target(run_tests
+  COMMAND ${CMAKE_COMMAND} --build . --target tests
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test/cpp
+  COMMENT "Running tests"
 )
-message(STATUS "LUPNT_DATA_PATH: ${LUPNT_DATA_PATH}")
+
+add_custom_command(TARGET run_tests POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE="${CMAKE_BINARY_DIR}/test/cpp/default.profraw" $<TARGET_FILE:tests>
+  COMMAND llvm-profdata merge -sparse default.profraw -o default.profdata
+  COMMAND llvm-cov show $<TARGET_FILE:lupnt> -instr-profile=default.profdata > coverage.txt
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test/cpp
+  COMMENT "Generating coverage report"
+)

@@ -19,8 +19,6 @@
 
 #include "lupnt/numerics/math_utils.h"
 
-
-
 namespace lupnt {
 
 class File {

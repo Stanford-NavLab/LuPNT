@@ -12,17 +12,17 @@ using namespace Catch::Matchers;
 namespace sp = SpiceInterface;
 
 // Demonstrate some basic assertions.
-TEST_CASE("SpiceTest-StringToTDB") {
+TEST_CASE("SpiceInterface.StringToTDB") {
   real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
   REQUIRE(et.val() == 734788800);
 }
 
-TEST_CASE("SpiceTest-StringToTAI") {
+TEST_CASE("SpiceInterface.StringToTAI") {
   real tai = sp::StringToTAI("2023-04-15 00:00:00 TDB");
   REQUIRE(tai.val() == 7.347887678143708e+08);
 }
 
-TEST_CASE("SpiceTest-TDBtoStringUTC") {
+TEST_CASE("SpiceInterface.TDBtoStringUTC") {
   real et = sp::StringToTDB("2023-04-15 00:00:00 UTC");
   int prec = 3;
   std::string str = sp::TDBtoStringUTC(et, prec);
@@ -30,7 +30,7 @@ TEST_CASE("SpiceTest-TDBtoStringUTC") {
   REQUIRE(str == "2023 APR 15 00:00:00.000");
 }
 
-TEST_CASE("SpiceTest-GetBodyPos") {
+TEST_CASE("SpiceInterface.GetBodyPos") {
   real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
   // 2. GetBodyPos: Get Body Position via SPICE
   std::string target = "MOON";
@@ -49,7 +49,7 @@ TEST_CASE("SpiceTest-GetBodyPos") {
   REQUIRE_THAT(pos[2], WithinAbs(-1.318831107682142e+05, abs_error));
 }
 
-TEST_CASE("SpiceTest-GetFrameConversionMatrix") {
+TEST_CASE("SpiceInterface.GetFrameConversionMatrix") {
   real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
 
   // 3: GetFrameConversionMatrix
@@ -69,7 +69,7 @@ TEST_CASE("SpiceTest-GetFrameConversionMatrix") {
   EXPECT_NEAR_ADMAT(xform, xform_expected, 1e-6);
 }
 
-TEST_CASE("SpiceTest-GetBodyPosVel") {
+TEST_CASE("SpiceInterface.GetBodyPosVel") {
   real tai = sp::StringToTAI("2023-04-15 00:00:00 TDB");
 
   // 4. GetBodyPosVel

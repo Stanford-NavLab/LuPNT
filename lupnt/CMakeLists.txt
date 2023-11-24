@@ -18,7 +18,7 @@ set(LuPNT_srcs)
 include_directories("${CMAKE_SOURCE_DIR}/lupnt")
 
 # assemble core libaries
-message(STATUS "Building modules")
+message(STATUS "Configuring modules")
 foreach(subdir ${LuPNT_subdirs})
   # Build convenience libraries
   file(GLOB_RECURSE subdir_srcs "${subdir}/*.cc" "${subdir}/*.h") # Include header files so they show up in Visual Studio
@@ -38,7 +38,7 @@ foreach(subdir ${LuPNT_subdirs})
 endforeach(subdir)
 
 # build shared and static versions of the library
-message(STATUS "Building lupnt - shared: ${BUILD_SHARED_LIBS}")
+message(STATUS "Configuring lupnt - shared: ${BUILD_SHARED_LIBS}")
 
 # BUILD_SHARED_LIBS automatically defines static/shared libs:
 add_library(lupnt ${LuPNT_srcs})

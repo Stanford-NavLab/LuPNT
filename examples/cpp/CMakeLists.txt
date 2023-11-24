@@ -18,7 +18,7 @@ foreach(script_file IN ITEMS ${script_files})
     endif()
 endforeach()
 
-message(STATUS "Building examples")
+message(STATUS "Configuring examples")
 
 # Don't put test files in folders in MSVC and Xcode because they're already grouped
 source_group("" FILES ${script_srcs} ${script_headers})
