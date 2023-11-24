@@ -1,43 +1,55 @@
-################################
-# Testing
-################################
-if (APPLE)
-  add_definitions(-DGTEST_USE_OWN_TR1_TUPLE)
-  add_definitions(-D__GLIBCXX__)
-endif (APPLE)
+# GoogleTest
+# include(FetchContent)
+# FetchContent_Declare(
+#   googletest
+#   URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+#   DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+# )
 
-#   # This adds another subdirectory, which has 'project(gtest)'.
-#   add_subdirectory(lib/gtest-1.6.0)
-
-#   enable_testing()
-
-#   # Include the gtest library. gtest_SOURCE_DIR is available due to
-#   # 'project(gtest)' above.
-#   include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-
-##############
-# Unit Tests
-##############
-enable_testing()
-
-file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES false *.h *.cc)
-set(SOURCES ${TEST_SOURCES})
-add_executable(runUnitTests  ${TEST_SOURCES})
-
-target_include_directories(runUnitTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../lupnt)
-
-# Standard linking to gtest stuff.
-target_link_libraries(runUnitTests GTest::gtest_main)
-
-# Extra linking for the project.
-target_link_libraries(runUnitTests lupnt)
-
-# This is so you can do 'make test' to see all your tests run, instead of
-# manually running the executable runUnitTests to see those specific tests.
-# find_package(GTest REQUIRED)
+# # For Windows: Prevent overriding the parent project's compiler/linker settings
+# set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+# FetchContent_MakeAvailable(googletest)
 # include(GoogleTest)
-# gtest_discover_tests(runUnitTests)
 
-# You can also omit NAME and COMMAND. The second argument could be some other
-# test executable.
-#add_test(that-other-test-I-made runUnitTests)
+# # add_library(GTest::GTest INTERFACE IMPORTED)
+# # target_link_libraries(GTest::GTest INTERFACE gtest_main)
+
+# if (APPLE)
+#   add_definitions(-DGTEST_USE_OWN_TR1_TUPLE)
+#   add_definitions(-D__GLIBCXX__)
+# endif (APPLE)
+
+# file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES false *.h *.cc)
+# # add_executable(tests ${TEST_SOURCES})
+
+# target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/lupnt)
+
+# # Standard linking to gtest stuff.
+# target_link_libraries(tests GTest::gtest_main)
+
+# # Extra linking for the project.
+# target_link_libraries(tests lupnt)
+
+# gtest_discover_tests(tests
+#   PROPERTIES ENVIRONMENT "LUPNT_DATA_PATH=${LUPNT_DATA_PATH}"
+# )
+
+# message(STATUS "LUPNT_DATA_PATH: ${LUPNT_DATA_PATH}")
+
+Include(FetchContent)
+
+FetchContent_Declare(
+  Catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG        v3.4.0 # or a later release
+)
+
+FetchContent_MakeAvailable(Catch2)
+
+add_executable(tests test_hello.cc)
+target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)
+
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+include(CTest)
+include(Catch)
+catch_discover_tests(tests)
