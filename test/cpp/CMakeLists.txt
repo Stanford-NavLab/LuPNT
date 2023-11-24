@@ -35,8 +35,8 @@ target_link_libraries(runUnitTests lupnt)
 # This is so you can do 'make test' to see all your tests run, instead of
 # manually running the executable runUnitTests to see those specific tests.
 # find_package(GTest REQUIRED)
-include(GoogleTest)
-gtest_discover_tests(runUnitTests)
+# include(GoogleTest)
+# gtest_discover_tests(runUnitTests)
 
 # You can also omit NAME and COMMAND. The second argument could be some other
 # test executable.

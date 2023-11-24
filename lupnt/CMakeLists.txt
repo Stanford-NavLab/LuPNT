@@ -1,10 +1,24 @@
-project(lupnt
-  LANGUAGES CXX)
+project(lupnt LANGUAGES CXX)
+
+# # GoogleTest
+# include(FetchContent)
+# FetchContent_Declare(
+#   googletest
+#   URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+#   DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+# )
+
+# # For Windows: Prevent overriding the parent project's compiler/linker settings
+# set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+# FetchContent_MakeAvailable(googletest)
+# # add_library(GTest::GTest INTERFACE IMPORTED)
+# # target_link_libraries(GTest::GTest INTERFACE gtest_main)
+
 
 # We split the library in to separate subfolders, each containing
 # tests, timing, and an optional convenience library.
 # The following variable is the master list of subdirs to add
-set(LPT_subdirs
+set(LuPNT_subdirs
   core
   dynamics
   numerics
@@ -13,97 +27,77 @@ set(LPT_subdirs
   measurements
 )
 
-set(LPT_srcs)
-
-# Build 3rdparty separately
-message(STATUS "Building 3rdparty")
-add_subdirectory(3rdparty)
+set(LuPNT_srcs)
 
 # Add the "lupnt" directory to the include search paths
 include_directories("${CMAKE_SOURCE_DIR}/lupnt")
 
-set(3rdparty_srcs
-  ${eigen_headers} # Set by 3rdparty/CMakeLists.txt
-  ${autodiff_headers}
-  ${cspice_headers}
-  ${libInterpolate_headers}
-)
-
-# Add the parent directory to the header search path
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-# foreach(subdir ${LPT_subdirs})
-#   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${subdir})
-# endforeach(subdir)
-
 # assemble core libaries
-foreach(subdir ${LPT_subdirs})
+message(STATUS "Building modules")
+foreach(subdir ${LuPNT_subdirs})
   # Build convenience libraries
   file(GLOB_RECURSE subdir_srcs "${subdir}/*.cc" "${subdir}/*.h") # Include header files so they show up in Visual Studio
   set(${subdir}_srcs ${subdir_srcs})
 
   # Build local library and tests
-  message(STATUS "Building ${subdir}")
+  message(STATUS "   ${subdir}")
   add_subdirectory(${subdir})
 endforeach(subdir)
 
 # To add additional sources to gtsam when building the full library (static or shared)
 # append the subfolder with _srcs appended to the end to this list
-set(LPT_srcs ${3rdparty_srcs})
+set(LuPNT_srcs ${third_party_srcs})
 
-foreach(subdir ${LPT_subdirs})
-  list(APPEND LPT_srcs ${${subdir}_srcs})
+foreach(subdir ${LuPNT_subdirs})
+  list(APPEND LuPNT_srcs ${${subdir}_srcs})
 endforeach(subdir)
 
 # build shared and static versions of the library
 message(STATUS "Building lupnt - shared: ${BUILD_SHARED_LIBS}")
 
 # BUILD_SHARED_LIBS automatically defines static/shared libs:
-add_library(lupnt ${LPT_srcs})
+add_library(lupnt ${LuPNT_srcs})
 
 # add cspice
-target_link_libraries(lupnt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/cspice/cspice.a")
+target_link_libraries(lupnt PUBLIC "${CMAKE_SOURCE_DIR}/third_party/cspice/cspice.a")
 
 # add Boost
 target_link_libraries(lupnt PUBLIC ${Boost_LIBRARIES})
 
 # include libraries
 target_include_directories(lupnt BEFORE PUBLIC # main gtsam includes:
-  $<BUILD_INTERFACE:${LPT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${LuPNT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include/>
 )
 
-# 3rdparty libraries: use the "system" flag so they are included via "-isystem"
+# third_party libraries: use the "system" flag so they are included via "-isystem"
 # and warnings (and warnings-considered-errors) in those headers are not
 # reported as warnings/errors in our targets:
 target_include_directories(lupnt SYSTEM BEFORE PUBLIC
 
   # autodiff
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/autodiff>
-  $<INSTALL_INTERFACE:include/lupnt/3rdparty/autodiff>
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/autodiff>
+  $<INSTALL_INTERFACE:include/lupnt/third_party/autodiff>
 
   # Eigen
-  $<BUILD_INTERFACE:${LPT_EIGEN_INCLUDE_FOR_BUILD}>
-  $<INSTALL_INTERFACE:${LPT_EIGEN_INCLUDE_FOR_INSTALL}>
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/Eigen>
+  $<INSTALL_INTERFACE:${include/lupnt/third_party/Eigen}>
 
   # cspice
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/cspice>
-  $<INSTALL_INTERFACE:include/lupnt/3rdparty/cspice>
-
-  # libInterpolate
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libInterpolate>
-  $<INSTALL_INTERFACE:include/lupnt/3rdparty/libInterpolate>
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/cspice>
+  $<INSTALL_INTERFACE:include/lupnt/third_party/cspice>
 )
 
 if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
   if(NOT BUILD_SHARED_LIBS)
     set_target_properties(lupnt PROPERTIES
       PREFIX "lib"
-      COMPILE_DEFINITIONS LPT_IMPORT_STATIC)
+      COMPILE_DEFINITIONS LuPNT_IMPORT_STATIC)
   else()
     set_target_properties(lupnt PROPERTIES
       PREFIX ""
-      DEFINE_SYMBOL LPT_EXPORTS
-      RUNTIME_OUTPUT_DIRECTORY "${LPT_BINARY_DIR}/bin")
+      DEFINE_SYMBOL LuPNT_EXPORTS
+      RUNTIME_OUTPUT_DIRECTORY "${LuPNT_BINARY_DIR}/bin")
   endif()
 endif()
 
@@ -113,10 +107,10 @@ endif()
 
 install(
   TARGETS lupnt
-  EXPORT LPT-exports
+  EXPORT LuPNT-exports
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-list(APPEND LPT_EXPORTED_TARGETS lupnt)
-set(LPT_EXPORTED_TARGETS "${LPT_EXPORTED_TARGETS}" PARENT_SCOPE)
+list(APPEND LuPNT_EXPORTED_TARGETS lupnt)
+set(LuPNT_EXPORTED_TARGETS "${LuPNT_EXPORTED_TARGETS}" PARENT_SCOPE)

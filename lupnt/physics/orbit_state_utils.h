@@ -11,8 +11,6 @@
 
 #pragma once
 
-#include <boost/preprocessor.hpp>
-
 #include "lupnt/core/constants.h"
 #include "lupnt/physics/coord_converter.h"
 #include "lupnt/physics/orbit_state.h"

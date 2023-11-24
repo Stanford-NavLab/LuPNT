@@ -32,26 +32,26 @@ using namespace lupnt;
 
 class PyOrbitState : public OrbitState {
  public:
-  /* inherit the constructors*/
+  // Inherit the constructors
   PyOrbitState(const Vector6d &vec, const CoordSystem cs,
                const OrbitStateRepres sr)
       : OrbitState(vec, cs, sr) {}
 
-  /* Trampoline (need one for each virtual functions)*/
+  // Trampolines (need one for each virtual functions)
   void Print(const bool deg) const override {
     PYBIND11_OVERLOAD_PURE(
-        void,       /* Return type */
-        OrbitState, /* Parent class */
-        Print,      /* Name of function in C++ (must match Python name) */
-        deg         /* Argument(s) */
+        void,        // Return type
+        OrbitState,  // Parent class
+        Print,       // Name of function in C++ (must match Python name)
+        deg          // Argument(s)
     );
   }
 
   std::shared_ptr<OrbitState> Clone() const override {
     PYBIND11_OVERLOAD_PURE(
-        std::shared_ptr<OrbitState>, /* Return type */
-        OrbitState,                  /* Parent class */
-        Clone, /* Name of function in C++ (must match Python name) */
+        std::shared_ptr<OrbitState>,  // Return type
+        OrbitState,                   // Parent class
+        Clone,  // Name of function in C++ (must match Python name)
     );
   }
 };

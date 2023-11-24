@@ -9,9 +9,8 @@
  * @copyright Mark Adler (c) 2023
  */
 
-#include "lupnt/physics/cheby.h"
+#include "cheby.h"
 
-#include "../3rdparty/cspice/include/SpiceUsr.h"
 #include "lupnt/numerics/math_utils.h"
 
 namespace lupnt {
@@ -82,8 +81,7 @@ void cheby_eval(double x, double *scale, double *coeff, long num, double *f,
   *df = (w0 + x * dw0 - dw1) / scale[1];
 }
 
-VectorXreal cheby_eval_ad(real x, double *scale, double *coeff,
-                              long num) {
+VectorXreal cheby_eval_ad(real x, double *scale, double *coeff, long num) {
   real x2, w0 = 0., w1 = 0., dw0 = 0., dw1 = 0., tmp;
   x = (x - scale[0]) / scale[1];
   x2 = x * 2.;

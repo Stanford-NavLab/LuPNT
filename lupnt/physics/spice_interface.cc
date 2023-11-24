@@ -11,17 +11,16 @@
 
 #include "spice_interface.h"
 
+#include <cspice/SpiceUsr.h>
+#include <cspice/SpiceZfc.h>
 #include <string.h>
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 
 #include "lupnt/core/user_file_path.h"
-#include "lupnt/3rdparty/cspice/include/SpiceUsr.h"
-#include "lupnt/3rdparty/cspice/include/SpiceZfc.h"
 #include "lupnt/physics/cheby.h"
-
-
 
 namespace lupnt {
 namespace SpiceInterface {

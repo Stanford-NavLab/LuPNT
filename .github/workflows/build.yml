@@ -1,9 +1,15 @@
-name: Doxygen GitHub Pages Deploy Action
+name: build
 
 on:
   push:
     branches:
-      - development
+      - main
+      - v*.*.*
+  pull_request:
+    branches:
+      - main
+      - v*.*.*
+  workflow_dispatch:
 
 jobs:
   deploy:

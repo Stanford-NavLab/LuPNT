@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include <boost/preprocessor.hpp>
 #include <stdexcept>
 
 #include "coord_converter.h"

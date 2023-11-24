@@ -11,16 +11,14 @@
 
 #pragma once
 
+#include <cspice/SpiceUsr.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "../3rdparty/cspice/include/SpiceUsr.h"
 #include "lupnt/core/constants.h"
-
-
 
 namespace lupnt {
 /**
