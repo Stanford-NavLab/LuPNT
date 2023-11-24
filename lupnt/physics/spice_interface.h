@@ -13,7 +13,7 @@
 
 #include <string.h>
 
-#include "../physics/cheby.h"
+#include "lupnt/physics/cheby.h"
 #include "lupnt/core/constants.h"
 
 namespace lupnt {

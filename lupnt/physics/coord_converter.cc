@@ -13,8 +13,8 @@
 
 #include <filesystem>
 
-#include "../core/constants.h"
-#include "../numerics/math_utils.h"
+#include "lupnt/core/constants.h"
+#include "lupnt/numerics/math_utils.h"
 #include "cheby.h"
 #include "spice_interface.h"
 

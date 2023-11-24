@@ -14,8 +14,8 @@
 #include <iostream>
 #include <sstream>
 
-#include "../core/file.h"
-#include "../numerics/math_utils.h"
+#include "lupnt/core/file.h"
+#include "lupnt/numerics/math_utils.h"
 
 namespace lupnt {
 

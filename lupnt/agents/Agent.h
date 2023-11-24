@@ -18,12 +18,12 @@
 
 
 // lupnt includes
-#include "../core/constants.h"
-#include "../dynamics/dynamics.h"
-#include "../physics/clock.h"
-#include "../physics/coord_converter.h"
-#include "../physics/orbit_state.h"
-#include "../physics/orbit_state_utils.h"
+#include "lupnt/core/constants.h"
+#include "lupnt/dynamics/dynamics.h"
+#include "lupnt/physics/clock.h"
+#include "lupnt/physics/coord_converter.h"
+#include "lupnt/physics/orbit_state.h"
+#include "lupnt/physics/orbit_state_utils.h"
 #include "comm_device.h"
 
 namespace lupnt {
