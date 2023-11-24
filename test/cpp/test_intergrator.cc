@@ -1,7 +1,10 @@
-#include <gtest/gtest.h>
 #include <lupnt/numerics/integrator.h>
 
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
+
 using namespace lupnt;
+using namespace Catch::Matchers;
 
 namespace {
 
@@ -15,13 +18,13 @@ ODE HarmonicOscillator = [](const real t, const VectorXreal& x) {
   return dxdt;
 };
 
-TEST(Integrator, RK4) {
+TEST_CASE("Integrator-RK4") {
   RK4 integrator;
 
   real t = 0;
   VectorXreal x(2);
-  x[0] = 1;            // initial position
-  x[1] = 0;            // initial velocity
+  x[0] = 1;        // initial position
+  x[1] = 0;        // initial velocity
   real dt = 0.01;  // time step
 
   // Simulate for one period
@@ -31,17 +34,17 @@ TEST(Integrator, RK4) {
   }
 
   // After one period, the oscillator should be back to the initial position.
-  EXPECT_NEAR(x(0).val(), 1.0, EPS);
-  EXPECT_NEAR(x(1).val(), 0.0, EPS);
+  REQUIRE_THAT(x(0).val(), WithinAbs(1.0, EPS));
+  REQUIRE_THAT(x(1).val(), WithinAbs(0.0, EPS));
 }
 
-TEST(Integrator, RK8) {
+TEST_CASE("Integrator-RK8") {
   RK8 integrator;
 
   real t = 0;
   VectorXreal x(2);
-  x[0] = 1;            // initial position
-  x[1] = 0;            // initial velocity
+  x[0] = 1;        // initial position
+  x[1] = 0;        // initial velocity
   real dt = 0.01;  // time step
 
   // Simulate for one period
@@ -51,8 +54,8 @@ TEST(Integrator, RK8) {
   }
 
   // After one period, the oscillator should be back to the initial position.
-  EXPECT_NEAR(x(0).val(), 1.0, EPS);
-  EXPECT_NEAR(x(1).val(), 0.0, EPS);
+  REQUIRE_THAT(x(0).val(), WithinAbs(1.0, EPS));
+  REQUIRE_THAT(x(1).val(), WithinAbs(0.0, EPS));
 }
 
 }  // namespace

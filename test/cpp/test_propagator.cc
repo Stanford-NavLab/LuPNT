@@ -1,8 +1,12 @@
-#include <gtest/gtest.h>
 #include <lupnt/dynamics/propagator.h>
 
-#include "test_utils.h"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
+
+#include "test_utils.cc"
+
 using namespace lupnt;
+using namespace Catch::Matchers;
 
 namespace {
 
@@ -21,7 +25,7 @@ ODE TwoBodyODE = [](const real t, const VectorXreal& x) {
   return acc;
 };
 
-TEST(NumericalPropagator, PropagateWithStmTwoBodyTest) {
+TEST_CASE("NumericalPropagator", "PropagateWithStmTwoBodyTest") {
   NumericalPropagator propagator("RK4");
 
   real t0 = 0;

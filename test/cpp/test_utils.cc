@@ -1,45 +1,46 @@
-#pragma once
-
-#include <gtest/gtest.h>
 #include <lupnt/core/constants.h>
 #include <lupnt/numerics/math_utils.h>
 
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
+
+using namespace Catch::Matchers;
 using namespace lupnt;
 
 static void EXPECT_NEAR_ADVEC(const VectorXreal& a, const VectorXreal& b,
                               double abs_error) {
-  EXPECT_EQ(a.size(), b.size());
+  REQUIRE(a.size() == b.size());
   for (int i = 0; i < a.size(); ++i) {
-    EXPECT_NEAR(a[i].val(), b[i].val(), abs_error);
+    REQUIRE_THAT(a[i].val(), WithinAbs(b[i].val(), abs_error));
   }
 }
 
 static void EXPECT_NEAR_ADMAT(const MatrixXreal& a, const MatrixXreal& b,
                               double abs_error) {
-  EXPECT_EQ(a.rows(), b.rows());
-  EXPECT_EQ(a.cols(), b.cols());
+  REQUIRE(a.rows() == b.rows());
+  REQUIRE(a.cols() == b.cols());
   for (int i = 0; i < a.rows(); ++i) {
     for (int j = 0; j < a.cols(); ++j) {
-      EXPECT_NEAR(a(i, j).val(), b(i, j).val(), abs_error);
+      REQUIRE_THAT(a(i, j).val(), WithinAbs(b(i, j).val(), abs_error));
     }
   }
 }
 
 static void EXPECT_NEAR_EIGENVEC(const VectorXd& a, const VectorXd& b,
                                  double abs_error) {
-  EXPECT_EQ(a.size(), b.size());
+  REQUIRE(a.size() == b.size());
   for (int i = 0; i < a.size(); ++i) {
-    EXPECT_NEAR(a[i], b[i], abs_error);
+    REQUIRE_THAT(a[i], WithinAbs(b[i], abs_error));
   }
 }
 
 static void EXPECT_NEAR_EIGENMAT(const MatrixXd& a, const MatrixXd& b,
                                  double abs_error) {
-  EXPECT_EQ(a.rows(), b.rows());
-  EXPECT_EQ(a.cols(), b.cols());
+  REQUIRE(a.rows() == b.rows());
+  REQUIRE(a.cols() == b.cols());
   for (int i = 0; i < a.rows(); ++i) {
     for (int j = 0; j < a.cols(); ++j) {
-      EXPECT_NEAR(a(i, j), b(i, j), abs_error);
+      REQUIRE_THAT(a(i, j), WithinAbs(b(i, j), abs_error));
     }
   }
 }

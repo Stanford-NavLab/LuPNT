@@ -1,7 +1,3 @@
-#include <gtest/gtest.h>
+#include <catch2/catch_test_macros.hpp>
 
-TEST(OrbitState, CartesianOrbitState) {
-  EXPECT_STRNE("hello", "world");
-  // Expect equality.
-  EXPECT_EQ(7 * 6, 42);
-}
+TEST_CASE("OrbitState", "CartesianOrbitState") {}

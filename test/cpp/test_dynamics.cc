@@ -1,17 +1,17 @@
-#include <gtest/gtest.h>
 #include <lupnt/core/constants.h>
 #include <lupnt/dynamics/dynamics.h>
 #include <lupnt/physics/orbit_state.h>
 #include <lupnt/physics/orbit_state_utils.h>
 
+#include <catch2/catch_test_macros.hpp>
 #include <iostream>
 
-#include "test_utils.h"
+#include "test_utils.cc"
 
 using namespace lupnt;
 
 // Keplerian Dynamics with Classical Orbital Elements
-TEST(Test_Dynamics, Test_KeplerianDynamics_ClassicalOE) {
+TEST_CASE("Test_KeplerianDynamics_ClassicalOE") {
   // Classical orbital elements
   real a = 6541.4;                  // [km]
   real e = 0.6;                     // [-]
@@ -59,7 +59,7 @@ TEST(Test_Dynamics, Test_KeplerianDynamics_ClassicalOE) {
 }
 
 // CartesianTwoBodyDynamics
-TEST(Test_Dynamics, Test_CartesianTwoBodyDynamics) {
+TEST_CASE("Test_CartesianTwoBodyDynamics") {
   // Classical orbital elements
   real a = 6541.4;                  // [km]
   real e = 0.6;                     // [-]

@@ -46,10 +46,15 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(tests test_hello.cc)
-target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)
+file(GLOB_RECURSE test_sources LIST_DIRECTORIES false *.cc)
+add_executable(tests ${test_sources})
+target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/lupnt)
+target_link_libraries(tests PRIVATE Catch2::Catch2WithMain lupnt)
 
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(CTest)
 include(Catch)
-catch_discover_tests(tests)
+catch_discover_tests(tests
+  PROPERTIES ENVIRONMENT "LUPNT_DATA_PATH=${LUPNT_DATA_PATH}"
+)
+message(STATUS "LUPNT_DATA_PATH: ${LUPNT_DATA_PATH}")
