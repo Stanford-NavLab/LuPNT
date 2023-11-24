@@ -1,6 +1,6 @@
 ![The Logo](docs/nav_lab_logo.png)
 
-[![codecov](https://codecov.io/gh/Stanford-NavLab/LuPNT/graph/badge.svg?token=MFGWTJBC4A)](https://codecov.io/gh/Stanford-NavLab/LuPNT)
+[![codecov](https://codecov.io/github/Stanford-NavLab/LuPNT/graph/badge.svg?token=MFGWTJBC4A)](https://codecov.io/github/Stanford-NavLab/LuPNT)
 
 # Welcome to the LuPNT Library
 
