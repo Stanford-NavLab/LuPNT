@@ -4,7 +4,6 @@ import sys
 import pytest
 
 sys.path.append("pylupntutil")
-import pntautodiff as ad
 from setup_gmat import gmat
 
 
@@ -17,9 +16,12 @@ def test_StateUtils():
     w = np.deg2rad(0.0)
     M = np.deg2rad(0.0)
 
+    coe_state = pnt.ClassicalOE([a, e, i, Omega, w, M], pnt.CoordSystem.MI)
+    coe_state.vector
+    tmp = pnt.Vector3real([1, 2, 3])
+
     mu = pnt.MU_MOON
-    coe_state = pnt.ClassicalOE(a, e, i, Omega, w, M, cs=pnt.CoordSystem.MI)
-    coe_vec = coe_state.get_vector().asarray()
+    coe_vec = coe_state.get_vector()
 
     np.testing.assert_array_almost_equal(coe_vec, [a, e, i, Omega, w, M])
 

@@ -1,5 +1,5 @@
 /**
- * @file Filters.h
+ * @file filters.h
  * @author Stanford NAV LAB
  * @brief List of Filters
  * @version 0.1
@@ -12,17 +12,19 @@
 #pragma once
 
 // Autodiff includes
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+
+
 
 // Eigen includes
-#include <Eigen/Dense>
-#include <Eigen/QR>
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+#include <lupnt/core/constants.h>
 
-namespace ad = autodiff;
-namespace LPT {
+
+#include <Eigen/QR>
+
+
+
+
+namespace lupnt {
 
 // Dynamics and Measurement Function
 
@@ -34,8 +36,8 @@ namespace LPT {
  * @param t_end End time
  * @param Phi STM of the dynamics
  */
-typedef std::function<ad::VectorXreal(const ad::VectorXreal, ad::real t_curr,
-                                      ad::real t_end, Eigen::MatrixXd &)>
+typedef std::function<VectorXreal(const VectorXreal, real t_curr, real t_end,
+                                  MatrixXd &)>
     DynamicsFunction;
 
 /**
@@ -44,11 +46,10 @@ typedef std::function<ad::VectorXreal(const ad::VectorXreal, ad::real t_curr,
  * @param x State
  * @param t_curr Current time
  * @param t_end End time
- * @return Eigen::MatrixXd Process noise covariance
+ * @return MatrixXd Process noise covariance
  *
  */
-typedef std::function<Eigen::MatrixXd(const ad::VectorXreal, ad::real t_curr,
-                                      ad::real t_end)>
+typedef std::function<MatrixXd(const VectorXreal, real t_curr, real t_end)>
     ProcessNoiseFunction;
 
 /**
@@ -59,8 +60,7 @@ typedef std::function<Eigen::MatrixXd(const ad::VectorXreal, ad::real t_curr,
  * @param R Measurement noise covariance
  *
  */
-typedef std::function<ad::VectorXreal(const ad::VectorXreal, Eigen::MatrixXd &,
-                                      Eigen::MatrixXd &)>
+typedef std::function<VectorXreal(const VectorXreal, MatrixXd &, MatrixXd &)>
     MeasurementFunction;
 
 class IFilter {
@@ -87,42 +87,42 @@ class IFilter {
  */
 class EKF : public IFilter {
  public:
-  ad::VectorXreal x;     // Updated state
-  ad::real t_curr;       // Current time
-  ad::VectorXreal xbar;  // Predicted state
-  ad::VectorXreal dx;    // State update
+  VectorXreal x;     // Updated state
+  real t_curr;       // Current time
+  VectorXreal xbar;  // Predicted state
+  VectorXreal dx;    // State update
 
-  Eigen::MatrixXd P;     // Updated state cov
-  Eigen::MatrixXd Pbar;  // Predicted state cov
+  MatrixXd P;     // Updated state cov
+  MatrixXd Pbar;  // Predicted state cov
 
-  // Eigen::MatrixXd F;  // Jacobian of the dynamics
-  Eigen::MatrixXd H;  // Measurement matrix
-  Eigen::MatrixXd S;  // Innovation cov
-  Eigen::MatrixXd K;  // Kalman gain
-  Eigen::MatrixXd I;  // Identity matrix
+  // MatrixXd F;  // Jacobian of the dynamics
+  MatrixXd H;  // Measurement matrix
+  MatrixXd S;  // Innovation cov
+  MatrixXd K;  // Kalman gain
+  MatrixXd I;  // Identity matrix
 
-  void Initialize(const ad::VectorXreal &x0, const Eigen::MatrixXd &P0) {
+  void Initialize(const VectorXreal &x0, const MatrixXd &P0) {
     x = x0;
     P = P0;
   }
 
-  ad::VectorXreal GetPredictedStateEstimate(Eigen::MatrixXd &Pbar) {
+  VectorXreal GetPredictedStateEstimate(MatrixXd &Pbar) {
     Pbar = this->Pbar;
     return this->xbar;
   }
 
-  ad::VectorXreal GetUpdatedStateEstimate(Eigen::MatrixXd &P) {
+  VectorXreal GetUpdatedStateEstimate(MatrixXd &P) {
     Pbar = this->P;
     return this->x;
   }
 
-  void Predict(ad::real t_end);
-  void Update(ad::VectorXreal z_obs);
+  void Predict(real t_end);
+  void Update(VectorXreal z_obs);
 
-  void Step(ad::real t_end, ad::VectorXreal z_obs) {
+  void Step(real t_end, VectorXreal z_obs) {
     Predict(t_end);
     Update(z_obs);
   }
 };
 
-}  // namespace LPT
+}  // namespace lupnt

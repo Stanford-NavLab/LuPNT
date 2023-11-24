@@ -1,5 +1,5 @@
 /**
- * @file Integrator.h
+ * @file integrator.h
  * @author Stanford NAV LAB
  * @brief Integrator interfaces
  * @version 0.1
@@ -11,33 +11,31 @@
 
 #pragma once
 
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+#include "lupnt/core/constants.h"
 
-namespace ad = autodiff;
 
-namespace LPT {
 
-typedef std::function<ad::VectorXreal(const ad::real, const ad::VectorXreal &)>
-    ODE;
+namespace lupnt {
+
+using ODE = std::function<VectorXreal(const real, const VectorXreal &)>;
 
 class IIntegrator {
  public:
-  virtual ad::VectorXreal Step(const ODE &f, const ad::real t,
-                               const ad::VectorXreal &x, const ad::real dt) = 0;
+  virtual VectorXreal Step(const ODE &f, const real t, const VectorXreal &x,
+                           const real dt) = 0;
   virtual ~IIntegrator(){};
 };
 
 class RK4 : public IIntegrator {
  public:
-  ad::VectorXreal Step(const ODE &f, const ad::real t, const ad::VectorXreal &x,
-                       const ad::real dt);
+  VectorXreal Step(const ODE &f, const real t, const VectorXreal &x,
+                   const real dt);
 };
 
 class RK8 : public IIntegrator {
  public:
-  ad::VectorXreal Step(const ODE &f, const ad::real t, const ad::VectorXreal &x,
-                       const ad::real dt);
+  VectorXreal Step(const ODE &f, const real t, const VectorXreal &x,
+                   const real dt);
 };
 
-}  // namespace LPT
+}  // namespace lupnt

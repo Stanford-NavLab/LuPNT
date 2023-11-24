@@ -10,16 +10,12 @@ venv
 **/.DS_Store
 **/__pycache__
 
-# 3rdparty
-lupnt/3rdparty/Eigen
-lupnt/3rdparty/cspice
-lupnt/3rdparty/autodiff
+third_party/cspice
 
 # internal
 build
 doc
 local
-pybind11
 output
 data/ephemeris
 examples/figures

@@ -1,5 +1,5 @@
 /**
- * @file Occultation.h
+ * @file occultation.h
  * @author Stanford NAV LAB
  * @brief Signal blockage model
  * @version 0.1
@@ -11,13 +11,12 @@
 
 #pragma once
 
-#include <lupnt/core/Constants.h>
+#include <lupnt/core/constants.h>
 
-#include <autodiff/forward/real/eigen.hpp>
 #include <cmath>
 #include <map>
 
-namespace LPT {
+namespace lupnt {
 
 class Occultation {
  private:
@@ -41,16 +40,16 @@ class Occultation {
    * @return std::map<std::string, bool>
    */
   static std::map<std::string, bool> ComputeOccultation(
-      const Eigen::Vector3d tx_eci, const Eigen::Vector3d tx_mci,
-      const Eigen::Vector3d rx_eci, const Eigen::Vector3d rx_mci,
+      const Vector3d tx_eci, const Vector3d tx_mci,
+      const Vector3d rx_eci, const Vector3d rx_mci,
       const std::string tx_planet) {
-    Eigen::Vector3d tx2usr = rx_eci - tx_eci;
+    Vector3d tx2usr = rx_eci - tx_eci;
     double tx2usr_norm = tx2usr.norm();
 
     // COMPUTE EARTH OCCULTATION
 
     // Compute angle between (tx->Earth center) and (tx->rx)
-    Eigen::Vector3d tx2earth = -tx_eci;
+    Vector3d tx2earth = -tx_eci;
     double tx2earth_norm = tx2earth.norm();
     double alpha_earth =
         acos(tx2usr.dot(tx2earth) / (tx2earth_norm * tx2usr_norm));
@@ -79,7 +78,7 @@ class Occultation {
     // COMPUTE MOON OCCULTATION
 
     // Compute angle between (tx->Moon center) and (tx->rx)
-    Eigen::Vector3d tx2moon = -tx_mci;
+    Vector3d tx2moon = -tx_mci;
     double tx2moon_norm = tx2moon.norm();
     double alpha_moon =
         acos(tx2moon.dot(tx2usr) / (tx2moon_norm * tx2usr_norm));
@@ -102,4 +101,4 @@ class Occultation {
             {"moon", occ_moon}};
   }
 };
-}  // namespace LPT
+}  // namespace lupnt

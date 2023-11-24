@@ -1,5 +1,5 @@
 /**
- * @file Constants.h
+ * @file constants.h
  * @author Stanford NAV LAB
  * @brief List of constants
  * @version 0.1
@@ -10,24 +10,47 @@
  */
 #pragma once
 
-#include <autodiff/common/eigen.hpp>
+#include <Eigen/Core>
+#include <Eigen/Dense>
 #include <autodiff/forward/real.hpp>
-#include <string>
+#include <autodiff/forward/real/eigen.hpp>
 
-#include "UserFilePath.h"
+#include "user_file_path.h"
 
-namespace Eigen {
-typedef Matrix<double, 6, 6> Matrix6d;
-typedef Matrix<double, 6, 1> Vector6d;
+#define DEFINE_STATIC_VECTORS_MATRICES(size)                  \
+  using Vector##size##d = Eigen::Matrix<double, size, 1>;     \
+  using Matrix##size##d = Eigen::Matrix<double, size, size>;  \
+  using RowVector##size##d = Eigen::Matrix<double, 1, size>;  \
+  using Vector##size##real = Eigen::Matrix<real, size, 1>;    \
+  using Matrix##size##real = Eigen::Matrix<real, size, size>; \
+  using RowVector##size##real = Eigen::Matrix<real, 1, size>;
 
-}  // namespace Eigen
+#define DEFINE_DYNAMIC_VECTORS_MATRICES                                    \
+  using VectorXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;               \
+  using MatrixXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;  \
+  using RowVectorXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;            \
+  using VectorXreal = Eigen::Matrix<real, Eigen::Dynamic, 1>;              \
+  using MatrixXreal = Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>; \
+  using RowVectorXreal = Eigen::Matrix<real, 1, Eigen::Dynamic>;
 
-namespace autodiff {
-using Matrix6real = Eigen::Matrix<real1st, 6, 6, 0, 6, 6>;
-using Vector6real = Eigen::Matrix<real1st, 6, 1, 0, 6, 1>;
-}  // namespace autodiff
+#define DEFINE_VECTORS_MATRICES      \
+  DEFINE_STATIC_VECTORS_MATRICES(1)  \
+  DEFINE_STATIC_VECTORS_MATRICES(2)  \
+  DEFINE_STATIC_VECTORS_MATRICES(3)  \
+  DEFINE_STATIC_VECTORS_MATRICES(4)  \
+  DEFINE_STATIC_VECTORS_MATRICES(5)  \
+  DEFINE_STATIC_VECTORS_MATRICES(6)  \
+  DEFINE_STATIC_VECTORS_MATRICES(7)  \
+  DEFINE_STATIC_VECTORS_MATRICES(8)  \
+  DEFINE_STATIC_VECTORS_MATRICES(9)  \
+  DEFINE_STATIC_VECTORS_MATRICES(10) \
+  DEFINE_DYNAMIC_VECTORS_MATRICES
 
-namespace LPT {
+namespace lupnt {
+
+using real = autodiff::real;
+
+DEFINE_VECTORS_MATRICES
 
 // Math constants --------------------------------------------------------------
 static constexpr double PI_DEG = 180.0;
@@ -125,8 +148,8 @@ static constexpr double P_SUN =
 
 // File Pathes -----------------------------------------------------------------
 static const std::filesystem::path CSPICE_KER_DIR =
-    BASEPATH / "data" / "ephemeris";
+   GetDataPath() / "ephemeris";
 
 // Moon mean elements
 
-}  // namespace LPT
+}  // namespace lupnt

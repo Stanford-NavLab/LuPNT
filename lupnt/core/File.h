@@ -1,5 +1,5 @@
 /**
- * @file File.h
+ * @file file.h
  * @author Stanford NAV LAB
  * @brief File access utils
  * @version 0.1
@@ -10,10 +10,6 @@
  */
 #pragma once
 
-#include <lupnt/numerics/MathUtils.h>
-
-#include <Eigen/Dense>
-#include <autodiff/forward/real/eigen.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -21,9 +17,9 @@
 #include <string>
 #include <vector>
 
-namespace ad = autodiff;
+#include "lupnt/numerics/math_utils.h"
 
-namespace LPT {
+namespace lupnt {
 
 class File {
  private:
@@ -73,11 +69,10 @@ class DataHistory {
     if (historyData.find(key) == historyData.end()) {
       historyData[key] = {};
     }
-    historyData[key].push_back(
-        Timestamped<Eigen::VectorXd>(timestamp, toEigen(data)));
+    historyData[key].push_back(Timestamped<VectorXd>(timestamp, toEigen(data)));
   }
 
-  const std::vector<Timestamped<Eigen::VectorXd>>& GetData(
+  const std::vector<Timestamped<VectorXd>>& GetData(
       const std::string& key) const {
     auto it = historyData.find(key);
     if (it != historyData.end()) {
@@ -90,8 +85,8 @@ class DataHistory {
     headers[key].push_back(header);
   }
 
-  const std::map<std::string, std::vector<Timestamped<Eigen::VectorXd>>>&
-  GetData() const {
+  const std::map<std::string, std::vector<Timestamped<VectorXd>>>& GetData()
+      const {
     return historyData;
   }
 
@@ -100,7 +95,7 @@ class DataHistory {
   }
 
  private:
-  std::map<std::string, std::vector<Timestamped<Eigen::VectorXd>>> historyData;
+  std::map<std::string, std::vector<Timestamped<VectorXd>>> historyData;
   std::map<std::string, std::vector<std::string>> headers;
 };
 
@@ -155,4 +150,4 @@ class FileWriter {
   Eigen::IOFormat fmt{Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n"};
 };
 
-}  // namespace LPT
+}  // namespace lupnt

@@ -1,6 +1,13 @@
 [submodule "pybind11"]
-	path = pybind11
-	url = https://github.com/pybind/pybind11.git
+	path = third_party/pybind11
+	url = git@github.com:pybind/pybind11.git
+	branch = stable
 [submodule "docs/doxygen-awesome-css"]
 	path = docs/doxygen-awesome-css
 	url = https://github.com/jothepro/doxygen-awesome-css.git
+[submodule "third_party/autodiff"]
+	path = third_party/autodiff
+	url = git@github.com:autodiff/autodiff.git
+[submodule "third_party/eigen"]
+	path = third_party/eigen
+	url = https://gitlab.com/libeigen/eigen.git

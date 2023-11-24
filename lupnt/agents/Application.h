@@ -1,5 +1,5 @@
 /**
- * @file Application.h
+ * @file application.h
  * @author Stanford NAVLab
  * @brief Base class for Application
  * @version 0.1
@@ -13,7 +13,7 @@
 
 #include <memory>
 
-namespace LPT {
+namespace lupnt {
 class Application {
  public:
   virtual ~Application(){};
@@ -22,4 +22,4 @@ class Application {
   virtual void Step(double t) = 0;
   virtual double GetFrequency() = 0;
 };
-};  // namespace LPT
+};  // namespace lupnt

@@ -1,5 +1,7 @@
 ![The Logo](docs/nav_lab_logo.png)
 
+[![codecov](https://codecov.io/github/Stanford-NavLab/LuPNT/graph/badge.svg?token=MFGWTJBC4A)](https://codecov.io/github/Stanford-NavLab/LuPNT)
+
 # Welcome to the LuPNT Library
 
 `LuPNT` is an open-source C++/Python library for Lunar Positioning, Navigation, and Timing Research.
@@ -21,7 +23,7 @@ If using this project in your own work please cite the following:
 @inproceedings{IiyamaCasadesus2023,
   title = {LuPNT: Open-Souce Simulator for Lunar Positioning, Navigation, and Timing},
   author={Iiyama, Keidai and Casadesus Vila, Guillem and Gao, Grace},
-  booktitle={Proceedings of the Institute of Navigation GNSS+ conference (ION GNSS+ 2023)},
+  booktitle={Proceedings of the Institute of Navigation Gnss+ conference (ION Gnss+ 2023)},
   institution = {Stanford University},
   year = {2023},
   url = {https://github.com/Stanford-NavLab/LuPNT},
@@ -62,10 +64,10 @@ Todo: Create a bashfile to do the installation
   - Place the files under `/data/spherical_harmonics`
 
 ### Step 2: Do Additional Setups
-1. Add the path to the base of this Simulator to UserFilePath.h
+1. Add the path to the base of this Simulator to user_file_path.h
 2. In the project directory, execute following command to prohibit comitting your path changes
 ```
-git update-index --assume-unchanged lupnt/core/UserFilePath.h
+git update-index --assume-unchanged lupnt/core/user_file_path.h
 ```
 3. If you are using VSCode (recommended), do the additional setups as listed [here](#working-with-vscode)
 

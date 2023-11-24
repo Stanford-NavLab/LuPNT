@@ -1,5 +1,5 @@
 /**
- * @file Agent.h
+ * @file agent.h
  * @author Stanford NAV LAB
  * @brief List of agents
  * @version 0.1
@@ -13,20 +13,20 @@
 // C++ includes
 #include <memory>
 
-// autodiff includes
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+
+
+
 
 // lupnt includes
-#include "lupnt/agents/CommDevice.h"
-#include "lupnt/core/Constants.h"
-#include "lupnt/dynamics/Dynamics.h"
-#include "lupnt/physics/Clock.h"
-#include "lupnt/physics/CoordConverter.h"
-#include "lupnt/physics/OrbitState.h"
-#include "lupnt/physics/OrbitStateUtils.h"
+#include "lupnt/core/constants.h"
+#include "lupnt/dynamics/dynamics.h"
+#include "lupnt/physics/clock.h"
+#include "lupnt/physics/coord_converter.h"
+#include "lupnt/physics/orbit_state.h"
+#include "lupnt/physics/orbit_state_utils.h"
+#include "comm_device.h"
 
-namespace LPT {
+namespace lupnt {
 
 class ICommDevice;
 
@@ -36,37 +36,37 @@ class ICommDevice;
  */
 class Agent {
  private:
-  static int IDCounter;
-  const int ID;
-  std::string name;
+  static int id_counter_;
+  const int id_;
+  std::string name_;
 
   BodyId bodyId_;
-  ad::real epoch_;
+  real epoch_;
   std::shared_ptr<OrbitState> state_;
   std::shared_ptr<IOrbitDynamics> dynamics_;
   std::vector<std::shared_ptr<ICommDevice>> devices_;
 
-  ad::Vector2real clk_;
-  std::unique_ptr<ClockDynamics> clk_dyn_;
+  Vector2real clock_;
+  std::unique_ptr<ClockDynamics> clock_dynamics_;
 
  public:
-  Agent() : ID(IDCounter++) {}
+  Agent() : id_(id_counter_++) {}
 
   // Getters
-  ad::real GetEpoch() { return epoch_; }
+  real GetEpoch() { return epoch_; }
   BodyId GetBodyId() { return bodyId_; }
   std::shared_ptr<OrbitState> GetOrbitState() { return state_; }
   std::shared_ptr<IOrbitDynamics> GetDynamics() { return dynamics_; }
-  ad::Vector2real GetClock() { return clk_; }
+  Vector2real GetClock() { return clock_; }
 
   // Setters
   void SetOrbitState(std::shared_ptr<OrbitState> state) { state_ = state; }
   void SetDynamics(std::shared_ptr<IOrbitDynamics> dyn) { dynamics_ = dyn; }
-  void SetEpoch(ad::real epoch) { epoch_ = epoch; }
+  void SetEpoch(real epoch) { epoch_ = epoch; }
   void SetBodyId(BodyId bodyId) { bodyId_ = bodyId; }
-  void SetClock(ad::Vector2real clk) { clk_ = clk; }
-  void SetClockDynamics(ClockDynamics& clk_dyn) {
-    clk_dyn_ = std::make_unique<ClockDynamics>(clk_dyn);
+  void SetClock(Vector2real clk) { clock_ = clk; }
+  void SetClockDynamics(ClockDynamics& clock_dyn) {
+    clock_dynamics_ = std::make_unique<ClockDynamics>(clock_dyn);
   }
 
   void AddDevice(std::shared_ptr<ICommDevice> device) {
@@ -75,14 +75,14 @@ class Agent {
 
   // Cartesian OrbitState at epoch in GCRF frame
   std::shared_ptr<CartesianOrbitState> GetCartesianGCRFStateAtEpoch(
-      ad::real epoch, CoordSystem coord_sys = CoordSystem::GCRF);
+      real epoch, CoordSystem coord_sys = CoordSystem::GCRF);
 
-  void Propagate(const ad::real epoch) {
+  void Propagate(const real epoch) {
     if (epoch == epoch_) return;
 
     dynamics_->Propagate(*state_, epoch_, epoch, 1.0 * SECS_PER_MINUTE);
-    if (clk_dyn_ != nullptr) {
-      clk_dyn_->Propagate(clk_, epoch - epoch_);
+    if (clock_dynamics_ != nullptr) {
+      clock_dynamics_->Propagate(clock_, epoch - epoch_);
     }
 
     epoch_ = epoch;
@@ -107,4 +107,4 @@ class Rover : public Agent {
   Rover() : Agent() {}
 };
 
-};  // namespace LPT
+};  // namespace lupnt

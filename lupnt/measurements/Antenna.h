@@ -1,5 +1,5 @@
 /**
- * @file Antenna.h
+ * @file antenna.h
  * @author Stanford NAV LAB
  * @brief Antenna class
  * @version 0.1
@@ -10,17 +10,15 @@
  */
 #pragma once
 
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
 #include <string>
 
-#include "lupnt/core/Constants.h"
+#include "lupnt/core/constants.h"
 
-namespace LPT {
+namespace lupnt {
 class Antenna {
  public:
-  std::string comms_name_;           // Name of the antenna
-  Eigen::MatrixXd antenna_pattern_;  // Antenna gain pattern [deg & dB]
+  std::string comms_name_;    // Name of the antenna
+  MatrixXd antenna_pattern_;  // Antenna gain pattern [deg & dB]
   double antenna_mask_ =
       80.0 * RAD_PER_DEG;  // Cut off angle for the transmit antenna [rad]
 
@@ -31,7 +29,7 @@ class Antenna {
 
   void LoadAntennaPattern();
   double GetAntennaGain(double theta, double phi);
-  double GetAntennaGain(Eigen::Vector3d direction);
+  double GetAntennaGain(Vector3d direction);
 };
 
-}  // namespace LPT
+}  // namespace lupnt

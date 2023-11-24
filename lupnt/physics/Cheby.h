@@ -11,20 +11,16 @@
 
 #pragma once
 
+#include <cspice/SpiceUsr.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+#include "lupnt/core/constants.h"
 
-#include "../3rdparty/cspice/include/SpiceUsr.h"
-
-namespace ad = autodiff;
-
-namespace LPT {
+namespace lupnt {
 /**
 * @brief Evaluate the given Chebyshev polynomial at x, returning both the
 evaluated polynomial in *f, and the evaluated derivative of the polymonial in
@@ -36,15 +32,14 @@ scale[0] + scale[1].  Outside of that range, the polynomial is not valid.
 */
 void cheby_eval(double x, double *scale, double *coeff, long num, double *f,
                 double *df);
-ad::VectorXreal cheby_eval_ad(ad::real x, double *scale, double *coeff,
-                              long num);
+VectorXreal cheby_eval_ad(real x, double *scale, double *coeff, long num);
 
 /**
  * @brief Find the appropriate SPK record for time t and compute the position
  * and velocity for that time.  Returns 0 on success, 1 if the time is not
  * covered by the segment. */
 int cheby_posvel(double t, double *seg, long len, double pos[3], double vel[3]);
-ad::VectorXreal cheby_posvel_ad(ad::real t, double *seg, long len);
+VectorXreal cheby_posvel_ad(real t, double *seg, long len);
 
 /**
  * @brief Verify that the provided segment meets the constraints of a uniform
@@ -92,4 +87,4 @@ segment_t *spk_extract(char const *path, long *segs);
  * Free the resources of an SPK structure created by spk_extract(). */
 void spk_free(segment_t *s, long n);
 
-}  // namespace LPT
+}  // namespace lupnt

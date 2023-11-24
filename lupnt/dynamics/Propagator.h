@@ -1,5 +1,5 @@
 /**
- * @file Propagator.h
+ * @file propagator.h
  * @author Stanford NAV LAB
  * @brief Numerical Propagator
  * @version 0.1
@@ -10,16 +10,15 @@
  */
 #pragma once
 
-#include <autodiff/forward/real.hpp>
 #include <iostream>
 #include <memory>
 #include <string>
 
-#include "lupnt/numerics/Integrator.h"
+#include "lupnt/numerics/integrator.h"
 
-namespace ad = autodiff;
 
-namespace LPT {
+
+namespace lupnt {
 class NumericalPropagator {
  public:
   std::unique_ptr<IIntegrator> integrator;  // integrator type
@@ -27,11 +26,11 @@ class NumericalPropagator {
   NumericalPropagator();
   NumericalPropagator(std::string integratorType);
 
-  ad::VectorXreal Propagate(ODE odefunc, ad::real t0, ad::real tf,
-                            ad::VectorXreal x0, ad::real dt);
-  ad::VectorXreal PropagateWithStm(ODE odefunc, ad::real t0, ad::real tf,
-                                   ad::VectorXreal x0, ad::real dt,
-                                   Eigen::MatrixXd &J);
+  VectorXreal Propagate(ODE odefunc, real t0, real tf,
+                            VectorXreal x0, real dt);
+  VectorXreal PropagateWithStm(ODE odefunc, real t0, real tf,
+                                   VectorXreal x0, real dt,
+                                   MatrixXd &J);
 };
 
-}  // namespace LPT
+}  // namespace lupnt

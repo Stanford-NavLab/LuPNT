@@ -1,43 +1,71 @@
-################################
-# Testing
-################################
-if (APPLE)
-  add_definitions(-DGTEST_USE_OWN_TR1_TUPLE)
-  add_definitions(-D__GLIBCXX__)
-endif (APPLE)
+# GoogleTest
+# include(FetchContent)
+# FetchContent_Declare(
+#   googletest
+#   URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+#   DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+# )
 
-#   # This adds another subdirectory, which has 'project(gtest)'.
-#   add_subdirectory(lib/gtest-1.6.0)
+# # For Windows: Prevent overriding the parent project's compiler/linker settings
+# set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+# FetchContent_MakeAvailable(googletest)
+# include(GoogleTest)
 
-#   enable_testing()
+# # add_library(GTest::GTest INTERFACE IMPORTED)
+# # target_link_libraries(GTest::GTest INTERFACE gtest_main)
 
-#   # Include the gtest library. gtest_SOURCE_DIR is available due to
-#   # 'project(gtest)' above.
-#   include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+# if (APPLE)
+#   add_definitions(-DGTEST_USE_OWN_TR1_TUPLE)
+#   add_definitions(-D__GLIBCXX__)
+# endif (APPLE)
 
-##############
-# Unit Tests
-##############
-enable_testing()
+# file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES false *.h *.cc)
+# # add_executable(tests ${TEST_SOURCES})
 
-file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES false *.h *.cpp)
-set(SOURCES ${TEST_SOURCES})
-add_executable(runUnitTests  ${TEST_SOURCES})
+# target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/lupnt)
 
-target_include_directories(runUnitTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../lupnt)
+# # Standard linking to gtest stuff.
+# target_link_libraries(tests GTest::gtest_main)
 
-# Standard linking to gtest stuff.
-target_link_libraries(runUnitTests GTest::gtest_main)
+# # Extra linking for the project.
+# target_link_libraries(tests lupnt)
 
-# Extra linking for the project.
-target_link_libraries(runUnitTests lupnt)
+# gtest_discover_tests(tests
+#   PROPERTIES ENVIRONMENT "LUPNT_DATA_PATH=${LUPNT_DATA_PATH}"
+# )
 
-# This is so you can do 'make test' to see all your tests run, instead of
-# manually running the executable runUnitTests to see those specific tests.
-# find_package(GTest REQUIRED)
-include(GoogleTest)
-gtest_discover_tests(runUnitTests)
+# message(STATUS "LUPNT_DATA_PATH: ${LUPNT_DATA_PATH}")
 
-# You can also omit NAME and COMMAND. The second argument could be some other
-# test executable.
-#add_test(that-other-test-I-made runUnitTests)
+Include(FetchContent)
+
+FetchContent_Declare(
+  Catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG        v3.4.0 # or a later release
+)
+
+FetchContent_MakeAvailable(Catch2)
+
+file(GLOB_RECURSE test_sources LIST_DIRECTORIES false *.cc)
+add_executable(tests ${test_sources})
+target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/lupnt)
+target_link_libraries(tests PRIVATE Catch2::Catch2WithMain lupnt)
+
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+include(CTest)
+include(Catch)
+catch_discover_tests(tests)
+
+add_custom_target(run_tests
+  COMMAND ${CMAKE_COMMAND} --build . --target tests
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test/cpp
+  COMMENT "Running tests"
+)
+
+add_custom_command(TARGET run_tests POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE="${CMAKE_BINARY_DIR}/test/cpp/default.profraw" $<TARGET_FILE:tests>
+  COMMAND llvm-profdata merge -sparse default.profraw -o default.profdata
+  COMMAND llvm-cov show $<TARGET_FILE:lupnt> -instr-profile=default.profdata > coverage.txt
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test/cpp
+  COMMENT "Generating coverage report"
+)

@@ -1,5 +1,5 @@
 /**
- * @file Event.h
+ * @file event.h
  * @author Stanford NAV LAB
  * @brief Event class
  * @version 0.1
@@ -16,7 +16,7 @@
 
 #define INF std::numeric_limits<double>::infinity()
 
-namespace LPT {
+namespace lupnt {
 class Event {
  public:
   double frequency_;
@@ -41,4 +41,4 @@ class Event {
   void SetTime(double time) { time_ = time; }
 };
 
-};  // namespace LPT
+};  // namespace lupnt

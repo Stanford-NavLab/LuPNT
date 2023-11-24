@@ -1,5 +1,5 @@
 /**
- * @file State.h
+ * @file state.h
  * @author Stanford NAV LAB
  * @brief  SPICE Interface functions
  * @version 0.1
@@ -11,13 +11,11 @@
 
 #pragma once
 
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
 #include <vector>
 
-namespace ad = autodiff;
 
-namespace LPT {
+
+namespace lupnt {
 
 /**
  * @brief Interface for States
@@ -26,8 +24,8 @@ namespace LPT {
 class IState {
  public:
   virtual ~IState() = default;
-  virtual inline int GetStateSize() = 0;
-  virtual inline ad::real GetValue(int idx) = 0;
+  virtual inline int GetSize() const = 0;
+  virtual inline real GetValue(int idx) const = 0;
 };
 
 /**
@@ -45,7 +43,7 @@ class JointState {
     int state_vec_size = 0;
     for (int i = 0; state_vec.size(); i++) {
       state_vec_.push_back(state_vec[i]);
-      state_vec_size += state_vec_[i]->GetStateSize();
+      state_vec_size += state_vec_[i]->GetSize();
     }
     state_vec_size_ = state_vec_size;
   };
@@ -54,11 +52,11 @@ class JointState {
 
   std::vector<IState*> GetJointState() { return state_vec_; };
 
-  ad::VectorXreal GetJointStateValue() {
-    ad::VectorXreal advec(state_vec_size_);
+  VectorXreal GetJointStateValue() {
+    VectorXreal advec(state_vec_size_);
     int cur_idx = 0;
     for (int i = 0; state_vec_.size(); i++) {
-      for (int j = 0; j < state_vec_[i]->GetStateSize(); j++) {
+      for (int j = 0; j < state_vec_[i]->GetSize(); j++) {
         advec(i) = state_vec_[i]->GetValue(j);
       }
     }
@@ -66,4 +64,4 @@ class JointState {
   };
 };
 
-}  // namespace LPT
+}  // namespace lupnt

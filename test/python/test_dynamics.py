@@ -121,4 +121,4 @@ def test_CartesianTwoBodyDynamics():
 if __name__ == "__main__":
     test_KeplerianDynamics_ClassicalOE()
     test_CartesianTwoBodyDynamics()
-    print("All tests passed!")
+    print("All tests passed")
