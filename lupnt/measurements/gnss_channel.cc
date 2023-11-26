@@ -66,17 +66,18 @@ std::vector<Transmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
     // Occultation
     std::string tx_planet = "";
     std::map<std::string, bool> vis = Occultation::ComputeOccultation(
-        toEigen(rv_tx_gcrf->r()), toEigen(rv_tx_mi->r()),
-        toEigen(rv_rx_gcrf->r()), toEigen(rv_rx_mi->r()), tx_planet);
+        rv_tx_gcrf->r().cast<double>(), rv_tx_mi->r().cast<double>(),
+        rv_rx_gcrf->r().cast<double>(), rv_rx_mi->r().cast<double>(),
+        tx_planet);
 
     if (vis["EARTH"] || vis["MOON"]) continue;  // quit if occulted
 
     // Transmitter and Receiver Antenna gain
     std::string receiver_orientation = "PZ_EarthPoint";
-    double At = tx->GetTransmittionAntennaGain(t_tx, toEigen(rv_tx_gcrf->r()),
-                                               toEigen(rv_rx_gcrf->r()));
-    double Ar = rx.GetReceiverAntennaGain(t_rx, toEigen(rv_tx_gcrf->r()),
-                                          toEigen(rv_rx_gcrf->r()),
+    double At = tx->GetTransmittionAntennaGain(
+        t_tx, rv_tx_gcrf->r().cast<double>(), rv_rx_gcrf->r().cast<double>());
+    double Ar = rx.GetReceiverAntennaGain(t_rx, rv_tx_gcrf->r().cast<double>(),
+                                          rv_rx_gcrf->r().cast<double>(),
                                           receiver_orientation);
 
     // Generate transmission
@@ -112,8 +113,8 @@ std::vector<Transmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
       trans.freq = freq;
       trans.freq_label = freq_name;
       trans.dt_tx = 0.0;
-      trans.r_tx = toEigen(rv_tx_gcrf->r());
-      trans.v_tx = toEigen(rv_tx_gcrf->v());
+      trans.r_tx = rv_tx_gcrf->r().cast<double>();
+      trans.v_tx = rv_tx_gcrf->v().cast<double>();
 
       // Channel
       trans.I_rx = 0.0;
@@ -128,8 +129,8 @@ std::vector<Transmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
       // RX
       trans.t_rx = t_rx;
       trans.dt_rx = rx.GetAgent()->GetClock()(0).val();
-      trans.r_rx = toEigen(rv_rx_gcrf->r());
-      trans.v_rx = toEigen(rv_rx_gcrf->v());
+      trans.r_rx = rv_rx_gcrf->r().cast<double>();
+      trans.v_rx = rv_rx_gcrf->v().cast<double>();
 
       received_transs.push_back(trans);
     }

@@ -8,8 +8,8 @@
  * @copyright Copyright (c) 2023
  *
  */
-#include <lupnt/measurements/occultation.h>
 #include <lupnt/core/constants.h>
+#include <lupnt/measurements/occultation.h>
 #include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/coord_converter.h>
 
@@ -23,14 +23,18 @@ void printOccultation(Vector6real state_tx_vec, Vector6real state_rx_vec,
   Vector3d segment_eci, segment_mi, user_eci, user_mi;
   double t = 0.0;
 
-  tmp_ad = CoordConverter::Convert(state_tx_vec, t, CoordSystem::GCRF, CoordSystem::MI);
-  segment_mi = toEigen(tmp_ad.segment(0, 3));
-  tmp_ad = CoordConverter::Convert(state_tx_vec, t, CoordSystem::GCRF,CoordSystem::GCRF);
-  segment_eci = toEigen(tmp_ad.segment(0, 3));
-  tmp_ad = CoordConverter::Convert(state_rx_vec, t, CoordSystem::MI, CoordSystem::GCRF);
-  user_mi = toEigen(tmp_ad.segment(0, 3));
-  tmp_ad = CoordConverter::Convert(state_rx_vec, t, CoordSystem::MI, CoordSystem::GCRF);
-  user_eci = toEigen(tmp_ad.segment(0, 3));
+  tmp_ad = CoordConverter::Convert(state_tx_vec, t, CoordSystem::GCRF,
+                                   CoordSystem::MI);
+  segment_mi = tmp_ad.segment(0, 3).cast<double>();
+  tmp_ad = CoordConverter::Convert(state_tx_vec, t, CoordSystem::GCRF,
+                                   CoordSystem::GCRF);
+  segment_eci = tmp_ad.segment(0, 3).cast<double>();
+  tmp_ad = CoordConverter::Convert(state_rx_vec, t, CoordSystem::MI,
+                                   CoordSystem::GCRF);
+  user_mi = tmp_ad.segment(0, 3).cast<double>();
+  tmp_ad = CoordConverter::Convert(state_rx_vec, t, CoordSystem::MI,
+                                   CoordSystem::GCRF);
+  user_eci = tmp_ad.segment(0, 3).cast<double>();
 
   std::map<std::string, bool> occ = Occultation::ComputeOccultation(
       segment_eci, segment_mi, user_eci, user_mi, seg_planet);

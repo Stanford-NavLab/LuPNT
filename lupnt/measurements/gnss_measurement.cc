@@ -90,7 +90,7 @@ GnssMeasurement GnssMeasurement::ExtractSignal(std::string freq_label) {
 }
 
 VectorXreal GnssMeasurement::ComputePseudorange(VectorXreal r_rx,
-                                                    real dt_rx) const {
+                                                real dt_rx) const {
   // P_rx = rho_rx + c*(dt_rx(t_rx) - dt_tx(t_tx)) + I_rx + T_rx + eps_P
   VectorXreal P_rx(r_tx.cols());
   for (int i = 0; i < r_tx.cols(); i++) {
@@ -104,10 +104,9 @@ VectorXreal GnssMeasurement::GetPseudorange() {
   return ComputePseudorange(r_rx, dt_rx);
 }
 
-VectorXreal GnssMeasurement::GetPseudorange(double epoch,
-                                                Vector6real rv_pred,
-                                                Vector2real clk_pred,
-                                                MatrixXd &H_pr) {
+VectorXreal GnssMeasurement::GetPseudorange(double epoch, Vector6real rv_pred,
+                                            Vector2real clk_pred,
+                                            MatrixXd &H_pr) {
   auto func = [&, epoch, this](const Vector6real &rv_pred,
                                const Vector2real &clk_pred) {
     auto rv_pred_gcrf = CoordConverter::Convert(rv_pred, epoch, CoordSystem::MI,
@@ -117,12 +116,12 @@ VectorXreal GnssMeasurement::GetPseudorange(double epoch,
     return ComputePseudorange(r_rx, dt_rx);
   };
 
-  Vector6real rv_pred_ad = toEigen(rv_pred);
-  Vector2real clk_pred_ad = toEigen(clk_pred);
+  Vector6real rv_pred_ad = rv_pred.cast<double>();
+  Vector2real clk_pred_ad = clk_pred.cast<double>();
 
   VectorXreal z_pr_pred(n_meas);
   H_pr = jacobian(func, wrt(rv_pred_ad, clk_pred_ad),
-                      at(rv_pred_ad, clk_pred_ad), z_pr_pred);
+                  at(rv_pred_ad, clk_pred_ad), z_pr_pred);
   return z_pr_pred;
 }
 
@@ -141,7 +140,7 @@ VectorXreal GnssMeasurement::GetPhaseRange() {
   // (phi_rx_0 - phi_0 + N_rx) + lambda*eps_Phi
 
   VectorXreal Phi_rx = c * (t_rx - t_tx + dt_rx - dt_tx.array()).matrix() +
-                           lambda * (phi_rx_tx - phi_tx + N_rx + eps_Phi);
+                       lambda * (phi_rx_tx - phi_tx + N_rx + eps_Phi);
   return Phi_rx;
 };
 
@@ -150,15 +149,15 @@ VectorXreal GnssMeasurement::GetDopplerShift() {
   // c* dt_tx_dot(t_tx))) + eps_D
 
   VectorXd f_D = -f / c *
-                            (((v_tx - v_rx) * e_rx).array() + c * dt_rx_dot -
-                             c * dt_tx_dot.array())
-                                .matrix() +
-                        eps_D;
+                     (((v_tx - v_rx) * e_rx).array() + c * dt_rx_dot -
+                      c * dt_tx_dot.array())
+                         .matrix() +
+                 eps_D;
   return f_D;
 }
 
-VectorXreal GnssMeasurement::GetPseudorangeRate(
-    const VectorXreal &r_rx_, const VectorXreal &v_rx_) {
+VectorXreal GnssMeasurement::GetPseudorangeRate(const VectorXreal &r_rx_,
+                                                const VectorXreal &v_rx_) {
   // f_D = - f/c*((v_tx(t_tx) - v_rx(t_rx))^T * e_rx + c * dt_rx_dot(t_rx) -
   // c* dt_tx_dot(t_tx))) + eps_D
 

@@ -12,14 +12,13 @@
 #pragma once
 
 #include <lupnt/core/constants.h>
+
 #include <random>
-
-
 
 namespace lupnt {
 
-// Convert autodiff vector to Eigen vector
-VectorXd toEigen(VectorXreal x);
+std::tuple<real, real, real> unpack(const Vector3real &vec);
+std::tuple<real, real, real, real, real, real> unpack(const Vector6real &vec);
 
 /**
  * @brief Wrap the angle between -pi and pi

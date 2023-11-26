@@ -73,8 +73,8 @@ int main() {
       // GPS constellation
       for (int i = 0; i < gnss_const.GetNumSatellites(); i++) {
         auto sat_name = "sat" + std::to_string(i);
-        auto sat_state = toEigen(
-            gnss_const.GetSatellite(i)->GetOrbitState()->GetVector().head(3));
+        auto sat_state = 
+            gnss_const.GetSatellite(i)->GetOrbitState()->GetVector().head(3).cast<double>();
         data_history.AddData(sat_name, t, sat_state);
       }
 

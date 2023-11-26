@@ -24,7 +24,7 @@ Vector6real CoeToCart(const Vector6real &coeVec, double mu);
 ClassicalOE CartToCoe(const CartesianOrbitState &cartOrbitState, double mu);
 Vector6real CartToCoe(const Vector6real &cartVec, double mu);
 
-// ROE <-> COE
+// COE <-> ROE
 ClassicalOE RoeToCoe(const ClassicalOE &coeChief,
                      const QuasiNonsingularROE &roe);
 Vector6real RoeToCoe(const Vector6real &coeChiefVec, const Vector6real &roeVec);

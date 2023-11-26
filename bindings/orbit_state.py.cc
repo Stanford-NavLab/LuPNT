@@ -11,14 +11,16 @@
 namespace py = pybind11;
 using namespace lupnt;
 
-#define DEFINE_GETSET(class, name) &class ::Get##name, &class ::Set##name
+#define DEFINE_GETSET(class, attribute) \
+  &class ::Get##attribute, &class## ::Set##attribute
 
-#define DEFINE_GETSET_REAL(class, name) \
-  [](const class &s) -> double { return s.name().val(); }, &class ::Set_##name
+#define DEFINE_GETSET_REAL(class, attribute)                    \
+  [](const class &s) -> double { return s.attribute().val(); }, \
+      [](class &s, double val) { s.Set_##attribute(val); }
 
-#define DEFINE_GETSET_REALVEC(class, name, type)                       \
-  [](const class &s) -> type { return s.Get##name().cast<double>(); }, \
-      &class ::Set##name
+#define DEFINE_GETSET_REALVEC(class, attribute, type)                       \
+  [](const class &s) -> type { return s.Get##attribute().cast<double>(); }, \
+      [](class &s, type val) { s.Set##attribute(val.cast<real>()); }
 
 #define DEFINE_REPR(class)                                         \
   [](const class &s) -> std::string {                              \
@@ -26,7 +28,7 @@ using namespace lupnt;
     ss << "<pylupnt." << #class << " ["                            \
        << s.GetVector().transpose().format(Eigen::IOFormat(        \
               Eigen::StreamPrecision, Eigen::DontAlignCols, ", ")) \
-       << "]";                                                     \
+       << "]>";                                                    \
     return ss.str();                                               \
   }
 
@@ -36,16 +38,6 @@ class PyOrbitState : public OrbitState {
   PyOrbitState(const Vector6d &vec, const CoordSystem cs,
                const OrbitStateRepres sr)
       : OrbitState(vec, cs, sr) {}
-
-  // Trampolines (need one for each virtual functions)
-  void Print(const bool deg) const override {
-    PYBIND11_OVERLOAD_PURE(
-        void,        // Return type
-        OrbitState,  // Parent class
-        Print,       // Name of function in C++ (must match Python name)
-        deg          // Argument(s)
-    );
-  }
 
   std::shared_ptr<OrbitState> Clone() const override {
     PYBIND11_OVERLOAD_PURE(
@@ -78,13 +70,14 @@ void init_orbit_state(py::module &m) {
           [](const OrbitState &s) -> Vector6d {
             return s.GetVector().cast<double>();
           },
-          &OrbitState::SetVector)
+          [](OrbitState &s, const Vector6d &vec) {
+            s.SetVector(vec.cast<real>());
+          })
       .def_property("coord_sys", &OrbitState::GetCoordSystem,
                     &OrbitState::SetCoordSystem)
       .def_property("state_repres", &OrbitState::GetOrbitStateRepres,
                     &OrbitState::SetOrbitStateRepres)
       .def_property_readonly("size", &OrbitState::GetSize)
-      .def("__copy__", &OrbitState::Clone)
       .def("__repr__", [](const OrbitState &s) {
         std::stringstream ss;
         ss << "<pylupnt.OrbitState [" << s.GetVector().transpose() << "]>";
@@ -102,7 +95,8 @@ void init_orbit_state(py::module &m) {
       .def_property("e", DEFINE_GETSET_REAL(ClassicalOE, e))
       .def_property("i", DEFINE_GETSET_REAL(ClassicalOE, i))
       .def_property("Omega", DEFINE_GETSET_REAL(ClassicalOE, Omega))
-      .def_property("W", DEFINE_GETSET_REAL(ClassicalOE, w))
+      .def_property("w", DEFINE_GETSET_REAL(ClassicalOE, w))
+      .def_property("M", DEFINE_GETSET_REAL(ClassicalOE, M))
       .def("__repr__", DEFINE_REPR(ClassicalOE));
 
   // CartesianOrbitState
@@ -116,13 +110,17 @@ void init_orbit_state(py::module &m) {
           [](const CartesianOrbitState &s) -> Vector3d {
             return s.r().cast<double>();
           },
-          &CartesianOrbitState::Set_r)
+          [](CartesianOrbitState &s, const Vector3d &vec) {
+            s.Set_r(vec.cast<real>());
+          })
       .def_property(
           "v",
           [](const CartesianOrbitState &s) -> Vector3d {
             return s.v().cast<double>();
           },
-          &CartesianOrbitState::Set_v)
+          [](CartesianOrbitState &s, const Vector3d &vec) {
+            s.Set_v(vec.cast<real>());
+          })
       .def("__repr__", DEFINE_REPR(CartesianOrbitState));
 
   // QuasiNonsingularOE
@@ -169,12 +167,12 @@ void init_orbit_state(py::module &m) {
       .def(py::init<const Vector6d &, const CoordSystem>())
       .def("print", &SingularROE::Print, py::arg("deg") = true)
       .def("clone", &SingularROE::Clone)
-      .def_property("da", DEFINE_GETSET_REAL(SingularROE, da))
-      .def_property("dM", DEFINE_GETSET_REAL(SingularROE, dM))
-      .def_property("de", DEFINE_GETSET_REAL(SingularROE, de))
-      .def_property("dw", DEFINE_GETSET_REAL(SingularROE, dw))
-      .def_property("di", DEFINE_GETSET_REAL(SingularROE, di))
-      .def_property("dOmega", DEFINE_GETSET_REAL(SingularROE, dOmega))
+      .def_property("ada", DEFINE_GETSET_REAL(SingularROE, ada))
+      .def_property("adM", DEFINE_GETSET_REAL(SingularROE, adM))
+      .def_property("ade", DEFINE_GETSET_REAL(SingularROE, ade))
+      .def_property("adw", DEFINE_GETSET_REAL(SingularROE, adw))
+      .def_property("adi", DEFINE_GETSET_REAL(SingularROE, adi))
+      .def_property("adOmega", DEFINE_GETSET_REAL(SingularROE, adOmega))
       .def("__repr__", DEFINE_REPR(SingularROE));
 
   // QuasiNonsingularROE
@@ -182,110 +180,11 @@ void init_orbit_state(py::module &m) {
       .def(py::init<const Vector6d &, const CoordSystem>())
       .def("print", &QuasiNonsingularROE::Print, py::arg("deg") = true)
       .def("clone", &QuasiNonsingularROE::Clone)
-      .def_property("da", DEFINE_GETSET_REAL(QuasiNonsingularROE, da))
-      .def_property("dl", DEFINE_GETSET_REAL(QuasiNonsingularROE, dl))
-      .def_property("dex", DEFINE_GETSET_REAL(QuasiNonsingularROE, dex))
-      .def_property("dey", DEFINE_GETSET_REAL(QuasiNonsingularROE, dey))
-      .def_property("dix", DEFINE_GETSET_REAL(QuasiNonsingularROE, dix))
-      .def_property("diy", DEFINE_GETSET_REAL(QuasiNonsingularROE, diy))
+      .def_property("ada", DEFINE_GETSET_REAL(QuasiNonsingularROE, ada))
+      .def_property("adl", DEFINE_GETSET_REAL(QuasiNonsingularROE, adl))
+      .def_property("adex", DEFINE_GETSET_REAL(QuasiNonsingularROE, adex))
+      .def_property("adey", DEFINE_GETSET_REAL(QuasiNonsingularROE, adey))
+      .def_property("adix", DEFINE_GETSET_REAL(QuasiNonsingularROE, adix))
+      .def_property("adiy", DEFINE_GETSET_REAL(QuasiNonsingularROE, adiy))
       .def("__repr__", DEFINE_REPR(QuasiNonsingularROE));
-
-  //   py::class_<TLE>(m, "TLE")
-  //       .def("FromLines", &TLE::FromLines)
-  //       .def("FromFile", &TLE::FromFile);
-
-  //   // functions
-  //   m.def("convert_state_representation", &ConvertOrbitStateRepresentation,
-  //         py::arg("state"), py::arg("to"), py::arg("mu"));
-
-  //   m.def("convert_state_coord_system", &ConvertOrbitStateCoordSystem,
-  //         py::arg("state"), py::arg("epoch"), py::arg("to"));
-
-  // coe <-> cart
-  m.def(
-      "coe_to_cart",
-      [](const ClassicalOE &coe, double mu) -> CartesianOrbitState {
-        return CoeToCart(coe, mu);
-      },
-      py::arg("coe"), py::arg("mu"));
-  m.def(
-      "coe_to_cart",
-      [](const Vector6d &coeVec, double mu) -> Vector6d {
-        return CoeToCart(coeVec, mu).cast<double>();
-      },
-      py::arg("coe"), py::arg("mu"));
-  m.def(
-      "cart_to_coe",
-      [](const CartesianOrbitState &cart, double mu) -> ClassicalOE {
-        return CartToCoe(cart, mu);
-      },
-      py::arg("cart"), py::arg("mu"));
-  m.def(
-      "cart_to_coe",
-      [](const Vector6d &cartVec, double mu) -> Vector6d {
-        return CartToCoe(cartVec, mu).cast<double>();
-      },
-      py::arg("cart"), py::arg("mu"));
-
-  // coe <-> roe
-  m.def(
-      "roe_to_coe",
-      [](const ClassicalOE &coe_chief, const QuasiNonsingularROE &roe) {
-        return RoeToCoe(coe_chief, roe);
-      },
-      py::arg("coe_chief"), py::arg("roe"));
-  m.def(
-      "roe_to_coe",
-      [](const Vector6d &coe_chief, const Vector6d &roe) -> Vector6d {
-        return RoeToCoe(coe_chief, roe).cast<double>();
-      },
-      py::arg("coe_chief"), py::arg("roe"));
-
-  // inertial <-> rtn
-  m.def(
-      "inertial_to_rtn",
-      [](const CartesianOrbitState &rv_chief,
-         const CartesianOrbitState &rv_deputy) {
-        return InertialToRtn(rv_chief, rv_deputy);
-      },
-      py::arg("cart_orig"), py::arg("cart"));
-  m.def(
-      "inertial_to_rtn",
-      [](const Vector6d &cart_orig, const Vector6d &cart) -> Vector6d {
-        return InertialToRtn(cart_orig, cart).cast<double>();
-      },
-      py::arg("cart_orig"), py::arg("cart"));
-
-  m.def(
-      "coe_to_rtn",
-      [](const ClassicalOE &coe_chief, const ClassicalOE &coe_deputy,
-         double mu) { return CoeToRtn(coe_chief, coe_deputy, mu); },
-      py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
-  m.def(
-      "coe_to_rtn",
-      [](const Vector6d &coe_chief, const Vector6d &coe_deputy,
-         double mu) -> Vector6d {
-        return CoeToRtn(coe_chief, coe_deputy, mu).cast<double>();
-      },
-      py::arg("coe_chief"), py::arg("coe_deputy"), py::arg("mu"));
-
-  // Anomaly Conversions
-  m.def("eccentric_to_true", [](double E, double e) -> double {
-    return EccentricAnomToTrueAnom(E, e).val();
-  });
-  m.def("eccentric_to_mean", [](double E, double e) -> double {
-    return EccentricAnomToMeanAnom(E, e).val();
-  });
-  m.def("mean_to_eccentric", [](double M, double e) -> double {
-    return MeanAnomToEccentricAnom(M, e).val();
-  });
-  m.def("mean_to_true", [](double M, double e) -> double {
-    return MeanAnomToTrueAnom(M, e).val();
-  });
-  m.def("true_to_eccentric", [](double nu, double e) -> double {
-    return TrueAnomToEccentricAnom(nu, e).val();
-  });
-  m.def("true_to_mean", [](double f, double e) -> double {
-    return TrueAnomToMeanAnom(f, e).val();
-  });
 }

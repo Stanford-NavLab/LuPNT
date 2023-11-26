@@ -157,8 +157,8 @@ Transmission GnssTransmitter::GenerateTransmission(double t) {
 
   Transmission trans;
   trans.dt_tx = 0.0;
-  trans.r_tx = toEigen(cart_state->r());
-  trans.v_tx = toEigen(cart_state->v());
+  trans.r_tx = cart_state->r().cast<double>();
+  trans.v_tx = cart_state->v().cast<double>();
   return trans;
 }
 

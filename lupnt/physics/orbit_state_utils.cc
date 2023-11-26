@@ -31,12 +31,7 @@ CartesianOrbitState CoeToCart(const ClassicalOE &coe, double mu) {
 }
 
 Vector6real CoeToCart(const Vector6real &coeVec, double mu) {
-  real a = coeVec(0);
-  real e = coeVec(1);
-  real i = coeVec(2);
-  real Omega = coeVec(3);
-  real w = coeVec(4);
-  real M = coeVec(5);
+  auto [a, e, i, Omega, w, M] = unpack(coeVec);
 
   real p = a * (1.0 - pow(e, 2.0));
   real nu = MeanAnomToTrueAnom(M, e);
@@ -331,8 +326,7 @@ Vector6real CoeToQnsoe(const Vector6real &coeVec) {
   real ex = e * cos(w);
   real ey = e * sin(w);
 
-  Vector6real qnsoeVec;
-  qnsoeVec << a, u, ex, ey, i, Omega;
+  Vector6real qnsoeVec{a, u, ex, ey, i, Omega};
   return qnsoeVec;
 }
 ClassicalOE QnsoeToCoe(const QuasiNonsingularOE &qnsoe) {
@@ -380,8 +374,7 @@ QuasiNonsingularROE QnsoeToQnsroe(const QuasiNonsingularOE &qnsoe_c,
   real dix = i_d - i_c;
   real diy = (Omega_d - Omega_c) * sin(i_c);
 
-  Vector6real qnsroe;
-  qnsroe << da, dl, dex, dey, dix, diy;
+  Vector6real qnsroe{da, dl, dex, dey, dix, diy};
   return QuasiNonsingularROE(qnsroe);
 }
 

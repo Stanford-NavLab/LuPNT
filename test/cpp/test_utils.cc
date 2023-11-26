@@ -62,6 +62,6 @@ static void NumericalJacobian(
     propagate_function(vec_p, dt);
     propagate_function(vec_m, dt);
 
-    jacobian.col(i) = lupnt::toEigen(vec_p - vec_m) / (2.0 * eps);
+    jacobian.col(i) = (vec_p - vec_m).cast<double>() / (2.0 * eps);
   }
 }
