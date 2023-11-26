@@ -25,7 +25,7 @@ std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
   OrbitStateRepres repres_in = state_in->GetOrbitStateRepres();
 
   if (repres_in == repres_out) {
-    return state_in->Clone();
+    return std::make_shared<OrbitState>(*state_in);
   }
 
   std::shared_ptr<OrbitState> state_out = nullptr;

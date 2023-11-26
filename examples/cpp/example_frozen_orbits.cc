@@ -21,32 +21,25 @@
 using namespace lupnt;
 using namespace std;
 
-typedef Vector6real Vec6;
-
 int main() {
   MoonMeanDynamics moonMeanDynamics;
-  ClassicalOE coeMean_1(
-      {3738, 0.1, 48.0689 * RAD_PER_DEG, 0, 90 * RAD_PER_DEG, 0});
-  ClassicalOE coeMean_2(
-      {13738, 0.1, 39.6024 * RAD_PER_DEG, 0, 90 * RAD_PER_DEG, 0});
 
-  Vec6 coeMeanVec_1 = coeMean_1.GetVector();
-  Vec6 coeMeanVec_2 = coeMean_2.GetVector();
-  Vec6 delMeanVec_1 = CoeToDelaunay(coeMeanVec_1, MU_MOON, 0, 0);
-  Vec6 delMeanVec_2 = CoeToDelaunay(coeMeanVec_2, MU_MOON, 0, 0);
-  Vec6 coeMeanVec_1_ = DelaunayToCoe(delMeanVec_1, MU_MOON, 0, 0);
-  Vec6 coeMeanVec_2_ = DelaunayToCoe(delMeanVec_2, MU_MOON, 0, 0);
+  Vector6real coe_m_1{3738, 0.1, 48.0689 * RAD_PER_DEG, 0, 90 * RAD_PER_DEG, 0};
+  Vector6real coe_m_2{13738, 0.1, 39.6024 * RAD_PER_DEG, 0, 90 * RAD_PER_DEG,
+                      0};
 
-  std::cout << "coeMeanVec_1 : " << coeMeanVec_1.transpose() << std::endl;
-  std::cout << "coeMeanVec_1_: " << coeMeanVec_1_.transpose() << std::endl;
+  auto deloe_m_1 = CoeToDelaunay(coe_m_1, MU_MOON, 0, 0);
+  auto deloe_m_2 = CoeToDelaunay(coe_m_2, MU_MOON, 0, 0);
+  auto coe_m_1_ = DelaunayToCoe(deloe_m_1, MU_MOON, 0, 0);
+  auto coe_m_2_ = DelaunayToCoe(deloe_m_2, MU_MOON, 0, 0);
 
-  std::cout << "coeMeanVec_2 : " << coeMeanVec_2.transpose() << std::endl;
-  std::cout << "coeMeanVec_2_: " << coeMeanVec_2_.transpose() << std::endl;
+  std::cout << "coe_m_1 : " << coe_m_1.transpose() << std::endl;
+  std::cout << "coe_m_1_: " << coe_m_1_.transpose() << std::endl;
 
-  Vec6 coeOscVec_1 = MeanToOsculating(coeMeanVec_1, J2_MOON);
-  Vec6 coeOscVec_2 = MeanToOsculating(coeMeanVec_2, J2_MOON);
+  std::cout << "coe_m_2 : " << coe_m_2.transpose() << std::endl;
+  std::cout << "coe_m_2_: " << coe_m_2_.transpose() << std::endl;
 
-  ClassicalOE coeOsc_1(coeOscVec_1);
-  ClassicalOE coeOsc_2(coeOscVec_2);
+  auto coe_c_1 = MeanToOsc(coe_m_1, J2_MOON);
+  auto coe_c_2 = MeanToOsc(coe_m_2, J2_MOON);
   return 0;
 }

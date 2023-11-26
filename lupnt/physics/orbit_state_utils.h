@@ -19,59 +19,54 @@ namespace lupnt {
 
 // COE <-> Cart
 CartesianOrbitState CoeToCart(const ClassicalOE &coe, double mu);
+ClassicalOE CartToCoe(const CartesianOrbitState &cart, double mu);
 Vector6real CoeToCart(const Vector6real &coe, double mu);
-
-ClassicalOE CartToCoe(const CartesianOrbitState &cartOrbitState, double mu);
-Vector6real CartToCoe(const Vector6real &cartVec, double mu);
+Vector6real CartToCoe(const Vector6real &cart, double mu);
 
 // COE <-> ROE
-ClassicalOE QnsroeToCoe(const ClassicalOE &coeChief,
-                        const QuasiNonsingularROE &roe);
-Vector6real QnsroeToCoe(const Vector6real &coeChiefVec,
-                        const Vector6real &roeVec);
+ClassicalOE QnsroeToCoe(const ClassicalOE &coe,
+                        const QuasiNonsingularROE &qnsroe);
+Vector6real QnsroeToCoe(const Vector6real &coe, const Vector6real &qnsroe);
 
 // Inertial <-> RTN
-CartesianOrbitState InertialToRtn(
-    const CartesianOrbitState &rtnOrigin,
-    const CartesianOrbitState &inertialOrbitState);
-Vector6real InertialToRtn(const Vector6real &rtnOrigin,
-                          const Vector6real &inertialVec);
+CartesianOrbitState InertialToRtn(const CartesianOrbitState &cart_c,
+                                  const CartesianOrbitState &cart_d);
+Vector6real InertialToRtn(const Vector6real &cart_c, const Vector6real &cart_d);
 
 // COE <-> RTN
-CartesianOrbitState CoeToRtn(const ClassicalOE &coeChief,
-                             const ClassicalOE &coeDeputy, double mu);
-Vector6real CoeToRtn(const Vector6real &coeChiefVec,
-                     const Vector6real &coeDeputyVec, double mu);
+CartesianOrbitState CoeToRtn(const ClassicalOE &coe_c, const ClassicalOE &coe_d,
+                             double mu);
+Vector6real CoeToRtn(const Vector6real &coe_c, const Vector6real &coe_d,
+                     double mu);
 
 // COE <-> QNSOE
 QuasiNonsingularOE CoeToQnsoe(const ClassicalOE &coe);
-Vector6real CoeToQnsoe(const Vector6real &coe);
-
-// COE <-> QNSROE
-QuasiNonsingularROE QnsoeToQnsroe(const QuasiNonsingularOE &qnsoeChief,
-                                  const QuasiNonsingularOE &qnsoeDeputy);
-QuasiNonsingularROE CoeToQnsroe(const ClassicalOE &coeChief,
-                                const ClassicalOE &coeDeputy);
-
 ClassicalOE QnsoeToCoe(const QuasiNonsingularOE &qnsoe);
+Vector6real CoeToQnsoe(const Vector6real &coe);
 Vector6real QnsoeToCoe(const Vector6real &qnsoeVec);
 
-Vector6real EquioeToCoe(const Vector6real &equioe);
-Vector6real CoeToEquioe(const Vector6real &coe);
+// COE <-> QNSROE
+QuasiNonsingularROE QnsoeToQnsroe(const QuasiNonsingularOE &qnsoe_c,
+                                  const QuasiNonsingularOE &qnsoe_d);
+QuasiNonsingularROE CoeToQnsroe(const ClassicalOE &coe_c,
+                                const ClassicalOE &coe_d);
 
-Vector6real MeanToOsculating(const Vector6real &meanCoe, double J2);
-ClassicalOE MeanToOsculating(const ClassicalOE &meanCoe, double J2);
+// COE <-> Equinoctial
+EquinoctialOE CoeToEqoe(const ClassicalOE &coe);
+ClassicalOE EqoeToCoe(const EquinoctialOE &eqoe);
+Vector6real CoeToEqoe(const Vector6real &coe);
+Vector6real EqoeToCoe(const Vector6real &eqoe);
 
-Vector6real OsculatingToMean(const Vector6real &osculatingCoe, double J2);
-ClassicalOE OsculatingToMean(const ClassicalOE &osculatingCoe, double J2);
+// Mean <-> Osculating
+ClassicalOE OscToMean(const ClassicalOE &coe_o, double J2);
+ClassicalOE MeanToOsc(const ClassicalOE &coe_m, double J2);
+Vector6real OscToMean(const Vector6real &coe_o, double J2);
+Vector6real MeanToOsc(const Vector6real &coe_m, double J2);
 
 Vector6real CartToQnsoe(const Vector6real &cart, double mu);
 QuasiNonsingularOE CartToQnsoe(const CartesianOrbitState &cart, double mu);
 
-QuasiNonsingularOE OscQnsoeToMeanQnsoe(const QuasiNonsingularOE &oscQnsoe,
-                                       double J2);
-
-Vector6real DelaunayToCoe(const Vector6real &delaunay, double mu, double n,
+Vector6real DelaunayToCoe(const Vector6real &deloe, double mu, double n,
                           double t);
 Vector6real CoeToDelaunay(const Vector6real &coe, double mu, double n,
                           double t);

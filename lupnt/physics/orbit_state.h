@@ -33,6 +33,7 @@ enum class OrbitStateRepres {
   SINGULAR_ROE,
   QUASINONSINGULAR_ROE,
   DELAUNAY_OE,
+  OTHER,
 };
 
 class OrbitState;
@@ -54,13 +55,18 @@ class OrbitState : public IState {
   std::array<const char *, kOrbitStateSize> units_;
 
  public:
-  OrbitState(const Vector6real &x, CoordSystem sys, OrbitStateRepres rep,
+  OrbitState(const Vector6real &x, CoordSystem coord, OrbitStateRepres repres,
              const std::array<const char *, kOrbitStateSize> &names,
              const std::array<const char *, kOrbitStateSize> &units)
-      : x_(x), coord_(sys), repres_(rep), names_(names), units_(units) {}
-  virtual ~OrbitState(){};
+      : x_(x), coord_(coord), repres_(repres), names_(names), units_(units) {}
 
   Vector6real GetVector() const { return x_; }
+  inline std::array<const char *, kOrbitStateSize> GetNames() const {
+    return names_;
+  }
+  inline std::array<const char *, kOrbitStateSize> GetUnits() const {
+    return units_;
+  }
   inline int GetSize() const { return kOrbitStateSize; }
   inline real GetValue(int i) const { return x_(i); }
   inline OrbitStateRepres GetOrbitStateRepres() const { return repres_; }
@@ -72,8 +78,6 @@ class OrbitState : public IState {
   inline void SetCoordSystem(CoordSystem sys) { coord_ = sys; }
 
   inline real operator()(int idx) const { return x_(idx); }
-
-  virtual std::shared_ptr<OrbitState> Clone() const = 0;
 };
 
 /**
@@ -98,10 +102,6 @@ class CartesianOrbitState : public OrbitState {
  public:
   CartesianOrbitState(const Vector6real &x, CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, repres_, names_, units_) {}
-
-  std::shared_ptr<OrbitState> Clone() const override {
-    return std::make_shared<CartesianOrbitState>(*this);
-  }
 
   inline Vector3real r() const { return GetVector().head(3); }
   inline Vector3real v() const { return GetVector().tail(3); }
@@ -130,15 +130,12 @@ class ClassicalOE : public OrbitState {
   static constexpr std::array<const char *, kOrbitStateSize> names_ = {
       "a", "e", "i", "Omega", "w", "M"};
   static constexpr std::array<const char *, kOrbitStateSize> units_ = {
-      "km", "", "rad", "rad", "rad", "rad"};
+      "km", "-", "rad", "rad", "rad", "rad"};
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CLASSICAL_OE;
 
  public:
   ClassicalOE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, repres_, names_, units_) {}
-  std::shared_ptr<OrbitState> Clone() const override {
-    return std::make_shared<ClassicalOE>(*this);
-  }
 
   GETSET_ELEM(a, 0);
   GETSET_ELEM(e, 1);
@@ -165,7 +162,7 @@ class QuasiNonsingularOE : public OrbitState {
   static constexpr std::array<const char *, kOrbitStateSize> names_ = {
       "a", "u", "ex", "ey", "i", "Omega"};
   static constexpr std::array<const char *, kOrbitStateSize> units_ = {
-      "km", "", "", "", "rad", "rad"};
+      "km", "-", "-", "-", "rad", "rad"};
   static constexpr OrbitStateRepres repres_ =
       OrbitStateRepres::QUASI_NONSINGULAR_OE;
 
@@ -173,9 +170,6 @@ class QuasiNonsingularOE : public OrbitState {
   QuasiNonsingularOE(const Vector6real &x,
                      const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, repres_, names_, units_) {}
-  std::shared_ptr<OrbitState> Clone() const override {
-    return std::make_shared<QuasiNonsingularOE>(*this);
-  }
 
   GETSET_ELEM(a, 0);
   GETSET_ELEM(u, 1);
@@ -207,9 +201,6 @@ class DelaunayOE : public OrbitState {
  public:
   DelaunayOE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, repres_, names_, units_) {}
-  std::shared_ptr<OrbitState> Clone() const override {
-    return std::make_shared<DelaunayOE>(*this);
-  }
 
   GETSET_ELEM(l, 0);
   GETSET_ELEM(g, 1);
@@ -236,15 +227,12 @@ class EquinoctialOE : public OrbitState {
   static constexpr std::array<const char *, kOrbitStateSize> names_ = {
       "a", "h", "k", "p", "q", "lambda"};
   static constexpr std::array<const char *, kOrbitStateSize> units_ = {
-      "km", "", "", "", "", "rad"};
+      "km", "-", "-", "-", "-", "rad"};
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::EQUINOCTIAL_OE;
 
  public:
   EquinoctialOE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, repres_, names_, units_) {}
-  std::shared_ptr<OrbitState> Clone() const override {
-    return std::make_shared<EquinoctialOE>(*this);
-  }
 
   GETSET_ELEM(a, 0);
   GETSET_ELEM(h, 1);
@@ -277,9 +265,6 @@ class SingularROE : public OrbitState {
  public:
   SingularROE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, repres_, names_, units_) {}
-  std::shared_ptr<OrbitState> Clone() const override {
-    return std::make_shared<SingularROE>(*this);
-  }
 
   GETSET_ELEM(ada, 0);
   GETSET_ELEM(adM, 1);
@@ -307,15 +292,14 @@ class QuasiNonsingularROE : public OrbitState {
       "ada", "adl", "adex", "adey", "adix", "adiy"};
   static constexpr std::array<const char *, kOrbitStateSize> units_ = {
       "m", "m", "m", "m", "m", "m"};
-  static constexpr OrbitStateRepres repres_ = OrbitStateRepres::QUASINONSINGULAR_ROE;
-  public :
-      // ada, adl, adex, adey, adix, adiy
-      QuasiNonsingularROE(const Vector6real &x,
-                          const CoordSystem sys = CoordSystem::NONE)
+  static constexpr OrbitStateRepres repres_ =
+      OrbitStateRepres::QUASINONSINGULAR_ROE;
+
+ public:
+  // ada, adl, adex, adey, adix, adiy
+  QuasiNonsingularROE(const Vector6real &x,
+                      const CoordSystem sys = CoordSystem::NONE)
       : OrbitState(x, sys, repres_, names_, units_) {}
-  std::shared_ptr<OrbitState> Clone() const override {
-    return std::make_shared<QuasiNonsingularROE>(*this);
-  }
 
   GETSET_ELEM(ada, 0);
   GETSET_ELEM(adl, 1);

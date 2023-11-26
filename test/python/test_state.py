@@ -20,7 +20,8 @@ class TestOrbitState:
 
     # Quasi-Nonsingular Relative Orbital Elements
     # (ada, adl, adex, adey, adix, adiy) [m]
-    qns_roe_array = np.array([10.0, 20.0, 30.0, 40.0, 50.0, 60.0])
+    roe_array_1 = np.array([10.0, 20.0, 30.0, 40.0, 50.0, 60.0])
+    roe_array_2 = np.array([100.0, 200.0, 300.0, 400.0, 500.0, 600.0])
 
     # Print options
     array2string_kwargs = {
@@ -33,7 +34,6 @@ class TestOrbitState:
             "CARTESIAN",
             "CLASSICAL_OE",
             "QUASI_NONSINGULAR_OE",
-            "NONSINGULAR_OE",
             "EQUINOTICAL_OE",
             "SINGULAR_ROE",
             "QUASINONSINGULAR_ROE",
@@ -73,7 +73,6 @@ class TestOrbitState:
             + np.array2string(coe, **self.array2string_kwargs)
             + ">"
         )
-        coe_state.print()
 
     def test_CartesianOrbitState(self):
         # Constructor
@@ -107,11 +106,10 @@ class TestOrbitState:
             + np.array2string(rv, **self.array2string_kwargs)
             + ">"
         )
-        cart_state.print()
 
     def test_QuasiNonsingularOE(self):
         # Constructor
-        qns_oe = pnt.coe_to_qnsoe(self.coe_array_elfo, pnt.MU_MOON)
+        qns_oe = pnt.coe_to_qnsoe(self.coe_array_elfo)
         qns_oe_state = pnt.QuasiNonsingularOE(qns_oe, pnt.CoordSystem.MI)
         attributes = ["a", "u", "ex", "ey", "i", "Omega"]
 
@@ -124,12 +122,12 @@ class TestOrbitState:
         assert np.allclose(qns_oe_state.vector, qns_oe)
 
         # Setters
-        qns_oe = pnt.coe_to_qnsoe(self.coe_array_llo, pnt.MU_MOON)
+        qns_oe = pnt.coe_to_qnsoe(self.coe_array_llo)
         for i, attr in enumerate(attributes):
             setattr(qns_oe_state, attr, qns_oe[i])
             assert getattr(qns_oe_state, attr) == qns_oe[i]
 
-        qns_oe = pnt.coe_to_qnsoe(self.coe_array_elfo, pnt.MU_MOON)
+        qns_oe = pnt.coe_to_qnsoe(self.coe_array_elfo)
         qns_oe_state.vector = qns_oe
         assert np.allclose(qns_oe_state.vector, qns_oe)
 
@@ -140,39 +138,10 @@ class TestOrbitState:
             + np.array2string(qns_oe, **self.array2string_kwargs)
             + ">"
         )
-        qns_oe_state.print()
-
-    def test_NonsingularOE(self):
-        # Constructor
-        ns_oe = pnt.coe_to_nsoe(self.coe_array_elfo, pnt.MU_MOON)
-        ns_oe_state = pnt.NonsingularOE(ns_oe, pnt.CoordSystem.MI)
-        attributes = ["a", "e1", "e2", "e3", "e4", "e5"]
-
-        # Getters
-        for i, attr in enumerate(attributes):
-            assert getattr(ns_oe_state, attr) == ns_oe[i]
-        assert ns_oe_state.coord_sys == pnt.CoordSystem.MI
-        assert ns_oe_state.state_repres == pnt.OrbitStateRepres.NONSINGULAR_OE
-        assert ns_oe_state.size == 6
-
-        # Setters
-        ns_oe = pnt.coe_to_nsoe(self.coe_array_llo, pnt.MU_MOON)
-        for i, attr in enumerate(attributes):
-            setattr(ns_oe_state, attr, ns_oe[i])
-            assert getattr(ns_oe_state, attr) == ns_oe[i]
-
-        # Other
-        assert (
-            str(ns_oe_state)
-            == "<pylupnt.NonsingularOE "
-            + np.array2string(ns_oe, **self.array2string_kwargs)
-            + ">"
-        )
-        ns_oe_state.print()
 
     def test_EquinoctialOE(self):
         # Constructor
-        eq_oe = pnt.coe_to_eqoe(self.coe_array_elfo, pnt.MU_MOON)
+        eq_oe = pnt.coe_to_eqoe(self.coe_array_elfo)
         eq_oe_state = pnt.EquinoctialOE(eq_oe, pnt.CoordSystem.MI)
         attributes = ["a", "h", "k", "p", "q", "lon"]
 
@@ -184,10 +153,14 @@ class TestOrbitState:
         assert eq_oe_state.size == 6
 
         # Setters
-        eq_oe = pnt.coe_to_eqoe(self.coe_array_llo, pnt.MU_MOON)
+        eq_oe = pnt.coe_to_eqoe(self.coe_array_llo)
         for i, attr in enumerate(attributes):
             setattr(eq_oe_state, attr, eq_oe[i])
             assert getattr(eq_oe_state, attr) == eq_oe[i]
+
+        eq_oe = pnt.coe_to_eqoe(self.coe_array_elfo)
+        eq_oe_state.vector = eq_oe
+        assert np.allclose(eq_oe_state.vector, eq_oe)
 
         # Other
         assert (
@@ -196,63 +169,68 @@ class TestOrbitState:
             + np.array2string(eq_oe, **self.array2string_kwargs)
             + ">"
         )
-        eq_oe_state.print()
 
     def test_SingularROE(self):
         # Constructor
-        s_oe = pnt.coe_to_sroe(self.coe_array_elfo, pnt.MU_MOON)
-        s_oe_state = pnt.SingularROE(s_oe, pnt.CoordSystem.MI)
+        roe = self.roe_array_1
+        roe_state = pnt.SingularROE(roe, pnt.CoordSystem.MI)
         attributes = ["ada", "adM", "ade", "adw", "adi", "adOmega"]
 
         # Getters
         for i, attr in enumerate(attributes):
-            assert getattr(s_oe_state, attr) == s_oe[i]
-        assert s_oe_state.coord_sys == pnt.CoordSystem.MI
-        assert s_oe_state.state_repres == pnt.OrbitStateRepres.SINGULAR_ROE
-        assert s_oe_state.size == 6
+            assert getattr(roe_state, attr) == roe[i]
+        assert roe_state.coord_sys == pnt.CoordSystem.MI
+        assert roe_state.state_repres == pnt.OrbitStateRepres.SINGULAR_ROE
+        assert roe_state.size == 6
 
         # Setters
-        s_oe = pnt.coe_to_sroe(self.coe_array_llo, pnt.MU_MOON)
+        roe = self.roe_array_2
         for i, attr in enumerate(attributes):
-            setattr(s_oe_state, attr, s_oe[i])
-            assert getattr(s_oe_state, attr) == s_oe[i]
+            setattr(roe_state, attr, roe[i])
+            assert getattr(roe_state, attr) == roe[i]
+
+        roe = self.roe_array_1
+        roe_state.vector = roe
+        assert np.allclose(roe_state.vector, roe)
 
         # Other
         assert (
-            str(s_oe_state)
+            str(roe_state)
             == "<pylupnt.SingularROE "
-            + np.array2string(s_oe, **self.array2string_kwargs)
+            + np.array2string(roe, **self.array2string_kwargs)
             + ">"
         )
-        s_oe_state.print()
 
     def test_QuasiNonsingularROE(self):
         # Constructor
-        qns_oe = pnt.coe_to_qnsroe(self.coe_array_elfo, pnt.MU_MOON)
-        qns_oe_state = pnt.QuasiNonsingularROE(qns_oe, pnt.CoordSystem.MI)
+        roe = self.roe_array_1
+        roe_state = pnt.QuasiNonsingularROE(roe, pnt.CoordSystem.MI)
         attributes = ["ada", "adl", "adex", "adey", "adix", "adiy"]
 
         # Getters
         for i, attr in enumerate(attributes):
-            assert getattr(qns_oe_state, attr) == qns_oe[i]
-        assert qns_oe_state.coord_sys == pnt.CoordSystem.MI
-        assert qns_oe_state.state_repres == pnt.OrbitStateRepres.QUASINONSINGULAR_ROE
-        assert qns_oe_state.size == 6
+            assert getattr(roe_state, attr) == roe[i]
+        assert roe_state.coord_sys == pnt.CoordSystem.MI
+        assert roe_state.state_repres == pnt.OrbitStateRepres.QUASINONSINGULAR_ROE
+        assert roe_state.size == 6
 
         # Setters
-        qns_oe = pnt.coe_to_qnsroe(self.coe_array_llo, pnt.MU_MOON)
+        roe = self.roe_array_2
         for i, attr in enumerate(attributes):
-            setattr(qns_oe_state, attr, qns_oe[i])
-            assert getattr(qns_oe_state, attr) == qns_oe[i]
+            setattr(roe_state, attr, roe[i])
+            assert getattr(roe_state, attr) == roe[i]
+
+        roe = self.roe_array_1
+        roe_state.vector = roe
+        assert np.allclose(roe_state.vector, roe)
 
         # Other
         assert (
-            str(qns_oe_state)
+            str(roe_state)
             == "<pylupnt.QuasiNonsingularROE "
-            + np.array2string(qns_oe, **self.array2string_kwargs)
+            + np.array2string(roe, **self.array2string_kwargs)
             + ">"
         )
-        qns_oe_state.print()
 
 
 if __name__ == "__main__":

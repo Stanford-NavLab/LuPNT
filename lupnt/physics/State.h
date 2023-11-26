@@ -13,8 +13,6 @@
 
 #include <vector>
 
-
-
 namespace lupnt {
 
 /**

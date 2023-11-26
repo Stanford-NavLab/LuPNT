@@ -46,15 +46,6 @@ void KeplerianDynamics::PropagateWithStm(QuasiNonsingularOE &state, real dt,
   throw std::runtime_error("Not implemented");
 }
 
-// NonsingularOE
-void KeplerianDynamics::Propagate(NonsingularOE &state, real dt) {
-  state.Set_e5(state.e5() + sqrt(mu_ / pow(state.a(), 3)) * dt);
-}
-void KeplerianDynamics::PropagateWithStm(NonsingularOE &state, real dt,
-                                         Matrix6d &stm) {
-  throw std::runtime_error("Not implemented");
-}
-
 // EquinoctialOE
 void KeplerianDynamics::Propagate(EquinoctialOE &state, real dt) {
   state.Set_lon(state.lon() + sqrt(mu_ / pow(state.a(), 3)) * dt);

@@ -3,10 +3,6 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
-
-
-
-
 namespace py = pybind11;
 using namespace lupnt;
 
@@ -14,16 +10,12 @@ void init_dynamics(py::module &m) {
   // KeplerianDynamics
   py::class_<KeplerianDynamics>(m, "KeplerianDynamics")
       .def(py::init<const double>())
-      .def("propagate",
-           py::overload_cast<ClassicalOE &, real>(
-               &KeplerianDynamics::Propagate),
-           py::arg("state"), py::arg("dt"))
+      .def(
+          "propagate",
+          py::overload_cast<ClassicalOE &, real>(&KeplerianDynamics::Propagate),
+          py::arg("state"), py::arg("dt"))
       .def("propagate",
            py::overload_cast<QuasiNonsingularOE &, real>(
-               &KeplerianDynamics::Propagate),
-           py::arg("state"), py::arg("dt"))
-      .def("propagate",
-           py::overload_cast<NonsingularOE &, real>(
                &KeplerianDynamics::Propagate),
            py::arg("state"), py::arg("dt"))
       .def("propagate",
@@ -41,14 +33,6 @@ void init_dynamics(py::module &m) {
       .def(
           "propagate_with_stm",
           [](KeplerianDynamics &dyn, QuasiNonsingularOE &state, real dt) {
-            Matrix6d stm;
-            dyn.PropagateWithStm(state, dt, stm);
-            return stm;
-          },
-          py::arg("state"), py::arg("dt"), py::return_value_policy::move)
-      .def(
-          "propagate_with_stm",
-          [](KeplerianDynamics &dyn, NonsingularOE &state, real dt) {
             Matrix6d stm;
             dyn.PropagateWithStm(state, dt, stm);
             return stm;
@@ -88,8 +72,8 @@ void init_dynamics(py::module &m) {
           py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](NumericalDynamics &dyn, Vector6real &state, real t0,
-             real tf, real dt) {
+          [](NumericalDynamics &dyn, Vector6real &state, real t0, real tf,
+             real dt) {
             Matrix6d stm;
             dyn.PropagateWithStm(state, t0, tf, dt, stm);
             return stm;
