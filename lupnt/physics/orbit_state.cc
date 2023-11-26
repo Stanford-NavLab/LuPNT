@@ -20,22 +20,28 @@
 namespace lupnt {
 
 std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
-    std::shared_ptr<OrbitState> fromOrbitState, OrbitStateRepres toRepres,
+    const std::shared_ptr<OrbitState> &state_in, OrbitStateRepres repres_out,
     double mu) {
-  OrbitStateRepres fromRepres = fromOrbitState->GetOrbitStateRepres();
-  if (fromRepres == toRepres) return fromOrbitState;
-  if (fromRepres == OrbitStateRepres::CARTESIAN &&
-      toRepres == OrbitStateRepres::CLASSICAL_OE) {
+  OrbitStateRepres repres_in = state_in->GetOrbitStateRepres();
+
+  if (repres_in == repres_out) {
+    return state_in->Clone();
+  }
+
+  std::shared_ptr<OrbitState> state_out = nullptr;
+
+  if (repres_in == OrbitStateRepres::CARTESIAN &&
+      repres_out == OrbitStateRepres::CLASSICAL_OE) {
     if (mu == 0.0) throw std::invalid_argument("mu cannot be zero");
     std::shared_ptr<CartesianOrbitState> cs =
-        std::static_pointer_cast<CartesianOrbitState>(fromOrbitState);
+        std::static_pointer_cast<CartesianOrbitState>(state_in);
     return std::make_shared<ClassicalOE>(CartToCoe(*cs, mu));
   }
-  if (fromRepres == OrbitStateRepres::CLASSICAL_OE &&
-      toRepres == OrbitStateRepres::CARTESIAN) {
+  if (repres_in == OrbitStateRepres::CLASSICAL_OE &&
+      repres_out == OrbitStateRepres::CARTESIAN) {
     if (mu == 0.0) throw std::invalid_argument("mu cannot be zero");
     std::shared_ptr<ClassicalOE> coe =
-        std::static_pointer_cast<ClassicalOE>(fromOrbitState);
+        std::static_pointer_cast<ClassicalOE>(state_in);
     return std::make_shared<CartesianOrbitState>(CoeToCart(*coe, mu));
   }
   return nullptr;

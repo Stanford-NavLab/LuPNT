@@ -16,6 +16,8 @@
 #include "coord_converter.h"
 #include "state.h"
 
+#define kOrbitStateSize 6
+
 #define GETSET_ELEM(name, idx)                          \
   inline real name() const { return GetVector()(idx); } \
   inline void Set_##name(real val) { SetValue(val, idx); }
@@ -34,47 +36,69 @@ enum class OrbitStateRepres {
 };
 
 class OrbitState;
+
 std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
-    std::shared_ptr<OrbitState> fromOrbitState, OrbitStateRepres toRepres,
+    const std::shared_ptr<OrbitState> &state_in, OrbitStateRepres repres_out,
     double mu = 0.0);
 
+/**
+ * @class OrbitState
+ * @brief Base class for orbit states
+ */
 class OrbitState : public IState {
  private:
   Vector6real x_;
-  OrbitStateRepres state_repres_;
-  CoordSystem coord_sys_;
+  OrbitStateRepres repres_;
+  CoordSystem coord_;
+  std::array<const char *, kOrbitStateSize> names_;
+  std::array<const char *, kOrbitStateSize> units_;
 
  public:
-  int state_size = 6;
-  OrbitState(const Vector6real &x, const CoordSystem sys,
-             const OrbitStateRepres rep)
-      : x_(x), coord_sys_(sys), state_repres_(rep){};
+  OrbitState(const Vector6real &x, CoordSystem sys, OrbitStateRepres rep,
+             const std::array<const char *, kOrbitStateSize> &names,
+             const std::array<const char *, kOrbitStateSize> &units)
+      : x_(x), coord_(sys), repres_(rep), names_(names), units_(units) {}
   virtual ~OrbitState(){};
 
   Vector6real GetVector() const { return x_; }
-  inline int GetSize() const { return x_.size(); }
+  inline int GetSize() const { return kOrbitStateSize; }
   inline real GetValue(int i) const { return x_(i); }
-  inline OrbitStateRepres GetOrbitStateRepres() const { return state_repres_; }
-  inline CoordSystem GetCoordSystem() const { return coord_sys_; }
+  inline OrbitStateRepres GetOrbitStateRepres() const { return repres_; }
+  inline CoordSystem GetCoordSystem() const { return coord_; }
 
   inline void SetValue(real val, int idx) { x_(idx) = val; }
   inline void SetVector(const Vector6real &x) { x_ = x; }
-  inline void SetOrbitStateRepres(const OrbitStateRepres rep) {
-    state_repres_ = rep;
-  }
-  inline void SetCoordSystem(CoordSystem sys) { coord_sys_ = sys; }
+  inline void SetOrbitStateRepres(const OrbitStateRepres rep) { repres_ = rep; }
+  inline void SetCoordSystem(CoordSystem sys) { coord_ = sys; }
 
   inline real operator()(int idx) const { return x_(idx); }
 
   virtual std::shared_ptr<OrbitState> Clone() const = 0;
 };
 
-// Cartesian Orbit State
+/**
+ * @class CartesianOrbitState
+ * @brief Extends OrbitState to represent an orbit in Cartesian coordinates
+ * @details The state vector is
+ * - $r_x$ [km]
+ * - $r_y$ [km]
+ * - $r_z$ [km]
+ * - $v_x$ [km/s]
+ * - $v_y$ [km/s]
+ * - $v_z$ [km/s]
+ */
 class CartesianOrbitState : public OrbitState {
+ private:
+  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
+      "rx", "ry", "rz", "vx", "vy", "vz"};
+  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
+      "km", "km", "km", "km/s", "km/s", "km/s"};
+  static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CARTESIAN;
+
  public:
-  // rx, ry, rz, vx, vy, vz
   CartesianOrbitState(const Vector6real &x, CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(x, sys, OrbitStateRepres::CARTESIAN) {}
+      : OrbitState(x, sys, repres_, names_, units_) {}
+
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<CartesianOrbitState>(*this);
   }
@@ -89,12 +113,29 @@ class CartesianOrbitState : public OrbitState {
   }
 };
 
-// Classical Orbital Elements
+/**
+ * @class ClassicalOE
+ * @brief Extends OrbitState to represent an orbit in classical orbital elements
+ * @details The state vector is
+ * - $a$ [km] (semi-major axis)
+ * - $e$ [-] (eccentricity)
+ * - $i$ [rad] (inclination)
+ * - $\Omega$ [rad] (right ascension of the ascending node)
+ * - $\omega$ [rad] (argument of periapsis)
+ * - $M$ [rad] (mean anomaly)
+ * Singular at $e \in {0,1}$, and $i \in {0, \pi}$
+ */
 class ClassicalOE : public OrbitState {
+ private:
+  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
+      "a", "e", "i", "Omega", "w", "M"};
+  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
+      "km", "", "rad", "rad", "rad", "rad"};
+  static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CLASSICAL_OE;
+
  public:
-  // a, e, i, Omega, w, M;
   ClassicalOE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(x, sys, OrbitStateRepres::CLASSICAL_OE) {}
+      : OrbitState(x, sys, repres_, names_, units_) {}
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<ClassicalOE>(*this);
   }
@@ -107,13 +148,31 @@ class ClassicalOE : public OrbitState {
   GETSET_ELEM(M, 5);
 };
 
-// Quasi-Nonsingular Orbital Elements
+/**
+ * @class QuasiNonsingularOE
+ * @brief Extends OrbitState to represent an orbit in quasi-nonsingular orbital
+ * elements
+ * @details The state vector is
+ * - $a$ [km] (semi-major axis)
+ * - $u$ [-] (mean argument of latitude)
+ * - $e_x$ [-] (eccentricity x-component)
+ * - $e_y$ [-] (eccentricity y-component)
+ * - $i$ [rad] (inclination)
+ * - $\Omega$ [rad] (right ascension of the ascending node)
+ */
 class QuasiNonsingularOE : public OrbitState {
+ private:
+  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
+      "a", "u", "ex", "ey", "i", "Omega"};
+  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
+      "km", "", "", "", "rad", "rad"};
+  static constexpr OrbitStateRepres repres_ =
+      OrbitStateRepres::QUASI_NONSINGULAR_OE;
+
  public:
-  // a, u, ex, ey, i, Omega;
   QuasiNonsingularOE(const Vector6real &x,
                      const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(x, sys, OrbitStateRepres::QUASI_NONSINGULAR_OE) {}
+      : OrbitState(x, sys, repres_, names_, units_) {}
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<QuasiNonsingularOE>(*this);
   }
@@ -126,30 +185,28 @@ class QuasiNonsingularOE : public OrbitState {
   GETSET_ELEM(Omega, 5);
 };
 
-// Nonsingular Orbital Elements
-class NonsingularOE : public OrbitState {
- public:
-  // a, e1, e2, e3, e4, e5;
-  NonsingularOE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(x, sys, OrbitStateRepres::NONSINGULAR_OE) {}
-  std::shared_ptr<OrbitState> Clone() const override {
-    return std::make_shared<NonsingularOE>(*this);
-  }
-
-  GETSET_ELEM(a, 0);
-  GETSET_ELEM(e1, 1);
-  GETSET_ELEM(e2, 2);
-  GETSET_ELEM(e3, 3);
-  GETSET_ELEM(e4, 4);
-  GETSET_ELEM(e5, 5);
-};
-
-// Delaunay Orbital Elements
+/**
+ * @class DelaunayOE
+ * @brief Extends OrbitState to represent an orbit in Delaunay orbital elements
+ * @details The state vector is
+ * - $l$ [rad] (mean longitude)
+ * - $g$ [rad] (longitude of periapsis)
+ * - $h$ [rad] (longitude of ascending node)
+ * - $L$ [rad]
+ * - $G$ [rad]
+ * - $H$ [rad]
+ */
 class DelaunayOE : public OrbitState {
+ private:
+  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
+      "l", "g", "h", "L", "G", "H"};
+  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
+      "rad", "rad", "rad", "rad", "rad", "rad"};
+  static constexpr OrbitStateRepres repres_ = OrbitStateRepres::DELAUNAY_OE;
+
  public:
-  // l, g, h, L, G, H
   DelaunayOE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(x, sys, OrbitStateRepres::DELAUNAY_OE) {}
+      : OrbitState(x, sys, repres_, names_, units_) {}
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<DelaunayOE>(*this);
   }
@@ -162,12 +219,29 @@ class DelaunayOE : public OrbitState {
   GETSET_ELEM(H, 5);
 };
 
-// Equinoctial Orbital Elements
+/**
+ * @class EquinoctialOE
+ * @brief Extends OrbitState to represent an orbit in equinoctial orbital
+ * elements
+ * @details The state vector is
+ * - $a$ [km] (semi-major axis)
+ * - $h$ [-]
+ * - $k$ [-]
+ * - $p$ [-]
+ * - $q$ [-]
+ * - $\lambda$ [rad]
+ */
 class EquinoctialOE : public OrbitState {
+ private:
+  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
+      "a", "h", "k", "p", "q", "lambda"};
+  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
+      "km", "", "", "", "", "rad"};
+  static constexpr OrbitStateRepres repres_ = OrbitStateRepres::EQUINOCTIAL_OE;
+
  public:
-  // a, h, k, p, q, lon
   EquinoctialOE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(x, sys, OrbitStateRepres::EQUINOCTIAL_OE) {}
+      : OrbitState(x, sys, repres_, names_, units_) {}
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<EquinoctialOE>(*this);
   }
@@ -180,12 +254,29 @@ class EquinoctialOE : public OrbitState {
   GETSET_ELEM(lon, 5);
 };
 
-// Singular Relative Orbital Elements
+/**
+ * @class SingularROE
+ * @brief Extends OrbitState to represent an orbit in singular relative orbital
+ * elements
+ * @details The state vector is
+ * - $a\delta a$ [m] (semi-major axis)
+ * - $a\delta M$ [m] (mean anomaly)
+ * - $a\delta e$ [m] (eccentricity)
+ * - $a\delta \omega$ [m] (argument of periapsis)
+ * - $a\delta i$ [m] (inclination)
+ * - $a\delta \Omega$ [m] (right ascension of the ascending node)
+ */
 class SingularROE : public OrbitState {
+ private:
+  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
+      "ada", "adM", "ade", "adw", "adi", "adOmega"};
+  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
+      "m", "m", "m", "m", "m", "m"};
+  static constexpr OrbitStateRepres repres_ = OrbitStateRepres::SINGULAR_ROE;
+
  public:
-  // da, dM, de, dw, di, dOmega
   SingularROE(const Vector6real &x, const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(x, sys, OrbitStateRepres::SINGULAR_ROE) {}
+      : OrbitState(x, sys, repres_, names_, units_) {}
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<SingularROE>(*this);
   }
@@ -198,13 +289,30 @@ class SingularROE : public OrbitState {
   GETSET_ELEM(adOmega, 5);
 };
 
-// Quasi-Nonsingular Relative Orbital Elements
+/**
+ * @class QuasiNonsingularROE
+ * @brief Extends OrbitState to represent an orbit in quasi-nonsingular relative
+ * orbital elements
+ * @details The state vector is
+ * - $a\delta a$ [m] (semi-major axis)
+ * - $a\delta l$ [m] (mean longitude)
+ * - $a\delta e_x$ [m] (eccentricity x-component)
+ * - $a\delta e_y$ [m] (eccentricity y-component)
+ * - $a\delta i_x$ [m] (inclination x-component)
+ * - $a\delta i_y$ [m] (inclination y-component)
+ */
 class QuasiNonsingularROE : public OrbitState {
- public:
-  // da, dl, dex, dey, dix, diy
-  QuasiNonsingularROE(const Vector6real &x,
-                      const CoordSystem sys = CoordSystem::NONE)
-      : OrbitState(x, sys, OrbitStateRepres::QUASINONSINGULAR_ROE){};
+ private:
+  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
+      "ada", "adl", "adex", "adey", "adix", "adiy"};
+  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
+      "m", "m", "m", "m", "m", "m"};
+  static constexpr OrbitStateRepres repres_ = OrbitStateRepres::QUASINONSINGULAR_ROE;
+  public :
+      // ada, adl, adex, adey, adix, adiy
+      QuasiNonsingularROE(const Vector6real &x,
+                          const CoordSystem sys = CoordSystem::NONE)
+      : OrbitState(x, sys, repres_, names_, units_) {}
   std::shared_ptr<OrbitState> Clone() const override {
     return std::make_shared<QuasiNonsingularROE>(*this);
   }

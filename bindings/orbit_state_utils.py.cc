@@ -93,21 +93,21 @@ void init_orbit_state_utils(py::module &m) {
 
   // Anomaly Conversions
   m.def("eccentric_to_true", [](double E, double e) -> double {
-    return EccentricAnomToTrueAnom(E, e).val();
+    return EccentricToTrueAnomaly(E, e).val();
   });
   m.def("eccentric_to_mean", [](double E, double e) -> double {
-    return EccentricAnomToMeanAnom(E, e).val();
+    return EccentricToMeanAnomaly(E, e).val();
   });
   m.def("mean_to_eccentric", [](double M, double e) -> double {
-    return MeanAnomToEccentricAnom(M, e).val();
+    return MeanToEccentricAnomaly(M, e).val();
   });
   m.def("mean_to_true", [](double M, double e) -> double {
-    return MeanAnomToTrueAnom(M, e).val();
+    return MeanToTrueAnomaly(M, e).val();
   });
   m.def("true_to_eccentric", [](double nu, double e) -> double {
-    return TrueAnomToEccentricAnom(nu, e).val();
+    return TrueToEccentricAnomaly(nu, e).val();
   });
   m.def("true_to_mean", [](double f, double e) -> double {
-    return TrueAnomToMeanAnom(f, e).val();
+    return TrueToMeanAnomaly(f, e).val();
   });
 }

@@ -48,13 +48,5 @@ int main() {
 
   ClassicalOE coeOsc_1(coeOscVec_1);
   ClassicalOE coeOsc_2(coeOscVec_2);
-
-  coeMean_1.Print();
-  cout << endl;
-  coeOsc_1.Print();
-  cout << endl;
-  coeMean_2.Print();
-  cout << endl;
-  coeOsc_2.Print();
   return 0;
 }

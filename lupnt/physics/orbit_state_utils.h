@@ -19,15 +19,16 @@ namespace lupnt {
 
 // COE <-> Cart
 CartesianOrbitState CoeToCart(const ClassicalOE &coe, double mu);
-Vector6real CoeToCart(const Vector6real &coeVec, double mu);
+Vector6real CoeToCart(const Vector6real &coe, double mu);
 
 ClassicalOE CartToCoe(const CartesianOrbitState &cartOrbitState, double mu);
 Vector6real CartToCoe(const Vector6real &cartVec, double mu);
 
 // COE <-> ROE
-ClassicalOE RoeToCoe(const ClassicalOE &coeChief,
-                     const QuasiNonsingularROE &roe);
-Vector6real RoeToCoe(const Vector6real &coeChiefVec, const Vector6real &roeVec);
+ClassicalOE QnsroeToCoe(const ClassicalOE &coeChief,
+                        const QuasiNonsingularROE &roe);
+Vector6real QnsroeToCoe(const Vector6real &coeChiefVec,
+                        const Vector6real &roeVec);
 
 // Inertial <-> RTN
 CartesianOrbitState InertialToRtn(
@@ -44,7 +45,7 @@ Vector6real CoeToRtn(const Vector6real &coeChiefVec,
 
 // COE <-> QNSOE
 QuasiNonsingularOE CoeToQnsoe(const ClassicalOE &coe);
-Vector6real CoeToQnsoe(const Vector6real &coeVec);
+Vector6real CoeToQnsoe(const Vector6real &coe);
 
 // COE <-> QNSROE
 QuasiNonsingularROE QnsoeToQnsroe(const QuasiNonsingularOE &qnsoeChief,
@@ -86,12 +87,12 @@ std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6real &coe,
 
 // Anomaly conversions
 
-real EccentricAnomToTrueAnom(real E, real e);
-real EccentricAnomToMeanAnom(real E, real e);
-real MeanAnomToEccentricAnom(real M, real e);
-real MeanAnomToTrueAnom(real M, real e);
-real TrueAnomToEccentricAnom(real nu, real e);
-real TrueAnomToMeanAnom(real f, real e);
+real EccentricToTrueAnomaly(real E, real e);
+real EccentricToMeanAnomaly(real E, real e);
+real MeanToEccentricAnomaly(real M, real e);
+real TrueToEccentricAnomaly(real nu, real e);
+real MeanToTrueAnomaly(real M, real e);
+real TrueToMeanAnomaly(real f, real e);
 
 class TLE {
  public:

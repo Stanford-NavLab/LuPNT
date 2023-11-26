@@ -23,30 +23,30 @@ namespace lupnt {
  * @ref Vallado "Fudamentals of Astrodynamics and Applications " p146 (ELORB)
  */
 CartesianOrbitState CoeToCart(const ClassicalOE &coe, double mu) {
-  Vector6real coeVec = coe.GetVector();
-  Vector6real cartVec = CoeToCart(coeVec, mu);
-  CartesianOrbitState cartOrbitState(cartVec);
-  cartOrbitState.SetCoordSystem(coe.GetCoordSystem());
-  return cartOrbitState;
+  return CartesianOrbitState(CoeToCart(coe.GetVector(), mu),
+                             coe.GetCoordSystem());
 }
 
-Vector6real CoeToCart(const Vector6real &coeVec, double mu) {
-  auto [a, e, i, Omega, w, M] = unpack(coeVec);
+Vector6real CoeToCart(const Vector6real &coe, double mu) {
+  auto [a, e, i, Omega, w, M] = unpack(coe);
 
   real p = a * (1.0 - pow(e, 2.0));
-  real nu = MeanAnomToTrueAnom(M, e);
+  real nu = MeanToTrueAnomaly(M, e);
   real pev = p / (1 + e * cos(nu));
   real mu_p = sqrt(mu / p);
 
   Vector3real r_PQW = {pev * cos(nu), pev * sin(nu), 0};
   Vector3real v_PQW = {-mu_p * sin(nu), mu_p * (e + cos(nu)), 0};
 
-  Matrix3real rot;
-  rot.row(0) << cos(Omega) * cos(w) - sin(Omega) * sin(w) * cos(i),
-      -cos(Omega) * sin(w) - sin(Omega) * cos(w) * cos(i), sin(Omega) * sin(i);
-  rot.row(1) << sin(Omega) * cos(w) + cos(Omega) * sin(w) * cos(i),
-      -sin(Omega) * sin(w) + cos(Omega) * cos(w) * cos(i), -cos(Omega) * sin(i);
-  rot.row(2) << sin(w) * sin(i), cos(w) * sin(i), cos(i);
+  Matrix3real rot{
+      {cos(Omega) * cos(w) - sin(Omega) * sin(w) * cos(i),
+       -cos(Omega) * sin(w) - sin(Omega) * cos(w) * cos(i),
+       sin(Omega) * sin(i)},
+      {sin(Omega) * cos(w) + cos(Omega) * sin(w) * cos(i),
+       -sin(Omega) * sin(w) + cos(Omega) * cos(w) * cos(i),
+       -cos(Omega) * sin(i)},
+      {sin(w) * sin(i), cos(w) * sin(i), cos(i)},
+  };
 
   Vector3real r = rot * r_PQW;
   Vector3real v = rot * v_PQW;
@@ -64,10 +64,8 @@ Vector6real CoeToCart(const Vector6real &coeVec, double mu) {
  * @ref Vallado "Fudamentals of Astrodynamics and Applications " p146 (ELORB)
  */
 ClassicalOE CartToCoe(const CartesianOrbitState &cartOrbitState, double mu) {
-  Vector6real cartVec = cartOrbitState.GetVector();
-  Vector6real coeVec = CartToCoe(cartVec, mu);
-  ClassicalOE coe(coeVec);
-  return coe;
+  return ClassicalOE(CartToCoe(cartOrbitState.GetVector(), mu),
+                     cartOrbitState.GetCoordSystem());
 }
 Vector6real CartToCoe(const Vector6real &cartVec, double mu) {
   real a, e, p, i, Omega, w, nu, M;
@@ -78,13 +76,10 @@ Vector6real CartToCoe(const Vector6real &cartVec, double mu) {
   real rnorm = r.squaredNorm();
   real vnorm = v.squaredNorm();
 
-  Vector3real K;
-  K << 0, 0, 1.0;
+  Vector3real K{0., 0., 1.};
 
-  Vector3real h;
-  h = r.cross(v);
-  Vector3real n;
-  n = K.cross(h);
+  Vector3real h = r.cross(v);
+  Vector3real n = K.cross(h);
 
   real hnorm = h.squaredNorm();
   real nnorm = n.squaredNorm();
@@ -126,11 +121,10 @@ Vector6real CartToCoe(const Vector6real &cartVec, double mu) {
     nu = 2 * M_PI - nu;
   }
 
-  M = TrueAnomToMeanAnom(nu, e);
+  M = TrueToMeanAnomaly(nu, e);
 
-  Vector6real coeVec;
-  coeVec << a, e, i, Omega, w, M;
-  return coeVec;
+  Vector6real coe{a, e, i, Omega, w, M};
+  return coe;
 }
 
 /**
@@ -140,11 +134,8 @@ Vector6real CartToCoe(const Vector6real &cartVec, double mu) {
  * @param e          Eccentricity
  * @return real  True anomaly [rad]
  */
-
-real EccentricAnomToTrueAnom(real E, real e) {
+real EccentricToTrueAnomaly(real E, real e) {
   return atan2(sqrt(1 - pow(e, 2)) * sin(E), cos(E) - e);
-  // real beta = e / (1.0 + sqrt(1.0 - pow(e, 2)));
-  // return E + 2.0 * atan2(beta * sin(E), 1.0 + beta * cos(E));
 }
 
 /**
@@ -154,10 +145,7 @@ real EccentricAnomToTrueAnom(real E, real e) {
  * @param e          Eccentricity
  * @return real  Mean anomaly [rad]
  */
-
-real EccentricAnomToMeanAnom(real E, real e) {
-  return wrapToPi(E - e * sin(E));
-}
+real EccentricToMeanAnomaly(real E, real e) { return wrapToPi(E - e * sin(E)); }
 
 /**
  * @brief Compute mean anomaly from the Eccentric anomaly
@@ -165,8 +153,7 @@ real EccentricAnomToMeanAnom(real E, real e) {
  * @param e          Eccentricity
  * @return real  Eccentric anomaly [rad]
  */
-
-real MeanAnomToEccentricAnom(real M, real e) {
+real MeanToEccentricAnomaly(real M, real e) {
   real MM = wrapToPi(M);
 
   // Initial estimate of E
@@ -193,10 +180,9 @@ real MeanAnomToEccentricAnom(real M, real e) {
  * @param e          Eccentricity
  * @return real  True anomaly [rad]
  */
-
-real MeanAnomToTrueAnom(real M, real e) {
-  real E = MeanAnomToEccentricAnom(M, e);
-  real nu = EccentricAnomToTrueAnom(E, e);
+real MeanToTrueAnomaly(real M, real e) {
+  real E = MeanToEccentricAnomaly(M, e);
+  real nu = EccentricToTrueAnomaly(E, e);
   return wrapToPi(nu);
 }
 
@@ -206,8 +192,7 @@ real MeanAnomToTrueAnom(real M, real e) {
  * @param e          Eccentricity
  * @return real  Eccentric anomaly [rad]
  */
-
-real TrueAnomToEccentricAnom(real nu, real e) {
+real TrueToEccentricAnomaly(real nu, real e) {
   real E = 2 * atan(sqrt((1 - e) / (1 + e)) * tan(nu / 2));
   return E;
 }
@@ -219,10 +204,9 @@ real TrueAnomToEccentricAnom(real nu, real e) {
  * @param e          Eccentricity
  * @return real  Mean anomaly [rad]
  */
-
-real TrueAnomToMeanAnom(real nu, real e) {
-  real E = TrueAnomToEccentricAnom(nu, e);
-  real M = EccentricAnomToMeanAnom(E, e);
+real TrueToMeanAnomaly(real nu, real e) {
+  real E = TrueToEccentricAnomaly(nu, e);
+  real M = EccentricToMeanAnomaly(E, e);
   return M;
 }
 
@@ -249,9 +233,7 @@ Vector6real RoeToCoe(const Vector6real &coe_c, const Vector6real &roe) {
   real ed = sqrt(exd * exd + eyd * eyd);
   real Md = wrapToPi(ud - wd);
 
-  Vector6real coe_d;
-  coe_d << ad, ed, id, Od, wd, Md;
-
+  Vector6real coe_d{ad, ed, id, Od, wd, Md};
   return coe_d;
 }
 
@@ -314,13 +296,8 @@ QuasiNonsingularOE CoeToQnsoe(const ClassicalOE &coe) {
   return QuasiNonsingularOE(qnsoe);
 }
 
-Vector6real CoeToQnsoe(const Vector6real &coeVec) {
-  real a = coeVec(0);
-  real e = coeVec(1);
-  real i = coeVec(2);
-  real Omega = coeVec(3);
-  real w = coeVec(4);
-  real M = coeVec(5);
+Vector6real CoeToQnsoe(const Vector6real &coe) {
+  auto [a, e, i, Omega, w, M] = unpack(coe);
 
   real u = w + M;
   real ex = e * cos(w);
@@ -330,25 +307,17 @@ Vector6real CoeToQnsoe(const Vector6real &coeVec) {
   return qnsoeVec;
 }
 ClassicalOE QnsoeToCoe(const QuasiNonsingularOE &qnsoe) {
-  Vector6real coeVec = QnsoeToCoe(qnsoe.GetVector());
-  ClassicalOE coe(coeVec);
-  return coe;
+  return ClassicalOE(QnsoeToCoe(qnsoe.GetVector()), qnsoe.GetCoordSystem());
 }
 Vector6real QnsoeToCoe(const Vector6real &qnsoeVec) {
-  real a = qnsoeVec(0);
-  real u = qnsoeVec(1);
-  real ex = qnsoeVec(2);
-  real ey = qnsoeVec(3);
-  real i = qnsoeVec(4);
-  real Omega = qnsoeVec(5);
+  auto [a, u, ex, ey, i, Omega] = unpack(qnsoeVec);
 
   real e = sqrt(ex * ex + ey * ey);
   real w = atan2(ey, ex);
   real M = u - w;
 
-  Vector6real coeVec;
-  coeVec << a, e, i, Omega, w, M;
-  return coeVec;
+  Vector6real coe{a, e, i, Omega, w, M};
+  return coe;
 }
 
 QuasiNonsingularROE QnsoeToQnsroe(const QuasiNonsingularOE &qnsoe_c,
@@ -380,9 +349,20 @@ QuasiNonsingularROE QnsoeToQnsroe(const QuasiNonsingularOE &qnsoe_c,
 
 Vector6real QnsoeToQnsroe(const Vector6real &qnsoe_c,
                           const Vector6real &qnsoe_d) {
-  QuasiNonsingularROE qnsroe =
-      QnsoeToQnsroe(QuasiNonsingularOE(qnsoe_c), QuasiNonsingularOE(qnsoe_d));
-  return qnsroe.GetVector();
+  auto [a_c, u_c, ex_c, ey_c, i_c, Omega_c] = unpack(qnsoe_c);
+  auto [a_d, u_d, ex_d, ey_d, i_d, Omega_d] = unpack(qnsoe_d);
+
+  real da, dl, dex, dey, dix, diy;
+  da = (a_d - a_c) / a_c;
+  dl = (u_d - u_c) + (Omega_d - Omega_c) * cos(i_c);
+  dex = ex_d - ex_c;
+  dey = ey_d - ey_c;
+  dix = i_d - i_c;
+  diy = (Omega_d - Omega_c) * sin(i_c);
+
+  Vector6real qnsroe_a{da, dl, dex, dey, dix, diy};
+  Vector6real qnsroe = a_c * qnsroe_a;
+  return qnsroe;
 }
 
 QuasiNonsingularROE CoeToQnsroe(const ClassicalOE &coe_c,
@@ -500,7 +480,7 @@ Vector6real CoeToEquioe(const Vector6real &coe) {
   real w = coe(4);
   real M = coe(5);
 
-  real f = MeanAnomToTrueAnom(M, e);
+  real f = MeanToTrueAnomaly(M, e);
   real w_tilde = Omega + w;
   real Psi = w_tilde + f;
   real tq1 = e * cos(w_tilde);

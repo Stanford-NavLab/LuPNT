@@ -151,7 +151,7 @@ void YamanakaAnkersenDynamics::Initialize(ClassicalOE &coe_c,
 }
 MatrixXreal YamanakaAnkersenDynamics::ComputeMatrix(real t) {
   real M = n * (t - tInit) + M0;
-  real f = MeanAnomToTrueAnom(M, e);
+  real f = MeanToTrueAnomaly(M, e);
   real sin_f = sin(f);
   real cos_f = cos(f);
   real k = 1.0 + e * cos(f);
@@ -193,7 +193,7 @@ MatrixXreal YamanakaAnkersenDynamics::ComputeMatrix(real t) {
 }
 MatrixXreal YamanakaAnkersenDynamics::ComputeInverseMatrix(real t) {
   real M = n * (t - tInit) + M0;
-  real f = MeanAnomToTrueAnom(M, e);
+  real f = MeanToTrueAnomaly(M, e);
   real sin_f = sin(f);
   real cos_f = cos(f);
   real k = 1.0 + e * cos(f);
@@ -280,7 +280,7 @@ void RoeGeometricMappingDynamics::Initialize(ClassicalOE coe_c,
 }
 MatrixXreal RoeGeometricMappingDynamics::ComputeMatrix(real t) {
   real M = n * (t - tInit) + M0;
-  real f = MeanAnomToTrueAnom(M, e);
+  real f = MeanToTrueAnomaly(M, e);
   real u = f + w;
   real sin_u = sin(u);
   real cos_u = cos(u);

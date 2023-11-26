@@ -111,7 +111,7 @@ std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6real &coe,
   double O = (double)coe(3);
   double w = (double)coe(4);
   double M = (double)coe(5);
-  double f = (double)MeanAnomToTrueAnom(coe(5), coe(1));
+  double f = (double)MeanToTrueAnomaly(coe(5), coe(1));
 
   double l = (double)doe(0);
   double g = (double)doe(1);

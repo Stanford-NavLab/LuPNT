@@ -113,9 +113,6 @@ class KeplerianDynamics {
   // QuasiNonsingularOE
   void Propagate(QuasiNonsingularOE &state, real dt);
   void PropagateWithStm(QuasiNonsingularOE &state, real dt, Matrix6d &stm);
-  // NonsingularOE
-  void Propagate(NonsingularOE &state, real dt);
-  void PropagateWithStm(NonsingularOE &state, real dt, Matrix6d &stm);
   // EquinoctialOE
   void Propagate(EquinoctialOE &state, real dt);
   void PropagateWithStm(EquinoctialOE &state, real dt, Matrix6d &stm);

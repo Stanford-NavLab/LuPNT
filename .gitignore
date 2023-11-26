@@ -21,3 +21,4 @@ data/ephemeris
 examples/figures
 lupnt.egg-info
 docs/html
+*.profraw

@@ -89,7 +89,6 @@ void init_orbit_state(py::module &m) {
       .def(py::init<const Vector6d &, const CoordSystem>(),
            py::arg("[a, e, i, Omega, w, M]"),
            py::arg("coord_sys") = CoordSystem::NONE)
-      .def("print", &ClassicalOE::Print, py::arg("deg") = true)
       .def("clone", &ClassicalOE::Clone)
       .def_property("a", DEFINE_GETSET_REAL(ClassicalOE, a))
       .def_property("e", DEFINE_GETSET_REAL(ClassicalOE, e))
@@ -103,7 +102,6 @@ void init_orbit_state(py::module &m) {
   py::class_<CartesianOrbitState, OrbitState>(m, "CartesianOrbitState")
       .def(py::init<const Vector6d &, const CoordSystem>(), py::arg("rv"),
            py::arg("coord_sys") = CoordSystem::NONE)
-      .def("print", &CartesianOrbitState::Print, py::arg("deg") = true)
       .def("clone", &CartesianOrbitState::Clone)
       .def_property(
           "r",
@@ -126,7 +124,6 @@ void init_orbit_state(py::module &m) {
   // QuasiNonsingularOE
   py::class_<QuasiNonsingularOE, OrbitState>(m, "QuasiNonsingularOE")
       .def(py::init<const Vector6d &, const CoordSystem>())
-      .def("print", &QuasiNonsingularOE::Print, py::arg("deg") = true)
       .def("clone", &QuasiNonsingularOE::Clone)
       .def_property("a", DEFINE_GETSET_REAL(QuasiNonsingularOE, a))
       .def_property("u", DEFINE_GETSET_REAL(QuasiNonsingularOE, u))
@@ -139,7 +136,6 @@ void init_orbit_state(py::module &m) {
   // NonsingularOE
   py::class_<NonsingularOE, OrbitState>(m, "NonsingularOE")
       .def(py::init<const Vector6d &, const CoordSystem>())
-      .def("print", &NonsingularOE::Print, py::arg("deg") = true)
       .def("clone", &NonsingularOE::Clone)
       .def_property("a", DEFINE_GETSET_REAL(NonsingularOE, a))
       .def_property("e1", DEFINE_GETSET_REAL(NonsingularOE, e1))
@@ -152,7 +148,6 @@ void init_orbit_state(py::module &m) {
   // EquinoctialOE
   py::class_<EquinoctialOE, OrbitState>(m, "EquinoctialOE")
       .def(py::init<const Vector6d &, const CoordSystem>())
-      .def("print", &EquinoctialOE::Print, py::arg("deg") = true)
       .def("clone", &EquinoctialOE::Clone)
       .def_property("a", DEFINE_GETSET_REAL(EquinoctialOE, a))
       .def_property("h", DEFINE_GETSET_REAL(EquinoctialOE, h))
@@ -165,7 +160,6 @@ void init_orbit_state(py::module &m) {
   // SingularROE
   py::class_<SingularROE, OrbitState>(m, "SingularROE")
       .def(py::init<const Vector6d &, const CoordSystem>())
-      .def("print", &SingularROE::Print, py::arg("deg") = true)
       .def("clone", &SingularROE::Clone)
       .def_property("ada", DEFINE_GETSET_REAL(SingularROE, ada))
       .def_property("adM", DEFINE_GETSET_REAL(SingularROE, adM))
@@ -178,7 +172,6 @@ void init_orbit_state(py::module &m) {
   // QuasiNonsingularROE
   py::class_<QuasiNonsingularROE, OrbitState>(m, "QuasiNonsingularROE")
       .def(py::init<const Vector6d &, const CoordSystem>())
-      .def("print", &QuasiNonsingularROE::Print, py::arg("deg") = true)
       .def("clone", &QuasiNonsingularROE::Clone)
       .def_property("ada", DEFINE_GETSET_REAL(QuasiNonsingularROE, ada))
       .def_property("adl", DEFINE_GETSET_REAL(QuasiNonsingularROE, adl))
