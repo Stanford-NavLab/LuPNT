@@ -48,7 +48,6 @@ void init_orbit_state_utils(py::module &m) {
         return CartToCoe(cartVec, mu).cast<double>();
       },
       py::arg("cart"), py::arg("mu"));
-  pnt.coe_to_eqoe
       // coe <-> qnsoe
       m.def(
           "coe_to_qnsoe",

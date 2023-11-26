@@ -355,16 +355,16 @@ real ConvertTime(real t, std::string from_time_type, std::string to_time_type) {
  * @param tai_MJD TAI in MJD (with the origin as JD_NOV_17_1858)
  * @param center  center body id
  * @param target  target body id
- * @return VectorXreal  6x1 vector of position and velocity of target body
+ * @return VectorX  6x1 vector of position and velocity of target body
  * in center body J2000 frame
  */
-VectorXreal GetBodyPosVel(const real tai, int center, int target) {
+VectorX GetBodyPosVel(const real tai, int center, int target) {
   LoadSpiceKernel();
 
   bool load_cent = false;
   bool load_targ = false;
-  VectorXreal rv_center(6);
-  VectorXreal rv_target(6);
+  VectorX rv_center(6);
+  VectorX rv_target(6);
 
   // convert TAI to TDB past J2000
   real t_s = ConvertTime(tai, "TAI", "TDB");
@@ -384,7 +384,7 @@ VectorXreal GetBodyPosVel(const real tai, int center, int target) {
     }
   }
 
-  VectorXreal retState(6);
+  VectorX retState(6);
   retState = rv_target - rv_center;
 
   return retState;

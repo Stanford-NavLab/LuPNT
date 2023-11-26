@@ -64,43 +64,43 @@ void NBodyDynamics::SetCentralBody(const Body &body) { centralBody = body; }
 
 void NBodyDynamics::AddBody(const Body &body) { bodies.push_back(body); }
 
-VectorXreal NBodyDynamics::ComputeRates(real t,
-                                            const VectorXreal &x) const {
-  VectorXreal acc = VectorXreal::Zero(6);
+VectorX NBodyDynamics::ComputeRates(real t,
+                                            const VectorX &x) const {
+  VectorX acc = VectorX::Zero(6);
 
   // N-body gravity
   acc.head(3) = x.tail(3);
   acc.tail(3) += ComputeNBodyGravity(t, x);
 
   // Solar radiation pressure
-  Vector3real r_body2sc = x.head(3);
-  Vector3real r_body2sun =
+  Vector3 r_body2sc = x.head(3);
+  Vector3 r_body2sun =
       SpiceInterface::GetBodyPos("SUN", t, "J2000", "MOON", "NONE");
-  Vector3real r_sun2sc = r_body2sc - r_body2sun;
+  Vector3 r_sun2sc = r_body2sc - r_body2sun;
   double R_body = centralBody.R;
   double R_SUN = 696000.0;
   double m = 1000.0;
   double CR = 1.5;
   double area = 1.0;
-  Vector3real a_srp = ComputeSolarRadiationPressure(
+  Vector3 a_srp = ComputeSolarRadiationPressure(
       r_body2sc, r_sun2sc, R_body, R_SUN, m, CR, area);
   acc.tail(3) += a_srp;
 
   return acc;
 }
 
-Vector3real NBodyDynamics::ComputeNBodyGravity(
-    real t, const VectorXreal &rv) const {
+Vector3 NBodyDynamics::ComputeNBodyGravity(
+    real t, const VectorX &rv) const {
   assert(rv.size() == 6);
 
-  Vector3real r = rv.head(3);  // s/c position w.r.t. the center body [km]
-  Vector3real v = rv.tail(3);  // s/c velocity w.r.t. the center body [km/s]
-  Vector3real a = Vector3real::Zero();  // s/c acceleration w.r.t. the
+  Vector3 r = rv.head(3);  // s/c position w.r.t. the center body [km]
+  Vector3 v = rv.tail(3);  // s/c velocity w.r.t. the center body [km/s]
+  Vector3 a = Vector3::Zero();  // s/c acceleration w.r.t. the
                                                 // center body [km/s^2]
 
   for (Body body : bodies) {
-    VectorXreal rv_i, rv_body;
-    Vector3real a_i, a_i_C, r_i;
+    VectorX rv_i, rv_body;
+    Vector3 a_i, a_i_C, r_i;
 
     // Check central body
     if (body.id != centralBody.id) {
@@ -115,7 +115,7 @@ Vector3real NBodyDynamics::ComputeNBodyGravity(
     } else {
       rv_i = rv;
       r_i = rv_i.head(3);
-      a_i_C = Vector3real::Zero();
+      a_i_C = Vector3::Zero();
     }
 
     // Check spherical harmonics
@@ -125,8 +125,8 @@ Vector3real NBodyDynamics::ComputeNBodyGravity(
       Matrix3d Ur2j = SpiceInterface::GetFrameConversionMatrix(
                                  t, rotatingFrame, inertialFrame)
                                  .block(0, 0, 3, 3);
-      Vector3real r_i_rot = Ur2j.transpose() * r_i;
-      Vector3real a_i_rot = spharm_acc_ecr(
+      Vector3 r_i_rot = Ur2j.transpose() * r_i;
+      Vector3 a_i_rot = spharm_acc_ecr(
           body.n_max, body.m_max, r_i_rot, body.R, body.mu, body.Cnm, body.Snm);
       a_i = Ur2j * a_i_rot;
     } else {
@@ -145,11 +145,11 @@ Vector3real NBodyDynamics::ComputeNBodyGravity(
  * @ref 1. O. Montenbruck, and E. Gill, _Satellite Orbits: Models, Methods and
  * Applications_, 2012, p.77-83.
  */
-Vector3real NBodyDynamics::ComputeSolarRadiationPressure(
-    const Vector3real &r_body2sc, const Vector3real &r_sun2sc,
+Vector3 NBodyDynamics::ComputeSolarRadiationPressure(
+    const Vector3 &r_body2sc, const Vector3 &r_sun2sc,
     double R_body, double R_SUN, double m, double CR, double area) const {
   // Acceleration of a satellite due to the solar radiation pressure
-  Vector3real a_srp;
+  Vector3 a_srp;
 
   // Apparent radius of the occulted body (i.e. the Sun)
   real a = asin(R_SUN / r_sun2sc.norm());

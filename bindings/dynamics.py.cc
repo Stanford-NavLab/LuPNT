@@ -57,7 +57,7 @@ void init_dynamics(py::module &m) {
                &NumericalDynamics::Propagate),
            py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
       .def("propagate",
-           py::overload_cast<Vector6real &, real, real, real>(
+           py::overload_cast<Vector6 &, real, real, real>(
                &NumericalDynamics::Propagate),
            py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
       .def(
@@ -72,7 +72,7 @@ void init_dynamics(py::module &m) {
           py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](NumericalDynamics &dyn, Vector6real &state, real t0, real tf,
+          [](NumericalDynamics &dyn, Vector6 &state, real t0, real tf,
              real dt) {
             Matrix6d stm;
             dyn.PropagateWithStm(state, t0, tf, dt, stm);

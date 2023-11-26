@@ -20,7 +20,7 @@ CartesianOrbitState CoeToCart(const ClassicalOE &coe, double mu) {
                              coe.GetCoordSystem());
 }
 
-Vector6real CoeToCart(const Vector6real &coe, double mu) {
+Vector6 CoeToCart(const Vector6 &coe, double mu) {
   auto [a, e, i, Omega, w, M] = unpack(coe);
 
   real p = a * (1.0 - pow(e, 2.0));
@@ -28,10 +28,10 @@ Vector6real CoeToCart(const Vector6real &coe, double mu) {
   real pev = p / (1 + e * cos(nu));
   real mu_p = sqrt(mu / p);
 
-  Vector3real r_PQW = {pev * cos(nu), pev * sin(nu), 0};
-  Vector3real v_PQW = {-mu_p * sin(nu), mu_p * (e + cos(nu)), 0};
+  Vector3 r_PQW = {pev * cos(nu), pev * sin(nu), 0};
+  Vector3 v_PQW = {-mu_p * sin(nu), mu_p * (e + cos(nu)), 0};
 
-  Matrix3real rot{
+  Matrix3 rot{
       {cos(Omega) * cos(w) - sin(Omega) * sin(w) * cos(i),
        -cos(Omega) * sin(w) - sin(Omega) * cos(w) * cos(i),
        sin(Omega) * sin(i)},
@@ -41,10 +41,10 @@ Vector6real CoeToCart(const Vector6real &coe, double mu) {
       {sin(w) * sin(i), cos(w) * sin(i), cos(i)},
   };
 
-  Vector3real r = rot * r_PQW;
-  Vector3real v = rot * v_PQW;
+  Vector3 r = rot * r_PQW;
+  Vector3 v = rot * v_PQW;
 
-  Vector6real cart;
+  Vector6 cart;
   cart << r, v;
   return cart;
 }
@@ -52,24 +52,24 @@ Vector6real CoeToCart(const Vector6real &coe, double mu) {
 ClassicalOE CartToCoe(const CartesianOrbitState &cart, double mu) {
   return ClassicalOE(CartToCoe(cart.GetVector(), mu), cart.GetCoordSystem());
 }
-Vector6real CartToCoe(const Vector6real &cart, double mu) {
+Vector6 CartToCoe(const Vector6 &cart, double mu) {
   real a, e, p, i, Omega, w, nu, M;
 
-  Vector3real r = cart.head(3);
-  Vector3real v = cart.tail(3);
+  Vector3 r = cart.head(3);
+  Vector3 v = cart.tail(3);
 
   real rnorm = r.squaredNorm();
   real vnorm = v.squaredNorm();
 
-  Vector3real K{0., 0., 1.};
+  Vector3 K{0., 0., 1.};
 
-  Vector3real h = r.cross(v);
-  Vector3real n = K.cross(h);
+  Vector3 h = r.cross(v);
+  Vector3 n = K.cross(h);
 
   real hnorm = h.squaredNorm();
   real nnorm = n.squaredNorm();
 
-  Vector3real evec = ((pow(vnorm, 2.0) - mu / rnorm) * r - r.dot(v) * v) / mu;
+  Vector3 evec = ((pow(vnorm, 2.0) - mu / rnorm) * r - r.dot(v) * v) / mu;
   e = evec.norm();
 
   real xi = pow(vnorm, 2.0) / 2.0 - mu / rnorm;
@@ -108,7 +108,7 @@ Vector6real CartToCoe(const Vector6real &cart, double mu) {
 
   M = TrueToMeanAnomaly(nu, e);
 
-  return Vector6real{a, e, i, Omega, w, M};
+  return Vector6{a, e, i, Omega, w, M};
 }
 
 /**
@@ -194,7 +194,7 @@ real TrueToMeanAnomaly(real nu, real e) {
   return M;
 }
 
-Vector6real QnsroeToCoe(const Vector6real &coe_c, const Vector6real &qnsroe) {
+Vector6 QnsroeToCoe(const Vector6 &coe_c, const Vector6 &qnsroe) {
   auto [ac, ec, ic, Oc, wc, Mc] = unpack(coe_c);
   auto [ada, adl, adex, adey, adix, adiy] = unpack(qnsroe);
 
@@ -216,7 +216,7 @@ Vector6real QnsroeToCoe(const Vector6real &coe_c, const Vector6real &qnsroe) {
   real ed = sqrt(exd * exd + eyd * eyd);
   real Md = wrapToPi(ud - wd);
 
-  return Vector6real(ad, ed, id, Od, wd, Md);
+  return Vector6(ad, ed, id, Od, wd, Md);
 }
 
 ClassicalOE QnsroeToCoe(const ClassicalOE &coe_c,
@@ -225,26 +225,26 @@ ClassicalOE QnsroeToCoe(const ClassicalOE &coe_c,
                      coe_c.GetCoordSystem());
 }
 
-Vector6real InertialToRtn(const Vector6real &rtn_c, const Vector6real &rtn_d) {
-  Vector3real rInertial = rtn_d.head(3);
-  Vector3real vInertial = rtn_d.tail(3);
-  Vector3real rOrigin = rtn_c.head(3);
-  Vector3real vOrigin = rtn_c.tail(3);
+Vector6 InertialToRtn(const Vector6 &rtn_c, const Vector6 &rtn_d) {
+  Vector3 rInertial = rtn_d.head(3);
+  Vector3 vInertial = rtn_d.tail(3);
+  Vector3 rOrigin = rtn_c.head(3);
+  Vector3 vOrigin = rtn_c.tail(3);
 
-  Vector3real uR, uT, uN;  // RTN basis vectors
+  Vector3 uR, uT, uN;  // RTN basis vectors
   uR = rOrigin.normalized();
   uN = (rOrigin.cross(vOrigin)).normalized();
   uT = uN.cross(uR);
 
-  Matrix3real R_Inertial_Rtn;  // Rotation matrix from inertial to RTN
+  Matrix3 R_Inertial_Rtn;  // Rotation matrix from inertial to RTN
   R_Inertial_Rtn << uR.transpose(), uT.transpose(), uN.transpose();
 
-  Vector3real w, rRtn, vRtn;
+  Vector3 w, rRtn, vRtn;
   w = rOrigin.cross(vOrigin) / rOrigin.squaredNorm();
   rRtn = R_Inertial_Rtn * (rInertial - rOrigin);
   vRtn = R_Inertial_Rtn * (vInertial - vOrigin - w.cross(rInertial - rOrigin));
 
-  Vector6real rtnVec;
+  Vector6 rtnVec;
   rtnVec << rRtn, vRtn;
   return rtnVec;
 }
@@ -257,46 +257,45 @@ CartesianOrbitState InertialToRtn(
       rtn_c.GetCoordSystem());
 }
 
-Vector6real CoeToRtn(const Vector6real &coe_c, const Vector6real &coe_d,
-                     double mu) {
-  Vector6real rtn_c = CoeToCart(coe_c, mu);
-  Vector6real inertialVec = CoeToCart(coe_d, mu);
-  Vector6real rtnVec = InertialToRtn(rtn_c, inertialVec);
+Vector6 CoeToRtn(const Vector6 &coe_c, const Vector6 &coe_d, double mu) {
+  Vector6 rtn_c = CoeToCart(coe_c, mu);
+  Vector6 inertialVec = CoeToCart(coe_d, mu);
+  Vector6 rtnVec = InertialToRtn(rtn_c, inertialVec);
   return rtnVec;
 }
 
 CartesianOrbitState CoeToRtn(const ClassicalOE &coe_c, const ClassicalOE &coe_d,
                              double mu) {
-  Vector6real rtnVec = CoeToRtn(coe_c.GetVector(), coe_d.GetVector(), mu);
+  Vector6 rtnVec = CoeToRtn(coe_c.GetVector(), coe_d.GetVector(), mu);
   return CartesianOrbitState(rtnVec);
 }
 
 QuasiNonsingularOE CoeToQnsoe(const ClassicalOE &coe) {
-  Vector6real qnsoe = CoeToQnsoe(coe.GetVector());
+  Vector6 qnsoe = CoeToQnsoe(coe.GetVector());
   return QuasiNonsingularOE(qnsoe);
 }
 
-Vector6real CoeToQnsoe(const Vector6real &coe) {
+Vector6 CoeToQnsoe(const Vector6 &coe) {
   auto [a, e, i, Omega, w, M] = unpack(coe);
 
   real u = w + M;
   real ex = e * cos(w);
   real ey = e * sin(w);
 
-  return Vector6real(a, u, ex, ey, i, Omega);
+  return Vector6(a, u, ex, ey, i, Omega);
 }
 
 ClassicalOE QnsoeToCoe(const QuasiNonsingularOE &qnsoe) {
   return ClassicalOE(QnsoeToCoe(qnsoe.GetVector()), qnsoe.GetCoordSystem());
 }
-Vector6real QnsoeToCoe(const Vector6real &qnsoeVec) {
+Vector6 QnsoeToCoe(const Vector6 &qnsoeVec) {
   auto [a, u, ex, ey, i, Omega] = unpack(qnsoeVec);
 
   real e = sqrt(ex * ex + ey * ey);
   real w = atan2(ey, ex);
   real M = u - w;
 
-  Vector6real coe{a, e, i, Omega, w, M};
+  Vector6 coe{a, e, i, Omega, w, M};
   return coe;
 }
 
@@ -306,8 +305,7 @@ QuasiNonsingularROE QnsoeToQnsroe(const QuasiNonsingularOE &qnsoe_c,
       QnsoeToQnsroe(qnsoe_c.GetVector(), qnsoe_d.GetVector()));
 }
 
-Vector6real QnsoeToQnsroe(const Vector6real &qnsoe_c,
-                          const Vector6real &qnsoe_d) {
+Vector6 QnsoeToQnsroe(const Vector6 &qnsoe_c, const Vector6 &qnsoe_d) {
   auto [a_c, u_c, ex_c, ey_c, i_c, Omega_c] = unpack(qnsoe_c);
   auto [a_d, u_d, ex_d, ey_d, i_d, Omega_d] = unpack(qnsoe_d);
 
@@ -319,7 +317,7 @@ Vector6real QnsoeToQnsroe(const Vector6real &qnsoe_c,
   dix = i_d - i_c;
   diy = (Omega_d - Omega_c) * sin(i_c);
 
-  return a_c * Vector6real(da, dl, dex, dey, dix, diy);
+  return a_c * Vector6(da, dl, dex, dey, dix, diy);
 }
 
 QuasiNonsingularROE CoeToQnsroe(const ClassicalOE &coe_c,
@@ -335,7 +333,7 @@ ClassicalOE EqoeToCoe(const EquinoctialOE &eqoe) {
   return ClassicalOE(EqoeToCoe(eqoe.GetVector()), eqoe.GetCoordSystem());
 }
 
-Vector6real EqoeToCoe(const Vector6real &equioe) {
+Vector6 EqoeToCoe(const Vector6 &equioe) {
   auto [a, Psi, tq1, tq2, p1, p2] = unpack(equioe);
 
   real Omega = atan2(p2, p1);
@@ -356,15 +354,15 @@ Vector6real EqoeToCoe(const Vector6real &equioe) {
     M = 0;
   }
 
-  return Vector6real(a, e, i, Omega, w, M);
+  return Vector6(a, e, i, Omega, w, M);
 }
 
-Vector6real MeanToOsc(const Vector6real &coe_m, double J2) {
-  Vector6real coe_o;
+Vector6 MeanToOsc(const Vector6 &coe_m, double J2) {
+  Vector6 coe_o;
 
   if (J2 > 0) {
-    Vector6real meanEquioe = CoeToEqoe(coe_m);
-    Vector6real oscEquioe;  // = MeanOscClosedEqui(meanEquioe, J2);
+    Vector6 meanEquioe = CoeToEqoe(coe_m);
+    Vector6 oscEquioe;  // = MeanOscClosedEqui(meanEquioe, J2);
     coe_o = EqoeToCoe(oscEquioe);
   } else {
     coe_o = coe_m;
@@ -377,17 +375,17 @@ ClassicalOE MeanToOsc(const ClassicalOE &coe_m, double J2) {
   return ClassicalOE(MeanToOsc(coe_m.GetVector(), J2), coe_m.GetCoordSystem());
 }
 
-Vector6real osc2mean_NRiterator(const Vector6real &osc_equi_elem, double tol) {
-  Vector6real mean_equi_elem = osc_equi_elem;
+Vector6 osc2mean_NRiterator(const Vector6 &osc_equi_elem, double tol) {
+  Vector6 mean_equi_elem = osc_equi_elem;
   double R = 1.0;
   int niter = 0;
 
   while (std::abs(R) > tol) {
     niter++;
-    Vector6real osc_loop;
+    Vector6 osc_loop;
     // std::tie(std::ignore, osc_loop, std::ignore) =
     // transformationmatrix_osc2mean_equinoctial(mean_equi_elem);
-    Vector6real delta = osc_equi_elem - osc_loop;
+    Vector6 delta = osc_equi_elem - osc_loop;
     // R = delta.norm_inf(); // Assuming the library provides an infinity norm
     // function
     mean_equi_elem = mean_equi_elem + delta;
@@ -401,13 +399,13 @@ Vector6real osc2mean_NRiterator(const Vector6real &osc_equi_elem, double tol) {
   return mean_equi_elem;
 }
 
-Vector6real OscToMean(const Vector6real &coe_o, double J2) {
-  Vector6real coe_m;
+Vector6 OscToMean(const Vector6 &coe_o, double J2) {
+  Vector6 coe_m;
   double tol = 1e-8;
 
   if (J2 > 0) {
-    Vector6real eqoe_o = CoeToEqoe(coe_o);
-    Vector6real eqoe_m = osc2mean_NRiterator(eqoe_o, tol);
+    Vector6 eqoe_o = CoeToEqoe(coe_o);
+    Vector6 eqoe_m = osc2mean_NRiterator(eqoe_o, tol);
     coe_m = EqoeToCoe(eqoe_m);
   } else {
     coe_m = coe_o;
@@ -420,7 +418,7 @@ ClassicalOE OscToMean(const ClassicalOE &coe_o, double J2) {
   return ClassicalOE(OscToMean(coe_o.GetVector(), J2), coe_o.GetCoordSystem());
 }
 
-Vector6real CoeToEqoe(const Vector6real &coe) {
+Vector6 CoeToEqoe(const Vector6 &coe) {
   auto [a, e, i, Omega, w, M] = unpack(coe);
 
   real f = MeanToTrueAnomaly(M, e);
@@ -436,12 +434,12 @@ Vector6real CoeToEqoe(const Vector6real &coe) {
     Psi = Psi - 2 * M_PI;
   }
 
-  return Vector6real(a, Psi, tq1, tq2, p1, p2);
+  return Vector6(a, Psi, tq1, tq2, p1, p2);
 }
 
-Vector6real CartToQnsoe(const Vector6real &cart, double mu) {
-  Vector6real coe = CartToCoe(cart, mu);
-  Vector6real qnsoe = CoeToQnsoe(coe);
+Vector6 CartToQnsoe(const Vector6 &cart, double mu) {
+  Vector6 coe = CartToCoe(cart, mu);
+  Vector6 qnsoe = CoeToQnsoe(coe);
   return qnsoe;
 }
 QuasiNonsingularOE CartToQnsoe(const CartesianOrbitState &cart, double mu) {
@@ -449,8 +447,7 @@ QuasiNonsingularOE CartToQnsoe(const CartesianOrbitState &cart, double mu) {
                             cart.GetCoordSystem());
 }
 
-Vector6real DelaunayToCoe(const Vector6real &delaunay, double mu, double n,
-                          double t) {
+Vector6 DelaunayToCoe(const Vector6 &delaunay, double mu, double n, double t) {
   auto [l, g, h, L, G, H] = unpack(delaunay);
 
   real a = L * L / mu;
@@ -460,11 +457,10 @@ Vector6real DelaunayToCoe(const Vector6real &delaunay, double mu, double n,
   real w = g;
   real M = l;
 
-  return Vector6real(a, e, i, O, w, M);
+  return Vector6(a, e, i, O, w, M);
 }
 
-Vector6real CoeToDelaunay(const Vector6real &coe, double mu, double n,
-                          double t) {
+Vector6 CoeToDelaunay(const Vector6 &coe, double mu, double n, double t) {
   auto [a, e, i, O, w, M] = unpack(coe);
 
   real l = M;
@@ -474,7 +470,7 @@ Vector6real CoeToDelaunay(const Vector6real &coe, double mu, double n,
   real G = L * sqrt(1 - e * e);
   real H = G * cos(i);
 
-  return Vector6real(l, g, h, L, G, H);
+  return Vector6(l, g, h, L, G, H);
 }
 
 }  // namespace lupnt

@@ -35,7 +35,7 @@ int main() {
 
   std::cout << "TAI: " << tai << std::endl;
 
-  MatrixXreal xform(6, 6);
+  MatrixX xform(6, 6);
 
   xform = sp::GetFrameConversionMatrix(et, "J2000", "ITRF93");
   std::cout << "XFORM_ITRF: " << std::endl << xform << std::endl;

@@ -26,7 +26,7 @@ void init_coord_converter(py::module &m) {
   py::class_<CoordConverter>(m, "CoordConverter")
       .def_static(
           "convert",
-          [](const VectorXreal &rv_in, const real epoch,
+          [](const VectorX &rv_in, const real epoch,
              const CoordSystem coord_sys_in, const CoordSystem coord_sys_out) {
             return CoordConverter::Convert(rv_in, epoch, coord_sys_in,
                                            coord_sys_out);

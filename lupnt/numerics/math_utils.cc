@@ -17,10 +17,10 @@
 
 namespace lupnt {
 
-std::tuple<real, real, real> unpack(const Vector3real &vec) {
+std::tuple<real, real, real> unpack(const Vector3 &vec) {
   return std::make_tuple(vec(0), vec(1), vec(2));
 }
-std::tuple<real, real, real, real, real, real> unpack(const Vector6real &vec) {
+std::tuple<real, real, real, real, real, real> unpack(const Vector6 &vec) {
   return std::make_tuple(vec(0), vec(1), vec(2), vec(3), vec(4), vec(5));
 }
 

@@ -32,14 +32,14 @@ scale[0] + scale[1].  Outside of that range, the polynomial is not valid.
 */
 void cheby_eval(double x, double *scale, double *coeff, long num, double *f,
                 double *df);
-VectorXreal cheby_eval_ad(real x, double *scale, double *coeff, long num);
+VectorX cheby_eval_ad(real x, double *scale, double *coeff, long num);
 
 /**
  * @brief Find the appropriate SPK record for time t and compute the position
  * and velocity for that time.  Returns 0 on success, 1 if the time is not
  * covered by the segment. */
 int cheby_posvel(double t, double *seg, long len, double pos[3], double vel[3]);
-VectorXreal cheby_posvel_ad(real t, double *seg, long len);
+VectorX cheby_posvel_ad(real t, double *seg, long len);
 
 /**
  * @brief Verify that the provided segment meets the constraints of a uniform

@@ -17,21 +17,21 @@
 
 #include "user_file_path.h"
 
-#define DEFINE_STATIC_VECTORS_MATRICES(size)                  \
-  using Vector##size##d = Eigen::Matrix<double, size, 1>;     \
-  using Matrix##size##d = Eigen::Matrix<double, size, size>;  \
-  using RowVector##size##d = Eigen::Matrix<double, 1, size>;  \
-  using Vector##size##real = Eigen::Matrix<real, size, 1>;    \
-  using Matrix##size##real = Eigen::Matrix<real, size, size>; \
-  using RowVector##size##real = Eigen::Matrix<real, 1, size>;
+#define DEFINE_STATIC_VECTORS_MATRICES(size)                 \
+  using Vector##size##d = Eigen::Matrix<double, size, 1>;    \
+  using Matrix##size##d = Eigen::Matrix<double, size, size>; \
+  using RowVector##size##d = Eigen::Matrix<double, 1, size>; \
+  using Vector##size = Eigen::Matrix<real, size, 1>;         \
+  using Matrix##size = Eigen::Matrix<real, size, size>;      \
+  using RowVector##size = Eigen::Matrix<real, 1, size>;
 
-#define DEFINE_DYNAMIC_VECTORS_MATRICES                                    \
-  using VectorXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;               \
-  using MatrixXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;  \
-  using RowVectorXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;            \
-  using VectorXreal = Eigen::Matrix<real, Eigen::Dynamic, 1>;              \
-  using MatrixXreal = Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>; \
-  using RowVectorXreal = Eigen::Matrix<real, 1, Eigen::Dynamic>;
+#define DEFINE_DYNAMIC_VECTORS_MATRICES                                   \
+  using VectorXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;              \
+  using MatrixXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; \
+  using RowVectorXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;           \
+  using VectorX = Eigen::Matrix<real, Eigen::Dynamic, 1>;                 \
+  using MatrixX = Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>;    \
+  using RowVectorX = Eigen::Matrix<real, 1, Eigen::Dynamic>;
 
 #define DEFINE_VECTORS_MATRICES      \
   DEFINE_STATIC_VECTORS_MATRICES(1)  \
@@ -147,8 +147,7 @@ static constexpr double P_SUN =
     S_AU / C;  // Solar radiation pressure at 1 AU [N/km^2] = 4.56e-6 N/m^2
 
 // File Pathes -----------------------------------------------------------------
-static const std::filesystem::path CSPICE_KER_DIR =
-   GetDataPath() / "ephemeris";
+static const std::filesystem::path CSPICE_KER_DIR = GetDataPath() / "ephemeris";
 
 // Moon mean elements
 

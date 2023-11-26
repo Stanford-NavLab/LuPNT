@@ -36,7 +36,7 @@ namespace lupnt {
  * @param t_end End time
  * @param Phi STM of the dynamics
  */
-typedef std::function<VectorXreal(const VectorXreal, real t_curr, real t_end,
+typedef std::function<VectorX(const VectorX, real t_curr, real t_end,
                                   MatrixXd &)>
     DynamicsFunction;
 
@@ -49,7 +49,7 @@ typedef std::function<VectorXreal(const VectorXreal, real t_curr, real t_end,
  * @return MatrixXd Process noise covariance
  *
  */
-typedef std::function<MatrixXd(const VectorXreal, real t_curr, real t_end)>
+typedef std::function<MatrixXd(const VectorX, real t_curr, real t_end)>
     ProcessNoiseFunction;
 
 /**
@@ -60,7 +60,7 @@ typedef std::function<MatrixXd(const VectorXreal, real t_curr, real t_end)>
  * @param R Measurement noise covariance
  *
  */
-typedef std::function<VectorXreal(const VectorXreal, MatrixXd &, MatrixXd &)>
+typedef std::function<VectorX(const VectorX, MatrixXd &, MatrixXd &)>
     MeasurementFunction;
 
 class IFilter {
@@ -87,10 +87,10 @@ class IFilter {
  */
 class EKF : public IFilter {
  public:
-  VectorXreal x;     // Updated state
+  VectorX x;     // Updated state
   real t_curr;       // Current time
-  VectorXreal xbar;  // Predicted state
-  VectorXreal dx;    // State update
+  VectorX xbar;  // Predicted state
+  VectorX dx;    // State update
 
   MatrixXd P;     // Updated state cov
   MatrixXd Pbar;  // Predicted state cov
@@ -101,25 +101,25 @@ class EKF : public IFilter {
   MatrixXd K;  // Kalman gain
   MatrixXd I;  // Identity matrix
 
-  void Initialize(const VectorXreal &x0, const MatrixXd &P0) {
+  void Initialize(const VectorX &x0, const MatrixXd &P0) {
     x = x0;
     P = P0;
   }
 
-  VectorXreal GetPredictedStateEstimate(MatrixXd &Pbar) {
+  VectorX GetPredictedStateEstimate(MatrixXd &Pbar) {
     Pbar = this->Pbar;
     return this->xbar;
   }
 
-  VectorXreal GetUpdatedStateEstimate(MatrixXd &P) {
+  VectorX GetUpdatedStateEstimate(MatrixXd &P) {
     Pbar = this->P;
     return this->x;
   }
 
   void Predict(real t_end);
-  void Update(VectorXreal z_obs);
+  void Update(VectorX z_obs);
 
-  void Step(real t_end, VectorXreal z_obs) {
+  void Step(real t_end, VectorX z_obs) {
     Predict(t_end);
     Update(z_obs);
   }

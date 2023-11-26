@@ -50,8 +50,8 @@ class JointState {
 
   std::vector<IState*> GetJointState() { return state_vec_; };
 
-  VectorXreal GetJointStateValue() {
-    VectorXreal advec(state_vec_size_);
+  VectorX GetJointStateValue() {
+    VectorX advec(state_vec_size_);
     int cur_idx = 0;
     for (int i = 0; state_vec_.size(); i++) {
       for (int j = 0; j < state_vec_[i]->GetSize(); j++) {

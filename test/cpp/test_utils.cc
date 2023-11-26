@@ -7,7 +7,7 @@
 using namespace Catch::Matchers;
 using namespace lupnt;
 
-static void EXPECT_NEAR_ADVEC(const VectorXreal& a, const VectorXreal& b,
+static void EXPECT_NEAR_ADVEC(const VectorX& a, const VectorX& b,
                               double abs_error) {
   REQUIRE(a.size() == b.size());
   for (int i = 0; i < a.size(); ++i) {
@@ -15,7 +15,7 @@ static void EXPECT_NEAR_ADVEC(const VectorXreal& a, const VectorXreal& b,
   }
 }
 
-static void EXPECT_NEAR_ADMAT(const MatrixXreal& a, const MatrixXreal& b,
+static void EXPECT_NEAR_ADMAT(const MatrixX& a, const MatrixX& b,
                               double abs_error) {
   REQUIRE(a.rows() == b.rows());
   REQUIRE(a.cols() == b.cols());
@@ -47,11 +47,11 @@ static void EXPECT_NEAR_EIGENMAT(const MatrixXd& a, const MatrixXd& b,
 
 // inputs: vector, function(vector), jacobian
 static void NumericalJacobian(
-    std::function<void(VectorXreal&, real)> propagate_function,
-    const VectorXreal& vec, real dt, Matrix6d& jacobian, double eps = 1e-6) {
+    std::function<void(VectorX&, real)> propagate_function,
+    const VectorX& vec, real dt, Matrix6d& jacobian, double eps = 1e-6) {
   int n = vec.size();
-  VectorXreal vec_p;
-  VectorXreal vec_m;
+  VectorX vec_p;
+  VectorX vec_m;
 
   for (int i = 0; i < n; i++) {
     vec_p = vec;

@@ -81,7 +81,7 @@ void cheby_eval(double x, double *scale, double *coeff, long num, double *f,
   *df = (w0 + x * dw0 - dw1) / scale[1];
 }
 
-VectorXreal cheby_eval_ad(real x, double *scale, double *coeff, long num) {
+VectorX cheby_eval_ad(real x, double *scale, double *coeff, long num) {
   real x2, w0 = 0., w1 = 0., dw0 = 0., dw1 = 0., tmp;
   x = (x - scale[0]) / scale[1];
   x2 = x * 2.;
@@ -94,7 +94,7 @@ VectorXreal cheby_eval_ad(real x, double *scale, double *coeff, long num) {
     w0 = coeff[num] + (x2 * w0 - tmp);
   }
 
-  VectorXreal ret_state(2);
+  VectorX ret_state(2);
   ret_state[0] = coeff[0] + (x * w0 - w1);
   ret_state[1] = (w0 + x * dw0 - dw1) / scale[1];
 
@@ -122,9 +122,9 @@ int cheby_posvel(double t, double *seg, long len, double pos[3],
   return 0;
 }
 
-VectorXreal cheby_posvel_ad(real t, double *seg, long len) {
+VectorX cheby_posvel_ad(real t, double *seg, long len) {
   long k, num;
-  VectorXreal posvel(6);
+  VectorX posvel(6);
 
   k = (long)floor((t.val() - seg[len - 4]) /  // seg[len-4] is initial epoch
                   seg[len - 3]);              // seg[len-3] is record span
@@ -135,9 +135,9 @@ VectorXreal cheby_posvel_ad(real t, double *seg, long len) {
   seg += k * num;            // point seg to the record for t
   num = (num - 2) / 3;       // number of coefficients
 
-  VectorXreal xdx = cheby_eval_ad(t, seg, seg + 2, num);
-  VectorXreal ydy = cheby_eval_ad(t, seg, seg + 2 + num, num);
-  VectorXreal zdz = cheby_eval_ad(t, seg, seg + 2 + 2 * num, num);
+  VectorX xdx = cheby_eval_ad(t, seg, seg + 2, num);
+  VectorX ydy = cheby_eval_ad(t, seg, seg + 2 + num, num);
+  VectorX zdz = cheby_eval_ad(t, seg, seg + 2 + 2 * num, num);
 
   posvel << xdx[0], ydy[0], zdz[0], xdx[1], ydy[1], zdz[1];
 

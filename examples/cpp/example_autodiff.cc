@@ -3,8 +3,8 @@
 using namespace lupnt;
 
 int main() {
-  Vector3real a{1, 2, 3};
-  Vector3real b(a);
+  Vector3 a{1, 2, 3};
+  Vector3 b(a);
   b(2) += 1;
   auto c = a.transpose() * b;
   auto d = b.norm();
@@ -20,6 +20,6 @@ int main() {
 
   Vector3d e = a.cast<double>();
   std::cout << e.transpose() << std::endl;
-  Vector3real f = e.cast<real>();
+  Vector3 f = e.cast<real>();
   std::cout << f.transpose() << std::endl;
 }

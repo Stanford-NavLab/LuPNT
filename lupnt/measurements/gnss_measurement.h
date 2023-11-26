@@ -44,7 +44,7 @@ class GnssMeasurement {
   double
       t_tx;  // Signal transmission time measured by the transmitter clock [s]
 
-  VectorXreal P_rx;    // Pseudorange measurement [km] (n_meas * n_bands)
+  VectorX P_rx;    // Pseudorange measurement [km] (n_meas * n_bands)
   VectorXd rho_rx;  // True range from the transmitter to the receiver’s
                            // antenna [km] (n_meas)
 
@@ -57,7 +57,7 @@ class GnssMeasurement {
   VectorXd eps_P;  // Pseudorange measurement noise [km] (n_meas)
 
   // Carrier phase measurement
-  VectorXreal
+  VectorX
       phi_rx;  // Carrier phase measurement [cycles] (n_meas * n_bands)
   VectorXd phi_rx_tx;  // Phase of the receiver's local oscillator at
                               // time t [cycles] (n_meas * n_bands)
@@ -105,7 +105,7 @@ class GnssMeasurement {
 
   // Doppler shift measurement
   VectorXd D_rx;  // Doppler shift measurement [Hz] (n_meas * n_bands)
-  VectorXreal r_rx;  // Position of the receiver at time t_rx [km] (3)
+  VectorX r_rx;  // Position of the receiver at time t_rx [km] (3)
   MatrixXd
       r_tx;  // Position of the transmitter at time t_rx [km] (n_meas x 3)
   MatrixXd v_rx;  // Velocity of the receiver at time t_rx [m/s] (3)
@@ -133,7 +133,7 @@ class GnssMeasurement {
   // Transmission data
   int GetNumMeasurements() const { return n_meas; }
   std::vector<int> GetTxIds() const { return ID_tx; }
-  VectorXreal GetCN0() const { return CN0; }
+  VectorX GetCN0() const { return CN0; }
   VectorXd GetEarthOccultation() const { return vis_earth; }
   VectorXd GetMoonOccultation() const { return vis_moon; }
   VectorXd GetAntennaOccultation() const { return vis_antenna; }
@@ -141,16 +141,16 @@ class GnssMeasurement {
   VectorXd GetAtmosOccultation() const { return vis_atmos; }
 
   // Pseudorange
-  VectorXreal ComputePseudorange(VectorXreal r_rx,
+  VectorX ComputePseudorange(VectorX r_rx,
                                      real dt_rx) const;
-  VectorXreal GetPseudorange();
-  VectorXreal GetPseudorange(double epoch, Vector6real rv_pred,
-                                 Vector2real clk_pred,
+  VectorX GetPseudorange();
+  VectorX GetPseudorange(double epoch, Vector6 rv_pred,
+                                 Vector2 clk_pred,
                                  MatrixXd &H_pr);
-  VectorXreal GetPseudorangeRate(const VectorXreal &r_rx_,
-                                     const VectorXreal &v_rx_);
-  VectorXreal GetCarrierPhase();
-  VectorXreal GetPhaseRange();
-  VectorXreal GetDopplerShift();
+  VectorX GetPseudorangeRate(const VectorX &r_rx_,
+                                     const VectorX &v_rx_);
+  VectorX GetCarrierPhase();
+  VectorX GetPhaseRange();
+  VectorX GetDopplerShift();
 };
 }  // namespace lupnt

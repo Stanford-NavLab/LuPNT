@@ -20,30 +20,29 @@ namespace lupnt {
 // COE <-> Cart
 CartesianOrbitState CoeToCart(const ClassicalOE &coe, double mu);
 ClassicalOE CartToCoe(const CartesianOrbitState &cart, double mu);
-Vector6real CoeToCart(const Vector6real &coe, double mu);
-Vector6real CartToCoe(const Vector6real &cart, double mu);
+Vector6 CoeToCart(const Vector6 &coe, double mu);
+Vector6 CartToCoe(const Vector6 &cart, double mu);
 
 // COE <-> ROE
 ClassicalOE QnsroeToCoe(const ClassicalOE &coe,
                         const QuasiNonsingularROE &qnsroe);
-Vector6real QnsroeToCoe(const Vector6real &coe, const Vector6real &qnsroe);
+Vector6 QnsroeToCoe(const Vector6 &coe, const Vector6 &qnsroe);
 
 // Inertial <-> RTN
 CartesianOrbitState InertialToRtn(const CartesianOrbitState &cart_c,
                                   const CartesianOrbitState &cart_d);
-Vector6real InertialToRtn(const Vector6real &cart_c, const Vector6real &cart_d);
+Vector6 InertialToRtn(const Vector6 &cart_c, const Vector6 &cart_d);
 
 // COE <-> RTN
 CartesianOrbitState CoeToRtn(const ClassicalOE &coe_c, const ClassicalOE &coe_d,
                              double mu);
-Vector6real CoeToRtn(const Vector6real &coe_c, const Vector6real &coe_d,
-                     double mu);
+Vector6 CoeToRtn(const Vector6 &coe_c, const Vector6 &coe_d, double mu);
 
 // COE <-> QNSOE
 QuasiNonsingularOE CoeToQnsoe(const ClassicalOE &coe);
 ClassicalOE QnsoeToCoe(const QuasiNonsingularOE &qnsoe);
-Vector6real CoeToQnsoe(const Vector6real &coe);
-Vector6real QnsoeToCoe(const Vector6real &qnsoeVec);
+Vector6 CoeToQnsoe(const Vector6 &coe);
+Vector6 QnsoeToCoe(const Vector6 &qnsoeVec);
 
 // COE <-> QNSROE
 QuasiNonsingularROE QnsoeToQnsroe(const QuasiNonsingularOE &qnsoe_c,
@@ -54,31 +53,26 @@ QuasiNonsingularROE CoeToQnsroe(const ClassicalOE &coe_c,
 // COE <-> Equinoctial
 EquinoctialOE CoeToEqoe(const ClassicalOE &coe);
 ClassicalOE EqoeToCoe(const EquinoctialOE &eqoe);
-Vector6real CoeToEqoe(const Vector6real &coe);
-Vector6real EqoeToCoe(const Vector6real &eqoe);
+Vector6 CoeToEqoe(const Vector6 &coe);
+Vector6 EqoeToCoe(const Vector6 &eqoe);
 
 // Mean <-> Osculating
 ClassicalOE OscToMean(const ClassicalOE &coe_o, double J2);
 ClassicalOE MeanToOsc(const ClassicalOE &coe_m, double J2);
-Vector6real OscToMean(const Vector6real &coe_o, double J2);
-Vector6real MeanToOsc(const Vector6real &coe_m, double J2);
+Vector6 OscToMean(const Vector6 &coe_o, double J2);
+Vector6 MeanToOsc(const Vector6 &coe_m, double J2);
 
-Vector6real CartToQnsoe(const Vector6real &cart, double mu);
+Vector6 CartToQnsoe(const Vector6 &cart, double mu);
 QuasiNonsingularOE CartToQnsoe(const CartesianOrbitState &cart, double mu);
 
-Vector6real DelaunayToCoe(const Vector6real &deloe, double mu, double n,
-                          double t);
-Vector6real CoeToDelaunay(const Vector6real &coe, double mu, double n,
-                          double t);
+Vector6 DelaunayToCoe(const Vector6 &deloe, double mu, double n, double t);
+Vector6 CoeToDelaunay(const Vector6 &coe, double mu, double n, double t);
 
-std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6real &coe,
-                                                    Vector6real &doe);
-std::array<double, 6> ComputeFirstOrderMediumPeriod(Vector6real &coe,
-                                                    Vector6real &doe);
-std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6real &coe,
-                                                     Vector6real &doe);
-std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6real &coe,
-                                                    Vector6real &doe);
+std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6 &coe, Vector6 &doe);
+std::array<double, 6> ComputeFirstOrderMediumPeriod(Vector6 &coe, Vector6 &doe);
+std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
+                                                     Vector6 &doe);
+std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6 &coe, Vector6 &doe);
 
 // Anomaly conversions
 

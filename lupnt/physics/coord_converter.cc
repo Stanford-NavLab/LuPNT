@@ -29,20 +29,20 @@ using namespace SpiceInterface;
  * @param epoch Epoch of the state vector
  * @param coord_sys_in Coordinate system of the original state vector
  * @param coord_sys_out Coordinate system of the converted state vector
- * @return Vector6real  State vector in the converted coordinate system
+ * @return Vector6  State vector in the converted coordinate system
  */
-Vector6real CoordConverter::Convert(Vector6real rv_in, real epoch,
+Vector6 CoordConverter::Convert(Vector6 rv_in, real epoch,
                                     CoordSystem coord_sys_in,
                                     CoordSystem coord_sys_out) {
   if (coord_sys_in == coord_sys_out) return rv_in;
 
-  Vector6real rv_out;
+  Vector6 rv_out;
 
   if (coord_sys_in == ITRF)  /// Earth fixed frame
   {
     if (coord_sys_out == GCRF) {  // Earth fixed -> Inertial Frame
       // Convert to GCRF
-      Matrix6real Rrv_GCRF_ITRF;
+      Matrix6 Rrv_GCRF_ITRF;
       Rrv_GCRF_ITRF = ComputeITRFtoGCRF(epoch);
       rv_out = Rrv_GCRF_ITRF * rv_in;
       return rv_out;
@@ -57,19 +57,19 @@ Vector6real CoordConverter::Convert(Vector6real rv_in, real epoch,
   if (coord_sys_in == ME) {
     if (coord_sys_out == PA) {
       // Convert to PA
-      Vector3real r_ME = rv_in.head(3);
-      Vector3real v_ME = rv_in.tail(3);
+      Vector3 r_ME = rv_in.head(3);
+      Vector3 v_ME = rv_in.tail(3);
 
       // Rotation Matrix ME (in DE421) -> PA (in DE440)
       // Reference:
       // https://iopscience.iop.org/article/10.3847/1538-3881/abd414/pdf
-      Matrix3real B_M = R1(-0.2785 * DEG_PER_ARCSEC) *
+      Matrix3 B_M = R1(-0.2785 * DEG_PER_ARCSEC) *
                         R2(-78.6944 * DEG_PER_ARCSEC) *
                         R3(-67.8526 * DEG_PER_ARCSEC);
-      Matrix3real B_M_inv = B_M.transpose();
+      Matrix3 B_M_inv = B_M.transpose();
 
-      Vector3real r_PA = B_M * r_ME;
-      Vector3real v_PA = B_M * v_ME;
+      Vector3 r_PA = B_M * r_ME;
+      Vector3 v_PA = B_M * v_ME;
       rv_out << r_PA, v_PA;
       return rv_out;
     } else  // first convert to PA and then to the desired frame
@@ -85,18 +85,18 @@ Vector6real CoordConverter::Convert(Vector6real rv_in, real epoch,
       // Rotation Matrix ME (in DE421) -> PA (in DE440)
       // Reference:
       // https://iopscience.iop.org/article/10.3847/1538-3881/abd414/pdf
-      Vector3real r_PA = rv_in.head(3);
-      Vector3real v_PA = rv_in.tail(3);
-      Matrix3real B_M = R1(-0.2785 * DEG_PER_ARCSEC) *
+      Vector3 r_PA = rv_in.head(3);
+      Vector3 v_PA = rv_in.tail(3);
+      Matrix3 B_M = R1(-0.2785 * DEG_PER_ARCSEC) *
                         R2(-78.6944 * DEG_PER_ARCSEC) *
                         R3(-67.8526 * DEG_PER_ARCSEC);
-      Vector3real r_ME = B_M * r_PA;
-      Vector3real v_ME = B_M * v_PA;
+      Vector3 r_ME = B_M * r_PA;
+      Vector3 v_ME = B_M * v_PA;
       rv_out << r_ME, v_ME;
       return rv_out;
     } else if (coord_sys_out == MI)  // Convert to Moon Inertial
     {
-      Matrix6real Mrot = GetFrameConversionMatrix(epoch, "MOON_PA", "J2000");
+      Matrix6 Mrot = GetFrameConversionMatrix(epoch, "MOON_PA", "J2000");
       rv_out = Mrot * rv_in;
       return rv_out;
     } else {  // first convert to MI and then to the desired frame
@@ -108,20 +108,20 @@ Vector6real CoordConverter::Convert(Vector6real rv_in, real epoch,
 
   if (coord_sys_in == GCRF)  // Earth centered Inertial Frame
   {
-    Vector3real r_GCRF_E_p = rv_in.head(3);
-    Vector3real v_GCRF_E_p = rv_in.tail(3);
+    Vector3 r_GCRF_E_p = rv_in.head(3);
+    Vector3 v_GCRF_E_p = rv_in.tail(3);
 
     switch (coord_sys_out) {
       case ICRF: {
         // Get position and velocity of the Solar System Barycenter (SSB) with
         // respect to Earth (E) in ICRF frame
-        VectorXreal rv_ICRF_SSB_E = GetBodyPosVel(epoch, 399, 0);
+        VectorX rv_ICRF_SSB_E = GetBodyPosVel(epoch, 399, 0);
         rv_out = rv_in + rv_ICRF_SSB_E;
         return rv_out;
       }
       case ITRF: {
         // Convert to GCRF
-        Matrix6real Rrv_GCRF_ITRF;
+        Matrix6 Rrv_GCRF_ITRF;
         Rrv_GCRF_ITRF = ComputeITRFtoGCRF(epoch);
         rv_out = Rrv_GCRF_ITRF.transpose() * rv_in;
 
@@ -130,7 +130,7 @@ Vector6real CoordConverter::Convert(Vector6real rv_in, real epoch,
       case MI: {
         // Get position and velocity of the SMoon with respect to Earth (E) in
         // ICRF frame
-        Vector6real rv_ICRF_Moon_E = GetBodyPosVel(epoch, 399, 301);
+        Vector6 rv_ICRF_Moon_E = GetBodyPosVel(epoch, 399, 301);
         rv_out = rv_in + rv_ICRF_Moon_E;  // (sc - E) + (E - Moon) = (sc - Moon)
         return rv_out;
       }
@@ -143,12 +143,12 @@ Vector6real CoordConverter::Convert(Vector6real rv_in, real epoch,
     if (coord_sys_out == GCRF) {
       // Get position and velocity of the SMoon with respect to Earth (E) in
       // ICRF frame
-      Vector6real rv_ICRF_E_Moon = GetBodyPosVel(epoch, 301, 399);
+      Vector6 rv_ICRF_E_Moon = GetBodyPosVel(epoch, 301, 399);
       rv_out = rv_in + rv_ICRF_E_Moon;  // (sc - M) + (Moon - E) = (sc - Moon)
       return rv_out;
     } else if (coord_sys_out == PA) {  //  Convert to PA
       // convert TAI to TDB past J2000
-      Matrix6real Mrot = GetFrameConversionMatrix(epoch, "J2000", "MOON_PA");
+      Matrix6 Mrot = GetFrameConversionMatrix(epoch, "J2000", "MOON_PA");
       rv_out = Mrot * rv_in;
       return rv_out;
     } else if (coord_sys_out == ME) {  // first convert to PA and then to ME
@@ -171,17 +171,17 @@ Vector6real CoordConverter::Convert(Vector6real rv_in, real epoch,
  * systems
  *
  * @param epoch  tai in JD
- * @return Matrix3real 3x3 rotation matrix
+ * @return Matrix3 3x3 rotation matrix
  * @ref NASA/TP–20220014814 page 31-36, GMAT Math Spec page 19, GMAT
  * ITRFAxes::CalculateRotationMatrix
  */
-Matrix6real CoordConverter::ComputeITRFtoGCRF(real tai) {
+Matrix6 CoordConverter::ComputeITRFtoGCRF(real tai) {
   // Get the rotation matrix using SPICE
   auto tdb_s = ConvertTime(tai, "TAI", "TDB");
   double et =
       tdb_s
           .val();  // this cuts of the relationship between t and Mrot temporaly
-  Matrix6real Mrot = GetFrameConversionMatrix(et, "ITRF93", "J2000");
+  Matrix6 Mrot = GetFrameConversionMatrix(et, "ITRF93", "J2000");
 
   return Mrot;
 }
@@ -191,13 +191,13 @@ Matrix6real CoordConverter::ComputeITRFtoGCRF(real tai) {
  * the first axis in a system
  *
  * @param phi angle of rotation
- * @return Matrix3real 3x3 rotation matrix
+ * @return Matrix3 3x3 rotation matrix
  * @ref NASA/TP–20220014814 page 30
  */
-Matrix3real CoordConverter::R1(real phi) {
+Matrix3 CoordConverter::R1(real phi) {
   real c = cos(phi);
   real s = sin(phi);
-  Matrix3real R1{
+  Matrix3 R1{
       {1.0, 0.0, 0.0},
       {0.0, c, s},
       {0.0, -s, c},
@@ -210,13 +210,13 @@ Matrix3real CoordConverter::R1(real phi) {
  * the second axis in a system
  *
  * @param phi angle of rotation
- * @return Matrix3real 3x3 rotation matrix
+ * @return Matrix3 3x3 rotation matrix
  * @ref NASA/TP–20220014814 page 30
  */
-Matrix3real CoordConverter::R2(real phi) {
+Matrix3 CoordConverter::R2(real phi) {
   real c = cos(phi);
   real s = sin(phi);
-  Matrix3real R2{
+  Matrix3 R2{
       {c, 0.0, -s},
       {0.0, 1.0, 0.0},
       {s, 0.0, c},
@@ -229,13 +229,13 @@ Matrix3real CoordConverter::R2(real phi) {
  * the third axis in a system
  *
  * @param phi angle of rotation
- * @return Matrix3real 3x3 rotation matrix
+ * @return Matrix3 3x3 rotation matrix
  * @ref NASA/TP–20220014814 page 30
  */
-Matrix3real CoordConverter::R3(real phi) {
+Matrix3 CoordConverter::R3(real phi) {
   real c = cos(phi);
   real s = sin(phi);
-  Matrix3real R3{
+  Matrix3 R3{
       {c, s, 0.0},
       {-s, c, 0.0},
       {0.0, 0.0, 1.0},
@@ -247,11 +247,11 @@ Matrix3real CoordConverter::R3(real phi) {
  * @brief Compute the rotation matrix specified by the input skew vector.
  *
  * @param v
- * @return Matrix3real
+ * @return Matrix3
  */
-Matrix3real CoordConverter::Skew(Vector3real x)
+Matrix3 CoordConverter::Skew(Vector3 x)
 {
-  Matrix3real skew{
+  Matrix3 skew{
       {0.0, -x(2), x(1)},
       {x(2), 0.0, -x(0)},
       {-x(1), x(0), 0.0},

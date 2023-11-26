@@ -17,8 +17,8 @@
 
 namespace lupnt {
 
-std::tuple<real, real, real> unpack(const Vector3real &vec);
-std::tuple<real, real, real, real, real, real> unpack(const Vector6real &vec);
+std::tuple<real, real, real> unpack(const Vector3 &vec);
+std::tuple<real, real, real, real, real, real> unpack(const Vector6 &vec);
 
 /**
  * @brief Wrap the angle between -pi and pi

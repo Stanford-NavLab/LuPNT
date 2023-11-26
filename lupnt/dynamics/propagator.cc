@@ -30,10 +30,10 @@ NumericalPropagator::NumericalPropagator(std::string integratorType) {
     throw std::invalid_argument("Invalid Integrator Type");
 };
 
-VectorXreal NumericalPropagator::Propagate(ODE odefunc, real t0,
-                                               real tf, VectorXreal x0,
+VectorX NumericalPropagator::Propagate(ODE odefunc, real t0,
+                                               real tf, VectorX x0,
                                                real dt) {
-  VectorXreal x = x0;
+  VectorX x = x0;
   real t = t0;
   real step;
   while (t <= tf) {
@@ -44,12 +44,12 @@ VectorXreal NumericalPropagator::Propagate(ODE odefunc, real t0,
   return x;
 };
 
-VectorXreal NumericalPropagator::PropagateWithStm(ODE odefunc, real t0,
+VectorX NumericalPropagator::PropagateWithStm(ODE odefunc, real t0,
                                                       real tf,
-                                                      VectorXreal x0,
+                                                      VectorX x0,
                                                       real dt,
                                                       MatrixXd &J) {
-  auto func = [=, this](VectorXreal &x) {
+  auto func = [=, this](VectorX &x) {
     return Propagate(odefunc, t0, tf, x, dt);
   };
 
@@ -57,7 +57,7 @@ VectorXreal NumericalPropagator::PropagateWithStm(ODE odefunc, real t0,
   for (int i = 0; i < x0.size(); i++) {
     x0(i) = double(x0(i));
   }
-  VectorXreal xf;
+  VectorX xf;
   J = jacobian(func, wrt(x0), at(x0), xf);
   return xf;
 };

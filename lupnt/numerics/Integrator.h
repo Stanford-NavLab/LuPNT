@@ -17,24 +17,24 @@
 
 namespace lupnt {
 
-using ODE = std::function<VectorXreal(const real, const VectorXreal &)>;
+using ODE = std::function<VectorX(const real, const VectorX &)>;
 
 class IIntegrator {
  public:
-  virtual VectorXreal Step(const ODE &f, const real t, const VectorXreal &x,
+  virtual VectorX Step(const ODE &f, const real t, const VectorX &x,
                            const real dt) = 0;
   virtual ~IIntegrator(){};
 };
 
 class RK4 : public IIntegrator {
  public:
-  VectorXreal Step(const ODE &f, const real t, const VectorXreal &x,
+  VectorX Step(const ODE &f, const real t, const VectorX &x,
                    const real dt);
 };
 
 class RK8 : public IIntegrator {
  public:
-  VectorXreal Step(const ODE &f, const real t, const VectorXreal &x,
+  VectorX Step(const ODE &f, const real t, const VectorX &x,
                    const real dt);
 };
 

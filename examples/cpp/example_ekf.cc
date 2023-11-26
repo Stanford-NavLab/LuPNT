@@ -113,8 +113,8 @@ int main() {
   double sigma_range = 5e-3;       // Range measurement noise [km]
   double sigma_range_rate = 1e-6;  // Range rate measurement noise [km/s]
 
-  Vector6real rv = moon_sat->GetOrbitState()->GetVector();
-  Vector2real clk = Vector2real::Zero();
+  Vector6 rv = moon_sat->GetOrbitState()->GetVector();
+  Vector2 clk = Vector2::Zero();
 
   // OrbitState transition matrices
   Matrix6d Phi_rv;
@@ -137,10 +137,10 @@ int main() {
 
   // Initial estimates
   auto zero6 = Vector6d::Zero();
-  Vector6real rv_est = rv + SampleMVN(zero6, P_rv, 1);
+  Vector6 rv_est = rv + SampleMVN(zero6, P_rv, 1);
 
   auto zero2 = Vector2d::Zero();
-  Vector2real clk_est = clk + SampleMVN(zero2, P_clk, 1);
+  Vector2 clk_est = clk + SampleMVN(zero2, P_clk, 1);
 
   auto rv_pred_only = rv_est;
   auto clk_pred_only = clk_est;
@@ -203,7 +203,7 @@ int main() {
     clk_pred_only = Phi_clk * clk_pred_only;
 
     // OrbitState and covariance
-    VectorXreal x(n_state);
+    VectorX x(n_state);
     x << rv_pred, clk_pred;
 
     MatrixXd Phi(n_state, n_state);
@@ -229,7 +229,7 @@ int main() {
 
     // Predict measurements
     MatrixXd H_pr(n_meas, n_state);
-    VectorXreal z_pr_pred =
+    VectorX z_pr_pred =
         meas.GetPseudorange(epoch, rv_pred, clk_pred, H_pr);
 
     MatrixXd R_pr = MatrixXd::Zero(n_meas, n_meas);
@@ -245,7 +245,7 @@ int main() {
       R = R_pr;
 
       MatrixXd I = MatrixXd::Identity(n_state, n_state);
-      VectorXreal y = z_pr - z_pr_pred;
+      VectorX y = z_pr - z_pr_pred;
       MatrixXd S = H * P * H.transpose() + R;
       MatrixXd K = P * H.transpose() * S.inverse();
       // A = C*inv(B)
@@ -253,7 +253,7 @@ int main() {
       // decomposition MatrixXd A =
       // decompC.transpose().solve(B.transpose()).transpose();
 
-      VectorXreal dx = K * y;
+      VectorX dx = K * y;
       x = x + dx;
       P = (I - K * H) * P * (I - K * H).transpose() +
           K * R * K.transpose();  // Joseph form
@@ -261,7 +261,7 @@ int main() {
       // Unpack state and covariance
       rv_est = x.segment(0, 6);
       clk_est = x.segment(6, 2);
-      // Vector6real error = rv - rv_est;
+      // Vector6 error = rv - rv_est;
       // std::cout << "error: " << error.transpose() << std::endl;
 
     } else {
@@ -322,11 +322,11 @@ int main() {
     // Bodies
     data_history->AddData(
         "earth_mi", t,
-        CoordConverter::Convert(VectorXreal::Zero(6), epoch,
+        CoordConverter::Convert(VectorX::Zero(6), epoch,
                                 CoordSystem::GCRF, CoordSystem::MI));
     data_history->AddData(
         "moon_gcrf", t,
-        CoordConverter::Convert(VectorXreal::Zero(6), epoch,
+        CoordConverter::Convert(VectorX::Zero(6), epoch,
                                 CoordSystem::MI, CoordSystem::GCRF));
 
     // Print progress

@@ -78,23 +78,23 @@ static Matrix2d GetClockProcessNoise(ClockModel clk_model, double dt) {
  */
 class ClockState : public IState {
  private:
-  VectorXreal x_;
+  VectorX x_;
   int state_size_;  // it can be 2 or 3
 
  public:
   ClockState(int state_size) {
     state_size_ = state_size;
-    x_ = VectorXreal::Zero(state_size_);
+    x_ = VectorX::Zero(state_size_);
   }
-  ClockState(VectorXreal clock_vec) {
+  ClockState(VectorX clock_vec) {
     x_ = clock_vec;
     state_size_ = clock_vec.size();
   }
-  VectorXreal GetVector() const { return x_; }
+  VectorX GetVector() const { return x_; }
   real GetValue(int i) const { return x_(i); }
   int GetSize() { return state_size_; };
   inline void SetValue(const real val, const int idx) { x_(idx) = val; }
-  void SetVector(const VectorXreal& x) { x_ = x; }
+  void SetVector(const VectorX& x) { x_ = x; }
 };
 
 class ClockDynamics {
@@ -113,7 +113,7 @@ class ClockDynamics {
     dt_ = 0;
   }
 
-  void Propagate(Vector2real& clk, real dt) {
+  void Propagate(Vector2& clk, real dt) {
     if (dt.val() != dt_) {
       dt_ = dt.val();
       auto Q_clk = GetClockProcessNoise(clk_model_, dt.val());
