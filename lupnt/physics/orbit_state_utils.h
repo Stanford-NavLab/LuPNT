@@ -11,62 +11,95 @@
 
 #pragma once
 
+#include <functional>
+#include <map>
+#include <memory>
+#include <string>
+#include <tuple>
+
 #include "lupnt/core/constants.h"
 #include "lupnt/physics/coord_converter.h"
 #include "lupnt/physics/orbit_state.h"
 
 namespace lupnt {
 
-// COE <-> Cart
-CartesianOrbitState CoeToCart(const ClassicalOE &coe, double mu);
-ClassicalOE CartToCoe(const CartesianOrbitState &cart, double mu);
-Vector6 CoeToCart(const Vector6 &coe, double mu);
-Vector6 CartToCoe(const Vector6 &cart, double mu);
+extern std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
+         std::function<Vector6(const Vector6 &, double)>>
+    absolute_conversions;
 
-// COE <-> ROE
-ClassicalOE QnsroeToCoe(const ClassicalOE &coe,
-                        const QuasiNonsingularROE &qnsroe);
-Vector6 QnsroeToCoe(const Vector6 &coe, const Vector6 &qnsroe);
+extern std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
+         std::function<Vector6(const Vector6 &, const Vector6 &)>>
+    relative_conversions;
 
-// Inertial <-> RTN
+Vector6 ConvertOrbitState(const Vector6 &state_in, OrbitStateRepres repres_in,
+                          OrbitStateRepres repres_out, double mu = 0.0);
+
+Vector6 ConvertOrbitState(const Vector6 &state_in_c, const Vector6 &state_in_d,
+                          OrbitStateRepres repres_in_c,
+                          OrbitStateRepres repres_in_d,
+                          OrbitStateRepres repres_out, double mu = 0.0);
+
+std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
+    const std::shared_ptr<OrbitState> &state_in, OrbitStateRepres repres_out,
+    double mu = 0.0);
+
+// From CartesianOrbitState
+// - To ClassicalOE
+ClassicalOE CartesianToClassical(const CartesianOrbitState &cart, double mu);
+Vector6 CartesianToClassical(const Vector6 &cart, double mu);
+
+// - To CartesianOrbitState (relative)
 CartesianOrbitState InertialToRtn(const CartesianOrbitState &cart_c,
                                   const CartesianOrbitState &cart_d);
 Vector6 InertialToRtn(const Vector6 &cart_c, const Vector6 &cart_d);
 
-// COE <-> RTN
-CartesianOrbitState CoeToRtn(const ClassicalOE &coe_c, const ClassicalOE &coe_d,
-                             double mu);
-Vector6 CoeToRtn(const Vector6 &coe_c, const Vector6 &coe_d, double mu);
+// From ClassicalOE
+// - To CartesianOrbitState
+CartesianOrbitState ClassicalToCartesian(const ClassicalOE &coe, double mu);
+Vector6 ClassicalToCartesian(const Vector6 &coe, double mu);
 
-// COE <-> QNSOE
-QuasiNonsingularOE CoeToQnsoe(const ClassicalOE &coe);
-ClassicalOE QnsoeToCoe(const QuasiNonsingularOE &qnsoe);
-Vector6 CoeToQnsoe(const Vector6 &coe);
-Vector6 QnsoeToCoe(const Vector6 &qnsoeVec);
+// - To QuasiNonsingularOE
+QuasiNonsingularOE ClassicalToQuasiNonsingular(const ClassicalOE &coe,
+                                               double mu = 0.0);
+Vector6 ClassicalToQuasiNonsingular(const Vector6 &coe, double mu = 0.0);
 
-// COE <-> QNSROE
-QuasiNonsingularROE QnsoeToQnsroe(const QuasiNonsingularOE &qnsoe_c,
-                                  const QuasiNonsingularOE &qnsoe_d);
-QuasiNonsingularROE CoeToQnsroe(const ClassicalOE &coe_c,
-                                const ClassicalOE &coe_d);
+// - To EquinoctialOE
+EquinoctialOE ClassicalToEquinoctial(const ClassicalOE &coe, double mu = 0.0);
+Vector6 ClassicalToEquinoctial(const Vector6 &coe, double mu = 0.0);
 
-// COE <-> Equinoctial
-EquinoctialOE CoeToEqoe(const ClassicalOE &coe);
-ClassicalOE EqoeToCoe(const EquinoctialOE &eqoe);
-Vector6 CoeToEqoe(const Vector6 &coe);
-Vector6 EqoeToCoe(const Vector6 &eqoe);
+// - To DelaunayOE
+DelaunayOE ClassicalToDelaunay(const ClassicalOE &coe, double mu);
+Vector6 ClassicalToDelaunay(const Vector6 &coe, double mu);
 
-// Mean <-> Osculating
-ClassicalOE OscToMean(const ClassicalOE &coe_o, double J2);
-ClassicalOE MeanToOsc(const ClassicalOE &coe_m, double J2);
-Vector6 OscToMean(const Vector6 &coe_o, double J2);
-Vector6 MeanToOsc(const Vector6 &coe_m, double J2);
+// From QuasiNonsingularOE
+// - To ClassicalOE
+ClassicalOE QuasiNonsingularToClassical(const QuasiNonsingularOE &qnsoe,
+                                        double mu = 0.0);
+Vector6 QuasiNonsingularToClassical(const Vector6 &qnsoeVec, double mu = 0.0);
 
-Vector6 CartToQnsoe(const Vector6 &cart, double mu);
-QuasiNonsingularOE CartToQnsoe(const CartesianOrbitState &cart, double mu);
+// From EquinoctialOE
+// - To ClassicalOE
+ClassicalOE EquinoctialToClassical(const EquinoctialOE &eqoe, double mu = 0.0);
+Vector6 EquinoctialToClassical(const Vector6 &eqoe, double mu = 0.0);
 
-Vector6 DelaunayToCoe(const Vector6 &deloe, double mu, double n, double t);
-Vector6 CoeToDelaunay(const Vector6 &coe, double mu, double n, double t);
+// From DelaunayOE
+// - To ClassicalOE
+ClassicalOE DelaunayToClassical(const DelaunayOE &deloe, double mu);
+Vector6 DelaunayToClassical(const Vector6 &deloe, double mu);
+
+// From ClassicalOE and QuasiNonsingularROE (relative)
+// - To ClassicalOE
+ClassicalOE RelativeQuasiNonsingularToClassical(
+    const ClassicalOE &coe,
+    const QuasiNonsingularROE &RelativeQuasiNonsingular);
+Vector6 RelativeQuasiNonsingularToClassical(
+    const Vector6 &coe, const Vector6 &RelativeQuasiNonsingular);
+
+// Mean and Osculating
+ClassicalOE OsculatingToMean(const ClassicalOE &coe_o, double J2);
+ClassicalOE MeanToOsculating(const ClassicalOE &coe_m, double J2);
+Vector6 OsculatingToMean(const Vector6 &coe_o, double J2);
+Vector6 MeanToOsculating(const Vector6 &coe_m, double J2);
 
 std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6 &coe, Vector6 &doe);
 std::array<double, 6> ComputeFirstOrderMediumPeriod(Vector6 &coe, Vector6 &doe);
@@ -74,8 +107,7 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
                                                      Vector6 &doe);
 std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6 &coe, Vector6 &doe);
 
-// Anomaly conversions
-
+// Anomaly
 real EccentricToTrueAnomaly(real E, real e);
 real EccentricToMeanAnomaly(real E, real e);
 real MeanToEccentricAnomaly(real M, real e);

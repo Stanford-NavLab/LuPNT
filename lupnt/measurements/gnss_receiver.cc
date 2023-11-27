@@ -39,8 +39,9 @@ void GnssReceiver::InitializeReceiverParams() {
  * @param r_rx_gcrf
  * @return Vector3d
  */
-std::vector<Vector3d> GnssReceiver::GetReceiverOrientation(
-    double t, Vector3d& r_rx_gcrf, std::string mode) {
+std::vector<Vector3d> GnssReceiver::GetReceiverOrientation(double t,
+                                                           Vector3d& r_rx_gcrf,
+                                                           std::string mode) {
   auto r_sat2sun =
       SpiceInterface::GetBodyPos("SUN", t, "J2000", "EARTH", "NONE") -
       r_rx_gcrf;  // (SUN-Earth) - (Sat-Earth) = (Sun-Sat)

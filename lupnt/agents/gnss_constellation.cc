@@ -42,7 +42,7 @@ void GnssConstellation::LoadTleFile(std::string filename) {
     ClassicalOE coe({a, e, i, Omega, w, M});
     coe.SetCoordSystem(CoordSystem::GCRF);
     auto cartOrbitState =
-        std::make_shared<CartesianOrbitState>(CoeToCart(coe, MU_EARTH));
+        std::make_shared<CartesianOrbitState>(ClassicalToCartesian(coe, MU_EARTH));
 
     // Create the spacecraft
     auto sat = std::make_shared<Spacecraft>();

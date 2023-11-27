@@ -28,19 +28,14 @@ enum class OrbitStateRepres {
   CARTESIAN = 0,
   CLASSICAL_OE,
   QUASI_NONSINGULAR_OE,
+  SINGULAR_ROE,
   NONSINGULAR_OE,
   EQUINOCTIAL_OE,
-  SINGULAR_ROE,
-  QUASINONSINGULAR_ROE,
   DELAUNAY_OE,
-  OTHER,
+  ABSOLUTE_RELATIVE_SEPARATOR,
+  RTN,
+  QUASINONSINGULAR_ROE,
 };
-
-class OrbitState;
-
-std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
-    const std::shared_ptr<OrbitState> &state_in, OrbitStateRepres repres_out,
-    double mu = 0.0);
 
 /**
  * @class OrbitState

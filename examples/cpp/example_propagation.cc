@@ -65,7 +65,7 @@ int main() {
   coeMoon.SetCoordSystem(CoordSystem::MI);
 
   auto cartOrbitStateMoon =
-      std::make_shared<CartesianOrbitState>(CoeToCart(coeMoon, MU_MOON));
+      std::make_shared<CartesianOrbitState>(ClassicalToCartesian(coeMoon, MU_MOON));
   std::shared_ptr<Spacecraft> moonSat1 = std::make_shared<Spacecraft>();
   std::shared_ptr<GnssReceiver> receiver =
       std::make_shared<GnssReceiver>("moongpsr");

@@ -25,7 +25,7 @@
   using Matrix##size = Eigen::Matrix<real, size, size>;      \
   using RowVector##size = Eigen::Matrix<real, 1, size>;
 
-#define DEFINE_DYNAMIC_VECTORS_MATRICES                                   \
+#define DEFINE_DYNAMIC_VECTORS_MATRICES()                                   \
   using VectorXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;              \
   using MatrixXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; \
   using RowVectorXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;           \
@@ -33,7 +33,7 @@
   using MatrixX = Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>;    \
   using RowVectorX = Eigen::Matrix<real, 1, Eigen::Dynamic>;
 
-#define DEFINE_VECTORS_MATRICES      \
+#define DEFINE_VECTORS_MATRICES()    \
   DEFINE_STATIC_VECTORS_MATRICES(1)  \
   DEFINE_STATIC_VECTORS_MATRICES(2)  \
   DEFINE_STATIC_VECTORS_MATRICES(3)  \
@@ -44,13 +44,13 @@
   DEFINE_STATIC_VECTORS_MATRICES(8)  \
   DEFINE_STATIC_VECTORS_MATRICES(9)  \
   DEFINE_STATIC_VECTORS_MATRICES(10) \
-  DEFINE_DYNAMIC_VECTORS_MATRICES
+  DEFINE_DYNAMIC_VECTORS_MATRICES()
 
 namespace lupnt {
 
 using real = autodiff::real;
 
-DEFINE_VECTORS_MATRICES
+DEFINE_VECTORS_MATRICES()
 
 // Math constants --------------------------------------------------------------
 static constexpr double PI_DEG = 180.0;

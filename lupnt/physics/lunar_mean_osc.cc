@@ -18,10 +18,10 @@
 
 namespace lupnt {
 
-Vector6 MeanToOsculating(Vector6 meanCoeVec) {
+Vector6 MeanToOsculatingulating(Vector6 meanCoeVec) {
   double t = 0.0;  // Time [s]
   double nM = 2.66e-6;
-  Vector6 meanDoeVec = CoeToDelaunay(meanCoeVec, MU_MOON, nM, t);
+  Vector6 meanDoeVec = ClassicalToDelaunay(meanCoeVec, MU_MOON);
 
   double lpp = (double)meanDoeVec(0);
   double gpp = (double)meanDoeVec(1);
@@ -53,14 +53,14 @@ Vector6 MeanToOsculating(Vector6 meanCoeVec) {
   Vector6 oscDoeVec;
   oscDoeVec << l, g, h, L, G, H;
 
-  Vector6 oscCoeVec = DelaunayToCoe(oscDoeVec, MU_MOON, nM, t);
+  Vector6 oscCoeVec = DelaunayToClassical(oscDoeVec, MU_MOON);
   return oscCoeVec;
 }
 
 Vector6 OsculatingToMean(Vector6 oscCoeVec) {
   double t = 0.0;
   double nM = 2.66e-6;
-  Vector6 oscDoeVec = CoeToDelaunay(oscCoeVec, MU_MOON, nM, t);
+  Vector6 oscDoeVec = ClassicalToDelaunay(oscCoeVec, MU_MOON);
 
   double l = (double)oscDoeVec(0);
   double g = (double)oscDoeVec(1);
@@ -94,7 +94,7 @@ Vector6 OsculatingToMean(Vector6 oscCoeVec) {
   Vector6 meanDoeVec;
   meanDoeVec << lpp, gpp, hpp, Lpp, Gpp, Hpp;
 
-  Vector6 meanCoeVec = DelaunayToCoe(meanDoeVec, MU_MOON, nM, t);
+  Vector6 meanCoeVec = DelaunayToClassical(meanDoeVec, MU_MOON);
   return meanCoeVec;
 }
 

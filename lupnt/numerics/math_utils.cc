@@ -24,21 +24,29 @@ std::tuple<real, real, real, real, real, real> unpack(const Vector6 &vec) {
   return std::make_tuple(vec(0), vec(1), vec(2), vec(3), vec(4), vec(5));
 }
 
-/**
- * @brief Wrap the angle between -pi and pi
- *
- * @param angle
- * @return real
- */
-real wrapToPi(real angle) { return atan2(sin(angle), cos(angle)); }
+real angleBetweenVectors(const VectorX &a, const VectorX &b) {
+  assert(a.size() == b.size());
+  return 2.0 * atan2((a.normalized() - b.normalized()).norm(),
+                     (a.normalized() + b.normalized()).norm());
+}
 
-/**
- * @brief Wrap the angle between 0 and 2pi
- *
- * @param angle
- * @return real
- */
+real wrapToPi(real angle) { return atan2(sin(angle), cos(angle)); }
+VectorX wrapToPi(VectorX angle) {
+  VectorX result = angle;
+  for (int i = 0; i < angle.size(); i++) {
+    result(i) = wrapToPi(angle(i));
+  }
+  return result;
+}
+
 real wrapTo2Pi(real angle) { return atan2(sin(angle), cos(angle)) + M_PI; }
+VectorX wrapTo2Pi(VectorX angle) {
+  VectorX result = angle;
+  for (int i = 0; i < angle.size(); i++) {
+    result(i) = wrapTo2Pi(angle(i));
+  }
+  return result;
+}
 
 /**
  * @brief Convert degree to radian
@@ -46,7 +54,7 @@ real wrapTo2Pi(real angle) { return atan2(sin(angle), cos(angle)) + M_PI; }
  * @param deg
  * @return real
  */
-real degToRad(real deg) { return (M_PI / 180) * deg; }
+real deg2rad(real deg) { return (M_PI / 180) * deg; }
 
 /**
  * @brief Convert radian to degree
@@ -54,11 +62,31 @@ real degToRad(real deg) { return (M_PI / 180) * deg; }
  * @param rad
  * @return real
  */
-real radToDeg(real rad) { return (180 / M_PI) * rad; }
+real rad2deg(real rad) { return (180 / M_PI) * rad; }
 
-double degToRad(double deg) { return (M_PI / 180) * deg; }
+double deg2rad(double deg) { return (M_PI / 180) * deg; }
 
-double radToDeg(double rad) { return (180 / M_PI) * rad; }
+double rad2deg(double rad) { return (180 / M_PI) * rad; }
+
+real safe_acos(real x) {
+  if (x >= 1.0) {
+    return acos(x - 1e-15);
+  } else if (x <= -1.0) {
+    return acos(x + 1e-15);
+  } else {
+    return acos(x);
+  }
+}
+
+real safe_asin(real x) {
+  if (x >= 1.0) {
+    return asin(x - 1e-16);
+  } else if (x <= -1.0) {
+    return asin(x + 1e-16);
+  } else {
+    return asin(x);
+  }
+}
 
 /**
  * @brief Linear interpolation of a 2D data set

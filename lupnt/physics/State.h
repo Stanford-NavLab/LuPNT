@@ -13,6 +13,8 @@
 
 #include <vector>
 
+#include "lupnt/core/constants.h"
+
 namespace lupnt {
 
 /**

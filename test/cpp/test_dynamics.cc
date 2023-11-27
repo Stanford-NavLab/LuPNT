@@ -70,7 +70,7 @@ TEST_CASE("Test_CartesianTwoBodyDynamics") {
 
   double mu = MU_MOON;
   ClassicalOE coe_state({a, e, i, Omega, w, M}, CoordSystem::MI);
-  CartesianOrbitState cart_state = CoeToCart(coe_state, mu);
+  CartesianOrbitState cart_state = ClassicalToCartesian(coe_state, mu);
   Vector6 cart_vector = cart_state.GetVector();
   VectorX cart_vector_kep;
 
@@ -85,7 +85,7 @@ TEST_CASE("Test_CartesianTwoBodyDynamics") {
     tb_dyn.Propagate(cart_state, 0.0, dt, 1.0);
     tb_dyn.Propagate(cart_vector, 0.0, dt, 1.0);
 
-    cart_vector_kep = CoeToCart(coe_state.GetVector(), mu);
+    cart_vector_kep = ClassicalToCartesian(coe_state.GetVector(), mu);
     EXPECT_NEAR_ADVEC(cart_vector_kep, cart_state.GetVector(), 1e-6);
     EXPECT_NEAR_ADVEC(cart_vector_kep, cart_vector, 1e-6);
   }

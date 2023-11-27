@@ -27,6 +27,10 @@ std::tuple<real, real, real, real, real, real> unpack(const Vector6 &vec);
  * @return real
  */
 real wrapToPi(real angle);
+VectorX wrapToPi(VectorX angle);
+
+real wrapTo2Pi(real angle);
+VectorX wrapTo2Pi(VectorX angle);
 
 /**
  * @brief Convert degree to radian
@@ -34,7 +38,12 @@ real wrapToPi(real angle);
  * @param deg
  * @return real
  */
-real degToRad(real deg);
+real deg2rad(real deg);
+
+real safe_acos(real x);
+real safe_asin(real x);
+
+real angleBetweenVectors(const VectorX &a, const VectorX &b);
 
 /**
  * @brief Convert radian to degree
@@ -42,7 +51,7 @@ real degToRad(real deg);
  * @param rad
  * @return real
  */
-real radToDeg(real rad);
+real rad2deg(real rad);
 
 double LinearInterp1d(VectorXd x, VectorXd data, double ix);
 double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
