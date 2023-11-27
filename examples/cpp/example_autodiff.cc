@@ -8,12 +8,18 @@ int main() {
               deg2rad(90.0), deg2rad(0.0), deg2rad(30.0)};
   auto cart = ClassicalToCartesian(coe, MU_MOON);
   auto coe2 = CartesianToClassical(cart, MU_MOON);
+  auto cart2 = ClassicalToCartesian(coe2, MU_MOON);
+  auto coe3 = CartesianToClassical(cart2, MU_MOON);
+  auto cart3 = ClassicalToCartesian(coe3, MU_MOON);
 
   // Formatter
   auto fmt = Eigen::IOFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, " ",
                              " ", "", "", "", "");
 
   std::cout << coe.transpose().format(fmt) << std::endl;
-  std::cout << cart.transpose().format(fmt) << std::endl;
   std::cout << coe2.transpose().format(fmt) << std::endl;
+  std::cout << coe3.transpose().format(fmt) << std::endl;
+  std::cout << cart.transpose().format(fmt) << std::endl;
+  std::cout << cart2.transpose().format(fmt) << std::endl;
+  std::cout << cart3.transpose().format(fmt) << std::endl;
 }

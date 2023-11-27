@@ -63,4 +63,10 @@ double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
  */
 MatrixXd SampleMVN(const VectorXd mean, const MatrixXd cov, int nn);
 
+
+Matrix3 Rot1(real phi);
+Matrix3 Rot2(real phi);
+Matrix3 Rot3(real phi);
+Matrix3 Skew(Vector3 x);
+
 }  // namespace lupnt

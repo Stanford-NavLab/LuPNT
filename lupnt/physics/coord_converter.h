@@ -46,9 +46,5 @@ class CoordConverter {
 
  private:
   static Matrix6 ComputeITRFtoGCRF(real tai);
-  static Matrix3 R1(real phi);
-  static Matrix3 R2(real phi);
-  static Matrix3 R3(real phi);
-  static Matrix3 Skew(Vector3 x);
 };
 }  // namespace lupnt

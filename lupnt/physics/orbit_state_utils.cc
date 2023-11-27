@@ -172,7 +172,6 @@ ClassicalOE CartesianToClassical(const CartesianOrbitState &cart, double mu) {
                      cart.GetCoordSystem());
 }
 
-
 Vector6 CartesianToClassical(const Vector6 &cart, double mu) {
   Vector3 r = cart.head(3);
   Vector3 v = cart.tail(3);
@@ -247,12 +246,13 @@ Vector6 ClassicalToCartesian(const Vector6 &coe, double mu) {
 
   real p = a * (1.0 - pow(e, 2.0));
   real nu = MeanToTrueAnomaly(M, e);
-  real pev = p / (1 + e * cos(nu));
+  real pev = p / (1.0 + e * cos(nu));
   real mu_p = sqrt(mu / p);
 
-  Vector3 r_PQW = {pev * cos(nu), pev * sin(nu), 0};
-  Vector3 v_PQW = {-mu_p * sin(nu), mu_p * (e + cos(nu)), 0};
+  Vector3 r_PQW = {pev * cos(nu), pev * sin(nu), 0.0};
+  Vector3 v_PQW = {-mu_p * sin(nu), mu_p * (e + cos(nu)), 0.0};
 
+  // rot = Rot3(-Omega) * Rot1(-i) * Rot3(-w)
   Matrix3 rot{
       {cos(Omega) * cos(w) - sin(Omega) * sin(w) * cos(i),
        -cos(Omega) * sin(w) - sin(Omega) * cos(w) * cos(i),

@@ -24,29 +24,30 @@
 namespace lupnt {
 
 extern std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
-         std::function<Vector6(const Vector6 &, double)>>
+                std::function<Vector6(const Vector6 &, double)>>
     absolute_conversions;
 
 extern std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
-         std::function<Vector6(const Vector6 &, const Vector6 &)>>
+                std::function<Vector6(const Vector6 &, const Vector6 &)>>
     relative_conversions;
 
 Vector6 ConvertOrbitState(const Vector6 &state_in, OrbitStateRepres repres_in,
-                          OrbitStateRepres repres_out, double mu = 0.0);
+                          OrbitStateRepres repres_out, double mu = MU_MOON);
 
 Vector6 ConvertOrbitState(const Vector6 &state_in_c, const Vector6 &state_in_d,
                           OrbitStateRepres repres_in_c,
                           OrbitStateRepres repres_in_d,
-                          OrbitStateRepres repres_out, double mu = 0.0);
+                          OrbitStateRepres repres_out, double mu = MU_MOON);
 
 std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
     const std::shared_ptr<OrbitState> &state_in, OrbitStateRepres repres_out,
-    double mu = 0.0);
+    double mu = MU_MOON);
 
 // From CartesianOrbitState
 // - To ClassicalOE
-ClassicalOE CartesianToClassical(const CartesianOrbitState &cart, double mu);
-Vector6 CartesianToClassical(const Vector6 &cart, double mu);
+ClassicalOE CartesianToClassical(const CartesianOrbitState &cart,
+                                 double mu = MU_MOON);
+Vector6 CartesianToClassical(const Vector6 &cart, double mu = MU_MOON);
 
 // - To CartesianOrbitState (relative)
 CartesianOrbitState InertialToRtn(const CartesianOrbitState &cart_c,
@@ -55,37 +56,41 @@ Vector6 InertialToRtn(const Vector6 &cart_c, const Vector6 &cart_d);
 
 // From ClassicalOE
 // - To CartesianOrbitState
-CartesianOrbitState ClassicalToCartesian(const ClassicalOE &coe, double mu);
-Vector6 ClassicalToCartesian(const Vector6 &coe, double mu);
+CartesianOrbitState ClassicalToCartesian(const ClassicalOE &coe,
+                                         double mu = MU_MOON);
+Vector6 ClassicalToCartesian(const Vector6 &coe, double mu = MU_MOON);
 
 // - To QuasiNonsingularOE
 QuasiNonsingularOE ClassicalToQuasiNonsingular(const ClassicalOE &coe,
-                                               double mu = 0.0);
-Vector6 ClassicalToQuasiNonsingular(const Vector6 &coe, double mu = 0.0);
+                                               double mu = MU_MOON);
+Vector6 ClassicalToQuasiNonsingular(const Vector6 &coe, double mu = MU_MOON);
 
 // - To EquinoctialOE
-EquinoctialOE ClassicalToEquinoctial(const ClassicalOE &coe, double mu = 0.0);
-Vector6 ClassicalToEquinoctial(const Vector6 &coe, double mu = 0.0);
+EquinoctialOE ClassicalToEquinoctial(const ClassicalOE &coe,
+                                     double mu = MU_MOON);
+Vector6 ClassicalToEquinoctial(const Vector6 &coe, double mu = MU_MOON);
 
 // - To DelaunayOE
-DelaunayOE ClassicalToDelaunay(const ClassicalOE &coe, double mu);
-Vector6 ClassicalToDelaunay(const Vector6 &coe, double mu);
+DelaunayOE ClassicalToDelaunay(const ClassicalOE &coe, double mu = MU_MOON);
+Vector6 ClassicalToDelaunay(const Vector6 &coe, double mu = MU_MOON);
 
 // From QuasiNonsingularOE
 // - To ClassicalOE
 ClassicalOE QuasiNonsingularToClassical(const QuasiNonsingularOE &qnsoe,
-                                        double mu = 0.0);
-Vector6 QuasiNonsingularToClassical(const Vector6 &qnsoeVec, double mu = 0.0);
+                                        double mu = MU_MOON);
+Vector6 QuasiNonsingularToClassical(const Vector6 &qnsoeVec,
+                                    double mu = MU_MOON);
 
 // From EquinoctialOE
 // - To ClassicalOE
-ClassicalOE EquinoctialToClassical(const EquinoctialOE &eqoe, double mu = 0.0);
-Vector6 EquinoctialToClassical(const Vector6 &eqoe, double mu = 0.0);
+ClassicalOE EquinoctialToClassical(const EquinoctialOE &eqoe,
+                                   double mu = MU_MOON);
+Vector6 EquinoctialToClassical(const Vector6 &eqoe, double mu = MU_MOON);
 
 // From DelaunayOE
 // - To ClassicalOE
-ClassicalOE DelaunayToClassical(const DelaunayOE &deloe, double mu);
-Vector6 DelaunayToClassical(const Vector6 &deloe, double mu);
+ClassicalOE DelaunayToClassical(const DelaunayOE &deloe, double mu = MU_MOON);
+Vector6 DelaunayToClassical(const Vector6 &deloe, double mu = MU_MOON);
 
 // From ClassicalOE and QuasiNonsingularROE (relative)
 // - To ClassicalOE

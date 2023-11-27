@@ -12,44 +12,45 @@ except ImportError:
 
 class TestStateUtils:
     def test_cartesian(self):
+        # Cartesian to Classical
         cart_array = pnt.classical_to_cartesian(utils.coe_array_elfo, pnt.MU_MOON)
+        cart_state = pnt.CartesianOrbitState(cart_array, pnt.CoordSystem.MI)
 
         coe_array = pnt.cartesian_to_classical(cart_array, pnt.MU_MOON)
+        coe_state = pnt.cartesian_to_classical(cart_state, pnt.MU_MOON)
+
+        cart_gmat = cart_array
         coe_gmat = utils.unpack_gmat(
             gmat.StateConversionUtil.CartesianToKeplerian(
-                pnt.MU_MOON, gmat.Rvector6(*cart_array), "MA"
+                pnt.MU_MOON, gmat.Rvector6(*cart_gmat), "MA"
             )
         )
         coe_gmat[2:6] = pnt.wrapToPi(np.deg2rad(coe_gmat[2:6]))
+
         assert np.allclose(coe_array, coe_gmat)
+        assert np.allclose(coe_state.vector, coe_gmat)
 
+    def test_classical(self):
+        # Classical to Cartesian
+        coe_array = utils.coe_array_elfo
+        coe_state = pnt.ClassicalOE(coe_array, pnt.CoordSystem.MI)
 
-# def test_StateUtils():
-#     # ELFO 9750.5 0.7 63.5 90 0 0
-#     # LLO 100 0 28.5 0 0 0
-#     # PCO 3000 0 75 0 90 0
-#     a = 970
-#     e = 0.6
-#     i = np.deg2rad(65.5)
-#     Omega = np.deg2rad(90.0)
-#     w = np.deg2rad(0.0)
-#     M = np.deg2rad(0.0)
+        cart_array = pnt.classical_to_cartesian(coe_array, pnt.MU_MOON)
+        cart_state = pnt.classical_to_cartesian(coe_state, pnt.MU_MOON)
 
-#     coe_state = pnt.ClassicalOE([a, e, i, Omega, w, M], pnt.CoordSystem.MI)
+        coe_gmat = coe_array
+        coe_gmat[2:6] = np.rad2deg(coe_gmat[2:6])
+        cart_gmat = utils.unpack_gmat(
+            gmat.StateConversionUtil.KeplerianToCartesian(
+                pnt.MU_MOON, gmat.Rvector6(*coe_gmat), "MA"
+            )
+        )
+        assert np.allclose(cart_array, cart_gmat)
+        assert np.allclose(cart_state.vector, cart_gmat)
 
-#     mu = pnt.MU_MOON
-#     coe_vec = coe_state.get_vector()
+    def test_equinoctial(self):
+        pass
 
-#     np.testing.assert_array_almost_equal(coe_vec, [a, e, i, Omega, w, M])
-
-#     cart_vec_gmat = gmat.StateConversionUtil.KeplerianToCartesianesian(
-#         mu, gmat.Rvector6(*coe_vec), "MA"
-#     )
-#     cart_vec_gmat = np.array([cart_vec_gmat.Get(i) for i in range(6)])
-#     cart_vec_gmat[2:6] = np.deg2rad(cart_vec_gmat[2:6])
-
-#     cart_vec = pnt.coe_to_cart(coe_vec, mu)
-#     # np.testing.assert_array_almost_equal(cart_vec_gmat, cart_vec)
 
 if __name__ == "__main__":
     pytest.main([__file__])

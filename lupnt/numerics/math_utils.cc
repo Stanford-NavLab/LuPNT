@@ -208,4 +208,51 @@ MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn) {
   return samples;
 };
 
+Matrix3 Rot1(real phi) {
+  real c = cos(phi);
+  real s = sin(phi);
+  Matrix3 R1{
+      {1.0, 0.0, 0.0},
+      {0.0, c, s},
+      {0.0, -s, c},
+  };
+  return R1;
+}
+
+Matrix3 Rot2(real phi) {
+  real c = cos(phi);
+  real s = sin(phi);
+  Matrix3 R2{
+      {c, 0.0, -s},
+      {0.0, 1.0, 0.0},
+      {s, 0.0, c},
+  };
+  return R2;
+}
+
+Matrix3 Rot3(real phi) {
+  real c = cos(phi);
+  real s = sin(phi);
+  Matrix3 R3{
+      {c, s, 0.0},
+      {-s, c, 0.0},
+      {0.0, 0.0, 1.0},
+  };
+  return R3;
+}
+
+/**
+ * @brief Compute the rotation matrix specified by the input skew vector.
+ * @param v
+ * @return Matrix3
+ */
+Matrix3 Skew(Vector3 x) {
+  Matrix3 skew{
+      {0.0, -x(2), x(1)},
+      {x(2), 0.0, -x(0)},
+      {-x(1), x(0), 0.0},
+  };
+  return skew;
+}
+
 }  // namespace lupnt

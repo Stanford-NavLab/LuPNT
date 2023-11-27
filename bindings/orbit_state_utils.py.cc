@@ -28,35 +28,51 @@ void init_orbit_state_utils(py::module &m) {
               .cast<double>();
         });
 
-  m.def("cartesian_to_classical",
-        [](const Vector6d &cart, double mu) -> Vector6d {
-          return CartesianToClassical(cart, mu).cast<double>();
-        });
-  m.def("cartesian_to_classical",
-        [](const CartesianOrbitState &cart, double mu) -> ClassicalOE {
-          return CartesianToClassical(cart, mu);
-        });
+  m.def(
+      "cartesian_to_classical",
+      [](const Vector6d &cart, double mu) -> Vector6d {
+        return CartesianToClassical(cart, mu).cast<double>();
+      },
+      py::arg("cart"), py::arg("mu") = MU_MOON);
+  m.def(
+      "cartesian_to_classical",
+      [](const CartesianOrbitState &cart, double mu) -> ClassicalOE {
+        return CartesianToClassical(cart, mu);
+      },
+      py::arg("cart"), py::arg("mu") = MU_MOON);
 
-  m.def("classical_to_cartesian",
-        [](const Vector6d &coe, double mu) -> Vector6d {
-          return ClassicalToCartesian(coe, mu).cast<double>();
-        });
-  m.def("classical_to_cartesian",
-        [](const ClassicalOE &coe, double mu) -> CartesianOrbitState {
-          return ClassicalToCartesian(coe, mu);
-        });
+  m.def(
+      "classical_to_cartesian",
+      [](const Vector6d &coe, double mu) -> Vector6d {
+        return ClassicalToCartesian(coe, mu).cast<double>();
+      },
+      py::arg("coe"), py::arg("mu") = MU_MOON);
+  m.def(
+      "classical_to_cartesian",
+      [](const ClassicalOE &coe, double mu) -> CartesianOrbitState {
+        return ClassicalToCartesian(coe, mu);
+      },
+      py::arg("coe"), py::arg("mu") = MU_MOON);
 
-  m.def("classical_to_quasi_nonsingular", [](const Vector6d &coe) -> Vector6d {
-    return ClassicalToQuasiNonsingular(coe).cast<double>();
-  });
-  m.def("classical_to_quasi_nonsingular",
-        [](const ClassicalOE &coe) -> QuasiNonsingularOE {
-          return ClassicalToQuasiNonsingular(coe);
-        });
+  m.def(
+      "classical_to_quasi_nonsingular",
+      [](const Vector6d &coe, double mu) -> Vector6d {
+        return ClassicalToQuasiNonsingular(coe, mu).cast<double>();
+      },
+      py::arg("coe"), py::arg("mu") = MU_MOON);
+  m.def(
+      "classical_to_quasi_nonsingular",
+      [](const ClassicalOE &coe, double mu) -> QuasiNonsingularOE {
+        return ClassicalToQuasiNonsingular(coe, mu);
+      },
+      py::arg("coe"), py::arg("mu") = MU_MOON);
 
-  m.def("classical_to_equinoctial", [](const Vector6d &coe) -> Vector6d {
-    return ClassicalToEquinoctial(coe).cast<double>();
-  });
+  m.def(
+      "classical_to_equinoctial",
+      [](const Vector6d &coe, double mu) -> Vector6d {
+        return ClassicalToEquinoctial(coe, mu).cast<double>();
+      },
+      py::arg("coe"), py::arg("mu") = MU_MOON);
   m.def("classical_to_equinoctial",
         [](const ClassicalOE &coe, double mu) -> EquinoctialOE {
           return ClassicalToEquinoctial(coe, mu);
@@ -80,33 +96,44 @@ void init_orbit_state_utils(py::module &m) {
           return QuasiNonsingularToClassical(qnsoe, mu);
         });
 
-  m.def("equinoctial_to_classical", [](const Vector6d &eqoe) -> Vector6d {
-    return EquinoctialToClassical(eqoe).cast<double>();
-  });
-  m.def("equinoctial_to_classical",
-        [](const EquinoctialOE &eqoe, double mu) -> ClassicalOE {
-          return EquinoctialToClassical(eqoe, mu);
-        });
+  m.def(
+      "equinoctial_to_classical",
+      [](const Vector6d &eqoe, double mu) -> Vector6d {
+        return EquinoctialToClassical(eqoe, mu).cast<double>();
+      },
+      py::arg("eqoe"), py::arg("mu") = MU_MOON);
+  m.def(
+      "equinoctial_to_classical",
+      [](const EquinoctialOE &eqoe, double mu) -> ClassicalOE {
+        return EquinoctialToClassical(eqoe, mu);
+      },
+      py::arg("eqoe"), py::arg("mu") = MU_MOON);
 
   m.def("delaunay_to_classical",
         [](const Vector6d &deloe, double mu) -> Vector6d {
           return DelaunayToClassical(deloe, mu).cast<double>();
         });
-  m.def("delaunay_to_classical",
-        [](const DelaunayOE &deloe, double mu) -> ClassicalOE {
-          return DelaunayToClassical(deloe, mu);
-        });
+  m.def(
+      "delaunay_to_classical",
+      [](const DelaunayOE &deloe, double mu) -> ClassicalOE {
+        return DelaunayToClassical(deloe, mu);
+      },
+      py::arg("deloe"), py::arg("mu") = MU_MOON);
 
-  m.def("relative_quasi_nonsingular_to_classical",
-        [](const Vector6d &coe, const Vector6d &rel_qnsoe) -> Vector6d {
-          return RelativeQuasiNonsingularToClassical(coe, rel_qnsoe)
-              .cast<double>();
-        });
-  m.def("relative_quasi_nonsingular_to_classical",
-        [](const ClassicalOE &coe,
-           const QuasiNonsingularROE &rel_qnsoe) -> ClassicalOE {
-          return RelativeQuasiNonsingularToClassical(coe, rel_qnsoe);
-        });
+  m.def(
+      "relative_quasi_nonsingular_to_classical",
+      [](const Vector6d &coe, const Vector6d &rel_qnsoe) -> Vector6d {
+        return RelativeQuasiNonsingularToClassical(coe, rel_qnsoe)
+            .cast<double>();
+      },
+      py::arg("coe"), py::arg("rel_qnsoe"));
+  m.def(
+      "relative_quasi_nonsingular_to_classical",
+      [](const ClassicalOE &coe,
+         const QuasiNonsingularROE &rel_qnsoe) -> ClassicalOE {
+        return RelativeQuasiNonsingularToClassical(coe, rel_qnsoe);
+      },
+      py::arg("coe"), py::arg("rel_qnsoe"));
 
   // Anomaly Conversions
   m.def("eccentric_to_true", [](double E, double e) -> double {

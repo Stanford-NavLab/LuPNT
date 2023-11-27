@@ -13,9 +13,9 @@
 
 #include <filesystem>
 
+#include "cheby.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/numerics/math_utils.h"
-#include "cheby.h"
 #include "spice_interface.h"
 
 using namespace lupnt;
@@ -32,8 +32,8 @@ using namespace SpiceInterface;
  * @return Vector6  State vector in the converted coordinate system
  */
 Vector6 CoordConverter::Convert(Vector6 rv_in, real epoch,
-                                    CoordSystem coord_sys_in,
-                                    CoordSystem coord_sys_out) {
+                                CoordSystem coord_sys_in,
+                                CoordSystem coord_sys_out) {
   if (coord_sys_in == coord_sys_out) return rv_in;
 
   Vector6 rv_out;
@@ -63,9 +63,9 @@ Vector6 CoordConverter::Convert(Vector6 rv_in, real epoch,
       // Rotation Matrix ME (in DE421) -> PA (in DE440)
       // Reference:
       // https://iopscience.iop.org/article/10.3847/1538-3881/abd414/pdf
-      Matrix3 B_M = R1(-0.2785 * DEG_PER_ARCSEC) *
-                        R2(-78.6944 * DEG_PER_ARCSEC) *
-                        R3(-67.8526 * DEG_PER_ARCSEC);
+      Matrix3 B_M = Rot1(-0.2785 * DEG_PER_ARCSEC) *
+                    Rot2(-78.6944 * DEG_PER_ARCSEC) *
+                    Rot3(-67.8526 * DEG_PER_ARCSEC);
       Matrix3 B_M_inv = B_M.transpose();
 
       Vector3 r_PA = B_M * r_ME;
@@ -87,9 +87,9 @@ Vector6 CoordConverter::Convert(Vector6 rv_in, real epoch,
       // https://iopscience.iop.org/article/10.3847/1538-3881/abd414/pdf
       Vector3 r_PA = rv_in.head(3);
       Vector3 v_PA = rv_in.tail(3);
-      Matrix3 B_M = R1(-0.2785 * DEG_PER_ARCSEC) *
-                        R2(-78.6944 * DEG_PER_ARCSEC) *
-                        R3(-67.8526 * DEG_PER_ARCSEC);
+      Matrix3 B_M = Rot1(-0.2785 * DEG_PER_ARCSEC) *
+                    Rot2(-78.6944 * DEG_PER_ARCSEC) *
+                    Rot3(-67.8526 * DEG_PER_ARCSEC);
       Vector3 r_ME = B_M * r_PA;
       Vector3 v_ME = B_M * v_PA;
       rv_out << r_ME, v_ME;
@@ -184,77 +184,4 @@ Matrix6 CoordConverter::ComputeITRFtoGCRF(real tai) {
   Matrix6 Mrot = GetFrameConversionMatrix(et, "ITRF93", "J2000");
 
   return Mrot;
-}
-
-/**
- * @brief Compute the rotation matrix corresponding to a simple rotation about
- * the first axis in a system
- *
- * @param phi angle of rotation
- * @return Matrix3 3x3 rotation matrix
- * @ref NASA/TP–20220014814 page 30
- */
-Matrix3 CoordConverter::R1(real phi) {
-  real c = cos(phi);
-  real s = sin(phi);
-  Matrix3 R1{
-      {1.0, 0.0, 0.0},
-      {0.0, c, s},
-      {0.0, -s, c},
-  };
-  return R1;
-}
-
-/**
- * @brief Compute the rotation matrix corresponding to a simple rotation about
- * the second axis in a system
- *
- * @param phi angle of rotation
- * @return Matrix3 3x3 rotation matrix
- * @ref NASA/TP–20220014814 page 30
- */
-Matrix3 CoordConverter::R2(real phi) {
-  real c = cos(phi);
-  real s = sin(phi);
-  Matrix3 R2{
-      {c, 0.0, -s},
-      {0.0, 1.0, 0.0},
-      {s, 0.0, c},
-  };
-  return R2;
-}
-
-/**
- * @brief Compute the rotation matrix corresponding to a simple rotation about
- * the third axis in a system
- *
- * @param phi angle of rotation
- * @return Matrix3 3x3 rotation matrix
- * @ref NASA/TP–20220014814 page 30
- */
-Matrix3 CoordConverter::R3(real phi) {
-  real c = cos(phi);
-  real s = sin(phi);
-  Matrix3 R3{
-      {c, s, 0.0},
-      {-s, c, 0.0},
-      {0.0, 0.0, 1.0},
-  };
-  return R3;
-}
-
-/**
- * @brief Compute the rotation matrix specified by the input skew vector.
- *
- * @param v
- * @return Matrix3
- */
-Matrix3 CoordConverter::Skew(Vector3 x)
-{
-  Matrix3 skew{
-      {0.0, -x(2), x(1)},
-      {x(2), 0.0, -x(0)},
-      {-x(1), x(0), 0.0},
-  };
-  return skew;
 }
