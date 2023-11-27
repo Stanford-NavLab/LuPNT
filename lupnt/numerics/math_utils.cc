@@ -17,29 +17,36 @@
 
 namespace lupnt {
 
-VectorXd toEigen(VectorXreal x) {
-  VectorXd v(x.size());
-  for (int i = 0; i < x.size(); i++) {
-    v[i] = x[i].val();
-  }
-  return v;
+std::tuple<real, real, real> unpack(const Vector3 &vec) {
+  return std::make_tuple(vec(0), vec(1), vec(2));
+}
+std::tuple<real, real, real, real, real, real> unpack(const Vector6 &vec) {
+  return std::make_tuple(vec(0), vec(1), vec(2), vec(3), vec(4), vec(5));
 }
 
-/**
- * @brief Wrap the angle between -pi and pi
- *
- * @param angle
- * @return real
- */
-real wrapToPi(real angle) { return atan2(sin(angle), cos(angle)); }
+real angleBetweenVectors(const VectorX &a, const VectorX &b) {
+  assert(a.size() == b.size());
+  return 2.0 * atan2((a.normalized() - b.normalized()).norm(),
+                     (a.normalized() + b.normalized()).norm());
+}
 
-/**
- * @brief Wrap the angle between 0 and 2pi
- *
- * @param angle
- * @return real
- */
+real wrapToPi(real angle) { return atan2(sin(angle), cos(angle)); }
+VectorX wrapToPi(VectorX angle) {
+  VectorX result = angle;
+  for (int i = 0; i < angle.size(); i++) {
+    result(i) = wrapToPi(angle(i));
+  }
+  return result;
+}
+
 real wrapTo2Pi(real angle) { return atan2(sin(angle), cos(angle)) + M_PI; }
+VectorX wrapTo2Pi(VectorX angle) {
+  VectorX result = angle;
+  for (int i = 0; i < angle.size(); i++) {
+    result(i) = wrapTo2Pi(angle(i));
+  }
+  return result;
+}
 
 /**
  * @brief Convert degree to radian
@@ -47,7 +54,7 @@ real wrapTo2Pi(real angle) { return atan2(sin(angle), cos(angle)) + M_PI; }
  * @param deg
  * @return real
  */
-real degToRad(real deg) { return (M_PI / 180) * deg; }
+real deg2rad(real deg) { return (M_PI / 180) * deg; }
 
 /**
  * @brief Convert radian to degree
@@ -55,11 +62,31 @@ real degToRad(real deg) { return (M_PI / 180) * deg; }
  * @param rad
  * @return real
  */
-real radToDeg(real rad) { return (180 / M_PI) * rad; }
+real rad2deg(real rad) { return (180 / M_PI) * rad; }
 
-double degToRad(double deg) { return (M_PI / 180) * deg; }
+double deg2rad(double deg) { return (M_PI / 180) * deg; }
 
-double radToDeg(double rad) { return (180 / M_PI) * rad; }
+double rad2deg(double rad) { return (180 / M_PI) * rad; }
+
+real safe_acos(real x) {
+  if (x >= 1.0) {
+    return acos(x - 1e-15);
+  } else if (x <= -1.0) {
+    return acos(x + 1e-15);
+  } else {
+    return acos(x);
+  }
+}
+
+real safe_asin(real x) {
+  if (x >= 1.0) {
+    return asin(x - 1e-16);
+  } else if (x <= -1.0) {
+    return asin(x + 1e-16);
+  } else {
+    return asin(x);
+  }
+}
 
 /**
  * @brief Linear interpolation of a 2D data set
@@ -180,5 +207,52 @@ MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn) {
   MatrixXd samples = normTransform * randN + mean_samples;
   return samples;
 };
+
+Matrix3 Rot1(real phi) {
+  real c = cos(phi);
+  real s = sin(phi);
+  Matrix3 R1{
+      {1.0, 0.0, 0.0},
+      {0.0, c, s},
+      {0.0, -s, c},
+  };
+  return R1;
+}
+
+Matrix3 Rot2(real phi) {
+  real c = cos(phi);
+  real s = sin(phi);
+  Matrix3 R2{
+      {c, 0.0, -s},
+      {0.0, 1.0, 0.0},
+      {s, 0.0, c},
+  };
+  return R2;
+}
+
+Matrix3 Rot3(real phi) {
+  real c = cos(phi);
+  real s = sin(phi);
+  Matrix3 R3{
+      {c, s, 0.0},
+      {-s, c, 0.0},
+      {0.0, 0.0, 1.0},
+  };
+  return R3;
+}
+
+/**
+ * @brief Compute the rotation matrix specified by the input skew vector.
+ * @param v
+ * @return Matrix3
+ */
+Matrix3 Skew(Vector3 x) {
+  Matrix3 skew{
+      {0.0, -x(2), x(1)},
+      {x(2), 0.0, -x(0)},
+      {-x(1), x(0), 0.0},
+  };
+  return skew;
+}
 
 }  // namespace lupnt

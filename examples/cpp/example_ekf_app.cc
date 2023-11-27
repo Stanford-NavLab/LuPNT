@@ -87,7 +87,7 @@ int main() {
   coe_moon.SetCoordSystem(CoordSystem::MI);
 
   auto cart_state_moon =
-      std::make_shared<CartesianOrbitState>(CoeToCart(coe_moon, MU_MOON));
+      std::make_shared<CartesianOrbitState>(ClassicalToCartesian(coe_moon, MU_MOON));
   auto moon_sat = std::make_shared<Spacecraft>();
   auto receiver = std::make_shared<GnssReceiver>("moongpsr");
 
@@ -147,11 +147,11 @@ int main() {
     // Bodies
     data_history->AddData(
         "earth_mi", t,
-        CoordConverter::Convert(VectorXreal::Zero(6), epoch,
+        CoordConverter::Convert(VectorX::Zero(6), epoch,
                                 CoordSystem::GCRF, CoordSystem::MI));
     data_history->AddData(
         "moon_gcrf", t,
-        CoordConverter::Convert(VectorXreal::Zero(6), epoch,
+        CoordConverter::Convert(VectorX::Zero(6), epoch,
                                 CoordSystem::MI, CoordSystem::GCRF));
 
     // Print progress

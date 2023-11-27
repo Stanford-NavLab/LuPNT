@@ -11,7 +11,8 @@
 
 #pragma once
 
-#include <lupnt/core/constants.h>
+#include "lupnt/core/constants.h"
+#include "lupnt/numerics/math_utils.h"
 
 #include <cmath>
 #include <map>

@@ -17,3 +17,10 @@ target_link_libraries(pylupnt PRIVATE lupnt)
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL Clang AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 10.0.0)
     target_compile_options(pylupnt PRIVATE -fsized-deallocation)
 endif()
+
+# copy to PYTHON_LIBRARIES
+add_custom_command(TARGET pylupnt POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pylupnt> ${PYTHON_LIBRARIES}
+        COMMENT "Copying pylupnt to ${PYTHON_LIBRARIES}"
+        VERBATIM
+)

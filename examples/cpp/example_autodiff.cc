@@ -1,25 +1,25 @@
-#include <lupnt/core/constants.h>
+#include <lupnt/numerics/math_utils.h>
+#include <lupnt/physics/orbit_state_utils.h>
 
 using namespace lupnt;
 
 int main() {
-  Vector3real a{1, 2, 3};
-  Vector3real b(a);
-  b(2) += 1;
-  auto c = a.transpose() * b;
-  auto d = b.norm();
-  std::cout << a << std::endl;
-  std::cout << b << std::endl;
-  std::cout << c << std::endl;
-  std::cout << d << std::endl;
+  Vector6 coe{9750.5,        0.7,          deg2rad(63.5),
+              deg2rad(90.0), deg2rad(0.0), deg2rad(30.0)};
+  auto cart = ClassicalToCartesian(coe, MU_MOON);
+  auto coe2 = CartesianToClassical(cart, MU_MOON);
+  auto cart2 = ClassicalToCartesian(coe2, MU_MOON);
+  auto coe3 = CartesianToClassical(cart2, MU_MOON);
+  auto cart3 = ClassicalToCartesian(coe3, MU_MOON);
 
-  real x = 1.0;
-  double y = static_cast<double>(x);
-  std::cout << x << std::endl;
-  std::cout << y << std::endl;
+  // Formatter
+  auto fmt = Eigen::IOFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, " ",
+                             " ", "", "", "", "");
 
-  Vector3d e = a.cast<double>();
-  std::cout << e.transpose() << std::endl;
-  Vector3real f = e.cast<real>();
-  std::cout << f.transpose() << std::endl;
+  std::cout << coe.transpose().format(fmt) << std::endl;
+  std::cout << coe2.transpose().format(fmt) << std::endl;
+  std::cout << coe3.transpose().format(fmt) << std::endl;
+  std::cout << cart.transpose().format(fmt) << std::endl;
+  std::cout << cart2.transpose().format(fmt) << std::endl;
+  std::cout << cart3.transpose().format(fmt) << std::endl;
 }

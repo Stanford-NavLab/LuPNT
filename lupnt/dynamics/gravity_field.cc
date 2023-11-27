@@ -325,10 +325,10 @@ std::tuple<Matrix3d, Matrix3d> spharm_d2vwdx2(int n_in, int m_in, double Vn2m,
   return std::tuple<Matrix3d, Matrix3d>(d2VdX2, d2WdX2);
 }
 
-Vector3d spharm_acc_ecr(int nmax, int mmax, const Vector3real &x_R_in,
+Vector3d spharm_acc_ecr(int nmax, int mmax, const Vector3 &x_R_in,
                         double Re, double GMe, const MatrixXd &Cnm,
                         const MatrixXd &Snm) {
-  Vector3d x_R = toEigen(x_R_in);
+  Vector3d x_R = x_R_in.cast<double>();
   Vector3d accECR(0, 0, 0);
   MatrixXd V = MatrixXd::Zero(nmax + 3, mmax + 3);
   MatrixXd W = MatrixXd::Zero(nmax + 3, mmax + 3);

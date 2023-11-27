@@ -18,10 +18,10 @@
 
 namespace lupnt {
 
-Vector6real MeanToOsculating(Vector6real meanCoeVec) {
+Vector6 MeanToOsculatingulating(Vector6 meanCoeVec) {
   double t = 0.0;  // Time [s]
   double nM = 2.66e-6;
-  Vector6real meanDoeVec = CoeToDelaunay(meanCoeVec, MU_MOON, nM, t);
+  Vector6 meanDoeVec = ClassicalToDelaunay(meanCoeVec, MU_MOON);
 
   double lpp = (double)meanDoeVec(0);
   double gpp = (double)meanDoeVec(1);
@@ -50,17 +50,17 @@ Vector6real MeanToOsculating(Vector6real meanCoeVec) {
   double H =
       Hpp + sp2[5] + mp1[5] + mp2[5];  // H = Hpp + Hpp_sp2 + Hpp_mp1 + Hpp_mp2;
 
-  Vector6real oscDoeVec;
+  Vector6 oscDoeVec;
   oscDoeVec << l, g, h, L, G, H;
 
-  Vector6real oscCoeVec = DelaunayToCoe(oscDoeVec, MU_MOON, nM, t);
+  Vector6 oscCoeVec = DelaunayToClassical(oscDoeVec, MU_MOON);
   return oscCoeVec;
 }
 
-Vector6real OsculatingToMean(Vector6real oscCoeVec) {
+Vector6 OsculatingToMean(Vector6 oscCoeVec) {
   double t = 0.0;
   double nM = 2.66e-6;
-  Vector6real oscDoeVec = CoeToDelaunay(oscCoeVec, MU_MOON, nM, t);
+  Vector6 oscDoeVec = ClassicalToDelaunay(oscCoeVec, MU_MOON);
 
   double l = (double)oscDoeVec(0);
   double g = (double)oscDoeVec(1);
@@ -91,15 +91,15 @@ Vector6real OsculatingToMean(Vector6real oscCoeVec) {
   double Hpp = H - sp2[5] - mp1[5] - mp1c[5] -
                mp2[5];  // Hpp = H - H_sp2 - H_mp1 - H_mp1c - H_mp2;
 
-  Vector6real meanDoeVec;
+  Vector6 meanDoeVec;
   meanDoeVec << lpp, gpp, hpp, Lpp, Gpp, Hpp;
 
-  Vector6real meanCoeVec = DelaunayToCoe(meanDoeVec, MU_MOON, nM, t);
+  Vector6 meanCoeVec = DelaunayToClassical(meanDoeVec, MU_MOON);
   return meanCoeVec;
 }
 
-std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6real &coe,
-                                                    Vector6real &doe) {
+std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6 &coe,
+                                                    Vector6 &doe) {
   double n3 = 2.66e-6;
   double nM = 2.66e-6;
   double J2 = 2.03e-4;
@@ -111,7 +111,7 @@ std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6real &coe,
   double O = (double)coe(3);
   double w = (double)coe(4);
   double M = (double)coe(5);
-  double f = (double)MeanAnomToTrueAnom(coe(5), coe(1));
+  double f = (double)MeanToTrueAnomaly(coe(5), coe(1));
 
   double l = (double)doe(0);
   double g = (double)doe(1);
@@ -517,8 +517,8 @@ std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6real &coe,
   return ret;
 }
 
-std::array<double, 6> ComputeFirstOrderMediumPeriod(Vector6real &coe,
-                                                    Vector6real &doe) {
+std::array<double, 6> ComputeFirstOrderMediumPeriod(Vector6 &coe,
+                                                    Vector6 &doe) {
   double n3 = 2.66e-6;
   double nM = 2.66e-6;
   double J2 = 2.03e-4;
@@ -586,8 +586,8 @@ std::array<double, 6> ComputeFirstOrderMediumPeriod(Vector6real &coe,
   return ret;
 }
 
-std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6real &coe,
-                                                     Vector6real &doe) {
+std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
+                                                     Vector6 &doe) {
   double n3 = 2.66e-6;
   double nM = 2.66e-6;
   double J2 = 2.03e-4;
@@ -884,8 +884,8 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6real &coe,
   return ret;
 }
 
-std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6real &coe,
-                                                    Vector6real &doe) {
+std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6 &coe,
+                                                    Vector6 &doe) {
   double n3 = 2.66e-6;
   double nM = 2.66e-6;
   double J2 = 2.03e-4;

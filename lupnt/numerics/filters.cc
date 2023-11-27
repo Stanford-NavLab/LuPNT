@@ -24,12 +24,12 @@ void EKF::Predict(real t_end) {
   Pbar = P;
 }
 
-void EKF::Update(VectorXreal z_obs) {
+void EKF::Update(VectorX z_obs) {
   int n = x.size();
   int m = z_obs.size();
   MatrixXd H(m, n);
   MatrixXd R(m, m);
-  VectorXreal z_predict = this->measurement(xbar, H, R);
+  VectorX z_predict = this->measurement(xbar, H, R);
   S = R + H * P * H.transpose();
   K = P * H.transpose() * S.inverse();
   dx = K * (z_obs - z_predict);

@@ -77,7 +77,7 @@ std::tuple<Matrix3d, Matrix3d> spharm_d2vwdx2(
     double Wn2m_2, double Re);
 
 Vector3d spharm_acc_ecr(int nmax, int mmax,
-                               const Vector3real &x_R_in, double Re,
+                               const Vector3 &x_R_in, double Re,
                                double GMe, const MatrixXd &Cnm,
                                const MatrixXd &Snm);
 

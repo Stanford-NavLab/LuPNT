@@ -16,7 +16,7 @@ int Agent::id_counter_ = 0;
 
 std::shared_ptr<CartesianOrbitState> Agent::GetCartesianGCRFStateAtEpoch(
     real epoch, CoordSystem coord_sys) {
-  auto state = state_->Clone();
+  auto state = std::make_shared<OrbitState>(*state_);
   if (epoch != epoch_)
     dynamics_->Propagate(*state, epoch_, epoch, 1.0 * SECS_PER_MINUTE);
   double mu = GetBodyData(bodyId_).GM;

@@ -21,32 +21,32 @@ namespace lupnt {
 void NumericalDynamics::Propagate(OrbitState &state, real t0, real tf,
                                   real dt) {
   assert(state.GetOrbitStateRepres() == state_representation_);
-  Vector6real x0 = state.GetVector();
-  Vector6real xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt);
+  Vector6 x0 = state.GetVector();
+  Vector6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt);
   state.SetVector(xf);
 }
 
-void NumericalDynamics::Propagate(Vector6real &x, real t0, real tf, real dt) {
-  Vector6real x0 = x;
-  Vector6real xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt);
+void NumericalDynamics::Propagate(Vector6 &x, real t0, real tf, real dt) {
+  Vector6 x0 = x;
+  Vector6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt);
   x = xf;
 }
 
 void NumericalDynamics::PropagateWithStm(OrbitState &state, real t0, real tf,
                                          real dt, Matrix6d &stm) {
   assert(state.GetOrbitStateRepres() == state_representation_);
-  Vector6real x0 = state.GetVector();
+  Vector6 x0 = state.GetVector();
   MatrixXd J(6, 6);
-  VectorXreal xf = propagator_.PropagateWithStm(odefunc_, t0, tf, x0, dt, J);
+  VectorX xf = propagator_.PropagateWithStm(odefunc_, t0, tf, x0, dt, J);
   state.SetVector(xf);
   stm = J;
 }
 
-void NumericalDynamics::PropagateWithStm(Vector6real &x, real t0, real tf,
+void NumericalDynamics::PropagateWithStm(Vector6 &x, real t0, real tf,
                                          real dt, Matrix6d &stm) {
-  Vector6real x0 = x;
+  Vector6 x0 = x;
   MatrixXd J(6, 6);
-  VectorXreal xf = propagator_.PropagateWithStm(odefunc_, t0, tf, x0, dt, J);
+  VectorX xf = propagator_.PropagateWithStm(odefunc_, t0, tf, x0, dt, J);
   x = xf;
   stm = J;
 }
@@ -55,7 +55,7 @@ void NumericalDynamics::Propagate(OrbitState &state, real t0, real tf) {
   Propagate(state, t0, tf, dt_);
 }
 
-void NumericalDynamics::Propagate(Vector6real &x, real t0, real tf) {
+void NumericalDynamics::Propagate(Vector6 &x, real t0, real tf) {
   Propagate(x, t0, tf, dt_);
 }
 
@@ -64,7 +64,7 @@ void NumericalDynamics::PropagateWithStm(OrbitState &state, real t0, real tf,
   PropagateWithStm(state, t0, tf, dt_, stm);
 }
 
-void NumericalDynamics::PropagateWithStm(Vector6real &x, real t0, real tf,
+void NumericalDynamics::PropagateWithStm(Vector6 &x, real t0, real tf,
                                          Matrix6d &stm) {
   PropagateWithStm(x, t0, tf, dt_, stm);
 }
@@ -80,11 +80,11 @@ CartesianTwoBodyDynamics::CartesianTwoBodyDynamics(double mu,
                                   std::placeholders::_1, std::placeholders::_2),
                         OrbitStateRepres::CARTESIAN, integratorType){};
 
-VectorXreal CartesianTwoBodyDynamics::ComputeRates(real t,
-                                                   const VectorXreal &x) const {
-  Vector6real dxdt;
-  Vector3real r = x.head(3);
-  Vector3real v = x.tail(3);
+VectorX CartesianTwoBodyDynamics::ComputeRates(real t,
+                                                   const VectorX &x) const {
+  Vector6 dxdt;
+  Vector3 r = x.head(3);
+  Vector3 v = x.tail(3);
   real r_norm = r.norm();
 
   dxdt.head(3) = v;
@@ -103,15 +103,15 @@ MoonFixedDynamics::MoonFixedDynamics(double mu, std::string integratorType)
                                   std::placeholders::_1, std::placeholders::_2),
                         OrbitStateRepres::CARTESIAN, integratorType){};
 
-VectorXreal MoonFixedDynamics::ComputeRates(real t,
-                                            const VectorXreal &x) const {
-  Vector6real dxdt;
-  Vector3real r = x.head(3);
-  Vector3real v = x.tail(3);
+VectorX MoonFixedDynamics::ComputeRates(real t,
+                                            const VectorX &x) const {
+  Vector6 dxdt;
+  Vector3 r = x.head(3);
+  Vector3 v = x.tail(3);
   real r_norm = r.norm();
 
-  dxdt.head(3) = Vector3real::Zero();
-  dxdt.tail(3) = Vector3real::Zero();
+  dxdt.head(3) = Vector3::Zero();
+  dxdt.tail(3) = Vector3::Zero();
 
   return dxdt;
 }
@@ -130,18 +130,18 @@ J2CartesianTwoBodyDynamics::J2CartesianTwoBodyDynamics(
                     std::placeholders::_1, std::placeholders::_2),
           OrbitStateRepres::CARTESIAN, integratorType){};
 
-VectorXreal J2CartesianTwoBodyDynamics::ComputeRates(
-    real t, const VectorXreal &x) const {
-  VectorXreal acc(6);
+VectorX J2CartesianTwoBodyDynamics::ComputeRates(
+    real t, const VectorX &x) const {
+  VectorX acc(6);
 
-  Vector3real r = x.head(3);
-  Vector3real v = x.tail(3);
+  Vector3 r = x.head(3);
+  Vector3 v = x.tail(3);
   real r_norm = r.norm();
 
   acc.head(3) = v;
   acc.tail(3) = -mu_ * r / pow(r_norm, 3);
 
-  Vector3real aJ2;
+  Vector3 aJ2;
   real aux1 = -3.0 / 2.0 * mu_ * J2_ * pow(Rbody_, 2.0) / pow(r_norm, 4.0);
   real aux2 = 5.0 * pow(r(2) / Rbody_, 2.0);
   aJ2(0) = aux1 * (1.0 - aux2) * r(0);
@@ -167,13 +167,13 @@ J2KeplerianDynamics::J2KeplerianDynamics(double mu_in, double J2_in,
                                   std::placeholders::_1, std::placeholders::_2),
                         OrbitStateRepres::CARTESIAN, integratorType){};
 
-VectorXreal J2KeplerianDynamics::ComputeRates(real t,
-                                              const VectorXreal &x) const {
+VectorX J2KeplerianDynamics::ComputeRates(real t,
+                                              const VectorX &x) const {
   real p = x(0) * (1.0 - x(1) * x(1));
   real n = sqrt(mu / pow(x(0), 3.0));
   real eta = sqrt(1.0 - x(1) * x(1));
 
-  VectorXreal coeDot(6);
+  VectorX coeDot(6);
   coeDot(0) = 0.0;
   coeDot(1) = 0.0;
   coeDot(2) = 0.0;
@@ -194,7 +194,7 @@ MoonMeanDynamics::MoonMeanDynamics(std::string integratorType)
                                   std::placeholders::_1, std::placeholders::_2),
                         OrbitStateRepres::CARTESIAN, integratorType){};
 
-VectorXreal MoonMeanDynamics::ComputeRates(real t, const VectorXreal &x) const {
+VectorX MoonMeanDynamics::ComputeRates(real t, const VectorX &x) const {
   real a = x(0);
   real e = x(1);
   real i = x(2);
@@ -202,7 +202,7 @@ VectorXreal MoonMeanDynamics::ComputeRates(real t, const VectorXreal &x) const {
   real w = x(4);
   real M = x(5);
 
-  VectorXreal coeDot(6);
+  VectorX coeDot(6);
   coeDot(0) = 0;
   coeDot(1) = (15 * k * pow(n3, 2) * pow(a, 3.0 / 2.0)) / (8 * sqrt(MU_MOON)) *
               e * sqrt(1 - pow(e, 2)) * pow(sin(i), 2) * sin(2 * w);

@@ -53,8 +53,8 @@ TEST_CASE("SpiceInterface.GetFrameConversionMatrix") {
   real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
 
   // 3: GetFrameConversionMatrix
-  Matrix6real xform(6, 6);
-  Matrix6real xform_expected{
+  Matrix6 xform(6, 6);
+  Matrix6 xform_expected{
       {-0.925133587090201, -0.379635996326334, 0.00208718253372858, 0, 0, 0},
       {0.379635104286875, -0.925135941018640, -0.000823546386013230, 0, 0, 0},
       {0.00224357543019373, 3.04773366301969e-05, 0.999997482717042, 0, 0, 0},
@@ -79,10 +79,10 @@ TEST_CASE("SpiceInterface.GetBodyPosVel") {
   int center_id = 399;
   int target_id = 301;
 
-  Vector6real posvel(6);
+  Vector6 posvel(6);
   posvel = sp::GetBodyPosVel(tai, center_id, target_id);
 
-  Vector6real posvel_expected{263638.289944174,  -221028.422146322,
+  Vector6 posvel_expected{263638.289944174,  -221028.422146322,
                               -131883.110768214, 0.734154922271287,
                               0.697461344892098, 0.325673181901724};
 

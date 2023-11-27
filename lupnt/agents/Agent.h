@@ -46,7 +46,7 @@ class Agent {
   std::shared_ptr<IOrbitDynamics> dynamics_;
   std::vector<std::shared_ptr<ICommDevice>> devices_;
 
-  Vector2real clock_;
+  Vector2 clock_;
   std::unique_ptr<ClockDynamics> clock_dynamics_;
 
  public:
@@ -57,14 +57,14 @@ class Agent {
   BodyId GetBodyId() { return bodyId_; }
   std::shared_ptr<OrbitState> GetOrbitState() { return state_; }
   std::shared_ptr<IOrbitDynamics> GetDynamics() { return dynamics_; }
-  Vector2real GetClock() { return clock_; }
+  Vector2 GetClock() { return clock_; }
 
   // Setters
   void SetOrbitState(std::shared_ptr<OrbitState> state) { state_ = state; }
   void SetDynamics(std::shared_ptr<IOrbitDynamics> dyn) { dynamics_ = dyn; }
   void SetEpoch(real epoch) { epoch_ = epoch; }
   void SetBodyId(BodyId bodyId) { bodyId_ = bodyId; }
-  void SetClock(Vector2real clk) { clock_ = clk; }
+  void SetClock(Vector2 clk) { clock_ = clk; }
   void SetClockDynamics(ClockDynamics& clock_dyn) {
     clock_dynamics_ = std::make_unique<ClockDynamics>(clock_dyn);
   }

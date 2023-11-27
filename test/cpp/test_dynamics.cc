@@ -22,7 +22,7 @@ TEST_CASE("Test_KeplerianDynamics_ClassicalOE") {
 
   double mu = MU_MOON;
   ClassicalOE coe_state({a, e, i, Omega, w, M}, CoordSystem::MI);
-  Vector6real coe_analytical = coe_state.GetVector();
+  Vector6 coe_analytical = coe_state.GetVector();
 
   // Keplerian dynamics
   auto kep_dyn = KeplerianDynamics(mu);
@@ -39,7 +39,7 @@ TEST_CASE("Test_KeplerianDynamics_ClassicalOE") {
   }
 
   // Propagation with STM
-  auto propagate_function = [&](VectorXreal &vec, real dt) {
+  auto propagate_function = [&](VectorX &vec, real dt) {
     ClassicalOE state(vec, CoordSystem::MI);
     kep_dyn.Propagate(state, dt);
     vec = state.GetVector();
@@ -70,9 +70,9 @@ TEST_CASE("Test_CartesianTwoBodyDynamics") {
 
   double mu = MU_MOON;
   ClassicalOE coe_state({a, e, i, Omega, w, M}, CoordSystem::MI);
-  CartesianOrbitState cart_state = CoeToCart(coe_state, mu);
-  Vector6real cart_vector = cart_state.GetVector();
-  VectorXreal cart_vector_kep;
+  CartesianOrbitState cart_state = ClassicalToCartesian(coe_state, mu);
+  Vector6 cart_vector = cart_state.GetVector();
+  VectorX cart_vector_kep;
 
   // Two body dynamics
   auto kep_dyn = KeplerianDynamics(mu);
@@ -85,13 +85,13 @@ TEST_CASE("Test_CartesianTwoBodyDynamics") {
     tb_dyn.Propagate(cart_state, 0.0, dt, 1.0);
     tb_dyn.Propagate(cart_vector, 0.0, dt, 1.0);
 
-    cart_vector_kep = CoeToCart(coe_state.GetVector(), mu);
+    cart_vector_kep = ClassicalToCartesian(coe_state.GetVector(), mu);
     EXPECT_NEAR_ADVEC(cart_vector_kep, cart_state.GetVector(), 1e-6);
     EXPECT_NEAR_ADVEC(cart_vector_kep, cart_vector, 1e-6);
   }
 
   // Propagation with STM
-  auto propagate_function = [&](VectorXreal &vec, real dt) {
+  auto propagate_function = [&](VectorX &vec, real dt) {
     CartesianOrbitState state(vec, CoordSystem::MI);
     tb_dyn.Propagate(state, 0.0, dt, 0.1);
     vec = state.GetVector();
@@ -99,7 +99,7 @@ TEST_CASE("Test_CartesianTwoBodyDynamics") {
 
   // Propagation with STM
   Matrix6d stm_state, stm_vector, stm_numerical;
-  Vector6real cart_numerical = cart_vector;
+  Vector6 cart_numerical = cart_vector;
 
   for (int i = 0; i < 5; i++) {
     NumericalJacobian(propagate_function, cart_numerical, dt, stm_numerical);

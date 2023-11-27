@@ -10,7 +10,7 @@ def realvec(xval, n=None):
         size = len(xval)
 
     if n == "X":
-        x = lpt.VectorXreal(size)
+        x = lpt.VectorX(size)
     else:
         x = getattr(lpt, f"Vector{size}real")(size)
 
@@ -22,7 +22,7 @@ def realvec(xval, n=None):
 # vector functions
 def funcvec(x, f):
     n = len(x)
-    z = lpt.VectorXreal(n)
+    z = lpt.VectorX(n)
     for i in range(n):
         z[i] = f(x[i])
     return z
@@ -106,7 +106,7 @@ def sumvec(x):
 
 def arctan2vec(x, y):
     n = len(x)
-    z = lpt.VectorXreal(n)
+    z = lpt.VectorX(n)
     for i in range(n):
         z[i] = lpt.arctan2(x[i], y[i])
     return z
@@ -114,7 +114,7 @@ def arctan2vec(x, y):
 
 def maxvec(x, y):
     n = len(x)
-    z = lpt.VectorXreal(n)
+    z = lpt.VectorX(n)
     for i in range(n):
         z[i] = lpt.max(x[i], y[i])
     return z
@@ -122,7 +122,7 @@ def maxvec(x, y):
 
 def minvec(x, y):
     n = len(x)
-    z = lpt.VectorXreal(n)
+    z = lpt.VectorX(n)
     for i in range(n):
         z[i] = lpt.min(x[i], y[i])
     return z
@@ -130,7 +130,7 @@ def minvec(x, y):
 
 def powvec(x, y):
     n = len(x)
-    z = lpt.VectorXreal(n)
+    z = lpt.VectorX(n)
     for i in range(n):
         z[i] = lpt.pow(x[i], y[i])
     return z
@@ -146,7 +146,7 @@ def dotvec(x, y):
 
 def multvec(x, y):
     n = len(x)
-    z = lpt.VectorXreal(n)
+    z = lpt.VectorX(n)
     for i in range(n):
         z[i] = x[i] * y[i]
     return z
@@ -154,7 +154,7 @@ def multvec(x, y):
 
 def divvec(x, y):
     n = len(x)
-    z = lpt.VectorXreal(n)
+    z = lpt.VectorX(n)
     for i in range(n):
         z[i] = x[i] / y[i]
     return z
@@ -162,7 +162,7 @@ def divvec(x, y):
 
 def divvecscaler(x, y):
     n = len(x)
-    z = lpt.VectorXreal(n)
+    z = lpt.VectorX(n)
     for i in range(n):
         z[i] = x[i] / y
     return z
@@ -174,8 +174,8 @@ def numerical_gradient(f, x, eps=1e-8):
     x_val = x.asarray()
 
     for i in range(n):
-        x_p = lpt.VectorXreal(n)
-        x_m = lpt.VectorXreal(n)
+        x_p = lpt.VectorX(n)
+        x_m = lpt.VectorX(n)
         for j in range(n):
             if i == j:
                 x_p[j] = x_val[j] + eps
@@ -198,8 +198,8 @@ def numerical_jacobian(f, x, eps=1e-8):
     x_val = x.asarray()
 
     for i in range(n):
-        x_p = lpt.VectorXreal(n)
-        x_m = lpt.VectorXreal(n)
+        x_p = lpt.VectorX(n)
+        x_m = lpt.VectorX(n)
         for j in range(n):
             if i == j:
                 eps_ = max(abs(x_val[j] * eps), eps)

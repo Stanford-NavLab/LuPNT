@@ -14,8 +14,8 @@
 namespace lupnt {
 
 void GnssStateEstimationApp::Setup() {
-  Vector6real rv = agent->GetOrbitState()->GetVector();
-  Vector2real clk = Vector2real::Zero();
+  Vector6 rv = agent->GetOrbitState()->GetVector();
+  Vector2 clk = Vector2::Zero();
 
   // Initial covariance
   Matrix6d P_rv = Matrix6d::Zero();
@@ -79,7 +79,7 @@ void GnssStateEstimationApp::Step(double t) {
   clk_pred_only = Phi_clk * clk_pred_only;
 
   // State and covariance
-  VectorXreal x(n_state);
+  VectorX x(n_state);
   x << rv_pred, clk_pred;
 
   MatrixXd Phi(n_state, n_state);
@@ -103,7 +103,7 @@ void GnssStateEstimationApp::Step(double t) {
 
   // Predict measurements
   MatrixXd H_pr(n_meas, n_state);
-  VectorXreal z_pr_pred =
+  VectorX z_pr_pred =
       meas.GetPseudorange(epoch, rv_pred, clk_pred, H_pr);
 
   MatrixXd R_pr = MatrixXd::Zero(n_meas, n_meas);
@@ -118,7 +118,7 @@ void GnssStateEstimationApp::Step(double t) {
     MatrixXd R(n_meas, n_meas);
     R = R_pr;
 
-    VectorXreal y = z_pr - z_pr_pred;
+    VectorX y = z_pr - z_pr_pred;
     auto I = MatrixXd::Identity(n_state, n_state);
     auto S = H * P * H.transpose() + R;
     auto K = P * H.transpose() * S.inverse();
@@ -127,7 +127,7 @@ void GnssStateEstimationApp::Step(double t) {
     // decomposition MatrixXd A =
     // decompC.transpose().solve(B.transpose()).transpose();
 
-    VectorXreal dx = K * y;
+    VectorX dx = K * y;
     x = x + dx;
     P = (I - K * H) * P * (I - K * H).transpose() +
         K * R * K.transpose();  // Joseph form

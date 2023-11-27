@@ -69,7 +69,8 @@ class DataHistory {
     if (historyData.find(key) == historyData.end()) {
       historyData[key] = {};
     }
-    historyData[key].push_back(Timestamped<VectorXd>(timestamp, toEigen(data)));
+    historyData[key].push_back(
+        Timestamped<VectorXd>(timestamp, data.template cast<double>()));
   }
 
   const std::vector<Timestamped<VectorXd>>& GetData(
