@@ -4,15 +4,16 @@ import pytest
 
 try:
     from . import utils
-    from .setup_gmat import gmat
+    from .gmat import gmat
 except ImportError:
     import utils
-    import setup_gmat as gmat
+    from gmat import gmat
 
 
 class TestStateUtils:
-    def test_cartesian(self):
+    def test_classical(self):
         # Cartesian to Classical
+
         cart_array = pnt.classical_to_cartesian(utils.coe_array_elfo, pnt.MU_MOON)
         cart_state = pnt.CartesianOrbitState(cart_array, pnt.CoordSystem.MI)
 
@@ -30,8 +31,8 @@ class TestStateUtils:
         assert np.allclose(coe_array, coe_gmat)
         assert np.allclose(coe_state.vector, coe_gmat)
 
-    def test_classical(self):
         # Classical to Cartesian
+
         coe_array = utils.coe_array_elfo
         coe_state = pnt.ClassicalOE(coe_array, pnt.CoordSystem.MI)
 

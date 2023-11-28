@@ -136,22 +136,22 @@ void init_orbit_state_utils(py::module &m) {
       py::arg("coe"), py::arg("rel_qnsoe"));
 
   // Anomaly Conversions
-  m.def("eccentric_to_true", [](double E, double e) -> double {
+  m.def("eccentric_to_true_anomaly", [](double E, double e) -> double {
     return EccentricToTrueAnomaly(E, e).val();
   });
-  m.def("eccentric_to_mean", [](double E, double e) -> double {
+  m.def("eccentric_to_mean_anomaly", [](double E, double e) -> double {
     return EccentricToMeanAnomaly(E, e).val();
   });
-  m.def("mean_to_eccentric", [](double M, double e) -> double {
+  m.def("mean_to_eccentric_anomaly", [](double M, double e) -> double {
     return MeanToEccentricAnomaly(M, e).val();
   });
-  m.def("mean_to_true", [](double M, double e) -> double {
+  m.def("mean_to_true_anomaly", [](double M, double e) -> double {
     return MeanToTrueAnomaly(M, e).val();
   });
-  m.def("true_to_eccentric", [](double nu, double e) -> double {
+  m.def("true_to_eccentric_anomaly", [](double nu, double e) -> double {
     return TrueToEccentricAnomaly(nu, e).val();
   });
-  m.def("true_to_mean", [](double f, double e) -> double {
+  m.def("true_to_mean_anomaly", [](double f, double e) -> double {
     return TrueToMeanAnomaly(f, e).val();
   });
 }

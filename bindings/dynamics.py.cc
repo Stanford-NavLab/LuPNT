@@ -1,5 +1,6 @@
 #include <lupnt/core/constants.h>
 #include <lupnt/dynamics/dynamics.h>
+#include <lupnt/numerics/math_utils.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
@@ -12,19 +13,24 @@ void init_dynamics(py::module &m) {
       .def(py::init<const double>())
       .def(
           "propagate",
-          py::overload_cast<ClassicalOE &, real>(&KeplerianDynamics::Propagate),
+          [](KeplerianDynamics &dyn, ClassicalOE &state, double dt) -> void {
+            dyn.Propagate(state, dt);
+          },
           py::arg("state"), py::arg("dt"))
-      .def("propagate",
-           py::overload_cast<QuasiNonsingularOE &, real>(
-               &KeplerianDynamics::Propagate),
-           py::arg("state"), py::arg("dt"))
-      .def("propagate",
-           py::overload_cast<EquinoctialOE &, real>(
-               &KeplerianDynamics::Propagate),
-           py::arg("state"), py::arg("dt"))
+      .def(
+          "propagate",
+          [](KeplerianDynamics &dyn, QuasiNonsingularOE &state,
+             double dt) -> void { dyn.Propagate(state, dt); },
+          py::arg("state"), py::arg("dt"))
+      .def(
+          "propagate",
+          [](KeplerianDynamics &dyn, EquinoctialOE &state, double dt) -> void {
+            dyn.Propagate(state, dt);
+          },
+          py::arg("state"), py::arg("dt"))
       .def(
           "propagate_with_stm",
-          [](KeplerianDynamics &dyn, ClassicalOE &state, real dt) {
+          [](KeplerianDynamics &dyn, ClassicalOE &state, double dt) {
             Matrix6d stm;
             dyn.PropagateWithStm(state, dt, stm);
             return stm;
@@ -32,7 +38,7 @@ void init_dynamics(py::module &m) {
           py::arg("state"), py::arg("dt"), py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](KeplerianDynamics &dyn, QuasiNonsingularOE &state, real dt) {
+          [](KeplerianDynamics &dyn, QuasiNonsingularOE &state, double dt) {
             Matrix6d stm;
             dyn.PropagateWithStm(state, dt, stm);
             return stm;
@@ -40,7 +46,7 @@ void init_dynamics(py::module &m) {
           py::arg("state"), py::arg("dt"), py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](KeplerianDynamics &dyn, EquinoctialOE &state, real dt) {
+          [](KeplerianDynamics &dyn, EquinoctialOE &state, double dt) {
             Matrix6d stm;
             dyn.PropagateWithStm(state, dt, stm);
             return stm;
@@ -52,18 +58,24 @@ void init_dynamics(py::module &m) {
 
   // NumericalDynamics
   py::class_<NumericalDynamics>(m, "NumericalDynamics")
-      .def("propagate",
-           py::overload_cast<OrbitState &, real, real, real>(
-               &NumericalDynamics::Propagate),
-           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
-      .def("propagate",
-           py::overload_cast<Vector6 &, real, real, real>(
-               &NumericalDynamics::Propagate),
-           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
+      .def(
+          "propagate",
+          [](NumericalDynamics &dyn, OrbitState &state, double t0, double tf,
+             double dt) -> void { dyn.Propagate(state, t0, tf, dt); },
+          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
+      .def(
+          "propagate",
+          [](NumericalDynamics &dyn, Vector6d &state, double t0, double tf,
+             double dt) -> Vector6d {
+            Vector6 x = state.cast<real>();
+            dyn.Propagate(x, t0, tf, dt);
+            return x.cast<double>();
+          },
+          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
       .def(
           "propagate_with_stm",
-          [](NumericalDynamics &dyn, CartesianOrbitState &state, real t0,
-             real tf, real dt) {
+          [](NumericalDynamics &dyn, CartesianOrbitState &state, double t0,
+             double tf, double dt) {
             Matrix6d stm;
             dyn.PropagateWithStm(state, t0, tf, dt, stm);
             return stm;
@@ -72,14 +84,13 @@ void init_dynamics(py::module &m) {
           py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](NumericalDynamics &dyn, Vector6 &state, real t0, real tf,
-             real dt) {
+          [](NumericalDynamics &dyn, Vector6 &state, double t0, double tf,
+             double dt) -> std::tuple<Vector6d, Matrix6d> {
             Matrix6d stm;
             dyn.PropagateWithStm(state, t0, tf, dt, stm);
-            return stm;
+            return std::make_tuple(state.cast<double>(), stm);
           },
-          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"),
-          py::return_value_policy::move);
+          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"));
 
   // CartesianTwoBodyDynamics
   py::class_<CartesianTwoBodyDynamics, NumericalDynamics>(

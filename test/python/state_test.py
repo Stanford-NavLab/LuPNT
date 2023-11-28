@@ -1,7 +1,11 @@
 import pylupnt as pnt
 import numpy as np
 import pytest
-from . import utils
+
+try:
+    from . import utils
+except ImportError:
+    import utils
 
 
 class TestOrbitState:
