@@ -3,25 +3,25 @@ import numpy as np
 import pytest
 
 try:
-    from . import utils
-    from .gmat import gmat
+    from .utils import gmat_helpers, data
+    from .utils.gmat import gmat
 except ImportError:
-    import utils
-    from gmat import gmat
+    from utils import gmat_helpers, data
+    from utils.gmat import gmat
 
 
 class TestStateUtils:
     def test_classical(self):
         # Cartesian to Classical
 
-        cart_array = pnt.classical_to_cartesian(utils.coe_array_elfo, pnt.MU_MOON)
+        cart_array = pnt.classical_to_cartesian(data.coe_array_elfo, pnt.MU_MOON)
         cart_state = pnt.CartesianOrbitState(cart_array, pnt.CoordSystem.MI)
 
         coe_array = pnt.cartesian_to_classical(cart_array, pnt.MU_MOON)
         coe_state = pnt.cartesian_to_classical(cart_state, pnt.MU_MOON)
 
         cart_gmat = cart_array
-        coe_gmat = utils.unpack_gmat(
+        coe_gmat = gmat_helpers.unpack_rvector(
             gmat.StateConversionUtil.CartesianToKeplerian(
                 pnt.MU_MOON, gmat.Rvector6(*cart_gmat), "MA"
             )
@@ -33,7 +33,7 @@ class TestStateUtils:
 
         # Classical to Cartesian
 
-        coe_array = utils.coe_array_elfo
+        coe_array = data.coe_array_elfo
         coe_state = pnt.ClassicalOE(coe_array, pnt.CoordSystem.MI)
 
         cart_array = pnt.classical_to_cartesian(coe_array, pnt.MU_MOON)
@@ -41,7 +41,7 @@ class TestStateUtils:
 
         coe_gmat = coe_array
         coe_gmat[2:6] = np.rad2deg(coe_gmat[2:6])
-        cart_gmat = utils.unpack_gmat(
+        cart_gmat = gmat_helpers.unpack_rvector(
             gmat.StateConversionUtil.KeplerianToCartesian(
                 pnt.MU_MOON, gmat.Rvector6(*coe_gmat), "MA"
             )

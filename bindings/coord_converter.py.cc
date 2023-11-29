@@ -18,9 +18,6 @@ void init_coord_converter(py::module &m) {
       .value("MI", CoordSystem::MI)
       .value("PA", CoordSystem::PA)
       .value("ME", CoordSystem::ME)
-      .value("RTN", CoordSystem::RTN)
-      .value("CoordSystemCount", CoordSystem::CoordSystemCount)
-      .value("NONE", CoordSystem::NONE)
       .export_values();
 
   py::class_<CoordConverter>(m, "CoordConverter")

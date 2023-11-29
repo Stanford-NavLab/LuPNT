@@ -3,17 +3,17 @@ import numpy as np
 import pytest
 
 try:
-    from . import utils
-    from .gmat import gmat
+    from .utils import data, gmat_helpers
+    from .utils.gmat import gmat
 except ImportError:
-    import utils
-    from gmat import gmat
+    from utils import data, gmat_helpers
+    from utils.gmat import gmat
 
 
 class TestNumericalDynamics:
     def test_CartesianTwoBodyDynamics(self):
         # Constructor
-        cart_array = pnt.classical_to_cartesian(utils.coe_array_elfo, pnt.MU_MOON)
+        cart_array = pnt.classical_to_cartesian(data.coe_array_elfo, pnt.MU_MOON)
         dyn = pnt.CartesianTwoBodyDynamics(pnt.MU_MOON)
 
         # Propagate
