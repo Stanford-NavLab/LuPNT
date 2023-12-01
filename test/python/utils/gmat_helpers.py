@@ -59,48 +59,11 @@ def create_force_model():
     gmat.Initialize()
 
 
-# pylupnt.CoordSystem {
-#   ITRF = 0,  // International Terrestrial Reference Frame
-#   GCRF,      // Geocentric Reference System
-#   ICRF,      // International Celestial Reference System
-#   SER,       // Sun-Earth Rotating Frame
-#   GSE,       // Geocentric Solar Ecliptic
-#   EME,       // Earth-Centered mean equator and equinox at J2000 epoch
-#   MOD,       // Mean of date equatorial system
-#   TOD,       // True of date equatorial system
-#   EMR,       // Earth-Moon Rotating Frame
-#   MI,        // Moon-centered Inertial Frame  (Axis aligened with ICRF)
-#   PA,        // Moon-Fixed with principal axes
-#   ME,        // Moon-Fixed with mean-Earth / polar axes
-#   RTN,       // Radial-Tangential-Normal
-#   CoordSystemCount,
-#   NONE,
-# };
-
-# Gmat axes
-# creatables = [
-#     "MJ2000Eq",
-#     "MJ2000Ec",
-#     "TOEEq",
-#     "TOEEc",
-#     "MOEEq",
-#     "MOEEc",
-#     "TODEq",
-#     "TODEc",
-#     "MODEq",
-#     "MODEc",
-#     "ObjectReferenced",
-#     "Equator",
-#     "BodyFixed",
-#     "BodyInertial",
-#     "GSE",
-#     "GSM",
-#     "Topocentric",
-#     "LocalAlignedConstrained",
-#     #"ITRF", # This one is commented out in the original code
-#     "ICRF",
-#     "BodySpinSun"
-# ]
+# pylupnt.CoordSystem = {ITRF, GCRF, ICRF, SER, GSE, EME, MOD, TOD, MI, PA, ME, NONE}
+# gmat_axes = [
+# "MJ2000Eq", "MJ2000Ec", "TOEEq", "TOEEc", "MOEEq", "MOEEc", "TODEq", "TODEc", "MODEq", "MODEc",
+# "ObjectReferenced", "Equator", "BodyFixed", "BodyInertial", "GSE", "GSM", "Topocentric",
+# "LocalAlignedConstrained", "ICRF", "BodySpinSun"]
 
 
 def get_coordinate_system(name):
@@ -120,23 +83,52 @@ def get_coordinate_system(name):
         return gmat.Construct("CoordinateSystem", "MOD", "Earth", "MODEq")
     elif name == pnt.CoordSystem.TOD:
         return gmat.Construct("CoordinateSystem", "TOD", "Earth", "TODEq")
+    elif name == pnt.CoordSystem.EMR:
+        coord_sys = gmat.Construct("CoordinateSystem", "EMR")
+        coord_sys.SetField("Origin", "Earth")
+        coord_sys.SetField("Axes", "ObjectReferenced")
+        coord_sys.SetField("XAxis", "R")
+        coord_sys.SetField("ZAxis", "N")
+        coord_sys.SetField("Primary", "Earth")
+        coord_sys.SetField("Secondary", "Luna")
     elif name == pnt.CoordSystem.MI:
-        return gmat.Construct("CoordinateSystem", "MI", "Moon", "MJ2000Eq")
+        return gmat.Construct("CoordinateSystem", "MI", "Luna", "MJ2000Eq")
     elif name == pnt.CoordSystem.PA:
-        return gmat.Construct("CoordinateSystem", "PA", "Moon", "BodyFixed")
+        return gmat.Construct("CoordinateSystem", "PA", "Luna", "BodyFixed")
     elif name == pnt.CoordSystem.ME:
         assert False, "Not implemented"
     else:
         assert False, "Coordinate system not found"
 
 
-def convert(epoch, rv, coord_sys_from, coord_sys_to):
-    converter = None
+def convert_coord(epoch, rv, coord_sys_from, coord_sys_to):
+    epoch_gmat = gmat.GmatTime(convert_pylupnt_to_gmat_epoch(epoch))
+    coord_from = get_coordinate_system(coord_sys_from)
+    coord_to = get_coordinate_system(coord_sys_to)
+    state_from = gmat.Rvector6(rv)
+    state_to = gmat.Rvector6()
+    gmat.Initialize()
+
+    converter = gmat.CoordinateConverter()
+    converter.Convert(epoch_gmat, state_from, coord_from, state_to, coord_to)
+    return np.array([state_to[i] for i in range(state_to.GetSize())])
+
+
+def convert_gmat_to_pylupnt_epoch(epoch):
+    # pylupnt: TAI seconds since 2000/01/01 12:00:00.000
+    # gmat: A1MJD since 1941/
+    return epoch * gmat.SECS_PER_DAY - gmat.MJD_OF_J2000 * gmat.SECS_PER_DAY
+
+
+def convert_pylupnt_to_gmat_epoch(epoch):
+    # pylupnt: TAI seconds since J2000
+    # gmat: A1MJD since 1941
+    return (epoch + gmat.MJD_OF_J2000 * gmat.SECS_PER_DAY) / gmat.SECS_PER_DAY
 
 
 def convert_time(epoch, time_sys_from, time_sys_to):
     time_converter = gmat.TimeSystemConverter.Instance()
-    return (
-        time_converter.Convert(epoch, time_sys_from, time_sys_to) * gmat.SECS_PER_DAY
-        - gmat.MJD_OF_J2000 * gmat.SECS_PER_DAY
-    )
+    epoch_gmat_from = convert_pylupnt_to_gmat_epoch(epoch)
+    epoh_gmat_to = time_converter.Convert(epoch_gmat_from, time_sys_from, time_sys_to)
+    epoch_to = convert_gmat_to_pylupnt_epoch(epoh_gmat_to)
+    return epoch_to

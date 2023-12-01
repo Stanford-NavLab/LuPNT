@@ -23,6 +23,9 @@ class TestCoordConverter:
             cart_from = pnt.CoordConverter.convert(
                 epoch, cart_MI, pnt.MI, coord_sys_from
             )
+            cart_from_gmat = gmat_helpers.convert_coord(
+                epoch, cart_MI, pnt.MI, coord_sys_from
+            )
 
             for coord_sys_to in coord_systems:
                 print("From", coord_sys_from, "to", coord_sys_to)
@@ -32,5 +35,4 @@ class TestCoordConverter:
 
 
 if __name__ == "__main__":
-    # pytest.main([__file__])
-    TestCoordConverter().test_conversions()
+    pytest.main([__file__])
