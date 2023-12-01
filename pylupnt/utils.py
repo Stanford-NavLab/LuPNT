@@ -4,10 +4,11 @@ import numpy as np
 import pandas as pd
 from time import time
 import matplotlib.pyplot as plt
+
 # import array_to_latex as a2l
 from matplotlib.gridspec import GridSpec
 
-basepath = "/Users/keidaiiiyama/Documents/sw_navlab/LunaNetSimulator"
+basepath = os.getenv("$LUPNT_DATA_PATH")
 
 
 # Load data
@@ -21,7 +22,7 @@ def load_data(directory):
                 data[name] = np.loadtxt(
                     os.path.join(output_path, filename), delimiter=","
                 )
-            except:
+            except ValueError:
                 # Each row has a different number of elements
                 tmp = []
                 with open(os.path.join(output_path, filename), "r") as f:
@@ -153,16 +154,16 @@ def plot_RTN(
 
     limits = {
         "rR": [
-            min(np.min(rv_RTN[f"rR{l}"]) for l in labels) - delta,
-            max(np.max(rv_RTN[f"rR{l}"]) for l in labels) + delta,
+            min(np.min(rv_RTN[f"rR{s}"]) for s in labels) - delta,
+            max(np.max(rv_RTN[f"rR{s}"]) for s in labels) + delta,
         ],
         "rT": [
-            min(np.min(rv_RTN[f"rT{l}"]) for l in labels) - delta,
-            max(np.max(rv_RTN[f"rT{l}"]) for l in labels) + delta,
+            min(np.min(rv_RTN[f"rT{s}"]) for s in labels) - delta,
+            max(np.max(rv_RTN[f"rT{s}"]) for s in labels) + delta,
         ],
         "rN": [
-            min(np.min(rv_RTN[f"rN{l}"]) for l in labels) - delta,
-            max(np.max(rv_RTN[f"rN{l}"]) for l in labels) + delta,
+            min(np.min(rv_RTN[f"rN{s}"]) for s in labels) - delta,
+            max(np.max(rv_RTN[f"rN{s}"]) for s in labels) + delta,
         ],
     }
 
@@ -175,19 +176,19 @@ def plot_RTN(
 
     # Plotting function
     def plot_planes(ax, p1, p2):
-        for l, lt in zip(labels, legend_text):
-            ax.plot(rv_RTN[f"r{p1}{l}"], rv_RTN[f"r{p2}{l}"], lw=0.5, label=lt)
+        for s, lt in zip(labels, legend_text):
+            ax.plot(rv_RTN[f"r{p1}{s}"], rv_RTN[f"r{p2}{s}"], lw=0.5, label=lt)
             if init:
                 ax.plot(
-                    rv_RTN[f"r{p1}{l}"].iloc[0],
-                    rv_RTN[f"r{p2}{l}"].iloc[0],
+                    rv_RTN[f"r{p1}{s}"].iloc[0],
+                    rv_RTN[f"r{p2}{s}"].iloc[0],
                     "o",
                     label=f"Deputy {lt}",
                 )
             if final:
                 ax.plot(
-                    rv_RTN[f"r{p1}{l}"].iloc[-1],
-                    rv_RTN[f"r{p2}{l}"].iloc[-1],
+                    rv_RTN[f"r{p1}{s}"].iloc[-1],
+                    rv_RTN[f"r{p2}{s}"].iloc[-1],
                     "o",
                     label=f"Final {lt}",
                 )
@@ -203,29 +204,29 @@ def plot_RTN(
 
     # Plot 3D trajectory
     ax = fig.add_subplot(gs[0, 1], projection="3d")
-    for l, lt in zip(labels, legend_text):
+    for s, lt in zip(labels, legend_text):
         ax.plot(
-            rv_RTN[f"rR{l}"],
-            rv_RTN[f"rT{l}"],
-            rv_RTN[f"rN{l}"],
+            rv_RTN[f"rR{s}"],
+            rv_RTN[f"rT{s}"],
+            rv_RTN[f"rN{s}"],
             lw=0.5,
             label=lt,
         )
 
-    for l, lt in zip(labels, legend_text):
+    for s, lt in zip(labels, legend_text):
         if init:
             ax.plot(
-                rv_RTN[f"rR{l}"].iloc[0],
-                rv_RTN[f"rT{l}"].iloc[0],
-                rv_RTN[f"rN{l}"].iloc[0],
+                rv_RTN[f"rR{s}"].iloc[0],
+                rv_RTN[f"rT{s}"].iloc[0],
+                rv_RTN[f"rN{s}"].iloc[0],
                 "o",
                 label=f"Initial {lt}",
             )
         if final:
             ax.plot(
-                rv_RTN[f"rR{l}"].iloc[-1],
-                rv_RTN[f"rT{l}"].iloc[-1],
-                rv_RTN[f"rN{l}"].iloc[-1],
+                rv_RTN[f"rR{s}"].iloc[-1],
+                rv_RTN[f"rT{s}"].iloc[-1],
+                rv_RTN[f"rN{s}"].iloc[-1],
                 "o",
                 label=f"Deputy {lt}",
             )

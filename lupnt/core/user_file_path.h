@@ -20,12 +20,9 @@ namespace lupnt {
 
 static std::filesystem::path GetDataPath() {
   const char* dataPathEnv = std::getenv("LUPNT_DATA_PATH");
-  if (dataPathEnv != nullptr) {
-    return std::filesystem::path(dataPathEnv);
-  } else {
-    throw std::runtime_error(
-        "Environment variable LUPNT_DATA_PATH is not set.");
-  }
+  assert(dataPathEnv != nullptr &&
+         "Environment variable LUPNT_DATA_PATH is not set.");
+  return std::filesystem::path(dataPathEnv);
 }
 
 static std::optional<std::filesystem::path> FindFileInDir(

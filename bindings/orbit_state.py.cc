@@ -76,7 +76,7 @@ void init_orbit_state(py::module &m) {
   py::class_<ClassicalOE, OrbitState>(m, "ClassicalOE")
       .def(py::init<const Vector6d &, const CoordSystem>(),
            py::arg("[a, e, i, Omega, w, M]"),
-           py::arg("coord_sys") = CoordSystem::NONE)
+           py::arg("coord_sys") = CoordSystem::MI)
       .def_property("a", DEFINE_GETSET_REAL(ClassicalOE, a))
       .def_property("e", DEFINE_GETSET_REAL(ClassicalOE, e))
       .def_property("i", DEFINE_GETSET_REAL(ClassicalOE, i))
@@ -88,7 +88,7 @@ void init_orbit_state(py::module &m) {
   // CartesianOrbitState
   py::class_<CartesianOrbitState, OrbitState>(m, "CartesianOrbitState")
       .def(py::init<const Vector6d &, const CoordSystem>(), py::arg("rv"),
-           py::arg("coord_sys") = CoordSystem::NONE)
+           py::arg("coord_sys") = CoordSystem::MI)
       .def_property(
           "r",
           [](const CartesianOrbitState &s) -> Vector3d {

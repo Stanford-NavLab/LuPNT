@@ -29,20 +29,14 @@ enum CoordSystem {
   TOD,       // True of date equatorial system
   EMR,       // Earth-Moon Rotating Frame
   MI,        // Moon-centered Inertial Frame  (Axis aligened with ICRF)
-  PA,        // Moon Fixed with principal axes
+  PA,        // Moon-Fixed with principal axes
   ME,        // Moon-Fixed with mean-Earth / polar axes
-  RTN,       // Radial-Tangential-Normal
-  CoordSystemCount,
-  NONE,
 };
 
 class CoordConverter {
  public:
-  static const std::string COORD_SYSTEM_TEXT[CoordSystemCount];
-
-  static Vector6 Convert(Vector6 rv_in, real epoch,
-                             CoordSystem coord_sys_in,
-                             CoordSystem coord_sys_out);
+  static Vector6 Convert(real epoch, Vector6 rv_in, CoordSystem coord_sys_in,
+                         CoordSystem coord_sys_out);
 
  private:
   static Matrix6 ComputeITRFtoGCRF(real tai);

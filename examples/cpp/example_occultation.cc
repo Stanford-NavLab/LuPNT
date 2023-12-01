@@ -23,16 +23,16 @@ void printOccultation(Vector6 state_tx_vec, Vector6 state_rx_vec,
   Vector3d segment_eci, segment_mi, user_eci, user_mi;
   double t = 0.0;
 
-  tmp_ad = CoordConverter::Convert(state_tx_vec, t, CoordSystem::GCRF,
+  tmp_ad = CoordConverter::Convert(t, state_tx_vec, CoordSystem::GCRF,
                                    CoordSystem::MI);
   segment_mi = tmp_ad.segment(0, 3).cast<double>();
-  tmp_ad = CoordConverter::Convert(state_tx_vec, t, CoordSystem::GCRF,
+  tmp_ad = CoordConverter::Convert(t, state_tx_vec, CoordSystem::GCRF,
                                    CoordSystem::GCRF);
   segment_eci = tmp_ad.segment(0, 3).cast<double>();
-  tmp_ad = CoordConverter::Convert(state_rx_vec, t, CoordSystem::MI,
+  tmp_ad = CoordConverter::Convert(t, state_rx_vec, CoordSystem::MI,
                                    CoordSystem::GCRF);
   user_mi = tmp_ad.segment(0, 3).cast<double>();
-  tmp_ad = CoordConverter::Convert(state_rx_vec, t, CoordSystem::MI,
+  tmp_ad = CoordConverter::Convert(t, state_rx_vec, CoordSystem::MI,
                                    CoordSystem::GCRF);
   user_eci = tmp_ad.segment(0, 3).cast<double>();
 

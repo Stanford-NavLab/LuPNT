@@ -17,10 +17,18 @@ void init_spice_interface(py::module &m) {
                         et, from, to);
                   })
 
-      .def_static("string_to_tdb", py::overload_cast<std::string>(
-                                       &lupnt::SpiceInterface::StringToTDB))
-      .def_static("string_to_tai", py::overload_cast<std::string>(
-                                       &lupnt::SpiceInterface::StringToTAI))
+      .def_static(
+          "string_to_tdb",
+          [](std::string utc) -> double {
+            return lupnt::SpiceInterface::StringToTDB(utc).val();
+          },
+          py::arg("gregorian_date"))
+      .def_static(
+          "string_to_tai",
+          [](std::string utc) -> double {
+            return lupnt::SpiceInterface::StringToTAI(utc).val();
+          },
+          py::arg("gregorian_date"))
       .def_static("tdb_to_string_utc",
                   [](double tdb, int prec) {
                     return lupnt::SpiceInterface::TDBtoStringUTC(tdb, prec);

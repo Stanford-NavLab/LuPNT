@@ -183,7 +183,7 @@ Vector3d GetBodyPos(std::string targetName, real epoch, std::string refFrame,
  * @param to_frame
  * @return MatrixXd
  */
-MatrixXd GetFrameConversionMatrix(real et, std::string from_frame,
+Matrix6d GetFrameConversionMatrix(real et, std::string from_frame,
                                   std::string to_frame) {
   LoadSpiceKernel();
   SpiceInt bodyname;
@@ -191,7 +191,7 @@ MatrixXd GetFrameConversionMatrix(real et, std::string from_frame,
       (SpiceDouble)
           et.val();  // ToDO: this cuts the relatonship between et and matrix
   double xform[6][6];
-  MatrixXd M_rot(6, 6);
+  Matrix6d M_rot;
 
   const char *from_frame_char =
       strcpy(new char[from_frame.length() + 1], from_frame.c_str());
@@ -358,13 +358,13 @@ real ConvertTime(real t, std::string from_time_type, std::string to_time_type) {
  * @return VectorX  6x1 vector of position and velocity of target body
  * in center body J2000 frame
  */
-VectorX GetBodyPosVel(const real tai, int center, int target) {
+Vector6 GetBodyPosVel(const real tai, int center, int target) {
   LoadSpiceKernel();
 
   bool load_cent = false;
   bool load_targ = false;
-  VectorX rv_center(6);
-  VectorX rv_target(6);
+  Vector6 rv_center;
+  Vector6 rv_target;
 
   // convert TAI to TDB past J2000
   real t_s = ConvertTime(tai, "TAI", "TDB");
@@ -384,9 +384,7 @@ VectorX GetBodyPosVel(const real tai, int center, int target) {
     }
   }
 
-  VectorX retState(6);
-  retState = rv_target - rv_center;
-
+  Vector6 retState = rv_target - rv_center;
   return retState;
 }
 

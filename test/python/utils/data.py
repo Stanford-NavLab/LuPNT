@@ -21,7 +21,3 @@ array2string_kwargs = {
     "separator": ", ",
     "formatter": {"float_kind": lambda x: "%g" % x},
 }
-
-
-def unpack_gmat(rvector6):
-    return np.array([rvector6.Get(i) for i in range(6)])

@@ -1,4 +1,9 @@
+// lupnt
+#include <lupnt/core/constants.h>
 #include <lupnt/physics/coord_converter.h>
+
+// pybind11
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -18,18 +23,17 @@ void init_coord_converter(py::module &m) {
       .value("MI", CoordSystem::MI)
       .value("PA", CoordSystem::PA)
       .value("ME", CoordSystem::ME)
-      .value("RTN", CoordSystem::RTN)
-      .value("CoordSystemCount", CoordSystem::CoordSystemCount)
-      .value("NONE", CoordSystem::NONE)
       .export_values();
 
   py::class_<CoordConverter>(m, "CoordConverter")
       .def_static(
           "convert",
-          [](const VectorX &rv_in, const real epoch,
-             const CoordSystem coord_sys_in, const CoordSystem coord_sys_out) {
-            return CoordConverter::Convert(rv_in, epoch, coord_sys_in,
-                                           coord_sys_out);
+          [](double epoch, const Vector6d &rv_in, CoordSystem coord_sys_in,
+             CoordSystem coord_sys_out) -> Vector6d {
+            return CoordConverter::Convert(epoch, rv_in, coord_sys_in,
+                                           coord_sys_out)
+                .cast<double>();
           },
-          "Convert frame (Frame ID input)");
+          "Convert coordinate system", py::arg("rv_in"), py::arg("epoch"),
+          py::arg("coord_sys_in"), py::arg("coord_sys_out"));
 }

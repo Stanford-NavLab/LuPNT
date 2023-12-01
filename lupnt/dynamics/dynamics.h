@@ -73,8 +73,7 @@ class NumericalDynamics : public IOrbitDynamics {
   void Propagate(Vector6 &x, real t0, real tf, real dt);
   void PropagateWithStm(OrbitState &state, real t0, real tf, real dt,
                         Matrix6d &stm);
-  void PropagateWithStm(Vector6 &x, real t0, real tf, real dt,
-                        Matrix6d &stm);
+  void PropagateWithStm(Vector6 &x, real t0, real tf, real dt, Matrix6d &stm);
 
   // without dt (uses dt_)
   void Propagate(OrbitState &state, real t0, real tf);
@@ -242,10 +241,9 @@ class NBodyDynamics : public NumericalDynamics {
 
   Vector3 ComputeNBodyGravity(const real t, const VectorX &rv) const;
   Vector3 ComputeSolarRadiationPressure(const Vector3 &r_body2sc,
-                                            const Vector3 &r_sun2sc,
-                                            double R_body, double R_SUN,
-                                            double m, double CR,
-                                            double area) const;
+                                        const Vector3 &r_sun2sc, double R_body,
+                                        double R_SUN, double m, double CR,
+                                        double area) const;
 };
 
 }  // namespace lupnt

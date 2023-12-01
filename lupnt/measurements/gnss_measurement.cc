@@ -109,7 +109,7 @@ VectorX GnssMeasurement::GetPseudorange(double epoch, Vector6 rv_pred,
                                             MatrixXd &H_pr) {
   auto func = [&, epoch, this](const Vector6 &rv_pred,
                                const Vector2 &clk_pred) {
-    auto rv_pred_gcrf = CoordConverter::Convert(rv_pred, epoch, CoordSystem::MI,
+    auto rv_pred_gcrf = CoordConverter::Convert(epoch, rv_pred, CoordSystem::MI,
                                                 CoordSystem::GCRF);
     Vector3 r_rx = rv_pred_gcrf.head(3);
     real dt_rx = clk_pred(0);
