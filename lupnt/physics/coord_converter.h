@@ -35,7 +35,7 @@ enum CoordSystem {
 
 class CoordConverter {
  public:
-  static Vector6 Convert(Vector6 rv_in, real epoch, CoordSystem coord_sys_in,
+  static Vector6 Convert(real epoch, Vector6 rv_in, CoordSystem coord_sys_in,
                          CoordSystem coord_sys_out);
 
  private:

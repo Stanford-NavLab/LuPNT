@@ -128,3 +128,15 @@ def get_coordinate_system(name):
         assert False, "Not implemented"
     else:
         assert False, "Coordinate system not found"
+
+
+def convert(epoch, rv, coord_sys_from, coord_sys_to):
+    converter = None
+
+
+def convert_time(epoch, time_sys_from, time_sys_to):
+    time_converter = gmat.TimeSystemConverter.Instance()
+    return (
+        time_converter.Convert(epoch, time_sys_from, time_sys_to) * gmat.SECS_PER_DAY
+        - gmat.MJD_OF_J2000 * gmat.SECS_PER_DAY
+    )

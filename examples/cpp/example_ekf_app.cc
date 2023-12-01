@@ -26,8 +26,6 @@
 
 // Autodiff includes
 
-
-
 // Eigen includes
 
 #include <Eigen/QR>
@@ -86,8 +84,8 @@ int main() {
   ClassicalOE coe_moon({a, e, i, Omega, w, M});
   coe_moon.SetCoordSystem(CoordSystem::MI);
 
-  auto cart_state_moon =
-      std::make_shared<CartesianOrbitState>(ClassicalToCartesian(coe_moon, MU_MOON));
+  auto cart_state_moon = std::make_shared<CartesianOrbitState>(
+      ClassicalToCartesian(coe_moon, MU_MOON));
   auto moon_sat = std::make_shared<Spacecraft>();
   auto receiver = std::make_shared<GnssReceiver>("moongpsr");
 
@@ -104,7 +102,8 @@ int main() {
 
   // Output
   auto data_history = std::make_shared<DataHistory>();
-  auto output_path = std::filesystem::current_path() / "output" / "ExampleEKFApp";
+  auto output_path =
+      std::filesystem::current_path() / "output" / "ExampleEKFApp";
   FileWriter writer(output_path, true);
 
   // OrbitState estimation app
@@ -147,12 +146,12 @@ int main() {
     // Bodies
     data_history->AddData(
         "earth_mi", t,
-        CoordConverter::Convert(VectorX::Zero(6), epoch,
-                                CoordSystem::GCRF, CoordSystem::MI));
+        CoordConverter::Convert(epoch, VectorX::Zero(6), CoordSystem::GCRF,
+                                CoordSystem::MI));
     data_history->AddData(
         "moon_gcrf", t,
-        CoordConverter::Convert(VectorX::Zero(6), epoch,
-                                CoordSystem::MI, CoordSystem::GCRF));
+        CoordConverter::Convert(epoch, VectorX::Zero(6), CoordSystem::MI,
+                                CoordSystem::GCRF));
 
     // Print progress
     if (fmod(t, print_every) < 1e-3) {

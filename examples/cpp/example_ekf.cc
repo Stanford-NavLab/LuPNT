@@ -319,11 +319,11 @@ int main() {
     // Bodies
     data_history->AddData(
         "earth_mi", t,
-        CoordConverter::Convert(VectorX::Zero(6), epoch, CoordSystem::GCRF,
+        CoordConverter::Convert(epoch, VectorX::Zero(6), CoordSystem::GCRF,
                                 CoordSystem::MI));
     data_history->AddData(
         "moon_gcrf", t,
-        CoordConverter::Convert(VectorX::Zero(6), epoch, CoordSystem::MI,
+        CoordConverter::Convert(epoch, VectorX::Zero(6), CoordSystem::MI,
                                 CoordSystem::GCRF));
 
     // Print progress

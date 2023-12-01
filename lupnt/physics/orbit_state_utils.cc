@@ -167,14 +167,14 @@ std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
 
 // From CartesianOrbitState
 // - To ClassicalOE
-ClassicalOE CartesianToClassical(const CartesianOrbitState &cart, double mu) {
-  return ClassicalOE(CartesianToClassical(cart.GetVector(), mu),
-                     cart.GetCoordSystem());
+ClassicalOE CartesianToClassical(const CartesianOrbitState &rv, double mu) {
+  return ClassicalOE(CartesianToClassical(rv.GetVector(), mu),
+                     rv.GetCoordSystem());
 }
 
-Vector6 CartesianToClassical(const Vector6 &cart, double mu) {
-  Vector3 r = cart.head(3);
-  Vector3 v = cart.tail(3);
+Vector6 CartesianToClassical(const Vector6 &rv, double mu) {
+  Vector3 r = rv.head(3);
+  Vector3 v = rv.tail(3);
 
   Vector3 k{0, 0, 1};
 
@@ -202,36 +202,61 @@ Vector6 CartesianToClassical(const Vector6 &cart, double mu) {
 }
 
 // - To CartesianOrbitState (relative)
-CartesianOrbitState InertialToRtn(
-    const CartesianOrbitState &rtn_c,
-    const CartesianOrbitState &inertialOrbitState) {
-  return CartesianOrbitState(
-      InertialToRtn(rtn_c.GetVector(), inertialOrbitState.GetVector()),
-      rtn_c.GetCoordSystem());
+CartesianOrbitState InertialToRtn(const CartesianOrbitState &rv_c,
+                                  const CartesianOrbitState &rv_d) {
+  return CartesianOrbitState(InertialToRtn(rv_c.GetVector(), rv_d.GetVector()),
+                             rv_c.GetCoordSystem());
 }
 
-Vector6 InertialToRtn(const Vector6 &rtn_c, const Vector6 &rtn_d) {
-  Vector3 rInertial = rtn_d.head(3);
-  Vector3 vInertial = rtn_d.tail(3);
-  Vector3 rOrigin = rtn_c.head(3);
-  Vector3 vOrigin = rtn_c.tail(3);
+Vector6 InertialToRtn(const Vector6 &rv_c, const Vector6 &rv_d) {
+  Vector3 r_d = rv_d.head(3);
+  Vector3 v_d = rv_d.tail(3);
+  Vector3 r_c = rv_c.head(3);
+  Vector3 v_c = rv_c.tail(3);
 
-  Vector3 uR, uT, uN;  // RTN basis vectors
-  uR = rOrigin.normalized();
-  uN = (rOrigin.cross(vOrigin)).normalized();
-  uT = uN.cross(uR);
+  // RTN basis vectors
+  Vector3 uR = r_c.normalized();
+  Vector3 uN = (r_c.cross(v_c)).normalized();
+  Vector3 uT = uN.cross(uR);
 
-  Matrix3 R_Inertial_Rtn;  // Rotation matrix from inertial to RTN
-  R_Inertial_Rtn << uR.transpose(), uT.transpose(), uN.transpose();
+  Matrix3 Rot_inert_rtn;  // Rotation matrix from inertial to RTN
+  Rot_inert_rtn << uR.transpose(), uT.transpose(), uN.transpose();
 
-  Vector3 w, rRtn, vRtn;
-  w = rOrigin.cross(vOrigin) / rOrigin.norm();
-  rRtn = R_Inertial_Rtn * (rInertial - rOrigin);
-  vRtn = R_Inertial_Rtn * (vInertial - vOrigin - w.cross(rInertial - rOrigin));
+  Vector3 w = r_c.cross(v_c) / r_c.norm();
+  Vector3 r_rtn_d = Rot_inert_rtn * (r_d - r_c);
+  Vector3 v_rtn_d = Rot_inert_rtn * (v_d - v_c - w.cross(r_d - r_c));
 
-  Vector6 rtnVec;
-  rtnVec << rRtn, vRtn;
-  return rtnVec;
+  Vector6 rv_rtn_d;
+  rv_rtn_d << r_rtn_d, v_rtn_d;
+  return rv_rtn_d;
+}
+
+CartesianOrbitState RtnToInertial(const CartesianOrbitState &rv_c,
+                                  const CartesianOrbitState &rv_rtn_d) {
+  return CartesianOrbitState(
+      RtnToInertial(rv_c.GetVector(), rv_rtn_d.GetVector()),
+      rv_c.GetCoordSystem());
+}
+
+Vector6 RtnToInertial(const Vector6 &rv_c, const Vector6 &rv_rtn_d) {
+  Vector3 r_c = rv_c.head(3);
+  Vector3 v_c = rv_c.tail(3);
+
+  // RTN basis vectors
+  Vector3 uR = r_c.normalized();
+  Vector3 uN = (r_c.cross(v_c)).normalized();
+  Vector3 uT = uN.cross(uR);
+
+  Matrix3 Rot_rtn_inert;  // Rotation matrix from RTN to inertial
+  Rot_rtn_inert << uR, uT, uN;
+
+  Vector3 w = r_c.cross(v_c) / r_c.norm();
+  Vector3 r_d = r_c + Rot_rtn_inert * rv_rtn_d.head(3);
+  Vector3 v_d = v_c + Rot_rtn_inert * rv_rtn_d.tail(3) + w.cross(r_d - r_c);
+
+  Vector6 rv_d;
+  rv_d << r_d, v_d;
+  return rv_d;
 }
 
 // From ClassicalOE
@@ -266,9 +291,9 @@ Vector6 ClassicalToCartesian(const Vector6 &coe, double mu) {
   Vector3 r = rot * r_PQW;
   Vector3 v = rot * v_PQW;
 
-  Vector6 cart;
-  cart << r, v;
-  return cart;
+  Vector6 rv;
+  rv << r, v;
+  return rv;
 }
 
 // - To QuasiNonsingularOE

@@ -45,14 +45,18 @@ std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
 
 // From CartesianOrbitState
 // - To ClassicalOE
-ClassicalOE CartesianToClassical(const CartesianOrbitState &cart,
+ClassicalOE CartesianToClassical(const CartesianOrbitState &rv,
                                  double mu = MU_MOON);
-Vector6 CartesianToClassical(const Vector6 &cart, double mu = MU_MOON);
+Vector6 CartesianToClassical(const Vector6 &rv, double mu = MU_MOON);
 
 // - To CartesianOrbitState (relative)
-CartesianOrbitState InertialToRtn(const CartesianOrbitState &cart_c,
-                                  const CartesianOrbitState &cart_d);
-Vector6 InertialToRtn(const Vector6 &cart_c, const Vector6 &cart_d);
+CartesianOrbitState InertialToRtn(const CartesianOrbitState &rv_c,
+                                  const CartesianOrbitState &rv_d);
+Vector6 InertialToRtn(const Vector6 &rv_c, const Vector6 &rv_d);
+
+CartesianOrbitState RtnToInertial(const CartesianOrbitState &rv_c,
+                                  const CartesianOrbitState &rv_rtn_d);
+Vector6 RtnToInertial(const Vector6 &rv_c, const Vector6 &rv_rtn_d);
 
 // From ClassicalOE
 // - To CartesianOrbitState
@@ -146,7 +150,7 @@ static std::shared_ptr<CartesianOrbitState> ConvertOrbitStateCoordSystem(
   auto rv_in = state_in->GetVector();
   auto coord_sys_in = state_in->GetCoordSystem();
   auto rv_out =
-      CoordConverter::Convert(rv_in, epoch, coord_sys_in, coord_sys_out);
+      CoordConverter::Convert(epoch, rv_in, coord_sys_in, coord_sys_out);
   auto state_out = std::make_shared<CartesianOrbitState>(rv_out, coord_sys_out);
   return state_out;
 }

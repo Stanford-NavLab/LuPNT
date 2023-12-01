@@ -131,11 +131,11 @@ int main() {
     // Bodies
     dataHistory.AddData(
         "earthMi", t,
-        CoordConverter::Convert(VectorX::Zero(6), t, CoordSystem::GCRF,
+        CoordConverter::Convert(t, VectorX::Zero(6), CoordSystem::GCRF,
                                 CoordSystem::MI));
     dataHistory.AddData(
         "moonGcrf", t,
-        CoordConverter::Convert(VectorX::Zero(6), t, CoordSystem::MI,
+        CoordConverter::Convert(t, VectorX::Zero(6), CoordSystem::MI,
                                 CoordSystem::GCRF));
 
     // Print progress

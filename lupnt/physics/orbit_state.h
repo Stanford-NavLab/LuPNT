@@ -162,8 +162,7 @@ class QuasiNonsingularOE : public OrbitState {
       OrbitStateRepres::QUASI_NONSINGULAR_OE;
 
  public:
-  QuasiNonsingularOE(const Vector6 &x,
-                     const CoordSystem sys = CoordSystem::MI)
+  QuasiNonsingularOE(const Vector6 &x, const CoordSystem sys = CoordSystem::MI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(a, 0);
@@ -292,8 +291,7 @@ class QuasiNonsingularROE : public OrbitState {
 
  public:
   // ada, adl, adex, adey, adix, adiy
-  QuasiNonsingularROE(const Vector6 &x,
-                      const CoordSystem sys = CoordSystem::MI)
+  QuasiNonsingularROE(const Vector6 &x, const CoordSystem sys = CoordSystem::MI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(ada, 0);

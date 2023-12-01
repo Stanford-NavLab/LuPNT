@@ -8,7 +8,7 @@ void init_orbit_state(py::module &m);
 void init_orbit_state_utils(py::module &m);
 void init_math_utils(py::module &m);
 void init_dynamics(py::module &m);
-// void init_spice_interface(py::module &m);
+void init_spice_interface(py::module &m);
 
 PYBIND11_MODULE(pylupnt, m) {
   init_coord_converter(m);
@@ -17,5 +17,5 @@ PYBIND11_MODULE(pylupnt, m) {
   init_orbit_state_utils(m);
   init_math_utils(m);
   init_dynamics(m);
-  // init_spice_interface(m);
+  init_spice_interface(m);
 }

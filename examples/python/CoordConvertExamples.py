@@ -17,7 +17,7 @@ print(
 print(rv_in_ad)
 print(" ")
 
-rv_out_ad = pnt.CoordConverter.convert(rv_in_ad, epoch, coord_in, coord_out)
+rv_out_ad = pnt.CoordConverter.convert(epoch, rv_in_ad, coord_in, coord_out)
 
 print("ITRF:")
 print(rv_out_ad)
