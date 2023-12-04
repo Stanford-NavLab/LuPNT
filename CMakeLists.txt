@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON) # ...is required...
 set(CMAKE_CXX_EXTENSIONS OFF) # ...without compiler extensions like gnu++11
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 add_definitions(-D_USE_MATH_DEFINES)
+set(PYPI_PACKAGE_NAME "pylupnt")
 
 project(LuPNT LANGUAGES CXX)
 
@@ -20,11 +21,23 @@ if(${LuPNT_SOURCE_DIR} STREQUAL ${LuPNT_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
+set(ORIG_CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+
+# Output Folders
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${LuPNT_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${LuPNT_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${LuPNT_BINARY_DIR}/bin)
+
 # build directories
 add_subdirectory(third_party)
 add_subdirectory(lupnt)
 add_subdirectory(examples/cpp) 
-add_subdirectory(bindings)
+
+# build python modules
+option (BUILD_PYMODULE "Build the Python Module" ON)
+if (BUILD_PYMODULE)
+  add_subdirectory(pylupnt)
+endif ()
 
 # # Only build tests if we are the top-level project
 # # Allows this to be used by super projects with `add_subdirectory`

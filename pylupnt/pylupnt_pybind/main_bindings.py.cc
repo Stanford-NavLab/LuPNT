@@ -10,7 +10,7 @@ void init_math_utils(py::module &m);
 void init_dynamics(py::module &m);
 void init_spice_interface(py::module &m);
 
-PYBIND11_MODULE(_pylupnt, m) {
+PYBIND11_MODULE(pylupnt_pybind, m) {
   init_coord_converter(m);
   init_constants(m);
   init_orbit_state(m);
