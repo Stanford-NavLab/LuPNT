@@ -1,15 +1,9 @@
 import pylupnt as pnt
 import numpy as np
 
-import sys
-
-sys.path.append("pylupntutil")
-import pntautodiff as ad
-
 
 def degToRad(deg):
     return deg * np.pi / 180
-
 
 p = 11067.790
 e = 0.83285
@@ -18,24 +12,23 @@ i = degToRad(87.87)
 Omega = degToRad(227.89)
 w = degToRad(53.38)
 nu = degToRad(92.335)
-M = pnt.true_to_mean(nu, e)
+M = pnt.true_to_mean_anomaly(nu, e)
+
+oe = np.array([a, e, i, Omega, w, M])
 
 # State
-x_oe = pnt.ClassicalOE(a, e, i, Omega, w, M, cs=pnt.CoordSystem.GCRF)
+x_oe = pnt.ClassicalOE(oe, coord_sys=pnt.CoordSystem.MI)
 print(" ")
 print("Classical orbital elements:")
-x_oe.print()
+print(x_oe.vector)
 
 # Dynamics
 mu_moon = 4902.800066
 keplerian_dynamics = pnt.KeplerianDynamics(mu_moon)
-print(" ")
-print("Keplerian dynamics object:")
-print(keplerian_dynamics)
 
 # Propagate
 t_end = 10.0
 keplerian_dynamics.propagate(x_oe, t_end)
 print(" ")
 print("Propagated state:")
-x_oe.print()
+print(x_oe.vector)
