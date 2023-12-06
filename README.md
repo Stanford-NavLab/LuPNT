@@ -56,6 +56,8 @@ Todo: Create a bashfile to do the installation
   git submodule add -b stable ../../pybind/pybind11 pybind11
   git submodule update --init
   ```
+- [GMAT](https://sourceforge.net/projects/gmat/files/GMAT/GMAT-R2016a/)
+  - Required for testing
 - Ephemeris Files 
   - See [here](data/ephemeris/readme.md) for instructions
   - You can extract the kernel files from [here](https://www.dropbox.com/sh/npgjdndt9ma3tmr/AADnjjwIsdwQwsuarLrHRF76a?dl=0) as well
@@ -64,7 +66,11 @@ Todo: Create a bashfile to do the installation
   - Place the files under `/data/spherical_harmonics`
 
 ### Step 2: Do Additional Setups
-1. Add the path to the base of this Simulator to user_file_path.h
+1. Add the path your .zshrc or .bashrc
+```
+$ export LUPNT_DATA_PATH="/absolute/path/to/the/data/folder/in/this/repo"
+$ export GMAT_PATH="/path/to/GMAT"
+```
 2. In the project directory, execute following command to prohibit comitting your path changes
 ```
 git update-index --assume-unchanged lupnt/core/user_file_path.h
@@ -74,17 +80,25 @@ git update-index --assume-unchanged lupnt/core/user_file_path.h
 ###  Step 3: Build the LuPNT Library
 After the build is completed, the generated library will be located at `build/lupnt/liblupnt.a`
 
-#### Option 1: From VScode
+#### Option 1: From VScode (Recommended)
 1. From Extensions, download `CMAKE Tools`
-2. Inside the .vscode directory in this project, create "settings.json" and add the following CMAKE option (This required to robustly build pybind)
-```{
-      // cmake settings
-      "cmake.configureArgs": [
-          "-DPYTHON_INCLUDE_DIRS=path1string",
-          "-DPYTHON_LIBRARIES=path2string"
-          "-DBUILD_EXAMPLES=ON"
-      ]
-    }
+2. If you wish to use a conda environment or virtual environment, create and activate that environment.
+
+Example: 
+```
+conda activate (name of your environment)
+```
+3. Inside the .vscode directory in this project, create "settings.json" and add the following CMAKE option (This required to robustly build pybind)
+```
+{
+    // cmake settings
+    "cmake.configureArgs": [
+        "-DPYTHON_INCLUDE_DIRS=path1string",
+        "-DPYTHON_LIBRARIES=path2string",
+        "-DPYTHON_EXECUTABLE=path3string",
+        "-DBUILD_EXAMPLES=ON"
+    ]
+}
 ```
 In above, replace `path1string` with the output you get when typing in the following command in terminal
 ```
@@ -94,6 +108,11 @@ Similarly, replace `path2string` with the output of the following command
 ```
 python3 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"
 ```
+Finally, replace `path3string` with the output of the following command
+```
+which python
+```
+
 3. Configure and Build Project from the `CMAKE` tab
 
 #### Option 2: From Terminal 
@@ -111,18 +130,18 @@ The two cmake options will add the path to the python libraries which is require
 ### Step 4: Install the Python LuPNT Library (pylupnt)
 For developers, see [here](bindings/readme.md) for details on how to add new python bindings.
 1. Run CMake to build the python bindings
-2. Create and activate your local venv environment
+2. (Create and activate your local venv environment)
+3. Add permission to run the install script
 ```
-$ python3 -m venv venv
-$ . /venv/bin/activate
+$ sudo chmod 755 ./scripts/install_pylupnt.zsh
 ```
-3. install the lupnt library using pip (you will need to re-run this every time you add a new function to pybind)
+3. Build and install the lupnt library (run this every time you change your c++ or python library)
 ```
-$ pip3 install .
+$ ./scripts/install_pylupnt.zsh
 ```
 4. Now you can use the pylupnt library inside your project (see the codes under `examples_python/`)
 ```
-install pylupnt as lpt
+$ install pylupnt as pnt
 ```
 
 ### Step 5: Run Unit Tests
@@ -133,7 +152,7 @@ $ ./build/test/runUnitTests
 
 To run the tests for the Python bindings, run the following script in the project root 
 ```
-$ python3 -m pytest test_python
+$ python3 -m pytest test/python
 ```
 
 
