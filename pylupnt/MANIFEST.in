@@ -1,0 +1,12 @@
+# Misc
+include README.md
+include LICENSE
+include requirements.txt
+
+# Compiled module
+include pylupnt/pylupnt*.pyd
+include pylupnt/pylupnt*.so
+include pylupnt_pybind*.so
+
+# Exclude
+global-exclude *.py[co]
