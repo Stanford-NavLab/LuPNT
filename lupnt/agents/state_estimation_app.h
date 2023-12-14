@@ -72,6 +72,7 @@ class JointState {
   DynamicsFunction GetDynamicsFunction() {
     auto dynfunc = [&](VectorX x, real t_curr, real t_end, MatrixXd& Phi) {
       std::vector<IState*> state_vec = GetJointState();
+      Phi.resize(state_vec_size_, state_vec_size_);
 
       // Iterate for each dynamics and corresponding state (e.g. orbit and
       // dynamics)

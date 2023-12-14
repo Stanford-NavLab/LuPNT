@@ -38,7 +38,7 @@ class IDynamics {
 class NumericalDynamics : public IDynamics {
  private:
   ODE odefunc_;
-  double dt_;
+  double dt_ = 0.0;
   OrbitStateRepres state_representation_;
   NumericalPropagator propagator_;
 
@@ -80,8 +80,10 @@ class AnalyticalDynamics : public IDynamics {
   virtual ~AnalyticalDynamics(){};
   virtual void Propagate(OrbitState &state, real t0, real dt) = 0;
   virtual void Propagate(Vector6 &x, real t0, real dt) = 0;
-  virtual void PropagateWithSTM(OrbitState &state, real t0, real dt) = 0;
-  virtual void PropagateWithSTM(Vector6 &x, real t0, real dt) = 0;
+  virtual void PropagateWithSTM(OrbitState &state, real t0, real dt,
+                                Matrix6d &stm) = 0;
+  virtual void PropagateWithSTM(Vector6 &x, real t0, real dt,
+                                Matrix6d &stm) = 0;
 
   // arbitrary state size
   void PropagateX(VectorX &x, real t0, real tf) {
@@ -98,7 +100,7 @@ class AnalyticalDynamics : public IDynamics {
     real dt = tf - t0;
     Matrix6d stm6;
     stm6 = stm.block(0, 0, 6, 6);
-    PropagateWithSTM(x6, t0, dt);
+    PropagateWithSTM(x6, t0, dt, stm6);
     x.head(6) = x6;
     stm.block(0, 0, 6, 6) = stm6;
   }

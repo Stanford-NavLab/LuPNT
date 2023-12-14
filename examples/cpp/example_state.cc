@@ -20,7 +20,8 @@ using namespace lupnt;
 int main() {
   // Create a clock
   ClockState clock(2);
-  std::cout << "clock size" << clock.GetSize() << std::endl;
+  clock.SetValue(0.0, 0);
+  clock.SetValue(0.1, 1);
 
   // Set the state
   real a = 6541.4;
@@ -31,15 +32,24 @@ int main() {
   real M = 0.0 * RAD_PER_DEG;
   ClassicalOE coe({a, e, i, Omega, w, M});
 
+  auto cart = ClassicalToCartesian(coe, MU_EARTH);
+
   // dynamics model
   auto dyn_earth_tb = CartesianTwoBodyDynamics(MU_EARTH);
   auto dyn_clk = ClockDynamics(ClockModel::kMicrosemiCsac);
 
   // Joint state
   JointState joint_state;
-  joint_state.PushBackStateAndDynamics(&coe, &dyn_earth_tb);
+  joint_state.PushBackStateAndDynamics(&cart, &dyn_earth_tb);
   joint_state.PushBackStateAndDynamics(&clock, &dyn_clk);
 
   VectorX state_vec = joint_state.GetJointStateValue();
   std::cout << "State: " << std::endl << state_vec << std::endl;
+
+  DynamicsFunction dynamics = joint_state.GetDynamicsFunction();
+  MatrixXd Phi;
+
+  VectorX prop_state = dynamics(state_vec, 0, 0.5, Phi);
+
+  std::cout << "Propagated State: " << std::endl << prop_state << std::endl;
 }

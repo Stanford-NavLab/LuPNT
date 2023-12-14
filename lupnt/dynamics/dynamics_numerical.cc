@@ -52,38 +52,76 @@ void NumericalDynamics::PropagateWithStm(Vector6 &x, real t0, real tf, real dt,
 }
 
 void NumericalDynamics::Propagate(OrbitState &state, real t0, real tf) {
-  Propagate(state, t0, tf, dt_);
+  real dt_prop = tf - t0;
+  if (dt_ == 0.0) {
+    dt_prop = (tf - t0) / 10;
+  } else {
+    dt_prop = dt_;
+  }
+  Propagate(state, t0, tf, dt_prop);
 }
 
 void NumericalDynamics::Propagate(Vector6 &x, real t0, real tf) {
-  Propagate(x, t0, tf, dt_);
+  real dt_prop = tf - t0;
+  if (dt_ == 0.0) {
+    dt_prop = (tf - t0) / 10;
+  } else {
+    dt_prop = dt_;
+  }
+  Propagate(x, t0, tf, dt_prop);
 }
 
 void NumericalDynamics::PropagateWithStm(OrbitState &state, real t0, real tf,
                                          Matrix6d &stm) {
-  PropagateWithStm(state, t0, tf, dt_, stm);
+  real dt_prop = tf - t0;
+  if (dt_ == 0.0) {
+    dt_prop = (tf - t0) / 10;
+  } else {
+    dt_prop = dt_;
+  }
+  PropagateWithStm(state, t0, tf, dt_prop, stm);
 }
 
 void NumericalDynamics::PropagateWithStm(Vector6 &x, real t0, real tf,
                                          Matrix6d &stm) {
-  PropagateWithStm(x, t0, tf, dt_, stm);
+  real dt_prop = tf - t0;
+  if (dt_ == 0.0) {
+    dt_prop = (tf - t0) / 10;
+  } else {
+    dt_prop = dt_;
+  }
+  PropagateWithStm(x, t0, tf, dt_prop, stm);
 }
 
 // arbitrary state size
 void NumericalDynamics::PropagateX(VectorX &x, real t0, real tf) {
+  real dt_prop = tf - t0;
+  if (dt_ == 0.0) {
+    dt_prop = (tf - t0) / 10;
+  } else {
+    dt_prop = dt_;
+  }
+
   Vector6 x6;
   x6 << x(0), x(1), x(2), x(3), x(4), x(5);
-  Propagate(x6, t0, tf, dt_);
+  Propagate(x6, t0, tf, dt_prop);
   x.head(6) = x6;
 }
 
 void NumericalDynamics::PropagateWithStmX(VectorX &x, real t0, real tf,
                                           MatrixXd &stm) {
+  real dt_prop = tf - t0;
+  if (dt_ == 0.0) {
+    dt_prop = (tf - t0) / 10;
+  } else {
+    dt_prop = dt_;
+  }
+
   Vector6 x6;
   x6 << x(0), x(1), x(2), x(3), x(4), x(5);
   Matrix6d stm6;
   stm6 = stm.block(0, 0, 6, 6);
-  PropagateWithStm(x6, t0, tf, dt_, stm6);
+  PropagateWithStm(x6, t0, tf, dt_prop, stm6);
   x.head(6) = x6;
   stm.block(0, 0, 6, 6) = stm6;
 }
