@@ -20,7 +20,7 @@ namespace lupnt {
 // Dynamics and Measurement Function
 
 /**
- * @brief Dynamics function
+ * @brief Dynamics function for the filter
  *
  * @param x State
  * @param t_curr Current time
@@ -29,10 +29,10 @@ namespace lupnt {
  */
 typedef std::function<VectorX(const VectorX, real t_curr, real t_end,
                               MatrixXd &)>
-    DynamicsFunction;
+    FilterDynamicsFunction;
 
 /**
- * @brief Process noise function
+ * @brief Process noise function for the filter
  *
  * @param x State
  * @param t_curr Current time
@@ -41,10 +41,10 @@ typedef std::function<VectorX(const VectorX, real t_curr, real t_end,
  *
  */
 typedef std::function<MatrixXd(const VectorX, real t_curr, real t_end)>
-    ProcessNoiseFunction;
+    FilterProcessNoiseFunction;
 
 /**
- * @brief Measurement function
+ * @brief Measurement function for the filter
  *
  * @param x State
  * @param H Measurement matrix
@@ -52,22 +52,22 @@ typedef std::function<MatrixXd(const VectorX, real t_curr, real t_end)>
  *
  */
 typedef std::function<VectorX(const VectorX, MatrixXd &, MatrixXd &)>
-    MeasurementFunction;
+    FilterMeasurementFunction;
 
 class IFilter {
  public:
   virtual ~IFilter() = default;
-  DynamicsFunction dynamics;
-  ProcessNoiseFunction process_noise;
-  MeasurementFunction measurement;
+  FilterDynamicsFunction dynamics;
+  FilterProcessNoiseFunction process_noise;
+  FilterMeasurementFunction measurement;
 
-  void SetDynamicsFunction(DynamicsFunction dynamics) {
+  void SetDynamicsFunction(FilterDynamicsFunction dynamics) {
     this->dynamics = dynamics;
   }
-  void SetProcessNoiseFunction(ProcessNoiseFunction process_noise) {
+  void SetProcessNoiseFunction(FilterProcessNoiseFunction process_noise) {
     this->process_noise = process_noise;
   }
-  void SetMeasurementFunction(MeasurementFunction measurement) {
+  void SetMeasurementFunction(FilterMeasurementFunction measurement) {
     this->measurement = measurement;
   }
 };

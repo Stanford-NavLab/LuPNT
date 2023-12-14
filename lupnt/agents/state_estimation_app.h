@@ -69,7 +69,7 @@ class JointState {
     }
   };
 
-  DynamicsFunction GetDynamicsFunction() {
+  FilterDynamicsFunction GetFilterDynamicsFunction() {
     auto dynfunc = [&](VectorX x, real t_curr, real t_end, MatrixXd& Phi) {
       std::vector<IState*> state_vec = GetJointState();
       Phi.resize(state_vec_size_, state_vec_size_);
@@ -108,8 +108,8 @@ class StateEstimationApp : public Application {
 
   std::shared_ptr<Agent> agent_;
   std::shared_ptr<IFilter> filter_;
-  DynamicsFunction dynamics_func_;
-  MeasurementFunction meas_func_;
+  FilterDynamicsFunction dynamics_func_;
+  FilterMeasurementFunction meas_func_;
   JointState state_vec_;
 
   std::shared_ptr<DataHistory> data_history_;

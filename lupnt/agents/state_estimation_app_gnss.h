@@ -63,7 +63,7 @@ class GnssStateEstimationApp : public Application {
   std::shared_ptr<NumericalDynamics> dyn;
   std::shared_ptr<GnssReceiver> receiver;
   std::shared_ptr<IFilter> filter;
-  MeasurementFunction meas_func;
+  FilterMeasurementFunction meas_func;
 
   VectorX x_est;
   VectorX P_est;

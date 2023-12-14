@@ -8,12 +8,13 @@
  * @copyright Copyright (c) 2023
  *
  */
-
 #include <lupnt/agents/state_estimation_app.h>
 #include <lupnt/core/constants.h>
 #include <lupnt/dynamics/dynamics.h>
 #include <lupnt/physics/clock.h>
 #include <lupnt/physics/orbit_state.h>
+
+#include <cmath>
 
 using namespace lupnt;
 
@@ -32,8 +33,8 @@ MatrixXd SetInitialCovariance(double pos_sigma, double vel_sigma,
   return P0;
 }
 
-ProcessNoiseFunction proc_noise_func = [](const VectorX& x, real t_curr,
-                                          real t_end) {
+FilterProcessNoiseFunction proc_noise_func = [](const VectorX& x, real t_curr,
+                                                real t_end) {
   int clock_index = 6;
   double dt = (t_end - t_curr).val();
   double sigma_acc = 1e-13;
@@ -55,8 +56,8 @@ ProcessNoiseFunction proc_noise_func = [](const VectorX& x, real t_curr,
   return Q;
 };
 
-MeasurementFunction meas_func_pos_clk = [](const VectorX& x, MatrixXd& H,
-                                           MatrixXd& R) {
+FilterMeasurementFunction meas_func_pos_clk = [](const VectorX& x, MatrixXd& H,
+                                                 MatrixXd& R) {
   int clock_index = 6;
 
   VectorX y = VectorX::Zero(meas_size);
@@ -104,16 +105,20 @@ int main() {
   joint_state.PushBackStateAndDynamics(&clock, &dyn_clk);
 
   VectorX state_vec = joint_state.GetJointStateValue();
-  std::cout << "State: " << std::endl << state_vec << std::endl;
+  std::cout << "Initial State: " << std::endl << state_vec << std::endl;
 
   // Test propagation
-  DynamicsFunction joint_dynamics = joint_state.GetDynamicsFunction();
+  FilterDynamicsFunction joint_dynamics =
+      joint_state.GetFilterDynamicsFunction();
   MatrixXd Phi;
   real t_start = 0.0;
   real t_end = 60.0;
   VectorX prop_state = joint_dynamics(state_vec, t_start, t_end, Phi);
 
-  std::cout << "Propagated State: " << std::endl << prop_state << std::endl;
+  std::cout << " " << std::endl;
+  std::cout << "Propagated State (60 sec): " << std::endl
+            << prop_state << std::endl;
+  std::cout << " " << std::endl;
   std::cout << "State Transition Matrix: " << std::endl << Phi << std::endl;
 
   // Initialize EKF
@@ -127,7 +132,7 @@ int main() {
   t_end = 100.0;
   real dt = 2.0;
 
-  // Dummy Variables
+  // Dummy Variables for Storage
   MatrixXd Phat(state_size, state_size);
   MatrixXd Phi_t(state_size, state_size);
   MatrixXd H(meas_size, state_size);
@@ -141,6 +146,7 @@ int main() {
   ekf.Initialize(x_est, P0);
 
   MatrixXd Q = ekf.process_noise(x_true, 0, dt);
+  std::cout << " " << std::endl;
   std::cout << "Process Noise: " << std::endl << Q << std::endl;
 
   // Run EKF Simulation
@@ -161,17 +167,21 @@ int main() {
     // Update EKF
     ekf.Step(t + dt, meas);
 
-    // Print
-    x_est = ekf.GetUpdatedStateEstimate(Phat);
-    double x_pos_err =
-        (x_true.segment(0, 3) - x_est.segment(0, 3)).norm().val();
-    double x_vel_err =
-        (x_true.segment(3, 3) - x_est.segment(3, 3)).norm().val();
-    double x_clk_bias_err = abs((x_true(6) - x_est(6)).val());
+    // Print Result every 10 seconds
+    if (std::fmod(t.val(), 10.0) != 0.0) {
+      continue;
+    } else {
+      x_est = ekf.GetUpdatedStateEstimate(Phat);
+      double x_pos_err =
+          (x_true.segment(0, 3) - x_est.segment(0, 3)).norm().val();
+      double x_vel_err =
+          (x_true.segment(3, 3) - x_est.segment(3, 3)).norm().val();
+      double x_clk_bias_err = abs((x_true(6) - x_est(6)).val());
 
-    std::cout.precision(3);
-    std::cout << t << " | " << x_pos_err << " | " << x_vel_err << " | "
-              << x_clk_bias_err << std::endl;
+      std::cout.precision(3);
+      std::cout << t << " | " << x_pos_err << " | " << x_vel_err << " | "
+                << x_clk_bias_err << std::endl;
+    }
   }
 
   // Print final covariance
