@@ -198,7 +198,7 @@ MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn) {
   MatrixXd randN(xsize, nn);
   MatrixXd mean_samples(xsize, nn);
   for (int i = 0; i < xsize; i++) {
-    for (int j = 0; j < xsize; j++) {
+    for (int j = 0; j < nn; j++) {
       randN(i, j) = dist();
       mean_samples(i, j) = mean(i);
     }

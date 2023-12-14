@@ -11,18 +11,9 @@
 
 #pragma once
 
-// Autodiff includes
-
-
-
-// Eigen includes
 #include <lupnt/core/constants.h>
 
-
 #include <Eigen/QR>
-
-
-
 
 namespace lupnt {
 
@@ -37,7 +28,7 @@ namespace lupnt {
  * @param Phi STM of the dynamics
  */
 typedef std::function<VectorX(const VectorX, real t_curr, real t_end,
-                                  MatrixXd &)>
+                              MatrixXd &)>
     DynamicsFunction;
 
 /**
@@ -88,7 +79,7 @@ class IFilter {
 class EKF : public IFilter {
  public:
   VectorX x;     // Updated state
-  real t_curr;       // Current time
+  real t_curr;   // Current time
   VectorX xbar;  // Predicted state
   VectorX dx;    // State update
 
@@ -111,8 +102,8 @@ class EKF : public IFilter {
     return this->xbar;
   }
 
-  VectorX GetUpdatedStateEstimate(MatrixXd &P) {
-    Pbar = this->P;
+  VectorX GetUpdatedStateEstimate(MatrixXd &Phat) {
+    Phat = this->P;
     return this->x;
   }
 
