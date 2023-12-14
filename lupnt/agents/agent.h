@@ -13,18 +13,14 @@
 // C++ includes
 #include <memory>
 
-
-
-
-
 // lupnt includes
+#include "comm_device.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/dynamics/dynamics.h"
 #include "lupnt/physics/clock.h"
 #include "lupnt/physics/coord_converter.h"
 #include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/orbit_state_utils.h"
-#include "comm_device.h"
 
 namespace lupnt {
 
@@ -43,7 +39,7 @@ class Agent {
   BodyId bodyId_;
   real epoch_;
   std::shared_ptr<OrbitState> state_;
-  std::shared_ptr<IOrbitDynamics> dynamics_;
+  std::shared_ptr<NumericalDynamics> dynamics_;
   std::vector<std::shared_ptr<ICommDevice>> devices_;
 
   Vector2 clock_;
@@ -56,12 +52,12 @@ class Agent {
   real GetEpoch() { return epoch_; }
   BodyId GetBodyId() { return bodyId_; }
   std::shared_ptr<OrbitState> GetOrbitState() { return state_; }
-  std::shared_ptr<IOrbitDynamics> GetDynamics() { return dynamics_; }
+  std::shared_ptr<NumericalDynamics> GetDynamics() { return dynamics_; }
   Vector2 GetClock() { return clock_; }
 
   // Setters
   void SetOrbitState(std::shared_ptr<OrbitState> state) { state_ = state; }
-  void SetDynamics(std::shared_ptr<IOrbitDynamics> dyn) { dynamics_ = dyn; }
+  void SetDynamics(std::shared_ptr<NumericalDynamics> dyn) { dynamics_ = dyn; }
   void SetEpoch(real epoch) { epoch_ = epoch; }
   void SetBodyId(BodyId bodyId) { bodyId_ = bodyId; }
   void SetClock(Vector2 clk) { clock_ = clk; }

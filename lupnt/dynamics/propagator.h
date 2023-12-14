@@ -16,8 +16,6 @@
 
 #include "lupnt/numerics/integrator.h"
 
-
-
 namespace lupnt {
 class NumericalPropagator {
  public:
@@ -26,11 +24,9 @@ class NumericalPropagator {
   NumericalPropagator();
   NumericalPropagator(std::string integratorType);
 
-  VectorX Propagate(ODE odefunc, real t0, real tf,
-                            VectorX x0, real dt);
-  VectorX PropagateWithStm(ODE odefunc, real t0, real tf,
-                                   VectorX x0, real dt,
-                                   MatrixXd &J);
+  VectorX Propagate(ODE odefunc, real t0, real tf, VectorX x0, real dt);
+  VectorX PropagateWithStm(ODE odefunc, real t0, real tf, VectorX x0, real dt,
+                           MatrixXd &J);
 };
 
 }  // namespace lupnt

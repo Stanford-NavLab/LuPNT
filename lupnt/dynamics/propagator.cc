@@ -10,11 +10,6 @@
  */
 #include "propagator.h"
 
-
-
-
-
-
 namespace lupnt {
 
 NumericalPropagator::NumericalPropagator() {
@@ -30,9 +25,8 @@ NumericalPropagator::NumericalPropagator(std::string integratorType) {
     throw std::invalid_argument("Invalid Integrator Type");
 };
 
-VectorX NumericalPropagator::Propagate(ODE odefunc, real t0,
-                                               real tf, VectorX x0,
-                                               real dt) {
+VectorX NumericalPropagator::Propagate(ODE odefunc, real t0, real tf,
+                                       VectorX x0, real dt) {
   VectorX x = x0;
   real t = t0;
   real step;
@@ -44,11 +38,9 @@ VectorX NumericalPropagator::Propagate(ODE odefunc, real t0,
   return x;
 };
 
-VectorX NumericalPropagator::PropagateWithStm(ODE odefunc, real t0,
-                                                      real tf,
-                                                      VectorX x0,
-                                                      real dt,
-                                                      MatrixXd &J) {
+VectorX NumericalPropagator::PropagateWithStm(ODE odefunc, real t0, real tf,
+                                              VectorX x0, real dt,
+                                              MatrixXd &J) {
   auto func = [=, this](VectorX &x) {
     return Propagate(odefunc, t0, tf, x, dt);
   };

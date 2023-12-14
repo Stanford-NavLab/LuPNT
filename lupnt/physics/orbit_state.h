@@ -56,6 +56,15 @@ class OrbitState : public IState {
       : x_(x), coord_(coord), repres_(repres), names_(names), units_(units) {}
 
   Vector6 GetVector() const { return x_; }
+
+  VectorX GetVectorX() const {
+    VectorX x(kOrbitStateSize);
+    for (int i = 0; i < kOrbitStateSize; i++) {
+      x(i) = x_(i);
+    }
+    return x;
+  }
+
   inline std::array<const char *, kOrbitStateSize> GetNames() const {
     return names_;
   }
@@ -69,6 +78,16 @@ class OrbitState : public IState {
 
   inline void SetValue(real val, int idx) { x_(idx) = val; }
   inline void SetVector(const Vector6 &x) { x_ = x; }
+
+  inline void SetVectorX(const VectorX &x) {
+    if (x.size() != kOrbitStateSize) {
+      throw std::invalid_argument("Vector size does not match");
+    }
+    for (int i = 0; i < kOrbitStateSize; i++) {
+      x_(i) = x(i);
+    }
+  }
+
   inline void SetOrbitStateRepres(const OrbitStateRepres rep) { repres_ = rep; }
   inline void SetCoordSystem(CoordSystem sys) { coord_ = sys; }
 

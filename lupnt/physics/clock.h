@@ -13,6 +13,8 @@
 
 #include <tuple>
 
+#include "lupnt/dynamics/dynamics.h"
+#include "lupnt/numerics/math_utils.h"
 #include "state.h"
 
 namespace lupnt {
@@ -72,6 +74,32 @@ static Matrix2d GetClockProcessNoise(ClockModel clk_model, double dt) {
   return Q;
 };
 
+static Matrix3d GetClockProcessNoise3(ClockModel clk_model, double dt) {
+  double sig1, sig2, sig3, t2, t3, t4, t5;
+  std::tie(sig1, sig2, sig3) = GetClockSigma(clk_model);
+
+  t2 = std::pow(dt, 2);
+  t3 = std::pow(dt, 3);
+  t4 = std::pow(dt, 4);
+  t5 = std::pow(dt, 5);
+
+  sig1 = std::pow(sig1, 2);
+  sig2 = std::pow(sig2, 2);
+  sig3 = std::pow(sig3, 2);
+
+  Matrix3d Q;
+  Q(0, 0) = sig1 * dt + std::pow(sig2, 2) * t3 / 3 + sig3 * t5 / 20;
+  Q(0, 1) = sig2 * t2 / 2 + sig3 * t4 / 8;
+  Q(0, 2) = sig3 * t3 / 6;
+  Q(1, 0) = Q(0, 1);
+  Q(1, 1) = sig2 * dt + sig3 * t3 / 3;
+  Q(1, 2) = sig3 * t2 / 2;
+  Q(2, 0) = Q(0, 2);
+  Q(2, 1) = Q(1, 2);
+  Q(2, 2) = sig3 * dt;
+  return Q;
+};
+
 /**
  * @brief Clock State Class
  *
@@ -92,33 +120,135 @@ class ClockState : public IState {
   }
   VectorX GetVector() const { return x_; }
   real GetValue(int i) const { return x_(i); }
-  int GetSize() { return state_size_; };
+  inline int GetSize() const { return state_size_; };
   inline void SetValue(const real val, const int idx) { x_(idx) = val; }
   void SetVector(const VectorX& x) { x_ = x; }
 };
 
-class ClockDynamics {
+class ClockDynamics : public IDynamics {
  private:
   ClockModel clk_model_;
   double dt_;
 
  public:
-  ClockDynamics(ClockModel clk_model) {
-    clk_model_ = clk_model;
-    dt_ = 0;
+  ClockDynamics(ClockModel clk_model) { clk_model_ = clk_model; }
+
+  ClockDynamics(const ClockDynamics& other) { clk_model_ = other.clk_model_; }
+
+  Matrix2 TwoStatePhi(real dt) {
+    Matrix2 Phi_clk;
+    Phi_clk << 1, dt, 0, 1;
+    return Phi_clk;
   }
 
-  ClockDynamics(const ClockDynamics& other) {
-    clk_model_ = other.clk_model_;
-    dt_ = 0;
+  Matrix2d TwoStatePhi(double dt) {
+    Matrix2d Phi_clk;
+    Phi_clk << 1, dt, 0, 1;
+    return Phi_clk;
+  }
+
+  Matrix3 ThreeStatePhi(real dt) {
+    Matrix3 Phi_clk;
+    Phi_clk << 1, dt, dt * dt / 2, 0, 1, dt, 0, 0, 1;
+    return Phi_clk;
+  }
+
+  Matrix3d ThreeStatePhi(double dt) {
+    Matrix3d Phi_clk;
+    Phi_clk << 1, dt, dt * dt / 2, 0, 1, dt, 0, 0, 1;
+    return Phi_clk;
+  }
+
+  // two state clock
+  void Propagate(Vector2& clk, real t0, real tf) {
+    real dt = tf - t0;
+    Matrix2 Phi_clk = TwoStatePhi(dt);
+    clk = Phi_clk * clk;
   }
 
   void Propagate(Vector2& clk, real dt) {
-    if (dt.val() != dt_) {
-      dt_ = dt.val();
-      auto Q_clk = GetClockProcessNoise(clk_model_, dt.val());
-      Matrix2d Phi_clk_{{1, dt.val()}, {0, 1}};
-      clk = Phi_clk_ * clk + SampleMVN(Vector2d::Zero(), Q_clk, 1);
+    Matrix2 Phi_clk = TwoStatePhi(dt);
+    clk = Phi_clk * clk;
+  }
+
+  void Propagate(Vector2& clk, double dt) {
+    Matrix2d Phi_clk = TwoStatePhi(dt);
+    clk = Phi_clk * clk;
+  }
+
+  void PropagateWithNoise(Vector2& clk, real t0, real tf) {
+    real dt = tf - t0;
+    auto Q_clk = GetClockProcessNoise(clk_model_, dt.val());
+    Matrix2 Phi_clk_ = TwoStatePhi(dt);
+    clk = Phi_clk_ * clk + SampleMVN(Vector2d::Zero(), Q_clk, 1);
+  }
+
+  void PropagateWithStm(Vector2& clk, real t0, real tf, MatrixXd& stm) {
+    real dt = tf - t0;
+    Matrix2 Phi_clk = TwoStatePhi(dt);
+    Matrix2d Phi_clk_d = Phi_clk.cast<double>();
+    clk = Phi_clk * clk;
+    stm.block(0, 0, 2, 2) = Phi_clk_d * stm.block(0, 0, 2, 2);
+  }
+
+  // three state clock
+  void Propagate(Vector3& clk, real t0, real tf) {
+    real dt = tf - t0;
+    Matrix3 Phi_clk = ThreeStatePhi(dt);
+    clk = Phi_clk * clk;
+  }
+
+  void Propagate(Vector3& clk, real dt) {
+    Matrix3 Phi_clk = ThreeStatePhi(dt);
+    clk = Phi_clk * clk;
+  }
+
+  void Propagate(Vector3& clk, double dt) {
+    Matrix3d Phi_clk = ThreeStatePhi(dt);
+    clk = Phi_clk * clk;
+  }
+
+  void PropagateWithNoise(Vector3& clk, real t0, real tf) {
+    real dt = tf - t0;
+    auto Q_clk = GetClockProcessNoise3(clk_model_, dt.val());
+    Matrix3 Phi_clk_ = ThreeStatePhi(dt);
+    clk = Phi_clk_ * clk + SampleMVN(Vector3d::Zero(), Q_clk, 1);
+  }
+
+  void PropagateWithStm(Vector3& clk, real t0, real tf, MatrixXd& stm) {
+    real dt = tf - t0;
+    Matrix3 Phi_clk = ThreeStatePhi(dt);
+    Matrix3d Phi_clk_d = Phi_clk.cast<double>();
+    clk = Phi_clk * clk;
+    stm.block(0, 0, 3, 3) = Phi_clk_d * stm.block(0, 0, 3, 3);
+  }
+
+  // arbitrary state clock
+  void PropagateX(VectorX& clk, real t0, real tf) {
+    if (clk.size() == 2) {
+      Vector2 clk2 = clk;
+      Propagate(clk2, t0, tf);
+      clk = clk2;
+    } else if (clk.size() == 3) {
+      Vector3 clk3 = clk;
+      Propagate(clk3, t0, tf);
+      clk = clk3;
+    } else {
+      throw std::runtime_error("Invalid clock state size");
+    }
+  }
+
+  void PropagateWithStmX(VectorX& clk, real t0, real tf, MatrixXd& stm) {
+    if (clk.size() == 2) {
+      Vector2 clk2 = clk;
+      PropagateWithStm(clk2, t0, tf, stm);
+      clk = clk2;
+    } else if (clk.size() == 3) {
+      Vector3 clk3 = clk;
+      PropagateWithStm(clk3, t0, tf, stm);
+      clk = clk3;
+    } else {
+      throw std::runtime_error("Invalid clock state size");
     }
   }
 };

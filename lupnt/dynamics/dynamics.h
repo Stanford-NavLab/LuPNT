@@ -25,35 +25,17 @@ namespace lupnt {
 class IDynamics {
  public:
   // without dt
-  virtual void Propagate(VectorX &x, real t0, real tf) = 0;
-  virtual void PropagateWithStm(VectorX &x, real t0, real tf,
-                                MatrixXd &stm) = 0;
+  virtual ~IDynamics() = default;
+  virtual void PropagateX(VectorX &x, real t0, real tf) = 0;
+  virtual void PropagateWithStmX(VectorX &x, real t0, real tf,
+                                 MatrixXd &stm) = 0;
 };
 
 /**
- * @brief Interface for Orbit Dynamics (Todo: find a way to inherit this from
- * IDynamics)
+ * @brief Numerical Dynamics
  *
  */
-class IOrbitDynamics {
- public:
-  virtual ~IOrbitDynamics() = default;
-  virtual void Propagate(OrbitState &state, real t0, real tf, real dt) = 0;
-  virtual void Propagate(Vector6 &x, real t0, real tf, real dt) = 0;
-  virtual void PropagateWithStm(OrbitState &state, real t0, real tf, real dt,
-                                Matrix6d &stm) = 0;
-  virtual void PropagateWithStm(Vector6 &x, real t0, real tf, real dt,
-                                Matrix6d &stm) = 0;
-  // without dt
-  virtual void Propagate(OrbitState &state, real t0, real tf) = 0;
-  virtual void Propagate(Vector6 &x, real t0, real tf) = 0;
-  virtual void PropagateWithStm(OrbitState &state, real t0, real tf,
-                                Matrix6d &stm) = 0;
-  virtual void PropagateWithStm(Vector6 &x, real t0, real tf,
-                                Matrix6d &stm) = 0;
-};
-
-class NumericalDynamics : public IOrbitDynamics {
+class NumericalDynamics : public IDynamics {
  private:
   ODE odefunc_;
   double dt_;
@@ -81,22 +63,50 @@ class NumericalDynamics : public IOrbitDynamics {
   void PropagateWithStm(OrbitState &state, real t0, real tf, Matrix6d &stm);
   void PropagateWithStm(Vector6 &x, real t0, real tf, Matrix6d &stm);
 
+  // arbitrary state size
+  void PropagateX(VectorX &x, real t0, real tf);
+  void PropagateWithStmX(VectorX &x, real t0, real tf, MatrixXd &stm);
+
  protected:
   virtual VectorX ComputeRates(real t, const VectorX &x) const = 0;
 };
 
-class IAnalyticalDynamics {
+/**
+ * @brief Analytical Dynamics
+ *
+ */
+class AnalyticalDynamics : public IDynamics {
  public:
-  virtual ~IAnalyticalDynamics(){};
+  virtual ~AnalyticalDynamics(){};
   virtual void Propagate(OrbitState &state, real t0, real dt) = 0;
   virtual void Propagate(Vector6 &x, real t0, real dt) = 0;
   virtual void PropagateWithSTM(OrbitState &state, real t0, real dt) = 0;
   virtual void PropagateWithSTM(Vector6 &x, real t0, real dt) = 0;
+
+  // arbitrary state size
+  void PropagateX(VectorX &x, real t0, real tf) {
+    Vector6 x6;
+    real dt = tf - t0;
+    x6 << x(0), x(1), x(2), x(3), x(4), x(5);
+    Propagate(x6, t0, dt);
+    x.head(6) = x6;
+  }
+
+  void PropagateWithStmX(VectorX &x, real t0, real tf, MatrixXd &stm) {
+    Vector6 x6;
+    x6 << x(0), x(1), x(2), x(3), x(4), x(5);
+    real dt = tf - t0;
+    Matrix6d stm6;
+    stm6 = stm.block(0, 0, 6, 6);
+    PropagateWithSTM(x6, t0, dt);
+    x.head(6) = x6;
+    stm.block(0, 0, 6, 6) = stm6;
+  }
 };
 
 /**
  * @brief Keplerian Dynamics (Todo: find a way to inherit this from
- * IAnalyticalDynamics)
+ * AnalyticalDynamics)
  *
  */
 class KeplerianDynamics {
@@ -167,7 +177,7 @@ class MoonMeanDynamics : public NumericalDynamics {
   VectorX ComputeRates(real t, const VectorX &x) const;
 };
 
-class ClohessyWiltshireDynamics : public IAnalyticalDynamics {
+class ClohessyWiltshireDynamics : public AnalyticalDynamics {
  private:
   real a, n;
   VectorX K;
@@ -180,7 +190,7 @@ class ClohessyWiltshireDynamics : public IAnalyticalDynamics {
   MatrixX ComputeMatrix(real t);
 };
 
-class YamanakaAnkersenDynamics : public IAnalyticalDynamics {
+class YamanakaAnkersenDynamics : public AnalyticalDynamics {
  private:
   real a, n, e, M0;
   VectorX K;
@@ -195,7 +205,7 @@ class YamanakaAnkersenDynamics : public IAnalyticalDynamics {
   MatrixX ComputeInverseMatrix(real t);
 };
 
-class RoeGeometricMappingDynamics : public IAnalyticalDynamics {
+class RoeGeometricMappingDynamics : public AnalyticalDynamics {
  private:
   real a, e, i, w, M0, ex, ey, n;
   VectorX K;

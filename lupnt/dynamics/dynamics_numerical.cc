@@ -42,8 +42,8 @@ void NumericalDynamics::PropagateWithStm(OrbitState &state, real t0, real tf,
   stm = J;
 }
 
-void NumericalDynamics::PropagateWithStm(Vector6 &x, real t0, real tf,
-                                         real dt, Matrix6d &stm) {
+void NumericalDynamics::PropagateWithStm(Vector6 &x, real t0, real tf, real dt,
+                                         Matrix6d &stm) {
   Vector6 x0 = x;
   MatrixXd J(6, 6);
   VectorX xf = propagator_.PropagateWithStm(odefunc_, t0, tf, x0, dt, J);
@@ -69,6 +69,25 @@ void NumericalDynamics::PropagateWithStm(Vector6 &x, real t0, real tf,
   PropagateWithStm(x, t0, tf, dt_, stm);
 }
 
+// arbitrary state size
+void NumericalDynamics::PropagateX(VectorX &x, real t0, real tf) {
+  Vector6 x6;
+  x6 << x(0), x(1), x(2), x(3), x(4), x(5);
+  Propagate(x6, t0, tf, dt_);
+  x.head(6) = x6;
+}
+
+void NumericalDynamics::PropagateWithStmX(VectorX &x, real t0, real tf,
+                                          MatrixXd &stm) {
+  Vector6 x6;
+  x6 << x(0), x(1), x(2), x(3), x(4), x(5);
+  Matrix6d stm6;
+  stm6 = stm.block(0, 0, 6, 6);
+  PropagateWithStm(x6, t0, tf, dt_, stm6);
+  x.head(6) = x6;
+  stm.block(0, 0, 6, 6) = stm6;
+}
+
 // ****************************************************************************
 // CartesianTwoBodyDynamics
 // ****************************************************************************
@@ -80,8 +99,7 @@ CartesianTwoBodyDynamics::CartesianTwoBodyDynamics(double mu,
                                   std::placeholders::_1, std::placeholders::_2),
                         OrbitStateRepres::CARTESIAN, integratorType){};
 
-VectorX CartesianTwoBodyDynamics::ComputeRates(real t,
-                                                   const VectorX &x) const {
+VectorX CartesianTwoBodyDynamics::ComputeRates(real t, const VectorX &x) const {
   Vector6 dxdt;
   Vector3 r = x.head(3);
   Vector3 v = x.tail(3);
@@ -103,8 +121,7 @@ MoonFixedDynamics::MoonFixedDynamics(double mu, std::string integratorType)
                                   std::placeholders::_1, std::placeholders::_2),
                         OrbitStateRepres::CARTESIAN, integratorType){};
 
-VectorX MoonFixedDynamics::ComputeRates(real t,
-                                            const VectorX &x) const {
+VectorX MoonFixedDynamics::ComputeRates(real t, const VectorX &x) const {
   Vector6 dxdt;
   Vector3 r = x.head(3);
   Vector3 v = x.tail(3);
@@ -130,8 +147,8 @@ J2CartesianTwoBodyDynamics::J2CartesianTwoBodyDynamics(
                     std::placeholders::_1, std::placeholders::_2),
           OrbitStateRepres::CARTESIAN, integratorType){};
 
-VectorX J2CartesianTwoBodyDynamics::ComputeRates(
-    real t, const VectorX &x) const {
+VectorX J2CartesianTwoBodyDynamics::ComputeRates(real t,
+                                                 const VectorX &x) const {
   VectorX acc(6);
 
   Vector3 r = x.head(3);
@@ -167,8 +184,7 @@ J2KeplerianDynamics::J2KeplerianDynamics(double mu_in, double J2_in,
                                   std::placeholders::_1, std::placeholders::_2),
                         OrbitStateRepres::CARTESIAN, integratorType){};
 
-VectorX J2KeplerianDynamics::ComputeRates(real t,
-                                              const VectorX &x) const {
+VectorX J2KeplerianDynamics::ComputeRates(real t, const VectorX &x) const {
   real p = x(0) * (1.0 - x(1) * x(1));
   real n = sqrt(mu / pow(x(0), 3.0));
   real eta = sqrt(1.0 - x(1) * x(1));

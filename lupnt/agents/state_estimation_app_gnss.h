@@ -60,7 +60,7 @@ class GnssStateEstimationApp : public Application {
   Matrix2d Phi_clk_pred_only;
 
   std::shared_ptr<Agent> agent;
-  std::shared_ptr<IOrbitDynamics> dyn;
+  std::shared_ptr<NumericalDynamics> dyn;
   std::shared_ptr<GnssReceiver> receiver;
   std::shared_ptr<IFilter> filter;
   MeasurementFunction meas_func;
@@ -72,7 +72,7 @@ class GnssStateEstimationApp : public Application {
 
  public:
   void SetAgent(std::shared_ptr<Agent> agent) { this->agent = agent; }
-  void SetDynamics(std::shared_ptr<IOrbitDynamics> dyn) { this->dyn = dyn; }
+  void SetDynamics(std::shared_ptr<NumericalDynamics> dyn) { this->dyn = dyn; }
   void SetReceiver(std::shared_ptr<GnssReceiver> receiver) {
     this->receiver = receiver;
   }
