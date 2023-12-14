@@ -188,7 +188,7 @@ class ClockDynamics : public IDynamics {
     Matrix2 Phi_clk = TwoStatePhi(dt);
     Matrix2d Phi_clk_d = Phi_clk.cast<double>();
     clk = Phi_clk * clk;
-    stm.block(0, 0, 2, 2) = Phi_clk_d * stm.block(0, 0, 2, 2);
+    stm.block(0, 0, 2, 2) = Phi_clk_d;
   }
 
   // three state clock
@@ -220,7 +220,7 @@ class ClockDynamics : public IDynamics {
     Matrix3 Phi_clk = ThreeStatePhi(dt);
     Matrix3d Phi_clk_d = Phi_clk.cast<double>();
     clk = Phi_clk * clk;
-    stm.block(0, 0, 3, 3) = Phi_clk_d * stm.block(0, 0, 3, 3);
+    stm.block(0, 0, 3, 3) = Phi_clk_d;
   }
 
   // arbitrary state clock
@@ -241,10 +241,12 @@ class ClockDynamics : public IDynamics {
   void PropagateWithStmX(VectorX& clk, real t0, real tf, MatrixXd& stm) {
     if (clk.size() == 2) {
       Vector2 clk2 = clk;
+      stm.resize(2, 2);
       PropagateWithStm(clk2, t0, tf, stm);
       clk = clk2;
     } else if (clk.size() == 3) {
       Vector3 clk3 = clk;
+      stm.resize(3, 3);
       PropagateWithStm(clk3, t0, tf, stm);
       clk = clk3;
     } else {

@@ -52,4 +52,5 @@ int main() {
   VectorX prop_state = dynamics(state_vec, 0, 0.5, Phi);
 
   std::cout << "Propagated State: " << std::endl << prop_state << std::endl;
+  std::cout << "State Transition Matrix: " << std::endl << Phi << std::endl;
 }
