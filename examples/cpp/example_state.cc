@@ -31,25 +31,27 @@ int main() {
   real w = 90.0 * RAD_PER_DEG;
   real M = 0.0 * RAD_PER_DEG;
   ClassicalOE coe({a, e, i, Omega, w, M});
-
-  auto cart = ClassicalToCartesian(coe, MU_EARTH);
+  auto cart = ClassicalToCartesian(coe, MU_MOON);
 
   // dynamics model
-  auto dyn_earth_tb = CartesianTwoBodyDynamics(MU_EARTH);
+  auto dyn_moon_tb = CartesianTwoBodyDynamics(MU_MOON);
+  dyn_moon_tb.SetDt(0.5);
   auto dyn_clk = ClockDynamics(ClockModel::kMicrosemiCsac);
 
   // Joint state
   JointState joint_state;
-  joint_state.PushBackStateAndDynamics(&cart, &dyn_earth_tb);
+  joint_state.PushBackStateAndDynamics(&cart, &dyn_moon_tb);
   joint_state.PushBackStateAndDynamics(&clock, &dyn_clk);
 
   VectorX state_vec = joint_state.GetJointStateValue();
   std::cout << "State: " << std::endl << state_vec << std::endl;
 
-  DynamicsFunction dynamics = joint_state.GetDynamicsFunction();
+  // Test propagation
+  DynamicsFunction joint_dynamics = joint_state.GetDynamicsFunction();
   MatrixXd Phi;
-
-  VectorX prop_state = dynamics(state_vec, 0, 0.5, Phi);
+  real t_start = 0.0;
+  real t_end = 60.0;
+  VectorX prop_state = joint_dynamics(state_vec, t_start, t_end, Phi);
 
   std::cout << "Propagated State: " << std::endl << prop_state << std::endl;
   std::cout << "State Transition Matrix: " << std::endl << Phi << std::endl;
