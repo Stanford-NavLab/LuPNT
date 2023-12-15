@@ -92,6 +92,15 @@ class EKF : public IFilter {
   MatrixXd K;  // Kalman gain
   MatrixXd I;  // Identity matrix
 
+  EKF() {}
+
+  EKF(FilterDynamicsFunction dynamics, FilterProcessNoiseFunction process_noise,
+      FilterMeasurementFunction measurement) {
+    this->dynamics = dynamics;
+    this->process_noise = process_noise;
+    this->measurement = measurement;
+  }
+
   void Initialize(const VectorX &x0, const MatrixXd &P0) {
     x = x0;
     P = P0;
