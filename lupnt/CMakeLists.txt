@@ -46,6 +46,9 @@ add_library(lupnt ${LuPNT_srcs})
 # add cspice
 target_link_libraries(lupnt PUBLIC "${CMAKE_SOURCE_DIR}/third_party/cspice/cspice.a")
 
+# add MatPlot++
+target_link_libraries(lupnt PUBLIC matplot)
+
 # add Boost
 target_link_libraries(lupnt PUBLIC ${Boost_LIBRARIES})
 
