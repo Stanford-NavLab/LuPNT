@@ -148,14 +148,12 @@ class ClockDynamics : public IDynamics {
   }
 
   Matrix3 ThreeStatePhi(real dt) {
-    Matrix3 Phi_clk;
-    Phi_clk << 1, dt, dt * dt / 2, 0, 1, dt, 0, 0, 1;
+    Matrix3 Phi_clk{{1, dt, dt * dt / 2}, {0, 1, dt}, {0, 0, 1}};
     return Phi_clk;
   }
 
   Matrix3d ThreeStatePhi(double dt) {
-    Matrix3d Phi_clk;
-    Phi_clk << 1, dt, dt * dt / 2, 0, 1, dt, 0, 0, 1;
+    Matrix3d Phi_clk{{1, dt, dt * dt / 2}, {0, 1, dt}, {0, 0, 1}};
     return Phi_clk;
   }
 
@@ -171,16 +169,11 @@ class ClockDynamics : public IDynamics {
     clk = Phi_clk * clk;
   }
 
-  void Propagate(Vector2& clk, double dt) {
-    Matrix2d Phi_clk = TwoStatePhi(dt);
-    clk = Phi_clk * clk;
-  }
-
   void PropagateWithNoise(Vector2& clk, real t0, real tf) {
     real dt = tf - t0;
     auto Q_clk = GetClockProcessNoise(clk_model_, dt.val());
     Matrix2 Phi_clk_ = TwoStatePhi(dt);
-    clk = Phi_clk_ * clk + SampleMVN(Vector2d::Zero(), Q_clk, 1);
+    clk = SampleMVN(Phi_clk_ * clk, Q_clk, 1);
   }
 
   void PropagateWithStm(Vector2& clk, real t0, real tf, MatrixXd& stm) {
@@ -200,11 +193,6 @@ class ClockDynamics : public IDynamics {
 
   void Propagate(Vector3& clk, real dt) {
     Matrix3 Phi_clk = ThreeStatePhi(dt);
-    clk = Phi_clk * clk;
-  }
-
-  void Propagate(Vector3& clk, double dt) {
-    Matrix3d Phi_clk = ThreeStatePhi(dt);
     clk = Phi_clk * clk;
   }
 
@@ -234,7 +222,7 @@ class ClockDynamics : public IDynamics {
       Propagate(clk3, t0, tf);
       clk = clk3;
     } else {
-      throw std::runtime_error("Invalid clock state size");
+      assert(false && "Invalid clock state size");
     }
   }
 
@@ -250,8 +238,14 @@ class ClockDynamics : public IDynamics {
       PropagateWithStm(clk3, t0, tf, stm);
       clk = clk3;
     } else {
-      throw std::runtime_error("Invalid clock state size");
+      assert(false && "Invalid clock state size");
     }
+  }
+
+  // ClockState
+  void Propagate(ClockState clk, real t0, real tf) {
+    VectorX clk_vec = clk.GetVector();
+    PropagateX(clk_vec, t0, tf);
   }
 };
 }  // namespace lupnt

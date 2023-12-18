@@ -89,8 +89,7 @@ GnssMeasurement GnssMeasurement::ExtractSignal(std::string freq_label) {
   return GnssMeasurement(transmissions_freq);
 }
 
-VectorX GnssMeasurement::ComputePseudorange(VectorX r_rx,
-                                                real dt_rx) const {
+VectorX GnssMeasurement::ComputePseudorange(VectorX r_rx, real dt_rx) const {
   // P_rx = rho_rx + c*(dt_rx(t_rx) - dt_tx(t_tx)) + I_rx + T_rx + eps_P
   VectorX P_rx(r_tx.cols());
   for (int i = 0; i < r_tx.cols(); i++) {
@@ -105,8 +104,7 @@ VectorX GnssMeasurement::GetPseudorange() {
 }
 
 VectorX GnssMeasurement::GetPseudorange(double epoch, Vector6 rv_pred,
-                                            Vector2 clk_pred,
-                                            MatrixXd &H_pr) {
+                                        Vector2 clk_pred, MatrixXd &H_pr) {
   auto func = [&, epoch, this](const Vector6 &rv_pred,
                                const Vector2 &clk_pred) {
     auto rv_pred_gcrf = CoordConverter::Convert(epoch, rv_pred, CoordSystem::MI,
@@ -140,7 +138,7 @@ VectorX GnssMeasurement::GetPhaseRange() {
   // (phi_rx_0 - phi_0 + N_rx) + lambda*eps_Phi
 
   VectorX Phi_rx = c * (t_rx - t_tx + dt_rx - dt_tx.array()).matrix() +
-                       lambda * (phi_rx_tx - phi_tx + N_rx + eps_Phi);
+                   lambda * (phi_rx_tx - phi_tx + N_rx + eps_Phi);
   return Phi_rx;
 };
 
@@ -157,7 +155,7 @@ VectorX GnssMeasurement::GetDopplerShift() {
 }
 
 VectorX GnssMeasurement::GetPseudorangeRate(const VectorX &r_rx_,
-                                                const VectorX &v_rx_) {
+                                            const VectorX &v_rx_) {
   // f_D = - f/c*((v_tx(t_tx) - v_rx(t_rx))^T * e_rx + c * dt_rx_dot(t_rx) -
   // c* dt_tx_dot(t_tx))) + eps_D
 

@@ -38,25 +38,27 @@ void EKF::Predict(real t_end) {
 /**
  * @brief Update step
  *
- * @param z_obs observed measurement
+ * @param z_true observed measurement
  */
-void EKF::Update(VectorX z_obs) {
+void EKF::Update(VectorX z_true_in) {
+  z_true = z_true_in;
+
   int n = x.size();
-  int m = z_obs.size();
+  int m = z_true.size();
 
   // allocate memory (without this, MatrixXd will cause segfault)
   MatrixXd H(m, n);
   MatrixXd R(m, m);
-  S.resize(m, m);
-  K.resize(n, m);
-  dx.resize(n);
+  S = MatrixXd::Zero(m, m);
+  K = MatrixXd::Zero(n, m);
+  dx = VectorX::Zero(n);
 
-  VectorX z_predict = this->measurement(xbar, H, R);
+  z_pred = this->measurement(xbar, H, R);
 
   // Update step
   S = R + H * P * H.transpose();        // Measurement information
   K = P * H.transpose() * S.inverse();  // Kalman gain
-  dx = K * (z_obs - z_predict);
+  dx = K * (z_true - z_pred);
   x = x + dx;
   I = MatrixXd::Identity(n, n);
   MatrixXd G = MatrixXd(n, n);

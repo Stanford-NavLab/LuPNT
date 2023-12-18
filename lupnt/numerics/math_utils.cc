@@ -15,6 +15,8 @@
 #include <Eigen/Eigenvalues>
 #include <Eigen/SVD>
 
+#include "lupnt/core/constants.h"
+
 namespace lupnt {
 
 std::tuple<real, real, real> unpack(const Vector3 &vec) {
@@ -207,6 +209,44 @@ MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn) {
   MatrixXd samples = normTransform * randN + mean_samples;
   return samples;
 };
+
+MatrixX SampleMVN(const VectorX mean, const MatrixX covar, int nn) {
+  // Define random generator with Gaussian distribution
+  int xsize = mean.size();
+  auto dist = std::bind(std::normal_distribution<double>{0.0, 1.0},
+                        std::mt19937(std::random_device{}()));
+
+  // Transform Matrix
+  MatrixX normTransform(xsize, xsize);
+  Eigen::LLT<MatrixX> cholSolver(covar);
+
+  if (cholSolver.info() == Eigen::Success) {
+    // Use cholesky solver
+    normTransform = cholSolver.matrixL();
+  } else {
+    std::runtime_error(
+        "The covariance matrix must be symmetric and pos-definite.");
+  }
+
+  MatrixX randN(xsize, nn);
+  MatrixX mean_samples(xsize, nn);
+  for (int i = 0; i < xsize; i++) {
+    for (int j = 0; j < nn; j++) {
+      randN(i, j) = dist();
+      mean_samples(i, j) = mean(i);
+    }
+  }
+
+  MatrixX samples = normTransform * randN + mean_samples;
+  return samples;
+};
+
+MatrixXd blkdiag(const MatrixXd &A, const MatrixXd &B) {
+  MatrixXd C = MatrixXd::Zero(A.rows() + B.rows(), A.cols() + B.cols());
+  C.topLeftCorner(A.rows(), A.cols()) = A;
+  C.bottomRightCorner(B.rows(), B.cols()) = B;
+  return C;
+}
 
 Matrix3 Rot1(real phi) {
   real c = cos(phi);

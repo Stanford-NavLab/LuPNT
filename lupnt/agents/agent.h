@@ -42,25 +42,25 @@ class Agent {
   std::shared_ptr<NumericalDynamics> dynamics_;
   std::vector<std::shared_ptr<ICommDevice>> devices_;
 
-  Vector2 clock_;
+  ClockState clock_;
   std::unique_ptr<ClockDynamics> clock_dynamics_;
 
  public:
-  Agent() : id_(id_counter_++) {}
+  Agent() : id_(id_counter_++), clock_(ClockState(Vector2d::Zero())){};
 
   // Getters
   real GetEpoch() { return epoch_; }
   BodyId GetBodyId() { return bodyId_; }
   std::shared_ptr<OrbitState> GetOrbitState() { return state_; }
   std::shared_ptr<NumericalDynamics> GetDynamics() { return dynamics_; }
-  Vector2 GetClock() { return clock_; }
+  ClockState GetClockState() { return clock_; }
 
   // Setters
   void SetOrbitState(std::shared_ptr<OrbitState> state) { state_ = state; }
   void SetDynamics(std::shared_ptr<NumericalDynamics> dyn) { dynamics_ = dyn; }
   void SetEpoch(real epoch) { epoch_ = epoch; }
   void SetBodyId(BodyId bodyId) { bodyId_ = bodyId; }
-  void SetClock(Vector2 clk) { clock_ = clk; }
+  void SetClock(ClockState clk) { clock_ = clk; }
   void SetClockDynamics(ClockDynamics& clock_dyn) {
     clock_dynamics_ = std::make_unique<ClockDynamics>(clock_dyn);
   }
@@ -77,8 +77,9 @@ class Agent {
     if (epoch == epoch_) return;
 
     dynamics_->Propagate(*state_, epoch_, epoch, 1.0 * SECS_PER_MINUTE);
+
     if (clock_dynamics_ != nullptr) {
-      clock_dynamics_->Propagate(clock_, epoch - epoch_);
+      clock_dynamics_->Propagate(clock_, epoch_, epoch);
     }
 
     epoch_ = epoch;

@@ -61,8 +61,9 @@ double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
  * @brief Sample from a multivariate normal distribution
  *
  */
-MatrixXd SampleMVN(const VectorXd mean, const MatrixXd cov, int nn);
+MatrixX SampleMVN(const VectorX mean, const MatrixX cov, int nn);
 
+MatrixXd blkdiag(const MatrixXd &A, const MatrixXd &B);
 
 Matrix3 Rot1(real phi);
 Matrix3 Rot2(real phi);

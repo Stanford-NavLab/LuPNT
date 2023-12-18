@@ -128,7 +128,7 @@ std::vector<Transmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
 
       // RX
       trans.t_rx = t_rx;
-      trans.dt_rx = rx.GetAgent()->GetClock()(0).val();
+      trans.dt_rx = rx.GetAgent()->GetClockState().GetValue(0).val();
       trans.r_rx = rv_rx_gcrf->r().cast<double>();
       trans.v_rx = rv_rx_gcrf->v().cast<double>();
 

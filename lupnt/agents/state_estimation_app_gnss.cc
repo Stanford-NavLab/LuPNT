@@ -156,7 +156,7 @@ void GnssStateEstimationApp::Step(double t) {
   data_history->AddData("rv_pred_only", t, rv_pred_only);
   data_history->AddData("rv_est", t, rv_est);
 
-  data_history->AddData("clk", t, agent->GetClock());
+  data_history->AddData("clk", t, agent->GetClockState().GetVector());
   data_history->AddData("clk_pred", t, clk_pred);
   data_history->AddData("clk_est", t, clk_est);
   data_history->AddData("clk_pred_only", t, clk_pred_only);

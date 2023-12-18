@@ -78,10 +78,12 @@ class IFilter {
  */
 class EKF : public IFilter {
  public:
-  VectorX x;     // Updated state
-  real t_curr;   // Current time
-  VectorX xbar;  // Predicted state
-  VectorX dx;    // State update
+  real t_curr;     // Current time
+  VectorX x;       // Updated state
+  VectorX xbar;    // Predicted state
+  VectorX dx;      // State update
+  VectorX z_true;  // Observed measurement
+  VectorX z_pred;  // Predicted measurement
 
   MatrixXd P;     // Updated state cov
   MatrixXd Pbar;  // Predicted state cov

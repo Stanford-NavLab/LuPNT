@@ -122,7 +122,7 @@ int main() {
   std::cout << "State Transition Matrix: " << std::endl << Phi << std::endl;
 
   // Initialize EKF
-  EKF ekf = EKF();
+  EKF ekf;
   ekf.SetDynamicsFunction(joint_dynamics);
   ekf.SetMeasurementFunction(meas_func_pos_clk);
   ekf.SetProcessNoiseFunction(proc_noise_func);
