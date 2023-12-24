@@ -54,6 +54,13 @@ class Agent {
   std::shared_ptr<OrbitState> GetOrbitState() { return state_; }
   std::shared_ptr<NumericalDynamics> GetDynamics() { return dynamics_; }
   ClockState GetClockState() { return clock_; }
+  VectorX GetStateVector() {
+    Vector6 rv = GetOrbitState()->GetVector();
+    Vector2 clk = GetClockState().GetVector();
+    VectorX state(8);
+    state << rv, clk;
+    return state;
+  }
 
   // Setters
   void SetOrbitState(std::shared_ptr<OrbitState> state) { state_ = state; }

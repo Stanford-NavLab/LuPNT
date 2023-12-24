@@ -10,31 +10,12 @@
  */
 
 // lupnt includes
-#include <lupnt/agents/agent.h>
-#include <lupnt/agents/gnss_constellation.h>
-#include <lupnt/agents/state_estimation_app.h>
-#include <lupnt/core/file.h>
-#include <lupnt/dynamics/dynamics.h>
-#include <lupnt/measurements/gnss_channel.h>
-#include <lupnt/measurements/gnss_measurement.h>
-#include <lupnt/measurements/gnss_receiver.h>
-#include <lupnt/measurements/transmission.h>
-#include <lupnt/numerics/filters.h>
-#include <lupnt/numerics/math_utils.h>
-#include <lupnt/physics/clock.h>
-#include <lupnt/physics/coord_converter.h>
-#include <lupnt/physics/orbit_state.h>
-#include <lupnt/physics/spice_interface.h>
-
-// C++ includes
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <memory>
-#include <string>
+#include "example_utils.cc"
 
 using namespace lupnt;
 namespace sp = SpiceInterface;
+
+// Util Functions
 
 int main() {
   // Dynamics
@@ -64,10 +45,10 @@ int main() {
   std::cout << "Initial Epoch: " << epoch_string << std::endl;
 
   double t0 = 0;
-  double tf = t0 + 24.0 * SECS_PER_HOUR;  // 6 hours
-  double dt = 1.0;                        // Integration time step [s]
-  double Dt = 10.0;                       // Propagation time step [s]
-  double print_every = 1.0 * SECS_PER_HOUR;
+  double tf = t0 + 1.0 * SECS_PER_HOUR;  // 6 hours
+  double dt = 1.0;                       // Integration time step [s]
+  double Dt = 10.0;                      // Propagation time step [s]
+  double print_every = 0.1 * SECS_PER_HOUR;
   double save_every = Dt;
 
   // Moon spacecraft
@@ -110,15 +91,8 @@ int main() {
   double sigma_range_rate = 1e-6;  // Range rate measurement noise [km/s]
 
   // Initial covariance
-  Matrix6d P_rv = Matrix6d::Zero();
-  P_rv.block(0, 0, 3, 3) = Matrix3d::Identity() * pow(pos_err, 2);
-  P_rv.block(3, 3, 3, 3) = Matrix3d::Identity() * pow(vel_err, 2);
-
-  Matrix2d P_clk = Matrix2d::Zero();
-  P_clk(0, 0) = pow(clk_bias_err, 2);
-  P_clk(1, 1) = pow(clk_drift_err, 2);
-
-  MatrixXd P0 = blkdiag(P_rv, P_clk);
+  MatrixXd P0 =
+      ConstructInitCovariance(pos_err, vel_err, clk_bias_err, clk_drift_err);
 
   // Joint state and dynamics
   JointState joint_state;
@@ -128,30 +102,6 @@ int main() {
 
   FilterDynamicsFunction joint_dynamics =
       joint_state.GetFilterDynamicsFunction();
-
-  // Process noise
-  FilterProcessNoiseFunction proc_noise_func =
-      [state_size](const VectorX& x, real t_curr, real t_end) {
-        int clock_index = 6;
-        double dt = (t_end - t_curr).val();
-        double sigma_acc = 1e-13;
-
-        MatrixXd Q = MatrixXd::Zero(state_size, state_size);
-
-        Matrix6d Q_rv = Matrix6d::Zero();
-        for (int i = 0; i < 3; i++) {
-          Q_rv(i, i) = pow(dt, 3) / 3.0 * pow(sigma_acc, 2);
-          Q_rv(i + 3, i + 3) = dt * pow(sigma_acc, 2);
-          Q_rv(i, i + 3) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
-          Q_rv(i + 3, i) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
-        }
-        Matrix2d Q_clk = GetClockProcessNoise(ClockModel::kMicrosemiCsac, dt);
-
-        Q.block(0, 0, 6, 6) = Q_rv;
-        Q.block(6, 6, 2, 2) = Q_clk;
-
-        return Q;
-      };
 
   FilterMeasurementFunction meas_func_pos_clk =
       [moon_sat, receiver, state_size, sigma_range](
@@ -179,6 +129,7 @@ int main() {
   ekf.SetDynamicsFunction(joint_dynamics);
   ekf.SetMeasurementFunction(meas_func_pos_clk);
   ekf.SetProcessNoiseFunction(proc_noise_func);
+  std::cout << "Initialized EKF" << std::endl;
 
   VectorX x_est = SampleMVN(joint_state.GetJointStateValue(), P0, 1);
   ekf.Initialize(x_est, P0);
@@ -191,6 +142,11 @@ int main() {
   // Main loop
   double t = t0;
   double epoch = epoch0;
+  std::cout << "Run Simulation" << std::endl;
+  std::cout << " " << std::endl;
+  std::cout << " " << std::endl;
+  std::cout << "Time  | Pos Err | Vel Err | Clk Bias Err" << std::endl;
+  std::cout << "-----------------------------------------" << std::endl;
 
   while (t < tf) {
     t += Dt;
@@ -212,69 +168,25 @@ int main() {
     // Update EKF
     ekf.Step(t + dt, z_true);
 
-    // Navigation
-    data_history->AddData("z_true", t, ekf.z_true);
-    data_history->AddData("z_pred", t, ekf.z_pred);
-    data_history->AddData("CN0", t, meas.GetCN0());
-
-    data_history->AddData("vis_earth", t, meas.GetEarthOccultation());
-    data_history->AddData("vis_moon", t, meas.GetMoonOccultation());
-    data_history->AddData("vis_antenna", t, meas.GetMoonOccultation());
-    data_history->AddData("vis_ionos", t, meas.GetMoonOccultation());
-
-    // Moon spacecraft
-    auto state = moon_sat->GetCartesianGCRFStateAtEpoch(epoch);
-    auto sate_mi = ConvertOrbitStateCoordSystem(state, epoch, CoordSystem::MI);
-    auto state_gcrf =
-        ConvertOrbitStateCoordSystem(state, epoch, CoordSystem::GCRF);
-    data_history->AddData("rv_moon_mi", t, sate_mi->GetVector());
-    data_history->AddData("rv_moon_gcrf", t, state_gcrf->GetVector());
-
-    // Estimation
-    data_history->AddData("rv", t, moon_sat->GetOrbitState()->GetVector());
-    data_history->AddData("rv_pred", t, ekf.xbar.head(6));
-    data_history->AddData("rv_est", t, ekf.x.head(6));
-
-    data_history->AddData("clk", t, moon_sat->GetClockState().GetVector());
-    data_history->AddData("clk_pred", t, ekf.xbar.tail(2));
-    data_history->AddData("clk_est", t, ekf.x.tail(2));
-
-    data_history->AddData("P_rv", t, ekf.P.diagonal().segment(0, 6));
-    data_history->AddData("P_clk", t, ekf.P.diagonal().segment(6, 2));
-
-    // GPS constellation
-    for (int i = 0; i < gps_const.GetNumSatellites(); i++) {
-      auto sate =
-          gps_const.GetSatellite(i)->GetCartesianGCRFStateAtEpoch(epoch);
-      auto sate_mi = ConvertOrbitStateCoordSystem(sate, epoch, CoordSystem::MI);
-      auto state_gcrf =
-          ConvertOrbitStateCoordSystem(sate, epoch, CoordSystem::GCRF);
-
-      std::string name = "sat" + std::to_string(i);
-      data_history->AddData(name + "_mi", t, sate->GetVector());
-      data_history->AddData(name + "_gcrf", t, state_gcrf->GetVector());
-    }
-
-    // Bodies
-    data_history->AddData(
-        "earth_mi", t,
-        CoordConverter::Convert(epoch, VectorX::Zero(6), CoordSystem::GCRF,
-                                CoordSystem::MI));
-    data_history->AddData(
-        "moon_gcrf", t,
-        CoordConverter::Convert(epoch, VectorX::Zero(6), CoordSystem::MI,
-                                CoordSystem::GCRF));
+    // Add Data
+    AddStateEstimationData(data_history, moon_sat, &ekf, &gps_const, &meas, t,
+                           epoch);
 
     // Print progress
     if (fmod(t, print_every) < 1e-3) {
-      std::cout << "t = " << std::fixed << std::setprecision(1) << t / 3600.0
-                << "/" << tf / 3600.0 << " hours (" << (t / tf * 100) << "%)"
-                << "  Number of Measurements: " << meas_size << std::endl
-                << std::setprecision(4);
+      PrintProgress(t, moon_sat, &ekf);
     }
   }
 
-  // Write data
+  // Plots -----------------------------------------------
+  // Plot3DTrajectory(data_history, "true");
+  // Plot3DTrajectory(data_history, "est");
+
+  // Plot estimate for all states
+  PlotState(data_history, "true");
+  PlotState(data_history, "est");
+
+  // Write data ------------------------------------------
   std::cout << "Simulation finished, saving data..." << std::endl;
   writer.WriteData(*data_history);
   std::cout << "Data saved to " << output_path << std::endl;

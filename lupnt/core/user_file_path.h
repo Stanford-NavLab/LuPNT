@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include <assert.h>
+
 #include <filesystem>
 #include <iostream>
 #include <optional>

@@ -162,7 +162,11 @@ Vector6 ConvertOrbitState(const Vector6 &state_in_c, const Vector6 &state_in_d,
 std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
     const std::shared_ptr<OrbitState> &state_in, OrbitStateRepres repres_out,
     double mu) {
-  return nullptr;
+  Vector6 state_out = ConvertOrbitState(
+      state_in->GetVector(), state_in->GetOrbitStateRepres(), repres_out, mu);
+  return std::make_shared<OrbitState>(state_out, state_in->GetCoordSystem(),
+                                      repres_out, state_in->GetNames(),
+                                      state_in->GetUnits());
 }
 
 // From CartesianOrbitState
