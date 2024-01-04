@@ -28,7 +28,7 @@ namespace lupnt {
  * @return std::vector<Transmission>
  */
 std::vector<Transmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
-  std::vector<Transmission> received_transs;
+  std::vector<Transmission> received_transs;  // create an empty vector
 
   // Messages from other comms systems that can generate Gnss messages
   for (auto &tx : tx_devices) {

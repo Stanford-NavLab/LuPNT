@@ -89,38 +89,66 @@ GnssMeasurement GnssMeasurement::ExtractSignal(std::string freq_label) {
   return GnssMeasurement(transmissions_freq);
 }
 
-VectorX GnssMeasurement::ComputePseudorange(VectorX r_rx, real dt_rx) const {
+VectorX GnssMeasurement::ComputePseudorange(VectorX r_rx, real dt_rx,
+                                            bool with_noise) {
   // P_rx = rho_rx + c*(dt_rx(t_rx) - dt_tx(t_tx)) + I_rx + T_rx + eps_P
   VectorX P_rx(r_tx.cols());
   for (int i = 0; i < r_tx.cols(); i++) {
     P_rx(i) = RadioMeasurement::ComputePseudorange(r_rx, r_tx.col(i), dt_tx[i],
                                                    dt_rx, I_rx(i) + T_rx(i));
+    if (with_noise) {
+      P_rx(i) += ComputePseudorangeNoise(CN0(i));
+    }
   }
   return P_rx;
 }
 
-VectorX GnssMeasurement::GetPseudorange() {
-  return ComputePseudorange(r_rx, dt_rx);
+VectorX GnssMeasurement::GetPseudorange(bool with_noise) {
+  return ComputePseudorange(r_rx, dt_rx, with_noise);
 }
 
 VectorX GnssMeasurement::GetPseudorange(double epoch, Vector6 rv_pred,
                                         Vector2 clk_pred, MatrixXd &H_pr) {
-  auto func = [&, epoch, this](const Vector6 &rv_pred,
-                               const Vector2 &clk_pred) {
-    auto rv_pred_gcrf = CoordConverter::Convert(epoch, rv_pred, CoordSystem::MI,
-                                                CoordSystem::GCRF);
-    Vector3 r_rx = rv_pred_gcrf.head(3);
+  auto func = [epoch, this](const Vector6 rv_pred, const Vector2 clk_pred) {
+    auto rv_gcrf = CoordConverter::Convert(epoch, rv_pred, CoordSystem::MI,
+                                           CoordSystem::GCRF);
+    Vector3 r_rx = rv_gcrf.head(3);
     real dt_rx = clk_pred(0);
     return ComputePseudorange(r_rx, dt_rx);
   };
 
-  Vector6 rv_pred_ad = rv_pred.cast<double>();
-  Vector2 clk_pred_ad = clk_pred.cast<double>();
-
   VectorX z_pr_pred(n_meas);
-  H_pr = jacobian(func, wrt(rv_pred_ad, clk_pred_ad),
-                  at(rv_pred_ad, clk_pred_ad), z_pr_pred);
+  H_pr =
+      jacobian(func, wrt(rv_pred, clk_pred), at(rv_pred, clk_pred), z_pr_pred);
   return z_pr_pred;
+}
+
+VectorX GnssMeasurement::GetPseudorange2(double epoch, Vector6 rv_pred,
+                                         Vector2 clk_pred, MatrixXd &H_pr) {
+  auto rv_gcrf = CoordConverter::Convert(epoch, rv_pred, CoordSystem::MI,
+                                         CoordSystem::GCRF);
+  Vector3 r_rx = rv_gcrf.head(3);
+  real dt_rx = clk_pred(0);
+
+  // compute range
+  VectorX P_rx(r_tx.cols());
+  H_pr = MatrixXd::Zero(r_tx.cols(), 8);
+
+  for (int i = 0; i < r_tx.cols(); i++) {
+    real offset = I_rx(i) + T_rx(i);
+    VectorX r_tx_col = r_tx.col(i);
+    real dt_tx_col = dt_tx[i];
+    real rho_rx = (r_tx_col - r_rx).norm();
+
+    // directly compute jacobian
+    P_rx(i) = rho_rx + C * (dt_rx - dt_tx_col) + offset;
+    H_pr(i, 0) = ((r_rx(0) - r_tx_col(0)) / rho_rx).val();
+    H_pr(i, 1) = ((r_rx(1) - r_tx_col(1)) / rho_rx).val();
+    H_pr(i, 2) = ((r_rx(2) - r_tx_col(2)) / rho_rx).val();
+    H_pr(i, 6) = C;
+  }
+
+  return P_rx;
 }
 
 VectorX GnssMeasurement::GetCarrierPhase() {
@@ -165,4 +193,15 @@ VectorX GnssMeasurement::GetPseudorangeRate(const VectorX &r_rx_,
       eps_D;
   return f_D;
 }
+
+/********************
+ * Noise Models
+ *********************/
+
+double GnssMeasurement::ComputePseudorangeNoise(double CN0) { return 0; }
+
+double GnssMeasurement::ComputePseudorangeRateNoise(double CN0) { return 0; }
+
+double GnssMeasurement::ComputeCarrierPhaseNoise(double CN0) { return 0; }
+
 }  // namespace lupnt

@@ -145,7 +145,7 @@ int main() {
   x_est = x_true + SampleMVN(Vector8d::Zero(), P0, 1).col(0);
   ekf.Initialize(x_est, P0);
 
-  MatrixXd Q = ekf.process_noise(x_true, 0, dt);
+  MatrixXd Q = ekf.process_noise_(x_true, 0, dt);
   std::cout << " " << std::endl;
   std::cout << "Process Noise: " << std::endl << Q << std::endl;
 
@@ -161,7 +161,7 @@ int main() {
     x_true += SampleMVN(Vector8d::Zero(), Q, 1).col(0);
 
     // Get True Measurement
-    VectorX meas = ekf.measurement(x_true, H, R);
+    VectorX meas = ekf.measurement_(x_true, H, R);
     meas += SampleMVN(Vector4d::Zero(), R, 1).col(0);
 
     // Update EKF

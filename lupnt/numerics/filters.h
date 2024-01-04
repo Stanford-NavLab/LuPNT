@@ -57,18 +57,18 @@ typedef std::function<VectorX(const VectorX, MatrixXd &, MatrixXd &)>
 class IFilter {
  public:
   virtual ~IFilter() = default;
-  FilterDynamicsFunction dynamics;
-  FilterProcessNoiseFunction process_noise;
-  FilterMeasurementFunction measurement;
+  FilterDynamicsFunction dynamics_;
+  FilterProcessNoiseFunction process_noise_;
+  FilterMeasurementFunction measurement_;
 
   void SetDynamicsFunction(FilterDynamicsFunction dynamics) {
-    this->dynamics = dynamics;
+    this->dynamics_ = dynamics;
   }
   void SetProcessNoiseFunction(FilterProcessNoiseFunction process_noise) {
-    this->process_noise = process_noise;
+    this->process_noise_ = process_noise;
   }
   void SetMeasurementFunction(FilterMeasurementFunction measurement) {
-    this->measurement = measurement;
+    this->measurement_ = measurement;
   }
 };
 
@@ -78,46 +78,63 @@ class IFilter {
  */
 class EKF : public IFilter {
  public:
-  real t_curr;     // Current time
-  VectorX x;       // Updated state
-  VectorX xbar;    // Predicted state
-  VectorX dx;      // State update
-  VectorX z_true;  // Observed measurement
-  VectorX z_pred;  // Predicted measurement
+  real t_curr_;     // Current time
+  VectorX x_;       // Updated state
+  VectorX xbar_;    // Predicted state
+  VectorX dy_;      // Measurement residual
+  VectorX dx_;      // State update
+  VectorX z_true_;  // Observed measurement
+  VectorX z_pred_;  // Predicted measurement
 
-  MatrixXd P;     // Updated state cov
-  MatrixXd Pbar;  // Predicted state cov
+  MatrixXd P_;     // Updated state cov
+  MatrixXd Pbar_;  // Predicted state cov
+  MatrixXd Q_;     // Process noise cov
 
-  // MatrixXd F;  // Jacobian of the dynamics
-  MatrixXd H;  // Measurement matrix
-  MatrixXd S;  // Innovation cov
-  MatrixXd K;  // Kalman gain
-  MatrixXd I;  // Identity matrix
+  MatrixXd H_;  // Measurement matrix
+  MatrixXd S_;  // Innovation cov
+  MatrixXd K_;  // Kalman gain
+  MatrixXd R_;  // Measurement noise cov
+
+  double outlier_threshold_ = 3.0;
 
   EKF() {}
 
   EKF(FilterDynamicsFunction dynamics, FilterProcessNoiseFunction process_noise,
       FilterMeasurementFunction measurement) {
-    this->dynamics = dynamics;
-    this->process_noise = process_noise;
-    this->measurement = measurement;
+    this->dynamics_ = dynamics;
+    this->process_noise_ = process_noise;
+    this->measurement_ = measurement;
   }
 
   void Initialize(const VectorX &x0, const MatrixXd &P0) {
-    x = x0;
-    P = P0;
+    x_ = x0;
+    P_ = P0;
   }
 
   VectorX GetPredictedStateEstimate(MatrixXd &Pbar) {
-    Pbar = this->Pbar;
-    return this->xbar;
+    Pbar = this->Pbar_;
+    return this->xbar_;
   }
-
+  VectorX GetPredictedStateEstimate() { return this->xbar_; }
   VectorX GetUpdatedStateEstimate(MatrixXd &Phat) {
-    Phat = this->P;
-    return this->x;
+    Phat = this->P_;
+    return this->x_;
+  }
+  VectorX GetUpdatedStateEstimate() { return this->x_; }
+  VectorX GetMeasurementResidual() { return this->dy_; }
+  MatrixX GetKalmanGain() { return this->K_; }
+  MatrixX GetMeasurementNoiseCov() { return this->R_; }
+  MatrixX GetMeasurementJacobian() { return this->H_; }
+  int GetMeasurementSize() { return this->H_.rows(); }
+
+  void SetOutlierThreshold(double outlier_threshold) {
+    if (outlier_threshold < 0) {
+      throw std::invalid_argument("Outlier threshold must be positive");
+    }
+    this->outlier_threshold_ = outlier_threshold;
   }
 
+  int RemoveOutliers(int m);
   void Predict(real t_end);
   void Update(VectorX z_obs);
 

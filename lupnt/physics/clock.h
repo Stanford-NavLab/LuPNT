@@ -226,6 +226,20 @@ class ClockDynamics : public IDynamics {
     }
   }
 
+  void PropagateWithNoiseX(VectorX& clk, real t0, real tf) {
+    if (clk.size() == 2) {
+      Vector2 clk2 = clk;
+      PropagateWithNoise(clk2, t0, tf);
+      clk = clk2;
+    } else if (clk.size() == 3) {
+      Vector3 clk3 = clk;
+      PropagateWithNoise(clk3, t0, tf);
+      clk = clk3;
+    } else {
+      assert(false && "Invalid clock state size");
+    }
+  }
+
   void PropagateWithStmX(VectorX& clk, real t0, real tf, MatrixXd& stm) {
     if (clk.size() == 2) {
       Vector2 clk2 = clk;
@@ -242,10 +256,17 @@ class ClockDynamics : public IDynamics {
     }
   }
 
-  // ClockState
-  void Propagate(ClockState clk, real t0, real tf) {
+  // Propagate using clockState
+  void Propagate(ClockState& clk, real t0, real tf) {
     VectorX clk_vec = clk.GetVector();
     PropagateX(clk_vec, t0, tf);
+    clk.SetVector(clk_vec);
+  }
+
+  void PropagateWithNoise(ClockState& clk, real t0, real tf) {
+    VectorX clk_vec = clk.GetVector();
+    PropagateWithNoiseX(clk_vec, t0, tf);
+    clk.SetVector(clk_vec);
   }
 };
 }  // namespace lupnt

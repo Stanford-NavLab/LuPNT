@@ -88,8 +88,8 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
                             GnssConstellation* gps_const, GnssMeasurement* meas,
                             double t, double epoch) {
   // Navigation
-  data_history->AddData("z_true", t, ekf->z_true);
-  data_history->AddData("z_pred", t, ekf->z_pred);
+  data_history->AddData("z_true", t, ekf->z_true_);
+  data_history->AddData("z_pred", t, ekf->z_pred_);
   data_history->AddData("CN0", t, meas->GetCN0());
 
   data_history->AddData("vis_earth", t, meas->GetEarthOccultation());
@@ -107,15 +107,15 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
 
   // Estimation
   data_history->AddData("rv", t, sat->GetOrbitState()->GetVector());
-  data_history->AddData("rv_pred", t, ekf->xbar.head(6));
-  data_history->AddData("rv_est", t, ekf->x.head(6));
+  data_history->AddData("rv_pred", t, ekf->xbar_.head(6));
+  data_history->AddData("rv_est", t, ekf->x_.head(6));
 
   data_history->AddData("clk", t, sat->GetClockState().GetVector());
-  data_history->AddData("clk_pred", t, ekf->xbar.tail(2));
-  data_history->AddData("clk_est", t, ekf->x.tail(2));
+  data_history->AddData("clk_pred", t, ekf->xbar_.tail(2));
+  data_history->AddData("clk_est", t, ekf->x_.tail(2));
 
-  data_history->AddData("P_rv", t, ekf->P.diagonal().segment(0, 6));
-  data_history->AddData("P_clk", t, ekf->P.diagonal().segment(6, 2));
+  data_history->AddData("P_rv", t, ekf->P_.diagonal().segment(0, 6));
+  data_history->AddData("P_clk", t, ekf->P_.diagonal().segment(6, 2));
 
   // GPS constellation
   for (int i = 0; i < gps_const->GetNumSatellites(); i++) {
@@ -140,22 +140,36 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
                               CoordSystem::GCRF));
 };
 
+void PrintProgressHeader() {
+  std::cout << "Run Simulation" << std::endl;
+  std::cout << " " << std::endl;
+  std::cout << " " << std::endl;
+  std::cout << "Time [min]  | Pos Err [m] | Vel Err [mm/s] | Clk Bias Err [ms]"
+            << std::endl;
+  std::cout << "--------------------------------------------------------------"
+            << std::endl;
+}
+
 void PrintProgress(double t, const std::shared_ptr<Spacecraft> sat, EKF* ekf) {
-  auto x_est = ekf->x;
+  auto x_est = ekf->x_;
   auto x_true = sat->GetStateVector();
 
-  double x_pos_err = (x_true.segment(0, 3) - x_est.segment(0, 3)).norm().val();
-  double x_vel_err = (x_true.segment(3, 3) - x_est.segment(3, 3)).norm().val();
-  double x_clk_bias_err = abs((x_true(6) - x_est(6)).val());
+  double x_pos_err =
+      1000 * (x_true.segment(0, 3) - x_est.segment(0, 3)).norm().val();
+  double x_vel_err =
+      1e6 * (x_true.segment(3, 3) - x_est.segment(3, 3)).norm().val();
+  double x_clk_bias_err = 1e9 * abs((x_true(6) - x_est(6)).val());
 
-  std::cout.precision(3);
-  std::cout << t / 3600 << " | " << x_pos_err << " | " << x_vel_err << " | "
+  std::cout.precision(5);
+  std::cout << std::left << std::setw(12) << t / 60 << " " << std::left
+            << std::setw(12) << x_pos_err << "  " << std::left << std::setw(14)
+            << x_vel_err << "   " << std::left << std::setw(16)
             << x_clk_bias_err << std::endl;
 
   // true and estimated state
-  std::cout << "x_true: " << std::endl << x_true << std::endl;
-  std::cout << "x_est: " << std::endl << x_est << std::endl;
-  std::cout << " " << std::endl;
+  // std::cout << "  x_true: " << std::endl << x_true.transpose() << std::endl;
+  // std::cout << "  x_est: " << std::endl << x_est.transpose() << std::endl;
+  // std::cout << " " << std::endl;
 };
 
 void Plot3DTrajectory(const std::shared_ptr<DataHistory> data_history,
@@ -285,5 +299,7 @@ void PlotState(const std::shared_ptr<DataHistory> data_history,
   ax3->legend({"clk_bias [s]", "clk_drift [s/s]"});
   show();
 };
+
+int main() { return 0; };
 
 }  // namespace lupnt

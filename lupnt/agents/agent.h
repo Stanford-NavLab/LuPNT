@@ -86,7 +86,7 @@ class Agent {
     dynamics_->Propagate(*state_, epoch_, epoch, 1.0 * SECS_PER_MINUTE);
 
     if (clock_dynamics_ != nullptr) {
-      clock_dynamics_->Propagate(clock_, epoch_, epoch);
+      clock_dynamics_->PropagateWithNoise(clock_, epoch_, epoch);
     }
 
     epoch_ = epoch;

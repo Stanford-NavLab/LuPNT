@@ -23,16 +23,81 @@ namespace lupnt {
  * @param t_end
  */
 void EKF::Predict(real t_end) {
-  int n = x.size();
+  int n = x_.size();
   MatrixXd Phi(n, n);
-  MatrixXd Q(n, n);
-  P.resize(n, n);
-  x = this->dynamics(x, t_curr, t_end, Phi);
-  Q = this->process_noise(x, t_curr, t_end);
-  P = Phi * P * Phi.transpose() + Q;
-  xbar = x;
-  Pbar = P;
-  t_curr = t_end;
+  P_.resize(n, n);
+  Q_.resize(n, n);
+
+  Q_ = this->process_noise_(x_, t_curr_, t_end);
+  x_ = this->dynamics_(x_, t_curr_, t_end, Phi);
+  P_ = Phi * P_ * Phi.transpose() + Q_;
+  xbar_ = x_;
+  Pbar_ = P_;
+  t_curr_ = t_end;
+}
+
+/**
+ * @brief
+ *
+ */
+int EKF::RemoveOutliers(int m_orig) {
+  std::vector<int> is_outlier(m_orig);
+  VectorXd ratio(m_orig);
+  int n_valid = 0;
+  int n = x_.size();
+
+  for (int i = 0; i < m_orig; i++) {
+    ratio(i) = abs(dy_(i).val() / sqrt(S_(i, i)));
+    if (ratio(i) > outlier_threshold_) {
+      is_outlier[i] = 1;
+    } else {
+      is_outlier[i] = 0;
+      n_valid++;
+    }
+  }
+
+  // Remove outliers
+  int m = n_valid;
+
+  if (m == m_orig) {
+    return m;  // all measurement valid, nothing to change
+  } else {
+    std::cout << "Removing " << m_orig - m << "/" << m_orig
+              << " outliers - ratio: " << ratio.transpose() << std::endl;
+  }
+
+  MatrixXd H_new(m, n);
+  MatrixXd R_new(m, m);
+  MatrixXd S_new(m, m);
+  VectorX dy_new(m);
+  int j = 0;
+  int l = 0;
+
+  for (int i = 0; i < m_orig; i++) {
+    if (is_outlier[i] == 0) {
+      H_new.row(j) = H_.row(i);
+      dy_new(j) = dy_(i);
+
+      l = 0;
+      for (int k = 0; k < m_orig; k++) {
+        if (is_outlier[k] == 0) {
+          R_new(j, l) = R_(i, k);
+          S_new(j, l) = S_(i, k);
+          l++;
+        }
+      }
+
+      j++;
+    }
+  }
+
+  // set new value
+  H_ = H_new;
+  R_ = R_new;
+  S_ = S_new;
+  dy_ = dy_new;
+
+  return m;
 }
 
 /**
@@ -41,29 +106,41 @@ void EKF::Predict(real t_end) {
  * @param z_true observed measurement
  */
 void EKF::Update(VectorX z_true_in) {
-  z_true = z_true_in;
+  z_true_ = z_true_in;
 
-  int n = x.size();
-  int m = z_true.size();
+  int n = x_.size();
+  int m = z_true_.size();
+
+  if (m == 0) {
+    return;  // no measurement, nothing to update
+  }
 
   // allocate memory (without this, MatrixXd will cause segfault)
-  MatrixXd H(m, n);
-  MatrixXd R(m, m);
-  S = MatrixXd::Zero(m, m);
-  K = MatrixXd::Zero(n, m);
-  dx = VectorX::Zero(n);
+  H_.resize(m, n);
+  S_.resize(m, m);
+  dy_.resize(m);
+  dx_.resize(n);
+  R_.resize(m, m);
 
-  z_pred = this->measurement(xbar, H, R);
+  z_pred_ = this->measurement_(x_, H_, R_);
+
+  S_ = R_ + H_ * P_ * H_.transpose();  // Measurement information
+  dy_ = z_true_ - z_pred_;
+
+  // Remove outliers
+  m = RemoveOutliers(m);
+
+  // re-allocate memory
+  K_.resize(n, m);
 
   // Update step
-  S = R + H * P * H.transpose();        // Measurement information
-  K = P * H.transpose() * S.inverse();  // Kalman gain
-  dx = K * (z_true - z_pred);
-  x = x + dx;
-  I = MatrixXd::Identity(n, n);
+  K_ = P_ * H_.transpose() * S_.inverse();  // Kalman gain
+  dx_ = K_ * dy_;
+  x_ = x_ + dx_;
+  MatrixXd I = MatrixXd::Identity(n, n);
   MatrixXd G = MatrixXd(n, n);
-  G = I - K * H;
-  P = G * P * G.transpose() + K * R * K.transpose();  // Joseph form
+  G = I - K_ * H_;
+  P_ = G * P_ * G.transpose() + K_ * R_ * K_.transpose();  // Joseph form
 }
 
 /*****************************************************
