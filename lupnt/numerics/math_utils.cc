@@ -91,6 +91,34 @@ real safe_asin(real x) {
 }
 
 /**
+ * @brief Root Mean Square
+ *
+ * @param vec  target vector
+ * @return double  RMS value
+ */
+double Rms(VectorXd vec) {
+  return std::sqrt(vec.array().pow(2).sum() / vec.size());
+}
+
+double Percentile(VectorXd vec, double p) {
+  std::sort(vec.data(), vec.data() + vec.size());
+  int index = std::ceil(p * vec.size());
+  if (index > (vec.size() - 1)) {
+    index = vec.size() - 1;
+  }
+  return vec(index);
+}
+
+double Std(VectorXd vec) {
+  double mean = vec.sum() / vec.size();
+  double sq_sum = 0.0;
+  for (int i = 0; i < vec.size(); i++) {
+    sq_sum += (vec(i) - mean) * (vec(i) - mean);
+  }
+  return std::sqrt(sq_sum / vec.size());
+}
+
+/**
  * @brief Linear interpolation of a 2D data set
  *
  * @param x  data x axis

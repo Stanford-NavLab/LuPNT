@@ -30,8 +30,9 @@ int main() {
   double save_every = Dt;
 
   // for debug
-  tf = t0 + 3.0 * SECS_PER_HOUR;
+  tf = t0 + 0.5 * SECS_PER_HOUR;
   print_every = 600;
+  int time_step_num = int((tf - t0) / Dt) + 1;
 
   // Initial State
   real a = 6541.4;
@@ -171,8 +172,15 @@ int main() {
   ekf.SetProcessNoiseFunction(proc_noise_func);
   std::cout << "Initialized EKF" << std::endl;
 
+  // storage
+  MatrixXd error_mat(4, time_step_num);
+  VectorXd num_meas(time_step_num);
+
+  // Initilization
   VectorX x_est = SampleMVN(joint_state.GetJointStateValue(), P0, 1);
   ekf.Initialize(x_est, P0);
+  VectorXd est_err = ComputeEstimationErrors(moon_sat, &ekf);
+  error_mat.col(0) = est_err;
 
   // Print State
   if (print_debug) {
@@ -193,7 +201,10 @@ int main() {
   double epoch = epoch0;
   PrintProgressHeader();
 
+  int time_index = 0;
+
   for (t = t0; t < tf; t += Dt) {
+    time_index += 1;
     epoch += Dt;  // first propagate to the next epoch
 
     // Propagate True State
@@ -206,6 +217,7 @@ int main() {
     auto meas = measall.ExtractSignal("L1");
     int meas_size = meas.GetNumMeasurements();
     auto CN0 = meas.GetCN0();
+    num_meas(time_index) = meas_size;
 
     if (!no_meas) {
       z_true = meas.GetPseudorange();
@@ -226,27 +238,24 @@ int main() {
                              t.val(), epoch);
     }
 
+    // Compute Estimation
+    est_err =
+        ComputeEstimationErrors(moon_sat, &ekf);  // pos, vel, clkb, clkd error
+    error_mat.col(time_index) = est_err;
+
     // Print progress
     if (fmod(t.val(), print_every) < 1e-3) {
-      PrintProgress(t.val(), moon_sat, &ekf);
+      PrintProgress(t.val(), est_err(0), est_err(1), est_err(2));
     }
 
     // print measurement residuals
     if ((print_debug) && (!no_meas)) {
-      std::cout << "  Pbar : " << ekf.Pbar_.diagonal().transpose() << std::endl;
-      std::cout << "  Q:  " << std::endl << ekf.Q_ << std::endl;
-      std::cout << "  Kalman Gain: " << std::endl << ekf.K_ << std::endl;
-      std::cout << "  H:  " << std::endl << ekf.H_ << std::endl;
-      std::cout << "  R:  " << std::endl << ekf.R_ << std::endl;
-      std::cout << "  S:  " << std::endl << ekf.S_ << std::endl;
-      std::cout << "  Meas   Residuals: " << ekf.dy_.transpose() << std::endl;
-      std::cout << "  Linear Residuals: "
-                << (ekf.dy_ - ekf.H_ * ekf.dx_).transpose() << std::endl;
-      std::cout << "  dx: " << ekf.dx_.transpose() << std::endl;
-      std::cout << "  Phat: " << ekf.P_.diagonal().transpose() << std::endl;
-      std::cout << "  " << std::endl;
+      PrintEKFDebugInfo(&ekf);
     }
   }
+
+  // Print Statistics
+  PrintEstimationStatistics(num_meas, error_mat, 0.3);  // use last 30%
 
   // Write data ------------------------------------------
   std::cout << "Simulation finished, saving data..." << std::endl;

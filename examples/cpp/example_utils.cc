@@ -150,7 +150,8 @@ void PrintProgressHeader() {
             << std::endl;
 }
 
-void PrintProgress(double t, const std::shared_ptr<Spacecraft> sat, EKF* ekf) {
+VectorXd ComputeEstimationErrors(const std::shared_ptr<Spacecraft> sat,
+                                 EKF* ekf) {
   auto x_est = ekf->x_;
   auto x_true = sat->GetStateVector();
 
@@ -159,18 +160,115 @@ void PrintProgress(double t, const std::shared_ptr<Spacecraft> sat, EKF* ekf) {
   double x_vel_err =
       1e6 * (x_true.segment(3, 3) - x_est.segment(3, 3)).norm().val();
   double x_clk_bias_err = 1e9 * abs((x_true(6) - x_est(6)).val());
+  double x_clk_drift_err = 1e9 * abs((x_true(7) - x_est(7)).val());
 
+  VectorXd est_err(4);
+  est_err << x_pos_err, x_vel_err, x_clk_bias_err, x_clk_drift_err;
+
+  return est_err;
+}
+
+void PrintProgress(double t, double x_pos_err, double x_vel_err,
+                   double x_clk_bias_err) {
   std::cout.precision(5);
   std::cout << std::left << std::setw(12) << t / 60 << " " << std::left
             << std::setw(12) << x_pos_err << "  " << std::left << std::setw(14)
             << x_vel_err << "   " << std::left << std::setw(16)
             << x_clk_bias_err << std::endl;
-
-  // true and estimated state
-  // std::cout << "  x_true: " << std::endl << x_true.transpose() << std::endl;
-  // std::cout << "  x_est: " << std::endl << x_est.transpose() << std::endl;
-  // std::cout << " " << std::endl;
 };
+
+void PrintEKFDebugInfo(EKF* ekf) {
+  std::cout << "  Pbar : " << ekf->Pbar_.diagonal().transpose() << std::endl;
+  std::cout << "  Q:  " << std::endl << ekf->Q_ << std::endl;
+  std::cout << "  Kalman Gain: " << std::endl << ekf->K_ << std::endl;
+  std::cout << "  H:  " << std::endl << ekf->H_ << std::endl;
+  std::cout << "  R:  " << std::endl << ekf->R_ << std::endl;
+  std::cout << "  S:  " << std::endl << ekf->S_ << std::endl;
+  std::cout << "  Meas   Residuals: " << ekf->dy_.transpose() << std::endl;
+  std::cout << "  Linear Residuals: "
+            << (ekf->dy_ - ekf->H_ * ekf->dx_).transpose() << std::endl;
+  std::cout << "  dx: " << ekf->dx_.transpose() << std::endl;
+  std::cout << "  Phat: " << ekf->P_.diagonal().transpose() << std::endl;
+  std::cout << "  " << std::endl;
+}
+
+/**
+ * @brief Print Estimation Errors
+ *
+ * @param num_meas (n_time,)   Number of GPS measurements
+ * @param error_mat (4, n_time)  Error Matrix (Position, Velocity, Clock Bias,
+ * Clock Drift)
+ */
+void PrintEstimationStatistics(VectorXd num_meas, MatrixXd error_mat,
+                               double data_ratio = 1.0) {
+  int n_time = num_meas.size();
+  Vector4d rms, means, stds, p68, p95, p99;
+
+  if (error_mat.rows() != 4) {
+    std::cout << "Wrong Matrix Size, Error matrix size must be (4 x timestep)"
+              << std::endl;
+    return;
+  }
+
+  // extract statistics range data
+  int start_idx = (int)((1.0 - data_ratio) * n_time);
+  int end_idx = n_time - 1;
+  int n_range = end_idx - start_idx;
+
+  VectorXd num_meas_range(n_range);
+  MatrixXd error_mat_range(4, n_range);
+
+  num_meas_range = num_meas.segment(start_idx, n_range);
+  error_mat_range = error_mat.block(0, start_idx, 4, n_range);
+
+  // compute statistics ----------------------------------------------------
+  // rms
+  for (int i = 0; i < 4; i++) {
+    rms(i) = Rms(error_mat_range.row(i));
+    means(i) = error_mat_range.row(i).mean();
+    stds(i) = Std(error_mat_range.row(i));
+    p68(i) = Percentile(error_mat_range.row(i), 0.68);
+    p95(i) = Percentile(error_mat_range.row(i), 0.95);
+    p99(i) = Percentile(error_mat_range.row(i), 0.99);
+  }
+
+  std::cout << " " << std::endl;
+  std::cout << " " << std::endl;
+  std::cout << "< Simulation Statistics (Last " << data_ratio * 100 << "%)>"
+            << std::endl;
+  std::cout << " " << std::endl;
+  std::cout
+      << "Statistics  | Position [m]  | Velocity [mm/s] | Clock Bias [ns] "
+         "| Clk Drift [ns/s] "
+      << std::endl;
+  std::cout << "---------------------------------------------------------------"
+               "-----------------------"
+            << std::endl;
+
+  std::cout.precision(5);
+  std::cout << "RMS         | " << std::left << std::setw(16) << rms(0) << "  "
+            << std::left << std::setw(16) << rms(1) << "   " << std::left
+            << std::setw(16) << rms(2) << std::left << std::setw(16) << rms(3)
+            << std::endl;
+  std::cout << "Mean+-Std   | " << std::left << means(0) << "+-" << std::left
+            << stds(0) << "  " << std::left << means(1) << "+-" << std::left
+            << stds(1) << "   " << std::left << means(2) << "+-" << std::left
+            << stds(2) << "   " << std::left << means(3) << "+-" << std::left
+            << stds(3) << std::endl;
+  std::cout << "68%         | " << std::left << std::setw(16) << p68(0) << "  "
+            << std::left << std::setw(16) << p68(1) << "   " << std::left
+            << std::setw(16) << p68(2) << std::left << std::setw(16) << p68(3)
+            << std::endl;
+  std::cout << "95%         | " << std::left << std::setw(16) << p95(0) << "  "
+            << std::left << std::setw(16) << p95(1) << "   " << std::left
+            << std::setw(16) << p95(2) << std::left << std::setw(16) << p95(3)
+            << std::endl;
+  std::cout << "99%         | " << std::left << std::setw(16) << p99(0) << "  "
+            << std::left << std::setw(16) << p99(1) << "   " << std::left
+            << std::setw(16) << p99(2) << std::left << std::setw(16) << p99(3)
+            << std::endl;
+  std::cout << "  " << std::endl;
+}
 
 void Plot3DTrajectory(const std::shared_ptr<DataHistory> data_history,
                       std::string state_type = "true") {

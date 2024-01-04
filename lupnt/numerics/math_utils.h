@@ -43,6 +43,10 @@ real deg2rad(real deg);
 real safe_acos(real x);
 real safe_asin(real x);
 
+double Rms(VectorXd vec);
+double Percentile(VectorXd vec, double p);
+double Std(VectorXd vec);
+
 real angleBetweenVectors(const VectorX &a, const VectorX &b);
 
 /**
