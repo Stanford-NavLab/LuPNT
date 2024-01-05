@@ -132,8 +132,9 @@ class GnssMeasurement {
   VectorXd GetAtmosOccultation() const { return vis_atmos; }
 
   // Measurement
-  VectorX ComputePseudorange(VectorX r_rx, real dt_rx, bool with_noise = false);
-  VectorX GetPseudorange(bool with_noise = false);
+  VectorX ComputePseudorange(VectorX r_rx, real dt_rx, bool with_noise = false,
+                             int seed = 0);
+  VectorX GetPseudorange(bool with_noise = false, int seed = 0);
   VectorX GetPseudorange(double epoch, Vector6 rv_pred, Vector2 clk_pred,
                          MatrixXd &H_pr);
   VectorX GetPseudorange2(double epoch, Vector6 rv_pred, Vector2 clk_pred,

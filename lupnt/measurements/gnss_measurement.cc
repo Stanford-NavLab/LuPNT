@@ -93,21 +93,27 @@ GnssMeasurement GnssMeasurement::ExtractSignal(std::string freq_label) {
 }
 
 VectorX GnssMeasurement::ComputePseudorange(VectorX r_rx, real dt_rx,
-                                            bool with_noise) {
+                                            bool with_noise, int seed) {
   // P_rx = rho_rx + c*(dt_rx(t_rx) - dt_tx(t_tx)) + I_rx + T_rx + eps_P
   VectorX P_rx(r_tx.cols());
+
+  std::default_random_engine generator;
+  generator.seed(seed);
+
   for (int i = 0; i < r_tx.cols(); i++) {
     P_rx(i) = RadioMeasurement::ComputePseudorange(r_rx, r_tx.col(i), dt_tx[i],
                                                    dt_rx, I_rx(i) + T_rx(i));
     if (with_noise) {
-      P_rx(i) += ComputePseudorangeNoise(CN0(i));
+      double sigma = ComputePseudorangeNoise(CN0(i));
+      std::normal_distribution<double> distribution(0.0, sigma);
+      P_rx(i) += distribution(generator);
     }
   }
   return P_rx;
 }
 
-VectorX GnssMeasurement::GetPseudorange(bool with_noise) {
-  return ComputePseudorange(r_rx, dt_rx, with_noise);
+VectorX GnssMeasurement::GetPseudorange(bool with_noise, int seed) {
+  return ComputePseudorange(r_rx, dt_rx, with_noise, seed);
 }
 
 VectorX GnssMeasurement::GetPseudorange(double epoch, Vector6 rv_pred,

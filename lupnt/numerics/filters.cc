@@ -31,7 +31,7 @@ void EKF::Predict(real t_end) {
   t_curr_ = t_end;
 }
 
-int EKF::RemoveOutliers(int m_orig, bool debug = false) {
+int EKF::RemoveOutliers(int m_orig, bool debug) {
   std::vector<int> is_outlier(m_orig);
   VectorXd ratio(m_orig);
   int n_valid = 0;
@@ -98,7 +98,7 @@ int EKF::RemoveOutliers(int m_orig, bool debug = false) {
  *
  * @param z_true observed measurement
  */
-void EKF::Update(VectorX z_true_in, bool debug = false) {
+void EKF::Update(VectorX z_true_in, bool debug) {
   z_true_ = z_true_in;
 
   int n = x_.size();
@@ -136,7 +136,7 @@ void EKF::Update(VectorX z_true_in, bool debug = false) {
   P_ = G * P_ * G.transpose() + K_ * R_ * K_.transpose();  // Joseph form
 }
 
-void EKF::Step(real t_end, VectorX z_obs, bool debug = false) {
+void EKF::Step(real t_end, VectorX z_obs, bool debug) {
   Predict(t_end);
   Update(z_obs, debug);
 }

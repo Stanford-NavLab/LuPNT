@@ -141,7 +141,7 @@ class EKF : public IFilter {
    * @param debug   debug flag
    * @return int   number of measurements after removing outliers
    */
-  int RemoveOutliers(int m, bool debug);
+  int RemoveOutliers(int m, bool debug = false);
 
   /**
    * @brief Predict the state to a given time
@@ -156,7 +156,7 @@ class EKF : public IFilter {
    * @param z_obs   measurement
    * @param debug   debug flag
    */
-  void Update(VectorX z_obs, bool debug);
+  void Update(VectorX z_obs, bool debug = false);
 
   /**
    * @brief Update the state with a measurement
@@ -165,9 +165,7 @@ class EKF : public IFilter {
    * @param z_obs   measurement obtained at end time
    * @param debug   debug flag
    */
-  void Step(real t_end, VectorX z_obs, bool debug);
-
-  void Step(real t_end, VectorX z_obs) { Step(t_end, z_obs, false); }
+  void Step(real t_end, VectorX z_obs, bool debug = false);
 };
 
 }  // namespace lupnt
