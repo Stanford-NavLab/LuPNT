@@ -27,121 +27,80 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand(
         'type summary add --summary-string "${var.m_data._M_elems[0]}" real'  # ???
     )
-    # lupnt Vector and Matrix
     debugger.HandleCommand(
         'type summary add --summary-string "${var.m_data.__elems_[0]}" *real<.*>'
+    )
+    # lupnt Vector and Matrix
+    debugger.HandleCommand(
+        "type synthetic add -x lupnt::(Vector|Matrix)* --python-class eigenlldb.MatrixChildProvider"
     )
     debugger.HandleCommand(
         "type summary add -x lupnt::(Vector|Matrix)* --python-function eigenlldb.summary"
     )
-    debugger.HandleCommand(
-        "type synthetic add -x lupnt::(Vector|Matrix)* --python-class eigenlldb.MatrixChildProvider"
-    )
 
 
 def summary(valobj, internal_dict, options):
-    """
-    Create summary for Eigen
-    """
-    valtype = valobj.GetType().GetCanonicalType()
-    scalar_type = valtype.GetTemplateArgumentType(0)
-    if not scalar_type.IsValid():
-        # In the case that scalar_type is invalid on LLDB 9.0 on Windows with CLion
-        storage = valobj.GetChildMemberWithName("m_storage")
-        data = storage.GetChildMemberWithName("m_data")
-        data_type = data.GetType()
-        if data_type.IsPointerType():
-            scalar_type = data.GetType().GetPointeeType()
-        else:
-            scalar_type = (
-                data.GetChildMemberWithName("array").GetType().GetArrayElementType()
+    names = [str(x.GetName()) for x in valobj.get_value_child_list()]
+    values = [float(x.GetValue()) for x in valobj.get_value_child_list()]
+
+    if len(names[0]) == 3:
+        # Vector "[i]"
+        row_idxs = [int(x[1:-1]) for x in names]
+        rows = max(row_idxs) + 1
+        col_idxs = [0] * rows
+        cols = 1
+    else:
+        # Matrix "[i,j]"
+        tmp = [x[1:-1].split(",") for x in names]
+        row_idxs = [int(x[0]) for x in tmp]
+        rows = max(row_idxs) + 1
+        col_idxs = [int(x[1]) for x in tmp]
+        cols = max(col_idxs) + 1
+
+    # Array
+    array = [[0.0] * cols for _ in range(rows)]
+    for i, j, x in zip(row_idxs, col_idxs, values):
+        array[i][j] = x
+
+    return print_aligned(array)
+
+
+def print_aligned(matrix):
+    num_columns = len(matrix[0])
+    max_before_decimal = [0] * num_columns
+    max_after_decimal = [0] * num_columns
+
+    # Step 1: Find the maximum length before and after decimal for each column
+    for row in matrix:
+        for i, value in enumerate(row):
+            parts = str(value).split(".")
+            max_before_decimal[i] = max(max_before_decimal[i], len(parts[0]))
+            if len(parts) > 1:
+                max_after_decimal[i] = max(max_after_decimal[i], len(parts[1]))
+
+    # Step 2: Format each number with padding and accumulate in a string
+    txt = "\n["
+    for r, row in enumerate(matrix):
+        line = "[" if r == 0 else " ["
+        for i, value in enumerate(row):
+            value = float(format_element(value))
+            before, after = (
+                str(value).split(".") if "." in str(value) else (str(value), "")
             )
-    scalar_size = scalar_type.GetByteSize()
-    name = valtype.GetName()
-    # template_begin = name.find("<")
-    # template_end = name.find(">")
-    # template_args = name[(template_begin + 1) : template_end].split(",")
+            padding_left = " " * (max_before_decimal[i] - len(before))
+            padding_right = " " * (max_after_decimal[i] - len(after))
+            formatted_value = f"{padding_left}{before}.{after}{padding_right}"
+            line += formatted_value + (" " if i < num_columns - 1 else "")
+        txt += line + "]\n"
 
-    # find the last '>' to support nested template
-    # split template arguments without splitting nested template
-    # example
-    # in  : "Eigen::Matrix<autodiff::detail::Real<1, double>, -1, 1, 0, -1, 1>""
-    # out : ["autodiff::detail::Real<1, double>", "-1", "1", "0", "-1", "1"]
-    template_args = extract_args(name)
-
-    rows_compile_time = int(template_args[1])
-    cols_compile_time = int(template_args[2])
-    row_major = (int(template_args[3]) & 1) != 0
-
-    max_rows = int(template_args[4])
-    max_cols = int(template_args[5])
-    fixed_storage = max_rows != -1 and max_cols != -1
-    storage = valobj.GetChildMemberWithName("m_storage")
-    data = storage.GetChildMemberWithName("m_data")
-
-    if cols_compile_time == -1:
-        # Dynamic size
-        storage = valobj.GetChildMemberWithName("m_storage")
-        cols = storage.GetChildMemberWithName("m_cols")
-        cols = cols.GetValueAsUnsigned()
-    else:
-        # Fixed size
-        cols = cols_compile_time
-
-    if rows_compile_time == -1:
-        # Dynamic size
-        storage = valobj.GetChildMemberWithName("m_storage")
-        rows = storage.GetChildMemberWithName("m_rows")
-        rows = rows.GetValueAsUnsigned()
-    else:
-        # Fixed size
-        rows = rows_compile_time
-
-    if fixed_storage:
-        data_ = data.GetChildMemberWithName("array")
-    else:
-        data_ = data
-
-    array = [[] for _ in range(rows)]
-    for index in range(rows * cols):
-        offset = scalar_size * index
-
-        if row_major:
-            row = index // cols
-            col = index % cols
-        else:
-            row = index % rows
-            col = index // rows
-
-        if cols == 1:
-            name = "[{}]".format(row)
-        elif rows == 1:
-            name = "[{}]".format(col)
-        else:
-            name = "[{},{}]".format(row, col)
-
-        if str(scalar_type) == "double":
-            # double
-            child = data_.CreateChildAtOffset(name, offset, scalar_type)
-            val = float(child.GetValue())
-        else:
-            # real
-            child = data_.CreateChildAtOffset(name, offset, scalar_type)
-            child = child.GetChildMemberWithName("m_data")
-            child = child.GetChildMemberWithName("__elems_")  # __elems_/_M_elems
-            val = float(child.GetChildAtIndex(0).GetValue())
-            der = float(child.GetChildAtIndex(1).GetValue())
-
-        array[row].append(val)
-
-    return format_array(array)
+    return txt
 
 
-def format_elem(x):
+def format_element(x):
     if x == 0.0:
         return "0.0"
     else:
-        return f"{x:.4f}"
+        return f"{x}"
 
 
 def format_array(array):
@@ -151,7 +110,7 @@ def format_array(array):
         if i != 0:
             txt += "\n "
         txt += "["
-        txt += " ".join(format_elem(x) for x in row)
+        txt += " ".join(format_element(x) for x in row)
         txt += "]"
     txt += "]"
     return txt
@@ -222,6 +181,7 @@ class MatrixChildProvider:
 
         max_rows = int(template_args[4])
         max_cols = int(template_args[5])
+
         self._fixed_storage = max_rows != -1 and max_cols != -1
 
     def num_children(self):
