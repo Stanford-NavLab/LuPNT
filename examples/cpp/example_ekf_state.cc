@@ -21,7 +21,7 @@ int main() {
   /**********************************************
    * Simulation Parameters
    *********************************************/
-  // time
+  // Time
   double t0 = 0;
   double tf = t0 + 1.0 * SECS_PER_HOUR;  // 6 hours
   double dt = 1.0;                       // Integration time step [s]
@@ -29,11 +29,11 @@ int main() {
   double print_every = 0.1 * SECS_PER_HOUR;
   double save_every = Dt;
 
-  // simulation seed
+  // Simulation seed
   int seed = 0;
   std::srand(seed);
 
-  // for debug
+  // For debug
   tf = t0 + 12 * SECS_PER_HOUR;
   print_every = 600;
   int time_step_num = int((tf - t0) / Dt) + 1;
@@ -164,8 +164,12 @@ int main() {
     x_clk = x.tail(2);
 
     VectorX z = meas.GetPseudorange2(epoch, x_rv, x_clk, H);
-    R.diagonal().array() = pow(sigma_range, 2);
 
+    auto H2 = H;
+    VectorX z2 = meas.GetPseudorange(epoch, x_rv, x_clk, H2);
+    assert(H.isApprox(H2));
+
+    R.diagonal().array() = pow(sigma_range, 2);
     return z;
   };
 
@@ -176,7 +180,7 @@ int main() {
   ekf.SetProcessNoiseFunction(proc_noise_func);
   std::cout << "Initialized EKF" << std::endl;
 
-  // storage
+  // Storage
   MatrixXd error_mat(4, time_step_num);
   VectorXd num_meas(time_step_num);
 
