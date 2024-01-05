@@ -28,6 +28,7 @@ class GnssChannel;
 class GnssReceiver : public Receiver {
  public:
   Antenna antenna_;
+  GnssReceiverParam gnssr_param_;
   std::string receiver_name_;  // Name of the receiver system
 
   GnssReceiver(std::string receiver_name) : receiver_name_(receiver_name) {
@@ -36,8 +37,8 @@ class GnssReceiver : public Receiver {
   };
 
   // Receiver Gain Calculators
-  std::vector<Vector3d> GetReceiverOrientation(
-      double t, Vector3d& r_rx_gcrf, std::string mode);
+  std::vector<Vector3d> GetReceiverOrientation(double t, Vector3d& r_rx_gcrf,
+                                               std::string mode);
   double GetReceiverAntennaGain(double t, Vector3d r_tx_gcrf,
                                 Vector3d r_rx_gcrf, std::string mode);
 

@@ -33,6 +33,7 @@ real angleBetweenVectors(const VectorX &a, const VectorX &b) {
 }
 
 real wrapToPi(real angle) { return atan2(sin(angle), cos(angle)); }
+
 VectorX wrapToPi(VectorX angle) {
   VectorX result = angle;
   for (int i = 0; i < angle.size(); i++) {
@@ -41,7 +42,20 @@ VectorX wrapToPi(VectorX angle) {
   return result;
 }
 
+/**
+ * @brief wrap the angle between 0 and 2pi
+ *
+ * @param angle   angle in radians
+ * @return real  wrapped angle in radians
+ */
 real wrapTo2Pi(real angle) { return atan2(sin(angle), cos(angle)) + M_PI; }
+
+/**
+ * @brief  Wrap the angles between 0 and 2pi
+ *
+ * @param angle  angle vector in radians
+ * @return VectorX  wrapped angle vector in radians
+ */
 VectorX wrapTo2Pi(VectorX angle) {
   VectorX result = angle;
   for (int i = 0; i < angle.size(); i++) {
@@ -50,20 +64,8 @@ VectorX wrapTo2Pi(VectorX angle) {
   return result;
 }
 
-/**
- * @brief Convert degree to radian
- *
- * @param deg
- * @return real
- */
 real deg2rad(real deg) { return (M_PI / 180) * deg; }
 
-/**
- * @brief Convert radian to degree
- *
- * @param rad
- * @return real
- */
 real rad2deg(real rad) { return (180 / M_PI) * rad; }
 
 double deg2rad(double deg) { return (M_PI / 180) * deg; }
@@ -90,12 +92,6 @@ real safe_asin(real x) {
   }
 }
 
-/**
- * @brief Root Mean Square
- *
- * @param vec  target vector
- * @return double  RMS value
- */
 double Rms(VectorXd vec) {
   return std::sqrt(vec.array().pow(2).sum() / vec.size());
 }
@@ -118,14 +114,6 @@ double Std(VectorXd vec) {
   return std::sqrt(sq_sum / vec.size());
 }
 
-/**
- * @brief Linear interpolation of a 2D data set
- *
- * @param x  data x axis
- * @param y  data
- * @param ix  interpolation point x
- * @return double  data at the interpolation point
- */
 double LinearInterp1d(VectorXd x, VectorXd data, double ix) {
   int ix0 = 0;
   int ix1 = 0;
@@ -150,16 +138,6 @@ double LinearInterp1d(VectorXd x, VectorXd data, double ix) {
   return result;
 }
 
-/**
- * @brief Linear interpolation of a 2D data set
- *
- * @param x  data x axis
- * @param y  data y axis
- * @param data data matrix
- * @param ix  interpolation point x
- * @param iy  interpolation point y
- * @return double  data at the interpolation point
- */
 double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
                       double iy) {
   int ix0 = 0;
@@ -199,14 +177,6 @@ double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
   return result;
 }
 
-/**
- * @brief Sample from a multivariate normal distribution
- *
- * @param mean
- * @param cov
- * @param nn
- * @return MatrixXd
- */
 MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn) {
   // Define random generator with Gaussian distribution
   int xsize = mean.size();
@@ -309,11 +279,6 @@ Matrix3 Rot3(real phi) {
   return R3;
 }
 
-/**
- * @brief Compute the rotation matrix specified by the input skew vector.
- * @param v
- * @return Matrix3
- */
 Matrix3 Skew(Vector3 x) {
   Matrix3 skew{
       {0.0, -x(2), x(1)},

@@ -109,6 +109,10 @@ class GnssMeasurement {
   VectorXd eps_PR;     // Pseudorange rate measurement noise [m/s]
                        // (n_meas * n_bands)
 
+  // Receiver param
+  GnssReceiverParam gnssr_param;
+  double chip_rate;  // Chip rate [Hz]
+
   // Link budget
   VectorXd CN0;  // Carrier‐to‐noise density [dB‐Hz] (n_meas * n_bands)
 

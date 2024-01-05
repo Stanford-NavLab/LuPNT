@@ -134,14 +134,40 @@ class EKF : public IFilter {
     this->outlier_threshold_ = outlier_threshold;
   }
 
-  int RemoveOutliers(int m);
-  void Predict(real t_end);
-  void Update(VectorX z_obs);
+  /**
+   * @brief Remove outliers from the measurement
+   *
+   * @param m   number of measurements
+   * @param debug   debug flag
+   * @return int   number of measurements after removing outliers
+   */
+  int RemoveOutliers(int m, bool debug);
 
-  void Step(real t_end, VectorX z_obs) {
-    Predict(t_end);
-    Update(z_obs);
-  }
+  /**
+   * @brief Predict the state to a given time
+   *
+   * @param t_end   end time
+   */
+  void Predict(real t_end);
+
+  /**
+   * @brief Update the state with a measurement
+   *
+   * @param z_obs   measurement
+   * @param debug   debug flag
+   */
+  void Update(VectorX z_obs, bool debug);
+
+  /**
+   * @brief Update the state with a measurement
+   *
+   * @param t_end   end time
+   * @param z_obs   measurement obtained at end time
+   * @param debug   debug flag
+   */
+  void Step(real t_end, VectorX z_obs, bool debug);
+
+  void Step(real t_end, VectorX z_obs) { Step(t_end, z_obs, false); }
 };
 
 }  // namespace lupnt

@@ -29,8 +29,12 @@ int main() {
   double print_every = 0.1 * SECS_PER_HOUR;
   double save_every = Dt;
 
+  // simulation seed
+  int seed = 0;
+  std::srand(seed);
+
   // for debug
-  tf = t0 + 0.5 * SECS_PER_HOUR;
+  tf = t0 + 12 * SECS_PER_HOUR;
   print_every = 600;
   int time_step_num = int((tf - t0) / Dt) + 1;
 

@@ -66,6 +66,9 @@ GnssMeasurement::GnssMeasurement(const std::vector<Transmission> trans)
 
     f[i] = tr.freq;
 
+    gnssr_param = tr.gnssr_param;
+    chip_rate = tr.chip_rate;
+
     ID_tx.push_back(tr.ID_tx);
 
     i++;
@@ -198,10 +201,55 @@ VectorX GnssMeasurement::GetPseudorangeRate(const VectorX &r_rx_,
  * Noise Models
  *********************/
 
-double GnssMeasurement::ComputePseudorangeNoise(double CN0) { return 0; }
+double GnssMeasurement::ComputePseudorangeNoise(double CN0_dB) {
+  // thermal noise in DLL
+  double pr = 0.0;
+  double CN0 = 10.0 * log10(CN0_dB);
 
-double GnssMeasurement::ComputePseudorangeRateNoise(double CN0) { return 0; }
+  // extract gnss receiver parameters
+  double Bn = gnssr_param.Bn;
+  double Bfe = gnssr_param.Bfe;
+  double Rc = chip_rate;
+  double T = gnssr_param.T;
+  double D = gnssr_param.D;
+  double Tc = 1 / Rc;
 
-double GnssMeasurement::ComputeCarrierPhaseNoise(double CN0) { return 0; }
+  // devide into three cases
+  if (D >= (PI * Rc / Bfe)) {
+    pr = sqrt(Bn / (2.0 * CN0) * D * (1.0 + 2.0 / (T * CN0 * (2 - D))));
+  } else if (D > (Rc / Bfe)) {
+    double tmp1 = Bn / (2.0 * CN0);
+    double tmp2 =
+        1.0 / (Bfe * Tc) + Bfe * Tc / (PI - 1) * pow((D - 1.0 / (Bfe * Tc)), 2);
+    double tmp3 = 1.0 + 2.0 / (T * CN0 * (2 - D));
+    pr = sqrt(tmp1 * tmp2 * tmp3);
+  } else {
+    pr = sqrt(Bn / (2.0 * CN0) * (1.0 / (Bfe * Tc)) * (1.0 + 1.0 / (T * CN0)));
+  }
+
+  pr = pr * (c * Tc);  // convert to meters
+
+  return pr;
+}
+
+double GnssMeasurement::ComputePseudorangeRateNoise(double CN0_dB) {
+  double F = 2;  // F=1 at high CN0, F=2 at low CN0
+  double CN0 = 10.0 * log10(CN0_dB);
+
+  // extract gnss receiver parameters
+  double Bn = gnssr_param.Bn;
+  double Bfe = gnssr_param.Bfe;
+  double Rc = chip_rate;
+  double T = gnssr_param.T;
+  double D = gnssr_param.D;
+  double Tc = 1 / Rc;
+
+  double prr =
+      lambda / (2 * PI * T) * sqrt(4 * F * Bn / CN0 * (1 + 1.0 / (T * CN0)));
+
+  return prr;
+}
+
+double GnssMeasurement::ComputeCarrierPhaseNoise(double CN0_dB) { return 0; }
 
 }  // namespace lupnt

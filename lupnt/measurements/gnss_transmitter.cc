@@ -127,10 +127,6 @@ std::vector<Vector3d> GnssTransmitter::GetTransmitterOrientation(
   return e_gnss;
 }
 
-/**
- * @brief Get the
- *
- */
 double GnssTransmitter::GetTransmittionAntennaGain(double t, Vector3d r_tx_gcrf,
                                                    Vector3d r_rx_gcrf) {
   auto e_gnss = GnssTransmitter::GetTransmitterOrientation(t, r_tx_gcrf);

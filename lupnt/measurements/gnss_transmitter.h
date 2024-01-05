@@ -31,8 +31,11 @@ class GnssTransmitter : public Transmitter {
   std::string txrx = "TX";             // Type of comms system
   int prn_;                            // PRN of the transmitter satellite
   double freq_tx;                      // Transmit frequency [Hz]
+  double Rc;                           // Ranging chip rate [Hz]
   std::vector<std::string> freq_list;  // List of frequencies (by signal names)
   std::map<std::string, double> freq_map;  // map string to frequencies
+  std::map<std::string, double> rc_map;    // map string to chip rates
+
   // Tramsmitter
 
   GnssTransmitter(std::string gnss_type, int prn)
@@ -40,6 +43,11 @@ class GnssTransmitter : public Transmitter {
     freq_map = {{"L1", 1575.42e6},  {"L2", 1227.60e6}, {"L5", 1176.45e6},
                 {"E1", 1575.42e6},  {"E6", 1278.75e6}, {"E5", 1191.795e6},
                 {"E5a", 1176.45e6}, {"E5b", 1207.14e6}};  // frequency maps
+
+    // Information from https://gnss-sdr.org/docs/tutorials/gnss-signals/
+    rc_map = {{"L1", 1.023e6},  {"L2", 0.5115e6}, {"L5", 10.23e6},
+              {"E1", 1.023e6},  {"E6", 0.5115e6}, {"E5", 10.23e6},
+              {"E5a", 10.23e6}, {"E5b", 10.23e6}};  // chip rate maps
     InitializeGnssTransmitter();
   }
 
@@ -51,8 +59,8 @@ class GnssTransmitter : public Transmitter {
   void InitializeBEIDOUTransmitter();
 
   // Get transmitter orientatiion
-  std::vector<Vector3d> GetTransmitterOrientation(
-      double t, Vector3d& rv_tx_gcrf);
+  std::vector<Vector3d> GetTransmitterOrientation(double t,
+                                                  Vector3d& rv_tx_gcrf);
   double GetTransmittionAntennaGain(double t, Vector3d r_tx_gcrf,
                                     Vector3d r_rx_gcrf);
 

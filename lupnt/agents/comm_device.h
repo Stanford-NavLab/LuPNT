@@ -10,8 +10,6 @@
  */
 #pragma once
 
-
-
 #include <map>
 #include <memory>
 
@@ -19,8 +17,6 @@
 #include "lupnt/measurements/transmission.h"
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/orbit_state.h"
-
-
 
 namespace lupnt {
 

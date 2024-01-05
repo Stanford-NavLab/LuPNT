@@ -16,6 +16,10 @@
 
 namespace lupnt {
 
+/**
+ * @brief Initialize the receiver parameters
+ *
+ */
 void GnssReceiver::InitializeReceiverParams() {
   if (receiver_name_ == "moongpsr") {
     // Lunar Gnss Receiver
@@ -26,8 +30,16 @@ void GnssReceiver::InitializeReceiverParams() {
     rx_param_.L = -0.16;  // Receiver implementation, A/D conversion losses [dB]
     rx_param_.As = 0.0;   // System losses, in front of LNA [dB]
     rx_param_.CN0threshold = 15.0;  // CN0 threshold [dB-Hz]
+
+    // GNSS Receiver chip parameter
+    gnssr_param_.Bp = 5.0;    // Carrier loop noise bandwidth [Hz]
+    gnssr_param_.T = 20e-3;   // Tracking loop integration time [s]
+    gnssr_param_.Bfe = 26e6;  // Double sided front end bandwidth [Hz]
+    gnssr_param_.Bn = 0.2;    // Code loop noise bandwidth [Hz]
+    gnssr_param_.D = 0.3;     // Early-to-late correlator spacing (chips)
+
   } else {
-    std::cout << "Receiver name not found" << std::endl;
+    std::runtime_error("Receiver name not found");
   }
 }
 
@@ -35,9 +47,9 @@ void GnssReceiver::InitializeReceiverParams() {
  * @brief Get the transmitter orientation
  *        Todo: Change this depending on the gnss type
  *
- * @param t
- * @param r_rx_gcrf
- * @return Vector3d
+ * @param t  epoch (TAI)
+ * @param r_rx_gcrf  position of the receiver in GCRF [km]
+ * @return Vector3d   unit vector of the receiver orientation
  */
 std::vector<Vector3d> GnssReceiver::GetReceiverOrientation(double t,
                                                            Vector3d& r_rx_gcrf,
@@ -63,8 +75,13 @@ std::vector<Vector3d> GnssReceiver::GetReceiverOrientation(double t,
 }
 
 /**
- * @brief Get the
+ * @brief Get the Anttena Gain of the Receiver
  *
+ * @param t   epoch (TAI) [s]
+ * @param r_tx_gcrf  position of the transmitter in GCRF [km]
+ * @param r_rx_gcrf  position of the receiver in GCRF [km]
+ * @param mode  receiver orientation mode  (PZ_EarthPoint, )
+ * @return double
  */
 double GnssReceiver::GetReceiverAntennaGain(double t, Vector3d r_tx_gcrf,
                                             Vector3d r_rx_gcrf,
@@ -82,6 +99,12 @@ double GnssReceiver::GetReceiverAntennaGain(double t, Vector3d r_tx_gcrf,
   return Ar;
 }
 
+/**
+ * @brief Get GNSS measurement (without noise) from the receiver at epoch t
+ *
+ * @param t  receiver epoch (TAI) [s]
+ * @return GnssMeasurement
+ */
 GnssMeasurement GnssReceiver::GetMeasurement(double t) {
   // Revieve Gnss signals
   std::vector<Transmission> transmissions = channel->Receive(*this, t);
