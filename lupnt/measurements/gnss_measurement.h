@@ -145,8 +145,33 @@ class GnssMeasurement {
   VectorX GetDopplerShift();
 
   // Measurement Noise
+  VectorXd GetPseudorangeNoiseVector();
+  VectorXd GetPseudorangeRateNoiseVector();
+  VectorXd GetCarrierPhaseNoiseVector();
+
+  /**
+   * @brief Compute the pseudorange noise using thermal noise in DLL
+   * Reference:
+   *
+   * @param CN0  Carrier‐to‐noise density [dB‐Hz]
+   * @return double  Pseudorange noise [km]
+   */
   double ComputePseudorangeNoise(double CN0);
+
+  /**
+   * @brief Compute the pseudorange rate noise using thermal noise in FLL
+   *
+   * @param CN0  Carrier‐to‐noise density [dB‐Hz]
+   * @return double  Pseudorange rate noise [km/s]
+   */
   double ComputePseudorangeRateNoise(double CN0);
+
+  /**
+   * @brief Compute the carrier phase noise using thermal noise in PLL
+   *
+   * @param CN0  Carrier‐to‐noise density [dB‐Hz]
+   * @return double  Carrier phase noise [cycles]
+   */
   double ComputeCarrierPhaseNoise(double CN0);
 };
 }  // namespace lupnt

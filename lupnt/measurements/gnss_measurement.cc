@@ -207,9 +207,39 @@ VectorX GnssMeasurement::GetPseudorangeRate(const VectorX &r_rx_,
  * Noise Models
  *********************/
 
+VectorXd GnssMeasurement::GetPseudorangeNoiseVector() {
+  int n_meas = r_tx.cols();
+  VectorXd noise(n_meas);
+
+  for (int i = 0; i < n_meas; i++) {
+    noise(i) = ComputePseudorangeNoise(CN0(i));
+  }
+  return noise;
+}
+
+VectorXd GnssMeasurement::GetPseudorangeRateNoiseVector() {
+  int n_meas = r_tx.cols();
+  VectorXd noise(n_meas);
+
+  for (int i = 0; i < n_meas; i++) {
+    noise(i) = ComputePseudorangeRateNoise(CN0(i));
+  }
+  return noise;
+}
+
+VectorXd GnssMeasurement::GetCarrierPhaseNoiseVector() {
+  int n_meas = r_tx.cols();
+  VectorXd noise(n_meas);
+
+  for (int i = 0; i < n_meas; i++) {
+    noise(i) = ComputeCarrierPhaseNoise(CN0(i));
+  }
+  return noise;
+}
+
 double GnssMeasurement::ComputePseudorangeNoise(double CN0_dB) {
   // thermal noise in DLL
-  double pr = 0.0;
+  double sigma = 0.0;
   double CN0 = 10.0 * log10(CN0_dB);
 
   // extract gnss receiver parameters
@@ -222,20 +252,21 @@ double GnssMeasurement::ComputePseudorangeNoise(double CN0_dB) {
 
   // devide into three cases
   if (D >= (PI * Rc / Bfe)) {
-    pr = sqrt(Bn / (2.0 * CN0) * D * (1.0 + 2.0 / (T * CN0 * (2 - D))));
+    sigma = sqrt(Bn / (2.0 * CN0) * D * (1.0 + 2.0 / (T * CN0 * (2 - D))));
   } else if (D > (Rc / Bfe)) {
     double tmp1 = Bn / (2.0 * CN0);
     double tmp2 =
         1.0 / (Bfe * Tc) + Bfe * Tc / (PI - 1) * pow((D - 1.0 / (Bfe * Tc)), 2);
     double tmp3 = 1.0 + 2.0 / (T * CN0 * (2 - D));
-    pr = sqrt(tmp1 * tmp2 * tmp3);
+    sigma = sqrt(tmp1 * tmp2 * tmp3);
   } else {
-    pr = sqrt(Bn / (2.0 * CN0) * (1.0 / (Bfe * Tc)) * (1.0 + 1.0 / (T * CN0)));
+    sigma =
+        sqrt(Bn / (2.0 * CN0) * (1.0 / (Bfe * Tc)) * (1.0 + 1.0 / (T * CN0)));
   }
 
-  pr = pr * (c * Tc);  // convert to meters
+  sigma = sigma * (C * Tc);  // convert to meters
 
-  return pr;
+  return sigma;
 }
 
 double GnssMeasurement::ComputePseudorangeRateNoise(double CN0_dB) {
@@ -244,18 +275,27 @@ double GnssMeasurement::ComputePseudorangeRateNoise(double CN0_dB) {
 
   // extract gnss receiver parameters
   double Bn = gnssr_param.Bn;
-  double Bfe = gnssr_param.Bfe;
-  double Rc = chip_rate;
   double T = gnssr_param.T;
-  double D = gnssr_param.D;
-  double Tc = 1 / Rc;
 
-  double prr =
+  // compute pseudorange rate noise
+  double sigma =
       lambda / (2 * PI * T) * sqrt(4 * F * Bn / CN0 * (1 + 1.0 / (T * CN0)));
 
-  return prr;
+  return sigma;
 }
 
-double GnssMeasurement::ComputeCarrierPhaseNoise(double CN0_dB) { return 0; }
+double GnssMeasurement::ComputeCarrierPhaseNoise(double CN0_dB) {
+  // thermal noise in PLL
+  double CN0 = 10.0 * log10(CN0_dB);
+
+  // extract gnss receiver parameters
+  double Bp = gnssr_param.Bp;
+  double T = gnssr_param.T;
+
+  double sigma =
+      lambda / (2 * PI) * sqrt(Bp / CN0 * (1.0 + 1.0 / (2 * T * CN0)));
+
+  return sigma;
+}
 
 }  // namespace lupnt
