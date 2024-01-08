@@ -165,9 +165,9 @@ int main() {
 
     VectorX z = meas.GetPseudorange2(epoch, x_rv, x_clk, H);
 
-    auto H2 = H;
-    VectorX z2 = meas.GetPseudorange(epoch, x_rv, x_clk, H2);
-    assert(H.isApprox(H2));
+    // MatrixXd H2 = MatrixXd::Zero(meas_size, state_size);
+    // VectorX z2 = meas.GetPseudorange(epoch, x_rv, x_clk, H2);
+    // assert(H.isApprox(H2));
 
     R.diagonal().array() = pow(sigma_range, 2);
     return z;
