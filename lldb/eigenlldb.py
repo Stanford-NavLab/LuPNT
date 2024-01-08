@@ -25,10 +25,7 @@ import bisect
 def __lldb_init_module(debugger, internal_dict):
     # real
     debugger.HandleCommand(
-        'type summary add --summary-string "${var.m_data._M_elems[0]}" real'  # ???
-    )
-    debugger.HandleCommand(
-        'type summary add --summary-string "${var.m_data.__elems_[0]}" *real<.*>'
+        'type summary add --summary-string "${var.m_data.__elems_[0]}" lupnt::real'
     )
     # lupnt Vector and Matrix
     debugger.HandleCommand(
@@ -39,7 +36,7 @@ def __lldb_init_module(debugger, internal_dict):
     )
 
 
-def summary(valobj, internal_dict, options):
+def summary(valobj, internalr_dict, options):
     names = [str(x.GetName()) for x in valobj.get_value_child_list()]
     values = [float(x.GetValue()) for x in valobj.get_value_child_list()]
 
@@ -188,7 +185,7 @@ class MatrixChildProvider:
         return self._cols() * self._rows()
 
     def get_child_index(self, name):
-        pass
+        return int(name.lstrip("[").rstrip("]"))
 
     def get_child_at_index(self, index):
         storage = self._valobj.GetChildMemberWithName("m_storage")
@@ -215,11 +212,12 @@ class MatrixChildProvider:
             child = data.CreateChildAtOffset(name, offset, self._scalar_type)
         else:
             # real
-            child = data.CreateChildAtOffset(name, offset, self._scalar_type)
+            child = data.GetChildAtIndex(index)
             child = child.GetChildMemberWithName("m_data")
             child = child.GetChildMemberWithName("__elems_")
+            offset = child.GetChildAtIndex(0).GetByteSize() * index
             scalar_type = child.GetChildAtIndex(0).GetType()
-            child = child.CreateChildAtOffset(name, offset, scalar_type)
+            child = child.CreateChildAtOffset(name, 0, scalar_type)
         return child
 
     def _cols(self):

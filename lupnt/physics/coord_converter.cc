@@ -115,27 +115,27 @@ Vector6 CoordConverter::Convert(real epoch, Vector6 rv_in,
     }
 
     case GCRF: {
-      Vector3 r_gcrf_E_p = rv_in.head(3);
-      Vector3 v_gcrf_E_p = rv_in.tail(3);
-
       switch (coord_sys_out) {
         case ICRF: {
-          Vector6 rv_icrf_ssb_earth = GetBodyPosVel(epoch, 399, 0);
+          Vector6 rv_icrf_ssb_earth = GetBodyPosVel(
+              epoch, NaifId::SOLAR_SYSTEM_BARYCENTER, NaifId::EARTH);
           Vector6 rv_icrf = rv_in + rv_icrf_ssb_earth;
           return rv_icrf;
         }
         case ITRF: {
-          Matrix6 Rrv_gcrf_itrf = ComputeITRFtoGCRF(epoch);
-          Vector6 rv_itrf = Rrv_gcrf_itrf.transpose() * rv_in;
+          Matrix6 Rrv_itrf_gcrf = ComputeGCRFtoITRF(epoch);
+          Vector6 rv_itrf = Rrv_itrf_gcrf * rv_in;
           return rv_itrf;
         }
         case MI: {
-          Vector6 rv_icrf_moon_earth = GetBodyPosVel(epoch, 399, 301);
+          Vector6 rv_icrf_moon_earth =
+              GetBodyPosVel(epoch, NaifId::MOON, NaifId::EARTH);
           Vector6 rv_mi = rv_in + rv_icrf_moon_earth;
           return rv_mi;
         }
         case EMR: {
-          Vector6 rv_icrf_emb_earth = GetBodyPosVel(epoch, 399, 3);
+          Vector6 rv_icrf_emb_earth = GetBodyPosVel(
+              epoch, NaifId::EARTH_MOON_BARYCENTER, NaifId::EARTH);
           Vector6 rv_emr = InertialToRtn(rv_icrf_emb_earth, rv_in);
           return rv_emr;
         }
@@ -153,7 +153,8 @@ Vector6 CoordConverter::Convert(real epoch, Vector6 rv_in,
     case MI: {
       switch (coord_sys_out) {
         case GCRF: {
-          Vector6 rv_icrf_earth_moon = GetBodyPosVel(epoch, 301, 399);
+          Vector6 rv_icrf_earth_moon =
+              GetBodyPosVel(epoch, NaifId::EARTH, NaifId::MOON);
           Vector6 rv_gcrf = rv_in + rv_icrf_earth_moon;
           return rv_gcrf;
         }
@@ -178,7 +179,7 @@ Vector6 CoordConverter::Convert(real epoch, Vector6 rv_in,
     case ICRF: {
       switch (coord_sys_out) {
         case GCRF: {
-          Vector6 rv_icrf_ssb_earth = GetBodyPosVel(epoch, 399, 0);
+          Vector6 rv_icrf_ssb_earth = GetBodyPosVel(epoch, 0, NaifId::EARTH);
           Vector6 rv_gcrf = rv_in - rv_icrf_ssb_earth;
           return rv_gcrf;
         }
@@ -193,7 +194,7 @@ Vector6 CoordConverter::Convert(real epoch, Vector6 rv_in,
     case EMR: {
       switch (coord_sys_out) {
         case GCRF: {
-          Vector6 rv_icrf_emb_earth = GetBodyPosVel(epoch, 399, 3);
+          Vector6 rv_icrf_emb_earth = GetBodyPosVel(epoch, NaifId::EARTH, 3);
           Vector6 rv_gcrf = RtnToInertial(rv_icrf_emb_earth, rv_in);
           return rv_gcrf;
         }
@@ -227,6 +228,14 @@ Matrix6 CoordConverter::ComputeITRFtoGCRF(real tai) {
   double et = tdb_s.val();  // this cuts of the relationship between t and
                             // Mrot temporaly
   Matrix6 Mrot = GetFrameConversionMatrix(et, "ITRF93", "J2000");
+  return Mrot;
+}
 
+Matrix6 CoordConverter::ComputeGCRFtoITRF(real tai) {
+  // Get the rotation matrix using SPICE
+  auto tdb_s = ConvertTime(tai, "TAI", "TDB");
+  double et = tdb_s.val();  // this cuts of the relationship between t and
+                            // Mrot temporaly
+  Matrix6 Mrot = GetFrameConversionMatrix(et, "J2000", "ITRF93");
   return Mrot;
 }

@@ -151,7 +151,7 @@ class GnssMeasurement {
 
   /**
    * @brief Compute the pseudorange noise using thermal noise in DLL
-   * Reference:
+   * Reference: Reference: "Understanding GPS", p195
    *
    * @param CN0  Carrier‐to‐noise density [dB‐Hz]
    * @return double  Pseudorange noise [km]
@@ -160,6 +160,7 @@ class GnssMeasurement {
 
   /**
    * @brief Compute the pseudorange rate noise using thermal noise in FLL
+   * Reference: "Understanding GPS", p192
    *
    * @param CN0  Carrier‐to‐noise density [dB‐Hz]
    * @return double  Pseudorange rate noise [km/s]
@@ -168,6 +169,7 @@ class GnssMeasurement {
 
   /**
    * @brief Compute the carrier phase noise using thermal noise in PLL
+   * Reference: "Understanding GPS", p185
    *
    * @param CN0  Carrier‐to‐noise density [dB‐Hz]
    * @return double  Carrier phase noise [cycles]

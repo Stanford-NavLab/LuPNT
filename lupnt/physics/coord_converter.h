@@ -40,5 +40,6 @@ class CoordConverter {
 
  private:
   static Matrix6 ComputeITRFtoGCRF(real tai);
+  static Matrix6 ComputeGCRFtoITRF(real tai);
 };
 }  // namespace lupnt

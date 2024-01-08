@@ -84,6 +84,7 @@ def get_coordinate_system(name):
     elif name == pnt.CoordSystem.TOD:
         return gmat.Construct("CoordinateSystem", "TOD", "Earth", "TODEq")
     elif name == pnt.CoordSystem.EMR:
+        # GMAT Code Broken. Not working
         coord_sys = gmat.Construct("CoordinateSystem", "EMR")
         coord_sys.SetField("Origin", "Earth")
         coord_sys.SetField("Axes", "ObjectReferenced")

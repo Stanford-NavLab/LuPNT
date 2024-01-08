@@ -25,7 +25,7 @@
   using Matrix##size = Eigen::Matrix<real, size, size>;      \
   using RowVector##size = Eigen::Matrix<real, 1, size>;
 
-#define DEFINE_DYNAMIC_VECTORS_MATRICES()                                   \
+#define DEFINE_DYNAMIC_VECTORS_MATRICES()                                 \
   using VectorXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;              \
   using MatrixXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; \
   using RowVectorXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;           \
@@ -151,4 +151,42 @@ static const std::filesystem::path CSPICE_KER_DIR = GetDataPath() / "ephemeris";
 
 // Moon mean elements
 
+// NAIF Intefer ID codes
+// Reference:
+// https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/req/naif_ids.html
+namespace NaifId {
+const int SOLAR_SYSTEM_BARYCENTER = 0;
+const int MERCURY_BARYCENTER = 1;
+const int VENUS_BARYCENTER = 2;
+const int EARTH_BARYCENTER = 3;
+const int EARTH_MOON_BARYCENTER = 3;
+const int MARS_BARYCENTER = 4;
+const int JUPITER_BARYCENTER = 5;
+const int SATURN_BARYCENTER = 6;
+const int URANUS_BARYCENTER = 7;
+const int NEPTUNE_BARYCENTER = 8;
+const int PLUTO_BARYCENTER = 9;
+const int SUN = 10;
+const int MERCURY = 199;
+const int VENUS = 299;
+const int EARTH = 399;
+const int MOON = 301;
+const int MARS = 499;
+const int PHOBOS = 401;
+const int DEIMOS = 402;
+const int JUPITER = 599;
+}  // namespace NaifId
+
+namespace TimeSystems {
+const std::string TAI = "TAI";
+}
+// TAI         International Atomic Time
+//    TDB         Barycentric Dynamical Time
+//    TT          Terrestrial Time
+//    TDT         Terrestrial Dynamical Time (TT)
+//    ET          Ephemeris time, alias for TDB
+//    JDTDB       Julian Date relative to TDB
+//    JDTDT       Julian Date relative to TDT (TT)
+//    JED         Julian Ephemeris date (synonym to JDTDB)
+//    GPS         Global Positioning System Time
 }  // namespace lupnt

@@ -370,19 +370,27 @@ Vector6 GetBodyPosVel(const real tai, int center, int target) {
   real t_s = ConvertTime(tai, "TAI", "TDB");
 
   // find the segment for the center and target body
+  if (center == 0) {
+    rv_center = Vector6::Zero();
+  }
+  if (target == 0) {
+    rv_target = Vector6::Zero();
+  }
+
   for (int i = 0; i < cheby_n; i++) {
     if (cheby_s[i].target == target) {
       rv_target = cheby_posvel_ad(t_s, cheby_s[i].seg, cheby_s[i].len);
       load_cent = true;
     } else if (cheby_s[i].target == center) {
       rv_center = cheby_posvel_ad(t_s, cheby_s[i].seg, cheby_s[i].len);
-      load_targ = false;
+      load_targ = true;
     }
 
     if (load_cent && load_targ) {
       break;
     }
   }
+  assert(load_cent && load_targ && "Chebyshev coefficients not found");
 
   Vector6 retState = rv_target - rv_center;
   return retState;

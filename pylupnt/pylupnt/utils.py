@@ -254,3 +254,45 @@ def plot_RTN(
     plot_planes(ax, "T", "R")
     ax = fig.add_subplot(gs[1, 1])
     plot_planes(ax, "N", "R")
+
+
+def format_element(x, fmt="{}"):
+    if x == 0.0:
+        return "0.0"
+    else:
+        return fmt.format(x)
+
+
+def print_aligned(matrix):
+    if len(matrix.shape) == 1:
+        num_columns = 1
+        matrix = matrix.reshape((len(matrix), 1))
+    else:
+        num_columns = len(matrix[0])
+    max_before_decimal = [0] * num_columns
+    max_after_decimal = [0] * num_columns
+
+    # Step 1: Find the maximum length before and after decimal for each column
+    for row in matrix:
+        for i, value in enumerate(row):
+            parts = str(value).split(".")
+            max_before_decimal[i] = max(max_before_decimal[i], len(parts[0]))
+            if len(parts) > 1:
+                max_after_decimal[i] = max(max_after_decimal[i], len(parts[1]))
+
+    # Step 2: Format each number with padding and accumulate in a string
+    txt = "\n["
+    for r, row in enumerate(matrix):
+        line = "[" if r == 0 else " ["
+        for i, value in enumerate(row):
+            value = float(format_element(value))
+            before, after = (
+                str(value).split(".") if "." in str(value) else (str(value), "")
+            )
+            padding_left = " " * (max_before_decimal[i] - len(before))
+            padding_right = " " * (max_after_decimal[i] - len(after))
+            formatted_value = f"{padding_left}{before}.{after}{padding_right}"
+            line += formatted_value + (" " if i < num_columns - 1 else "")
+        txt += line + "]\n"
+
+    print(txt)
