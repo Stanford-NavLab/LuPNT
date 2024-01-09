@@ -1,7 +1,7 @@
 import os
 from PIL import Image
 import numpy as np
-import utils as u
+from . import utils as u
 import matplotlib.pyplot as plt
 
 import matplotlib.colors as mcolors
@@ -21,7 +21,7 @@ plot_data = {
         "brightness": 3,
     },
     "MOON": {
-        "filename": "moon_surface.jpg",
+        "filename": "moon_surface.jpeg",
         "RE": 1737.1,
         "lim": 10e3,
         "scale": 15,
@@ -31,7 +31,7 @@ plot_data = {
 
 images_dict = {}
 for k, v in plot_data.items():
-    image_file = os.path.join(u.basepath, "data", "topo", v["filename"])
+    image_file = os.path.join(u.basepath, "topo", v["filename"])
     img = Image.open(image_file)
     img = np.array(img.resize([int(d / v["scale"]) for d in img.size])) / 256.0
     img = np.minimum(img * v["brightness"], 1)

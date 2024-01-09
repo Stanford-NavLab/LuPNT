@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 # import array_to_latex as a2l
 from matplotlib.gridspec import GridSpec
 
-basepath = os.getenv("$LUPNT_DATA_PATH")
+basepath = os.getenv("LUPNT_DATA_PATH")
+assert basepath is not None, "Environment variable LUPNT_DATA_PATH not set"
 
 
 # Load data
