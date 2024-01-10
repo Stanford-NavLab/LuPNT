@@ -33,7 +33,7 @@ GnssMeasurement::GnssMeasurement(const std::vector<Transmission> trans)
       vis_atmos(trans.size()),
       vis_ionos(trans.size()),
       rho_rx(trans.size()),
-      lambda(trans.size()),
+      lambda_(trans.size()),
       P_rx(trans.size()) {
   n_meas = trans.size();
 
@@ -66,7 +66,7 @@ GnssMeasurement::GnssMeasurement(const std::vector<Transmission> trans)
     vis_ionos[i] = tr.vis_ionos;
 
     f[i] = tr.freq;
-    lambda[i] = c / f[i];
+    lambda_[i] = c / f[i];
 
     gnssr_param = tr.gnssr_param;
     chip_rate = tr.chip_rate;
@@ -162,21 +162,21 @@ VectorX GnssMeasurement::GetPseudorange2(double epoch, Vector6 rv_pred,
 }
 
 VectorX GnssMeasurement::GetCarrierPhase() {
-  // phi_rx = c / lambda * (t_rx - t_tx) + c / lambda * (dt_rx(t_rx) -
+  // phi_rx = c / lambda_ * (t_rx - t_tx) + c / lambda_ * (dt_rx(t_rx) -
   // dt_tx(t_tx)) + phi_rx_0 - phi_0 + N_rx + eps_phi
 
   VectorXd phi_rx =
-      c * lambda.cwiseProduct((t_rx - t_tx + dt_rx - dt_tx.array()).matrix()) +
+      c * lambda_.cwiseProduct((t_rx - t_tx + dt_rx - dt_tx.array()).matrix()) +
       (phi_rx_tx - phi_tx + N_rx + eps_phi);
   return phi_rx;
 }
 
 VectorX GnssMeasurement::GetPhaseRange() {
-  // Phi_rx = c * (t_rx - t_tx) + c*(dt_rx(t_rx)  dt_tx(t_tx)) + lambda *
-  // (phi_rx_0 - phi_0 + N_rx) + lambda*eps_Phi
+  // Phi_rx = c * (t_rx - t_tx) + c*(dt_rx(t_rx)  dt_tx(t_tx)) + lambda_ *
+  // (phi_rx_0 - phi_0 + N_rx) + lambda_*eps_Phi
 
   VectorX Phi_rx = c * (t_rx - t_tx + dt_rx - dt_tx.array()).matrix() +
-                   lambda.cwiseProduct(phi_rx_tx - phi_tx + N_rx + eps_Phi);
+                   lambda_.cwiseProduct(phi_rx_tx - phi_tx + N_rx + eps_Phi);
   return Phi_rx;
 };
 
@@ -222,7 +222,7 @@ VectorXd GnssMeasurement::GetPseudorangeRateNoiseVector() {
   VectorXd noise(n_meas);
 
   for (int i = 0; i < n_meas; i++) {
-    noise(i) = ComputePseudorangeRateNoise(CN0(i));
+    noise(i) = ComputePseudorangeRateNoise(CN0(i), lambda_(i));
   }
   return noise;
 }
@@ -232,7 +232,7 @@ VectorXd GnssMeasurement::GetCarrierPhaseNoiseVector() {
   VectorXd noise(n_meas);
 
   for (int i = 0; i < n_meas; i++) {
-    noise(i) = ComputeCarrierPhaseNoise(CN0(i));
+    noise(i) = ComputeCarrierPhaseNoise(CN0(i), lambda_(i));
   }
   return noise;
 }
@@ -240,12 +240,12 @@ VectorXd GnssMeasurement::GetCarrierPhaseNoiseVector() {
 double GnssMeasurement::ComputePseudorangeNoise(double CN0_dB) {
   // thermal noise in DLL
   double sigma = 0.0;
-  double CN0 = 10.0 * log10(CN0_dB);
+  double CN0 = pow(10, CN0_dB / 10);
 
   // extract gnss receiver parameters
   double Bn = gnssr_param.Bn;
-  double Bfe = gnssr_param.Bfe;
   double Rc = chip_rate;
+  double Bfe = gnssr_param.b * Rc;
   double T = gnssr_param.T;
   double D = gnssr_param.D;
   double Tc = 1 / Rc;
@@ -269,9 +269,10 @@ double GnssMeasurement::ComputePseudorangeNoise(double CN0_dB) {
   return sigma;
 }
 
-double GnssMeasurement::ComputePseudorangeRateNoise(double CN0_dB) {
+double GnssMeasurement::ComputePseudorangeRateNoise(double CN0_dB,
+                                                    double lambda) {
   double F = 2;  // F=1 at high CN0, F=2 at low CN0
-  double CN0 = 10.0 * log10(CN0_dB);
+  double CN0 = pow(10, CN0_dB / 10);
 
   // extract gnss receiver parameters
   double Bn = gnssr_param.Bn;
@@ -279,23 +280,21 @@ double GnssMeasurement::ComputePseudorangeRateNoise(double CN0_dB) {
 
   // compute pseudorange rate noise
   double sigma =
-      (lambda / (2 * PI * T))
-          .cwiseProduct(sqrt(4 * F * Bn / CN0 * (1 + 1.0 / (T * CN0))));
+      lambda / (2 * PI * T) * sqrt(4 * F * Bn / CN0 * (1 + 1.0 / (T * CN0)));
 
   return sigma;
 }
 
-double GnssMeasurement::ComputeCarrierPhaseNoise(double CN0_dB) {
+double GnssMeasurement::ComputeCarrierPhaseNoise(double CN0_dB, double lambda) {
   // thermal noise in PLL
-  double CN0 = 10.0 * log10(CN0_dB);
+  double CN0 = pow(10, CN0_dB / 10);
 
   // extract gnss receiver parameters
   double Bp = gnssr_param.Bp;
   double T = gnssr_param.T;
 
   double sigma =
-      (lambda / (2 * PI))
-          .cwiseProduct(sqrt(Bp / CN0 * (1.0 + 1.0 / (2 * T * CN0))));
+      lambda / (2 * PI) * sqrt(Bp / CN0 * (1.0 + 1.0 / (2 * T * CN0)));
 
   return sigma;
 }
