@@ -32,11 +32,11 @@ void GnssReceiver::InitializeReceiverParams() {
     rx_param_.CN0threshold = 15.0;  // CN0 threshold [dB-Hz]
 
     // GNSS Receiver chip parameter
-    gnssr_param_.Bp = 5.0;    // Carrier loop noise bandwidth [Hz]
-    gnssr_param_.T = 20e-3;   // Tracking loop integration time [s]
-    gnssr_param_.Bfe = 26e6;  // Double sided front end bandwidth [Hz]
-    gnssr_param_.Bn = 0.2;    // Code loop noise bandwidth [Hz]
-    gnssr_param_.D = 0.3;     // Early-to-late correlator spacing (chips)
+    gnssr_param_.Bp = 5.0;   // Carrier loop noise bandwidth [Hz]
+    gnssr_param_.T = 20e-3;  // Tracking loop integration time [s]
+    gnssr_param_.b = 2.0;    // normalized bandwidth [Hz]
+    gnssr_param_.Bn = 0.2;   // Code loop noise bandwidth [Hz]
+    gnssr_param_.D = 0.3;    // Early-to-late correlator spacing (chips)
 
   } else {
     std::runtime_error("Receiver name not found");

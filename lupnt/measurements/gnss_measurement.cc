@@ -33,6 +33,7 @@ GnssMeasurement::GnssMeasurement(const std::vector<Transmission> trans)
       vis_atmos(trans.size()),
       vis_ionos(trans.size()),
       rho_rx(trans.size()),
+      lambda_(trans.size()),
       P_rx(trans.size()) {
   n_meas = trans.size();
 
@@ -65,6 +66,7 @@ GnssMeasurement::GnssMeasurement(const std::vector<Transmission> trans)
     vis_ionos[i] = tr.vis_ionos;
 
     f[i] = tr.freq;
+    lambda_[i] = c / f[i];
 
     gnssr_param = tr.gnssr_param;
     chip_rate = tr.chip_rate;
@@ -160,21 +162,21 @@ VectorX GnssMeasurement::GetPseudorange2(double epoch, Vector6 rv_pred,
 }
 
 VectorX GnssMeasurement::GetCarrierPhase() {
-  // phi_rx = c / lambda * (t_rx - t_tx) + c / lambda * (dt_rx(t_rx) -
+  // phi_rx = c / lambda_ * (t_rx - t_tx) + c / lambda_ * (dt_rx(t_rx) -
   // dt_tx(t_tx)) + phi_rx_0 - phi_0 + N_rx + eps_phi
 
   VectorXd phi_rx =
-      c * lambda * (t_rx - t_tx + dt_rx - dt_tx.array()).matrix() +
+      c * lambda_.cwiseProduct((t_rx - t_tx + dt_rx - dt_tx.array()).matrix()) +
       (phi_rx_tx - phi_tx + N_rx + eps_phi);
   return phi_rx;
 }
 
 VectorX GnssMeasurement::GetPhaseRange() {
-  // Phi_rx = c * (t_rx - t_tx) + c*(dt_rx(t_rx)  dt_tx(t_tx)) + lambda *
-  // (phi_rx_0 - phi_0 + N_rx) + lambda*eps_Phi
+  // Phi_rx = c * (t_rx - t_tx) + c*(dt_rx(t_rx)  dt_tx(t_tx)) + lambda_ *
+  // (phi_rx_0 - phi_0 + N_rx) + lambda_*eps_Phi
 
   VectorX Phi_rx = c * (t_rx - t_tx + dt_rx - dt_tx.array()).matrix() +
-                   lambda * (phi_rx_tx - phi_tx + N_rx + eps_Phi);
+                   lambda_.cwiseProduct(phi_rx_tx - phi_tx + N_rx + eps_Phi);
   return Phi_rx;
 };
 
@@ -182,10 +184,9 @@ VectorX GnssMeasurement::GetDopplerShift() {
   // f_D = - f/c*((v_tx(t_tx) - v_rx(t_rx))^T * e_rx + c * dt_rx_dot(t_rx) -
   // c* dt_tx_dot(t_tx))) + eps_D
 
-  VectorXd f_D = -f / c *
-                     (((v_tx - v_rx) * e_rx).array() + c * dt_rx_dot -
-                      c * dt_tx_dot.array())
-                         .matrix() +
+  VectorXd f_D = -(f / c).cwiseProduct((((v_tx - v_rx) * e_rx).array() +
+                                        c * dt_rx_dot - c * dt_tx_dot.array())
+                                           .matrix()) +
                  eps_D;
   return f_D;
 }
@@ -221,7 +222,7 @@ VectorXd GnssMeasurement::GetPseudorangeRateNoiseVector() {
   VectorXd noise(n_meas);
 
   for (int i = 0; i < n_meas; i++) {
-    noise(i) = ComputePseudorangeRateNoise(CN0(i));
+    noise(i) = ComputePseudorangeRateNoise(CN0(i), lambda_(i));
   }
   return noise;
 }
@@ -231,7 +232,7 @@ VectorXd GnssMeasurement::GetCarrierPhaseNoiseVector() {
   VectorXd noise(n_meas);
 
   for (int i = 0; i < n_meas; i++) {
-    noise(i) = ComputeCarrierPhaseNoise(CN0(i));
+    noise(i) = ComputeCarrierPhaseNoise(CN0(i), lambda_(i));
   }
   return noise;
 }
@@ -239,12 +240,12 @@ VectorXd GnssMeasurement::GetCarrierPhaseNoiseVector() {
 double GnssMeasurement::ComputePseudorangeNoise(double CN0_dB) {
   // thermal noise in DLL
   double sigma = 0.0;
-  double CN0 = 10.0 * log10(CN0_dB);
+  double CN0 = pow(10, CN0_dB / 10);
 
   // extract gnss receiver parameters
   double Bn = gnssr_param.Bn;
-  double Bfe = gnssr_param.Bfe;
   double Rc = chip_rate;
+  double Bfe = gnssr_param.b * Rc;
   double T = gnssr_param.T;
   double D = gnssr_param.D;
   double Tc = 1 / Rc;
@@ -268,9 +269,10 @@ double GnssMeasurement::ComputePseudorangeNoise(double CN0_dB) {
   return sigma;
 }
 
-double GnssMeasurement::ComputePseudorangeRateNoise(double CN0_dB) {
+double GnssMeasurement::ComputePseudorangeRateNoise(double CN0_dB,
+                                                    double lambda) {
   double F = 2;  // F=1 at high CN0, F=2 at low CN0
-  double CN0 = 10.0 * log10(CN0_dB);
+  double CN0 = pow(10, CN0_dB / 10);
 
   // extract gnss receiver parameters
   double Bn = gnssr_param.Bn;
@@ -283,9 +285,9 @@ double GnssMeasurement::ComputePseudorangeRateNoise(double CN0_dB) {
   return sigma;
 }
 
-double GnssMeasurement::ComputeCarrierPhaseNoise(double CN0_dB) {
+double GnssMeasurement::ComputeCarrierPhaseNoise(double CN0_dB, double lambda) {
   // thermal noise in PLL
-  double CN0 = 10.0 * log10(CN0_dB);
+  double CN0 = pow(10, CN0_dB / 10);
 
   // extract gnss receiver parameters
   double Bp = gnssr_param.Bp;

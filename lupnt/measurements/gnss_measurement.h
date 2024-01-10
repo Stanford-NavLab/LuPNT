@@ -64,8 +64,8 @@ class GnssMeasurement {
   double t_0;  // Initial time [s]
   VectorXd phi_0;  // Initial phase of the transmitted signal at time t_0
                    // [cycles] (n_meas * n_bands)
-  double
-      lambda;  // Carrier wavelength [km] (n_bands) // TODO: Convert to vector
+  VectorXd
+      lambda_;  // Carrier wavelength [km] (n_bands) // TODO: Convert to vector
   VectorXd L_rx_txr;  // Integer component of the receiver’s numerically
                       // controlled oscillator (NCO) phase
   VectorXd K_rx_txr;  // Integer component of the propagation term
@@ -149,6 +149,10 @@ class GnssMeasurement {
   VectorXd GetPseudorangeRateNoiseVector();
   VectorXd GetCarrierPhaseNoiseVector();
 
+  void SetGnssReceiverParam(GnssReceiverParam gnssr_param_input) {
+    gnssr_param = gnssr_param_input;
+  }
+
   /**
    * @brief Compute the pseudorange noise using thermal noise in DLL
    * Reference: Reference: "Understanding GPS", p195
@@ -165,7 +169,7 @@ class GnssMeasurement {
    * @param CN0  Carrier‐to‐noise density [dB‐Hz]
    * @return double  Pseudorange rate noise [km/s]
    */
-  double ComputePseudorangeRateNoise(double CN0);
+  double ComputePseudorangeRateNoise(double CN0, double lambda);
 
   /**
    * @brief Compute the carrier phase noise using thermal noise in PLL
@@ -174,6 +178,6 @@ class GnssMeasurement {
    * @param CN0  Carrier‐to‐noise density [dB‐Hz]
    * @return double  Carrier phase noise [cycles]
    */
-  double ComputeCarrierPhaseNoise(double CN0);
+  double ComputeCarrierPhaseNoise(double CN0, double lambda);
 };
 }  // namespace lupnt

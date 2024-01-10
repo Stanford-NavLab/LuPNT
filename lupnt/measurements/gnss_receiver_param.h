@@ -15,13 +15,13 @@ namespace lupnt {
 
 struct GnssReceiverParam {
   // Receiver chip parameter
-  double Bp;   // Carrier loop noise bandwidth [Hz]
-  double T;    // Tracking loop integration time [s]
-  double Bfe;  // Double sided front end bandwidth [Hz]
-  double Bn;   // Code loop noise bandwidth [Hz]
-  double D;    // Early-to-late correlator spacing (chips)
-  double Rc;   // chipping rate
-  double Tc;   // chip period [s]
+  double Bp;  // Carrier loop noise bandwidth [Hz]
+  double T;   // Tracking loop integration time [s]
+  double b;   // normalized bandwidth [Hz]
+  double Bn;  // Code loop noise bandwidth [Hz]
+  double D;   // Early-to-late correlator spacing (chips)
+  double Rc;  // chipping rate
+  double Tc;  // chip period [s]
 };
 
 }  // namespace lupnt
