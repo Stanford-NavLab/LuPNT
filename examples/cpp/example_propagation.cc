@@ -74,7 +74,7 @@ int main() {
   moonSat1->SetDynamics(moonDynamics);
   moonSat1->SetOrbitState(cartOrbitStateMoon);
   moonSat1->SetEpoch(epoch);
-  moonSat1->SetBodyId(BodyId::MOON);
+  moonSat1->SetBodyId(NaifId::MOON);
 
   receiver->SetAgent(moonSat1);
   receiver->SetChannel(channel);

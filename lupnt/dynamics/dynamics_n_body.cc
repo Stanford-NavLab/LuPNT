@@ -13,45 +13,10 @@
 #include "lupnt/core/constants.h"
 #include "lupnt/dynamics/gravity_field.h"
 #include "lupnt/numerics/math_utils.h"
+#include "lupnt/physics/body.h"
 #include "lupnt/physics/spice_interface.h"
 
 namespace lupnt {
-
-Body Body::Moon(int n_max, int m_max) {
-  Body moon;
-  moon.name = "MOON";
-  moon.id = BodyId::MOON;
-  moon.sphericalHarmonics = n_max > 0 || m_max > 0;
-  moon.normalized = true;
-  moon.n_max = n_max;
-  moon.m_max = m_max;
-
-  BodyData bd = GetBodyData(moon.id);
-  moon.mu = bd.GM;
-  moon.R = bd.R;
-
-  if (moon.sphericalHarmonics)
-    std::tie(moon.Cnm, moon.Snm) = LoadGravityCoefficients(bd, n_max);
-  return moon;
-}
-
-Body Body::Earth(int n_max, int m_max) {
-  Body earth;
-  earth.name = "EARTH";
-  earth.id = BodyId::EARTH;
-  earth.sphericalHarmonics = n_max > 0 || m_max > 0;
-  earth.normalized = true;
-  earth.n_max = n_max;
-  earth.m_max = m_max;
-
-  BodyData bd = GetBodyData(earth.id);
-  earth.mu = bd.GM;
-  earth.R = bd.R;
-
-  if (earth.sphericalHarmonics)
-    std::tie(earth.Cnm, earth.Snm) = LoadGravityCoefficients(bd, n_max);
-  return earth;
-}
 
 NBodyDynamics::NBodyDynamics(std::string integratorType)
     : NumericalDynamics(std::bind(&NBodyDynamics::ComputeRates, this,
@@ -102,7 +67,7 @@ Vector3 NBodyDynamics::ComputeNBodyGravity(real t, const VectorX &rv) const {
     if (body.id != centralBody.id) {
       // i-th body pos and vel w.r.t. the center body [km, km/s]
       rv_body =
-          SpiceInterface::GetBodyPosVel(t, (int)centralBody.id, (int)body.id);
+          SpiceInterface::GetBodyPosVel(t, centralBody.id, body.id);
 
       // s/c pos and vel w.r.t. the i-th body [km, km/s]
       rv_i = rv - rv_body;

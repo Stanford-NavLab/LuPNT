@@ -358,7 +358,7 @@ real ConvertTime(real t, std::string from_time_type, std::string to_time_type) {
  * @return VectorX  6x1 vector of position and velocity of target body
  * in center body J2000 frame
  */
-Vector6 GetBodyPosVel(const real tai, int center, int target) {
+Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target) {
   LoadSpiceKernel();
 
   bool load_cent = false;
@@ -370,18 +370,18 @@ Vector6 GetBodyPosVel(const real tai, int center, int target) {
   real t_s = ConvertTime(tai, "TAI", "TDB");
 
   // find the segment for the center and target body
-  if (center == 0) {
+  if (center == NaifId::SOLAR_SYSTEM_BARYCENTER) {
     rv_center = Vector6::Zero();
   }
-  if (target == 0) {
+  if (target == NaifId::SOLAR_SYSTEM_BARYCENTER) {
     rv_target = Vector6::Zero();
   }
 
   for (int i = 0; i < cheby_n; i++) {
-    if (cheby_s[i].target == target) {
+    if (cheby_s[i].target == (int)target) {
       rv_target = cheby_posvel_ad(t_s, cheby_s[i].seg, cheby_s[i].len);
       load_cent = true;
-    } else if (cheby_s[i].target == center) {
+    } else if (cheby_s[i].target == (int)center) {
       rv_center = cheby_posvel_ad(t_s, cheby_s[i].seg, cheby_s[i].len);
       load_targ = true;
     }

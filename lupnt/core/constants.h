@@ -154,28 +154,28 @@ static const std::filesystem::path CSPICE_KER_DIR = GetDataPath() / "ephemeris";
 // NAIF Intefer ID codes
 // Reference:
 // https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/req/naif_ids.html
-namespace NaifId {
-const int SOLAR_SYSTEM_BARYCENTER = 0;
-const int MERCURY_BARYCENTER = 1;
-const int VENUS_BARYCENTER = 2;
-const int EARTH_BARYCENTER = 3;
-const int EARTH_MOON_BARYCENTER = 3;
-const int MARS_BARYCENTER = 4;
-const int JUPITER_BARYCENTER = 5;
-const int SATURN_BARYCENTER = 6;
-const int URANUS_BARYCENTER = 7;
-const int NEPTUNE_BARYCENTER = 8;
-const int PLUTO_BARYCENTER = 9;
-const int SUN = 10;
-const int MERCURY = 199;
-const int VENUS = 299;
-const int EARTH = 399;
-const int MOON = 301;
-const int MARS = 499;
-const int PHOBOS = 401;
-const int DEIMOS = 402;
-const int JUPITER = 599;
-}  // namespace NaifId
+enum class NaifId {
+  SOLAR_SYSTEM_BARYCENTER = 0,
+  MERCURY_BARYCENTER = 1,
+  VENUS_BARYCENTER = 2,
+  EARTH_BARYCENTER = 3,
+  EARTH_MOON_BARYCENTER = 3,
+  MARS_BARYCENTER = 4,
+  JUPITER_BARYCENTER = 5,
+  SATURN_BARYCENTER = 6,
+  URANUS_BARYCENTER = 7,
+  NEPTUNE_BARYCENTER = 8,
+  PLUTO_BARYCENTER = 9,
+  SUN = 10,
+  MERCURY = 199,
+  VENUS = 299,
+  EARTH = 399,
+  MOON = 301,
+  MARS = 499,
+  PHOBOS = 401,
+  DEIMOS = 402,
+  JUPITER = 599
+};
 
 namespace TimeSystems {
 const std::string TAI = "TAI";

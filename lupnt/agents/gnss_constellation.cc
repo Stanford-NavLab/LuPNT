@@ -35,21 +35,21 @@ void GnssConstellation::LoadTleFile(std::string filename) {
     real Omega = tle.raan * RAD_PER_DEG;
     real w = tle.argPerigee * RAD_PER_DEG;
     real rad_per_sec = tle.meanMotion * 2 * PI /
-                           SECS_PER_DAY;  // TLE mean motion is in revs/day
+                       SECS_PER_DAY;  // TLE mean motion is in revs/day
     real M =
         tle.meanAnomaly * RAD_PER_DEG + dt_epoch * rad_per_sec;  // in radians
 
     ClassicalOE coe({a, e, i, Omega, w, M});
     coe.SetCoordSystem(CoordSystem::GCRF);
-    auto cartOrbitState =
-        std::make_shared<CartesianOrbitState>(ClassicalToCartesian(coe, MU_EARTH));
+    auto cartOrbitState = std::make_shared<CartesianOrbitState>(
+        ClassicalToCartesian(coe, MU_EARTH));
 
     // Create the spacecraft
     auto sat = std::make_shared<Spacecraft>();
     sat->SetDynamics(dynamics_);
     sat->SetOrbitState(cartOrbitState);
     sat->SetEpoch(epoch_);
-    sat->SetBodyId(BodyId::EARTH);
+    sat->SetBodyId(NaifId::EARTH);
 
     if (channel_) {
       auto transmitter = std::make_shared<GnssTransmitter>(tle.name, tle.prn);

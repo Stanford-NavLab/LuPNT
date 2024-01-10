@@ -44,6 +44,12 @@ pybind11_add_module(${PACKAGE_NAME}
     ${PY_ALL_SOURCE_FILES}
 )
 
+# Custom command to generate Python stubs after building the module
+# add_custom_command(TARGET ${PACKAGE_NAME} POST_BUILD
+#                    COMMAND ${PYTHON_EXECUTABLE} -m pybind11_stubgen ${PACKAGE_NAME}
+#                    COMMENT "Generating Python stubs for ${PACKAGE_NAME}")
+
+
 # Add the root directory of the project to the include list
 target_include_directories(${PACKAGE_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}

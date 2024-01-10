@@ -179,7 +179,7 @@ Vector6 CoordConverter::Convert(real epoch, Vector6 rv_in,
     case ICRF: {
       switch (coord_sys_out) {
         case GCRF: {
-          Vector6 rv_icrf_ssb_earth = GetBodyPosVel(epoch, 0, NaifId::EARTH);
+          Vector6 rv_icrf_ssb_earth = GetBodyPosVel(epoch, NaifId::SOLAR_SYSTEM_BARYCENTER, NaifId::EARTH);
           Vector6 rv_gcrf = rv_in - rv_icrf_ssb_earth;
           return rv_gcrf;
         }
@@ -194,7 +194,7 @@ Vector6 CoordConverter::Convert(real epoch, Vector6 rv_in,
     case EMR: {
       switch (coord_sys_out) {
         case GCRF: {
-          Vector6 rv_icrf_emb_earth = GetBodyPosVel(epoch, NaifId::EARTH, 3);
+          Vector6 rv_icrf_emb_earth = GetBodyPosVel(epoch, NaifId::EARTH, NaifId::EARTH_MOON_BARYCENTER);
           Vector6 rv_gcrf = RtnToInertial(rv_icrf_emb_earth, rv_in);
           return rv_gcrf;
         }

@@ -15,6 +15,7 @@
 #include "lupnt/numerics/integrator.h"
 #include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/state.h"
+#include "lupnt/physics/body.h"
 
 namespace lupnt {
 
@@ -219,22 +220,6 @@ class RoeGeometricMappingDynamics : public AnalyticalDynamics {
   void Initialize(ClassicalOE coe_c, QuasiNonsingularROE &roe, real t0,
                   double mu);
   MatrixX ComputeMatrix(real t);
-};
-
-struct Body {
-  std::string name;
-  double mu;
-  double R;
-  BodyId id;
-  bool sphericalHarmonics;
-  bool normalized;
-  int n_max;
-  int m_max;
-  MatrixXd Cnm;
-  MatrixXd Snm;
-
-  static Body Moon(int n_max = 0, int m_max = 0);
-  static Body Earth(int n_max = 0, int m_max = 0);
 };
 
 class NBodyDynamics : public NumericalDynamics {

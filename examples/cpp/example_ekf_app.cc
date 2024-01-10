@@ -93,7 +93,7 @@ int main() {
   moon_sat->SetDynamics(dyn_moon_nb);
   moon_sat->SetOrbitState(cart_state_moon);
   moon_sat->SetEpoch(epoch0);
-  moon_sat->SetBodyId(BodyId::MOON);
+  moon_sat->SetBodyId(NaifId::MOON);
   moon_sat->SetClockDynamics(dyn_clk);
 
   receiver->SetAgent(moon_sat);

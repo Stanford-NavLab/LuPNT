@@ -36,7 +36,7 @@ class Agent {
   const int id_;
   std::string name_;
 
-  BodyId bodyId_;
+  NaifId bodyId_;
   real epoch_;
   std::shared_ptr<OrbitState> state_;
   std::shared_ptr<NumericalDynamics> dynamics_;
@@ -50,7 +50,7 @@ class Agent {
 
   // Getters
   real GetEpoch() { return epoch_; }
-  BodyId GetBodyId() { return bodyId_; }
+  NaifId GetBodyId() { return bodyId_; }
   std::shared_ptr<OrbitState> GetOrbitState() { return state_; }
   std::shared_ptr<NumericalDynamics> GetDynamics() { return dynamics_; }
   ClockState GetClockState() { return clock_; }
@@ -66,7 +66,7 @@ class Agent {
   void SetOrbitState(std::shared_ptr<OrbitState> state) { state_ = state; }
   void SetDynamics(std::shared_ptr<NumericalDynamics> dyn) { dynamics_ = dyn; }
   void SetEpoch(real epoch) { epoch_ = epoch; }
-  void SetBodyId(BodyId bodyId) { bodyId_ = bodyId; }
+  void SetBodyId(NaifId bodyId) { bodyId_ = bodyId; }
   void SetClock(ClockState clk) { clock_ = clk; }
   void SetClockDynamics(ClockDynamics& clock_dyn) {
     clock_dynamics_ = std::make_unique<ClockDynamics>(clock_dyn);
@@ -109,6 +109,17 @@ class Spacecraft : public Agent {
 class Rover : public Agent {
  public:
   Rover() : Agent() {}
+};
+
+class GroundStation : public Agent {
+ public:
+  GroundStation() : Agent() {}
+
+  void SetPosition(Vector3d pos) { pos_ = pos; }
+  Vector3d GetPosition() { return pos_; }
+
+ private:
+  Vector3d pos_;
 };
 
 };  // namespace lupnt
