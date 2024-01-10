@@ -33,6 +33,7 @@ GnssMeasurement::GnssMeasurement(const std::vector<Transmission> trans)
       vis_atmos(trans.size()),
       vis_ionos(trans.size()),
       rho_rx(trans.size()),
+      lambda(trans.size()),
       P_rx(trans.size()) {
   n_meas = trans.size();
 
@@ -65,6 +66,7 @@ GnssMeasurement::GnssMeasurement(const std::vector<Transmission> trans)
     vis_ionos[i] = tr.vis_ionos;
 
     f[i] = tr.freq;
+    lambda[i] = c / f[i];
 
     gnssr_param = tr.gnssr_param;
     chip_rate = tr.chip_rate;
@@ -164,7 +166,7 @@ VectorX GnssMeasurement::GetCarrierPhase() {
   // dt_tx(t_tx)) + phi_rx_0 - phi_0 + N_rx + eps_phi
 
   VectorXd phi_rx =
-      c * lambda * (t_rx - t_tx + dt_rx - dt_tx.array()).matrix() +
+      c * lambda.cwiseProduct((t_rx - t_tx + dt_rx - dt_tx.array()).matrix()) +
       (phi_rx_tx - phi_tx + N_rx + eps_phi);
   return phi_rx;
 }
@@ -174,7 +176,7 @@ VectorX GnssMeasurement::GetPhaseRange() {
   // (phi_rx_0 - phi_0 + N_rx) + lambda*eps_Phi
 
   VectorX Phi_rx = c * (t_rx - t_tx + dt_rx - dt_tx.array()).matrix() +
-                   lambda * (phi_rx_tx - phi_tx + N_rx + eps_Phi);
+                   lambda.cwiseProduct(phi_rx_tx - phi_tx + N_rx + eps_Phi);
   return Phi_rx;
 };
 
@@ -182,10 +184,9 @@ VectorX GnssMeasurement::GetDopplerShift() {
   // f_D = - f/c*((v_tx(t_tx) - v_rx(t_rx))^T * e_rx + c * dt_rx_dot(t_rx) -
   // c* dt_tx_dot(t_tx))) + eps_D
 
-  VectorXd f_D = -f / c *
-                     (((v_tx - v_rx) * e_rx).array() + c * dt_rx_dot -
-                      c * dt_tx_dot.array())
-                         .matrix() +
+  VectorXd f_D = -(f / c).cwiseProduct((((v_tx - v_rx) * e_rx).array() +
+                                        c * dt_rx_dot - c * dt_tx_dot.array())
+                                           .matrix()) +
                  eps_D;
   return f_D;
 }
@@ -278,7 +279,8 @@ double GnssMeasurement::ComputePseudorangeRateNoise(double CN0_dB) {
 
   // compute pseudorange rate noise
   double sigma =
-      lambda / (2 * PI * T) * sqrt(4 * F * Bn / CN0 * (1 + 1.0 / (T * CN0)));
+      (lambda / (2 * PI * T))
+          .cwiseProduct(sqrt(4 * F * Bn / CN0 * (1 + 1.0 / (T * CN0))));
 
   return sigma;
 }
@@ -292,7 +294,8 @@ double GnssMeasurement::ComputeCarrierPhaseNoise(double CN0_dB) {
   double T = gnssr_param.T;
 
   double sigma =
-      lambda / (2 * PI) * sqrt(Bp / CN0 * (1.0 + 1.0 / (2 * T * CN0)));
+      (lambda / (2 * PI))
+          .cwiseProduct(sqrt(Bp / CN0 * (1.0 + 1.0 / (2 * T * CN0))));
 
   return sigma;
 }

@@ -64,7 +64,7 @@ class GnssMeasurement {
   double t_0;  // Initial time [s]
   VectorXd phi_0;  // Initial phase of the transmitted signal at time t_0
                    // [cycles] (n_meas * n_bands)
-  double
+  VectorXd
       lambda;  // Carrier wavelength [km] (n_bands) // TODO: Convert to vector
   VectorXd L_rx_txr;  // Integer component of the receiver’s numerically
                       // controlled oscillator (NCO) phase
@@ -148,6 +148,10 @@ class GnssMeasurement {
   VectorXd GetPseudorangeNoiseVector();
   VectorXd GetPseudorangeRateNoiseVector();
   VectorXd GetCarrierPhaseNoiseVector();
+
+  void SetGnssReceiverParam(GnssReceiverParam gnssr_param_input) {
+    gnssr_param = gnssr_param_input;
+  }
 
   /**
    * @brief Compute the pseudorange noise using thermal noise in DLL
