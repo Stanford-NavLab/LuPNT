@@ -54,7 +54,7 @@ int main() {
   double vel_err = 1e-3;           // Velocity error [km/s]
   double clk_bias_err = 1e-6;      // Clock bias error [s]
   double clk_drift_err = 1e-9;     // Clock drift error [s/s]
-  double sigma_acc = 2e-6;         // Process noise [km/s^2]
+  double sigma_acc = 1e-7;         // Process noise [km/s^2]
   double sigma_range = 5e-3;       // Range measurement noise [km]
   double sigma_range_rate = 1e-6;  // Range rate measurement noise [km/s]
 
@@ -169,7 +169,7 @@ int main() {
     // VectorX z2 = meas.GetPseudorange(epoch, x_rv, x_clk, H2);
     // assert(H.isApprox(H2));
 
-    R.diagonal().array() = pow(sigma_range, 2);
+    R.diagonal().array() = meas.GetPseudorangeNoiseVector();
     return z;
   };
 
@@ -231,7 +231,7 @@ int main() {
       z_true = meas.GetPseudorange();
       // Add Noise
       MatrixX R_noise(meas_size, meas_size);
-      R_noise = pow(sigma_range, 2) * MatrixX::Identity(meas_size, meas_size);
+      R_noise.diagonal().array() = meas.GetPseudorangeNoiseVector();
       z_true += SampleMVN(VectorX::Zero(meas_size), R_noise, 1);
     } else {
       z_true = VectorXd::Zero(0);
