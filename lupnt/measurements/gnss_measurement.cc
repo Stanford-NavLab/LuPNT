@@ -120,16 +120,22 @@ VectorX GnssMeasurement::GetPseudorange(bool with_noise, int seed) {
 
 VectorX GnssMeasurement::GetPseudorange(double epoch, Vector6 rv, Vector2 clk,
                                         MatrixXd &H_pr) {
-  auto func = [epoch, this](const Vector6 rv, const Vector2 clk) {
-    auto rv_gcrf =
-        CoordConverter::Convert(epoch, rv, CoordSystem::MI, CoordSystem::GCRF);
+  auto func = [epoch, this](const Vector6 rv_gcrf, const Vector2 clk) {
     Vector3 r_rx = rv_gcrf.head(3);
     real dt_rx = clk(0);
     return ComputePseudorange(r_rx, dt_rx);
   };
 
+  Vector6 rv_gcrf =
+      CoordConverter::Convert(epoch, rv, CoordSystem::MI, CoordSystem::GCRF);
   VectorX z_pr_pred(n_meas);
-  H_pr = jacobian(func, wrt(rv, clk), at(rv, clk), z_pr_pred);
+
+  // break the computational graph relations before taking jacobian
+  Vector6 rv_gcrf_tmp = rv_gcrf.cast<double>();
+  Vector2 clk_tmp = clk.cast<double>();
+
+  H_pr = jacobian(func, wrt(rv_gcrf_tmp, clk_tmp), at(rv_gcrf_tmp, clk_tmp),
+                  z_pr_pred);
   return z_pr_pred;
 }
 

@@ -349,6 +349,13 @@ real ConvertTime(real t, std::string from_time_type, std::string to_time_type) {
   return t_out;
 }
 
+Vector6 GetBodyPosVel(const real tai, int center, int target) {
+  // cast to NaifId
+  NaifId center_id_naif = (NaifId)center;
+  NaifId target_id_naif = (NaifId)target;
+  return GetBodyPosVel(tai, center_id_naif, target_id_naif);
+}
+
 /**
  * @brief Get the Body Position and Velocity using Chebyshev polynomials
  *

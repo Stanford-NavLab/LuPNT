@@ -59,6 +59,7 @@ int main() {
   double sigma_range_rate = 1e-6;  // Range rate measurement noise [km/s]
 
   // Debug mode
+  bool debug_jacobian = false;
   bool print_debug = false;
   bool no_meas = false;  // set to true to turn off measurements
   bool use_nbody = false;
@@ -140,7 +141,7 @@ int main() {
 
   // Define Measurement function
   FilterMeasurementFunction meas_func_pos_clk =
-      [moon_sat, receiver, state_size, sigma_range, no_meas](
+      [moon_sat, receiver, state_size, sigma_range, no_meas, debug_jacobian](
           const VectorX x, MatrixXd& H, MatrixXd& R) -> VectorX {
     if (no_meas) {
       return VectorXd::Zero(0);
@@ -159,15 +160,25 @@ int main() {
     R = MatrixXd::Zero(meas_size, meas_size);
 
     // create new state
-    VectorX x_rv(6), x_clk(2);
-    x_rv = x.head(6);
-    x_clk = x.tail(2);
+    Vector6 x_rv = x.head(6);
+    Vector2 x_clk = x.tail(2);
 
-    VectorX z = meas.GetPseudorange2(epoch, x_rv, x_clk, H);
+    VectorX z =
+        meas.GetPseudorange(epoch, x_rv, x_clk, H);  // Jacobian with autodiff
 
-    // MatrixXd H2 = MatrixXd::Zero(meas_size, state_size);
-    // VectorX z2 = meas.GetPseudorange(epoch, x_rv, x_clk, H2);
-    // assert(H.isApprox(H2));
+    if (debug_jacobian) {
+      MatrixXd H2 = MatrixXd::Zero(meas_size, state_size);
+      VectorX z2 = meas.GetPseudorange2(epoch, x_rv, x_clk,
+                                        H2);  // Analytical jacobian (for debug)
+
+      // Check Jacobian
+      if (!H.isApprox(H2)) {
+        std::cout << "H1: " << std::endl << H << std::endl;
+        std::cout << "H2: " << std::endl << H2 << std::endl;
+        std::cout << "H1-H2: " << std::endl << H - H2 << std::endl;
+        throw std::runtime_error("H1 != H2");
+      }
+    }
 
     R.diagonal().array() = meas.GetPseudorangeNoiseVector();
     return z;
