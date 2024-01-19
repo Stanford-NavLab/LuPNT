@@ -12,10 +12,18 @@
 
 #include <lupnt/core/constants.h>
 #include <lupnt/measurements/transmission.h>
+#include <lupnt/physics/coord_converter.h>
 
 #include <memory>
+#include <vector>
 
 namespace lupnt {
+
+enum GnssMeasurementType {
+  PR,   // Pseudorange
+  PRR,  // Pseudorange rate
+  CP,   // Carrier phase
+};
 
 class GnssMeasurement {
   // Implemenation based on Gnss SDR Observables block:
@@ -131,20 +139,145 @@ class GnssMeasurement {
   VectorXd GetIonosOccultation() const { return vis_ionos; }
   VectorXd GetAtmosOccultation() const { return vis_atmos; }
 
-  // Measurement
+  /***********************************************************
+   * General Methods for computing Measurements
+   ***********************************************************/
+
+  /**
+   * @brief Compute the pseudorange measurement
+   *
+   * @param r_rx   Receiver position [km]
+   * @param dt_rx  Receiver clock offset from Gnss time [s]
+   * @param with_noise   use noise
+   * @param seed   random seed
+   * @return VectorX
+   */
   VectorX ComputePseudorange(VectorX r_rx, real dt_rx, bool with_noise = false,
                              int seed = 0);
-  VectorX GetPseudorange(bool with_noise = false, int seed = 0);
-  VectorX GetPseudorange(double epoch, Vector6 rv_pred, Vector2 clk_pred,
-                         MatrixXd &H_pr);
-  VectorX GetPseudorange2(double epoch, Vector6 rv_pred, Vector2 clk_pred,
-                          MatrixXd &H_pr);
-  VectorX GetPseudorangeRate(const VectorX &r_rx_, const VectorX &v_rx_);
-  VectorX GetCarrierPhase();
-  VectorX GetPhaseRange();
-  VectorX GetDopplerShift();
+  VectorX ComputePseudorangerate(VectorX r_rx, VectorX v_rx, real dt_rx_dot,
+                                 bool with_noise = false, int seed = 0);
+  VectorX ComputeCarrierPhase(VectorX r_rx, real dt_rx, bool with_noise = false,
+                              int seed = 0);
 
-  // Measurement Noise
+  /***********************************************************
+   *  Methods for true measurement generation
+   ***********************************************************/
+
+  /**
+   * @brief Get the Gnss Measurement for the observed signal
+   *
+   * @param meas_type  vector of measurement types
+   * @param with_noise  use noise
+   * @param seed   random seed
+   * @return VectorX
+   */
+  VectorX GetGnssMeasurement(std::vector<GnssMeasurementType> meas_type,
+                             bool with_noise = false, int seed = 0);
+  /**
+   * @brief Get the Pseudorange for the observed signal
+   *
+   * @param with_noise  use noise
+   * @param seed  random seed
+   * @return VectorX
+   */
+  VectorX GetPseudorange(bool with_noise = false, int seed = 0);
+
+  /**
+   * @brief Get the Pseudorange rate for the observed signal
+   *
+   * @param with_noise  use noise
+   * @param seed  random seed
+   * @return VectorX
+   */
+  VectorX GetPseudorangerate(bool with_noise = false, int seed = 0);
+
+  /**
+   * @brief Get the Carrier Phase for the observed signal
+   *
+   * @param with_noise  use noise
+   * @param seed  random seed
+   * @return VectorX
+   */
+  VectorX GetCarrierPhase(bool with_noise = false, int seed = 0);
+
+  /***********************************************************
+   *  Methods for predicted measurement generation
+   ***********************************************************/
+  /**
+   * @brief Get the Gnss Measurement for the predicted state
+   *       This method is used for the measurement update step
+   *       in the filter
+   * @param epoch     epoch time
+   * @param rv_pred   predicted position and velocity
+   * @param clk_pred  predicted clock offset and drift
+   * @param meas_type  vector of measurement types
+   * @param with_noise  use noise
+   */
+  VectorX GetGnssMeasurement(double epoch, Vector6 rv_pred, Vector2 clk_pred,
+                             MatrixXd &H_gnss,
+                             std::vector<GnssMeasurementType> meas_type,
+                             bool with_noise = false, int seed = 0);
+
+  /**
+   * @brief Get the Pseudorange for the predicted state
+   *
+   * @param epoch     epoch time
+   * @param rv_pred   predicted position and velocity
+   * @param clk_pred  predicted clock offset and drift
+   * @param H_pr       Jacobian of the measurement function
+   * @return VectorX
+   */
+  VectorX GetPseudorange(double epoch, Vector6 rv_pred, Vector2 clk_pred,
+                         MatrixXd &H_pr,
+                         CoordSystem coord_in = CoordSystem::MI);
+
+  /**
+   * @brief Get the Pseudorange Analytical Jacobian object
+   *
+   * @param epoch     epoch time
+   * @param rv_pred   predicted position and velocity
+   * @param clk_pred  predicted clock offset and drift
+   * @param H_pr      Jacobian of the measurement function
+   * @param coord_in  coordinate system of the input state
+   * @return * VectorX
+   */
+  VectorX GetPseudorangeAnalyticalJacobian(
+      double epoch, Vector6 rv_pred, Vector2 clk_pred, MatrixXd &H_pr,
+      CoordSystem coord_in = CoordSystem::MI);
+
+  /**
+   * @brief Get the Pseudorange Rate object
+   *
+   * @param epoch     epoch time
+   * @param rv_pred   predicted position and velocity
+   * @param clk_pred  predicted clock offset and drift
+   * @param H_prr     Jacobian of the measurement function
+   * @param coord_in  coordinate system of the input state
+   * @return VectorX
+   */
+  VectorX GetPseudorangerate(double epoch, Vector6 rv_pred, Vector2 clk_pred,
+                             MatrixXd &H_prr,
+                             CoordSystem coord_in = CoordSystem::MI);
+
+  /**
+   * @brief Get the Carrier Phase object
+   *
+   * @param epoch     epoch time
+   * @param rv_pred   predicted position and velocity
+   * @param clk_pred  predicted clock offset and drift
+   * @param H_cp      Jacobian of the measurement function
+   * @param coord_in  coordinate system of the input state
+   * @return VectorX
+   */
+  VectorX GetCarrierPhase(double epoch, Vector6 rv_pred, Vector2 clk_pred,
+                          MatrixXd &H_cp,
+                          CoordSystem coord_in = CoordSystem::MI);
+
+  /*********************************************************************
+   * Noise Models
+   ********************************************************************/
+  VectorXd GetGnssMeasurementNoiseVector(
+      std::vector<GnssMeasurementType> meas_type);
   VectorXd GetPseudorangeNoiseVector();
   VectorXd GetPseudorangeRateNoiseVector();
   VectorXd GetCarrierPhaseNoiseVector();

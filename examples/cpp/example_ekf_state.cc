@@ -168,8 +168,9 @@ int main() {
 
     if (debug_jacobian) {
       MatrixXd H2 = MatrixXd::Zero(meas_size, state_size);
-      VectorX z2 = meas.GetPseudorange2(epoch, x_rv, x_clk,
-                                        H2);  // Analytical jacobian (for debug)
+      VectorX z2 = meas.GetPseudorangeAnalyticalJacobian(
+          epoch, x_rv, x_clk,
+          H2);  // Analytical jacobian (for debug)
 
       // Check Jacobian
       if (!H.isApprox(H2)) {

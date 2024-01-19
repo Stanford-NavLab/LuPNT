@@ -29,6 +29,10 @@ struct Transmission {
   double dt_tx;
   double dt_rx;
 
+  // Clock drift from Gnss time [s/s]
+  double dt_tx_dot;
+  double dt_rx_dot;
+
   double I_rx;  // Ionospheric delay [m] (n_satellites * n_bands)
   double T_rx;  // Tropospheric delay [m] (n_satellites)
   double CN0;   // Carrier-to-noise density [dB-Hz] (n_satellites * n_bands)

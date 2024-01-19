@@ -113,7 +113,8 @@ std::vector<Transmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
       trans.freq = freq;
       trans.freq_label = freq_name;
       trans.chip_rate = tx->rc_map[freq_name];
-      trans.dt_tx = 0.0;
+      trans.dt_tx = 0.0;      // Todo: Get this from ephemeris
+      trans.dt_tx_dot = 0.0;  // Todo: Get this from ephemeris
       trans.r_tx = rv_tx_gcrf->r().cast<double>();
       trans.v_tx = rv_tx_gcrf->v().cast<double>();
 
@@ -130,6 +131,7 @@ std::vector<Transmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
       // RX
       trans.t_rx = t_rx;
       trans.dt_rx = rx.GetAgent()->GetClockState().GetValue(0).val();
+      trans.dt_rx_dot = rx.GetAgent()->GetClockState().GetValue(1).val();
       trans.r_rx = rv_rx_gcrf->r().cast<double>();
       trans.v_rx = rv_rx_gcrf->v().cast<double>();
 
