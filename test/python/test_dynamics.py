@@ -10,7 +10,7 @@ except ImportError:
     from utils.gmat import gmat
 
 
-class TestNumericalDynamics:
+class TestNumericalOrbitDynamics:
     def test_CartesianTwoBodyDynamics(self):
         # Constructor
         cart_array = pnt.classical_to_cartesian(data.coe_array_elfo, pnt.MU_MOON)

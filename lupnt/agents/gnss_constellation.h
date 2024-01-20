@@ -24,7 +24,7 @@ namespace lupnt {
 class GnssConstellation {
  private:
   std::vector<std::shared_ptr<Spacecraft>> satellites_;
-  std::shared_ptr<NumericalDynamics> dynamics_;
+  std::shared_ptr<NumericalOrbitDynamics> dynamics_;
   std::shared_ptr<GnssChannel> channel_;
   double epoch_;  // in TAI
   const std::filesystem::path kTlePath = GetDataPath() / "tle";
@@ -32,7 +32,7 @@ class GnssConstellation {
  public:
   // Setters
   void SetChannel(std::shared_ptr<GnssChannel> ch) { channel_ = ch; }
-  void SetDynamics(std::shared_ptr<NumericalDynamics> dyn) { dynamics_ = dyn; }
+  void SetDynamics(std::shared_ptr<NumericalOrbitDynamics> dyn) { dynamics_ = dyn; }
   void SetEpoch(double ep) { epoch_ = ep; }
   double GetEpoch() { return epoch_; }
 
@@ -40,7 +40,7 @@ class GnssConstellation {
   int GetNumSatellites() { return satellites_.size(); }
   std::shared_ptr<Spacecraft> GetSatellite(int i) { return satellites_[i]; }
   std::shared_ptr<GnssChannel> GetChannel() { return channel_; }
-  std::shared_ptr<NumericalDynamics> GetDynamics() { return dynamics_; }
+  std::shared_ptr<NumericalOrbitDynamics> GetDynamics() { return dynamics_; }
 
   // Methods
   void Propagate(double epoch) {

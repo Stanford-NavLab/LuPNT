@@ -56,16 +56,16 @@ void init_dynamics(py::module &m) {
         return "<pylupnt.KeplerianDynamics>";
       });
 
-  // NumericalDynamics
-  py::class_<NumericalDynamics>(m, "NumericalDynamics")
+  // NumericalOrbitDynamics
+  py::class_<NumericalOrbitDynamics>(m, "NumericalOrbitDynamics")
       .def(
           "propagate",
-          [](NumericalDynamics &dyn, OrbitState &state, double t0, double tf,
+          [](NumericalOrbitDynamics &dyn, OrbitState &state, double t0, double tf,
              double dt) -> void { dyn.Propagate(state, t0, tf, dt); },
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
       .def(
           "propagate",
-          [](NumericalDynamics &dyn, Vector6d &state, double t0, double tf,
+          [](NumericalOrbitDynamics &dyn, Vector6d &state, double t0, double tf,
              double dt) -> Vector6d {
             Vector6 x = state.cast<real>();
             dyn.Propagate(x, t0, tf, dt);
@@ -74,7 +74,7 @@ void init_dynamics(py::module &m) {
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
       .def(
           "propagate_with_stm",
-          [](NumericalDynamics &dyn, CartesianOrbitState &state, double t0,
+          [](NumericalOrbitDynamics &dyn, CartesianOrbitState &state, double t0,
              double tf, double dt) {
             Matrix6d stm;
             dyn.PropagateWithStm(state, t0, tf, dt, stm);
@@ -84,7 +84,7 @@ void init_dynamics(py::module &m) {
           py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](NumericalDynamics &dyn, Vector6 &state, double t0, double tf,
+          [](NumericalOrbitDynamics &dyn, Vector6 &state, double t0, double tf,
              double dt) -> std::tuple<Vector6d, Matrix6d> {
             Matrix6d stm;
             dyn.PropagateWithStm(state, t0, tf, dt, stm);
@@ -93,7 +93,7 @@ void init_dynamics(py::module &m) {
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"));
 
   // CartesianTwoBodyDynamics
-  py::class_<CartesianTwoBodyDynamics, NumericalDynamics>(
+  py::class_<CartesianTwoBodyDynamics, NumericalOrbitDynamics>(
       m, "CartesianTwoBodyDynamics")
       .def(py::init<double, std::string>(), py::arg("mu"),
            py::arg("integrator") = "RK4")

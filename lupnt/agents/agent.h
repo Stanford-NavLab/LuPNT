@@ -39,7 +39,7 @@ class Agent {
   NaifId bodyId_;
   real epoch_;
   std::shared_ptr<OrbitState> state_;
-  std::shared_ptr<NumericalDynamics> dynamics_;
+  std::shared_ptr<NumericalOrbitDynamics> dynamics_;
   std::vector<std::shared_ptr<ICommDevice>> devices_;
 
   ClockState clock_;
@@ -52,7 +52,7 @@ class Agent {
   real GetEpoch() { return epoch_; }
   NaifId GetBodyId() { return bodyId_; }
   std::shared_ptr<OrbitState> GetOrbitState() { return state_; }
-  std::shared_ptr<NumericalDynamics> GetDynamics() { return dynamics_; }
+  std::shared_ptr<NumericalOrbitDynamics> GetDynamics() { return dynamics_; }
   ClockState GetClockState() { return clock_; }
   VectorX GetStateVector() {
     Vector6 rv = GetOrbitState()->GetVector();
@@ -64,7 +64,9 @@ class Agent {
 
   // Setters
   void SetOrbitState(std::shared_ptr<OrbitState> state) { state_ = state; }
-  void SetDynamics(std::shared_ptr<NumericalDynamics> dyn) { dynamics_ = dyn; }
+  void SetDynamics(std::shared_ptr<NumericalOrbitDynamics> dyn) {
+    dynamics_ = dyn;
+  }
   void SetEpoch(real epoch) { epoch_ = epoch; }
   void SetBodyId(NaifId bodyId) { bodyId_ = bodyId; }
   void SetClock(ClockState clk) { clock_ = clk; }
