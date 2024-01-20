@@ -45,29 +45,6 @@ namespace lupnt {
 
 static const int state_size = 8;
 
-FilterProcessNoiseFunction proc_noise_func = [](const VectorX& x, real t_curr,
-                                                real t_end) {
-  int clock_index = 6;
-  double dt = (t_end - t_curr).val();
-  double sigma_acc = 1e-13;
-
-  MatrixXd Q = MatrixXd::Zero(state_size, state_size);
-
-  Matrix6d Q_rv = Matrix6d::Zero();
-  for (int i = 0; i < 3; i++) {
-    Q_rv(i, i) = pow(dt, 3) / 3.0 * pow(sigma_acc, 2);
-    Q_rv(i + 3, i + 3) = dt * pow(sigma_acc, 2);
-    Q_rv(i, i + 3) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
-    Q_rv(i + 3, i) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
-  }
-  Matrix2d Q_clk = GetClockProcessNoise(ClockModel::kMicrosemiCsac, dt);
-
-  Q.block(0, 0, 6, 6) = Q_rv;
-  Q.block(6, 6, 2, 2) = Q_clk;
-
-  return Q;
-};
-
 MatrixXd ConstructInitCovariance(double pos_err, double vel_err,
                                  double clk_bias_err, double clk_drift_err) {
   Matrix6d P_rv = Matrix6d::Zero();

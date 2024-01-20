@@ -177,11 +177,12 @@ double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
   return result;
 }
 
-MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn) {
+MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn,
+                   int seed) {
   // Define random generator with Gaussian distribution
   int xsize = mean.size();
-  auto dist = std::bind(std::normal_distribution<double>{0.0, 1.0},
-                        std::mt19937(std::random_device{}()));
+  auto generator = std::mt19937(seed);
+  auto dist = std::bind(std::normal_distribution<double>{0.0, 1.0}, generator);
 
   // Transform Matrix
   MatrixXd normTransform(xsize, xsize);
@@ -208,11 +209,11 @@ MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn) {
   return samples;
 };
 
-MatrixX SampleMVN(const VectorX mean, const MatrixX covar, int nn) {
+MatrixX SampleMVN(const VectorX mean, const MatrixX covar, int nn, int seed) {
   // Define random generator with Gaussian distribution
   int xsize = mean.size();
-  auto dist = std::bind(std::normal_distribution<double>{0.0, 1.0},
-                        std::mt19937(std::random_device{}()));
+  auto generator = std::mt19937(seed);
+  auto dist = std::bind(std::normal_distribution<double>{0.0, 1.0}, generator);
 
   // Transform Matrix
   MatrixX normTransform(xsize, xsize);

@@ -106,8 +106,8 @@ class GnssMeasurement {
   VectorXd D_rx;  // Doppler shift measurement [Hz] (n_meas * n_bands)
   VectorX r_rx;   // Position of the receiver at time t_rx [km] (3)
   MatrixXd r_tx;  // Position of the transmitter at time t_rx [km] (n_meas x 3)
-  MatrixXd v_rx;  // Velocity of the receiver at time t_rx [m/s] (3)
-  VectorXd v_tx;  // Velocity of the transmitter at time t_tx [m/s] (n_meas x 3)
+  VectorXd v_rx;  // Velocity of the receiver at time t_rx [m/s] (3)
+  MatrixXd v_tx;  // Velocity of the transmitter at time t_tx [m/s] (n_meas x 3)
   VectorXd eps_D;  // Doppler shift measurement noise [Hz] (n_meas * n_bands)
 
   // Pseudorange rate measurement
@@ -130,7 +130,8 @@ class GnssMeasurement {
   GnssMeasurement ExtractSignal(std::string freq_label);
 
   // Transmission data
-  int GetNumMeasurements() const { return n_meas; }
+  int GetTrackedSatelliteNum() const { return n_meas; }
+
   std::vector<int> GetTxIds() const { return ID_tx; }
   VectorX GetCN0() const { return CN0; }
   VectorXd GetEarthOccultation() const { return vis_earth; }
@@ -156,8 +157,8 @@ class GnssMeasurement {
                              int seed = 0);
   VectorX ComputePseudorangerate(VectorX r_rx, VectorX v_rx, real dt_rx_dot,
                                  bool with_noise = false, int seed = 0);
-  VectorX ComputeCarrierPhase(VectorX r_rx, real dt_rx, bool with_noise = false,
-                              int seed = 0);
+  VectorX ComputeCarrierPhase(VectorX r_rx, real dt_rx, VectorX N_rx,
+                              bool with_noise = false, int seed = 0);
 
   /***********************************************************
    *  Methods for true measurement generation
@@ -210,13 +211,12 @@ class GnssMeasurement {
    * @param epoch     epoch time
    * @param rv_pred   predicted position and velocity
    * @param clk_pred  predicted clock offset and drift
-   * @param meas_type  vector of measurement types
-   * @param with_noise  use noise
+   * @param coord_in  coordinate system of the input state
    */
-  VectorX GetGnssMeasurement(double epoch, Vector6 rv_pred, Vector2 clk_pred,
-                             MatrixXd &H_gnss,
-                             std::vector<GnssMeasurementType> meas_type,
-                             bool with_noise = false, int seed = 0);
+  VectorX GetPredictedGnssMeasurement(
+      double epoch, Vector6 rv_pred, Vector2 clk_pred, VectorX N_pred,
+      MatrixXd &H_gnss, std::vector<GnssMeasurementType> meas_type,
+      CoordSystem coord_in = CoordSystem::MI);
 
   /**
    * @brief Get the Pseudorange for the predicted state
@@ -225,11 +225,12 @@ class GnssMeasurement {
    * @param rv_pred   predicted position and velocity
    * @param clk_pred  predicted clock offset and drift
    * @param H_pr       Jacobian of the measurement function
+   * @param coord_in  coordinate system of the input state
    * @return VectorX
    */
-  VectorX GetPseudorange(double epoch, Vector6 rv_pred, Vector2 clk_pred,
-                         MatrixXd &H_pr,
-                         CoordSystem coord_in = CoordSystem::MI);
+  VectorX GetPredictedPseudorange(double epoch, Vector6 rv_pred,
+                                  Vector2 clk_pred, MatrixXd &H_pr,
+                                  CoordSystem coord_in = CoordSystem::MI);
 
   /**
    * @brief Get the Pseudorange Analytical Jacobian object
@@ -241,7 +242,7 @@ class GnssMeasurement {
    * @param coord_in  coordinate system of the input state
    * @return * VectorX
    */
-  VectorX GetPseudorangeAnalyticalJacobian(
+  VectorX GetPredictedPseudorangeAnalyticalJacobian(
       double epoch, Vector6 rv_pred, Vector2 clk_pred, MatrixXd &H_pr,
       CoordSystem coord_in = CoordSystem::MI);
 
@@ -255,9 +256,9 @@ class GnssMeasurement {
    * @param coord_in  coordinate system of the input state
    * @return VectorX
    */
-  VectorX GetPseudorangerate(double epoch, Vector6 rv_pred, Vector2 clk_pred,
-                             MatrixXd &H_prr,
-                             CoordSystem coord_in = CoordSystem::MI);
+  VectorX GetPredictedPseudorangerate(double epoch, Vector6 rv_pred,
+                                      Vector2 clk_pred, MatrixXd &H_prr,
+                                      CoordSystem coord_in = CoordSystem::MI);
 
   /**
    * @brief Get the Carrier Phase object
@@ -269,18 +270,18 @@ class GnssMeasurement {
    * @param coord_in  coordinate system of the input state
    * @return VectorX
    */
-  VectorX GetCarrierPhase(double epoch, Vector6 rv_pred, Vector2 clk_pred,
-                          MatrixXd &H_cp,
-                          CoordSystem coord_in = CoordSystem::MI);
+  VectorX GetPredictedCarrierPhase(double epoch, Vector6 rv_pred,
+                                   Vector2 clk_pred, VectorX N_pred,
+                                   MatrixXd &H_cp,
+                                   CoordSystem coord_in = CoordSystem::MI);
 
   /*********************************************************************
    * Noise Models
    ********************************************************************/
-  VectorXd GetGnssMeasurementNoiseVector(
-      std::vector<GnssMeasurementType> meas_type);
-  VectorXd GetPseudorangeNoiseVector();
-  VectorXd GetPseudorangeRateNoiseVector();
-  VectorXd GetCarrierPhaseNoiseVector();
+  VectorXd GetGnssNoiseStdVector(std::vector<GnssMeasurementType> meas_type);
+  VectorXd GetPseudorangeNoiseStdVector();
+  VectorXd GetPseudorangeRateNoiseStdVector();
+  VectorXd GetCarrierPhaseNoiseStdVector();
 
   void SetGnssReceiverParam(GnssReceiverParam gnssr_param_input) {
     gnssr_param = gnssr_param_input;

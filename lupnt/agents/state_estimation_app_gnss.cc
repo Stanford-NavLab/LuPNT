@@ -97,14 +97,14 @@ void GnssStateEstimationApp::Step(double t) {
 
   // Measurements
   auto meas = receiver->GetMeasurement(epoch).ExtractSignal("L1");
-  int n_meas = meas.GetNumMeasurements();
+  int n_meas = meas.GetTrackedSatelliteNum();
   auto CN0 = meas.GetCN0();
   auto z_pr = meas.GetPseudorange();
 
   // Predict measurements
   MatrixXd H_pr(n_meas, n_state);
   VectorX z_pr_pred =
-      meas.GetPseudorange(epoch, rv_pred, clk_pred, H_pr);
+      meas.GetPredictedPseudorange(epoch, rv_pred, clk_pred, H_pr);
 
   MatrixXd R_pr = MatrixXd::Zero(n_meas, n_meas);
   R_pr.diagonal().array() = pow(sigma_range, 2);

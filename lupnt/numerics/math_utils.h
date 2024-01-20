@@ -145,7 +145,7 @@ double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
  * @param nn  number of samples to generate
  * @return MatrixX
  */
-MatrixX SampleMVN(const VectorX mean, const MatrixX cov, int nn);
+MatrixX SampleMVN(const VectorX mean, const MatrixX cov, int nn, int seed = 0);
 
 /**
  * @brief block diagonal matrix

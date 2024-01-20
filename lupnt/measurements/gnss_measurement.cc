@@ -20,12 +20,15 @@ GnssMeasurement::GnssMeasurement(const std::vector<Transmission> trans)
     : trans_store(trans),
       f(trans.size()),
       dt_tx(trans.size()),
+      dt_tx_dot(trans.size()),
       I_rx(trans.size()),
       T_rx(trans.size()),
       N_rx(trans.size()),
       eps_P(trans.size()),
       r_tx(3, trans.size()),
+      v_tx(3, trans.size()),
       r_rx(3),
+      v_rx(3),
       CN0(trans.size()),
       vis_earth(trans.size()),
       vis_moon(trans.size()),
@@ -47,10 +50,16 @@ GnssMeasurement::GnssMeasurement(const std::vector<Transmission> trans)
     // Clock offset
     dt_rx = tr.dt_rx;
     dt_tx[i] = tr.dt_tx;
+    dt_rx_dot = tr.dt_rx_dot;
+    dt_tx_dot[i] = tr.dt_tx_dot;
 
     // Position
     r_rx = tr.r_rx;
     r_tx.col(i) = tr.r_tx;
+
+    // Velocity
+    v_rx = tr.v_rx;
+    v_tx.col(i) = tr.v_tx;
 
     // Propagation
     I_rx[i] = tr.I_rx;
@@ -108,14 +117,14 @@ VectorX GnssMeasurement::ComputePseudorange(VectorX r_rx, real dt_rx,
 
   std::default_random_engine generator;
   generator.seed(seed);
+  std::normal_distribution<double> distribution(0.0, 1.0);
 
   for (int i = 0; i < r_tx.cols(); i++) {
     P_rx(i) = RadioMeasurement::ComputePseudorange(r_rx, r_tx.col(i), dt_tx[i],
                                                    dt_rx, I_rx(i) + T_rx(i));
     if (with_noise) {
       double sigma = ComputePseudorangeNoise(CN0(i));
-      std::normal_distribution<double> distribution(0.0, sigma);
-      P_rx(i) += distribution(generator);
+      P_rx(i) += sigma * distribution(generator);
     }
   }
   return P_rx;
@@ -128,6 +137,7 @@ VectorX GnssMeasurement::ComputePseudorangerate(VectorX r_rx, VectorX v_rx,
 
   std::default_random_engine generator;
   generator.seed(seed);
+  std::normal_distribution<double> distribution(0.0, 1.0);
 
   real offset = 0;  // set pseudorange rate offset to zero
 
@@ -136,8 +146,7 @@ VectorX GnssMeasurement::ComputePseudorangerate(VectorX r_rx, VectorX v_rx,
         r_tx.col(i), r_rx, v_tx.col(i), v_rx, dt_tx_dot[i], dt_rx_dot, offset);
     if (with_noise) {
       double sigma = ComputePseudorangeRateNoise(CN0(i), lambda_(i));
-      std::normal_distribution<double> distribution(0.0, sigma);
-      P_rrx(i) += distribution(generator);
+      P_rrx(i) += sigma * distribution(generator);
     }
   }
 
@@ -145,13 +154,22 @@ VectorX GnssMeasurement::ComputePseudorangerate(VectorX r_rx, VectorX v_rx,
 }
 
 VectorX GnssMeasurement::ComputeCarrierPhase(VectorX r_rx, real dt_rx,
-                                             bool with_noise, int seed) {
+                                             VectorX N_rx, bool with_noise,
+                                             int seed) {
   // phi_rx = c / lambda_ * (t_rx - t_tx) + c / lambda_ * (dt_rx(t_rx) -
   // dt_tx(t_tx)) + phi_rx_0 - phi_0 + N_rx + eps_phi
   VectorX phi_rx(r_tx.cols());
 
+  // check if N_rx has the same size as r_tx
+  if (N_rx.size() != r_tx.cols()) {
+    std::cout << "The integer ambiguity N_rx has different size than r_tx"
+              << std::endl;
+    return phi_rx;
+  }
+
   std::default_random_engine generator;
   generator.seed(seed);
+  std::normal_distribution<double> distribution(0.0, 1.0);
 
   real pr, phase;
 
@@ -164,8 +182,7 @@ VectorX GnssMeasurement::ComputeCarrierPhase(VectorX r_rx, real dt_rx,
 
     if (with_noise) {
       double sigma = ComputeCarrierPhaseNoise(CN0(i), lambda_(i));
-      std::normal_distribution<double> distribution(0.0, sigma);
-      phi_rx(i) += distribution(generator);
+      phi_rx(i) += sigma * distribution(generator);
     }
   }
   return phi_rx;
@@ -209,41 +226,53 @@ VectorX GnssMeasurement::GetPseudorangerate(bool with_noise, int seed) {
 }
 
 VectorX GnssMeasurement::GetCarrierPhase(bool with_noise, int seed) {
-  return ComputeCarrierPhase(r_rx, dt_rx, with_noise, seed);
+  return ComputeCarrierPhase(r_rx, dt_rx, N_rx, with_noise, seed);
 }
 
 /***********************************************************
  *  Methods for predicted measurement generation
  ***********************************************************/
-VectorX GnssMeasurement::GetGnssMeasurement(
-    double epoch, Vector6 rv_pred, Vector2 clk_pred, MatrixXd &H_gnss,
-    std::vector<GnssMeasurementType> meas_type, bool with_noise, int seed) {
+VectorX GnssMeasurement::GetPredictedGnssMeasurement(
+    double epoch, Vector6 rv_pred, Vector2 clk_pred, VectorX N_pred,
+    MatrixXd &H_gnss, std::vector<GnssMeasurementType> meas_type,
+    CoordSystem coord_in) {
+  // number of measurements
   int n_meas_all = n_meas * meas_type.size();
+  bool use_cp = false;
+  for (auto type : meas_type) {
+    if (type == GnssMeasurementType::CP) use_cp = true;
+  }
+  // determine state size
+  int state_size = 8;  // position, velocity, clock
+  if (use_cp) state_size = 9;
+
   VectorX z(n_meas_all);
-  H_gnss.resize(n_meas_all, 8);
-  MatrixXd H_pr, H_prr, H_cp;
-  H_pr.resize(n_meas, 8);
-  H_prr.resize(n_meas, 8);
-  H_cp.resize(n_meas, 8);
+  H_gnss.resize(n_meas_all, state_size);
+  H_gnss = MatrixXd::Zero(n_meas_all, state_size);
+  MatrixXd H_pr(n_meas, state_size), H_prr(n_meas, state_size),
+      H_cp(n_meas, state_size);
 
   int i = 0;
 
   for (auto type : meas_type) {
     switch (type) {
       case GnssMeasurementType::PR:
+        H_pr = MatrixXd::Zero(n_meas, state_size);
         z.segment(i * n_meas, n_meas) =
-            GetPseudorange(epoch, rv_pred, clk_pred, H_pr);
+            GetPredictedPseudorange(epoch, rv_pred, clk_pred, H_pr, coord_in);
         H_gnss.block(i * n_meas, 0, n_meas, 8) = H_pr;
         break;
       case GnssMeasurementType::PRR:
-        z.segment(i * n_meas, n_meas) =
-            GetPseudorangerate(epoch, rv_pred, clk_pred, H_prr);
+        H_prr = MatrixXd::Zero(n_meas, state_size);
+        z.segment(i * n_meas, n_meas) = GetPredictedPseudorangerate(
+            epoch, rv_pred, clk_pred, H_prr, coord_in);
         H_gnss.block(i * n_meas, 0, n_meas, 8) = H_prr;
         break;
       case GnssMeasurementType::CP:
-        z.segment(i * n_meas, n_meas) =
-            GetCarrierPhase(epoch, rv_pred, clk_pred, H_cp);
-        H_gnss.block(i * n_meas, 0, n_meas, 8) = H_cp;
+        H_cp = MatrixXd::Zero(n_meas, state_size);
+        z.segment(i * n_meas, n_meas) = GetPredictedCarrierPhase(
+            epoch, rv_pred, clk_pred, N_pred, H_cp, coord_in);
+        H_gnss.block(i * n_meas, 0, n_meas, 9) = H_cp;
         break;
       default:
         std::cout << "Measurement type: " << type << " not supported"
@@ -255,9 +284,10 @@ VectorX GnssMeasurement::GetGnssMeasurement(
   return z;
 }
 
-VectorX GnssMeasurement::GetPseudorange(double epoch, Vector6 rv_pred,
-                                        Vector2 clk_pred, MatrixXd &H_pr,
-                                        CoordSystem coord_in) {
+VectorX GnssMeasurement::GetPredictedPseudorange(double epoch, Vector6 rv_pred,
+                                                 Vector2 clk_pred,
+                                                 MatrixXd &H_pr,
+                                                 CoordSystem coord_in) {
   auto func = [epoch, coord_in, this](const Vector6 rv_in, const Vector2 clk) {
     Vector6 rv_gcrf =
         CoordConverter::Convert(epoch, rv_in, coord_in, CoordSystem::GCRF);
@@ -277,7 +307,7 @@ VectorX GnssMeasurement::GetPseudorange(double epoch, Vector6 rv_pred,
   return z_pr_pred;
 }
 
-VectorX GnssMeasurement::GetPseudorangeAnalyticalJacobian(
+VectorX GnssMeasurement::GetPredictedPseudorangeAnalyticalJacobian(
     double epoch, Vector6 rv_pred, Vector2 clk_pred, MatrixXd &H_pr,
     CoordSystem coord_in) {
   auto rv_gcrf =
@@ -306,9 +336,11 @@ VectorX GnssMeasurement::GetPseudorangeAnalyticalJacobian(
   return P_rx;
 }
 
-VectorX GnssMeasurement::GetPseudorangerate(double epoch, Vector6 rv_pred,
-                                            Vector2 clk_pred, MatrixXd &H_prr,
-                                            CoordSystem coord_in) {
+VectorX GnssMeasurement::GetPredictedPseudorangerate(double epoch,
+                                                     Vector6 rv_pred,
+                                                     Vector2 clk_pred,
+                                                     MatrixXd &H_prr,
+                                                     CoordSystem coord_in) {
   auto func = [epoch, coord_in, this](const Vector6 rv_in, const Vector2 clk) {
     Vector6 rv_gcrf =
         CoordConverter::Convert(epoch, rv_in, coord_in, CoordSystem::GCRF);
@@ -329,15 +361,18 @@ VectorX GnssMeasurement::GetPseudorangerate(double epoch, Vector6 rv_pred,
   return z_prr_pred;
 }
 
-VectorX GnssMeasurement::GetCarrierPhase(double epoch, Vector6 rv_pred,
-                                         Vector2 clk_pred, MatrixXd &H_cp,
-                                         CoordSystem coord_in) {
-  auto func = [epoch, coord_in, this](const Vector6 rv_in, const Vector2 clk) {
+VectorX GnssMeasurement::GetPredictedCarrierPhase(double epoch, Vector6 rv_pred,
+                                                  Vector2 clk_pred,
+                                                  VectorX N_pred,
+                                                  MatrixXd &H_cp,
+                                                  CoordSystem coord_in) {
+  auto func = [epoch, coord_in, this](const Vector6 rv_in, const Vector2 clk,
+                                      const VectorX N_pred) {
     Vector6 rv_gcrf =
         CoordConverter::Convert(epoch, rv_in, coord_in, CoordSystem::GCRF);
     Vector3 r_rx = rv_gcrf.head(3);
     real dt_rx = clk(0);
-    return ComputeCarrierPhase(r_rx, dt_rx);
+    return ComputeCarrierPhase(r_rx, dt_rx, N_pred);
   };
 
   VectorX z_cp_pred(n_meas);
@@ -345,29 +380,30 @@ VectorX GnssMeasurement::GetCarrierPhase(double epoch, Vector6 rv_pred,
   // break the computational graph relations before taking jacobian
   Vector6 rv_in_tmp = rv_pred.cast<double>();
   Vector2 clk_tmp = clk_pred.cast<double>();
+  VectorX N_pred_tmp = N_pred.cast<double>();
 
-  H_cp = jacobian(func, wrt(rv_in_tmp, clk_tmp), at(rv_in_tmp, clk_tmp),
-                  z_cp_pred);
+  H_cp = jacobian(func, wrt(rv_in_tmp, clk_tmp, N_pred_tmp),
+                  at(rv_in_tmp, clk_tmp, N_pred_tmp), z_cp_pred);
   return z_cp_pred;
 }
 
 /********************
  * Noise Models
  *********************/
-VectorXd GnssMeasurement::GetGnssMeasurementNoiseVector(
+VectorXd GnssMeasurement::GetGnssNoiseStdVector(
     std::vector<GnssMeasurementType> meas_type) {
   VectorXd noise(n_meas * meas_type.size());
   int i = 0;
   for (auto type : meas_type) {
     switch (type) {
       case GnssMeasurementType::PR:
-        noise.segment(i * n_meas, n_meas) = GetPseudorangeNoiseVector();
+        noise.segment(i * n_meas, n_meas) = GetPseudorangeNoiseStdVector();
         break;
       case GnssMeasurementType::PRR:
-        noise.segment(i * n_meas, n_meas) = GetPseudorangeRateNoiseVector();
+        noise.segment(i * n_meas, n_meas) = GetPseudorangeRateNoiseStdVector();
         break;
       case GnssMeasurementType::CP:
-        noise.segment(i * n_meas, n_meas) = GetCarrierPhaseNoiseVector();
+        noise.segment(i * n_meas, n_meas) = GetCarrierPhaseNoiseStdVector();
         break;
       default:
         std::cout << "Measurement type: " << type << " not supported"
@@ -379,7 +415,7 @@ VectorXd GnssMeasurement::GetGnssMeasurementNoiseVector(
   return noise;
 }
 
-VectorXd GnssMeasurement::GetPseudorangeNoiseVector() {
+VectorXd GnssMeasurement::GetPseudorangeNoiseStdVector() {
   int n_meas = r_tx.cols();
   VectorXd noise(n_meas);
 
@@ -389,7 +425,7 @@ VectorXd GnssMeasurement::GetPseudorangeNoiseVector() {
   return noise;
 }
 
-VectorXd GnssMeasurement::GetPseudorangeRateNoiseVector() {
+VectorXd GnssMeasurement::GetPseudorangeRateNoiseStdVector() {
   int n_meas = r_tx.cols();
   VectorXd noise(n_meas);
 
@@ -399,7 +435,7 @@ VectorXd GnssMeasurement::GetPseudorangeRateNoiseVector() {
   return noise;
 }
 
-VectorXd GnssMeasurement::GetCarrierPhaseNoiseVector() {
+VectorXd GnssMeasurement::GetCarrierPhaseNoiseStdVector() {
   int n_meas = r_tx.cols();
   VectorXd noise(n_meas);
 
