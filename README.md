@@ -38,7 +38,7 @@ Todo: Create a bashfile to do the installation process.
   - You can clone the libraries by updating the gitsubmodule by calling the following command from the /LuPNT folder
     - If it fails to install with the error message ``Error: Permission denied (publickey)``, it is likely because you don't have a key. See [here](https://docs.github.com/en/authentication/troubleshooting-ssh/error-permission-denied-publickey#make-sure-you-have-a-key-that-is-being-used) for the details
   ```
-  git submodule update --remote --merge
+  git submodule update --init --recursive
   ```
   - The list of libraries that will be installed with the command above are:
     - [autodiff](https://github.com/autodiff/autodiff)
