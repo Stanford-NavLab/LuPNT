@@ -34,32 +34,37 @@ If using this project in your own work please cite the following:
 ### Step 1: Install Required Packages and Files
 Todo: Create a bashfile to do the installation process.
 
-- [autodiff](https://github.com/autodiff/autodiff)
-  - For automatic differentiation
-  - Tested with v.0.6.12
-  - Rename the entire folder to "autodiff", and place it under thirdparty
+- Third party libraries via git 
+  - You can clone the libraries by updating the gitsubmodule by calling the following command from the /LuPNT folder
+    - If it fails to install with the error message ``Error: Permission denied (publickey)``, it is likely because you don't have a key. See [here](https://docs.github.com/en/authentication/troubleshooting-ssh/error-permission-denied-publickey#make-sure-you-have-a-key-that-is-being-used) for the details
+  ```
+  git submodule update --remote --merge
+  ```
+  - The list of libraries that will be installed with the command above are:
+    - [autodiff](https://github.com/autodiff/autodiff)
+      - For automatic differentiation
+      - Tested with v.0.6.12
+      - Rename the entire folder to "autodiff", and place it under thirdparty
+    - [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
+      - For vector and matrix computation
+      - Tested with v3.4.0
+      - Place the entire folder to "Eigen", and place it under thirdparty
+    - [pybind](https://pybind11.readthedocs.io/en/stable/installing.html)
+        ```
+        git submodule add -b stable ../../pybind/pybind11 pybind11
+        git submodule update --init
+        ```
 - [cspice](https://naif.jpl.nasa.gov/naif/toolkit_C.html)
-  - For planetary ephemris and frame conversion
-  - Name the folder `cspice` and place it under thirdparty
-  - Then move `cpsice.a` and `csupport.a` under `cspice/lib` to under `cspice/`
-- [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
-  - For vector and matrix computation
-  - Tested with v3.4.0
-  - Place the entire folder to "Eigen", and place it under thirdparty
+    - For planetary ephemris and frame conversion
+    - Name the folder `cspice` and place it under thirdparty
+    - Then move `cpsice.a` and `csupport.a` under `cspice/lib` to under `cspice/`
 - [boost](https://www.boost.org/users/download/)
-- [pybind](https://pybind11.readthedocs.io/en/stable/installing.html)
-  ```
-  git submodule add -b stable ../../pybind/pybind11 pybind11
-  git submodule update --init
-  ```
 - [GMAT](https://sourceforge.net/projects/gmat/files/GMAT/GMAT-R2016a/)
   - Only required for testing
 - Ephemeris Files 
   - See [here](data/ephemeris/readme.md) for instructions
   - You can extract the kernel files from [here](https://www.dropbox.com/sh/npgjdndt9ma3tmr/AADnjjwIsdwQwsuarLrHRF76a?dl=0) as well
   - Place the files under `/data/ephemeris`
-- Spherical Harmonics Files
-  - Place the files under `/data/spherical_harmonics`
 
 In summary, you should have a directory as below
 
