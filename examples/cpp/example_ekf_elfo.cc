@@ -12,7 +12,7 @@
 // lupnt includes
 #include <vector>
 
-#include "example_utils.cc"
+#include "utils.cc"
 
 using namespace lupnt;
 namespace sp = SpiceInterface;
