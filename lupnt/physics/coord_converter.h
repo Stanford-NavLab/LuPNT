@@ -31,6 +31,7 @@ enum CoordSystem {
   MI,        // Moon-centered Inertial Frame  (Axis aligened with ICRF)
   PA,        // Moon-Fixed with principal axes
   ME,        // Moon-Fixed with mean-Earth / polar axes
+  OP,        // Earth Orbit Frame
 };
 
 class CoordConverter {
@@ -41,5 +42,6 @@ class CoordConverter {
  private:
   static Matrix6 ComputeITRFtoGCRF(real tai);
   static Matrix6 ComputeGCRFtoITRF(real tai);
+  static Matrix6 ComputeOpToMi(real epoch);
 };
 }  // namespace lupnt

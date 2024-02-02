@@ -168,6 +168,11 @@ Vector6 CoordConverter::Convert(real epoch, Vector6 rv_in,
           Vector6 rv_out = Convert(epoch, rv_pa, PA, coord_sys_out);
           return rv_out;
         }
+        case OP: {
+          Matrix6 R_op2mi = ComputeOpToMi(epoch);
+          Vector6 rv_op = R_op2mi.transpose() * rv_in;
+          return rv_op;
+        }
         default: {
           Vector6 rv_gcrf = Convert(epoch, rv_in, MI, GCRF);
           Vector6 rv_out = Convert(epoch, rv_gcrf, GCRF, coord_sys_out);
@@ -179,7 +184,8 @@ Vector6 CoordConverter::Convert(real epoch, Vector6 rv_in,
     case ICRF: {
       switch (coord_sys_out) {
         case GCRF: {
-          Vector6 rv_icrf_ssb_earth = GetBodyPosVel(epoch, NaifId::SOLAR_SYSTEM_BARYCENTER, NaifId::EARTH);
+          Vector6 rv_icrf_ssb_earth = GetBodyPosVel(
+              epoch, NaifId::SOLAR_SYSTEM_BARYCENTER, NaifId::EARTH);
           Vector6 rv_gcrf = rv_in - rv_icrf_ssb_earth;
           return rv_gcrf;
         }
@@ -194,13 +200,29 @@ Vector6 CoordConverter::Convert(real epoch, Vector6 rv_in,
     case EMR: {
       switch (coord_sys_out) {
         case GCRF: {
-          Vector6 rv_icrf_emb_earth = GetBodyPosVel(epoch, NaifId::EARTH, NaifId::EARTH_MOON_BARYCENTER);
+          Vector6 rv_icrf_emb_earth = GetBodyPosVel(
+              epoch, NaifId::EARTH, NaifId::EARTH_MOON_BARYCENTER);
           Vector6 rv_gcrf = RtnToInertial(rv_icrf_emb_earth, rv_in);
           return rv_gcrf;
         }
         default: {
           Vector6 rv_gcrf = Convert(epoch, rv_in, EMR, GCRF);
           Vector6 rv_out = Convert(epoch, rv_gcrf, GCRF, coord_sys_out);
+          return rv_out;
+        }
+      }
+    }
+
+    case OP: {
+      switch (coord_sys_out) {
+        case MI: {
+          Matrix6 R_op2mi = ComputeOpToMi(epoch);
+          Vector6 rv_mi = R_op2mi * rv_in;
+          return rv_mi;
+        }
+        default: {
+          Vector6 rv_mi = Convert(epoch, rv_in, OP, MI);
+          Vector6 rv_out = Convert(epoch, rv_mi, MI, coord_sys_out);
           return rv_out;
         }
       }
@@ -238,4 +260,35 @@ Matrix6 CoordConverter::ComputeGCRFtoITRF(real tai) {
                             // Mrot temporaly
   Matrix6 Mrot = GetFrameConversionMatrix(et, "J2000", "ITRF93");
   return Mrot;
+}
+
+Matrix6 CoordConverter::ComputeOpToMi(real epoch) {
+  Vector6 rv_earth_icrf = GetBodyPosVel(epoch, NaifId::SUN, NaifId::EARTH);
+  Vector6 rv_moon_icrf = GetBodyPosVel(epoch, NaifId::SUN, NaifId::MOON);
+
+  // Moon axis
+  MatrixX iau_moon2icrf;
+  iau_moon2icrf =
+      GetFrameConversionMatrix(epoch, "IAU_MOON", "J2000").block(0, 0, 3, 3);
+
+  // IAU pole
+  Vector3 iau_pole{0, 1, 0};
+  Vector3 iau_pole_icrf = iau_moon2icrf * iau_pole;
+
+  // OP unit vectors
+  Vector3 dr = rv_earth_icrf.head(3) - rv_moon_icrf.head(3);
+  Vector3 dv = rv_earth_icrf.tail(3) - rv_moon_icrf.tail(3);
+  Vector3 z_op = dr.cross(dv).normalized();
+  Vector3 x_op = iau_pole_icrf.cross(z_op).normalized();
+  Vector3 y_op = z_op.cross(x_op).normalized();
+
+  // create rotation matrix from OP to MI
+  Matrix3 R_op2mi;
+  R_op2mi << x_op, y_op, z_op;
+
+  Matrix6 R_op2mi_tot = Matrix6::Zero();
+  R_op2mi_tot.topLeftCorner(3, 3) = R_op2mi;
+  R_op2mi_tot.bottomRightCorner(3, 3) = R_op2mi;
+
+  return R_op2mi_tot.cast<double>();
 }
