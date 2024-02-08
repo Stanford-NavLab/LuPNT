@@ -49,6 +49,10 @@
 namespace lupnt {
 
 using real = autodiff::real;
+template <int rows, int cols>
+using Matrix = Eigen::Matrix<real, rows, cols>;
+template <int rows, int cols>
+using Matrixd = Eigen::Matrix<double, rows, cols>;
 
 DEFINE_VECTORS_MATRICES()
 

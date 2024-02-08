@@ -54,6 +54,7 @@ VectorX wrapTo2Pi(VectorX angle);
  * @return real
  */
 real deg2rad(real deg);
+double rad2deg(double rad);
 
 /**
  * @brief Arccosine function with input bounds
@@ -78,6 +79,7 @@ real safe_asin(real x);
  * @return real
  */
 real rad2deg(real rad);
+double deg2rad(double deg);
 
 /**
  * @brief Compute the root mean square of a vector
@@ -186,5 +188,7 @@ Matrix3 Rot3(real phi);
  * @return Matrix3
  */
 Matrix3 Skew(Vector3 x);
+
+std::vector<double> EigenToStdVector(const VectorX &vec);
 
 }  // namespace lupnt

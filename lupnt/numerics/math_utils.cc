@@ -289,4 +289,11 @@ Matrix3 Skew(Vector3 x) {
   return skew;
 }
 
+std::vector<double> EigenToStdVector(const VectorX &vec) {
+  std::vector<double> result(vec.size());
+  for (int i = 0; i < vec.size(); i++) {
+    result[i] = vec(i).val();
+  }
+  return result;
+}
 }  // namespace lupnt
