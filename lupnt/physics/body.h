@@ -50,7 +50,7 @@ void ReadData(const std::string &filepath, int N, int headerlines,
               std::vector<int> &idM, std::vector<double> &C,
               std::vector<double> &S, std::vector<double> &sigC,
               std::vector<double> &sigS);
-              
+
 BodyData GetBodyData(const NaifId bodyID);
 
 std::tuple<MatrixXd, MatrixXd> LoadGravityCoefficients(BodyData bd, int nmax);

@@ -45,7 +45,7 @@ int main() {
   auto moon = Body::Moon(5, 5);
   dyn_moon_nb->AddBody(moon);
   dyn_moon_nb->AddBody(earth);
-  dyn_moon_nb->SetCentralBody(moon);
+  dyn_moon_nb->SetPrimaryBody(moon);
 
   auto dyn_clk = ClockDynamics(ClockModel::kMicrosemiCsac);
 

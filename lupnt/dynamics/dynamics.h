@@ -46,7 +46,7 @@ class NumericalDynamics : public IDynamics {
   NumericalDynamics(ODE odefunc, std::string integrator = "RK4")
       : odefunc_(odefunc), propagator_(integrator){};
 
-  void SetDt(double dt) { dt_ = dt; };
+  void SetTimeStep(double dt) { dt_ = dt; };
   void PropagateX(VectorX &x, real t0, real tf);
   void PropagateWithStmX(VectorX &x, real t0, real tf, MatrixXd &stm);
 
@@ -254,8 +254,8 @@ class MoonMeanDynamics : public NumericalOrbitDynamics {
 
 class NBodyDynamics : public NumericalOrbitDynamics {
  private:
-  Body centralBody;
-  std::vector<Body> bodies;
+  Body central_body_;
+  std::vector<Body> bodies_;
   NumericalPropagator propagator;
   ODE odefunc;
   bool use_srp_ = false;
@@ -267,8 +267,16 @@ class NBodyDynamics : public NumericalOrbitDynamics {
   NBodyDynamics(std::string integrator = "RK4");
   VectorX ComputeRates(real epoch, const VectorX &x) const;
 
-  void AddBody(const Body &body) { bodies.push_back(body); }
-  void SetCentralBody(const Body &body) { centralBody = body; }
+  void AddBody(const Body &body) {
+    for (auto &b : bodies_) {
+      assert(b.id != body.id && "Body already added");
+    }
+    bodies_.push_back(body);
+  }
+  void SetPrimaryBody(const Body &body) {
+    central_body_ = body;
+    bodies_.push_back(body);
+  }
   void SetMass(double mass) { mass_ = mass; }
   void SetSRPArea(double area) { area_ = area; }
   void SetSRPCoeff(double CR) { CR_ = CR; }

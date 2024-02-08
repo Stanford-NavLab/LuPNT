@@ -107,10 +107,10 @@ int main() {
   auto moon_est = Body::Moon(moon_sph_est, moon_sph_est);
 
   dyn_true->AddBody(moon_true);
-  dyn_true->SetCentralBody(moon_true);
+  dyn_true->SetPrimaryBody(moon_true);
 
   dyn_est->AddBody(moon_est);
-  dyn_est->SetCentralBody(moon_est);
+  dyn_est->SetPrimaryBody(moon_est);
 
   if (add_earth) {
     dyn_true->AddBody(earth);
@@ -131,9 +131,9 @@ int main() {
   std::cout << "Initial Epoch: " << epoch_string << std::endl;
 
   // Set dynamics integration time
-  dyn_earth_tb->SetDt(dt);
-  dyn_est->SetDt(dt);
-  dyn_true->SetDt(dt);
+  dyn_earth_tb->SetTimeStep(dt);
+  dyn_est->SetTimeStep(dt);
+  dyn_true->SetTimeStep(dt);
 
   // Moon spacecraft
   ClassicalOE coe_moon({a, e, i, Omega, w, M}, CoordSystem::MI);

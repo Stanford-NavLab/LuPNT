@@ -96,7 +96,7 @@ int main() {
 
   // dynamics model
   auto dyn_moon_tb = CartesianTwoBodyDynamics(MU_MOON);
-  dyn_moon_tb.SetDt(0.5);
+  dyn_moon_tb.SetTimeStep(0.5);
   auto dyn_clk = ClockDynamics(ClockModel::kMicrosemiCsac);
 
   // Joint state
