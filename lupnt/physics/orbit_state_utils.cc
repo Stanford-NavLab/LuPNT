@@ -584,4 +584,80 @@ real TrueToMeanAnomaly(real nu, real e) {
   return M;
 }
 
+Vector3 GeographicalToCartesian(Vector3 r_geo, real radius) {
+  auto [lat, lon, alt] = unpack(r_geo);
+  real r = radius + alt;
+  real x = r * cos(lat) * cos(lon);
+  real y = r * cos(lat) * sin(lon);
+  real z = r * sin(lat);
+  return Vector3{x, y, z};
+}
+
+Vector3 CartesianToGeographical(Vector3 r_cart, real radius) {
+  auto [x, y, z] = unpack(r_cart);
+  real r = r_cart.norm();
+  real lat = safe_asin(z / r);
+  real lon = atan2(y, x);
+  real alt = r - radius;
+  return Vector3{lat, lon, alt};
+}
+
+Vector3 SphericalToCartesian(Vector3 r_sph) {
+  auto [r, theta, phi] = unpack(r_sph);
+  real x = r * sin(theta) * cos(phi);
+  real y = r * sin(theta) * sin(phi);
+  real z = r * cos(theta);
+  return Vector3{x, y, z};
+}
+
+Vector3 CartesianToSpherical(Vector3 r_cart) {
+  auto [x, y, z] = unpack(r_cart);
+  real r = r_cart.norm();
+  real theta = acos(z / r);
+  real phi = atan2(y, x);
+  return Vector3{r, theta, phi};
+}
+
+Vector3 EastNortUpToCartesian(Vector3 r_cart_ref, Vector3 r_enu) {
+  auto [e, n, u] = unpack(r_enu);
+  auto r_geo = CartesianToGeographical(r_cart_ref, r_cart_ref.norm());
+  auto [lat, lon, alt] = unpack(r_geo);
+  Matrix3 rot{
+      {-sin(lon), -sin(lat) * cos(lon), cos(lat) * cos(lon)},
+      {cos(lon), -sin(lat) * sin(lon), cos(lat) * sin(lon)},
+      {0, cos(lat), sin(lat)},
+  };
+
+  return rot * r_enu + r_cart_ref;
+}
+
+Vector3 CartesianToEastNortUp(Vector3 r_cart_ref, Vector3 r_cart) {
+  auto r_geo = CartesianToGeographical(r_cart_ref, r_cart_ref.norm());
+  auto [lat, lon, alt] = unpack(r_geo);
+  Matrix3 rot{
+      {-sin(lon), cos(lon), 0},
+      {-sin(lat) * cos(lon), -sin(lat) * sin(lon), cos(lat)},
+      {cos(lat) * cos(lon), cos(lat) * sin(lon), sin(lat)},
+  };
+
+  return rot * (r_cart - r_cart_ref);
+}
+
+Vector3 CartesianToAzimuthElevationRange(Vector3 r_cart_ref, Vector3 r_cart) {
+  Vector3 r_enu = CartesianToEastNortUp(r_cart_ref, r_cart);
+  auto [e, n, u] = unpack(r_enu);
+  real azimuth = atan2(e, n);
+  real elevation = atan2(u, sqrt(e * e + n * n));
+  real range = r_enu.norm();
+  return Vector3{azimuth, elevation, range};
+}
+
+Vector3 AzimuthElevationRangeToCartesian(Vector3 r_cart_ref, Vector3 r_aer) {
+  auto [azimuth, elevation, range] = unpack(r_aer);
+  real e = range * cos(elevation) * sin(azimuth);
+  real n = range * cos(elevation) * cos(azimuth);
+  real u = range * sin(elevation);
+  return EastNortUpToCartesian(r_cart_ref, Vector3{e, n, u});
+}
+
 }  // namespace lupnt

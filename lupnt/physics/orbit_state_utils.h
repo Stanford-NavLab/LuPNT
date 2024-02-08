@@ -124,6 +124,16 @@ real TrueToEccentricAnomaly(real nu, real e);
 real MeanToTrueAnomaly(real M, real e);
 real TrueToMeanAnomaly(real f, real e);
 
+// Other coordinates
+Vector3 GeographicalToCartesian(Vector3 r_geo, real radius);
+Vector3 CartesianToGeographical(Vector3 r_cart, real radius);
+Vector3 SphericalToCartesian(Vector3 r_sph);
+Vector3 CartesianToSpherical(Vector3 r_cart);
+Vector3 EastNortUpToCartesian(Vector3 r_ref, Vector3 r_enu);
+Vector3 CartesianToEastNortUp(Vector3 r_ref, Vector3 r_cart);
+Vector3 CartesianToAzimuthElevationRange(Vector3 r_cart_ref, Vector3 r_cart);
+Vector3 AzimuthElevationRangeToCartesian(Vector3 r_aer_ref, Vector3 r_aer);
+
 class TLE {
  public:
   std::string name;
