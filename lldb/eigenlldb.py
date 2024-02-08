@@ -21,8 +21,10 @@ import lldb
 from typing import List
 import bisect
 
-MAX_ROWS = 10
-MAX_COLS = 10
+import numpy as np
+
+MAX_ROWS = 100
+MAX_COLS = 100
 
 
 def __lldb_init_module(debugger, internal_dict):
@@ -32,10 +34,10 @@ def __lldb_init_module(debugger, internal_dict):
     )
     # lupnt Vector and Matrix
     debugger.HandleCommand(
-        "type synthetic add -x lupnt::(Vector|Matrixx)* --python-class eigenlldb.MatrixChildProvider"
+        "type synthetic add -x lupnt::(Vector|Matrix)* --python-class eigenlldb.MatrixChildProvider"
     )
     debugger.HandleCommand(
-        "type summary add -x lupnt::(Vector|Matrixx)* --python-function eigenlldb.summary"
+        "type summary add -x lupnt::(Vector|Matrix)* --python-function eigenlldb.summary"
     )
 
 
@@ -61,7 +63,7 @@ def summary(valobj, internalr_dict, options):
     cols_desc = "dynamic" if matrix._cols_compile_time == -1 else "static"
     rows_desc = "dynamic" if matrix._rows_compile_time == -1 else "static"
 
-    if len(names[0]) == 3:
+    if len(names[-1]) == 3:
         # Vector "[i]"
         row_idxs = [int(x[1:-1]) for x in filetered_names]
         n_rows = max(row_idxs) + 1
@@ -85,6 +87,7 @@ def summary(valobj, internalr_dict, options):
     summary_txt += print_aligned(
         array, all_rows=rows == n_rows, all_columns=cols == n_cols
     )
+    # summary_txt += "\n" + str(np.array(array))
     return summary_txt
 
 
@@ -96,7 +99,7 @@ def print_aligned(matrix, all_rows=True, all_columns=True):
     # Step 1: Find the maximum length before and after decimal for each column
     for row in matrix:
         for i, value in enumerate(row):
-            parts = str(value).split(".")
+            parts = format_element(value).split(".")
             max_before_decimal[i] = max(max_before_decimal[i], len(parts[0]))
             if len(parts) > 1:
                 max_after_decimal[i] = max(max_after_decimal[i], len(parts[1]))
@@ -106,7 +109,7 @@ def print_aligned(matrix, all_rows=True, all_columns=True):
     for r, row in enumerate(matrix):
         line = "[" if r == 0 else " ["
         for i, value in enumerate(row):
-            value = float(format_element(value))
+            value = format_element(value)
             before, after = (
                 str(value).split(".") if "." in str(value) else (str(value), "")
             )
@@ -132,7 +135,7 @@ def format_element(x):
     if x == 0.0:
         return "0.0"
     else:
-        return f"{x}"
+        return f"{x:.6g}"
 
 
 def split_template_args(s):
@@ -201,11 +204,15 @@ class MatrixChildProvider:
         max_rows = int(template_args[4])
         max_cols = int(template_args[5])
 
-        self._fixed_storage = max_rows != -1 and max_cols != -1
+        self._fixed_rows = max_rows != -1
+        self._fixed_cols = max_cols != -1
+        self._fixed_storage = self._fixed_rows and self._fixed_cols
 
     def num_children(self):
-        return min(self._cols(), MAX_COLS) * min(self._rows(), MAX_ROWS) + 2 * (
-            not self._fixed_storage
+        return (
+            min(self._cols(), MAX_COLS) * min(self._rows(), MAX_ROWS)
+            + (not self._fixed_rows)
+            + (not self._fixed_cols)
         )
 
     def get_child_index(self, name):
@@ -215,13 +222,17 @@ class MatrixChildProvider:
         storage = self._valobj.GetChildMemberWithName("m_storage")
         data = storage.GetChildMemberWithName("m_data")
 
-        if not self._fixed_storage:
+        if not self._fixed_rows:
             if index == 0:
                 return storage.GetChildMemberWithName("m_rows")
-            if index == 1:
+            index -= 1
+        if not self._fixed_cols:
+            if (index == 0 and not self._fixed_rows) or (
+                index == 1 and self._fixed_rows
+            ):
                 return storage.GetChildMemberWithName("m_cols")
-            index -= 2
-        else:
+            index -= 1
+        if self._fixed_storage:
             data = data.GetChildMemberWithName("array")
 
         n_cols = min(self._cols(), MAX_COLS)
