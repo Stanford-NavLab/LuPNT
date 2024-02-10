@@ -2,6 +2,8 @@
 #include <lupnt/numerics/math_utils.h>
 #include <matplot/matplot.h>
 
+namespace lupnt {
+
 matplot::line_handle plot3(const VectorX &x, const VectorX &y, const VectorX &z,
                            std::string_view line_spec = "") {
   return matplot::plot3(EigenToStdVector(x), EigenToStdVector(y),
@@ -19,4 +21,6 @@ matplot::line_handle scatter3(const VectorX &x, const VectorX &y,
   return matplot::scatter3(EigenToStdVector(x), EigenToStdVector(y),
                            EigenToStdVector(z), EigenToStdVector(sizes),
                            marker);
+}
+
 }
