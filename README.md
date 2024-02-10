@@ -120,7 +120,7 @@ python3 -c "import sysconfig; print(sysconfig.get_path('include'))"
 ```
 Similarly, replace `path2string` with the output of the following command
 ```
-python3 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"
+python3 -c "import sysconfig; priAnt(sysconfig.get_config_var('LIBDIR'))"
 ```
 Finally, replace `path3string` with the output of the following command
 ```
@@ -147,15 +147,15 @@ For developers, see [here](bindings/readme.md) for details on how to add new pyt
 2. (activate your local virtual environment e.g. venv, conda)
 3. Add permission to run the install script
 ```
-$ sudo chmod 755 ./scripts/install_pylupnt.zsh
+$ sudo chmod 755 ./scripts/install_pylupnt.sh
 ```
 3. Build and install the lupnt library (run this every time you change your c++ or python library)
 ```
-$ ./scripts/install_pylupnt.zsh
+$ ./scripts/install_pylupnt.sh
 ```
 4. Now you can use the pylupnt library inside your project (see the codes under `examples_python/`)
 ```
-$ install pylupnt as pnt
+$ import pylupnt as pnt
 ```
 
 ### Step 5: Run Unit Tests
