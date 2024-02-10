@@ -154,4 +154,37 @@ void init_orbit_state_utils(py::module &m) {
   m.def("true_to_mean_anomaly", [](double f, double e) -> double {
     return TrueToMeanAnomaly(f, e).val();
   });
+
+  m.def("geographical_to_cartesian",
+        [](const Vector3d &r_geo, double radius) -> Vector3d {
+          return GeographicalToCartesian(r_geo, radius).cast<double>();
+        });
+  m.def("cartesian_to_geographical",
+        [](const Vector3d &r_cart, double radius) -> Vector3d {
+          return CartesianToGeographical(r_cart, radius).cast<double>();
+        });
+  m.def("spherical_to_cartesian", [](const Vector3d &r_sph) -> Vector3d {
+    return SphericalToCartesian(r_sph).cast<double>();
+  });
+  m.def("cartesian_to_spherical", [](const Vector3d &r_cart) -> Vector3d {
+    return CartesianToSpherical(r_cart).cast<double>();
+  });
+  m.def("east_north_up_to_cartesian",
+        [](const Vector3d &r_ref, const Vector3d &r_enu) -> Vector3d {
+          return EastNortUpToCartesian(r_ref, r_enu).cast<double>();
+        });
+  m.def("cartesian_to_east_north_up",
+        [](const Vector3d &r_ref, const Vector3d &r_cart) -> Vector3d {
+          return CartesianToEastNortUp(r_ref, r_cart).cast<double>();
+        });
+  m.def("cartesian_to_azimuth_elevation_range",
+        [](const Vector3d &r_cart_ref, const Vector3d &r_cart) -> Vector3d {
+          return CartesianToAzimuthElevationRange(r_cart_ref, r_cart)
+              .cast<double>();
+        });
+  m.def("azimuth_elevation_range_to_cartesian",
+        [](const Vector3d &r_aer_ref, const Vector3d &r_aer) -> Vector3d {
+          return AzimuthElevationRangeToCartesian(r_aer_ref, r_aer)
+              .cast<double>();
+        });
 }

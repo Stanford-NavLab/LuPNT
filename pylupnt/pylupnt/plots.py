@@ -10,7 +10,6 @@ COLORS = list(mcolors.TABLEAU_COLORS.keys())
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif")
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 plot_data = {
     "EARTH": {
@@ -24,7 +23,7 @@ plot_data = {
         "filename": "moon_surface.jpeg",
         "RE": 1737.1,
         "lim": 10e3,
-        "scale": 15,
+        "scale": 3,
         "brightness": 1.5,
     },
 }
@@ -105,7 +104,7 @@ class Plot3D:
             # calculate dot product
             # the points where this is positive are to be shown
             proj = np.dot(Z, X)
-            RE = plot_data[name]["RE"]
+            RE = plot_data[self.name]["RE"]
             cond = np.logical_or(
                 proj >= 0,
                 np.linalg.norm(Z - X * proj.reshape(-1, 1), axis=1) > RE,
