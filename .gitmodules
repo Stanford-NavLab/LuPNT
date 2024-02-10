@@ -14,3 +14,6 @@
 [submodule "third_party/matplotplusplus"]
 	path = third_party/matplotplusplus
 	url = https://github.com/alandefreitas/matplotplusplus.git
+[submodule "third_party/AI-Toolbox"]
+	path = third_party/AI-Toolbox
+	url = https://github.com/Svalorzen/AI-Toolbox

@@ -66,6 +66,13 @@ add_subdirectory(pybind11)
 # Matplot++ -------------------------------------------------------------------
 add_subdirectory(matplotplusplus)
 
+# AI-Toolbox -------------------------------------------------------------------
+
+set(LPSOLVE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(EIGEN3_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/eigen")
+add_subdirectory(AI-Toolbox)
+file(GLOB_RECURSE autodiff_headers "${CMAKE_CURRENT_SOURCE_DIR}/autodiff/autodiff/*.hpp")
+
 # ------------------------------------------------------------
 
 set(third_party_srcs
