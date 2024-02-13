@@ -52,6 +52,6 @@ setup(
         "Source code": "@PROJECT_CODE@",
         "Issues": "@PROJECT_ISSUES@",
     },
-    version="@PROJECT_VERSION@",
+    version="0.1",
     zip_safe=False,
 )

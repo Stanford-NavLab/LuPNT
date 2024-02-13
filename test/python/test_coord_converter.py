@@ -3,10 +3,10 @@ import numpy as np
 import pytest
 
 try:
-    from .utils import data, gmat_helpers
+    from .utils import gmat_helpers
     from .utils.gmat import gmat
 except ImportError:
-    from utils import data, gmat_helpers
+    from utils import gmat_helpers
     from utils.gmat import gmat
 
 
