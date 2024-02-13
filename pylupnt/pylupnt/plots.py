@@ -16,28 +16,15 @@ plot_data = {
         "filename": "earth_surface.jpg",
         "RE": 6378.137,
         "lim": 25e3,
-        "scale": 1,
         "brightness": 3,
     },
     "MOON": {
         "filename": "moon_surface.jpeg",
         "RE": 1737.1,
         "lim": 10e3,
-        "scale": 3,
         "brightness": 1.5,
     },
 }
-
-images_dict = {}
-for k, v in plot_data.items():
-    image_file = os.path.join(u.basepath, "topo", v["filename"])
-    img = Image.open(image_file)
-    img = np.array(img.resize([int(d / v["scale"]) for d in img.size])) / 256.0
-    img = np.minimum(img * v["brightness"], 1)
-    # img = np.roll(img, int(img.shape[0] * -180 / 360), axis=1)
-    img = img[::-1, :]
-    img = img[:, ::-1]
-    plot_data[k]["img"] = img
 
 
 class Plot3D:
@@ -55,10 +42,19 @@ class Plot3D:
         self.elev = self.ax.elev
 
     def plot_surface(
-        self, name, offset=np.array([0, 0, 0]), adjust_axis=True, limit=None
+        self, name, offset=np.array([0, 0, 0]), adjust_axis=True, limit=None, scale=3
     ):
         self.name = name
-        img = plot_data[name]["img"]
+
+        img_data = plot_data[name]
+        image_file = os.path.join(u.basepath, "topo", img_data["filename"])
+        img = Image.open(image_file)
+        img = np.array(img.resize([int(d / scale) for d in img.size])) / 256.0
+        img = np.minimum(img * img_data["brightness"], 1)
+        # img = np.roll(img, int(img.shape[0] * -180 / 360), axis=1)
+        img = img[::-1, :]
+        img = img[:, ::-1]
+
         lons = np.linspace(-180, 180, img.shape[1]) * np.pi / 180
         lats = np.linspace(-90, 90, img.shape[0])[::-1] * np.pi / 180
 

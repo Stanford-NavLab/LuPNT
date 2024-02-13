@@ -6,3 +6,4 @@ Pillow
 xlrd
 openpyxl
 pyarrow
+ipykernel
