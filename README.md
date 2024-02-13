@@ -120,7 +120,7 @@ python3 -c "import sysconfig; print(sysconfig.get_path('include'))"
 ```
 Similarly, replace `path2string` with the output of the following command
 ```
-python3 -c "import sysconfig; priAnt(sysconfig.get_config_var('LIBDIR'))"
+python3 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"
 ```
 Finally, replace `path3string` with the output of the following command
 ```

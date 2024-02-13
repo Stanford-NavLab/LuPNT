@@ -67,7 +67,11 @@ add_subdirectory(pybind11)
 add_subdirectory(matplotplusplus)
 
 # AI-Toolbox -------------------------------------------------------------------
+# Specify the Python version you want CMake to find.
 
+
+set(MAKE_ALL TRUE)
+set(MAKE_PYTHON TRUE)
 set(LPSOLVE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(EIGEN3_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/eigen")
 add_subdirectory(AI-Toolbox)

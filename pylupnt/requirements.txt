@@ -1,2 +1,8 @@
-numpy>=1.15.0
-gnss-lib-py
+numpy
+# gnss-lib-py
+matplotlib
+pandas
+Pillow
+xlrd
+openpyxl
+pyarrow
