@@ -46,11 +46,11 @@ setup(
     packages=[
         "pylupnt",
     ],
-    url="@PROJECT_HOME@",
+    url="",
     project_urls={
-        "Documentation": "@PROJECT_DOCS@",
-        "Source code": "@PROJECT_CODE@",
-        "Issues": "@PROJECT_ISSUES@",
+        "Documentation": "",
+        "Source code": "",
+        "Issues": "",
     },
     version="0.1",
     zip_safe=False,

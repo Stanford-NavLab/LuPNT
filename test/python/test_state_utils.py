@@ -1,12 +1,14 @@
 import pylupnt as pnt
 import numpy as np
 import pytest
+from ..gmat.utils import data
+from test.gmat.utils import data
 
 try:
-    from .utils import gmat_helpers, data
+    from .utils import gmat_helpers
     from .utils.gmat import gmat
 except ImportError:
-    from utils import gmat_helpers, data
+    from utils import gmat_helpers
     from utils.gmat import gmat
 
 

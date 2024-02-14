@@ -59,7 +59,7 @@ else()
 endif()
 
 # Python ----------------------------------------------------------------------
-set(PYBIND11_FINDPYTHON ON CACHE BOOL "Force pybind11 to use FindPython")
+# set(PYBIND11_FINDPYTHON ON CACHE BOOL "Force pybind11 to use FindPython")
 add_subdirectory(pybind11)
 
 

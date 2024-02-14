@@ -50,9 +50,12 @@ def generate_coord_conversions():
             # store in file
             cart_to_store[i, j, :] = cart_to
 
+    # convert epoch to pylupnt epoch
+    epoch_tai = gmat_helpers.convert_gmat_to_pylupnt_epoch(epoch_gmat)
+
     # store in file
     data = {}
-    data["epoch"] = epoch_gmat  
+    data["epoch"] = epoch_tai
     data["cart_from"] = cart_from
     data["coord_froms"] = coord_froms
     data["coord_tos"] = coord_tos
@@ -60,20 +63,6 @@ def generate_coord_conversions():
 
     with open(filename, "wb") as f:
         pickle.dump(data, f)
-
-def load_coord_conversions():
-    filename = "data/coord_conversions.pkl"
-    with open(filename, "rb") as f:
-        data = pickle.load(f)
-    
-    epoch_gmat = data["epoch"]
-
-    # convert gmat epoch to pylupnt epoch
-    data["epoch"] = gmat_helpers.convert_gmat_to_pylupnt_epoch(epoch_gmat)
-
-    return data
-
-
 
 if __name__ == "__main__":
     generate_test_data()

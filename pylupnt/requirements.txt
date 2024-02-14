@@ -1,2 +1,2 @@
 numpy>=1.15.0
-gnss-lib-py
+# gnss-lib-py
