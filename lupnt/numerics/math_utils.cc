@@ -19,13 +19,6 @@
 
 namespace lupnt {
 
-std::tuple<real, real, real> unpack(const Vector3 &vec) {
-  return std::make_tuple(vec(0), vec(1), vec(2));
-}
-std::tuple<real, real, real, real, real, real> unpack(const Vector6 &vec) {
-  return std::make_tuple(vec(0), vec(1), vec(2), vec(3), vec(4), vec(5));
-}
-
 real angleBetweenVectors(const VectorX &a, const VectorX &b) {
   assert(a.size() == b.size());
   return 2.0 * atan2((a.normalized() - b.normalized()).norm(),
