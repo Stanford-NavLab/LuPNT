@@ -164,27 +164,33 @@ void init_orbit_state_utils(py::module &m) {
           return CartesianToGeographical(r_cart, radius).cast<double>();
         });
   m.def("spherical_to_cartesian", [](const Vector3d &r_sph) -> Vector3d {
-    return SphericalToCartesian(r_sph).cast<double>();
+    return SphericalToCartesian(r_sph.cast<real>().eval()).cast<double>();
   });
   m.def("cartesian_to_spherical", [](const Vector3d &r_cart) -> Vector3d {
-    return CartesianToSpherical(r_cart).cast<double>();
+    return CartesianToSpherical(r_cart.cast<real>().eval()).cast<double>();
   });
   m.def("east_north_up_to_cartesian",
         [](const Vector3d &r_ref, const Vector3d &r_enu) -> Vector3d {
-          return EastNortUpToCartesian(r_ref, r_enu).cast<double>();
+          return EastNortUpToCartesian(r_ref.cast<real>().eval(),
+                                       r_enu.cast<real>().eval())
+              .cast<double>();
         });
   m.def("cartesian_to_east_north_up",
         [](const Vector3d &r_ref, const Vector3d &r_cart) -> Vector3d {
-          return CartesianToEastNortUp(r_ref, r_cart).cast<double>();
+          return CartesianToEastNortUp(r_ref.cast<real>().eval(),
+                                       r_cart.cast<real>().eval())
+              .cast<double>();
         });
   m.def("cartesian_to_azimuth_elevation_range",
         [](const Vector3d &r_cart_ref, const Vector3d &r_cart) -> Vector3d {
-          return CartesianToAzimuthElevationRange(r_cart_ref, r_cart)
+          return CartesianToAzimuthElevationRange(
+                     r_cart_ref.cast<real>().eval(), r_cart.cast<real>().eval())
               .cast<double>();
         });
   m.def("azimuth_elevation_range_to_cartesian",
         [](const Vector3d &r_aer_ref, const Vector3d &r_aer) -> Vector3d {
-          return AzimuthElevationRangeToCartesian(r_aer_ref, r_aer)
+          return AzimuthElevationRangeToCartesian(r_aer_ref.cast<real>().eval(),
+                                                  r_aer.cast<real>().eval())
               .cast<double>();
         });
 }
