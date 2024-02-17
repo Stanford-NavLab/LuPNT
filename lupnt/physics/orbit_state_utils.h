@@ -169,8 +169,8 @@ Vector3 GeographicalToCartesian(const Vector3 &r_geo, real radius);
 Vector3 CartesianToGeographical(const Vector3 &r_cart, real radius);
 Vector3 SphericalToCartesian(const Vector3 &r_sph);
 Vector3 CartesianToSpherical(const Vector3 &r_cart);
-Vector3 EastNortUpToCartesian(const Vector3 &r_ref, const Vector3 &r_enu);
-Vector3 CartesianToEastNortUp(const Vector3 &r_ref, const Vector3 &r_cart);
+Vector3 EastNorthUpToCartesian(const Vector3 &r_ref, const Vector3 &r_enu);
+Vector3 CartesianToEastNorthUp(const Vector3 &r_ref, const Vector3 &r_cart);
 Vector3 CartesianToAzimuthElevationRange(const Vector3 &r_cart_ref,
                                          const Vector3 &r_cart);
 Vector3 AzimuthElevationRangeToCartesian(const Vector3 &r_aer_ref,
@@ -187,8 +187,8 @@ VECTORIZED_DEFINITION_FROM_VECTOR(SphericalToCartesian, 3);
 VECTORIZED_DEFINITION_FROM_VECTOR(CartesianToSpherical, 3);
 VECTORIZED_DEFINITION_FROM_VECTOR_REAL(GeographicalToCartesian, 3);
 VECTORIZED_DEFINITION_FROM_VECTOR_REAL(CartesianToGeographical, 3);
-VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(EastNortUpToCartesian, 3);
-VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(CartesianToEastNortUp, 3);
+VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(EastNorthUpToCartesian, 3);
+VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(CartesianToEastNorthUp, 3);
 VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(CartesianToAzimuthElevationRange, 3);
 VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(AzimuthElevationRangeToCartesian, 3);
 

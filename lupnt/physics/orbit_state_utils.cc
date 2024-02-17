@@ -735,8 +735,8 @@ Vector3 CartesianToSpherical(const Vector3 &r_cart) {
   return Vector3{r, theta, phi};
 }
 
-Vector3 EastNortUpToCartesian(const Vector3 &r_cart_ref, const Vector3 &r_enu) {
-  auto [e, n, u] = unpack(r_enu);
+Vector3 EastNorthUpToCartesian(const Vector3 &r_cart_ref,
+                               const Vector3 &r_enu) {
   auto r_geo = CartesianToGeographical(r_cart_ref, r_cart_ref.norm());
   auto [lat, lon, alt] = unpack(r_geo);
   Matrix3 rot{
@@ -748,8 +748,8 @@ Vector3 EastNortUpToCartesian(const Vector3 &r_cart_ref, const Vector3 &r_enu) {
   return rot * r_enu + r_cart_ref;
 }
 
-Vector3 CartesianToEastNortUp(const Vector3 &r_cart_ref,
-                              const Vector3 &r_cart) {
+Vector3 CartesianToEastNorthUp(const Vector3 &r_cart_ref,
+                               const Vector3 &r_cart) {
   auto r_geo = CartesianToGeographical(r_cart_ref, r_cart_ref.norm());
   auto [lat, lon, alt] = unpack(r_geo);
   Matrix3 rot{
@@ -763,7 +763,7 @@ Vector3 CartesianToEastNortUp(const Vector3 &r_cart_ref,
 
 Vector3 CartesianToAzimuthElevationRange(const Vector3 &r_cart_ref,
                                          const Vector3 &r_cart) {
-  Vector3 r_enu = CartesianToEastNortUp(r_cart_ref, r_cart);
+  Vector3 r_enu = CartesianToEastNorthUp(r_cart_ref, r_cart);
   auto [e, n, u] = unpack(r_enu);
   real azimuth = atan2(e, n);
   real elevation = atan2(u, sqrt(e * e + n * n));
@@ -777,7 +777,7 @@ Vector3 AzimuthElevationRangeToCartesian(const Vector3 &r_cart_ref,
   real e = range * cos(elevation) * sin(azimuth);
   real n = range * cos(elevation) * cos(azimuth);
   real u = range * sin(elevation);
-  return EastNortUpToCartesian(r_cart_ref, Vector3{e, n, u});
+  return EastNorthUpToCartesian(r_cart_ref, Vector3{e, n, u});
 }
 
 VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(EccentricToTrueAnomaly);
@@ -791,8 +791,8 @@ VECTORIZED_IMPLEMENTATION_FROM_VECTOR(SphericalToCartesian, 3);
 VECTORIZED_IMPLEMENTATION_FROM_VECTOR(CartesianToSpherical, 3);
 VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(GeographicalToCartesian, 3);
 VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(CartesianToGeographical, 3);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(EastNortUpToCartesian, 3);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(CartesianToEastNortUp, 3);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(EastNorthUpToCartesian, 3);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(CartesianToEastNorthUp, 3);
 VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(CartesianToAzimuthElevationRange,
                                              3);
 VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(AzimuthElevationRangeToCartesian,
