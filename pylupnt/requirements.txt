@@ -7,3 +7,4 @@ xlrd
 openpyxl
 pyarrow
 ipykernel
+pyqt5

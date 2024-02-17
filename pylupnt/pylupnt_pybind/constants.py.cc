@@ -15,7 +15,7 @@ void init_constants(py::module &m) {
   // Time System Constants
   m.attr("SECS_PER_DAY") = py::float_(SECS_PER_DAY);
   m.attr("SECS_PER_HOUR") = py::float_(SECS_PER_HOUR);
-  m.attr("SECS_PER_MIN") = py::float_(SECS_PER_MINUTE);
+  m.attr("SECS_PER_MINUTE") = py::float_(SECS_PER_MINUTE);
   m.attr("DAYS_PER_YEAR") = py::float_(DAYS_PER_YEAR);
   m.attr("DAYS_PER_JULIAN_CENTURY") = py::float_(DAYS_PER_JULIAN_CENTURY);
   m.attr("DAYS_PER_SEC") = py::float_(DAYS_PER_SEC);
@@ -48,4 +48,10 @@ void init_constants(py::module &m) {
   m.attr("S_AU") = py::float_(S_AU);
   m.attr("C") = py::float_(C);
   m.attr("P_SUN") = py::float_(P_SUN);
+
+  // NaifId
+  py::enum_<NaifId>(m, "NaifId")
+      .value("EARTH", NaifId::EARTH)
+      .value("MOON", NaifId::MOON)
+      .export_values();
 }

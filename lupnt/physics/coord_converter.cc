@@ -16,11 +16,30 @@
 #include "cheby.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/numerics/math_utils.h"
+#include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/orbit_state_utils.h"
 #include "spice_interface.h"
 
 using namespace lupnt;
 using namespace SpiceInterface;
+
+CartesianOrbitState CoordConverter::Convert(real epoch,
+                                            const CartesianOrbitState &state_in,
+                                            CoordSystem coord_sys_out) {
+  Vector6 rv_in = state_in.GetVector();
+  Vector6 rv_out =
+      Convert(epoch, rv_in, state_in.GetCoordSystem(), coord_sys_out);
+  return CartesianOrbitState(rv_out, coord_sys_out);
+}
+
+Vector3 CoordConverter::Convert(real epoch, Vector3 rv_in,
+                                CoordSystem coord_sys_in,
+                                CoordSystem coord_sys_out) {
+  Vector6 rv_in_6;
+  rv_in_6 << rv_in, Vector3::Zero();
+  Vector6 rv_out_6 = Convert(epoch, rv_in_6, coord_sys_in, coord_sys_out);
+  return rv_out_6.head(3);
+}
 
 /**
  * @brief Convert the state vector from one coordinate system to another (with

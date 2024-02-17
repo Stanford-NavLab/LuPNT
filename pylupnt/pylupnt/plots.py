@@ -3,6 +3,7 @@ from PIL import Image
 import numpy as np
 from . import utils as u
 import matplotlib.pyplot as plt
+from . import pylupnt_pybind as _pnt
 
 import matplotlib.colors as mcolors
 
@@ -12,13 +13,13 @@ plt.rc("text", usetex=True)
 plt.rc("font", family="serif")
 
 plot_data = {
-    "EARTH": {
+    _pnt.EARTH: {
         "filename": "earth_surface.jpg",
         "RE": 6378.137,
         "lim": 25e3,
         "brightness": 3,
     },
-    "MOON": {
+    _pnt.MOON: {
         "filename": "moon_surface.jpeg",
         "RE": 1737.1,
         "lim": 10e3,
@@ -30,16 +31,18 @@ plot_data = {
 class Plot3D:
     fig = None
     ax = None
-    points = []
-    data = []
     name = None
+    scatters = None
+    plots = None
 
-    def __init__(self, azim=-60, elev=30):
-        self.fig = plt.figure(figsize=(10, 10))
+    def __init__(self, azim=-60, elev=30, figsize=(10, 10)):
+        self.fig = plt.figure(figsize=figsize)
         self.ax = self.fig.add_subplot(111, projection="3d", computed_zorder=False)
         self.ax.view_init(azim=azim, elev=elev)
         self.azim = self.ax.azim
         self.elev = self.ax.elev
+        self.scatters = []
+        self.plots = []
 
     def plot_surface(
         self, name, offset=np.array([0, 0, 0]), adjust_axis=True, limit=None, scale=3
@@ -127,26 +130,25 @@ class Plot3D:
         alphas = (proj - np.min(proj)) / (np.max(proj) - np.min(proj))
         return cond, alphas
 
-    def scatter(self, data, *args, **kwargs):
+    def scatter(self, data, mask=False, *args, **kwargs):
         """
         Plot Cartesian coordinates
         """
-        cond, _ = self.check_occultation(data)
-        data[np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
+        if mask:
+            cond, _ = self.check_occultation(data)
+            data[np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
         self.ax.scatter(data[:, 0], data[:, 1], data[:, 2], *args, zorder=1, **kwargs)
-        # (points,) = self.ax.plot([], [], [], "ro", zorder=0)
-        # self.points.append(points)
-        # self.data.append(data)
 
-    def plot(self, data, *args, **kwargs):
+    def plot(self, data, mask=False, *args, **kwargs):
         """
         Plot Cartesian coordinates
         """
         if len(data.shape) == 3:
             n_data = data.shape[0]
             for i in range(n_data):
-                cond, _ = self.check_occultation(data[i])
-                data[i, np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
+                if mask:
+                    cond, _ = self.check_occultation(data[i])
+                    data[i, np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
                 self.ax.plot(
                     data[i, :, 0],
                     data[i, :, 1],
@@ -156,16 +158,10 @@ class Plot3D:
                     **kwargs
                 )
         else:
-            cond, _ = self.check_occultation(data)
-            data[np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
+            if mask:
+                cond, _ = self.check_occultation(data)
+                data[np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
             self.ax.plot(data[:, 0], data[:, 1], data[:, 2], *args, zorder=0, **kwargs)
-            # self.ax.plot(
-            #     data[i, cond, 0], data[i, cond, 1], data[i, cond, 2], *args, **kwargs
-            # )
-        # for i in range(n_data):
-        #     (points,) = self.ax.plot([], [], [], zorder=0)
-        #     self.points.append(points)
-        #     self.data.append(data[i])
 
     def label_axis(self, x="X [km]", y="Y [km]", z="Z [km]"):
         self.ax.set_xlabel(x)

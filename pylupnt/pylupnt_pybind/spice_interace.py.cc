@@ -41,7 +41,8 @@ void init_spice_interface(py::module &m) {
             return lupnt::SpiceInterface::ConvertTime(et, from, to).val();
           })
       .def_static("get_body_pos_vel",
-                  [](double ta, int center, int target) -> lupnt::Vector6d {
+                  [](double ta, lupnt::NaifId center,
+                     lupnt::NaifId target) -> lupnt::Vector6d {
                     return lupnt::SpiceInterface::GetBodyPosVel(ta, center,
                                                                 target)
                         .cast<double>();

@@ -18,6 +18,8 @@
 
 namespace lupnt {
 
+class CartesianOrbitState;
+
 enum CoordSystem {
   ITRF = 0,  // International Terrestrial Reference Frame
   GCRF,      // Geocentric Reference System
@@ -38,6 +40,11 @@ class CoordConverter {
  public:
   static Vector6 Convert(real epoch, Vector6 rv_in, CoordSystem coord_sys_in,
                          CoordSystem coord_sys_out);
+  static Vector3 Convert(real epoch, Vector3 r_in, CoordSystem coord_sys_in,
+                         CoordSystem coord_sys_out);
+  static CartesianOrbitState Convert(real epoch,
+                                     const CartesianOrbitState &state_in,
+                                     CoordSystem coord_sys_out);
 
  private:
   static Matrix6 ComputeITRFtoGCRF(real tai);
