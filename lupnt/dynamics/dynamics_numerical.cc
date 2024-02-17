@@ -85,44 +85,43 @@ void NumericalOrbitDynamics::PropagateWithStm(Vector6 &x, real t0, real tf,
 }
 
 void NumericalOrbitDynamics::Propagate(OrbitState &state, real t0, real tf) {
-  real dt_prop = tf - t0;
-  if (dt_ == 0.0) {
-    dt_prop = (tf - t0) / 10;
-  } else {
-    dt_prop = dt_;
-  }
+  real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
   Propagate(state, t0, tf, dt_prop);
 }
 
 void NumericalOrbitDynamics::Propagate(Vector6 &x, real t0, real tf) {
-  real dt_prop = tf - t0;
-  if (dt_ == 0.0) {
-    dt_prop = (tf - t0) / 10;
-  } else {
-    dt_prop = dt_;
-  }
+  real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
   Propagate(x, t0, tf, dt_prop);
+}
+
+MatrixX NumericalOrbitDynamics::Propagate(Vector6 &x, real t0, VectorX &tf) {
+  Vector6 x0 = x;
+  MatrixX xf(tf.size(), 6);
+  for (int i = 0; i < tf.size(); i++) {
+    xf.row(i) = propagator_.Propagate(odefunc_, t0, tf(i), x0, dt_);
+  }
+  return xf;
+}
+
+MatrixX NumericalOrbitDynamics::Propagate(OrbitState &state, real t0,
+                                          VectorX &tf) {
+  Vector6 x0 = state.GetVector();
+  MatrixX xf(tf.size(), 6);
+  for (int i = 0; i < tf.size(); i++) {
+    xf.row(i) = propagator_.Propagate(odefunc_, t0, tf(i), x0, dt_);
+  }
+  return xf;
 }
 
 void NumericalOrbitDynamics::PropagateWithStm(OrbitState &state, real t0,
                                               real tf, Matrix6d &stm) {
-  real dt_prop = tf - t0;
-  if (dt_ == 0.0) {
-    dt_prop = (tf - t0) / 10;
-  } else {
-    dt_prop = dt_;
-  }
+  real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
   PropagateWithStm(state, t0, tf, dt_prop, stm);
 }
 
 void NumericalOrbitDynamics::PropagateWithStm(Vector6 &x, real t0, real tf,
                                               Matrix6d &stm) {
-  real dt_prop = tf - t0;
-  if (dt_ == 0.0) {
-    dt_prop = (tf - t0) / 10;
-  } else {
-    dt_prop = dt_;
-  }
+  real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
   PropagateWithStm(x, t0, tf, dt_prop, stm);
 }
 

@@ -53,6 +53,10 @@ template <int rows, int cols>
 using Matrix = Eigen::Matrix<real, rows, cols>;
 template <int rows, int cols>
 using Matrixd = Eigen::Matrix<double, rows, cols>;
+template <int size>
+using Vector = Eigen::Matrix<real, size, 1>;
+template <int size>
+using Vectord = Eigen::Matrix<double, size, 1>;
 
 DEFINE_VECTORS_MATRICES()
 
