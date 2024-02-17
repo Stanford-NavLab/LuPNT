@@ -10,7 +10,8 @@ set(PYPI_PACKAGE_NAME "pylupnt")
 
 project(LuPNT LANGUAGES CXX)
 
-option (BUILD_TESTING "Build the testing tree." OFF)
+option (BUILD_TESTING "Build the testing tree." ON)
+option (USE_CODECOV "Use Codecov for coverage reporting" OFF)
 if(BUILD_TESTING)
   # set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
@@ -45,25 +46,26 @@ endif ()
 if (BUILD_TESTING AND (PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
   enable_testing()
   add_subdirectory(test/cpp)
+  if (USE_CODECOV)
+    # Codecov
+    set(CODECOV_TOKEN $ENV{CODECOV_TOKEN})
+    set(ENV{PATH} "$ENV{PATH}:/usr/local/opt/llvm/bin")
 
-  # Codecov
-  set(CODECOV_TOKEN $ENV{CODECOV_TOKEN})
-  set(ENV{PATH} "$ENV{PATH}:/usr/local/opt/llvm/bin")
+    add_custom_target(codecov
+      # Run tests
+      COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target tests
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test/cpp
 
-  add_custom_target(codecov
-    # Run tests
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target tests
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test/cpp
+      # Generate coverage data
+      COMMAND /usr/local/opt/llvm/bin/llvm-profdata merge -sparse default.profraw -o default.profdata
+      COMMAND /usr/local/opt/llvm/bin/llvm-cov show ${CMAKE_BINARY_DIR}/lupnt/liblupnt.a -instr-profile=default.profdata > coverage.txt
 
-    # Generate coverage data
-    COMMAND /usr/local/opt/llvm/bin/llvm-profdata merge -sparse default.profraw -o default.profdata
-    COMMAND /usr/local/opt/llvm/bin/llvm-cov show ${CMAKE_BINARY_DIR}/lupnt/liblupnt.a -instr-profile=default.profdata > coverage.txt
+      # Download and execute Codecov uploader
+      COMMAND curl -Os https://uploader.codecov.io/latest/macos/codecov
+      COMMAND chmod +x codecov
+      COMMAND ./codecov -t ${CODECOV_TOKEN} -f coverage.txt
 
-    # Download and execute Codecov uploader
-    COMMAND curl -Os https://uploader.codecov.io/latest/macos/codecov
-    COMMAND chmod +x codecov
-    COMMAND ./codecov -t ${CODECOV_TOKEN} -f coverage.txt
-
-    COMMENT "Running tests, generating coverage report and uploading to Codecov"
-  )
+      COMMENT "Running tests, generating coverage report and uploading to Codecov"
+    )
+  endif()
 endif()
