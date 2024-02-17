@@ -22,41 +22,43 @@
 #include "lupnt/physics/orbit_state.h"
 
 // Function:
-// (vector<size>) -> vector<size>
+// Vector<size> = func(Vector<size>)
 // New definitions:
-// (matrix<-1,size>) -> matrix<-1,size>
-#define VECTORIZED_DEFINITION_VECTOR(func, size) \
+// Matrix<-1,size> = (Matrix<-1,size>)
+#define VECTORIZED_DEFINITION_FROM_VECTOR(func, size) \
   Matrix<-1, size> func(const Matrix<-1, size> &x);
 
 // Function:
-// (vector<size>, real) -> vector<size>
+// Vector<size> = func(Vector<size>, real)
 // New definitions:
-// (matrix<-1,size>, real) -> matrix<-1,size>
-// (vector<size>, vector<-1>) -> matrix<-1,size>
-// (matrix<-1,size>, vector<-1>) -> matrix<-1,size>
-#define VECTORIZED_DEFINITION_VECTOR_REAL(func, size) \
-  Vector<size> func(const Vector<size> &x, real y);
+// Matrix<-1,size> = func(Matrix<-1,size>, real)
+// Matrix<-1,size> = func(Vector<size>, VectorX)
+// Matrix<-1,size> = func(Matrix<-1,size>, VectorX)
+#define VECTORIZED_DEFINITION_FROM_VECTOR_REAL(func, size)        \
+  Matrix<-1, size> func(const Vector<size> &x, const VectorX &y); \
+  Matrix<-1, size> func(const Matrix<-1, size> &x, real y);       \
+  Matrix<-1, size> func(const Matrix<-1, size> &x, const VectorX &y);
 
 // Function:
-// (vector, vector) -> vector
+// Vector<size> = func(Vector<size>, Vector<size>
 // New definitions:
-// (matrix, matrix) -> matrix
-// (matrix, vector) -> matrix
-// (vector, matrix) -> matrix
-#define VECTORIZED_DEFINITION_VECTOR_VECTOR(func, size)                        \
+// Matrix<-1,size> = func(Matrix<-1,size>, Matrix<-1,size>)
+// Matrix<-1,size> = func(Matrix<-1,size>, Vector<size>)
+// Matrix<-1,size> = func(Vector<size>, Matrix<-1,size>)
+#define VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(func, size)                   \
   Matrix<-1, size> func(const Matrix<-1, size> &x, const Matrix<-1, size> &y); \
   Matrix<-1, size> func(const Matrix<-1, size> &x, const Vector<size> &y);     \
   Matrix<-1, size> func(const Vector<size> &x, const Matrix<-1, size> &y);
 
 // Function:
-// (real, real) -> real
+// real = func(real, real)
 // New definitions:
-// (vector, real) -> vector
-// (real, vector) -> vector
-// (vector, vector) -> vector
-#define VECTORIZED_DEFINITION_REAL_REAL(func) \
-  VectorX func(const VectorX &x, real y);     \
-  VectorX func(real x, const VectorX &y);     \
+// vector = func(vector, real)
+// vector = func(real, vector)
+// vector = func(vector, vector)
+#define VECTORIZED_DEFINITION_FROM_REAL_REAL(func) \
+  VectorX func(const VectorX &x, real y);          \
+  VectorX func(real x, const VectorX &y);          \
   VectorX func(const VectorX &x, const VectorX &y);
 
 namespace lupnt {
@@ -162,17 +164,8 @@ real TrueToEccentricAnomaly(real nu, real e);
 real MeanToTrueAnomaly(real M, real e);
 real TrueToMeanAnomaly(real f, real e);
 
-VECTORIZED_DEFINITION_REAL_REAL(EccentricToTrueAnomaly);
-VECTORIZED_DEFINITION_REAL_REAL(EccentricToMeanAnomaly);
-VECTORIZED_DEFINITION_REAL_REAL(MeanToEccentricAnomaly);
-VECTORIZED_DEFINITION_REAL_REAL(TrueToEccentricAnomaly);
-VECTORIZED_DEFINITION_REAL_REAL(MeanToTrueAnomaly);
-VECTORIZED_DEFINITION_REAL_REAL(TrueToMeanAnomaly);
-
 // Other coordinates
-template <typename T>
-Eigen::Vector<T, 3> GeographicalToCartesian(const Eigen::Vector<T, 3> &r_geo,
-                                            real radius);
+Vector3 GeographicalToCartesian(const Vector3 &r_geo, real radius);
 Vector3 CartesianToGeographical(const Vector3 &r_cart, real radius);
 Vector3 SphericalToCartesian(const Vector3 &r_sph);
 Vector3 CartesianToSpherical(const Vector3 &r_cart);
@@ -183,14 +176,21 @@ Vector3 CartesianToAzimuthElevationRange(const Vector3 &r_cart_ref,
 Vector3 AzimuthElevationRangeToCartesian(const Vector3 &r_aer_ref,
                                          const Vector3 &r_aer);
 
-VECTORIZED_DEFINITION_VECTOR(SphericalToCartesian, 3);
-VECTORIZED_DEFINITION_VECTOR(CartesianToSpherical, 3);
-VECTORIZED_DEFINITION_VECTOR_REAL(GeographicalToCartesian, 3);
-VECTORIZED_DEFINITION_VECTOR_REAL(CartesianToGeographical, 3);
-VECTORIZED_DEFINITION_VECTOR_VECTOR(EastNortUpToCartesian, 3);
-VECTORIZED_DEFINITION_VECTOR_VECTOR(CartesianToEastNortUp, 3);
-VECTORIZED_DEFINITION_VECTOR_VECTOR(CartesianToAzimuthElevationRange, 3);
-VECTORIZED_DEFINITION_VECTOR_VECTOR(AzimuthElevationRangeToCartesian, 3);
+VECTORIZED_DEFINITION_FROM_REAL_REAL(EccentricToTrueAnomaly);
+VECTORIZED_DEFINITION_FROM_REAL_REAL(EccentricToMeanAnomaly);
+VECTORIZED_DEFINITION_FROM_REAL_REAL(MeanToEccentricAnomaly);
+VECTORIZED_DEFINITION_FROM_REAL_REAL(TrueToEccentricAnomaly);
+VECTORIZED_DEFINITION_FROM_REAL_REAL(MeanToTrueAnomaly);
+VECTORIZED_DEFINITION_FROM_REAL_REAL(TrueToMeanAnomaly);
+
+VECTORIZED_DEFINITION_FROM_VECTOR(SphericalToCartesian, 3);
+VECTORIZED_DEFINITION_FROM_VECTOR(CartesianToSpherical, 3);
+VECTORIZED_DEFINITION_FROM_VECTOR_REAL(GeographicalToCartesian, 3);
+VECTORIZED_DEFINITION_FROM_VECTOR_REAL(CartesianToGeographical, 3);
+VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(EastNortUpToCartesian, 3);
+VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(CartesianToEastNortUp, 3);
+VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(CartesianToAzimuthElevationRange, 3);
+VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(AzimuthElevationRangeToCartesian, 3);
 
 class TLE {
  public:

@@ -33,109 +33,120 @@
   }
 
 // Function:
-// (vector<size>) -> vector<size>
+// Vector = func(Vector)
 // New definitions:
-// (matrix<-1,size>) -> matrix<-1,size>
-#define VECTORIZED_IMPLEMENTATION_VECTOR(func, size) \
-  Matrix<-1, size> func(const Matrix<-1, size> &x) { \
-    Matrix<-1, size> out(x.rows(), size);            \
-    for (int i = 0; i < x.rows(); i++) {             \
-      out.row(i) = func(x.row(i));                   \
-    }                                                \
-    return out;                                      \
+// Matrix<-1,size> = (Matrix<-1,size>)
+#define VECTORIZED_IMPLEMENTATION_FROM_VECTOR(func, size) \
+  Matrix<-1, size> func(const Matrix<-1, size> &x) {      \
+    Matrix<-1, size> out(x.rows(), size);                 \
+    for (int i = 0; i < x.rows(); i++) {                  \
+      Vector<size> x_ = x.row(i);                         \
+      out.row(i) = func(x_);                              \
+    }                                                     \
+    return out;                                           \
   }
 
 // Function:
-// (vector<size>, real) -> vector<size>
+// Vector = func(Vector, real)
 // New definitions:
-// (matrix<-1,size>, real) -> matrix<-1,size>
-// (vector<size>, vector<-1>) -> matrix<-1,size>
-// (matrix<-1,size>, vector<-1>) -> matrix<-1,size>
-#define VECTORIZED_IMPLEMENTATION_VECTOR_REAL(func, size)                   \
-  Matrix<-1, size> func(const Matrix<-1, size> &x, const real &y) {         \
-    Matrix<-1, size> out(x.rows(), size);                                   \
-    for (int i = 0; i < x.rows(); i++) {                                    \
-      out.row(i) = func(x.row(i), y);                                       \
-    }                                                                       \
-    return out;                                                             \
-  }                                                                         \
-  Matrix<-1, size> func(const Matrix<-1, size> &x, const Vector<-1> &y) {   \
-    assert(x.rows() == y.rows() && "Size mismatch");                        \
-    Matrix<-1, size> out(x.rows(), size);                                   \
-    for (int i = 0; i < x.rows(); i++) {                                    \
-      out.row(i) = func(x.row(i), y);                                       \
-    }                                                                       \
-    return out;                                                             \
-  }                                                                         \
-  Matrix<-1, size> func(const Vector<size> &x, const Matrix<-1, size> &y) { \
-    Matrix<-1, size> out(y.rows(), size);                                   \
-    for (int i = 0; i < y.rows(); i++) {                                    \
-      out.row(i) = func(x, y.row(i));                                       \
-    }                                                                       \
-    return out;                                                             \
+// Matrix<-1,size> = func(Matrix<-1,size>, real)
+// Matrix<-1,size> = func(Vector, VectorX)
+// Matrix<-1,size> = func(Matrix<-1,size>, VectorX)
+#define VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(func, size)               \
+  Matrix<-1, size> func(const Vector<size> &x, const VectorX &y) {           \
+    Matrix<-1, size> out(y.rows(), size);                                    \
+    for (int i = 0; i < y.rows(); i++) {                                     \
+      out.row(i) = func(x, y(i));                                            \
+    }                                                                        \
+    return out;                                                              \
+  }                                                                          \
+  Matrix<-1, size> func(const Matrix<-1, size> &x, real y) {                 \
+    Matrix<-1, size> out(x.rows(), size);                                    \
+    for (int i = 0; i < x.rows(); i++) {                                     \
+      Vector<size> x_ = x.row(i);                                            \
+      out.row(i) = func(x_, y);                                              \
+    }                                                                        \
+    return out;                                                              \
+  }                                                                          \
+  Matrix<-1, size> func(const Matrix<-1, size> &x, const VectorX &y) {       \
+    ASSERT_WITH_MESSAGE(x.rows() == y.rows(),                                \
+                        __PRETTY_FUNCTION__ << "\nSize mismatch:"            \
+                                            << " x.rows() = " << x.rows()    \
+                                            << ", y.rows() = " << y.rows()); \
+    Matrix<-1, size> out(x.rows(), size);                                    \
+    for (int i = 0; i < x.rows(); i++) {                                     \
+      Vector<size> x_ = x.row(i);                                            \
+      out.row(i) = func(x_, y(i));                                           \
+    }                                                                        \
+    return out;                                                              \
   }
 
 // Function:
-// (vector, vector) -> vector
+// Vector = func(Vector, Vector
 // New definitions:
-// (matrix, matrix) -> matrix
-// (matrix, vector) -> matrix
-// (vector, matrix) -> matrix
-#define VECTORIZED_IMPLEMENTATION_VECTOR_VECTOR(func, size)                 \
-  Matrix<-1, size> func(const Matrix<-1, size> &x,                          \
-                        const Matrix<-1, size> &y) {                        \
-    assert(x.rows() == y.rows() && "Size mismatch");                        \
-    Matrix<-1, size> out(x.rows(), size);                                   \
-    for (int i = 0; i < x.rows(); i++) {                                    \
-      out.row(i) = func(x.row(i), y.row(i));                                \
-    }                                                                       \
-    return out;                                                             \
-  }                                                                         \
-  Matrix<-1, size> func(const Matrix<-1, size> &x, const Vector<size> &y) { \
-    Matrix<-1, size> out(x.rows(), size);                                   \
-    for (int i = 0; i < x.rows(); i++) {                                    \
-      out.row(i) = func(x.row(i), y);                                       \
-    }                                                                       \
-    return out;                                                             \
-  }                                                                         \
-  Matrix<-1, size> func(const Vector<size> &x, const Matrix<-1, size> &y) { \
-    Matrix<-1, size> out(y.rows(), size);                                   \
-    for (int i = 0; i < y.rows(); i++) {                                    \
-      out.row(i) = func(x, y.row(i));                                       \
-    }                                                                       \
-    return out;                                                             \
+// Matrix<-1,size> = func(Matrix<-1,size>, Matrix<-1,size>)
+// Matrix<-1,size> = func(Matrix<-1,size>, Vector)
+// Matrix<-1,size> = func(Vector, Matrix<-1,size>)
+#define VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(func, size)             \
+  Matrix<-1, size> func(const Matrix<-1, size> &x,                           \
+                        const Matrix<-1, size> &y) {                         \
+    ASSERT_WITH_MESSAGE(x.rows() == y.rows(),                                \
+                        __PRETTY_FUNCTION__ << "\nSize mismatch:"            \
+                                            << " x.rows() = " << x.rows()    \
+                                            << ", y.rows() = " << y.rows()); \
+    Matrix<-1, size> out(x.rows(), size);                                    \
+    for (int i = 0; i < x.rows(); i++) {                                     \
+      Vector<size> x_ = x.row(i);                                            \
+      Vector<size> y_ = y.row(i);                                            \
+      out.row(i) = func(x_, y_);                                             \
+    }                                                                        \
+    return out;                                                              \
+  }                                                                          \
+  Matrix<-1, size> func(const Matrix<-1, size> &x, const Vector<size> &y) {  \
+    Matrix<-1, size> out(x.rows(), size);                                    \
+    for (int i = 0; i < x.rows(); i++) {                                     \
+      Vector<size> x_ = x.row(i);                                            \
+      out.row(i) = func(x_, y);                                              \
+    }                                                                        \
+    return out;                                                              \
+  }                                                                          \
+  Matrix<-1, size> func(const Vector<size> &x, const Matrix<-1, size> &y) {  \
+    Matrix<-1, size> out(y.rows(), size);                                    \
+    for (int i = 0; i < y.rows(); i++) {                                     \
+      Vector<size> y_ = y.row(i);                                            \
+      out.row(i) = func(x, y_);                                              \
+    }                                                                        \
+    return out;                                                              \
   }
 
 // Function:
-// (real, real) -> real
+// real = func(real, real)
 // New definitions:
-// (vector, real) -> vector
-// (real, vector) -> vector
-// (vector, vector) -> vector
-#define VECTORIZED_IMPLEMENTATION_REAL_REAL(func)      \
-  {                                                    \
-    VectorX func(const VectorX &x, const real &y) {    \
-      VectorX out(x.size());                           \
-      for (int i = 0; i < x.size(); i++) {             \
-        out(i) = func(x(i), y);                        \
-      }                                                \
-      return out;                                      \
+// vector = func(vector, real)
+// vector = func(real, vector)
+// vector = func(vector, vector)
+#define VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(func) \
+  VectorX func(const VectorX &x, real y) {             \
+    VectorX out(x.size());                             \
+    for (int i = 0; i < x.size(); i++) {               \
+      out(i) = func(x(i), y);                          \
     }                                                  \
-    VectorX func(const real &x, const VectorX &y) {    \
-      VectorX out(y.size());                           \
-      for (int i = 0; i < y.size(); i++) {             \
-        out(i) = func(x, y(i));                        \
-      }                                                \
-      return out;                                      \
+    return out;                                        \
+  }                                                    \
+  VectorX func(real x, const VectorX &y) {             \
+    VectorX out(y.size());                             \
+    for (int i = 0; i < y.size(); i++) {               \
+      out(i) = func(x, y(i));                          \
     }                                                  \
-    VectorX func(const VectorX &x, const VectorX &y) { \
-      assert(x.size() == y.size() && "Size mismatch"); \
-      VectorX out(x.size());                           \
-      for (int i = 0; i < x.size(); i++) {             \
-        out(i) = func(x(i), y(i));                     \
-      }                                                \
-      return out;                                      \
+    return out;                                        \
+  }                                                    \
+  VectorX func(const VectorX &x, const VectorX &y) {   \
+    assert(x.size() == y.size() && "Size mismatch");   \
+    VectorX out(x.size());                             \
+    for (int i = 0; i < x.size(); i++) {               \
+      out(i) = func(x(i), y(i));                       \
     }                                                  \
+    return out;                                        \
   }
 
 namespace lupnt {
@@ -690,9 +701,7 @@ real TrueToMeanAnomaly(real nu, real e) {
   return M;
 }
 
-template <typename T>
-Eigen::Vector<T, 3> GeographicalToCartesian(const Eigen::Vector<T, 3> &r_geo,
-                                            real radius) {
+Vector3 GeographicalToCartesian(const Vector3 &r_geo, real radius) {
   auto [lat, lon, alt] = unpack(r_geo);
   real r = radius + alt;
   real x = r * cos(lat) * cos(lon);
@@ -771,13 +780,22 @@ Vector3 AzimuthElevationRangeToCartesian(const Vector3 &r_cart_ref,
   return EastNortUpToCartesian(r_cart_ref, Vector3{e, n, u});
 }
 
-VECTORIZED_DEFINITION_VECTOR(SphericalToCartesian, 3);
-VECTORIZED_DEFINITION_VECTOR(CartesianToSpherical, 3);
-VECTORIZED_DEFINITION_VECTOR_REAL(GeographicalToCartesian, 3);
-VECTORIZED_DEFINITION_VECTOR_REAL(CartesianToGeographical, 3);
-VECTORIZED_DEFINITION_VECTOR_VECTOR(EastNortUpToCartesian, 3);
-VECTORIZED_DEFINITION_VECTOR_VECTOR(CartesianToEastNortUp, 3);
-VECTORIZED_DEFINITION_VECTOR_VECTOR(CartesianToAzimuthElevationRange, 3);
-VECTORIZED_DEFINITION_VECTOR_VECTOR(AzimuthElevationRangeToCartesian, 3);
+VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(EccentricToTrueAnomaly);
+VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(EccentricToMeanAnomaly);
+VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(MeanToEccentricAnomaly);
+VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(TrueToEccentricAnomaly);
+VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(MeanToTrueAnomaly);
+VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(TrueToMeanAnomaly);
+
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR(SphericalToCartesian, 3);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR(CartesianToSpherical, 3);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(GeographicalToCartesian, 3);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(CartesianToGeographical, 3);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(EastNortUpToCartesian, 3);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(CartesianToEastNortUp, 3);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(CartesianToAzimuthElevationRange,
+                                             3);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(AzimuthElevationRangeToCartesian,
+                                             3);
 
 }  // namespace lupnt

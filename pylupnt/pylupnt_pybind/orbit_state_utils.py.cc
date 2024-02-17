@@ -8,8 +8,158 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
+#include <string>
+
 namespace py = pybind11;
 using namespace lupnt;
+
+#define VECTORIZED_BINDING_FROM_VECTOR(name, func, size, arg1)         \
+  m.def(                                                               \
+      name,                                                            \
+      [](const Vectord<size> &x) -> Vectord<size> {                    \
+        return func(x.cast<real>().eval()).cast<double>();             \
+      },                                                               \
+      py::arg(arg1));                                                  \
+  m.def(                                                               \
+      name,                                                            \
+      [](const RowVectord<size> &x) -> RowVectord<size> {              \
+        return func(x.transpose().cast<real>().eval()).cast<double>(); \
+      },                                                               \
+      py::arg(arg1));                                                  \
+  m.def(                                                               \
+      name,                                                            \
+      [](const Matrixd<-1, size> &x) -> Matrixd<-1, size> {            \
+        return func(x.cast<real>().eval()).cast<double>();             \
+      },                                                               \
+      py::arg(arg1));
+
+#define VECTORIZED_BINDING_FROM_VECTOR_REAL(name, func, size, arg1, arg2)      \
+  m.def(                                                                       \
+      name,                                                                    \
+      [](const Vectord<size> &x, double y) -> Vectord<size> {                  \
+        return func(x.cast<real>().eval(), y).cast<double>();                  \
+      },                                                                       \
+      py::arg(arg1), py::arg(arg2));                                           \
+  m.def(                                                                       \
+      name,                                                                    \
+      [](const RowVectord<size> &x, double y) -> RowVectord<size> {            \
+        return func(x.transpose().cast<real>().eval(), y).cast<double>();      \
+      },                                                                       \
+      py::arg(arg1), py::arg(arg2));                                           \
+  m.def(                                                                       \
+      name,                                                                    \
+      [](const Vectord<size> &x, const VectorXd &y) -> Matrixd<-1, size> {     \
+        return func(x.cast<real>().eval(), y.cast<real>().eval())              \
+            .cast<double>();                                                   \
+      },                                                                       \
+      py::arg(arg1), py::arg(arg2));                                           \
+  m.def(                                                                       \
+      name,                                                                    \
+      [](const RowVectord<size> &x, const VectorXd &y) -> RowVectord<size> {   \
+        return func(x.transpose().cast<real>().eval(), y.cast<real>().eval())  \
+            .cast<double>();                                                   \
+      },                                                                       \
+      py::arg(arg1), py::arg(arg2));                                           \
+  m.def(                                                                       \
+      name,                                                                    \
+      [](const Matrixd<-1, size> &x, double y) -> Matrixd<-1, size> {          \
+        return func(x.cast<real>().eval(), y).cast<double>();                  \
+      },                                                                       \
+      py::arg(arg1), py::arg(arg2));                                           \
+  m.def(                                                                       \
+      name,                                                                    \
+      [](const Matrixd<-1, size> &x, const VectorXd &y) -> Matrixd<-1, size> { \
+        return func(x.cast<real>().eval(), y.cast<real>().eval())              \
+            .cast<double>();                                                   \
+      },                                                                       \
+      py::arg(arg1), py::arg(arg2));
+
+// Vector = func(Vector, Vector)
+// RowVector = func(RowVector, RowVector)
+// template <size_t size>
+// void exportVectorizedFromVectorVector(
+//     py::module &m, const char *name,
+//     const std::function<Vectord<size>(const Vectord<size> &,
+//                                       const Vectord<size> &)> &func,
+//     const char *arg1, const char *arg2) {
+//   m.def(
+//       name,
+//       [](const VectorXd &x, const VectorXd &y) -> VectorXd {
+//         return func(x, y).template cast<double>();
+//       },
+//       py::arg(arg1), py::arg(arg2));
+//   m.def(
+//       name,
+//       [](const RowVectorXd &x, const RowVectorXd &y) -> RowVectorXd {
+//         return func(x, y).template cast<double>();
+//       },
+//       py::arg(arg1), py::arg(arg2));
+// }
+
+#define VECTORIZED_BINDING_FROM_VECTOR_VECTOR(name, func, size, arg1, arg2) \
+  m.def(                                                                    \
+      name,                                                                 \
+      [](const Vectord<size> &x, const Vectord<size> &y) -> Vectord<size> { \
+        return func(x.cast<real>().eval(), y.cast<real>().eval())           \
+            .cast<double>();                                                \
+      },                                                                    \
+      py::arg(arg1), py::arg(arg2));                                        \
+  m.def(                                                                    \
+      name,                                                                 \
+      [](const RowVectord<size> &x,                                         \
+         const RowVectord<size> &y) -> RowVectord<size> {                   \
+        return func(x.transpose().cast<real>().eval(),                      \
+                    y.transpose().cast<real>().eval())                      \
+            .cast<double>();                                                \
+      },                                                                    \
+      py::arg(arg1), py::arg(arg2));                                        \
+  m.def(                                                                    \
+      name,                                                                 \
+      [](const Matrixd<-1, size> &x,                                        \
+         const Vectord<size> &y) -> Matrixd<-1, size> {                     \
+        return func(x.cast<real>().eval(), y.cast<real>().eval())           \
+            .cast<double>();                                                \
+      },                                                                    \
+      py::arg(arg1), py::arg(arg2));                                        \
+  m.def(                                                                    \
+      name,                                                                 \
+      [](const Vectord<size> &x,                                            \
+         const Matrixd<-1, size> &y) -> Matrixd<-1, size> {                 \
+        return func(x.cast<real>().eval(), y.cast<real>().eval())           \
+            .cast<double>();                                                \
+      },                                                                    \
+      py::arg(arg1), py::arg(arg2));                                        \
+  m.def(                                                                    \
+      name,                                                                 \
+      [](const Matrixd<-1, size> &x,                                        \
+         const Matrixd<-1, size> &y) -> Matrixd<-1, size> {                 \
+        return func(x.cast<real>().eval(), y.cast<real>().eval())           \
+            .cast<double>();                                                \
+      },                                                                    \
+      py::arg(arg1), py::arg(arg2));
+
+#define VECTORIZED_BINDING_FROM_REAL_REAL(name, func, arg1, arg2)          \
+  m.def(                                                                   \
+      name, [](double x, double y) -> double { return func(x, y).val(); }, \
+      py::arg(arg1), py::arg(arg2));                                       \
+  m.def(                                                                   \
+      name,                                                                \
+      [](const VectorXd &x, double y) -> VectorXd {                        \
+        return func(x.cast<real>().eval(), y).cast<double>();              \
+      },                                                                   \
+      py::arg(arg1), py::arg(arg2));                                       \
+  // m.def(                                                                   \
+  //     name,                                                                \
+  //     [](double x, const VectorXd &y) -> VectorXd {                        \
+  //       return func(x, y).cast<double>();                                  \
+  //     },                                                                   \
+  //     py::arg(arg1), py::arg(arg2));                                       \
+  // m.def(                                                                   \
+  //     name,                                                                \
+  //     [](const VectorXd &x, const VectorXd &y) -> VectorXd {               \
+  //       return func(x, y).cast<double>();                                  \
+  //     },                                                                   \
+  //     py::arg(arg1), py::arg(arg2));
 
 void init_orbit_state_utils(py::module &m) {
   // Orbit State Conversions
@@ -136,61 +286,39 @@ void init_orbit_state_utils(py::module &m) {
       py::arg("coe"), py::arg("rel_qnsoe"));
 
   // Anomaly Conversions
-  m.def("eccentric_to_true_anomaly", [](double E, double e) -> double {
-    return EccentricToTrueAnomaly(E, e).val();
-  });
-  m.def("eccentric_to_mean_anomaly", [](double E, double e) -> double {
-    return EccentricToMeanAnomaly(E, e).val();
-  });
-  m.def("mean_to_eccentric_anomaly", [](double M, double e) -> double {
-    return MeanToEccentricAnomaly(M, e).val();
-  });
-  m.def("mean_to_true_anomaly", [](double M, double e) -> double {
-    return MeanToTrueAnomaly(M, e).val();
-  });
-  m.def("true_to_eccentric_anomaly", [](double nu, double e) -> double {
-    return TrueToEccentricAnomaly(nu, e).val();
-  });
-  m.def("true_to_mean_anomaly", [](double f, double e) -> double {
-    return TrueToMeanAnomaly(f, e).val();
-  });
+  VECTORIZED_BINDING_FROM_REAL_REAL("eccentric_to_true_anomaly",
+                                    EccentricToTrueAnomaly, "E", "e");
+  VECTORIZED_BINDING_FROM_REAL_REAL("eccentric_to_mean_anomaly",
+                                    EccentricToMeanAnomaly, "E", "e");
+  VECTORIZED_BINDING_FROM_REAL_REAL("mean_to_eccentric_anomaly",
+                                    MeanToEccentricAnomaly, "M", "e");
+  VECTORIZED_BINDING_FROM_REAL_REAL("mean_to_true_anomaly", MeanToTrueAnomaly,
+                                    "M", "e");
+  VECTORIZED_BINDING_FROM_REAL_REAL("true_to_eccentric_anomaly",
+                                    TrueToEccentricAnomaly, "nu", "e");
+  VECTORIZED_BINDING_FROM_REAL_REAL("true_to_mean_anomaly", TrueToMeanAnomaly,
+                                    "f", "e");
 
-  m.def("geographical_to_cartesian",
-        [](const Vector3d &r_geo, double radius) -> Vector3d {
-          return GeographicalToCartesian(r_geo, radius).cast<double>();
-        });
-  m.def("cartesian_to_geographical",
-        [](const Vector3d &r_cart, double radius) -> Vector3d {
-          return CartesianToGeographical(r_cart, radius).cast<double>();
-        });
-  m.def("spherical_to_cartesian", [](const Vector3d &r_sph) -> Vector3d {
-    return SphericalToCartesian(r_sph.cast<real>().eval()).cast<double>();
-  });
-  m.def("cartesian_to_spherical", [](const Vector3d &r_cart) -> Vector3d {
-    return CartesianToSpherical(r_cart.cast<real>().eval()).cast<double>();
-  });
-  m.def("east_north_up_to_cartesian",
-        [](const Vector3d &r_ref, const Vector3d &r_enu) -> Vector3d {
-          return EastNortUpToCartesian(r_ref.cast<real>().eval(),
-                                       r_enu.cast<real>().eval())
-              .cast<double>();
-        });
-  m.def("cartesian_to_east_north_up",
-        [](const Vector3d &r_ref, const Vector3d &r_cart) -> Vector3d {
-          return CartesianToEastNortUp(r_ref.cast<real>().eval(),
-                                       r_cart.cast<real>().eval())
-              .cast<double>();
-        });
-  m.def("cartesian_to_azimuth_elevation_range",
-        [](const Vector3d &r_cart_ref, const Vector3d &r_cart) -> Vector3d {
-          return CartesianToAzimuthElevationRange(
-                     r_cart_ref.cast<real>().eval(), r_cart.cast<real>().eval())
-              .cast<double>();
-        });
-  m.def("azimuth_elevation_range_to_cartesian",
-        [](const Vector3d &r_aer_ref, const Vector3d &r_aer) -> Vector3d {
-          return AzimuthElevationRangeToCartesian(r_aer_ref.cast<real>().eval(),
-                                                  r_aer.cast<real>().eval())
-              .cast<double>();
-        });
+  // Coordinate System Conversions
+  VECTORIZED_BINDING_FROM_VECTOR_REAL("geographical_to_cartesian",
+                                      GeographicalToCartesian, 3, "r_geo",
+                                      "radius");
+  VECTORIZED_BINDING_FROM_VECTOR_REAL("cartesian_to_geographical",
+                                      CartesianToGeographical, 3, "r_cart",
+                                      "radius");
+  VECTORIZED_BINDING_FROM_VECTOR("spherical_to_cartesian", SphericalToCartesian,
+                                 3, "r_sph");
+  VECTORIZED_BINDING_FROM_VECTOR("cartesian_to_spherical", CartesianToSpherical,
+                                 3, "r_cart");
+  VECTORIZED_BINDING_FROM_VECTOR_VECTOR(
+      "east_north_up_to_cartesian", EastNortUpToCartesian, 3, "r_ref", "r_enu");
+  VECTORIZED_BINDING_FROM_VECTOR_VECTOR("cartesian_to_east_north_up",
+                                        CartesianToEastNortUp, 3, "r_ref",
+                                        "r_cart");
+  VECTORIZED_BINDING_FROM_VECTOR_VECTOR("cartesian_to_azimuth_elevation_range",
+                                        CartesianToAzimuthElevationRange, 3,
+                                        "r_cart_ref", "r_cart");
+  VECTORIZED_BINDING_FROM_VECTOR_VECTOR("azimuth_elevation_range_to_cartesian",
+                                        AzimuthElevationRangeToCartesian, 3,
+                                        "r_aer_ref", "r_aer");
 }
