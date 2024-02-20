@@ -22,7 +22,8 @@ class Location:
 
     def __post_init__(self):
         self.r = pnt.geographical_to_cartesian(
-            [self.lat, self.lon, self.alt], pnt.R_MOON, deg=True
+            [self.lat, self.lon, self.alt],
+            pnt.R_MOON,
         )
 
 
@@ -44,34 +45,6 @@ class Task:
 
     def __hash__(self):
         return hash(self.id)
-
-
-class TaskType(Enum):
-    # Type of opportunity
-    SCIENCE: int = 0
-    SUN_POINTING: int = 1
-    DOWNLINK: int = 2
-    START: int = 3
-
-
-@dataclass(unsafe_hash=True)
-class Opportunity:
-
-    # Time window for tasking
-    time_start: float  # [s] Start time
-    time_end: float  # [s] End time
-    duration: float  # [s] Duration
-    power: float = -1  # [W]
-    data: float = 1  # [Mbps]
-    reward: float = 1  # [-]
-    type: TaskType = TaskType.SCIENCE  # [-] Type of opportunity
-
-    id: int = field(init=False)
-    id_count: int = 0
-
-    def __post_init__(self):
-        self.id = Opportunity.id_count
-        Opportunity.id_count += 1
 
 
 # LRO max slew rate in Observing mode is 0.1 deg/sec and HGA max rate is 0.5 deg/sec).
