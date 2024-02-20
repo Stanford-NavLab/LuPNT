@@ -30,8 +30,8 @@ real StringToTAI(std::string str);
 std::string TAItoStringUTC(real tai, int prec);
 std::string TDBtoStringUTC(real tdb, int prec);
 real ConvertTime(real t, std::string from_time_type, std::string to_time_type);
-Vector6 GetBodyPosVel(const real tai, int center, int target);
 Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target);
+Matrix<-1, 6> GetBodyPosVel(const VectorX &tai, NaifId center, NaifId target);
 Vector3d GetBodyPos(std::string targetName, real epoch, std::string refFrame,
                     std::string obsName, std::string abCorrection);
 
