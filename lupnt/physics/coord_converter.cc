@@ -41,6 +41,67 @@ Vector3 CoordConverter::Convert(real epoch, Vector3 rv_in,
   return rv_out_6.head(3);
 }
 
+Matrix<-1, 6> CoordConverter::Convert(real epoch, const Matrix<-1, 6> &rv_in,
+                                      CoordSystem coord_sys_in,
+                                      CoordSystem coord_sys_out) {
+  Matrix<-1, 6> rv_out(rv_in.rows(), 6);
+  for (int i = 0; i < rv_in.rows(); i++) {
+    rv_out.row(i) = Convert(epoch, rv_in.row(i).transpose().eval(),
+                            coord_sys_in, coord_sys_out);
+  }
+  return rv_out;
+}
+
+Matrix<-1, 3> CoordConverter::Convert(real epoch, const Matrix<-1, 3> &r_in,
+                                      CoordSystem coord_sys_in,
+                                      CoordSystem coord_sys_out) {
+  Matrix<-1, 6> rv_in(r_in.rows(), 6);
+  rv_in << r_in, Matrix<-1, 3>::Zero(r_in.rows(), 3);
+  Matrix<-1, 6> rv_out = Convert(epoch, rv_in, coord_sys_in, coord_sys_out);
+  return rv_out.leftCols(3);
+}
+
+Matrix<-1, 6> CoordConverter::Convert(VectorX epoch, const Vector6 &rv_in,
+                                      CoordSystem coord_sys_in,
+                                      CoordSystem coord_sys_out) {
+  Matrix<-1, 6> rv_out(epoch.size(), 6);
+  for (int i = 0; i < epoch.size(); i++) {
+    rv_out.row(i) = Convert(epoch(i), rv_in, coord_sys_in, coord_sys_out);
+  }
+  return rv_out;
+}
+
+Matrix<-1, 3> CoordConverter::Convert(VectorX epoch, const Vector3 &r_in,
+                                      CoordSystem coord_sys_in,
+                                      CoordSystem coord_sys_out) {
+  Matrix<-1, 6> rv_in(epoch.size(), 6);
+  rv_in << r_in, Matrix<-1, 3>::Zero(epoch.size(), 3);
+  Matrix<-1, 6> rv_out = Convert(epoch, rv_in, coord_sys_in, coord_sys_out);
+  return rv_out.leftCols(3);
+}
+
+Matrix<-1, 6> CoordConverter::Convert(VectorX epoch, const Matrix<-1, 6> &rv_in,
+                                      CoordSystem coord_sys_in,
+                                      CoordSystem coord_sys_out) {
+  assert(epoch.size() == rv_in.rows() && "Epoch and rv_in must have same size");
+  Matrix<-1, 6> rv_out(epoch.size(), 6);
+  for (int i = 0; i < epoch.size(); i++) {
+    rv_out.row(i) = Convert(epoch(i), rv_in.row(i).transpose().eval(),
+                            coord_sys_in, coord_sys_out);
+  }
+  return rv_out;
+}
+
+Matrix<-1, 3> CoordConverter::Convert(VectorX epoch, const Matrix<-1, 3> &r_in,
+                                      CoordSystem coord_sys_in,
+                                      CoordSystem coord_sys_out) {
+  assert(epoch.size() == r_in.rows() && "Epoch and r_in must have same size");
+  Matrix<-1, 6> rv_in(epoch.size(), 6);
+  rv_in << r_in, Matrix<-1, 3>::Zero(epoch.size(), 3);
+  Matrix<-1, 6> rv_out = Convert(epoch, rv_in, coord_sys_in, coord_sys_out);
+  return rv_out.leftCols(3);
+}
+
 /**
  * @brief Convert the state vector from one coordinate system to another (with
  * integer ID input)
