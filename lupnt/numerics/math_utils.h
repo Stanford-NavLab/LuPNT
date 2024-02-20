@@ -65,6 +65,10 @@ VectorX wrapTo2Pi(VectorX angle);
 real deg2rad(real deg);
 double rad2deg(double rad);
 
+real floor(real x);
+Vector3 degrees2dms(real deg);
+real dms2degrees(Vector3 hms);
+
 /**
  * @brief Arccosine function with input bounds
  *

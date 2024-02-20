@@ -14,8 +14,7 @@
 #include <Eigen/Cholesky>
 #include <Eigen/Eigenvalues>
 #include <Eigen/SVD>
-
-#include "lupnt/core/constants.h"
+#include <autodiff/forward/real.hpp>
 
 namespace lupnt {
 
@@ -64,6 +63,24 @@ real rad2deg(real rad) { return (180 / M_PI) * rad; }
 double deg2rad(double deg) { return (M_PI / 180) * deg; }
 
 double rad2deg(double rad) { return (180 / M_PI) * rad; }
+
+real floor(real x) {
+  real y = x;
+  y[0] = std::floor(x.val());
+  return y;
+}
+
+Vector3 degrees2dms(real deg) {
+  real d = floor(deg);
+  real m = floor((deg - d) * 60);
+  real s = (deg - d - m / 60) * 3600;
+  return Vector3{d, m, s};
+}
+
+real dms2degrees(Vector3 hms) {
+  real decdeg = hms(0) + hms(1) / 60.0 + hms(2) / 3600.0;
+  return decdeg;
+}
 
 real safe_acos(real x) {
   if (x >= 1.0) {
