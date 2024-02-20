@@ -49,9 +49,26 @@ void init_constants(py::module &m) {
   m.attr("C") = py::float_(C);
   m.attr("P_SUN") = py::float_(P_SUN);
 
-  // NaifId
   py::enum_<NaifId>(m, "NaifId")
+      .value("SOLAR_SYSTEM_BARYCENTER", NaifId::SOLAR_SYSTEM_BARYCENTER)
+      .value("MERCURY_BARYCENTER", NaifId::MERCURY_BARYCENTER)
+      .value("VENUS_BARYCENTER", NaifId::VENUS_BARYCENTER)
+      .value("EARTH_BARYCENTER", NaifId::EARTH_BARYCENTER)
+      .value("EARTH_MOON_BARYCENTER", NaifId::EARTH_MOON_BARYCENTER)
+      .value("MARS_BARYCENTER", NaifId::MARS_BARYCENTER)
+      .value("JUPITER_BARYCENTER", NaifId::JUPITER_BARYCENTER)
+      .value("SATURN_BARYCENTER", NaifId::SATURN_BARYCENTER)
+      .value("URANUS_BARYCENTER", NaifId::URANUS_BARYCENTER)
+      .value("NEPTUNE_BARYCENTER", NaifId::NEPTUNE_BARYCENTER)
+      .value("PLUTO_BARYCENTER", NaifId::PLUTO_BARYCENTER)
+      .value("SUN", NaifId::SUN)
+      .value("MERCURY", NaifId::MERCURY)
+      .value("VENUS", NaifId::VENUS)
       .value("EARTH", NaifId::EARTH)
       .value("MOON", NaifId::MOON)
+      .value("MARS", NaifId::MARS)
+      .value("PHOBOS", NaifId::PHOBOS)
+      .value("DEIMOS", NaifId::DEIMOS)
+      .value("JUPITER", NaifId::JUPITER)
       .export_values();
 }
