@@ -47,6 +47,13 @@ void init_spice_interface(py::module &m) {
                                                                 target)
                         .cast<double>();
                   })
+      .def_static("get_body_pos_vel",
+                  [](lupnt::VectorXd tai, lupnt::NaifId center,
+                     lupnt::NaifId target) -> lupnt::Matrixd<-1, 6> {
+                    return lupnt::SpiceInterface::GetBodyPosVel(tai, center,
+                                                                target)
+                        .cast<double>();
+                  })
       .def_static(
           "get_body_pos",
           [](std::string targetName, lupnt::real epoch, std::string refFrame,

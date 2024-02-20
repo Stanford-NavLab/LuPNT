@@ -1,21 +1,15 @@
-#define VECTORIZED_BINDING_FROM_VECTOR(name, func, size, arg1)         \
-  m.def(                                                               \
-      name,                                                            \
-      [](const Vectord<size> &x) -> Vectord<size> {                    \
-        return func(x.cast<real>().eval()).cast<double>();             \
-      },                                                               \
-      py::arg(arg1));                                                  \
-  m.def(                                                               \
-      name,                                                            \
-      [](const RowVectord<size> &x) -> RowVectord<size> {              \
-        return func(x.transpose().cast<real>().eval()).cast<double>(); \
-      },                                                               \
-      py::arg(arg1));                                                  \
-  m.def(                                                               \
-      name,                                                            \
-      [](const Matrixd<-1, size> &x) -> Matrixd<-1, size> {            \
-        return func(x.cast<real>().eval()).cast<double>();             \
-      },                                                               \
+#define VECTORIZED_BINDING_FROM_VECTOR(name, func, size, arg1) \
+  m.def(                                                       \
+      name,                                                    \
+      [](const Vectord<size> &x) -> Vectord<size> {            \
+        return func(x.cast<real>().eval()).cast<double>();     \
+      },                                                       \
+      py::arg(arg1));                                          \
+  m.def(                                                       \
+      name,                                                    \
+      [](const Matrixd<-1, size> &x) -> Matrixd<-1, size> {    \
+        return func(x.cast<real>().eval()).cast<double>();     \
+      },                                                       \
       py::arg(arg1));
 
 #define VECTORIZED_BINDING_FROM_VECTOR_REAL(name, func, size, arg1, arg2)      \
@@ -27,21 +21,8 @@
       py::arg(arg1), py::arg(arg2));                                           \
   m.def(                                                                       \
       name,                                                                    \
-      [](const RowVectord<size> &x, double y) -> RowVectord<size> {            \
-        return func(x.transpose().cast<real>().eval(), y).cast<double>();      \
-      },                                                                       \
-      py::arg(arg1), py::arg(arg2));                                           \
-  m.def(                                                                       \
-      name,                                                                    \
       [](const Vectord<size> &x, const VectorXd &y) -> Matrixd<-1, size> {     \
         return func(x.cast<real>().eval(), y.cast<real>().eval())              \
-            .cast<double>();                                                   \
-      },                                                                       \
-      py::arg(arg1), py::arg(arg2));                                           \
-  m.def(                                                                       \
-      name,                                                                    \
-      [](const RowVectord<size> &x, const VectorXd &y) -> RowVectord<size> {   \
-        return func(x.transpose().cast<real>().eval(), y.cast<real>().eval())  \
             .cast<double>();                                                   \
       },                                                                       \
       py::arg(arg1), py::arg(arg2));                                           \

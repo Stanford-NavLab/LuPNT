@@ -26,4 +26,12 @@ void init_math_utils(py::module &m) {
         return wrapTo2Pi(angle).cast<double>();
       },
       "Wrap angle to [0, 2pi]");
+  m.def(
+      "dms2degrees",
+      [](const Vector3d &hms) -> double { return dms2degrees(hms).val(); },
+      "Convert degrees, minutes, seconds to degrees", py::arg("hms"));
+  m.def(
+      "degrees2dms",
+      [](double deg) -> Vector3d { return degrees2dms(deg).cast<double>(); },
+      "Convert degrees to degrees, minutes, seconds", py::arg("deg"));
 }
