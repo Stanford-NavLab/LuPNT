@@ -173,6 +173,129 @@ def plot_opportunity_windows(
     plt.ylabel("Tasks")
 
 
+def plot_windows(
+    targets: np.array,  # Target ids
+    vtws: np.array,  # Visibility time windows (start, end)
+    durations: np.array,  # Task durations
+    #
+    task_otws: np.array,  # Opportunity time windows (start, end)
+    task_idxs: np.array,  # Target ids
+    #
+    rewards: np.array = None,  # Rewards
+    selected_tasks: np.array = None,  # Selected tasks
+    plot_labels: bool = True,
+):
+    color = TABLEAU_COLORS[0]
+    selected_targets = task_idxs[selected_tasks] if selected_tasks is not None else None
+
+    # Sort tasks by start time
+    indices = sorted(range(len(vtws)), key=lambda i: vtws[i][0])
+
+    # Add tasks to the minimum number of rows for plotting
+    rows = []
+    for idx in indices:
+        for row in rows:
+            if vtws[idx][0] > vtws[row[-1]][1]:
+                row.append(idx)
+                break
+        else:
+            rows.append([idx])
+
+    # Plot tasks
+    for r, row in enumerate(rows):
+
+        def add_text(ts, te, txt):
+            if plot_labels:
+                plt.text((ts + te) / 2, r + 0.15, txt, ha="center", va="center")
+
+        def add_rect(ts, te):
+            eps = 0
+            plt.fill_between(
+                [ts + eps, te - eps], r - 0.3, r + 0.3, alpha=0.5, color=color
+            )
+
+        def add_empty_rect(ts, te):
+            plt.fill_between(
+                [ts, te],
+                r - 0.3,
+                r + 0.3,
+                alpha=0.15,
+                hatch="/",
+                edgecolor="black",
+                color=color,
+            )
+
+        for idx in row:
+            # Opportunity window
+            vtw_s = vtws[idx][0]
+            vtw_e = vtws[idx][1]
+            dur = durations[idx]
+
+            if True:
+                # Plot lines for visibility time windows
+                plt.hlines(r, vtw_s, vtw_e, colors="k")
+                plt.vlines(vtw_s, r - 0.15, r + 0.15, colors="k")
+                plt.vlines(vtw_e, r - 0.15, r + 0.15, colors="k")
+
+                # Plot lines for opportunity time windows
+                otws = task_otws[task_idxs == idx]
+                for otw in otws:
+                    plt.vlines(otw[0], r - 0.05, r + 0.05, colors="k")
+
+                # Plot rectangles for tasks
+                if selected_targets is None:
+                    # Start times not resolved
+                    ts = (vtw_s + vtw_e - dur) / 2
+                    te = (vtw_s + vtw_e + dur) / 2
+                    add_rect(ts, te)
+                    add_text(vtw_s, vtw_e, str(targets[idx]))
+                else:
+
+                    if idx not in selected_targets:
+                        # Start times resolved and task is not selected
+                        ts = (vtw_s + vtw_e - dur) / 2
+                        te = (vtw_s + vtw_e + dur) / 2
+                        add_empty_rect(ts, te)
+                        add_text(vtw_s, vtw_e, str(targets[idx]))
+                    else:
+                        # Start times resolved and task is selected
+                        for ts, te in task_otws[selected_tasks & (task_idxs == idx)]:
+                            add_rect(ts, te)
+                            add_text(ts, te, str(targets[idx]))
+
+            else:
+                # Sun pointing or downlink opportunity
+                if start_end_times is None:
+                    add_rect(vtw_start, t_end)
+                    add_text(vtw_start, t_end, str(opp.id))
+                elif opp.id in start_end_times:
+                    for ts, te in zip(*start_end_times[opp.id]):
+                        add_rect(ts, te)
+                        add_text(ts, te, str(opp.id))
+                        add_text(ts, te, str(opp.id))
+
+    plt.xlabel("Time")
+    plt.xlim(0, np.max(vtws[:, 1]))
+    # plt.gca().spines[["left", "top", "right"]].set_visible(False)
+    # if start_end_times is not None:
+    #     legend = [
+    #         plt.Line2D(
+    #             [0], [0], color=COLORS[tt], lw=5, label=MODE_NAMES[tt], alpha=0.5
+    #         )
+    #         for tt in TaskType
+    #         if tt not in [TaskType.START]
+    #     ]
+    #     # Legend with 3 columns at the bottom outside the plot
+    #     plt.legend(
+    #         handles=legend,
+    #         loc="upper center",
+    #         bbox_to_anchor=(0.5, 1.3),
+    #         ncol=3,
+    #     )
+    plt.yticks([])
+    plt.ylabel("Tasks")
+
+
 def get_start_and_end_indexes(sequence: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     tmp = np.concatenate(([False], sequence.astype(bool), [False]))
     starts = np.where(np.logical_and(~tmp[:-1], tmp[1:]))[0]
