@@ -32,7 +32,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${LuPNT_BINARY_DIR}/bin)
 # build directories
 add_subdirectory(third_party)
 add_subdirectory(lupnt)
-add_subdirectory(examples/cpp) 
+add_subdirectory(examples/cpp)
+add_subdirectory(examples/projects)
 
 # build python modules
 option (BUILD_PYMODULE "Build the Python Module" ON)
