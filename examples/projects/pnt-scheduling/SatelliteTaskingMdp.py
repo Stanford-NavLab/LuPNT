@@ -57,7 +57,7 @@ class Satellite:
 
 
 @dataclass
-class SatelliteState:
+class State:
     time: float  # [s] Start time of the last action taken
     opportunities: set[Opportunity]  # [-] Future opportunities
     data: float  # [GB] Current on-board data usage
@@ -65,7 +65,7 @@ class SatelliteState:
 
 
 @dataclass
-class SatelliteAction:
+class Action:
     opportunity: Opportunity  # [-] Next opportunity to take
 
 
@@ -74,7 +74,7 @@ class SatelliteAction:
 # C(tsp, ts) is the agility constraint function that indicates whether a slew between the pointing conﬁgurations for ac- tions with start times tsp and ts is feasible. It is a binary function C(tsp, ts) ∈ {0, 1} where 1 denotes feasibility and 0 infeasibility of the transition.
 
 
-def slew_time(a: SatelliteAction) -> float:
+def slew_time(a: Action) -> float:
     return 0
 
 
@@ -83,28 +83,28 @@ class SatelliteTaskingMdp:
 
     # satellite: Satellite
 
-    def transition(self, s: SatelliteState, a: SatelliteAction) -> SatelliteState:
+    def transition(self, s: State, a: Action) -> State:
         time = min(s.time, a.opportunity.time_start) + a.opportunity.duration
         if a.opportunity.type not in [TaskType.SUN_POINTING, TaskType.DOWNLINK]:
             opportunities = s.opportunities - {a.opportunity}
         data = s.data + a.opportunity.data * a.opportunity.duration
         power = s.power - a.opportunity.power * a.opportunity.duration
-        sp = SatelliteState(time, opportunities, data, power)
+        sp = State(time, opportunities, data, power)
         return sp
 
-    def reward(self, s: SatelliteState, a: SatelliteAction) -> float:
+    def reward(self, s: State, a: Action) -> float:
         return a.opportunity.reward
 
-    def available_actions(self, s: SatelliteState) -> List[SatelliteAction]:
+    def available_actions(self, s: State) -> List[Action]:
         return [
-            SatelliteAction(opp)
+            Action(opp)
             for opp in s.opportunities
             if s.time <= opp.time_end - opp.duration
             # and power
             # and data
         ]
 
-    def is_terminal(self, s: SatelliteState) -> bool:
+    def is_terminal(self, s: State) -> bool:
         # Only sun pointing and downlink opportunities left
         return len(self.available_actions(s)) == 2
 

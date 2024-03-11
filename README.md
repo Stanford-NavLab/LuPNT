@@ -225,3 +225,7 @@ $ python3 -m pytest test/python
   [5] = 1.8768878200960224
 )
 ```
+
+# Install for Windows
+1. Clone the repo
+2. 

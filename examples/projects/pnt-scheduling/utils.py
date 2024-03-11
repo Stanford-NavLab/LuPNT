@@ -186,7 +186,12 @@ def plot_windows(
     plot_labels: bool = True,
 ):
     color = TABLEAU_COLORS[0]
-    selected_targets = task_idxs[selected_tasks] if selected_tasks is not None else None
+    if selected_tasks is None:
+        selected_targets = None
+    else:
+        assert selected_tasks.dtype == bool
+        assert task_idxs.dtype == int
+        selected_targets = task_idxs[selected_tasks]
 
     # Sort tasks by start time
     indices = sorted(range(len(vtws)), key=lambda i: vtws[i][0])
@@ -239,8 +244,9 @@ def plot_windows(
 
                 # Plot lines for opportunity time windows
                 otws = task_otws[task_idxs == idx]
-                for otw in otws:
-                    plt.vlines(otw[0], r - 0.05, r + 0.05, colors="k")
+                if len(otws) > 0:
+                    for otw in otws:
+                        plt.vlines(otw[0], r - 0.05, r + 0.05, colors="k")
 
                 # Plot rectangles for tasks
                 if selected_targets is None:
