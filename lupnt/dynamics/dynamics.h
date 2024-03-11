@@ -46,7 +46,7 @@ class NumericalDynamics : public IDynamics {
   NumericalDynamics(ODE odefunc, std::string integrator = "RK4")
       : odefunc_(odefunc), propagator_(integrator){};
 
-  void SetTimeStep(double dt) { dt_ = dt; };
+  void SetTimeStep(real dt) { dt_ = dt.val(); };
   void PropagateX(VectorX &x, real t0, real tf);
   void PropagateWithStmX(VectorX &x, real t0, real tf, MatrixXd &stm);
 

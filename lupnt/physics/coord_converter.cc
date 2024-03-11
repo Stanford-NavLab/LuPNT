@@ -352,7 +352,7 @@ Matrix6 CoordConverter::ComputeOpToMi(real epoch) {
       GetFrameConversionMatrix(epoch, "IAU_MOON", "J2000").block(0, 0, 3, 3);
 
   // IAU pole
-  Vector3 iau_pole{0, 1, 0};
+  Vector3 iau_pole{0, 0, 1};
   Vector3 iau_pole_icrf = iau_moon2icrf * iau_pole;
 
   // OP unit vectors

@@ -116,7 +116,10 @@ void init_dynamics(py::module &m) {
       .def(py::init<>())
       .def("set_primary_body", &NBodyDynamics::SetPrimaryBody, py::arg("body"))
       .def("add_body", &NBodyDynamics::AddBody, py::arg("body"))
-      .def("set_time_step", &NBodyDynamics::SetTimeStep, py::arg("dt"))
+      .def(
+          "set_time_step",
+          [](NBodyDynamics &dyn, double dt) { dyn.SetTimeStep(dt); },
+          py::arg("dt"))
       .def("__repr__",
            [](const NBodyDynamics &dyn) { return "<pylupnt.NBodyDynamics>"; });
 
