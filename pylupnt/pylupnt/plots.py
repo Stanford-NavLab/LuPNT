@@ -29,11 +29,11 @@ plot_data = {
 
 
 class Plot3D:
-    fig = None
-    ax = None
-    name = None
-    scatters = None
-    plots = None
+    fig: plt.Figure
+    ax: plt.Axes
+    name: str
+    scatters: list
+    plots: list
 
     def __init__(self, azim=-60, elev=30, figsize=(10, 10)):
         self.fig = plt.figure(figsize=figsize)

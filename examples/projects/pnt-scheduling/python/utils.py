@@ -4,173 +4,20 @@ import numpy as np
 import matplotlib.colors as mcolors
 from dataclasses import dataclass, field
 from enum import Enum
+import hashlib
 
 TABLEAU_COLORS = list(mcolors.TABLEAU_COLORS.values())
 
 
-class TaskType(Enum):
-    # Type of opportunity
-    USER: int = 0
-    SUN_POINTING: int = 1
-    DOWNLINK: int = 2
-    START: int = 3
+def create_hash(obj):
+    return hashlib.sha1(str(obj).encode()).hexdigest()
 
 
-COLORS = {
-    TaskType.USER: TABLEAU_COLORS[0],
-    TaskType.SUN_POINTING: TABLEAU_COLORS[1],
-    TaskType.DOWNLINK: TABLEAU_COLORS[2],
-    TaskType.START: TABLEAU_COLORS[3],
-}
-MODE_NAMES = {
-    TaskType.USER: "PNT/Comms",
-    TaskType.SUN_POINTING: "Sun pointing",
-    TaskType.DOWNLINK: "Downlink",
-    TaskType.START: "Start",
-}
-
-
-@dataclass(unsafe_hash=True)
-class Opportunity:
-
-    # Time window for tasking
-    task: int  # [-] Task to be performed
-    time_start: float  # [s] Start time
-    time_end: int  # [step] End time
-    duration: int  # [step] Duration
-    power: float = -1  # [W]
-    data: float = 1  # [Mbps]
-    reward: float = 1  # [-]
-    type: TaskType = TaskType.USER  # [-] Type of opportunity
-
-    id: int = field(init=False)
-    id_count: int = 0
-
-    def __post_init__(self):
-        self.id = Opportunity.id_count
-        Opportunity.id_count += 1
-
-
-def plot_opportunity_windows(
-    opportunities: List[Opportunity],
-    start_end_times: Dict[
-        int,
-        Tuple[
-            np.ndarray,
-            np.ndarray,
-        ],
-    ] = None,
-    plot_all: bool = False,
-    plot_labels: bool = True,
-):
-    # Plot horizontal bars for each opporftunity using the least number of rows
-    user_opps_filtered = [o for o in opportunities if o.type == TaskType.USER]
-    user_opps_sorted = sorted(user_opps_filtered, key=lambda x: x.time_start)
-    user_rows = []
-    for opp in user_opps_sorted:
-        for i, row in enumerate(user_rows):
-            if opp.time_start > row[-1].time_end:
-                row.append(opp)
-                break
-        else:
-            user_rows.append([opp])
-
-    downlink_opps = [o for o in opportunities if o.type == TaskType.DOWNLINK]
-    downlink_opps_sorted = sorted(downlink_opps, key=lambda x: x.time_start)
-    downlink_rows = []
-    for opp in downlink_opps_sorted:
-        for i, row in enumerate(downlink_rows):
-            if opp.time_start > row[-1].time_end:
-                row.append(opp)
-                break
-        else:
-            downlink_rows.append([opp])
-
-    sun_opps = [o for o in opportunities if o.type == TaskType.SUN_POINTING]
-    sun_rows = [sun_opps]
-
-    rows = user_rows + downlink_rows + sun_rows
-
-    for i, row in enumerate(rows):
-        for opp in row:
-            if not plot_all and opp.type != TaskType.USER:
-                continue
-
-            color = COLORS[opp.type]
-
-            def add_text(ts, te, txt):
-                if plot_labels:
-                    plt.text((ts + te) / 2, i + 0.15, txt, ha="center", va="center")
-
-            def add_rect(ts, te):
-                plt.fill_between([ts, te], i - 0.3, i + 0.3, alpha=0.5, color=color)
-
-            def add_empty_rect(ts, te):
-                plt.fill_between(
-                    [ts, te],
-                    i - 0.3,
-                    i + 0.3,
-                    alpha=0.15,
-                    hatch="/",
-                    edgecolor="black",
-                    color=color,
-                )
-
-            # Opportunity window
-            if opp.type not in [TaskType.SUN_POINTING, TaskType.DOWNLINK]:
-                plt.hlines(i, opp.time_start, opp.time_end, colors="k")
-                plt.vlines(opp.time_start, i - 0.15, i + 0.15, colors="k")
-                plt.vlines(opp.time_end, i - 0.15, i + 0.15, colors="k")
-
-                if start_end_times is None:
-                    ts = (opp.time_start + opp.time_end - opp.duration) / 2
-                    te = (opp.time_start + opp.time_end + opp.duration) / 2
-                    add_rect(ts, te)
-                    add_text(opp.time_start, opp.time_end, str(opp.id))
-                elif opp.id in start_end_times:
-                    for ts, te in zip(*start_end_times[opp.id]):
-                        add_rect(ts, te)
-                        add_text(ts, te, str(opp.id))
-                else:
-                    ts = (opp.time_start + opp.time_end - opp.duration) / 2
-                    te = (opp.time_start + opp.time_end + opp.duration) / 2
-                    add_empty_rect(ts, te)
-                    add_text(opp.time_start, opp.time_end, str(opp.id))
-
-            else:
-                # Sun pointing or downlink opportunity
-                if start_end_times is None:
-                    add_rect(opp.time_start, opp.time_end)
-                    add_text(opp.time_start, opp.time_end, str(opp.id))
-                elif opp.id in start_end_times:
-                    for ts, te in zip(*start_end_times[opp.id]):
-                        add_rect(ts, te)
-                        add_text(ts, te, str(opp.id))
-                        add_text(ts, te, str(opp.id))
-
-    plt.xlabel("Time")
-    plt.xlim(
-        0,
-        max(o.time_end for o in opportunities),
-    )
-    # plt.gca().spines[["left", "top", "right"]].set_visible(False)
-    if start_end_times is not None:
-        legend = [
-            plt.Line2D(
-                [0], [0], color=COLORS[tt], lw=5, label=MODE_NAMES[tt], alpha=0.5
-            )
-            for tt in TaskType
-            if tt not in [TaskType.START]
-        ]
-        # Legend with 3 columns at the bottom outside the plot
-        plt.legend(
-            handles=legend,
-            loc="upper center",
-            bbox_to_anchor=(0.5, 1.3),
-            ncol=3,
-        )
-    plt.yticks([])
-    plt.ylabel("Tasks")
+def normalize(v):
+    if v.ndim == 1:
+        return v / np.linalg.norm(v)
+    else:
+        return v / np.linalg.norm(v, axis=1)[:, None]
 
 
 def plot_windows(
@@ -302,7 +149,7 @@ def plot_windows(
     plt.ylabel("Tasks")
 
 
-def get_start_and_end_indexes(sequence: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def get_start_end_indexes(sequence: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     tmp = np.concatenate(([False], sequence.astype(bool), [False]))
     starts = np.where(np.logical_and(~tmp[:-1], tmp[1:]))[0]
     ends = np.where(np.logical_and(tmp[:-1], ~tmp[1:]))[0]

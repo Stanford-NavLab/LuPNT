@@ -34,4 +34,18 @@ void init_math_utils(py::module &m) {
       "degrees2dms",
       [](double deg) -> Vector3d { return degrees2dms(deg).cast<double>(); },
       "Convert degrees to degrees, minutes, seconds", py::arg("deg"));
+  m.def(
+      "decimal2dB", [](double x) -> double { return decimal2dB(x).val(); },
+      "Convert decimal to dB", py::arg("x"));
+  m.def(
+      "dB2decimal", [](double x) -> double { return dB2decimal(x).val(); },
+      "Convert dB to decimal", py::arg("x"));
+  m.def(
+      "dB2decimal",
+      [](MatrixXd x) -> MatrixXd { return dB2decimal(x).cast<double>(); },
+      py::arg("x"));
+  m.def(
+      "decimal2dB",
+      [](MatrixXd x) -> MatrixXd { return decimal2dB(x).cast<double>(); },
+      py::arg("x"));
 }

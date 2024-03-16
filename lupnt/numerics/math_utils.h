@@ -47,6 +47,12 @@ real angleBetweenVectors(const VectorX &a, const VectorX &b);
 real wrapToPi(real angle);
 VectorX wrapToPi(VectorX angle);
 
+real decimal2dB(real x);
+real dB2decimal(real x);
+
+MatrixX decimal2dB(MatrixX x);
+MatrixX dB2decimal(MatrixX x);
+
 /**
  * @brief Wrap the angles between 0 and 2pi
  *

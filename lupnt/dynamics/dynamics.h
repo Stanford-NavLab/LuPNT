@@ -195,8 +195,9 @@ class NumericalOrbitDynamics : public NumericalDynamics {
   // without dt (uses dt_)
   void Propagate(OrbitState &state, real t0, real tf);
   void Propagate(Vector6 &x, real t0, real tf);
-  MatrixX Propagate(OrbitState &state, real t0, VectorX &tf);
-  MatrixX Propagate(Vector6 &x, real t0, VectorX &tf);
+  MatrixX Propagate(OrbitState &state, real t0, VectorX &tf,
+                    bool progress = false);
+  MatrixX Propagate(Vector6 &x, real t0, VectorX &tf, bool progress = false);
   void PropagateWithStm(OrbitState &state, real t0, real tf, Matrix6d &stm);
   void PropagateWithStm(Vector6 &x, real t0, real tf, Matrix6d &stm);
 

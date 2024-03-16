@@ -11,6 +11,7 @@
 
 #include "dynamics.h"
 #include "lupnt/core/constants.h"
+#include "lupnt/core/progress_bar.h"
 
 namespace lupnt {
 
@@ -94,21 +95,36 @@ void NumericalOrbitDynamics::Propagate(Vector6 &x, real t0, real tf) {
   Propagate(x, t0, tf, dt_prop);
 }
 
-MatrixX NumericalOrbitDynamics::Propagate(Vector6 &x, real t0, VectorX &tf) {
+MatrixX NumericalOrbitDynamics::Propagate(Vector6 &x, real t0, VectorX &tf,
+                                          bool progress) {
   Vector6 x0 = x;
   MatrixX xf(tf.size(), 6);
+
+  ProgressBar pb(tf.size());
   for (int i = 0; i < tf.size(); i++) {
-    xf.row(i) = propagator_.Propagate(odefunc_, t0, tf(i), x0, dt_);
+    if (i == 0)
+      xf.row(i) = propagator_.Propagate(odefunc_, t0, tf(i), x0, dt_);
+    else
+      xf.row(i) =
+          propagator_.Propagate(odefunc_, tf(i - 1), tf(i), xf.row(i - 1), dt_);
+    if (progress) pb.Update();
   }
   return xf;
 }
 
 MatrixX NumericalOrbitDynamics::Propagate(OrbitState &state, real t0,
-                                          VectorX &tf) {
+                                          VectorX &tf, bool progress) {
   Vector6 x0 = state.GetVector();
   MatrixX xf(tf.size(), 6);
+
+  ProgressBar pb(tf.size());
   for (int i = 0; i < tf.size(); i++) {
-    xf.row(i) = propagator_.Propagate(odefunc_, t0, tf(i), x0, dt_);
+    if (i == 0)
+      xf.row(i) = propagator_.Propagate(odefunc_, t0, tf(i), x0, dt_);
+    else
+      xf.row(i) =
+          propagator_.Propagate(odefunc_, tf(i - 1), tf(i), xf.row(i - 1), dt_);
+    if (progress) pb.Update();
   }
   return xf;
 }

@@ -83,4 +83,5 @@ set(third_party_srcs
   ${eigen_headers} 
   ${autodiff_headers}
   ${cspice_headers}
+  ${tqdm_headers}
 )

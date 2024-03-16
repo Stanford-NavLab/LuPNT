@@ -24,3 +24,4 @@ docs/html
 *.profraw
 *.so
 **/figures
+**/cache

@@ -64,6 +64,20 @@ double deg2rad(double deg) { return (M_PI / 180) * deg; }
 
 double rad2deg(double rad) { return (180 / M_PI) * rad; }
 
+real decimal2dB(real x) { return 10 * log10(x); }
+
+real dB2decimal(real x) { return pow(10, x / 10); }
+
+MatrixX decimal2dB(MatrixX x) {
+  x.array() = x.unaryExpr([](real x) { return decimal2dB(x); });
+  return x;
+}
+
+MatrixX dB2decimal(MatrixX x) {
+  x.array() = x.unaryExpr([](real x) { return dB2decimal(x); });
+  return x;
+}
+
 real floor(real x) {
   real y = x;
   y[0] = std::floor(x.val());

@@ -75,13 +75,14 @@ void init_dynamics(py::module &m) {
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
       .def(
           "propagate",
-          [](NumericalOrbitDynamics &dyn, Vector6d &x, double t0,
-             VectorXd &tfs) -> MatrixXd {
+          [](NumericalOrbitDynamics &dyn, Vector6d &x, double t0, VectorXd &tfs,
+             bool progress) -> MatrixXd {
             Vector6 x_real = x.cast<real>();
             VectorX tfs_real = tfs.cast<real>();
-            return dyn.Propagate(x_real, t0, tfs_real).cast<double>();
+            return dyn.Propagate(x_real, t0, tfs_real, progress).cast<double>();
           },
-          py::arg("state"), py::arg("t0"), py::arg("tfs"))
+          py::arg("state"), py::arg("t0"), py::arg("tfs"),
+          py::arg("progress") = false)
       .def(
           "propagate_with_stm",
           [](NumericalOrbitDynamics &dyn, CartesianOrbitState &state, double t0,
