@@ -3,7 +3,7 @@ import pylupnt as pnt
 import matplotlib.pyplot as plt
 import pylupnt as pnt
 from matplotlib.colors import TABLEAU_COLORS
-from algorithms import Request, ServiceWindow, State, Action
+from algorithms import Request, ServiceWindow, State, Action, PntSchedulingProblem
 from typing import Tuple
 
 
@@ -127,13 +127,18 @@ def plot_requests_service_windows(
     requests: list[Request],
     service_windows: list[ServiceWindow],
     policy: list[tuple[State, Action]] = None,
+    ax: plt.Axes = None,
 ) -> None:
-    plt.figure(figsize=(8, 3))
     request_dict: dict[int, Request] = {r.id: r for r in requests}
     window_dict: dict[int, ServiceWindow] = {w.id: w for w in service_windows}
     total_contact: dict[int, float] = {r.id: 0 for r in requests}
     for w in service_windows:
         total_contact[w.request_id] += w.end - w.start
+
+    if ax is None:
+        plt.figure(figsize=(8, 6))
+    else:
+        plt.sca(ax)
 
     # Plot service windows
     for w in service_windows:
@@ -181,8 +186,61 @@ def plot_requests_service_windows(
     plt.xlim(0, np.max([w.end for w in service_windows]))
     plt.xlabel("Time")
     plt.ylabel("Request ID")
-    plt.title("Service Windows")
+    plt.grid()
     plt.gca().invert_yaxis()
+    plt.tight_layout()
+
+
+def plot_resources(
+    problem: PntSchedulingProblem,
+    policy: list[tuple[State, Action]],
+    ax: plt.Axes = None,
+) -> None:
+
+    times = []
+    data = []
+    energy = []
+    for s, a in policy:
+        times.append(s.time)
+        data.append(s.data)
+        energy.append(s.energy)
+        if a is not None:
+            times.append(a.start)
+            data.append(
+                max(s.data + problem.data_gen_func(s.time, a.start), problem.min_data)
+            )
+            energy.append(
+                min(
+                    s.energy + problem.energy_gen_func(s.time, a.start),
+                    problem.max_energy,
+                )
+            )
+
+    if ax is None:
+        fig, ax = plt.subplots(2, 1, figsize=(8, 6))
+
+    plt.sca(ax[0])
+    plt.plot(times, data, "tab:blue", label="Data", lw=2)
+    plt.hlines(problem.min_data, 0, np.max(times), colors="tab:blue", linestyles="--")
+    plt.hlines(problem.max_data, 0, np.max(times), colors="tab:blue", linestyles="--")
+    plt.xlabel("Time")
+    plt.ylabel("Data [MB]")
+    plt.xlim(0, np.max(times))
+    plt.grid()
+
+    plt.sca(ax[1])
+    plt.plot(times, energy, "tab:green", label="Energy", lw=2)
+    plt.hlines(
+        problem.min_energy, 0, np.max(times), colors="tab:green", linestyles="--"
+    )
+    plt.hlines(
+        problem.max_energy, 0, np.max(times), colors="tab:green", linestyles="--"
+    )
+    plt.xlabel("Time")
+    plt.ylabel("Energy [kWh]")
+    plt.xlim(0, np.max(times))
+    plt.grid()
+
     plt.tight_layout()
 
 

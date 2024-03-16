@@ -3,6 +3,7 @@ import cvxpy as cp
 import logging
 from dataclasses import dataclass, field
 import utils
+from tqdm import tqdm
 
 
 @dataclass(frozen=True, repr=True)
@@ -13,6 +14,7 @@ class Request:
     start: float  # Start time
     end: float  # End time
     duration: float  # Duration
+    priority: int = 1  # Priority
 
 
 @dataclass(frozen=True, repr=True)
@@ -87,6 +89,8 @@ class PntSchedulingProblem:
         max_energy: float,  # Maximum energy
         min_data: float,  # Minimum data
         max_data: float,  # Maximum data
+        energy_gen_func: callable,  # Energy generation function
+        data_gen_func: callable,  # Data generation function
     ):
         self.request_dict = {r.id: r for r in requests}
         self.service_windows = sorted(service_windows, key=lambda w: w.start)
@@ -97,8 +101,11 @@ class PntSchedulingProblem:
         self.max_energy = max_energy
         self.min_data = min_data
         self.max_data = max_data
+        self.energy_gen_func = energy_gen_func
+        self.data_gen_func = data_gen_func
+        self.tf = max([r.end for r in requests])
 
-    def available_actions(self, s: State) -> list[ServiceWindow]:
+    def available_actions(self, s: State) -> list[Action]:
         windows = [
             w
             for w in self.service_windows
@@ -116,22 +123,26 @@ class PntSchedulingProblem:
                 if s.last_window is None
                 else self.transition_times[s.last_window.id, window.id]
             )
-            action_start = max(window.start, s.time + trans_time)
-            action_duration = min(
+            a_start = max(window.start, s.time + trans_time)
+            a_duration = min(
                 self.min_action_duration,
-                window.end - action_start,
+                window.end - a_start,
                 self.request_dict[window.request_id].duration
                 - s.request_time[window.request_id],
             )
-            if action_duration <= 0:
+            if a_duration <= 0:
                 continue
 
             # Resources
+            energy_gen = self.energy_gen_func(s.time, a_start + a_duration)
+            data_gen = self.data_gen_func(s.time, a_start + a_duration)
+            if s.energy + energy_gen + window.power_gen < self.min_energy:
+                continue
+            if s.data + data_gen + window.data_gen > self.max_data:
+                continue
 
             # Consider action
-            actions.append(
-                Action(start=action_start, duration=action_duration, window=window)
-            )
+            actions.append(Action(start=a_start, duration=a_duration, window=window))
             actions_count += 1
 
             if actions_count >= self.N_max_actions:
@@ -141,14 +152,36 @@ class PntSchedulingProblem:
 
     def transition_function(self, s: State, a: Action) -> State:
         window = a.window
+        time = a.start + a.duration
         request_time = s.request_time.copy()
-        request_time[window.request_id] += a.duration
+        request_time[window.request_id] = min(
+            request_time[window.request_id] + a.duration,
+            self.request_dict[window.request_id].duration,
+        )
+        data = max(
+            self.min_data,
+            s.data + window.data_gen * a.duration + self.data_gen_func(s.time, time),
+        )
+        energy = min(
+            self.max_energy,
+            s.energy
+            + window.power_gen * a.duration
+            + self.energy_gen_func(s.time, time),
+        )
+
+        eps = 1e-6
+        assert s.time <= a.start + eps
+        assert data >= self.min_data - eps
+        assert data <= self.max_data + eps
+        assert energy <= self.max_energy + eps
+        assert energy >= self.min_energy - eps
+
         return State(
-            time=a.start + a.duration,
+            time=time,
             last_window=window,
             request_time=request_time,
-            data=s.data + window.data_gen,
-            energy=s.energy + window.power_gen,
+            data=data,
+            energy=energy,
         )
 
     def reward_function(self, s: State, a: Action) -> float:
@@ -163,12 +196,21 @@ class PntSchedulingProblem:
             time=0,
             last_window=None,
             request_time={r.id: 0 for r in self.request_dict.values()},
-            data=0,
-            energy=0,
+            data=(self.min_data + self.max_data) / 2,
+            energy=(self.min_energy + self.max_energy) / 2,
         )
 
     def total_reward(self, policy: list[tuple[State, Action]]) -> float:
         return sum(self.reward_function(s, a) for s, a in policy if a is not None)
+
+    def percentage_completed(self, policy: list[tuple[State, Action]]) -> float:
+        s0 = policy[0][0]
+        sf = policy[-1][0]
+        return {
+            r.id: round(sf.request_time[r.id] / r.duration * 100, 2)
+            for r in self.request_dict.values()
+            if r.id >= 0
+        }
 
 
 class SmdpForwardSearchSolver:
@@ -201,10 +243,24 @@ class SmdpForwardSearchSolver:
         logging.debug(f"Initial state: {s}")
         policy = []
         a, _ = self.select_action(s, d, gamma)
+
+        # Progress bar
+        tf = self.problem.tf
+        t = s.time
+        bar = tqdm(total=int(tf - t), desc="Solving Forward Search (progress in hours)")
+
         while a is not None:
             policy.append((s, a))
             s = self.problem.transition_function(s, a)
             a, _ = self.select_action(s, d, gamma)
+
+            # Update progress bar
+            bar.update(int(s.time - t))
+            t = s.time
+
+        # Close progress bar
+        bar.update(int(tf - bar.n))
+
         policy.append((s, None))
         return policy
 
@@ -220,12 +276,12 @@ class SmdpMctsSolver:
     def __init__(self, problem: PntSchedulingProblem):
         self.problem = problem
 
-        self.N = dict[State, dict[Action, float]]()
+        self.N = dict[State, dict[Action, int]]()
         self.Q = dict[State, dict[Action, float]]()
 
-    def get_N(self, s: State, a: Action) -> float:
+    def get_N(self, s: State, a: Action) -> int:
         if s not in self.N or a not in self.N[s]:
-            return 1
+            return 0
         return self.N[s][a]
 
     def get_Q(self, s: State, a: Action) -> float:
@@ -239,7 +295,7 @@ class SmdpMctsSolver:
         if d == 0 or not actions:
             return 0
 
-        use_rewards = True
+        use_rewards = False
         if use_rewards:
             rewards = np.array([self.problem.reward_function(s, a) for a in actions])
             rewards += 1e-5  # Add small value to avoid division by zero
@@ -297,13 +353,28 @@ class SmdpMctsSolver:
         for _ in range(n):
             self.simulate(s, d, gamma, c)
 
+        # Progress bar
+        tf = self.problem.tf
+        t = s.time
+        bar = tqdm(total=int(tf - t), desc="Solving Forward Search (progress in hours)")
+
         policy = []
         actions = self.problem.available_actions(s)
         while actions:
             a = max(actions, key=lambda a: self.get_Q(s, a))
             policy.append((s, a))
             s = self.problem.transition_function(s, a)
+
+            for _ in range(n):
+                self.simulate(s, d, gamma, c)
             actions = self.problem.available_actions(s)
+
+            # Update progress bar
+            bar.update(int(s.time - t))
+            t = s.time
+
+        # Close progress bar
+        bar.update(int(tf - bar.n))
 
         policy.append((s, None))
         return policy
@@ -312,37 +383,76 @@ class SmdpMctsSolver:
 class DiscreteTimeIpSolver:
     def __init__(self, problem: PntSchedulingProblem):
         self.problem = problem
+        self.solution: np.array = None
 
-    def solve(self, state: State, time_step: float) -> list[tuple[State, Action]]:
+    def solve(self, s: State, time_step: float) -> list[tuple[State, Action]]:
 
         N_requests = len(self.problem.request_dict)
-        N_time_steps = int(
-            max([r.end for r in self.problem.request_dict.values()]) / time_step
-        )
-        durations = np.array(
+        N_time_steps = int(self.problem.tf / time_step)
+        durations = np.ceil(
             [r.duration / time_step for r in self.problem.request_dict.values()]
-        )
+        ).astype(int)
         transition_times = np.ceil(self.problem.transition_times / time_step).astype(
             int
         )
         rewards = np.zeros((N_requests, N_time_steps))
-        service_windows = np.zeros((N_requests, N_time_steps), dtype=bool)
+        service_windows = np.zeros((N_requests, N_time_steps))
+        data_gen_requests = np.zeros((N_requests, N_time_steps))
+        energy_gen_requests = np.zeros((N_requests, N_time_steps))
         for i, r in enumerate(self.problem.request_dict.values()):
             windows = [w for w in self.problem.service_windows if w.request_id == r.id]
             starts = np.ceil([w.start / time_step for w in windows]).astype(int)
             ends = np.floor([w.end / time_step for w in windows]).astype(int)
-            for w, s, e in zip(windows, starts, ends):
-                service_windows[i, s:e] = True
-                rewards[i, s:e] = w.reward / (r.duration / time_step)
+            for w, ts, te in zip(windows, starts, ends):
+                if ts == te:
+                    print(
+                        f"Service window {w.id} has duration 0. Try decreasing time step."
+                    )
+                    # if te < N_time_steps:
+                    #     te += 1
+                    # else:
+                    #     ts -= 1
+                service_windows[i, ts:te] = 1
+                rewards[i, ts:te] = w.reward / durations[i]
+                data_gen_requests[i, ts:te] = w.data_gen * time_step
+                energy_gen_requests[i, ts:te] = w.power_gen * time_step
 
+        data_gen = self.problem.data_gen_func(
+            np.arange(N_time_steps) * time_step,
+            (np.arange(N_time_steps) + 1) * time_step,
+        )
+        energy_gen = self.problem.energy_gen_func(
+            np.arange(N_time_steps) * time_step,
+            (np.arange(N_time_steps) + 1) * time_step,
+        )
         # Variables
         x = cp.Variable((N_requests, N_time_steps), boolean=True)
 
         # Objective
-        objective = cp.Maximize(cp.sum(cp.multiply(x, rewards)))
+        lambda_sep = 1e-3 / (N_requests * N_time_steps)
+        objective = cp.Maximize(
+            cp.sum(
+                cp.multiply(x, rewards)
+                - lambda_sep * cp.sum(cp.abs(cp.diff(x, axis=1)))
+            )
+        )
 
         # Constraints
         constraints = []
+        for t in range(N_time_steps):
+            constraints.append(
+                s.data
+                + np.sum(data_gen[: t + 1])
+                + cp.sum(cp.multiply(data_gen_requests, x)[:, : t + 1])
+                <= self.problem.max_data
+            )
+            constraints.append(
+                s.energy
+                + np.sum(energy_gen[: t + 1])
+                + cp.sum(cp.multiply(energy_gen_requests, x)[:, : t + 1])
+                >= self.problem.min_energy
+            )
+
         constraints.append(cp.sum(x, axis=0) <= 1)  # One action at a time
         constraints.append(cp.sum(x, axis=1) <= durations)  # Duration
         constraints.append(x <= service_windows)  # Service window
@@ -352,53 +462,80 @@ class DiscreteTimeIpSolver:
                     continue
                 for t in range(N_time_steps - 1):
                     tt = transition_times[i, j]
-                    constraints.append(
-                        x[j, t : t + tt + 1] <= 1 - x[i, t]
-                    )  # Transition times
+                    # Transition times
+                    constraints.append(x[j, t : t + tt + 1] <= 1 - x[i, t])
 
         # Optimize
         problem = cp.Problem(objective, constraints)
-        problem.solve()
+        problem.solve(verbose=True, solver=cp.GUROBI)
+        self.solution = np.round(x.value).astype(int)  # Convert to integer
         print(problem.status)
 
         # Policy
-        policy = self.construct_policy(state, x, time_step)
+        policy = self.construct_policy(s, time_step)
         return policy
 
     def construct_policy(
-        self, state: State, x: np.array, time_step: float
+        self, s: State, time_step: float
     ) -> list[tuple[State, Action]]:
 
-        solution = np.round(x.value).astype(int)  # Convert to integer
+        # Dictionary mapping request id to service windows
         service_windows_dict: dict[int, list[ServiceWindow]] = {
             r.id: [w for w in self.problem.service_windows if w.request_id == r.id]
             for r in self.problem.request_dict.values()
         }
 
-        def get_window(s: int, e: int, request_id: int) -> int:
+        # Get window id given a time interval and a request id
+        def get_window(ts: int, te: int, request_id: int) -> int:
             windows = [
                 w
                 for w in service_windows_dict[request_id]
-                if s >= int(np.ceil(w.start / time_step))
-                and e <= int(np.floor(w.end / time_step))
+                if ts >= int(np.ceil(w.start / time_step)) - 1
+                and te <= int(np.floor(w.end / time_step)) + 1
             ]
             return windows[0]
 
+        # Create actions by iterating over the requests
         actions: list[Action] = []
         for i, r in enumerate(self.problem.request_dict.values()):
-            start, end = utils.get_start_end_indexes(solution[i])
-            for s, e in zip(start, end):
-                window = get_window(s, e, r.id)
+            start, end = utils.get_start_end_indexes(self.solution[i])
+            for ts, te in zip(start, end):
+                window = get_window(ts, te, r.id)
                 a = Action(
-                    start=s * time_step, duration=(e - s) * time_step, window=window
+                    start=ts * time_step, duration=(te - ts) * time_step, window=window
                 )
                 actions.append(a)
         actions.sort(key=lambda a: a.start)
 
+        # Create policy
         policy = []
-        s = state
         for a in actions:
+            # Fix the duration of the action
             policy.append((s, a))
             s = self.problem.transition_function(s, a)
+        policy.append((s, None))
+        return policy
+
+
+class RuleBasedSolver:
+
+    def __init__(self, problem: PntSchedulingProblem):
+        self.problem = problem
+
+    def solve(self, s: State) -> list[tuple[State, Action]]:
+        def sorting_key(a: Action) -> float:
+            return (
+                a.start * self.problem.tf + a.window.request_id
+                if a.window.request_id >= 0
+                else np.inf
+            )
+
+        actions = sorted(self.problem.available_actions(s), key=sorting_key)
+        policy = []
+        while actions:
+            a = actions[0]
+            policy.append((s, a))
+            s = self.problem.transition_function(s, a)
+            actions = sorted(self.problem.available_actions(s), key=sorting_key)
         policy.append((s, None))
         return policy
