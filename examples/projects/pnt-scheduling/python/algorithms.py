@@ -1,6 +1,5 @@
 import numpy as np
 import cvxpy as cp
-from collections import defaultdict
 import logging
 from dataclasses import dataclass, field
 import utils
@@ -84,12 +83,20 @@ class PntSchedulingProblem:
         transition_times: np.ndarray,  # Transition times matrix
         N_max_actions: int,  # Maximum number of actions to consider
         min_action_duration: float,  # Minimum action duration
+        min_energy: float,  # Minimum energy
+        max_energy: float,  # Maximum energy
+        min_data: float,  # Minimum data
+        max_data: float,  # Maximum data
     ):
         self.request_dict = {r.id: r for r in requests}
         self.service_windows = sorted(service_windows, key=lambda w: w.start)
         self.transition_times = transition_times
         self.N_max_actions = N_max_actions
         self.min_action_duration = min_action_duration
+        self.min_energy = min_energy
+        self.max_energy = max_energy
+        self.min_data = min_data
+        self.max_data = max_data
 
     def available_actions(self, s: State) -> list[ServiceWindow]:
         windows = [
@@ -101,7 +108,9 @@ class PntSchedulingProblem:
         ]
 
         actions = []
-        for window in windows[: self.N_max_actions]:
+        actions_count = 0
+        for window in windows:
+            # Time
             trans_time = (
                 0
                 if s.last_window is None
@@ -114,10 +123,20 @@ class PntSchedulingProblem:
                 self.request_dict[window.request_id].duration
                 - s.request_time[window.request_id],
             )
-            if action_duration > 0:
-                actions.append(
-                    Action(start=action_start, duration=action_duration, window=window)
-                )
+            if action_duration <= 0:
+                continue
+
+            # Resources
+
+            # Consider action
+            actions.append(
+                Action(start=action_start, duration=action_duration, window=window)
+            )
+            actions_count += 1
+
+            if actions_count >= self.N_max_actions:
+                break
+
         return actions
 
     def transition_function(self, s: State, a: Action) -> State:
@@ -200,13 +219,19 @@ class SmdpMctsSolver:
 
     def __init__(self, problem: PntSchedulingProblem):
         self.problem = problem
-        self.visited = set[State]()
 
-        self.N0 = defaultdict[State](lambda: defaultdict[Action](int))
-        self.Q0 = defaultdict[State](lambda: defaultdict[Action](int))
+        self.N = dict[State, dict[Action, float]]()
+        self.Q = dict[State, dict[Action, float]]()
 
-        self.N = defaultdict[State](lambda: defaultdict[Action](int))
-        self.Q = defaultdict[State](lambda: defaultdict[Action](int))
+    def get_N(self, s: State, a: Action) -> float:
+        if s not in self.N or a not in self.N[s]:
+            return 1
+        return self.N[s][a]
+
+    def get_Q(self, s: State, a: Action) -> float:
+        if s not in self.Q or a not in self.Q[s]:
+            return self.problem.reward_function(s, a)
+        return self.Q[s][a]
 
     def rollout(self, s: State, d: int, gamma: float) -> float:
         actions = self.problem.available_actions(s)
@@ -216,7 +241,8 @@ class SmdpMctsSolver:
 
         use_rewards = True
         if use_rewards:
-            rewards = [self.problem.reward_function(s, a) for a in actions]
+            rewards = np.array([self.problem.reward_function(s, a) for a in actions])
+            rewards += 1e-5  # Add small value to avoid division by zero
             rewards /= np.sum(rewards)
             idx = np.random.choice(len(actions), p=rewards)
         else:
@@ -236,11 +262,12 @@ class SmdpMctsSolver:
         if d == 0 or not actions:
             return 0
 
-        if s not in self.visited:
+        if s not in self.N:
+            self.N[s] = dict[Action, float]()
+            self.Q[s] = dict[Action, float]()
             for a in actions:
-                self.N[s, a] = self.N0[s, a]
-                self.Q[s, a] = self.Q0[s, a]
-            self.visited.add(s)
+                self.N[s][a] = self.get_N(s, a)
+                self.Q[s][a] = self.get_Q(s, a)
             return self.rollout(s, d, gamma)
 
         N_s = sum(self.N[s][a] for a in actions)
@@ -273,7 +300,7 @@ class SmdpMctsSolver:
         policy = []
         actions = self.problem.available_actions(s)
         while actions:
-            a = max(actions, key=lambda a: self.Q[s][a])
+            a = max(actions, key=lambda a: self.get_Q(s, a))
             policy.append((s, a))
             s = self.problem.transition_function(s, a)
             actions = self.problem.available_actions(s)
@@ -282,7 +309,7 @@ class SmdpMctsSolver:
         return policy
 
 
-class DiscreteTimeIlpSolver:
+class DiscreteTimeIpSolver:
     def __init__(self, problem: PntSchedulingProblem):
         self.problem = problem
 

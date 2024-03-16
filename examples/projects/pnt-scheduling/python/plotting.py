@@ -126,20 +126,21 @@ def plot_service_windows(
 def plot_requests_service_windows(
     requests: list[Request],
     service_windows: list[ServiceWindow],
-    policy: list[Tuple[State, Action]] = None,
+    policy: list[tuple[State, Action]] = None,
 ) -> None:
     plt.figure(figsize=(8, 3))
-    request_dict = {r.id: r for r in requests}
-    window_dict = {w.id: w for w in service_windows}
-    total_contact = {r.id: 0 for r in requests}
+    request_dict: dict[int, Request] = {r.id: r for r in requests}
+    window_dict: dict[int, ServiceWindow] = {w.id: w for w in service_windows}
+    total_contact: dict[int, float] = {r.id: 0 for r in requests}
     for w in service_windows:
         total_contact[w.request_id] += w.end - w.start
 
     # Plot service windows
     for w in service_windows:
+        y = w.request_id
         plt.plot(
             [w.start, w.end],
-            [w.request_id, w.request_id],
+            [y, y],
             "black",
             lw=2,
         )
@@ -147,6 +148,7 @@ def plot_requests_service_windows(
     if policy is None:
         # Plot average duration per window
         for w in service_windows:
+            y = w.request_id
             d = (
                 request_dict[w.request_id].duration
                 * (w.end - w.start)
@@ -155,8 +157,8 @@ def plot_requests_service_windows(
             m = (w.start + w.end) / 2
             plt.fill_between(
                 [m - d / 2, m + d / 2],
-                w.request_id - 0.3,
-                w.request_id + 0.3,
+                y - 0.3,
+                y + 0.3,
                 alpha=0.7,
                 color="tab:blue",
             )
@@ -180,6 +182,7 @@ def plot_requests_service_windows(
     plt.xlabel("Time")
     plt.ylabel("Request ID")
     plt.title("Service Windows")
+    plt.gca().invert_yaxis()
     plt.tight_layout()
 
 
