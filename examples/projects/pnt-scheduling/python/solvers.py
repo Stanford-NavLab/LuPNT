@@ -3,7 +3,7 @@ import cvxpy as cp
 import logging
 from dataclasses import dataclass, field
 import utils
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 from problem import PntSchedulingProblem, State, Action, ServiceWindow
 
 
@@ -150,7 +150,7 @@ class SmdpMctsSolver:
         # Progress bar
         tf = self.problem.tf
         t = s.time
-        bar = tqdm(total=int(tf - t), desc="Solving Forward Search (progress in hours)")
+        bar = tqdm(total=int(tf - t), desc="Solving MCTS (progress in hours)")
 
         policy = []
         actions = self.problem.available_actions(s)
@@ -207,9 +207,17 @@ class DiscreteTimeIpSolver:
                     # else:
                     #     ts -= 1
                 service_windows[i, ts:te] = 1
-                rewards[i, ts:te] = w.reward / durations[i]
-                data_gen_requests[i, ts:te] = w.data_gen * time_step
-                energy_gen_requests[i, ts:te] = w.power_gen * time_step
+                payload_on = w.request_id >= 0
+                if payload_on:
+                    rewards[i, ts:te] = (
+                        self.problem.CN0_norm[w.request_id, ts:te] * time_step
+                    )
+                    data_gen_requests[i, ts:te] = (
+                        self.problem.payload_data_gen * time_step
+                    )
+                    energy_gen_requests[i, ts:te] = (
+                        self.problem.payload_power_gen * time_step
+                    )
 
         data_gen = self.problem.data_gen_func(
             np.arange(N_time_steps) * time_step,
@@ -223,7 +231,7 @@ class DiscreteTimeIpSolver:
         x = cp.Variable((N_requests, N_time_steps), boolean=True)
 
         # Objective
-        lambda_sep = 1e-3 / (N_requests * N_time_steps)
+        lambda_sep = 1e-5 / (N_requests * N_time_steps)
         objective = cp.Maximize(
             cp.sum(
                 cp.multiply(x, rewards)

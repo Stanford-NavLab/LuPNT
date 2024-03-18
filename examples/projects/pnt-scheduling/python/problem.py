@@ -131,12 +131,14 @@ class PntSchedulingProblem:
                 if s.last_window is None
                 else self.transition_times[s.last_window.id, window.id]
             )
-            a_start = max(window.start, s.time + trans_time)
+            resources_time = 0
+
+            a_start = max(window.start, s.time + trans_time, s.time + resources_time)
             a_duration = min(
-                self.min_action_duration,
-                window.end - a_start,
+                self.min_action_duration,  # Hyperparameter
+                window.end - a_start,  # Window end
                 self.request_dict[window.request_id].duration
-                - s.request_time[window.request_id],
+                - s.request_time[window.request_id],  # Requested duration
             )
             if a_duration <= 0:
                 continue
@@ -144,9 +146,12 @@ class PntSchedulingProblem:
             # Resources
             energy_gen = self.energy_gen_func(s.time, a_start + a_duration)
             data_gen = self.data_gen_func(s.time, a_start + a_duration)
-            if s.energy + energy_gen + self.payload_power_gen < self.min_energy:
+            if (
+                s.energy + energy_gen + self.payload_power_gen * a_duration
+                < self.min_energy
+            ):
                 continue
-            if s.data + data_gen + self.payload_data_gen > self.max_data:
+            if s.data + data_gen + self.payload_data_gen * a_duration > self.max_data:
                 continue
 
             # Consider action
@@ -175,16 +180,17 @@ class PntSchedulingProblem:
             request_time[window.request_id] + a.duration,
             self.request_dict[window.request_id].duration,
         )
+        payload_on = window.request_id >= 0
         data = max(
             self.min_data,
             s.data
-            + self.payload_data_gen * a.duration
+            + self.payload_data_gen * a.duration * payload_on
             + self.data_gen_func(s.time, time),
         )
         energy = min(
             self.max_energy,
             s.energy
-            + self.payload_power_gen * a.duration
+            + self.payload_power_gen * a.duration * payload_on
             + self.energy_gen_func(s.time, time),
         )
 
@@ -213,12 +219,18 @@ class PntSchedulingProblem:
     def integrate_normalized_CN0(self, ts, te, request_id):
         # Integrate normalized CN0
         i_s, i_e = self.get_discrete_index(ts, te)
-        return np.sum(self.CN0_norm[request_id, i_s:i_e]) * self.time_step
+        cn0 = self.CN0_norm[request_id, i_s:i_e]
+        cn0[np.isnan(cn0)] = 0
+        return np.sum(cn0) * self.time_step
 
     def reward_function(self, s: State, a: Action) -> float:
-        return self.integrate_normalized_CN0(
-            a.start, a.start + a.duration, a.window.request_id
-        )
+        payload_on = a.window.request_id >= 0
+        if payload_on:
+            return self.integrate_normalized_CN0(
+                a.start, a.start + a.duration, a.window.request_id
+            )
+        else:
+            return 0
 
     def initial_state(self):
         return State(

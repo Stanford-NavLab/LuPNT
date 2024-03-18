@@ -3,7 +3,7 @@ import pylupnt as pnt
 import matplotlib.pyplot as plt
 import pylupnt as pnt
 from matplotlib.colors import TABLEAU_COLORS
-from algorithms import Request, ServiceWindow, State, Action, PntSchedulingProblem
+from problem import Request, ServiceWindow, State, Action, PntSchedulingProblem
 from typing import Tuple
 
 
@@ -208,41 +208,57 @@ def plot_resources(
         times.append(s.time)
         data.append(s.data)
         energy.append(s.energy)
+        assert not np.isnan(s.energy)
         if a is not None:
+            d = max(s.data + problem.data_gen_func(s.time, a.start), problem.min_data)
+            e = min(
+                s.energy + problem.energy_gen_func(s.time, a.start),
+                problem.max_energy,
+            )
+            assert not np.isnan(e)
             times.append(a.start)
-            data.append(
-                max(s.data + problem.data_gen_func(s.time, a.start), problem.min_data)
-            )
-            energy.append(
-                min(
-                    s.energy + problem.energy_gen_func(s.time, a.start),
-                    problem.max_energy,
-                )
-            )
+            data.append(d)
+            energy.append(e)
+        else:
+            d = s.data + problem.data_gen_func(s.time, problem.tf)
+            e = s.energy + problem.energy_gen_func(s.time, problem.tf)
+            assert not np.isnan(e)
+            times.append(problem.tf)
+            data.append(d)
+            energy.append(e)
 
     if ax is None:
         fig, ax = plt.subplots(2, 1, figsize=(8, 6))
 
+    times = np.array(times)
+    data = np.array(data) / problem.max_data * 100 * 0.8
+    energy = np.array(energy) / problem.max_energy * 100
+
     plt.sca(ax[0])
     plt.plot(times, data, "tab:blue", label="Data", lw=2)
-    plt.hlines(problem.min_data, 0, np.max(times), colors="tab:blue", linestyles="--")
-    plt.hlines(problem.max_data, 0, np.max(times), colors="tab:blue", linestyles="--")
+    y = 100 * 0.8
+    # plt.hlines(problem.min_data, 0, problem.tf, colors="tab:blue", linestyles="--")
+    plt.hlines(y, 0, problem.tf, colors="tab:blue", linestyles="--", label="Max. data")
+    plt.legend()
     plt.xlabel("Time")
-    plt.ylabel("Data [MB]")
-    plt.xlim(0, np.max(times))
+    plt.ylabel("Data [\\%]")
+    plt.xlim(0, problem.tf)
+    plt.ylim(0, 100)
+    plt.legend(loc="lower right")
     plt.grid()
 
     plt.sca(ax[1])
     plt.plot(times, energy, "tab:green", label="Energy", lw=2)
+    y = problem.min_energy / problem.max_energy * 100
     plt.hlines(
-        problem.min_energy, 0, np.max(times), colors="tab:green", linestyles="--"
+        y, 0, problem.tf, colors="tab:green", linestyles="--", label="Min. energy"
     )
-    plt.hlines(
-        problem.max_energy, 0, np.max(times), colors="tab:green", linestyles="--"
-    )
+    # plt.hlines(problem.max_energy, 0, problem.tf, colors="tab:green", linestyles="--")
     plt.xlabel("Time")
-    plt.ylabel("Energy [kWh]")
-    plt.xlim(0, np.max(times))
+    plt.ylabel("Energy [\\%]")
+    plt.xlim(0, problem.tf)
+    plt.ylim(0, 100)
+    plt.legend(loc="upper right")
     plt.grid()
 
     plt.tight_layout()
