@@ -27,8 +27,12 @@ class SmdpForwardSearchSolver:
         a_star, v_star = None, -np.inf
         for a in actions:
             sp = self.problem.transition_function(s, a)
+            sat_id = a.satellite_id
             _, vp = self.select_action(sp, d - 1, gamma)
-            v = self.problem.reward_function(s, a) + gamma ** (a.start - s.time) * vp
+            v = (
+                self.problem.reward_function(s, a)
+                + gamma ** (a.start - s.time[sat_id]) * vp
+            )
             if v > v_star:
                 a_star, v_star = a, v
         return a_star, v_star
@@ -40,7 +44,7 @@ class SmdpForwardSearchSolver:
 
         # Progress bar
         tf = self.problem.tf
-        t = s.time
+        t = min(s.time)
         bar = tqdm(total=int(tf - t), desc="Solving Forward Search (progress in hours)")
 
         while a is not None:
@@ -49,8 +53,8 @@ class SmdpForwardSearchSolver:
             a, _ = self.select_action(s, d, gamma)
 
             # Update progress bar
-            bar.update(int(s.time - t))
-            t = s.time
+            bar.update(int(min(s.time) - t))
+            t = min(s.time)
 
         # Close progress bar
         bar.update(int(tf - bar.n))
@@ -101,7 +105,7 @@ class SmdpMctsSolver:
         a = actions[idx]
         r = self.problem.reward_function(s, a)
         sp = self.problem.transition_function(s, a)
-        return r + gamma ** (a.start - s.time) * self.rollout(sp, d - 1, gamma)
+        return r + gamma ** (a.start - min(s.time)) * self.rollout(sp, d - 1, gamma)
 
     def bonus(self, c: float, N_s: int, N_sa: int) -> float:
         return c * np.sqrt(np.log(N_s) / N_sa) if N_sa > 0 else np.inf
@@ -149,7 +153,7 @@ class SmdpMctsSolver:
 
         # Progress bar
         tf = self.problem.tf
-        t = s.time
+        t = min(s.time)
         bar = tqdm(total=int(tf - t), desc="Solving MCTS (progress in hours)")
 
         policy = []
@@ -164,8 +168,8 @@ class SmdpMctsSolver:
             actions = self.problem.available_actions(s)
 
             # Update progress bar
-            bar.update(int(s.time - t))
-            t = s.time
+            bar.update(int(min(s.time) - t))
+            t = min(s.time)
 
         # Close progress bar
         bar.update(int(tf - bar.n))

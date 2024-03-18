@@ -63,7 +63,7 @@ class Action:
     def __repr__(self):
         a = "Action("
         a += f"sat={self.satellite_id}, "
-        a += f"window={self.window.id}, "
+        a += f"request={self.window.request_id}, "
         a += f"start={self.start:.2f}, "
         a += f"duration={self.duration:.2f}"
         a += ")"
@@ -127,13 +127,23 @@ class PntSchedulingProblem:
         sat_id = np.argmin(s.time)
 
         # List of available windows
+        other_sat_request_ids = [
+            w.request_id
+            for other_sat_id, w in enumerate(s.last_window)
+            if w is not None and other_sat_id != sat_id
+        ]
         windows = [
             w
             for w in self.service_windows
-            if w.end >= s.time[sat_id]  # There is still time to start the window
-            and s.request_time[w.request_id]
-            <= self.request_dict[w.request_id].duration  # The request is not completed
-            and w.satellite_id == sat_id  # The window is for the selected satellite
+            if
+            # There is still time to start the window
+            w.end >= s.time[sat_id]
+            # The request is not completed
+            and s.request_time[w.request_id] <= self.request_dict[w.request_id].duration
+            # The window is for the selected satellite
+            and w.satellite_id == sat_id
+            # The request is not being served by another satellite
+            and w.request_id not in other_sat_request_ids
         ]
 
         actions = []
@@ -153,7 +163,7 @@ class PntSchedulingProblem:
                 s.time[sat_id] + trans_time,
             )
             a_duration = min(
-                self.min_action_duration,  # Hyperparameter
+                self.min_action_duration,
                 window.end - a_start,  # Window end
                 self.request_dict[window.request_id].duration
                 - s.request_time[window.request_id],  # Requested duration
@@ -243,10 +253,10 @@ class PntSchedulingProblem:
             / self.request_dict[a.window.request_id].duration
         )
 
-    def integrate_normalized_CN0(self, ts, te, request_id):
+    def integrate_normalized_CN0(self, ts, te, request_id, satellite_id):
         # Integrate normalized CN0
         i_s, i_e = self.get_discrete_index(ts, te)
-        cn0 = self.CN0_norm[request_id, i_s:i_e]
+        cn0 = self.CN0_norm[satellite_id, request_id, i_s:i_e]
         cn0[np.isnan(cn0)] = 0
         return np.sum(cn0) * self.time_step
 
@@ -254,21 +264,21 @@ class PntSchedulingProblem:
         payload_on = a.window.request_id >= 0
         if payload_on:
             return self.integrate_normalized_CN0(
-                a.start, a.start + a.duration, a.window.request_id
+                a.start, a.start + a.duration, a.window.request_id, a.satellite_id
             )
         else:
             return 0
 
     def initial_state(self):
         return State(
-            time=[0 for _ in range(self.N_satellites)],
+            time=[0.0 for _ in range(self.N_satellites)],
             last_window=[None for _ in range(self.N_satellites)],
-            request_time={r.id: 0 for r in self.request_dict.values()},
+            request_time={r.id: 0.0 for r in self.request_dict.values()},
             data=[
-                (self.min_data + self.max_data) / 2 for _ in range(self.N_satellites)
+                (self.min_data + self.max_data) / 2.0 for _ in range(self.N_satellites)
             ],
             energy=[
-                (self.min_energy + self.max_energy) / 2
+                (self.min_energy + self.max_energy) / 2.0
                 for _ in range(self.N_satellites)
             ],
         )

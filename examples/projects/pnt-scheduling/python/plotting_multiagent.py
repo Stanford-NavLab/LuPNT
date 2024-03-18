@@ -3,7 +3,13 @@ import pylupnt as pnt
 import matplotlib.pyplot as plt
 import pylupnt as pnt
 from matplotlib.colors import TABLEAU_COLORS
-from problem import Request, ServiceWindow, State, Action, PntSchedulingProblem
+from problem_multiagent import (
+    Request,
+    ServiceWindow,
+    State,
+    Action,
+    PntSchedulingProblem,
+)
 from typing import Tuple
 
 COLORS = [k for k in TABLEAU_COLORS.keys()]
@@ -158,7 +164,7 @@ def plot_requests_service_windows(
             [w.start, w.end],
             [y, y],
             COLORS[w.satellite_id],
-            lw=2,
+            lw=3,
         )
 
     if policy is None:
@@ -177,7 +183,7 @@ def plot_requests_service_windows(
                 [m - d / 2, m + d / 2],
                 y - 0.4,
                 y + 0.4,
-                alpha=0.7,
+                alpha=0.5,
                 color=COLORS[w.satellite_id],
             )
     else:
@@ -188,14 +194,16 @@ def plot_requests_service_windows(
                 [a.start, a.start + a.duration],
                 y - 0.3,
                 y + 0.3,
-                alpha=0.7,
-                color="tab:blue",
+                alpha=0.5,
+                color=COLORS[a.satellite_id],
                 edgecolor=None,
             )
 
     for i in range(N_satellites):
         plt.plot([], [], color=COLORS[i], lw=2, label=f"Satellite {i+1}")
-    plt.fill_between([], [], alpha=0.7, label="Average duration")
+
+    if policy is None:
+        plt.fill_between([], [], alpha=0.7, label="Average duration")
     plt.yticks(np.arange(min(request_dict.keys()), max(request_dict.keys()) + 1))
     plt.xlim(0, np.max([w.end for w in service_windows]))
     plt.xlabel("Time")
@@ -211,42 +219,43 @@ def plot_resources(
     policy: list[tuple[State, Action]],
     ax: plt.Axes = None,
 ) -> None:
-
-    times = []
-    data = []
-    energy = []
+    times = [[] for _ in range(problem.N_satellites)]
+    data = [[] for _ in range(problem.N_satellites)]
+    energy = [[] for _ in range(problem.N_satellites)]
     for s, a in policy:
-        times.append(s.time)
-        data.append(s.data)
-        energy.append(s.energy)
-        assert not np.isnan(s.energy)
-        if a is not None:
-            d = max(s.data + problem.data_gen_func(s.time, a.start), problem.min_data)
-            e = min(
-                s.energy + problem.energy_gen_func(s.time, a.start),
-                problem.max_energy,
-            )
-            assert not np.isnan(e)
-            times.append(a.start)
-            data.append(d)
-            energy.append(e)
-        else:
-            d = s.data + problem.data_gen_func(s.time, problem.tf)
-            e = s.energy + problem.energy_gen_func(s.time, problem.tf)
-            assert not np.isnan(e)
-            times.append(problem.tf)
-            data.append(d)
-            energy.append(e)
+        if a is None:
+            continue
+        i = a.satellite_id
+        times[i].append(s.time[i])
+        data[i].append(s.data[i])
+        energy[i].append(s.energy[i])
+        assert not np.isnan(s.energy).all()
+        d = max(s.data[i] + problem.data_gen_func(s.time[i], a.start), problem.min_data)
+        e = min(
+            s.energy[i] + problem.energy_gen_func(s.time[i], a.start),
+            problem.max_energy,
+        )
+        assert not np.isnan(e).all()
+        times[i].append(a.start)
+        data[i].append(d)
+        energy[i].append(e)
+
+    for i in range(problem.N_satellites):
+        d = s.data[i] + problem.data_gen_func(s.time[i], problem.tf)
+        e = s.energy[i] + problem.energy_gen_func(s.time[i], problem.tf)
+        assert not np.isnan(e).all()
+        times[i].append(problem.tf)
+        data[i].append(d)
+        energy[i].append(e)
 
     if ax is None:
         fig, ax = plt.subplots(2, 1, figsize=(8, 6))
 
-    times = np.array(times)
-    data = np.array(data) / problem.max_data * 100 * 0.8
-    energy = np.array(energy) / problem.max_energy * 100
-
     plt.sca(ax[0])
-    plt.plot(times, data, "tab:blue", label="Data", lw=2)
+    for i in range(problem.N_satellites):
+        x = np.array(times[i])
+        y = np.array(data[i]) / problem.max_data * 100 * 0.8
+        plt.plot(x, y, label=f"Satellite {i+1}", lw=2, color=COLORS[i])
     y = 100 * 0.8
     # plt.hlines(problem.min_data, 0, problem.tf, colors="tab:blue", linestyles="--")
     plt.hlines(y, 0, problem.tf, colors="tab:blue", linestyles="--", label="Max. data")
@@ -259,7 +268,10 @@ def plot_resources(
     plt.grid()
 
     plt.sca(ax[1])
-    plt.plot(times, energy, "tab:green", label="Energy", lw=2)
+    for i in range(problem.N_satellites):
+        x = np.array(times[i])
+        y = np.array(energy[i]) / problem.max_energy * 100
+        plt.plot(x, y, label=f"Satellite {i+1}", lw=2, color=COLORS[i])
     y = problem.min_energy / problem.max_energy * 100
     plt.hlines(
         y, 0, problem.tf, colors="tab:green", linestyles="--", label="Min. energy"
