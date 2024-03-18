@@ -44,11 +44,11 @@ class State:
     def __hash__(self):
         return hash(
             (
-                self.time,
-                self.last_window,
+                tuple(self.time),
+                tuple(self.last_window),
                 tuple(self.request_time.items()),
-                self.data,
-                self.energy,
+                tuple(self.data),
+                tuple(self.energy),
             )
         )
 
