@@ -61,27 +61,31 @@ def plot_satellites_users(
     plt.legend()
 
 
-def plot_elevation_range(tspan, az_el_rho, user_visible) -> None:
+def plot_elevation_range(
+    tspan: np.array, az_el_rho: np.array, user_visible: np.array, axs: plt.Axes = None
+) -> None:
+    if axs is None:
+        fig, axs = plt.subplots(2, 1, figsize=(8, 6))
+
     # Elevation and range over time
-    plt.figure(figsize=(6, 4))
     x = tspan / pnt.SECS_PER_HOUR
     x_lim = (0, tspan[-1] / pnt.SECS_PER_HOUR)
 
-    plt.subplot(211)
+    plt.sca(axs[0])
     el = np.rad2deg(az_el_rho[:, :, 1].copy())
     plt.plot(x, el.T, label="Elevation", lw=0.5)
     el[~user_visible] = np.nan
-    plt.plot(x, el.T, lw=2)
+    plt.plot(x, el.T, lw=3)
     plt.xlabel("Time (h)")
     plt.ylabel("Elevation (deg)")
     plt.xlim(x_lim)
     plt.grid()
 
-    plt.subplot(212)
+    plt.sca(axs[1])
     rho = az_el_rho[:, :, 2].copy()
     plt.plot(x, rho.T, label="Range", lw=0.5)
     rho[~user_visible] = np.nan
-    plt.plot(x, rho.T, lw=2)
+    plt.plot(x, rho.T, lw=3)
     plt.xlabel("Time (h)")
     plt.ylabel("Range (km)")
     plt.ylim(0, 15e3)
