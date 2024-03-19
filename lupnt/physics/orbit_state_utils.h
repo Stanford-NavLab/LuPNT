@@ -31,8 +31,8 @@
 // Function:
 // Vector<size> = func(Vector<size>, real)
 // New definitions:
-// Matrix<-1,size> = func(Matrix<-1,size>, real)
 // Matrix<-1,size> = func(Vector<size>, VectorX)
+// Matrix<-1,size> = func(Matrix<-1,size>, real)
 // Matrix<-1,size> = func(Matrix<-1,size>, VectorX)
 #define VECTORIZED_DEFINITION_FROM_VECTOR_REAL(func, size)        \
   Matrix<-1, size> func(const Vector<size> &x, const VectorX &y); \
@@ -64,7 +64,7 @@
 namespace lupnt {
 
 extern std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
-                std::function<Vector6(const Vector6 &, double)>>
+                std::function<Vector6(const Vector6 &, real)>>
     absolute_conversions;
 
 extern std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
@@ -72,22 +72,21 @@ extern std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
     relative_conversions;
 
 Vector6 ConvertOrbitState(const Vector6 &state_in, OrbitStateRepres repres_in,
-                          OrbitStateRepres repres_out, double mu = MU_MOON);
+                          OrbitStateRepres repres_out, real mu);
 
 Vector6 ConvertOrbitState(const Vector6 &state_in_c, const Vector6 &state_in_d,
                           OrbitStateRepres repres_in_c,
                           OrbitStateRepres repres_in_d,
-                          OrbitStateRepres repres_out, double mu = MU_MOON);
+                          OrbitStateRepres repres_out, real mu);
 
 std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
     const std::shared_ptr<OrbitState> &state_in, OrbitStateRepres repres_out,
-    double mu = MU_MOON);
+    real mu);
 
 // From CartesianOrbitState
 // - To ClassicalOE
-ClassicalOE CartesianToClassical(const CartesianOrbitState &rv,
-                                 double mu = MU_MOON);
-Vector6 CartesianToClassical(const Vector6 &rv, double mu = MU_MOON);
+ClassicalOE CartesianToClassical(const CartesianOrbitState &rv, real mu);
+Vector6 CartesianToClassical(const Vector6 &rv, real mu);
 
 // - To CartesianOrbitState (relative)
 CartesianOrbitState InertialToRtn(const CartesianOrbitState &rv_c,
@@ -100,41 +99,36 @@ Vector6 RtnToInertial(const Vector6 &rv_c, const Vector6 &rv_rtn_d);
 
 // From ClassicalOE
 // - To CartesianOrbitState
-CartesianOrbitState ClassicalToCartesian(const ClassicalOE &coe,
-                                         double mu = MU_MOON);
-Vector6 ClassicalToCartesian(const Vector6 &coe, double mu = MU_MOON);
+CartesianOrbitState ClassicalToCartesian(const ClassicalOE &coe, real mu);
+Vector6 ClassicalToCartesian(const Vector6 &coe, real mu);
 
 // - To QuasiNonsingularOE
-QuasiNonsingularOE ClassicalToQuasiNonsingular(const ClassicalOE &coe,
-                                               double mu = MU_MOON);
-Vector6 ClassicalToQuasiNonsingular(const Vector6 &coe, double mu = MU_MOON);
+QuasiNonsingularOE ClassicalToQuasiNonsingular(const ClassicalOE &coe, real mu);
+Vector6 ClassicalToQuasiNonsingular(const Vector6 &coe, real mu);
 
 // - To EquinoctialOE
-EquinoctialOE ClassicalToEquinoctial(const ClassicalOE &coe,
-                                     double mu = MU_MOON);
-Vector6 ClassicalToEquinoctial(const Vector6 &coe, double mu = MU_MOON);
+EquinoctialOE ClassicalToEquinoctial(const ClassicalOE &coe, real mu);
+Vector6 ClassicalToEquinoctial(const Vector6 &coe, real mu);
 
 // - To DelaunayOE
-DelaunayOE ClassicalToDelaunay(const ClassicalOE &coe, double mu = MU_MOON);
-Vector6 ClassicalToDelaunay(const Vector6 &coe, double mu = MU_MOON);
+DelaunayOE ClassicalToDelaunay(const ClassicalOE &coe, real mu);
+Vector6 ClassicalToDelaunay(const Vector6 &coe, real mu);
 
 // From QuasiNonsingularOE
 // - To ClassicalOE
 ClassicalOE QuasiNonsingularToClassical(const QuasiNonsingularOE &qnsoe,
-                                        double mu = MU_MOON);
-Vector6 QuasiNonsingularToClassical(const Vector6 &qnsoeVec,
-                                    double mu = MU_MOON);
+                                        real mu);
+Vector6 QuasiNonsingularToClassical(const Vector6 &qnsoeVec, real mu);
 
 // From EquinoctialOE
 // - To ClassicalOE
-ClassicalOE EquinoctialToClassical(const EquinoctialOE &eqoe,
-                                   double mu = MU_MOON);
-Vector6 EquinoctialToClassical(const Vector6 &eqoe, double mu = MU_MOON);
+ClassicalOE EquinoctialToClassical(const EquinoctialOE &eqoe, real mu);
+Vector6 EquinoctialToClassical(const Vector6 &eqoe, real mu);
 
 // From DelaunayOE
 // - To ClassicalOE
-ClassicalOE DelaunayToClassical(const DelaunayOE &deloe, double mu = MU_MOON);
-Vector6 DelaunayToClassical(const Vector6 &deloe, double mu = MU_MOON);
+ClassicalOE DelaunayToClassical(const DelaunayOE &deloe, real mu);
+Vector6 DelaunayToClassical(const Vector6 &deloe, real mu);
 
 // From ClassicalOE and QuasiNonsingularROE (relative)
 // - To ClassicalOE
@@ -145,10 +139,10 @@ Vector6 RelativeQuasiNonsingularToClassical(
     const Vector6 &coe, const Vector6 &RelativeQuasiNonsingular);
 
 // Mean and Osculating
-ClassicalOE OsculatingToMean(const ClassicalOE &coe_o, double J2);
-ClassicalOE MeanToOsculating(const ClassicalOE &coe_m, double J2);
-Vector6 OsculatingToMean(const Vector6 &coe_o, double J2);
-Vector6 MeanToOsculating(const Vector6 &coe_m, double J2);
+ClassicalOE OsculatingToMean(const ClassicalOE &coe_o, real J2);
+ClassicalOE MeanToOsculating(const ClassicalOE &coe_m, real J2);
+Vector6 OsculatingToMean(const Vector6 &coe_o, real mu, real J2);
+Vector6 MeanToOsculating(const Vector6 &coe_m, real mu, real J2);
 
 std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6 &coe, Vector6 &doe);
 std::array<double, 6> ComputeFirstOrderMediumPeriod(Vector6 &coe, Vector6 &doe);
@@ -191,6 +185,19 @@ VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(EastNorthUpToCartesian, 3);
 VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(CartesianToEastNorthUp, 3);
 VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(CartesianToAzimuthElevationRange, 3);
 VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(AzimuthElevationRangeToCartesian, 3);
+
+VECTORIZED_DEFINITION_FROM_VECTOR_REAL(ClassicalToCartesian, 6);
+VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(InertialToRtn, 6);
+VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(RtnToInertial, 6);
+VECTORIZED_DEFINITION_FROM_VECTOR_REAL(CartesianToClassical, 6);
+VECTORIZED_DEFINITION_FROM_VECTOR_REAL(ClassicalToQuasiNonsingular, 6);
+VECTORIZED_DEFINITION_FROM_VECTOR_REAL(ClassicalToEquinoctial, 6);
+VECTORIZED_DEFINITION_FROM_VECTOR_REAL(ClassicalToDelaunay, 6);
+VECTORIZED_DEFINITION_FROM_VECTOR_REAL(QuasiNonsingularToClassical, 6);
+VECTORIZED_DEFINITION_FROM_VECTOR_REAL(EquinoctialToClassical, 6);
+VECTORIZED_DEFINITION_FROM_VECTOR_REAL(DelaunayToClassical, 6);
+VECTORIZED_DEFINITION_FROM_VECTOR_VECTOR(RelativeQuasiNonsingularToClassical,
+                                         6);
 
 class TLE {
  public:

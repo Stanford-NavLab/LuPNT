@@ -18,10 +18,10 @@
 
 #include "lupnt/numerics/math_utils.h"
 
-#define ABSOLUTE_CONVERSION(from, to, func)                                \
-  {                                                                        \
-    {OrbitStateRepres::from, OrbitStateRepres::to},                        \
-        [](const Vector6 &x, double mu) -> Vector6 { return func(x, mu); } \
+#define ABSOLUTE_CONVERSION(from, to, func)                              \
+  {                                                                      \
+    {OrbitStateRepres::from, OrbitStateRepres::to},                      \
+        [](const Vector6 &x, real mu) -> Vector6 { return func(x, mu); } \
   }
 
 #define RELATIVE_CONVERSION(from, to, func)                 \
@@ -156,7 +156,7 @@ namespace {
 std::vector<OrbitStateRepres> FindShortestPath(
     OrbitStateRepres start, OrbitStateRepres end,
     const std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
-                   std::function<Vector6(const Vector6 &, double)>>
+                   std::function<Vector6(const Vector6 &, real)>>
         &absolute_conversions) {
   std::queue<OrbitStateRepres> queue;
   std::map<OrbitStateRepres, OrbitStateRepres> predecessors;
@@ -198,7 +198,7 @@ std::vector<OrbitStateRepres> FindShortestPath(
 }  // namespace
 
 std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
-         std::function<Vector6(const Vector6 &, double)>>
+         std::function<Vector6(const Vector6 &, real)>>
     absolute_conversions = {
         ABSOLUTE_CONVERSION(CARTESIAN, CLASSICAL_OE, CartesianToClassical),
         ABSOLUTE_CONVERSION(CLASSICAL_OE, CARTESIAN, ClassicalToCartesian),
@@ -223,7 +223,7 @@ std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
 };
 
 Vector6 ConvertOrbitState(const Vector6 &state_in, OrbitStateRepres repres_in,
-                          OrbitStateRepres repres_out, double mu) {
+                          OrbitStateRepres repres_out, real mu) {
   if (repres_in == repres_out) {
     return state_in;
   }
@@ -242,7 +242,7 @@ Vector6 ConvertOrbitState(const Vector6 &state_in, OrbitStateRepres repres_in,
 Vector6 ConvertOrbitState(const Vector6 &state_in_c, const Vector6 &state_in_d,
                           OrbitStateRepres repres_in_c,
                           OrbitStateRepres repres_in_d,
-                          OrbitStateRepres repres_out, double mu) {
+                          OrbitStateRepres repres_out, real mu) {
   // Check case
   // - (absolute_c, absolute_d) to relative_d
   // - (absolute_c, relative_d) to absolute_d
@@ -278,7 +278,7 @@ Vector6 ConvertOrbitState(const Vector6 &state_in_c, const Vector6 &state_in_d,
 
 std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
     const std::shared_ptr<OrbitState> &state_in, OrbitStateRepres repres_out,
-    double mu) {
+    real mu) {
   Vector6 state_out = ConvertOrbitState(
       state_in->GetVector(), state_in->GetOrbitStateRepres(), repres_out, mu);
   return std::make_shared<OrbitState>(state_out, state_in->GetCoordSystem(),
@@ -288,12 +288,12 @@ std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
 
 // From CartesianOrbitState
 // - To ClassicalOE
-ClassicalOE CartesianToClassical(const CartesianOrbitState &rv, double mu) {
+ClassicalOE CartesianToClassical(const CartesianOrbitState &rv, real mu) {
   return ClassicalOE(CartesianToClassical(rv.GetVector(), mu),
                      rv.GetCoordSystem());
 }
 
-Vector6 CartesianToClassical(const Vector6 &rv, double mu) {
+Vector6 CartesianToClassical(const Vector6 &rv, real mu) {
   Vector3 r = rv.head(3);
   Vector3 v = rv.tail(3);
 
@@ -382,12 +382,12 @@ Vector6 RtnToInertial(const Vector6 &rv_c, const Vector6 &rv_rtn_d) {
 
 // From ClassicalOE
 // - To CartesianOrbitState
-CartesianOrbitState ClassicalToCartesian(const ClassicalOE &coe, double mu) {
+CartesianOrbitState ClassicalToCartesian(const ClassicalOE &coe, real mu) {
   return CartesianOrbitState(ClassicalToCartesian(coe.GetVector(), mu),
                              coe.GetCoordSystem());
 }
 
-Vector6 ClassicalToCartesian(const Vector6 &coe, double mu) {
+Vector6 ClassicalToCartesian(const Vector6 &coe, real mu) {
   auto [a, e, i, Omega, w, M] = unpack(coe);
 
   real p = a * (1.0 - pow(e, 2.0));
@@ -419,12 +419,12 @@ Vector6 ClassicalToCartesian(const Vector6 &coe, double mu) {
 
 // - To QuasiNonsingularOE
 QuasiNonsingularOE ClassicalToQuasiNonsingular(const ClassicalOE &coe,
-                                               double mu) {
-  return QuasiNonsingularOE(ClassicalToQuasiNonsingular(coe.GetVector()),
+                                               real mu) {
+  return QuasiNonsingularOE(ClassicalToQuasiNonsingular(coe.GetVector(), mu),
                             coe.GetCoordSystem());
 }
 
-Vector6 ClassicalToQuasiNonsingular(const Vector6 &coe, double mu) {
+Vector6 ClassicalToQuasiNonsingular(const Vector6 &coe, real mu) {
   auto [a, e, i, Omega, w, M] = unpack(coe);
 
   real u = w + M;
@@ -435,12 +435,12 @@ Vector6 ClassicalToQuasiNonsingular(const Vector6 &coe, double mu) {
 }
 
 // - To EquinoctialOE
-EquinoctialOE ClassicalToEquinoctial(const ClassicalOE &coe, double mu) {
-  return EquinoctialOE(ClassicalToEquinoctial(coe.GetVector()),
+EquinoctialOE ClassicalToEquinoctial(const ClassicalOE &coe, real mu) {
+  return EquinoctialOE(ClassicalToEquinoctial(coe.GetVector(), mu),
                        coe.GetCoordSystem());
 }
 
-Vector6 ClassicalToEquinoctial(const Vector6 &coe, double mu) {
+Vector6 ClassicalToEquinoctial(const Vector6 &coe, real mu) {
   auto [a, e, i, Omega, w, M] = unpack(coe);
 
   real f = MeanToTrueAnomaly(M, e);
@@ -460,12 +460,12 @@ Vector6 ClassicalToEquinoctial(const Vector6 &coe, double mu) {
 }
 
 // - To DelaunayOE
-DelaunayOE ClassicalToDelaunay(const ClassicalOE &coe, double mu) {
+DelaunayOE ClassicalToDelaunay(const ClassicalOE &coe, real mu) {
   return DelaunayOE(ClassicalToDelaunay(coe.GetVector(), mu),
                     coe.GetCoordSystem());
 }
 
-Vector6 ClassicalToDelaunay(const Vector6 &coe, double mu) {
+Vector6 ClassicalToDelaunay(const Vector6 &coe, real mu) {
   auto [a, e, i, O, w, M] = unpack(coe);
 
   real n = sqrt(mu / pow(a, 3));
@@ -484,12 +484,12 @@ Vector6 ClassicalToDelaunay(const Vector6 &coe, double mu) {
 // From QuasiNonsingularOE
 // - To ClassicalOE
 ClassicalOE QuasiNonsingularToClassical(const QuasiNonsingularOE &qnsoe,
-                                        double mu) {
-  return ClassicalOE(QuasiNonsingularToClassical(qnsoe.GetVector()),
+                                        real mu) {
+  return ClassicalOE(QuasiNonsingularToClassical(qnsoe.GetVector(), mu),
                      qnsoe.GetCoordSystem());
 }
 
-Vector6 QuasiNonsingularToClassical(const Vector6 &qnsoeVec, double mu) {
+Vector6 QuasiNonsingularToClassical(const Vector6 &qnsoeVec, real mu) {
   auto [a, u, ex, ey, i, Omega] = unpack(qnsoeVec);
 
   real e = sqrt(ex * ex + ey * ey);
@@ -502,12 +502,12 @@ Vector6 QuasiNonsingularToClassical(const Vector6 &qnsoeVec, double mu) {
 
 // From EquinoctialOE
 // - To ClassicalOE
-ClassicalOE EquinoctialToClassical(const EquinoctialOE &eqoe, double mu) {
-  return ClassicalOE(EquinoctialToClassical(eqoe.GetVector()),
+ClassicalOE EquinoctialToClassical(const EquinoctialOE &eqoe, real mu) {
+  return ClassicalOE(EquinoctialToClassical(eqoe.GetVector(), mu),
                      eqoe.GetCoordSystem());
 }
 
-Vector6 EquinoctialToClassical(const Vector6 &equioe, double mu) {
+Vector6 EquinoctialToClassical(const Vector6 &equioe, real mu) {
   auto [a, Psi, tq1, tq2, p1, p2] = unpack(equioe);
 
   real Omega = atan2(p2, p1);
@@ -533,12 +533,12 @@ Vector6 EquinoctialToClassical(const Vector6 &equioe, double mu) {
 
 // From DelaunayOE
 // - To ClassicalOE
-ClassicalOE DelaunayToClassical(const DelaunayOE &deloe, double mu) {
+ClassicalOE DelaunayToClassical(const DelaunayOE &deloe, real mu) {
   return ClassicalOE(DelaunayToClassical(deloe.GetVector(), mu),
                      deloe.GetCoordSystem());
 }
 
-Vector6 DelaunayToClassical(const Vector6 &delaunay, double mu) {
+Vector6 DelaunayToClassical(const Vector6 &delaunay, real mu) {
   auto [l, g, h, L, G, H] = unpack(delaunay);
 
   real a = L * L / mu;
@@ -593,13 +593,13 @@ Vector6 RelativeQuasiNonsingularToClassical(
 }
 
 // Mean and Osculating
-Vector6 MeanToOsculating(const Vector6 &coe_m, double J2) {
+Vector6 MeanToOsculating(const Vector6 &coe_m, real mu, real J2) {
   Vector6 coe_o;
 
   if (J2 > 0) {
-    Vector6 meanEquioe = ClassicalToEquinoctial(coe_m);
+    Vector6 meanEquioe = ClassicalToEquinoctial(coe_m, mu);
     Vector6 oscEquioe;  // = MeanOscClosedEqui(meanEquioe, J2);
-    coe_o = EquinoctialToClassical(oscEquioe);
+    coe_o = EquinoctialToClassical(oscEquioe, mu);
   } else {
     coe_o = coe_m;
   }
@@ -607,8 +607,8 @@ Vector6 MeanToOsculating(const Vector6 &coe_m, double J2) {
   return coe_o;
 }
 
-ClassicalOE MeanToOsculating(const ClassicalOE &coe_m, double J2) {
-  return ClassicalOE(MeanToOsculating(coe_m.GetVector(), J2),
+ClassicalOE MeanToOsculating(const ClassicalOE &coe_m, real mu, real J2) {
+  return ClassicalOE(MeanToOsculating(coe_m.GetVector(), mu, J2),
                      coe_m.GetCoordSystem());
 }
 
@@ -636,14 +636,14 @@ Vector6 osc2mean_NRiterator(const Vector6 &osc_equi_elem, double tol) {
   return mean_equi_elem;
 }
 
-Vector6 OsculatingToMean(const Vector6 &coe_o, double J2) {
+Vector6 OsculatingToMean(const Vector6 &coe_o, real mu, real J2) {
   Vector6 coe_m;
   double tol = 1e-8;
 
   if (J2 > 0) {
-    Vector6 eqoe_o = ClassicalToEquinoctial(coe_o);
+    Vector6 eqoe_o = ClassicalToEquinoctial(coe_o, mu);
     Vector6 eqoe_m = osc2mean_NRiterator(eqoe_o, tol);
-    coe_m = EquinoctialToClassical(eqoe_m);
+    coe_m = EquinoctialToClassical(eqoe_m, mu);
   } else {
     coe_m = coe_o;
   }
@@ -651,8 +651,8 @@ Vector6 OsculatingToMean(const Vector6 &coe_o, double J2) {
   return coe_m;
 }
 
-ClassicalOE OsculatingToMean(const ClassicalOE &coe_o, double J2) {
-  return ClassicalOE(OsculatingToMean(coe_o.GetVector(), J2),
+ClassicalOE OsculatingToMean(const ClassicalOE &coe_o, real mu, real J2) {
+  return ClassicalOE(OsculatingToMean(coe_o.GetVector(), mu, J2),
                      coe_o.GetCoordSystem());
 }
 
@@ -797,5 +797,18 @@ VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(CartesianToAzimuthElevationRange,
                                              3);
 VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(AzimuthElevationRangeToCartesian,
                                              3);
+
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(ClassicalToCartesian, 6);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(InertialToRtn, 6);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(RtnToInertial, 6);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(CartesianToClassical, 6);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(ClassicalToQuasiNonsingular, 6);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(ClassicalToEquinoctial, 6);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(ClassicalToDelaunay, 6);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(QuasiNonsingularToClassical, 6);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(EquinoctialToClassical, 6);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(DelaunayToClassical, 6);
+VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(
+    RelativeQuasiNonsingularToClassical, 6);
 
 }  // namespace lupnt
