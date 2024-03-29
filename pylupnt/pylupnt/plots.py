@@ -139,7 +139,7 @@ class Plot3D:
             data[np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
         self.ax.scatter(data[:, 0], data[:, 1], data[:, 2], *args, zorder=1, **kwargs)
 
-    def plot(self, data, mask=False, *args, **kwargs):
+    def plot(self, data, *args, mask=False, **kwargs):
         """
         Plot Cartesian coordinates
         """

@@ -106,7 +106,7 @@ class PntSchedulingProblem:
         self.request_dict = {r.id: r for r in requests}
         self.service_windows = sorted(service_windows, key=lambda w: w.start)
         self.transition_times = transition_times
-        self.CN0_norm = CN0 / np.nanmax(CN0, axis=1)[:, None]
+        self.CN0_norm = CN0 / np.nanmax(CN0, axis=2)[:, :, None]
         self.N_satellites = len(set(w.satellite_id for w in service_windows))
 
         self.N_max_actions = N_max_actions
@@ -283,8 +283,10 @@ class PntSchedulingProblem:
             ],
         )
 
-    def total_reward(self, policy: list[tuple[State, Action]]) -> float:
-        return sum(self.reward_function(s, a) for s, a in policy if a is not None)
+    def total_reward(self, policy: list[tuple[State, Action]], gamma: float) -> float:
+        rewards = np.array([self.reward_function(s, a) for s, a in policy[:-1]])
+        discounts = np.array([gamma**i for i in range(len(policy[:-1]))])
+        return np.sum(rewards * discounts)
 
     def percentage_completed(self, policy: list[tuple[State, Action]]) -> float:
         s0 = policy[0][0]
@@ -294,3 +296,12 @@ class PntSchedulingProblem:
             for r in self.request_dict.values()
             if r.id >= 0
         }
+
+    def duration_fullfilled(self, policy: list[tuple[State, Action]]) -> float:
+        s0 = policy[0][0]
+        sf = policy[-1][0]
+        return (
+            sum(sf.request_time[r.id] for r in self.request_dict.values() if r.id >= 0)
+            / sum(r.duration for r in self.request_dict.values() if r.id >= 0)
+            * 100
+        )

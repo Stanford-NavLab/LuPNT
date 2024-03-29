@@ -1,5 +1,6 @@
 import numpy as np
 import cvxpy as cp
+from math import ceil, floor
 import logging
 from dataclasses import dataclass, field
 import utils
@@ -93,10 +94,10 @@ class SmdpMctsSolver:
         if d == 0 or not actions:
             return 0
 
-        use_rewards = False
+        use_rewards = True
         if use_rewards:
             rewards = np.array([self.problem.reward_function(s, a) for a in actions])
-            rewards += 1e-5  # Add small value to avoid division by zero
+            rewards = rewards + 1e-5  # Add small value to avoid division by zero
             rewards /= np.sum(rewards)
             idx = np.random.choice(len(actions), p=rewards)
         else:
@@ -183,10 +184,12 @@ class DiscreteTimeIpSolver:
         self.problem = problem
         self.solution: np.array = None
 
-    def solve(self, s: State, time_step: float) -> list[tuple[State, Action]]:
+    def solve(self, s: State, time_step_factor: float) -> list[tuple[State, Action]]:
 
         N_sat = self.problem.N_satellites
         N_req = len(self.problem.request_dict)
+        Dt = self.problem.tf / self.problem.CN0_norm.shape[2]
+        time_step = time_step_factor * Dt
         N_t = int(self.problem.tf / time_step)
 
         durations = np.ceil(
@@ -209,21 +212,26 @@ class DiscreteTimeIpSolver:
                 starts = np.ceil([w.start / time_step for w in windows]).astype(int)
                 ends = np.floor([w.end / time_step for w in windows]).astype(int)
                 for w, ts, te in zip(windows, starts, ends):
-                    if ts == te:
+                    if ts >= te:
                         print(
                             f"Service window {w.id} has duration 0. Try decreasing time step."
                         )
+                        continue
                         # if te < N_time_steps:
                         #     te += 1
                         # else:
                         #     ts -= 1
                     service_windows[i_sat, j_req, ts:te] = 1
                     payload_on = w.request_id >= 0
+                    f = time_step_factor
                     if payload_on:
                         rewards[i_sat, j_req, ts:te] = (
-                            self.problem.CN0_norm[i_sat, w.request_id, ts:te]
+                            self.problem.CN0_norm[
+                                i_sat, w.request_id, (f * ts) : (f * te) : f
+                            ]
                             * time_step
                         )
+                        assert not np.isnan(rewards).any()
                         data_gen_requests[i_sat, j_req, ts:te] = (
                             self.problem.payload_data_gen * time_step
                         )

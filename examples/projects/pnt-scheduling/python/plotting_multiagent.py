@@ -16,10 +16,14 @@ COLORS = [k for k in TABLEAU_COLORS.keys()]
 
 
 def plot_satellites_users(
-    rv_moon_sat, rv_moon_user, rv_moon_earth, rv_moon_sun, user_type
+    rv_moon_sat: np.ndarray,
+    rv_moon_user: np.ndarray,
+    rv_moon_earth: np.ndarray,
+    rv_moon_sun: np.ndarray,
+    user_type: np.ndarray,
 ) -> None:
     # Satellite orbit in MI frame
-    fig = pnt.plots.Plot3D(figsize=(5, 5), elev=15, azim=-40)
+    fig = pnt.plots.Plot3D(figsize=(5, 5), elev=15, azim=-50)
     fig.plot_surface(pnt.MOON, scale=3)
     fig.label_axis()
     rv_surface = rv_moon_user[user_type == "surface", :, :]
@@ -28,14 +32,43 @@ def plot_satellites_users(
         rv_surface[:, 0, :3],
         color="tab:red",
         mask=False,
+        depthshade=False,
+        # marker="o",
+        s=25,
     )
     fig.plot(
         rv_orbital[:, :, :3],
         color="tab:red",
         mask=True,
+        lw=1,
     )
-    fig.ax.plot([], [], color="tab:red", label="Users")
-    fig.plot(rv_moon_sat[:, :3], label="Satellite", color="tab:blue", mask=False)
+    fig.scatter(
+        rv_orbital[:, 0, :3],
+        color="tab:red",
+        mask=True,
+        depthshade=False,
+        s=25,
+    )
+    fig.ax.plot(
+        [],
+        [],
+        color="tab:red",
+        label="Users",
+        marker="o",
+        lw=1,
+    )
+    fig.ax.plot([], [], color="black", label="Satellites", marker="o", lw=1)
+
+    if len(rv_moon_sat.shape) == 2:
+        # Single satellite
+        fig.plot(rv_moon_sat[:, :3], color="black", mask=False, lw=1)
+        fig.scatter(rv_moon_sat[0, :3], color="black", mask=False, depthshade=False)
+    else:
+        for i in range(rv_moon_sat.shape[0]):
+            fig.plot(rv_moon_sat[i, :, :3], color="black", mask=False, lw=1)
+        fig.scatter(
+            rv_moon_sat[:, 0, :3], color="black", mask=False, s=25, depthshade=False
+        )
 
     # Earth and Sun positions
     earth_dir = rv_moon_earth[0, :3]
@@ -43,12 +76,12 @@ def plot_satellites_users(
     sun_dir = rv_moon_sun[0, :3]
     sun_dir = sun_dir / np.linalg.norm(sun_dir) * 3 * pnt.R_MOON
     org = np.zeros(3)
-    fig.ax.quiver(
-        *org, *earth_dir, color="tab:green", arrow_length_ratio=0.1, label="Earth"
-    )
-    fig.ax.quiver(
-        *org, *sun_dir, color="tab:orange", arrow_length_ratio=0.1, label="Sun"
-    )
+    # fig.ax.quiver(
+    #     *org, *earth_dir, color="tab:green", arrow_length_ratio=0.1, label="Earth"
+    # )
+    # fig.ax.quiver(
+    #     *org, *sun_dir, color="tab:orange", arrow_length_ratio=0.1, label="Sun"
+    # )
 
     # Change z-axis label margin
     fig.ax.xaxis.labelpad = 0
@@ -66,7 +99,10 @@ def plot_satellites_users(
     fig.ax.set_ylabel("Y [$10^3$ km]")
     fig.ax.set_zlabel("Z [$10^3$ km]")
     fig.ax.set_aspect("equal")
-    plt.legend()
+    fig.ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    fig.ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    fig.ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    plt.legend(facecolor="white", framealpha=1)
 
 
 def plot_elevation_range(
@@ -79,26 +115,34 @@ def plot_elevation_range(
     x = tspan / pnt.SECS_PER_HOUR
     x_lim = (0, tspan[-1] / pnt.SECS_PER_HOUR)
 
+    color = "tab:blue"
     plt.sca(axs[0])
     el = np.rad2deg(az_el_rho[:, :, 1].copy())
-    plt.plot(x, el.T, label="Elevation", lw=0.5)
+    plt.plot(x, el.T, lw=0.5, color=color, linestyle="--")
     el[~user_visible] = np.nan
-    plt.plot(x, el.T, lw=3)
-    plt.xlabel("Time (h)")
-    plt.ylabel("Elevation (deg)")
+    plt.plot(x, el.T, lw=1.5, color=color)
+    plt.xlabel("Time [h]")
+    plt.ylabel("Elevation [deg]")
     plt.xlim(x_lim)
     plt.grid()
+    plt.plot([], [], lw=1.5, color=color, label="User visible")
+    plt.plot([], [], lw=0.5, color=color, linestyle="--", label="User not visible")
+    plt.legend(loc="lower right", facecolor="white", framealpha=1)
 
     plt.sca(axs[1])
-    rho = az_el_rho[:, :, 2].copy()
-    plt.plot(x, rho.T, label="Range", lw=0.5)
+    rho = az_el_rho[:, :, 2].copy() / 1e3
+    plt.plot(x, rho.T, lw=0.5, color=color, linestyle="--")
     rho[~user_visible] = np.nan
-    plt.plot(x, rho.T, lw=3)
-    plt.xlabel("Time (h)")
-    plt.ylabel("Range (km)")
+    plt.plot(x, rho.T, lw=1.5, color=color)
+    plt.xlabel("Time [h]")
+    plt.ylabel("Range [$10^3$ km]")
     plt.ylim(0, 15e3)
     plt.xlim(x_lim)
     plt.grid()
+    plt.plot([], [], lw=1.5, color=color, label="User visible")
+    plt.plot([], [], lw=0.5, color=color, linestyle="--", label="User not visible")
+    plt.legend(loc="lower right", facecolor="white", framealpha=1)
+
     plt.tight_layout()
 
 
@@ -156,7 +200,7 @@ def plot_requests_service_windows(
     N_satellites = len(set([w.satellite_id for w in service_windows]))
     dy = 0.06
     for w in service_windows:
-        y = w.request_id
+        y = w.request_id + 1
         y += -dy / 2 * N_satellites + dy * N_satellites * w.satellite_id / (
             N_satellites - 1
         )
@@ -170,7 +214,7 @@ def plot_requests_service_windows(
     if policy is None:
         # Plot average duration per window
         for w in service_windows:
-            y = w.request_id
+            y = w.request_id + 1
             # y += -0.15 + 0.3 * w.satellite_id / (N_satellites - 1)
             d = (
                 request_dict[w.request_id].duration
@@ -189,7 +233,7 @@ def plot_requests_service_windows(
     else:
         # Plot policy
         for s, a in policy[:-1]:
-            y = window_dict[a.window.id].request_id
+            y = window_dict[a.window.id].request_id + 1
             plt.fill_between(
                 [a.start, a.start + a.duration],
                 y - 0.3,
@@ -199,17 +243,29 @@ def plot_requests_service_windows(
                 edgecolor=None,
             )
 
+    plt.plot([], [], color="black", lw=3, label=f"Window")
+    plt.plot([], [], color="black", lw=10, label=f"Service", alpha=0.5)
     for i in range(N_satellites):
-        plt.plot([], [], color=COLORS[i], lw=2, label=f"Satellite {i+1}")
+        plt.plot([], [], color=COLORS[i], lw=3, label=f"Satellite {i+1}")
 
-    if policy is None:
-        plt.fill_between([], [], alpha=0.7, label="Average duration")
-    plt.yticks(np.arange(min(request_dict.keys()), max(request_dict.keys()) + 1))
+    # if policy is None:
+    # plt.fill_between([], [], alpha=0.7, label="Average duration")
+    plt.yticks(np.arange(min(request_dict.keys()), max(request_dict.keys()) + 1.5))
     plt.xlim(0, np.max([w.end for w in service_windows]))
     plt.xlabel("Time")
-    plt.ylabel("Request ID")
+    plt.ylabel("Request")
+    plt.ylim(0.5, max(request_dict.keys()) + 1.5)
     plt.grid()
-    plt.legend(loc="upper right", facecolor="white", framealpha=1)
+    # legend outside top
+    plt.legend(
+        facecolor="white",
+        framealpha=1,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.15),
+        ncol=4,
+        frameon=False,
+        handlelength=1,
+    )
     plt.gca().invert_yaxis()
     plt.tight_layout()
 
@@ -255,33 +311,41 @@ def plot_resources(
     for i in range(problem.N_satellites):
         x = np.array(times[i])
         y = np.array(data[i]) / problem.max_data * 100 * 0.8
-        plt.plot(x, y, label=f"Satellite {i+1}", lw=2, color=COLORS[i])
+        plt.plot(x, y, lw=2, color=COLORS[i], label=f"Satellite {i+1}")
     y = 100 * 0.8
     # plt.hlines(problem.min_data, 0, problem.tf, colors="tab:blue", linestyles="--")
-    plt.hlines(y, 0, problem.tf, colors="tab:blue", linestyles="--", label="Max. data")
+    plt.hlines(
+        y, 0, problem.tf, colors="black", linestyles="--", label="Resource constraint"
+    )
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("Data [\\%]")
     plt.xlim(0, problem.tf)
     plt.ylim(0, 100)
-    plt.legend(loc="lower right")
+    plt.legend(
+        loc="upper center",
+        facecolor="white",
+        framealpha=1,
+        ncol=3,
+        bbox_to_anchor=(0.5, 1.4),
+        frameon=False,
+        handlelength=1,
+    )
     plt.grid()
 
     plt.sca(ax[1])
     for i in range(problem.N_satellites):
         x = np.array(times[i])
         y = np.array(energy[i]) / problem.max_energy * 100
-        plt.plot(x, y, label=f"Satellite {i+1}", lw=2, color=COLORS[i])
+        plt.plot(x, y, lw=2, color=COLORS[i])
     y = problem.min_energy / problem.max_energy * 100
-    plt.hlines(
-        y, 0, problem.tf, colors="tab:green", linestyles="--", label="Min. energy"
-    )
+    plt.hlines(y, 0, problem.tf, colors="black", linestyles="--", label="Min. energy")
     # plt.hlines(problem.max_energy, 0, problem.tf, colors="tab:green", linestyles="--")
     plt.xlabel("Time")
     plt.ylabel("Energy [\\%]")
     plt.xlim(0, problem.tf)
     plt.ylim(0, 100)
-    plt.legend(loc="upper right")
+    # plt.legend(loc="upper right", facecolor="white", framealpha=1)
     plt.grid()
 
     plt.tight_layout()
