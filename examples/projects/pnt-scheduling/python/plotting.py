@@ -3,7 +3,7 @@ import pylupnt as pnt
 import matplotlib.pyplot as plt
 import pylupnt as pnt
 from matplotlib.colors import TABLEAU_COLORS
-from problem_multiagent import (
+from problem import (
     Request,
     ServiceWindow,
     State,

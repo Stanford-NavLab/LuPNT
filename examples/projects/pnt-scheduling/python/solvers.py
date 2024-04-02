@@ -5,7 +5,7 @@ import logging
 from dataclasses import dataclass, field
 import utils
 from tqdm.notebook import tqdm
-from problem_multiagent import PntSchedulingProblem, State, Action, ServiceWindow
+from problem import PntSchedulingProblem, State, Action, ServiceWindow
 
 
 class SmdpForwardSearchSolver:
