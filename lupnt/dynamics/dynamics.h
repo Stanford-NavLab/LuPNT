@@ -262,6 +262,7 @@ class NBodyDynamics : public NumericalOrbitDynamics {
   double mass_ = 100.0;      // s/c mass [kg]
   double CR_ = 1.5;          // solar radiation pressure coefficient
   double area_ = 1.0 / 1e6;  // solar radiation pressure area [km^2]
+  double B_srp_ = (CR_ * area_) / mass_;  // solar radiation pressure constant
 
  public:
   NBodyDynamics(std::string integrator = "RK4");
