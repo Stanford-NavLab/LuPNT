@@ -10,8 +10,11 @@ set(PYPI_PACKAGE_NAME "pylupnt")
 
 project(LuPNT LANGUAGES CXX)
 
-option (BUILD_TESTING "Build the testing tree." ON)
-option (USE_CODECOV "Use Codecov for coverage reporting" OFF)
+option(BUILD_TESTING "Build the testing tree." ON)
+option(USE_CODECOV "Use Codecov for coverage reporting" OFF)
+option(BUILD_PYMODULE "Build the Python Module" ON)
+option(BUILD_AI_TOOLBOX "Build the AI Toolbox" OFF)
+
 if(BUILD_TESTING)
   # set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
@@ -36,7 +39,6 @@ add_subdirectory(examples/cpp)
 add_subdirectory(examples/projects)
 
 # build python modules
-option (BUILD_PYMODULE "Build the Python Module" ON)
 if (BUILD_PYMODULE)
   add_subdirectory(pylupnt)
 endif ()

@@ -69,13 +69,19 @@ add_subdirectory(matplotplusplus)
 # AI-Toolbox -------------------------------------------------------------------
 # Specify the Python version you want CMake to find.
 
+# Create cmake option for AI-toolbox
 
-set(MAKE_ALL TRUE)
-set(MAKE_PYTHON TRUE)
-set(LPSOLVE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-set(EIGEN3_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/eigen")
-add_subdirectory(AI-Toolbox)
-file(GLOB_RECURSE autodiff_headers "${CMAKE_CURRENT_SOURCE_DIR}/autodiff/autodiff/*.hpp")
+
+if(BUILD_AI_TOOLBOX)
+    set(MAKE_ALL TRUE)
+    set(MAKE_PYTHON TRUE)
+    set(LPSOLVE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+    set(EIGEN3_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/eigen")
+    add_subdirectory(AI-Toolbox)
+    file(
+        GLOB_RECURSE autodiff_headers 
+        "${CMAKE_CURRENT_SOURCE_DIR}/autodiff/autodiff/*.hpp")
+endif()
 
 # ------------------------------------------------------------
 
