@@ -8,6 +8,7 @@
  * @copyright Copyright (c) 2023
  *
  */
+#pragma once
 
 // lupnt includes
 #include <lupnt/agents/agent.h>
