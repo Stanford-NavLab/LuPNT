@@ -181,7 +181,14 @@ $ python3 -m pytest test/python
 ## Testing with GMAT
 - Some of the dynamics functions are tested by comparing outputs with the [GMAT](library) python API
 - See [here](https://sourceforge.net/p/gmat/git/ci/GMAT-R2020a/tree/application/api/API_README.txt) for instructions on how to setup the GMAT API for function
-
+- If you are a MAC OS user in Apple Silicon, the current python interface for GMAT only works for x86 platforms. You can create a conda environment with x86 python with the following commands.
+```
+CONDA_SUBDIR=osx-64 conda create -n gmat-env python=3.9 -y
+conda activate gmat-env
+conda env config vars set CONDA_SUBDIR=osx-64
+conda deactivate
+conda activate gmat-env
+```
 
 ## Working with VSCODE
 - This project uses the [Google C++ Style](https://google.github.io/styleguide/cppguide.html).
