@@ -25,6 +25,7 @@ void EKF::Predict(real t_end) {
 
   Q_ = this->process_noise_(x_, t_curr_, t_end);
   x_ = this->dynamics_(x_, t_curr_, t_end, Phi);
+
   P_ = Phi * P_ * Phi.transpose() + Q_;
   xbar_ = x_;
   Pbar_ = P_;
