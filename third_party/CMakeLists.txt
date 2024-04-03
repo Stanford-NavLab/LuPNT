@@ -14,6 +14,8 @@ install(DIRECTORY autodiff/autodiff
 # Assert headers are found
 if(NOT autodiff_headers)
     message(FATAL_ERROR "Autodiff headers not found")
+else()
+    message("Autodiff headers found")
 endif()
 
 # cspice ----------------------------------------------------------------------
@@ -40,6 +42,8 @@ install(DIRECTORY cspice/include
 
 if(NOT cspice_headers)
     message(FATAL_ERROR "cspice headers not found")
+else()
+    message("cspice headers found")
 endif()
 
 # Boost -----------------------------------------------------------------------
