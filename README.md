@@ -48,7 +48,7 @@ Todo: Create a bashfile to do the installation process.
     - [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
       - For vector and matrix computation
       - Tested with v3.4.0
-      - Rename the entire folder to "Eigen", and place it under thirdparty
+      - Rename the entire folder to "eigen", and place it under thirdparty
     - [pybind](https://pybind11.readthedocs.io/en/stable/installing.html)
         ```
         git submodule add -b stable ../../pybind/pybind11 pybind11
@@ -84,7 +84,7 @@ In summary, you should have a directory as below
       - ...
       - cspice.a
       - csupport.a
-    - Eigen
+    - eigen
     - pybind11
 
 ### Step 2: Do Additional Setups

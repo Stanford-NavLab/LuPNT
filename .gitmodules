@@ -8,8 +8,8 @@
 [submodule "third_party/autodiff"]
 	path = third_party/autodiff
 	url = git@github.com:autodiff/autodiff.git
-[submodule "third_party/Eigen"]
-	path = third_party/Eigen
+[submodule "third_party/eigen"]
+	path = third_party/eigen
 	url = https://gitlab.com/libeigen/eigen.git
 [submodule "third_party/matplotplusplus"]
 	path = third_party/matplotplusplus

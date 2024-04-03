@@ -68,8 +68,8 @@ target_include_directories(lupnt SYSTEM BEFORE PUBLIC
   $<INSTALL_INTERFACE:include/lupnt/third_party/autodiff>
 
   # Eigen
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/Eigen>
-  $<INSTALL_INTERFACE:${include/lupnt/third_party/Eigen}>
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/eigen>
+  $<INSTALL_INTERFACE:${include/lupnt/third_party/eigen}>
 
   # cspice
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/cspice>
