@@ -40,7 +40,7 @@ add_subdirectory(examples/projects)
 
 # build python modules
 if (BUILD_PYMODULE)
-  add_subdirectory(pylupnt)
+  add_subdirectory(python)
 endif ()
 
 
