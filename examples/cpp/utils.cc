@@ -108,14 +108,14 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
   }
 
   // Bodies
+  Vector6 vz6;
+  vz6.setZero();
   data_history->AddData(
       "earth_mi", t,
-      CoordConverter::Convert(epoch, VectorX::Zero(6), CoordSystem::GCRF,
-                              CoordSystem::MI));
+      CoordConverter::Convert(epoch, vz6, CoordSystem::GCRF, CoordSystem::MI));
   data_history->AddData(
       "moon_gcrf", t,
-      CoordConverter::Convert(epoch, VectorX::Zero(6), CoordSystem::MI,
-                              CoordSystem::GCRF));
+      CoordConverter::Convert(epoch, vz6, CoordSystem::MI, CoordSystem::GCRF));
 };
 
 void PrintProgressHeader() {

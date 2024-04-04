@@ -64,8 +64,8 @@ int main() {
   ClassicalOE coeMoon({a, e, i, Omega, w, M});
   coeMoon.SetCoordSystem(CoordSystem::MI);
 
-  auto cartOrbitStateMoon =
-      std::make_shared<CartesianOrbitState>(ClassicalToCartesian(coeMoon, MU_MOON));
+  auto cartOrbitStateMoon = std::make_shared<CartesianOrbitState>(
+      ClassicalToCartesian(coeMoon, MU_MOON));
   std::shared_ptr<Spacecraft> moonSat1 = std::make_shared<Spacecraft>();
   std::shared_ptr<GnssReceiver> receiver =
       std::make_shared<GnssReceiver>("moongpsr");
@@ -129,14 +129,14 @@ int main() {
     }
 
     // Bodies
+    Vector6 v6;
+    v6.setZero();
     dataHistory.AddData(
         "earthMi", t,
-        CoordConverter::Convert(t, VectorX::Zero(6), CoordSystem::GCRF,
-                                CoordSystem::MI));
+        CoordConverter::Convert(t, v6, CoordSystem::GCRF, CoordSystem::MI));
     dataHistory.AddData(
         "moonGcrf", t,
-        CoordConverter::Convert(t, VectorX::Zero(6), CoordSystem::MI,
-                                CoordSystem::GCRF));
+        CoordConverter::Convert(t, v6, CoordSystem::MI, CoordSystem::GCRF));
 
     // Print progress
     if (fmod(t, printEvery) < 1e-3) {

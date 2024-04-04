@@ -46,7 +46,13 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-file(GLOB_RECURSE test_sources LIST_DIRECTORIES false *.cc)
+file(GLOB_RECURSE test_sources LIST_DIRECTORIES false test_*.cc)
+# Print the source filenames only (not the full path)
+message(STATUS "Configuring tests:")
+foreach(test_source ${test_sources})
+  get_filename_component(filename ${test_source} NAME)
+  message(STATUS "    ${filename}")
+endforeach()
 add_executable(tests ${test_sources})
 target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/lupnt)
 target_link_libraries(tests PRIVATE Catch2::Catch2WithMain lupnt)

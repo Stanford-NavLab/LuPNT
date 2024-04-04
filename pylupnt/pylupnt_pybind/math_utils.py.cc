@@ -26,4 +26,26 @@ void init_math_utils(py::module &m) {
         return wrapTo2Pi(angle).cast<double>();
       },
       "Wrap angle to [0, 2pi]");
+  m.def(
+      "dms2degrees",
+      [](const Vector3d &hms) -> double { return dms2degrees(hms).val(); },
+      "Convert degrees, minutes, seconds to degrees", py::arg("hms"));
+  m.def(
+      "degrees2dms",
+      [](double deg) -> Vector3d { return degrees2dms(deg).cast<double>(); },
+      "Convert degrees to degrees, minutes, seconds", py::arg("deg"));
+  m.def(
+      "decimal2dB", [](double x) -> double { return decimal2dB(x).val(); },
+      "Convert decimal to dB", py::arg("x"));
+  m.def(
+      "dB2decimal", [](double x) -> double { return dB2decimal(x).val(); },
+      "Convert dB to decimal", py::arg("x"));
+  m.def(
+      "dB2decimal",
+      [](MatrixXd x) -> MatrixXd { return dB2decimal(x).cast<double>(); },
+      py::arg("x"));
+  m.def(
+      "decimal2dB",
+      [](MatrixXd x) -> MatrixXd { return decimal2dB(x).cast<double>(); },
+      py::arg("x"));
 }

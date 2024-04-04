@@ -38,7 +38,7 @@ int main() {
   std::cout << "coe_m_2 : " << coe_m_2.transpose() << std::endl;
   std::cout << "coe_m_2_: " << coe_m_2_.transpose() << std::endl;
 
-  auto coe_c_1 = MeanToOsculating(coe_m_1, J2_MOON);
-  auto coe_c_2 = MeanToOsculating(coe_m_2, J2_MOON);
+  auto coe_c_1 = MeanToOsculating(coe_m_1, MU_MOON, J2_MOON);
+  auto coe_c_2 = MeanToOsculating(coe_m_2, MU_MOON, J2_MOON);
   return 0;
 }

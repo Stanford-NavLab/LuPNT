@@ -284,14 +284,14 @@ int main() {
     }
 
     // Bodies
+    Vector6 v6;
+    v6.setZero();
     data_history->AddData(
         "earth_mi", t,
-        CoordConverter::Convert(epoch, VectorX::Zero(6), CoordSystem::GCRF,
-                                CoordSystem::MI));
+        CoordConverter::Convert(epoch, v6, CoordSystem::GCRF, CoordSystem::MI));
     data_history->AddData(
         "moon_gcrf", t,
-        CoordConverter::Convert(epoch, VectorX::Zero(6), CoordSystem::MI,
-                                CoordSystem::GCRF));
+        CoordConverter::Convert(epoch, v6, CoordSystem::MI, CoordSystem::GCRF));
 
     // Print progress
     if (fmod(t, print_every) < 1e-3) {

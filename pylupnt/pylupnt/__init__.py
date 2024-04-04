@@ -1,12 +1,14 @@
 try:
     from .pylupnt_pybind import *  # py2 py3 compatible
 
-    from . import plots, utils
+    from .utils import *
+    from .plots import *
 except ImportError:
     # this was installed with as a python wheel
     from pylupnt_pybind import *
 
-    from . import plots, utils
+    from utils import *
+    from plots import *
 
 try:
     import pkg_resources  # part of setuptools

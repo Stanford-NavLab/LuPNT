@@ -14,17 +14,9 @@
 #include <Eigen/Cholesky>
 #include <Eigen/Eigenvalues>
 #include <Eigen/SVD>
-
-#include "lupnt/core/constants.h"
+#include <autodiff/forward/real.hpp>
 
 namespace lupnt {
-
-std::tuple<real, real, real> unpack(const Vector3 &vec) {
-  return std::make_tuple(vec(0), vec(1), vec(2));
-}
-std::tuple<real, real, real, real, real, real> unpack(const Vector6 &vec) {
-  return std::make_tuple(vec(0), vec(1), vec(2), vec(3), vec(4), vec(5));
-}
 
 real angleBetweenVectors(const VectorX &a, const VectorX &b) {
   assert(a.size() == b.size());
@@ -71,6 +63,38 @@ real rad2deg(real rad) { return (180 / M_PI) * rad; }
 double deg2rad(double deg) { return (M_PI / 180) * deg; }
 
 double rad2deg(double rad) { return (180 / M_PI) * rad; }
+
+real decimal2dB(real x) { return 10 * log10(x); }
+
+real dB2decimal(real x) { return pow(10, x / 10); }
+
+MatrixX decimal2dB(MatrixX x) {
+  x.array() = x.unaryExpr([](real x) { return decimal2dB(x); });
+  return x;
+}
+
+MatrixX dB2decimal(MatrixX x) {
+  x.array() = x.unaryExpr([](real x) { return dB2decimal(x); });
+  return x;
+}
+
+real floor(real x) {
+  real y = x;
+  y[0] = std::floor(x.val());
+  return y;
+}
+
+Vector3 degrees2dms(real deg) {
+  real d = floor(deg);
+  real m = floor((deg - d) * 60);
+  real s = (deg - d - m / 60) * 3600;
+  return Vector3{d, m, s};
+}
+
+real dms2degrees(Vector3 hms) {
+  real decdeg = hms(0) + hms(1) / 60.0 + hms(2) / 3600.0;
+  return decdeg;
+}
 
 real safe_acos(real x) {
   if (x >= 1.0) {

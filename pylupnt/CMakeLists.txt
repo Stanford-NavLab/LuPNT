@@ -33,9 +33,10 @@ set(PACKAGE_NAME pylupnt_pybind)
 
 file(GLOB_RECURSE PY_ALL_SOURCE_FILES "${PYBIND_PACKAGE_FOLDER}/*.cc")
 
-message(STATUS "PY_ALL_SOURCE_FILES:")
+message(STATUS "Configuring Python bindings:")
 foreach(PY_ALL_SOURCE_FILE ${PY_ALL_SOURCE_FILES})
-    message(STATUS "    ${PY_ALL_SOURCE_FILE}")
+    get_filename_component(PY_ALL_SOURCE_FILE_NAME ${PY_ALL_SOURCE_FILE} NAME)
+    message(STATUS "    ${PY_ALL_SOURCE_FILE_NAME}")
 endforeach()
 
 

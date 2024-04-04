@@ -3,6 +3,7 @@ from PIL import Image
 import numpy as np
 from . import utils as u
 import matplotlib.pyplot as plt
+from . import pylupnt_pybind as _pnt
 
 import matplotlib.colors as mcolors
 
@@ -10,56 +11,53 @@ COLORS = list(mcolors.TABLEAU_COLORS.keys())
 
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif")
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 plot_data = {
-    "EARTH": {
+    _pnt.EARTH: {
         "filename": "earth_surface.jpg",
         "RE": 6378.137,
         "lim": 25e3,
-        "scale": 1,
         "brightness": 3,
     },
-    "MOON": {
+    _pnt.MOON: {
         "filename": "moon_surface.jpeg",
         "RE": 1737.1,
         "lim": 10e3,
-        "scale": 15,
         "brightness": 1.5,
     },
 }
 
-images_dict = {}
-for k, v in plot_data.items():
-    image_file = os.path.join(u.basepath, "topo", v["filename"])
-    img = Image.open(image_file)
-    img = np.array(img.resize([int(d / v["scale"]) for d in img.size])) / 256.0
-    img = np.minimum(img * v["brightness"], 1)
-    # img = np.roll(img, int(img.shape[0] * -180 / 360), axis=1)
-    img = img[::-1, :]
-    img = img[:, ::-1]
-    plot_data[k]["img"] = img
-
 
 class Plot3D:
-    fig = None
-    ax = None
-    points = []
-    data = []
-    name = None
+    fig: plt.Figure
+    ax: plt.Axes
+    name: str
+    scatters: list
+    plots: list
 
-    def __init__(self, azim=-60, elev=30):
-        self.fig = plt.figure(figsize=(10, 10))
+    def __init__(self, azim=-60, elev=30, figsize=(10, 10)):
+        self.fig = plt.figure(figsize=figsize)
         self.ax = self.fig.add_subplot(111, projection="3d", computed_zorder=False)
         self.ax.view_init(azim=azim, elev=elev)
         self.azim = self.ax.azim
         self.elev = self.ax.elev
+        self.scatters = []
+        self.plots = []
 
     def plot_surface(
-        self, name, offset=np.array([0, 0, 0]), adjust_axis=True, limit=None
+        self, name, offset=np.array([0, 0, 0]), adjust_axis=True, limit=None, scale=3
     ):
         self.name = name
-        img = plot_data[name]["img"]
+
+        img_data = plot_data[name]
+        image_file = os.path.join(u.basepath, "topo", img_data["filename"])
+        img = Image.open(image_file)
+        img = np.array(img.resize([int(d / scale) for d in img.size])) / 256.0
+        img = np.minimum(img * img_data["brightness"], 1)
+        # img = np.roll(img, int(img.shape[0] * -180 / 360), axis=1)
+        img = img[::-1, :]
+        img = img[:, ::-1]
+
         lons = np.linspace(-180, 180, img.shape[1]) * np.pi / 180
         lats = np.linspace(-90, 90, img.shape[0])[::-1] * np.pi / 180
 
@@ -105,7 +103,7 @@ class Plot3D:
             # calculate dot product
             # the points where this is positive are to be shown
             proj = np.dot(Z, X)
-            RE = plot_data[name]["RE"]
+            RE = plot_data[self.name]["RE"]
             cond = np.logical_or(
                 proj >= 0,
                 np.linalg.norm(Z - X * proj.reshape(-1, 1), axis=1) > RE,
@@ -132,26 +130,25 @@ class Plot3D:
         alphas = (proj - np.min(proj)) / (np.max(proj) - np.min(proj))
         return cond, alphas
 
-    def scatter(self, data, *args, **kwargs):
+    def scatter(self, data, mask=False, *args, **kwargs):
         """
         Plot Cartesian coordinates
         """
-        cond, _ = self.check_occultation(data)
-        data[np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
+        if mask:
+            cond, _ = self.check_occultation(data)
+            data[np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
         self.ax.scatter(data[:, 0], data[:, 1], data[:, 2], *args, zorder=1, **kwargs)
-        # (points,) = self.ax.plot([], [], [], "ro", zorder=0)
-        # self.points.append(points)
-        # self.data.append(data)
 
-    def plot(self, data, *args, **kwargs):
+    def plot(self, data, *args, mask=False, **kwargs):
         """
         Plot Cartesian coordinates
         """
         if len(data.shape) == 3:
             n_data = data.shape[0]
             for i in range(n_data):
-                cond, _ = self.check_occultation(data[i])
-                data[i, np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
+                if mask:
+                    cond, _ = self.check_occultation(data[i])
+                    data[i, np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
                 self.ax.plot(
                     data[i, :, 0],
                     data[i, :, 1],
@@ -161,16 +158,10 @@ class Plot3D:
                     **kwargs
                 )
         else:
-            cond, _ = self.check_occultation(data)
-            data[np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
+            if mask:
+                cond, _ = self.check_occultation(data)
+                data[np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
             self.ax.plot(data[:, 0], data[:, 1], data[:, 2], *args, zorder=0, **kwargs)
-            # self.ax.plot(
-            #     data[i, cond, 0], data[i, cond, 1], data[i, cond, 2], *args, **kwargs
-            # )
-        # for i in range(n_data):
-        #     (points,) = self.ax.plot([], [], [], zorder=0)
-        #     self.points.append(points)
-        #     self.data.append(data[i])
 
     def label_axis(self, x="X [km]", y="Y [km]", z="Z [km]"):
         self.ax.set_xlabel(x)
