@@ -80,7 +80,7 @@ class Plot3D:
             self.set_tickpad(0)
             self.set_labels("X [km]", "Y [km]", "Z [km]")
             self.set_labelpad(0, 0, 0)
-            self.set_limit(lims, lims, lims, equal=True)
+            self.set_lims(lims, lims, lims, equal=True)
 
         # self.fig.canvas.mpl_connect("motion_notify_event", self.rotate)
 
@@ -169,17 +169,25 @@ class Plot3D:
         self.ax.yaxis.set_pane_color(color)
         self.ax.zaxis.set_pane_color(color)
 
-    def set_labelpad(self, pad: int) -> None:
-        self.ax.xaxis.labelpad = pad
-        self.ax.yaxis.labelpad = pad
-        self.ax.zaxis.labelpad = pad
+    def set_labelpad(self, padx: int, pady: int, padz: int) -> None:
+        self.ax.xaxis.labelpad = padx
+        self.ax.yaxis.labelpad = pady
+        self.ax.zaxis.labelpad = padz
 
     def set_tickpad(self, pad: int) -> None:
         self.ax.tick_params(axis="both", which="major", pad=0)
 
-    def set_equal_aspect(
-        self, xlims: tuple, ylims: tuple, zlims: tuple, equal=True
-    ) -> None:
+    def set_tick_multiplier(self, factor: int) -> None:
+        self.ax.set_xticklabels([f"{int(x * factor)}" for x in self.ax.get_xticks()])
+        self.ax.set_yticklabels([f"{int(y * factor)}" for y in self.ax.get_yticks()])
+        self.ax.set_zticklabels([f"{int(z * factor)}" for z in self.ax.get_zticks()])
+
+    def set_ticks(self, x: list, y: list, z: list) -> None:
+        self.ax.set_xticks(x)
+        self.ax.set_yticks(y)
+        self.ax.set_zticks(z)
+
+    def set_lims(self, xlims: tuple, ylims: tuple, zlims: tuple, equal=True) -> None:
         for x in xlims:
             for y in ylims:
                 for z in zlims:
@@ -192,13 +200,3 @@ class Plot3D:
             self.ax.set_box_aspect(
                 [xlims[1] - xlims[0], ylims[1] - ylims[0], zlims[1] - zlims[0]]
             )
-
-    def set_tick_multiplier(self, factor: int) -> None:
-        self.ax.set_xticklabels([f"{int(x * factor)}" for x in self.ax.get_xticks()])
-        self.ax.set_yticklabels([f"{int(y * factor)}" for y in self.ax.get_yticks()])
-        self.ax.set_zticklabels([f"{int(z * factor)}" for z in self.ax.get_zticks()])
-
-    def set_ticks(self, x: list, y: list, z: list) -> None:
-        self.ax.set_xticks(x)
-        self.ax.set_yticks(y)
-        self.ax.set_zticks(z)

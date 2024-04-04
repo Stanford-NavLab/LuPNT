@@ -46,13 +46,13 @@ class OrbitState : public IState {
   Vector6 x_;
   OrbitStateRepres repres_;
   CoordSystem coord_;
-  std::array<const char *, kOrbitStateSize> names_;
-  std::array<const char *, kOrbitStateSize> units_;
+  std::vector<std::string> names_;
+  std::vector<std::string> units_;
 
  public:
   OrbitState(const Vector6 &x, CoordSystem coord, OrbitStateRepres repres,
-             const std::array<const char *, kOrbitStateSize> &names,
-             const std::array<const char *, kOrbitStateSize> &units)
+             const std::vector<std::string> &names,
+             const std::vector<std::string> &units)
       : x_(x), coord_(coord), repres_(repres), names_(names), units_(units) {}
 
   Vector6 GetVector() const { return x_; }
@@ -65,12 +65,8 @@ class OrbitState : public IState {
     return x;
   }
 
-  inline std::array<const char *, kOrbitStateSize> GetNames() const {
-    return names_;
-  }
-  inline std::array<const char *, kOrbitStateSize> GetUnits() const {
-    return units_;
-  }
+  inline std::vector<std::string> GetNames() const { return names_; }
+  inline std::vector<std::string> GetUnits() const { return units_; }
   inline int GetSize() const { return kOrbitStateSize; }
   inline real GetValue(int i) const { return x_(i); }
   inline OrbitStateRepres GetOrbitStateRepres() const { return repres_; }
@@ -107,9 +103,9 @@ class OrbitState : public IState {
  */
 class CartesianOrbitState : public OrbitState {
  private:
-  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
-      "rx", "ry", "rz", "vx", "vy", "vz"};
-  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
+  inline static const std::vector<std::string> names_ = {"rx", "ry", "rz",
+                                                         "vx", "vy", "vz"};
+  inline static const std::vector<std::string> units_ = {
       "km", "km", "km", "km/s", "km/s", "km/s"};
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CARTESIAN;
 
@@ -141,10 +137,10 @@ class CartesianOrbitState : public OrbitState {
  */
 class ClassicalOE : public OrbitState {
  private:
-  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
-      "a", "e", "i", "Omega", "w", "M"};
-  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
-      "km", "-", "rad", "rad", "rad", "rad"};
+  inline static const std::vector<std::string> names_ = {"a",     "e", "i",
+                                                         "Omega", "w", "M"};
+  inline static const std::vector<std::string> units_ = {"km",  "-",   "rad",
+                                                         "rad", "rad", "rad"};
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CLASSICAL_OE;
 
  public:
@@ -173,10 +169,10 @@ class ClassicalOE : public OrbitState {
  */
 class QuasiNonsingularOE : public OrbitState {
  private:
-  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
-      "a", "u", "ex", "ey", "i", "Omega"};
-  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
-      "km", "-", "-", "-", "rad", "rad"};
+  inline static const std::vector<std::string> names_ = {"a",  "u", "ex",
+                                                         "ey", "i", "Omega"};
+  inline static const std::vector<std::string> units_ = {"km", "-",   "-",
+                                                         "-",  "rad", "rad"};
   static constexpr OrbitStateRepres repres_ =
       OrbitStateRepres::QUASI_NONSINGULAR_OE;
 
@@ -205,10 +201,10 @@ class QuasiNonsingularOE : public OrbitState {
  */
 class DelaunayOE : public OrbitState {
  private:
-  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
-      "l", "g", "h", "L", "G", "H"};
-  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
-      "rad", "rad", "rad", "rad", "rad", "rad"};
+  inline static const std::vector<std::string> names_ = {"l", "g", "h",
+                                                         "L", "G", "H"};
+  inline static const std::vector<std::string> units_ = {"rad", "rad", "rad",
+                                                         "rad", "rad", "rad"};
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::DELAUNAY_OE;
 
  public:
@@ -237,10 +233,10 @@ class DelaunayOE : public OrbitState {
  */
 class EquinoctialOE : public OrbitState {
  private:
-  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
-      "a", "h", "k", "p", "q", "lambda"};
-  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
-      "km", "-", "-", "-", "-", "rad"};
+  inline static const std::vector<std::string> names_ = {"a", "h", "k",
+                                                         "p", "q", "lambda"};
+  inline static const std::vector<std::string> units_ = {"km", "-", "-",
+                                                         "-",  "-", "rad"};
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::EQUINOCTIAL_OE;
 
  public:
@@ -269,10 +265,10 @@ class EquinoctialOE : public OrbitState {
  */
 class SingularROE : public OrbitState {
  private:
-  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
+  inline static const std::vector<std::string> names_ = {
       "ada", "adM", "ade", "adw", "adi", "adOmega"};
-  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
-      "m", "m", "m", "m", "m", "m"};
+  inline static const std::vector<std::string> units_ = {"m", "m", "m",
+                                                         "m", "m", "m"};
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::SINGULAR_ROE;
 
  public:
@@ -301,10 +297,10 @@ class SingularROE : public OrbitState {
  */
 class QuasiNonsingularROE : public OrbitState {
  private:
-  static constexpr std::array<const char *, kOrbitStateSize> names_ = {
+  inline static const std::vector<std::string> names_ = {
       "ada", "adl", "adex", "adey", "adix", "adiy"};
-  static constexpr std::array<const char *, kOrbitStateSize> units_ = {
-      "m", "m", "m", "m", "m", "m"};
+  inline static const std::vector<std::string> units_ = {"m", "m", "m",
+                                                         "m", "m", "m"};
   static constexpr OrbitStateRepres repres_ =
       OrbitStateRepres::QUASINONSINGULAR_ROE;
 

@@ -25,7 +25,6 @@ def plot_satellites_users(
     # Satellite orbit in MI frame
     fig = pnt.plots.Plot3D(figsize=(5, 5), elev=15, azim=-50)
     fig.plot_surface(pnt.MOON, scale=3)
-    fig.label_axis()
     rv_surface = rv_moon_user[user_type == "surface", :, :]
     rv_orbital = rv_moon_user[user_type == "orbital", :, :]
     fig.scatter(
@@ -86,9 +85,9 @@ def plot_satellites_users(
     fig.set_tickpad(0)
     fig.set_tick_multiplier(1e-3)
     fig.set_labels("X [$10^3$ km]", "Y [$10^3$ km]", "Z [$10^3$ km]")
-    fig.set_pane_color(fig.ax, [1, 1, 1])
-    fig.set_labelpad(fig.ax, 0)
-    fig.set_equal_aspect([-5e3, 5e3], [-5e3, 5e3], [-10e3, 5e3])
+    fig.set_pane_color([1, 1, 1])
+    fig.set_labelpad(0, 0, 0)
+    fig.set_lims([-5e3, 5e3], [-5e3, 5e3], [-10e3, 5e3])
     plt.legend(facecolor="white", framealpha=1, loc="upper right")
 
 

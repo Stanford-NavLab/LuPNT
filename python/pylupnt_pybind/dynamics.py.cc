@@ -95,10 +95,11 @@ void init_dynamics(py::module &m) {
           py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](NumericalOrbitDynamics &dyn, Vector6 &state, double t0, double tf,
+          [](NumericalOrbitDynamics &dyn, Vector6d &state, double t0, double tf,
              double dt) -> std::tuple<Vector6d, Matrix6d> {
             Matrix6d stm;
-            dyn.PropagateWithStm(state, t0, tf, dt, stm);
+            Vector6 state_real = state.cast<real>();
+            dyn.PropagateWithStm(state_real, t0, tf, dt, stm);
             return std::make_tuple(state.cast<double>(), stm);
           },
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"));

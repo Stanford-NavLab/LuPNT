@@ -9,6 +9,39 @@ import hashlib
 TABLEAU_COLORS = list(mcolors.TABLEAU_COLORS.values())
 
 
+def propagate_orbital_user(user: dict) -> np.array:
+    """
+    Propagate a user on orbit around the Moon.
+    :param coe: [a, e, i, W, w, M] [km, -, deg, deg, deg, deg]
+    :param frame: Frame
+    :return: [x, y, z, vx, vy, vz] [km, km/s]
+    """
+    coe = user["orbital_elements"].copy()
+    frame = user["frame"]
+    coe[2:] = np.deg2rad(coe[2:])
+    rv0 = pnt.classical_to_cartesian(coe, pnt.MU_MOON)
+    rv0_mi = pnt.CoordConverter.convert(epoch_0, rv0, frame, pnt.MI)
+    rv_mi = dynamics.propagate(rv0_mi, epoch_0, epochs)
+    return rv_mi
+
+
+def propagate_surface_user(user: dict) -> np.array:
+    """
+    Propagate a user on the surface of the Moon.
+    :param lat_lon_alt: [lat, lon, alt] [deg, deg, km]
+    :return: [x, y, z, vx, vy, vz] [km, km/s]
+    """
+    lat_lon_alt = user["location"].copy()
+    lat_lon_alt[:2] = np.deg2rad(lat_lon_alt[:2])
+    rv_pa = np.zeros((N_t, 6))
+    rv_pa[:, :3] = pnt.geographical_to_cartesian(lat_lon_alt, pnt.R_MOON)
+    return rv_pa
+
+
+def cross_norm(a, b):
+    return np.cross(a, b) / np.linalg.norm(np.cross(a, b), axis=2)[:, :, None]
+
+
 def create_hash(obj):
     return hashlib.sha1(str(obj).encode()).hexdigest()
 
