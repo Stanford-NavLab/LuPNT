@@ -37,7 +37,9 @@ class Plot3D:
 
     def __init__(self, azim=-60, elev=30, figsize=(10, 10)):
         self.fig = plt.figure(figsize=figsize)
-        self.ax = self.fig.add_subplot(111, projection="3d", computed_zorder=False)
+        self.ax = self.fig.add_subplot(
+            111, projection="3d", proj_type="ortho", computed_zorder=False
+        )
         self.ax.view_init(azim=azim, elev=elev)
         self.azim = self.ax.azim
         self.elev = self.ax.elev
@@ -73,18 +75,12 @@ class Plot3D:
 
             lim = plot_data[name]["lim"] if limit is None else limit
             ticks = (-lim, -lim / 2, 0, lim / 2, lim)
-            self.ax.set_xticks(ticks)
-            self.ax.set_yticks(ticks)
-            self.ax.set_zticks(ticks)
-
-            self.ax.tick_params(axis="z", which="major", pad=10)
-            self.ax.set_xlabel("X [km]")
-            self.ax.set_zlabel("Z [km]", labelpad=10)
-            self.ax.set_ylabel("Y [km]", labelpad=5)
-
-            self.ax.set_xlim([-lim, lim])
-            self.ax.set_ylim([-lim, lim])
-            self.ax.set_zlim([-lim, lim])
+            lims = (-lim, lim)
+            self.set_ticks(ticks, ticks, ticks)
+            self.set_tickpad(0)
+            self.set_labels("X [km]", "Y [km]", "Z [km]")
+            self.set_labelpad(0, 0, 0)
+            self.set_limit(lims, lims, lims, equal=True)
 
         # self.fig.canvas.mpl_connect("motion_notify_event", self.rotate)
 
@@ -155,7 +151,7 @@ class Plot3D:
                     data[i, :, 2],
                     *args,
                     zorder=0,
-                    **kwargs
+                    **kwargs,
                 )
         else:
             if mask:
@@ -163,7 +159,46 @@ class Plot3D:
                 data[np.logical_not(cond), :] = [np.nan, np.nan, np.nan]
             self.ax.plot(data[:, 0], data[:, 1], data[:, 2], *args, zorder=0, **kwargs)
 
-    def label_axis(self, x="X [km]", y="Y [km]", z="Z [km]"):
+    def set_labels(self, x: str, y: str, z: str) -> None:
         self.ax.set_xlabel(x)
         self.ax.set_ylabel(y)
         self.ax.set_zlabel(z)
+
+    def set_pane_color(self, color: tuple) -> None:
+        self.ax.xaxis.set_pane_color(color)
+        self.ax.yaxis.set_pane_color(color)
+        self.ax.zaxis.set_pane_color(color)
+
+    def set_labelpad(self, pad: int) -> None:
+        self.ax.xaxis.labelpad = pad
+        self.ax.yaxis.labelpad = pad
+        self.ax.zaxis.labelpad = pad
+
+    def set_tickpad(self, pad: int) -> None:
+        self.ax.tick_params(axis="both", which="major", pad=0)
+
+    def set_equal_aspect(
+        self, xlims: tuple, ylims: tuple, zlims: tuple, equal=True
+    ) -> None:
+        for x in xlims:
+            for y in ylims:
+                for z in zlims:
+                    self.ax.scatter([x], [y], [z], color="white", s=0)
+        self.ax.set_xlim(xlims)
+        self.ax.set_ylim(ylims)
+        self.ax.set_zlim(zlims)
+
+        if equal:
+            self.ax.set_box_aspect(
+                [xlims[1] - xlims[0], ylims[1] - ylims[0], zlims[1] - zlims[0]]
+            )
+
+    def set_tick_multiplier(self, factor: int) -> None:
+        self.ax.set_xticklabels([f"{int(x * factor)}" for x in self.ax.get_xticks()])
+        self.ax.set_yticklabels([f"{int(y * factor)}" for y in self.ax.get_yticks()])
+        self.ax.set_zticklabels([f"{int(z * factor)}" for z in self.ax.get_zticks()])
+
+    def set_ticks(self, x: list, y: list, z: list) -> None:
+        self.ax.set_xticks(x)
+        self.ax.set_yticks(y)
+        self.ax.set_zticks(z)

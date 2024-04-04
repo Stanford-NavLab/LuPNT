@@ -83,26 +83,13 @@ def plot_satellites_users(
     #     *org, *sun_dir, color="tab:orange", arrow_length_ratio=0.1, label="Sun"
     # )
 
-    # Change z-axis label margin
-    fig.ax.xaxis.labelpad = 0
-    fig.ax.yaxis.labelpad = 0
-    fig.ax.zaxis.labelpad = 0
-    fig.ax.tick_params(axis="both", which="major", pad=0)
-
-    fig.ax.set_xlim(-5e3, 5e3)
-    fig.ax.set_ylim(-5e3, 5e3)
-    fig.ax.set_zlim(-10e3, 5e3)
-    fig.ax.set_xticklabels([f"{int(x/1000)}" for x in fig.ax.get_xticks()])
-    fig.ax.set_yticklabels([f"{int(y/1000)}" for y in fig.ax.get_yticks()])
-    fig.ax.set_zticklabels([f"{int(z/1000)}" for z in fig.ax.get_zticks()])
-    fig.ax.set_xlabel("X [$10^3$ km]")
-    fig.ax.set_ylabel("Y [$10^3$ km]")
-    fig.ax.set_zlabel("Z [$10^3$ km]")
-    fig.ax.set_aspect("equal")
-    fig.ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    fig.ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    fig.ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    plt.legend(facecolor="white", framealpha=1)
+    fig.set_tickpad(0)
+    fig.set_tick_multiplier(1e-3)
+    fig.set_labels("X [$10^3$ km]", "Y [$10^3$ km]", "Z [$10^3$ km]")
+    fig.set_pane_color(fig.ax, [1, 1, 1])
+    fig.set_labelpad(fig.ax, 0)
+    fig.set_equal_aspect([-5e3, 5e3], [-5e3, 5e3], [-10e3, 5e3])
+    plt.legend(facecolor="white", framealpha=1, loc="upper right")
 
 
 def plot_elevation_range(
