@@ -59,13 +59,8 @@ void LoadSpiceKernel(void) {
   furnsh_c(
       "earth_000101_230805_230512.bpc");  // shorter histrory precise earth EOP
 
-  std::cout << "Loaded All SPICE Kernels" << std::endl;
-
   // Load Chebyshev coefficients
   cheby_s = spk_extract("de440.bsp", &cheby_n);
-  std::cout << "Loaded Chebyshev coefficients for " + std::to_string(cheby_n) +
-                   " planets."
-            << std::endl;
 
   if (cheby_s == NULL) {
     cheby_err(

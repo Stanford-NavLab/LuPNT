@@ -89,9 +89,6 @@ class PntSchedulingProblem:
         service_windows: list[ServiceWindow],  # List of service windows
         transition_times: np.ndarray,  # Transition times matrix
         CN0,  # Carrier-to-noise density ratio [dB-Hz]
-        # Hyperparameters
-        N_max_actions: int,  # Maximum number of actions to consider
-        min_action_duration: float,  # Minimum action duration
         # Satelite
         min_energy: float,  # Minimum energy
         max_energy: float,  # Maximum energy
@@ -109,9 +106,6 @@ class PntSchedulingProblem:
         self.CN0_norm = CN0 / np.nanmax(CN0, axis=2)[:, :, None]
         self.N_satellites = len(set(w.satellite_id for w in service_windows))
 
-        self.N_max_actions = N_max_actions
-        self.min_action_duration = min_action_duration
-
         self.min_energy = min_energy
         self.max_energy = max_energy
         self.min_data = min_data
@@ -122,7 +116,19 @@ class PntSchedulingProblem:
         self.data_gen_func = data_gen_func
         self.tf = max([r.end for r in requests])
 
-    def available_actions(self, s: State) -> list[Action]:
+    def available_actions(self, s: State, N_max: float, d_min: float) -> list[Action]:
+        """
+        Get available actions for a given state
+
+        Args:
+            s (State): Current state
+            N_max (float): Maximum number of actions
+            d_min (float): Minimum action duration
+
+        Returns:
+            list[Action]: List of available actions
+        """
+
         # Satellite to select an action
         sat_id = np.argmin(s.time)
 
@@ -163,7 +169,7 @@ class PntSchedulingProblem:
                 s.time[sat_id] + trans_time,
             )
             a_duration = min(
-                self.min_action_duration,
+                d_min,
                 window.end - a_start,  # Window end
                 self.request_dict[window.request_id].duration
                 - s.request_time[window.request_id],  # Requested duration
@@ -196,13 +202,23 @@ class PntSchedulingProblem:
             )
             actions_count += 1
 
-            if actions_count >= self.N_max_actions:
+            if actions_count >= N_max:
                 break
 
         return actions
 
     def get_discrete_index(self, ts, te):
-        # Get the discrete index for a given time range
+        """
+        Get the discrete index for a given time range
+
+        Args:
+            ts (float): Start time
+            te (float): End time
+
+        Returns:
+            tuple[int, int]: Discrete index
+        """
+
         i_s = int(ts / self.time_step)
         i_e = int(te / self.time_step)
         if i_e == ts:
@@ -210,6 +226,17 @@ class PntSchedulingProblem:
         return i_s, i_e
 
     def transition_function(self, s: State, a: Action) -> State:
+        """
+        Transition function
+
+        Args:
+            s (State): Current state
+            a (Action): Action
+
+        Returns:
+            State: New state
+        """
+
         window = a.window
         time = a.start + a.duration
         sat_id = a.satellite_id
@@ -253,14 +280,37 @@ class PntSchedulingProblem:
             / self.request_dict[a.window.request_id].duration
         )
 
-    def integrate_normalized_CN0(self, ts, te, request_id, satellite_id):
-        # Integrate normalized CN0
+    def integrate_normalized_CN0(self, ts, te, request_id, satellite_id) -> float:
+        """
+        Integrate normalized CN0
+
+        Args:
+            ts (float): Start time
+            te (float): End time
+            request_id (int): Request id
+            satellite_id (int): Satellite id
+
+        Returns:
+            float: Integrated normalized CN0
+        """
+
         i_s, i_e = self.get_discrete_index(ts, te)
         cn0 = self.CN0_norm[satellite_id, request_id, i_s:i_e]
         cn0[np.isnan(cn0)] = 0
         return np.sum(cn0) * self.time_step
 
     def reward_function(self, s: State, a: Action) -> float:
+        """
+        Reward function
+
+        Args:
+            s (State): Current state
+            a (Action): Action
+
+        Returns:
+            float: Reward
+        """
+
         payload_on = a.window.request_id >= 0
         if payload_on:
             return self.integrate_normalized_CN0(
@@ -269,7 +319,14 @@ class PntSchedulingProblem:
         else:
             return 0
 
-    def initial_state(self):
+    def initial_state(self) -> State:
+        """
+        Get initial state
+
+        Returns:
+            State: Initial state
+        """
+
         return State(
             time=[0.0 for _ in range(self.N_satellites)],
             last_window=[None for _ in range(self.N_satellites)],
@@ -284,20 +341,51 @@ class PntSchedulingProblem:
         )
 
     def total_reward(self, policy: list[tuple[State, Action]], gamma: float) -> float:
+        """
+        Calculate the total reward of a policy
+
+        Args:
+            policy (list[tuple[State, Action]]): Policy
+            gamma (float): Discount factor
+
+        Returns:
+            float: Total reward
+        """
+
         rewards = np.array([self.reward_function(s, a) for s, a in policy[:-1]])
         discounts = np.array([gamma**i for i in range(len(policy[:-1]))])
         return np.sum(rewards * discounts)
 
-    def percentage_completed(self, policy: list[tuple[State, Action]]) -> float:
+    def percentage_completed(self, policy: list[tuple[State, Action]]) -> list[float]:
+        """
+        Calculate the percentage of completed requests
+
+        Args:
+            policy (list[tuple[State, Action]]): Policy
+
+        Returns:
+            list[float]: Percentage of completed requests
+        """
+
         s0 = policy[0][0]
         sf = policy[-1][0]
-        return {
-            r.id: round(sf.request_time[r.id] / r.duration * 100, 2)
+        return [
+            sf.request_time[r.id] / r.duration * 100
             for r in self.request_dict.values()
             if r.id >= 0
-        }
+        ]
 
     def duration_fullfilled(self, policy: list[tuple[State, Action]]) -> float:
+        """
+        Calculate the percentage of completed requests
+
+        Args:
+            policy (list[tuple[State, Action]]): Policy
+
+        Returns:
+            float: Percentage of completed requests
+        """
+
         s0 = policy[0][0]
         sf = policy[-1][0]
         return (

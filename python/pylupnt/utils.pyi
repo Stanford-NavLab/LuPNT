@@ -6,7 +6,7 @@ import os as os
 import pandas as pd
 import pickle as pickle
 from time import time
-__all__ = ['GridSpec', 'arr_to_mat_idx', 'basepath', 'dump_pickle', 'format_element', 'i_to_arr_idxs', 'load_data', 'load_pickle', 'mat_to_arr_idx', 'np', 'os', 'pd', 'pickle', 'plot_RTN', 'plt', 'print_aligned', 'set_axes_equal', 'time', 'timer_func', 'wrapToPi']
+__all__ = ['GridSpec', 'arr_to_mat_idx', 'basepath', 'dump_pickle', 'format_element', 'i_to_arr_idxs', 'load_data', 'load_pickle', 'mat_to_arr_idx', 'np', 'os', 'pd', 'pickle', 'plot_RTN', 'plt', 'print_aligned', 'set_axes_equal', 'time', 'timed', 'timer_func', 'wrapToPi']
 def arr_to_mat_idx(k, n):
     ...
 def dump_pickle(obj, path):
@@ -35,6 +35,8 @@ def set_axes_equal(ax):
           ax: a matplotlib axis, e.g., as output from plt.gca().
         
     """
+def timed(func, *args, **kwargs):
+    ...
 def timer_func(func):
     ...
 def wrapToPi(x):

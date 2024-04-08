@@ -1,49 +1,80 @@
 import matplotlib.pyplot as plt
-from typing import List, Dict, Tuple
 import numpy as np
 import matplotlib.colors as mcolors
-from dataclasses import dataclass, field
-from enum import Enum
+from tqdm.notebook import tqdm
 import hashlib
+from multiprocessing import Pool
+from problem import PntSchedulingProblem, State, Action
+from solvers import Solver
+from itertools import product
+import os
+import pickle
 
 TABLEAU_COLORS = list(mcolors.TABLEAU_COLORS.values())
 
 
-def propagate_orbital_user(user: dict) -> np.array:
-    """
-    Propagate a user on orbit around the Moon.
-    :param coe: [a, e, i, W, w, M] [km, -, deg, deg, deg, deg]
-    :param frame: Frame
-    :return: [x, y, z, vx, vy, vz] [km, km/s]
-    """
-    coe = user["orbital_elements"].copy()
-    frame = user["frame"]
-    coe[2:] = np.deg2rad(coe[2:])
-    rv0 = pnt.classical_to_cartesian(coe, pnt.MU_MOON)
-    rv0_mi = pnt.CoordConverter.convert(epoch_0, rv0, frame, pnt.MI)
-    rv_mi = dynamics.propagate(rv0_mi, epoch_0, epochs)
-    return rv_mi
+def load_or_recompute(filepath: os.PathLike, func, *args, **kwargs):
+    if os.path.exists(filepath):
+        with open(filepath, "rb") as f:
+            return pickle.load(f)
+    else:
+        result = func(*args, **kwargs)
+        with open(filepath, "wb") as f:
+            pickle.dump(result, f)
+        return result
 
 
-def propagate_surface_user(user: dict) -> np.array:
-    """
-    Propagate a user on the surface of the Moon.
-    :param lat_lon_alt: [lat, lon, alt] [deg, deg, km]
-    :return: [x, y, z, vx, vy, vz] [km, km/s]
-    """
-    lat_lon_alt = user["location"].copy()
-    lat_lon_alt[:2] = np.deg2rad(lat_lon_alt[:2])
-    rv_pa = np.zeros((N_t, 6))
-    rv_pa[:, :3] = pnt.geographical_to_cartesian(lat_lon_alt, pnt.R_MOON)
-    return rv_pa
+def iterate_params(params: dict) -> list[dict]:
+    return [dict(zip(params.keys(), x)) for x in product(*params.values())]
+
+
+def get_metrics(
+    problem: PntSchedulingProblem,
+    policy: list[tuple[State, Action]],
+    time: float,
+    gamma: float,
+) -> dict:
+    # Metrics
+    percentages = [round(x, 2) for x in problem.percentage_completed(policy)]
+    percentage = round(problem.duration_fullfilled(policy), 2)
+    reward = round(problem.total_reward(policy, gamma=gamma), 2)
+    time = round(time, 2)
+    return {"total": percentage, "user": percentages, "reward": reward, "time": time}
+
+
+def timed(func, *args, **kwargs):
+    import time
+
+    start = time.time()
+    result = func(*args, **kwargs)
+    end = time.time()
+    return result, end - start
+
+
+def solve(
+    params: dict, problem: PntSchedulingProblem, solver: Solver, seed: int
+) -> dict:
+    np.random.seed(seed)
+    s = problem.initial_state()
+    solver = solver(problem)
+    policy, time = timed(solver.solve, s, **params)
+    metrics = get_metrics(problem, policy, time, gamma=1)
+    metrics["params"] = params
+    return metrics
+
+
+def run_parallel(func, it, n_jobs=4):
+    with Pool(n_jobs) as p:
+        results = list(tqdm(p.imap(func, it), total=len(it), desc="Solving problems"))
+    return results
 
 
 def cross_norm(a, b):
     return np.cross(a, b) / np.linalg.norm(np.cross(a, b), axis=2)[:, :, None]
 
 
-def create_hash(obj):
-    return hashlib.sha1(str(obj).encode()).hexdigest()
+def create_hash(*args):
+    return hashlib.sha1(str(args).encode()).hexdigest()
 
 
 def normalize(v):
@@ -182,7 +213,7 @@ def plot_windows(
     plt.ylabel("Tasks")
 
 
-def get_start_end_indexes(sequence: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def get_start_end_indexes(sequence: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     tmp = np.concatenate(([False], sequence.astype(bool), [False]))
     starts = np.where(np.logical_and(~tmp[:-1], tmp[1:]))[0]
     ends = np.where(np.logical_and(tmp[:-1], ~tmp[1:]))[0]
