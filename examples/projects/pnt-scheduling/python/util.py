@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.colors as mcolors
 from tqdm.notebook import tqdm
-import hashlib
 from multiprocessing import Pool
+import hashlib
 from problem import PntSchedulingProblem, State, Action
 from solvers import Solver
 from itertools import product
@@ -14,6 +14,10 @@ TABLEAU_COLORS = list(mcolors.TABLEAU_COLORS.values())
 
 
 def load_or_recompute(filepath: os.PathLike, func, *args, **kwargs):
+    # Check if directory exists
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+    # Check if file exists
     if os.path.exists(filepath):
         with open(filepath, "rb") as f:
             return pickle.load(f)
@@ -63,9 +67,13 @@ def solve(
     return metrics
 
 
-def run_parallel(func, it, n_jobs=4):
-    with Pool(n_jobs) as p:
-        results = list(tqdm(p.imap(func, it), total=len(it), desc="Solving problems"))
+def run_parallel(func, it, n_jobs=4, desc="Multiprocessing"):
+    if n_jobs > 1:
+        with Pool(n_jobs) as p:
+            results = list(tqdm(p.imap(func, it), total=len(it), desc=desc))
+    else:
+        results = [func(x) for x in tqdm(it, desc=desc)]
+
     return results
 
 

@@ -1,31 +1,29 @@
 import numpy as np
 import cvxpy as cp
 import util
+import logging
+import gurobipy
 from problem import PntSchedulingProblem, State, Action, ServiceWindow
 from .Solver import Solver
 
 
 class DiscreteTimeIpSolver(Solver):
     def __init__(self, problem: PntSchedulingProblem):
-        self.problem = problem
+        self.problem: PntSchedulingProblem = problem
         self.solution: np.array = None
 
-    def solve(
-        self, s: State, time_step_factor: float, verbose: bool = False
-    ) -> list[tuple[State, Action]]:
+    def solve(self, s: State, time_step_factor: float) -> list[tuple[State, Action]]:
 
         N_sat = self.problem.N_satellites
         N_req = len(self.problem.request_dict)
         Dt = self.problem.tf / self.problem.CN0_norm.shape[2]
-        time_step = time_step_factor * Dt
-        N_t = int(self.problem.tf / time_step)
+        dt = time_step_factor * Dt
+        N_t = int(self.problem.tf / dt)
 
         durations = np.ceil(
-            [r.duration / time_step for r in self.problem.request_dict.values()]
+            [r.duration / dt for r in self.problem.request_dict.values()]
         ).astype(int)
-        transition_times = np.ceil(self.problem.transition_times / time_step).astype(
-            int
-        )
+        transition_times = np.ceil(self.problem.transition_times / dt).astype(int)
         rewards = np.zeros((N_sat, N_req, N_t))
         service_windows = np.zeros((N_sat, N_req, N_t))
         data_gen_requests = np.zeros((N_sat, N_req, N_t))
@@ -37,11 +35,11 @@ class DiscreteTimeIpSolver(Solver):
                     for win in self.problem.service_windows
                     if win.request_id == req.id and win.satellite_id == i_sat
                 ]
-                starts = np.ceil([w.start / time_step for w in windows]).astype(int)
-                ends = np.floor([w.end / time_step for w in windows]).astype(int)
+                starts = np.ceil([w.start / dt for w in windows]).astype(int)
+                ends = np.floor([w.end / dt for w in windows]).astype(int)
                 for w, ts, te in zip(windows, starts, ends):
                     if ts >= te:
-                        print(
+                        logging.debug(
                             f"Service window {w.id} has duration 0. Try decreasing time step."
                         )
                         continue
@@ -57,23 +55,23 @@ class DiscreteTimeIpSolver(Solver):
                             self.problem.CN0_norm[
                                 i_sat, w.request_id, (f * ts) : (f * te) : f
                             ]
-                            * time_step
+                            * dt
                         )
                         assert not np.isnan(rewards).any()
                         data_gen_requests[i_sat, j_req, ts:te] = (
-                            self.problem.payload_data_gen * time_step
+                            self.problem.payload_data_gen * dt
                         )
                         energy_gen_requests[i_sat, j_req, ts:te] = (
-                            self.problem.payload_power_gen * time_step
+                            self.problem.payload_power_gen * dt
                         )
 
         data_gen = self.problem.data_gen_func(
-            np.arange(N_t) * time_step,
-            (np.arange(N_t) + 1) * time_step,
+            np.arange(N_t) * dt,
+            (np.arange(N_t) + 1) * dt,
         )
         energy_gen = self.problem.energy_gen_func(
-            np.arange(N_t) * time_step,
-            (np.arange(N_t) + 1) * time_step,
+            np.arange(N_t) * dt,
+            (np.arange(N_t) + 1) * dt,
         )
         # Variables
         x = [cp.Variable((N_req, N_t), boolean=True) for _ in range(N_sat)]
@@ -91,29 +89,20 @@ class DiscreteTimeIpSolver(Solver):
 
         # Constraints
         constraints = []
-        for t in range(N_t):
-            constraints.extend(
-                [
-                    s.data
-                    + np.sum(data_gen[: t + 1])
-                    + cp.sum(
-                        cp.multiply(data_gen_requests[i_sat], x[i_sat])[:, : t + 1]
-                    )
-                    <= self.problem.max_data
-                    for i_sat in range(N_sat)
-                ]
+        for i_sat in range(N_sat):
+            tmp_data = data_gen + cp.sum(
+                cp.multiply(data_gen_requests[i_sat], x[i_sat]), axis=0
             )
-            constraints.extend(
-                [
-                    s.energy
-                    + np.sum(energy_gen[: t + 1])
-                    + cp.sum(
-                        cp.multiply(energy_gen_requests[i_sat], x[i_sat])[:, : t + 1]
-                    )
-                    >= self.problem.min_energy
-                    for i_sat in range(N_sat)
-                ]
+            tmp_energy = energy_gen + cp.sum(
+                cp.multiply(energy_gen_requests[i_sat], x[i_sat]), axis=0
             )
+            for t in range(N_t + 1):
+                constraints.append(
+                    s.data[i_sat] + cp.sum(tmp_data[:t]) <= self.problem.max_data
+                )
+                constraints.append(
+                    s.energy[i_sat] + cp.sum(tmp_energy[:t]) >= self.problem.min_energy
+                )
 
         # One action at a time for each satellite
         constraints.extend([cp.sum(x[i_sat], axis=0) <= 1 for i_sat in range(N_sat)])
@@ -149,31 +138,34 @@ class DiscreteTimeIpSolver(Solver):
                         )
 
         # Optimize
+        env = gurobipy.Env(empty=True)
+        env.setParam("OutputFlag", 0)
+        env.start()
         problem = cp.Problem(objective, constraints)
-        problem.solve(verbose=verbose, solver=cp.GUROBI)
+        problem.solve(solver=cp.GUROBI, env=env)
+
         # Convert to integer
         self.solution = np.zeros((N_sat, N_req, N_t))
         for i_sat in range(N_sat):
             self.solution[i_sat] = np.round(x[i_sat].value).astype(int)
-        print(problem.status)
 
         # Policy
-        policy = self.construct_policy(s, time_step)
-        return policy
+        # policy = self.construct_policy(s, dt)
+        # return policy
 
-    def construct_policy(
-        self, s: State, time_step: float
-    ) -> list[tuple[State, Action]]:
+        # def construct_policy(
+        #     self, s: State, time_step: float
+        # ) -> list[tuple[State, Action]]:
 
         # Dictionary mapping request and satellite ids to service windows
         service_windows_dict: dict[int, dict[int, list[ServiceWindow]]] = {
             req.id: {
-                sat_id: [
+                i_sat: [
                     w
                     for w in self.problem.service_windows
-                    if w.request_id == req.id and w.satellite_id == sat_id
+                    if w.request_id == req.id and w.satellite_id == i_sat
                 ]
-                for sat_id in range(self.problem.N_satellites)
+                for i_sat in range(self.problem.N_satellites)
             }
             for req in self.problem.request_dict.values()
         }
@@ -183,26 +175,41 @@ class DiscreteTimeIpSolver(Solver):
             windows = [
                 win
                 for win in service_windows_dict[request_id][satellite_id]
-                if ts >= int(np.ceil(win.start / time_step)) - 1
-                and te <= int(np.floor(win.end / time_step)) + 1
+                if ts >= int(np.ceil(win.start / dt)) - 1
+                and te <= int(np.floor(win.end / dt)) + 1
             ]
             return windows[0]
 
         # Create actions by iterating over the requests
         actions: list[Action] = []
         for j_req, req in enumerate(self.problem.request_dict.values()):
-            for sat_id in range(self.problem.N_satellites):
-                start, end = util.get_start_end_indexes(self.solution[sat_id, j_req])
+            for i_sat in range(self.problem.N_satellites):
+                start, end = util.get_start_end_indexes(self.solution[i_sat, j_req])
                 for ts, te in zip(start, end):
-                    window = get_window(ts, te, req.id, sat_id)
+                    window = get_window(ts, te, req.id, i_sat)
                     a = Action(
-                        satellite_id=sat_id,
-                        start=ts * time_step,
-                        duration=(te - ts) * time_step,
+                        satellite_id=i_sat,
+                        start=ts * dt,
+                        duration=(te - ts) * dt,
                         window=window,
                     )
                     actions.append(a)
         actions.sort(key=lambda a: a.start)
+
+        tmp_d = [
+            data_gen
+            + np.sum(
+                np.multiply(data_gen_requests[i_sat], self.solution[i_sat]), axis=0
+            )
+            for i_sat in range(N_sat)
+        ]
+        tmp_e = [
+            energy_gen
+            + np.sum(
+                np.multiply(energy_gen_requests[i_sat], self.solution[i_sat]), axis=0
+            )
+            for i_sat in range(N_sat)
+        ]
 
         # Create policy
         policy = []
@@ -210,5 +217,6 @@ class DiscreteTimeIpSolver(Solver):
             # Fix the duration of the action
             policy.append((s, a))
             s = self.problem.transition_function(s, a)
+
         policy.append((s, None))
         return policy

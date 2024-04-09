@@ -240,18 +240,22 @@ class PntSchedulingProblem:
         window = a.window
         time = a.start + a.duration
         sat_id = a.satellite_id
-
+        duration = min(
+            a.duration,
+            self.request_dict[window.request_id].duration
+            - s.request_time[window.request_id],
+        )
         payload_on = window.request_id >= 0
         data = max(
             self.min_data,
             s.data[sat_id]
-            + self.payload_data_gen * a.duration * payload_on
+            + self.payload_data_gen * duration * payload_on
             + self.data_gen_func(s.time[sat_id], time),
         )
         energy = min(
             self.max_energy,
             s.energy[sat_id]
-            + self.payload_power_gen * a.duration * payload_on
+            + self.payload_power_gen * duration * payload_on
             + self.energy_gen_func(s.time[sat_id], time),
         )
 
@@ -265,9 +269,12 @@ class PntSchedulingProblem:
         new_state = deepcopy(s)
         new_state.time[sat_id] = time
         new_state.last_window[sat_id] = window
-        new_state.request_time[window.request_id] = min(
-            s.request_time[window.request_id] + a.duration,
-            self.request_dict[window.request_id].duration,
+        new_state.request_time[window.request_id] = (
+            s.request_time[window.request_id] + duration
+        )
+        assert (
+            new_state.request_time[window.request_id]
+            <= self.request_dict[window.request_id].duration
         )
         new_state.data[sat_id] = data
         new_state.energy[sat_id] = energy

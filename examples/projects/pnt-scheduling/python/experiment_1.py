@@ -1,6 +1,5 @@
 import os
 import util
-import pprint
 
 import numpy as np
 import pylupnt as pnt
@@ -13,90 +12,101 @@ from solvers import (
     DiscreteTimeIpSolver,
     RuleBasedSolver,
 )
+import logging
 
 from functools import partial
 
 cache_path = "cache/"
-pp = pprint.PrettyPrinter()
+
+solvers = {
+    "RB": RuleBasedSolver,
+    "FS": SmdpForwardSearchSolver,
+    "MCTS": SmdpMctsSolver,
+    "IP": DiscreteTimeIpSolver,
+}
 
 
 def solve_wrapper(
-    problem: PntSchedulingProblem,
-    seed: int,
-    duration_factor: float,
-    params: dict,
-    solver: type,
-):
-    func = partial(util.solve, problem=problem, solver=solver, seed=seed)
-    it = util.iterate_params(params)
-    filepath = os.path.join(cache_path, util.create_hash(duration_factor, params))
-    return util.load_or_recompute(filepath, util.run_parallel, func, it, n_jobs=5)
+    config: dict, problem: PntSchedulingProblem, solver: str, n_jobs: int
+) -> list[dict]:
+    """
+    Load or recompute results for a solver and specific parameters.
 
+    Args:
+        config (dict): Configuration including date, duration factor, and solver parameters
+        problem (PntSchedulingProblem): Problem
+        solver (str): Solver name
+        n_jobs (int): Number of jobs
 
-def solve_problem(config: dict, verbose: bool = False) -> dict:
-    date = config["date"]
-    duration_factor = config["duration_factor"]
-    problem = get_problem(date, duration_factor)
-
-    seed = 0
-    results_all = {}
-
-    # ***** Rule-based *****
-    params = {}
-    results = [util.solve(params, problem, RuleBasedSolver, seed)]
-    results_all["RB"] = results
-    if verbose:
-        print("\nRule-based")
-        pp.pprint(results[0])
-
-    # ***** Forward search *****
-    seed = 0
-    params = config["FS"]
-    results = solve_wrapper(
-        problem, seed, duration_factor, params, SmdpForwardSearchSolver
+    Returns:
+        list[dict]: Results
+    """
+    # Solve function
+    func = partial(
+        util.solve, problem=problem, solver=solvers[solver], seed=config["solver_seed"]
     )
+
+    # Iterable with all the parameter combinations
+    it = util.iterate_params(config[solver])
+
+    # Filepath for caching
+    filepath = os.path.join(
+        cache_path,
+        solver,
+        util.create_hash(config["date"], config["duration_factor"], config[solver]),
+    )
+
+    # Load or recompute results
+    results = util.load_or_recompute(
+        filepath, util.run_parallel, func, it, n_jobs=n_jobs, desc=solver
+    )
+
+    # Sort results by duration percentage and computing time
     results.sort(key=lambda x: 1e3 * x["total"] - x["time"], reverse=True)
-    results_all["FS"] = results
-    if verbose:
-        print("\nForward search")
-        pp.pprint(results[0])
+    return results
 
-    # ***** MCTS *****
-    seed = 0
-    params = config["MCTS"]
-    func = partial(util.solve, problem=problem, solver=SmdpMctsSolver, seed=seed)
-    it = util.iterate_params(params)
-    filepath = os.path.join(cache_path, util.create_hash(duration_factor, params))
-    results = util.load_or_recompute(filepath, util.run_parallel, func, it, n_jobs=5)
 
-    results.sort(key=lambda x: x["total"], reverse=True)
-    results_all["MCTS"] = results
-    if verbose:
-        print("\nMCTS")
-        pp.pprint(results[0])
+def solve_problem(config: dict, n_jobs: int = 5) -> dict:
+    """
+    Solve the problem using all solvers.
 
-    # IP
-    seed = 0
-    params = config["IP"]
-    func = partial(util.solve, problem=problem, solver=DiscreteTimeIpSolver, seed=seed)
-    it = util.iterate_params(params)
-    filepath = os.path.join(cache_path, util.create_hash(duration_factor, params))
-    results = util.load_or_recompute(filepath, util.run_parallel, func, it, n_jobs=5)
+    Args:
+        config (dict): Configuration including date, duration factor, and solver parameters
+        n_jobs (int): Number of jobs
 
-    results.sort(key=lambda x: x["total"], reverse=True)
-    results_all["IP"] = results
-    if verbose:
-        print("\nIP")
-        pp.pprint(results[0])
+    Returns:
+        dict: Results
+    """
+
+    # Create the problem (satellites, users, demands, etc.)
+    problem = get_problem(config["date"], config["duration_factor"])
+
+    # Solve the problem using all solvers
+    results_all = {}
+    for solver in solvers.keys():
+        if solver not in config:
+            continue
+        results_all[solver] = solve_wrapper(config, problem, solver, n_jobs)
+        logging.debug(f"\n{solver}", results_all[solver][0])
 
     return results_all
 
 
 def get_problem(date, duration_factor) -> PntSchedulingProblem:
+    """
+    Create the PNT scheduling problem.
+
+    Args:
+        date (str): Start date
+        duration_factor (float): Duration factor for demand generation
+
+    Returns:
+        PntSchedulingProblem: Problem
+    """
+
     # *******************************************************************************
     # Satellite constellation
     # *******************************************************************************
-
     orbital_elements = pathfinder_data.orbital_elements.copy()
     users = pathfinder_data.users.copy()
     N_sat = 2
@@ -228,6 +238,7 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
                 rv_moon_user_mi[i_usr, :, :3], rv_moon_sat_mi[j_sat, :, :3]
             )
 
+    # Elevation mask
     surface_elev_mask = np.deg2rad(15)  # [rad] Elevation mask
     orbital_elev_mask = np.deg2rad(0)  # [rad] Elevation mask
     max_elevation = np.max(az_el_rho[:, :, :, 1], axis=2)
@@ -257,9 +268,11 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
     contact_durations_pathfinder = (
         np.round(contact_durations_pathfinder / 60 * 2) * 60 / 2
     )
-    print("Contact durations [hours]")
-    print(np.round(total_contact_durations / 60, 1))
-    print(contact_durations_pathfinder / 60)
+    logging.debug(
+        "Contact durations [minutes]",
+        np.round(total_contact_durations / 60, 1),
+        contact_durations_pathfinder / 60,
+    )
 
     # Navigation signal
     fs = 2492.028e6  # Carrier frequency [Hz]
@@ -464,8 +477,8 @@ def energy_gen_func(ts, te, sun_angle_cos, P_solar_max, Dt):
         float: Energy generation [Wh]
     """
     if not isinstance(ts, np.ndarray):
-        i_s = int(ts * pnt.SECS_PER_HOUR / Dt)
-        i_e = int(te * pnt.SECS_PER_HOUR / Dt)
+        i_s = round(ts * pnt.SECS_PER_HOUR / Dt)
+        i_e = round(te * pnt.SECS_PER_HOUR / Dt)
         if i_e == i_s:
             if i_e < len(sun_angle_cos):
                 i_e += 1
@@ -475,8 +488,8 @@ def energy_gen_func(ts, te, sun_angle_cos, P_solar_max, Dt):
     else:
         energy = np.zeros(len(ts))
         for i in range(len(ts)):
-            i_s = int(ts[i] * pnt.SECS_PER_HOUR / Dt)
-            i_e = int(te[i] * pnt.SECS_PER_HOUR / Dt)
+            i_s = round(ts[i] * pnt.SECS_PER_HOUR / Dt)
+            i_e = round(te[i] * pnt.SECS_PER_HOUR / Dt)
             if i_e == i_s:
                 if i_e < len(sun_angle_cos):
                     i_e += 1
