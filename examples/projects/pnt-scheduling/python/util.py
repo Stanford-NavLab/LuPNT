@@ -67,10 +67,13 @@ def solve(
     return metrics
 
 
-def run_parallel(func, it, n_jobs=4, desc="Multiprocessing"):
+def run_parallel(func, it, n_jobs=4, desc="Multiprocessing", progress=True):
     if n_jobs > 1:
         with Pool(n_jobs) as p:
-            results = list(tqdm(p.imap(func, it), total=len(it), desc=desc))
+            if progress:
+                results = list(tqdm(p.imap(func, it), total=len(it), desc=desc))
+            else:
+                results = p.map(func, it)
     else:
         results = [func(x) for x in tqdm(it, desc=desc)]
 
