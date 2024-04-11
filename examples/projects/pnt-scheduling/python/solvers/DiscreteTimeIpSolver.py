@@ -142,7 +142,10 @@ class DiscreteTimeIpSolver(Solver):
         env.setParam("OutputFlag", 0)
         env.start()
         problem = cp.Problem(objective, constraints)
-        problem.solve(solver=cp.GUROBI, env=env)
+        # verbose if logging is set to debug
+        problem.solve(
+            solver=cp.GUROBI, env=env, verbose=logging.DEBUG <= logging.root.level
+        )
 
         # Convert to integer
         self.solution = np.zeros((N_sat, N_req, N_t))

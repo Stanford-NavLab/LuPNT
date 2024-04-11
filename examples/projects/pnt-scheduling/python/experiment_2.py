@@ -130,7 +130,8 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
     period = 2 * np.pi * np.sqrt(np.power(sma, 3) / pnt.MU_MOON)  # [s] Orbital period
     Dt = 5 * pnt.SECS_PER_MINUTE  # [s] Simulation time step
     dt = 5 * pnt.SECS_PER_MINUTE  # [s] Propagation time step
-    tf = 2 * pnt.SECS_PER_DAY  # [s] Simulation final time
+    N_days = 2  # [-] Number of days
+    tf = N_days * pnt.SECS_PER_DAY  # [s] Simulation final time
     N_t = int(tf / Dt)  # [-] Number of time steps
     tspan = np.linspace(0, tf, N_t)  # [s] Time since first epoch
     epochs = epoch_0 + tspan  # [s] Epochs (TAI)
@@ -366,20 +367,20 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
             priority=0,
         ),  # Dummy request
     )
-    resquest_id = 0
-    for day in range(2):
+    request_id = 0
+    for j_day in range(N_days):
         for i, user in enumerate(users):
             requests.append(
                 Request(
-                    id=resquest_id,
+                    id=request_id,
                     user_id=user["id"],
                     rv=rv_moon_user_mi[i],
-                    start=day * 24,
-                    end=(day + 1) * 24,
+                    start=j_day * 24,
+                    end=N_days * 24,
                     duration=contact_durations_pathfinder[i] / 2 / 60,
                 )
             )
-            resquest_id += 1
+            request_id += 1
     N_req = len(requests)
 
     # Service windows
@@ -395,15 +396,23 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
                 end=tf / pnt.SECS_PER_HOUR,
             )  # Dummy service window
         )
-        for i, request in enumerate(requests[1:]):
-            for start, end in contact_start_ends[i_sat][i]:
+        for request in requests[1:]:
+            for start, end in contact_start_ends[i_sat][request.user_id]:
+
+                # Convert indexes to hours
+                start_h = start * Dt / pnt.SECS_PER_HOUR
+                end_h = end * Dt / pnt.SECS_PER_HOUR
+
+                if end_h <= request.start or start_h >= request.end:
+                    continue
+
                 service_windows.append(
                     ServiceWindow(
                         id=window_id,
                         satellite_id=i_sat,
                         request_id=request.id,
-                        start=ceil(start * Dt / pnt.SECS_PER_HOUR * 10) / 10,
-                        end=floor(end * Dt / pnt.SECS_PER_HOUR * 10) / 10,
+                        start=ceil(start_h * 10) / 10,
+                        end=floor(end_h * 10) / 10,
                     )
                 )
                 window_id += 1

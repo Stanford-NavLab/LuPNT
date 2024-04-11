@@ -92,13 +92,16 @@ def solve_problem(config: dict, n_jobs: int = 5) -> dict:
     return results_all
 
 
-def get_problem(date, duration_factor) -> PntSchedulingProblem:
+def get_problem(
+    date: str = "2026-01-01T00:00:00", duration_factor: float = 0.25, N_days: int = 1
+) -> PntSchedulingProblem:
     """
     Create the PNT scheduling problem.
 
     Args:
-        date (str): Start date
-        duration_factor (float): Duration factor for demand generation
+        date (str): Date
+        duration_factor (float): Duration factor
+        N_days (int): Number of days
 
     Returns:
         PntSchedulingProblem: Problem
@@ -130,7 +133,7 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
     period = 2 * np.pi * np.sqrt(np.power(sma, 3) / pnt.MU_MOON)  # [s] Orbital period
     Dt = 5 * pnt.SECS_PER_MINUTE  # [s] Simulation time step
     dt = 5 * pnt.SECS_PER_MINUTE  # [s] Propagation time step
-    tf = 1 * pnt.SECS_PER_DAY  # [s] Simulation final time
+    tf = N_days * pnt.SECS_PER_DAY  # [s] Simulation final time
     N_t = int(tf / Dt)  # [-] Number of time steps
     tspan = np.linspace(0, tf, N_t)  # [s] Time since first epoch
     epochs = epoch_0 + tspan  # [s] Epochs (TAI)

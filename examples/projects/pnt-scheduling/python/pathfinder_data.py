@@ -9,7 +9,7 @@ orbital_elements = [5740, 0.58, 54.856, 0, 86.322, 0]
 
 users = [
     {
-        "id": 1,
+        "id": 0,
         "desc": "Low Lunar Orbit (LLO) mission",
         "type": "orbital",
         "altitude": 100,  # [km]
@@ -23,7 +23,7 @@ users = [
         "contact": 150,  # [min] per day
     },
     {
-        "id": 2,
+        "id": 1,
         "desc": "Surface operations",
         "type": "surface",
         "location": [-90, 0, 0],  # [deg, deg, km]
@@ -35,7 +35,7 @@ users = [
         "contact": 467,  # [min] per day
     },
     {
-        "id": 3,
+        "id": 2,
         "desc": "Autonomous Rover",
         "type": "surface",
         "location": [-74.5, 135, 0],  # [deg, deg, km]
@@ -47,7 +47,7 @@ users = [
         "contact": 529,  # [min] per day
     },
     {
-        "id": 4,
+        "id": 3,
         "desc": "Tele-Operated Rover",
         "type": "surface",
         "location": [-80, 45, 0],  # [deg, deg, km]
@@ -59,7 +59,7 @@ users = [
         "data_rate": 1966,  # [kbps]
     },
     {
-        "id": 5,
+        "id": 4,
         "desc": "CubeSat on PCO",
         "type": "orbital",
         "altitude": 100,  # [km]
@@ -74,7 +74,7 @@ users = [
         "data_rate": 61,  # [kbps]
     },
     {
-        "id": 6,
+        "id": 5,
         "desc": "Lander on the North Pole",
         "type": "surface",
         "location": [90, 0, 0],  # [deg, deg, km]
