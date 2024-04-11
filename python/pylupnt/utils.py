@@ -53,6 +53,8 @@ def timer_func(func):
 
     return wrap_func
 
+def get_basepath():
+    return basepath
 
 def wrapToPi(x):
     """

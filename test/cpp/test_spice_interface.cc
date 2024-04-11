@@ -76,15 +76,15 @@ TEST_CASE("SpiceInterface.GetBodyPosVel") {
   std::string target = "MOON";
   std::string center = "EARTH";
 
-  int center_id = 399;
-  int target_id = 301;
+  // NaifId center_id = 399;
+  // NaifId target_id = 301;
 
   Vector6 posvel(6);
-  posvel = sp::GetBodyPosVel(tai, center_id, target_id);
+  posvel = sp::GetBodyPosVel(tai, NaifId::EARTH, NaifId::MOON);
 
   Vector6 posvel_expected{263638.289944174,  -221028.422146322,
-                              -131883.110768214, 0.734154922271287,
-                              0.697461344892098, 0.325673181901724};
+                          -131883.110768214, 0.734154922271287,
+                          0.697461344892098, 0.325673181901724};
 
   double abs_error = 1e-6;
   EXPECT_NEAR_ADVEC(posvel, posvel_expected, abs_error);

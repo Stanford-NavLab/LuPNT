@@ -201,6 +201,13 @@ class NumericalOrbitDynamics : public NumericalDynamics {
   void PropagateWithStm(OrbitState &state, real t0, real tf, Matrix6d &stm);
   void PropagateWithStm(Vector6 &x, real t0, real tf, Matrix6d &stm);
 
+  // with returns
+  Vector6 PropagateR(Vector6 &x, real t0, real tf, real dt);
+  Vector6 PropagateWithStmR(Vector6 &x, real t0, real tf, real dt,
+                            Matrix6d &stm);
+  Vector6 PropagateR(Vector6 &x, real t0, real tf);
+  Vector6 PropagateWithStmR(Vector6 &x, real t0, real tf, Matrix6d &stm);
+
  protected:
   virtual VectorX ComputeRates(real t, const VectorX &x) const = 0;
 };
@@ -265,6 +272,7 @@ class NBodyDynamics : public NumericalOrbitDynamics {
   double mass_ = 100.0;      // s/c mass [kg]
   double CR_ = 1.5;          // solar radiation pressure coefficient
   double area_ = 1.0 / 1e6;  // solar radiation pressure area [km^2]
+  double B_srp_ = (CR_ * area_) / mass_;  // solar radiation pressure constant
 
  public:
   NBodyDynamics(std::string integrator = "RK4");

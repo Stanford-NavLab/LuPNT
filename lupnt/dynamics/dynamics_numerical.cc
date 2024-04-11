@@ -115,18 +115,7 @@ MatrixX NumericalOrbitDynamics::Propagate(Vector6 &x, real t0, VectorX &tf,
 MatrixX NumericalOrbitDynamics::Propagate(OrbitState &state, real t0,
                                           VectorX &tf, bool progress) {
   Vector6 x0 = state.GetVector();
-  MatrixX xf(tf.size(), 6);
-
-  ProgressBar pb(tf.size());
-  for (int i = 0; i < tf.size(); i++) {
-    if (i == 0)
-      xf.row(i) = propagator_.Propagate(odefunc_, t0, tf(i), x0, dt_);
-    else
-      xf.row(i) =
-          propagator_.Propagate(odefunc_, tf(i - 1), tf(i), xf.row(i - 1), dt_);
-    if (progress) pb.Update();
-  }
-  return xf;
+  return Propagate(x0, t0, tf, progress);
 }
 
 void NumericalOrbitDynamics::PropagateWithStm(OrbitState &state, real t0,
@@ -139,6 +128,33 @@ void NumericalOrbitDynamics::PropagateWithStm(Vector6 &x, real t0, real tf,
                                               Matrix6d &stm) {
   real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
   PropagateWithStm(x, t0, tf, dt_prop, stm);
+}
+// With returns --------------------------------------------------------
+Vector6 NumericalOrbitDynamics::PropagateR(Vector6 &x, real t0, real tf,
+                                           real dt) {
+  Vector6 x0 = x;
+  Vector6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt);
+  return xf;
+}
+
+Vector6 NumericalOrbitDynamics::PropagateWithStmR(Vector6 &x, real t0, real tf,
+                                                  real dt, Matrix6d &stm) {
+  Vector6 x0 = x;
+  MatrixXd J(6, 6);
+  VectorX xf = propagator_.PropagateWithStm(odefunc_, t0, tf, x0, dt, J);
+  stm = J;
+  return xf;
+}
+
+Vector6 NumericalOrbitDynamics::PropagateR(Vector6 &x, real t0, real tf) {
+  real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
+  return PropagateR(x, t0, tf, dt_prop);
+}
+
+Vector6 NumericalOrbitDynamics::PropagateWithStmR(Vector6 &x, real t0, real tf,
+                                                  Matrix6d &stm) {
+  real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
+  return PropagateWithStmR(x, t0, tf, dt_prop, stm);
 }
 
 // ****************************************************************************

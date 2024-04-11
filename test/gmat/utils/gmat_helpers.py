@@ -1,5 +1,4 @@
 import numpy as np
-import pylupnt as pnt
 
 try:
     from .gmat import gmat
@@ -67,23 +66,23 @@ def create_force_model():
 
 
 def get_coordinate_system(name):
-    if name == pnt.CoordSystem.ITRF:
+    if name == "ITRF":
         return gmat.Construct("CoordinateSystem", "ITRF", "Earth", "BodyFixed")
-    elif name == pnt.CoordSystem.GCRF:
+    elif name == "GCRF":
         return gmat.Construct("CoordinateSystem", "GCRF", "Earth", "MJ2000Eq")
-    elif name == pnt.CoordSystem.ICRF:
+    elif name == "ICRF":
         return gmat.Construct("CoordinateSystem", "ICRF", "Earth", "ICRF")
-    elif name == pnt.CoordSystem.SER:
+    elif name == "SER":
         assert False, "Not implemented"
-    elif name == pnt.CoordSystem.GSE:
+    elif name == "GSE":
         return gmat.Construct("CoordinateSystem", "GSE", "Earth", "GSE")
-    elif name == pnt.CoordSystem.EME:
+    elif name == "EME":
         assert False, "Not implemented"
-    elif name == pnt.CoordSystem.MOD:
+    elif name == "MOD":
         return gmat.Construct("CoordinateSystem", "MOD", "Earth", "MODEq")
-    elif name == pnt.CoordSystem.TOD:
+    elif name == "TOD":
         return gmat.Construct("CoordinateSystem", "TOD", "Earth", "TODEq")
-    elif name == pnt.CoordSystem.EMR:
+    elif name == "EMR":
         # GMAT Code Broken. Not working
         coord_sys = gmat.Construct("CoordinateSystem", "EMR")
         coord_sys.SetField("Origin", "Earth")
@@ -92,11 +91,11 @@ def get_coordinate_system(name):
         coord_sys.SetField("ZAxis", "N")
         coord_sys.SetField("Primary", "Earth")
         coord_sys.SetField("Secondary", "Luna")
-    elif name == pnt.CoordSystem.MI:
+    elif name == "MI":
         return gmat.Construct("CoordinateSystem", "MI", "Luna", "MJ2000Eq")
-    elif name == pnt.CoordSystem.PA:
+    elif name == "PA":
         return gmat.Construct("CoordinateSystem", "PA", "Luna", "BodyFixed")
-    elif name == pnt.CoordSystem.ME:
+    elif name == "ME":
         assert False, "Not implemented"
     else:
         assert False, "Coordinate system not found"
