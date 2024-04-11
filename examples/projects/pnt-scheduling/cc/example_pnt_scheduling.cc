@@ -47,7 +47,7 @@ int temp() {
             << std::endl;
 }
 
-int main(){
+int main() {
   Vector3 x{1e5, 1e4, 1e3};
   Vector3 y{10, 20, 30};
   std::cout << decimal2dB(x) << std::endl;
