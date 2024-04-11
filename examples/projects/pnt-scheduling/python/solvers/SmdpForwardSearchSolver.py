@@ -30,7 +30,7 @@ class SmdpForwardSearchSolver(Solver):
             _, vp = self.select_action(sp, d - 1)
             v = (
                 self.problem.reward_function(s, a)
-                + self.gamma ** (a.start - s.time[sat_id]) * vp
+                + self.gamma ** (a.start - s.times[sat_id]) * vp
             )
             if v > v_star:
                 a_star, v_star = a, v
@@ -70,7 +70,7 @@ class SmdpForwardSearchSolver(Solver):
         # Progress bar
         if progress:
             tf = self.problem.tf
-            t = min(s.time)
+            t = min(s.times)
             bar = tqdm(
                 total=int(tf - t), desc="Solving Forward Search (progress in hours)"
             )
@@ -82,8 +82,8 @@ class SmdpForwardSearchSolver(Solver):
 
             # Update progress bar
             if progress:
-                bar.update(int(min(s.time) - t))
-                t = min(s.time)
+                bar.update(int(min(s.times) - t))
+                t = min(s.times)
 
         # Close progress bar
         if progress:

@@ -362,7 +362,6 @@ def get_problem(
         Request(
             id=-1,
             user_id=-1,
-            rv=None,
             start=0,
             end=tf / pnt.SECS_PER_HOUR,
             duration=tf / pnt.SECS_PER_HOUR,

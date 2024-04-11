@@ -171,11 +171,10 @@ def plot_requests_service_windows(
     policy: list[tuple[State, Action]] = None,
     ax: plt.Axes = None,
 ) -> None:
-    request_dict: dict[int, Request] = {r.id: r for r in requests}
-    window_dict: dict[int, ServiceWindow] = {w.id: w for w in service_windows}
-    total_contact: dict[int, float] = {r.id: 0 for r in requests}
-    for w in service_windows:
-        total_contact[w.request_id] += w.end - w.start
+    request_dict: dict[int, Request] = {req.id: req for req in requests}
+    total_contact: dict[int, float] = {req.id: 0 for req in requests}
+    for win in service_windows:
+        total_contact[win.user_id] += win.end - win.start
 
     if ax is None:
         plt.figure(figsize=(8, 6))
@@ -185,41 +184,43 @@ def plot_requests_service_windows(
     # Plot service windows
     N_satellites = len(set([w.satellite_id for w in service_windows]))
     dy = 0.06
-    for w in service_windows:
-        y = w.request_id + 1
-        y += -dy / 2 * N_satellites + dy * N_satellites * w.satellite_id / (
+    for win in service_windows:
+        y = win.user_id
+        y += -dy / 2 * N_satellites + dy * N_satellites * win.satellite_id / (
             N_satellites - 1
         )
         plt.plot(
-            [w.start, w.end],
+            [win.start, win.end],
             [y, y],
-            COLORS[w.satellite_id],
+            COLORS[win.satellite_id],
             lw=3,
         )
 
     if policy is None:
         # Plot average duration per window
-        for w in service_windows:
-            y = w.request_id + 1
+        for win in service_windows:
+            y = win.user_id
             # y += -0.15 + 0.3 * w.satellite_id / (N_satellites - 1)
             d = (
-                request_dict[w.request_id].duration
-                * (w.end - w.start)
-                / total_contact[w.request_id]
+                request_dict[win.user_id].duration
+                * (win.end - win.start)
+                / total_contact[win.user_id]
                 / N_satellites
             )
-            m = (w.start + w.end) / 2
+            m = (win.start + win.end) / 2
             plt.fill_between(
                 [m - d / 2, m + d / 2],
                 y - 0.4,
                 y + 0.4,
                 alpha=0.5,
-                color=COLORS[w.satellite_id],
+                color=COLORS[win.satellite_id],
             )
     else:
         # Plot policy
         for s, a in policy[:-1]:
-            y = window_dict[a.window.id].request_id + 1
+            if a.request is None:
+                continue
+            y = a.request.user_id
             plt.fill_between(
                 [a.start, a.start + a.duration],
                 y - 0.3,
@@ -227,6 +228,14 @@ def plot_requests_service_windows(
                 alpha=0.5,
                 color=COLORS[a.satellite_id],
                 edgecolor=None,
+            )
+            plt.text(
+                a.start + a.duration / 2,
+                y,
+                f"{a.request.id}",
+                ha="center",
+                va="center",
+                color="white",
             )
 
     plt.plot([], [], color="black", lw=3, label=f"Window")
@@ -236,18 +245,18 @@ def plot_requests_service_windows(
 
     # if policy is None:
     # plt.fill_between([], [], alpha=0.7, label="Average duration")
-    plt.yticks(np.arange(min(request_dict.keys()), max(request_dict.keys()) + 1.5))
+    plt.yticks(np.arange(min(request_dict.keys()), max(request_dict.keys()) + 0.5))
     plt.xlim(0, np.max([w.end for w in service_windows]))
     plt.xlabel("Time")
-    plt.ylabel("Request")
-    plt.ylim(0.5, max(request_dict.keys()) + 1.5)
+    plt.ylabel("User")
+    plt.ylim(-0.5, max(request_dict.keys()) - 0.5)
     plt.grid()
     # legend outside top
     plt.legend(
         facecolor="white",
         framealpha=1,
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.15),
+        bbox_to_anchor=(0.5, 1.3),
         ncol=4,
         frameon=False,
         handlelength=1,
@@ -268,13 +277,15 @@ def plot_resources(
         if a is None:
             continue
         i = a.satellite_id
-        times[i].append(s.time[i])
+        times[i].append(s.times[i])
         data[i].append(s.data[i])
         energy[i].append(s.energy[i])
         assert not np.isnan(s.energy).all()
-        d = max(s.data[i] + problem.data_gen_func(s.time[i], a.start), problem.min_data)
+        d = max(
+            s.data[i] + problem.data_gen_func(s.times[i], a.start), problem.min_data
+        )
         e = min(
-            s.energy[i] + problem.energy_gen_func(s.time[i], a.start),
+            s.energy[i] + problem.energy_gen_func(s.times[i], a.start),
             problem.max_energy,
         )
         assert not np.isnan(e).all()
@@ -283,8 +294,8 @@ def plot_resources(
         energy[i].append(e)
 
     for i in range(problem.N_satellites):
-        d = s.data[i] + problem.data_gen_func(s.time[i], problem.tf)
-        e = s.energy[i] + problem.energy_gen_func(s.time[i], problem.tf)
+        d = s.data[i] + problem.data_gen_func(s.times[i], problem.tf)
+        e = s.energy[i] + problem.energy_gen_func(s.times[i], problem.tf)
         assert not np.isnan(e).all()
         times[i].append(problem.tf)
         data[i].append(d)
