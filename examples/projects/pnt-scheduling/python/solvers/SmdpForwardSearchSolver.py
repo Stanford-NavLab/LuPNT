@@ -30,7 +30,7 @@ class SmdpForwardSearchSolver(Solver):
             _, vp = self.select_action(sp, d - 1)
             v = (
                 self.problem.reward_function(s, a)
-                + self.gamma ** (a.start - s.times[sat_id] + 1e-3) * vp
+                + self.gamma ** (a.duration + 1e-3) * vp
             )
             if v > v_star:
                 a_star, v_star = a, v

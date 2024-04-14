@@ -53,7 +53,7 @@ class State:
         s += f"t={np.round(self.times, 2)}, "
         s += f"d={np.round(self.data, 2)}, "
         s += f"e={np.round(self.energy, 2)}, "
-        s += f"requests={list(self.request_times.values())}"
+        s += f"req={list(self.request_times.values())}"
         s += ")"
         return s
 
@@ -79,10 +79,10 @@ class Action:
     def __repr__(self):
         a = "Action("
         a += f"sat={self.satellite_id}, "
-        a += f"user={self.request.user_id if self.request is not None else None}, "
-        a += f"request={self.request.id if self.request is not None else None}, "
+        a += f"usr={self.request.user_id if self.request is not None else None}, "
+        a += f"req={self.request.id if self.request is not None else None}, "
         a += f"start={self.start:.2f}, "
-        a += f"duration={self.duration:.2f}"
+        a += f"dur={self.duration:.2f}"
         a += ")"
         return a
 
@@ -164,9 +164,14 @@ class PntSchedulingProblem:
             req.id: [
                 win
                 for win in self.service_windows_dict[req.id]
-                if win.satellite_id == sat_id and win.end >= s.times[sat_id]
+                if
+                # Correct satellite
+                win.satellite_id == sat_id
+                # Still time left
+                and win.end >= s.times[sat_id]
             ]
             for req in self.requests
+            # Request has arrived
             if req.arrival <= self.current_time
         }
 
@@ -174,10 +179,11 @@ class PntSchedulingProblem:
         available_requests = [
             req
             for req in self.requests
-            if req.arrival <= self.current_time
             if
+            # Request has arrived
+            req.arrival <= self.current_time
             # There is still time to fulfill the request
-            req.end >= s.times[sat_id]
+            and req.end >= s.times[sat_id]
             # The request is not completed
             and s.request_times[req.id] < req.duration
             # There is a service window for the request
@@ -367,6 +373,23 @@ class PntSchedulingProblem:
         else:
             return 0
 
+    def get_current_policy_index(self):
+        if self.current_policy is None:
+            return None
+        for t, (s, a) in enumerate(self.current_policy):
+            if (
+                # All satellites have received requests
+                np.min(s.times) > self.current_time
+                # No more actions
+                or a is None
+                # Next action is past the current time
+                or a.start > self.current_time
+                # Next action is not a request
+                or (a.request is None and a.start + a.duration > self.current_time)
+            ):
+                return t
+        return len(self.current_policy) - 1
+
     def initial_state(self) -> State:
         """
         Get initial state
@@ -374,8 +397,9 @@ class PntSchedulingProblem:
         Returns:
             State: Initial state
         """
+        t = self.get_current_policy_index()
 
-        if self.current_policy is None:
+        if t is None:
             return State(
                 times=[0.0 for _ in range(self.N_satellites)],
                 requests=[None for _ in range(self.N_satellites)],
@@ -390,16 +414,8 @@ class PntSchedulingProblem:
                 ],
             )
 
-        for s, a in self.current_policy:
-            print(s.times, a.start, self.current_time)
-            for sat_id in range(self.N_satellites):
-                if (
-                    s.times[sat_id] > self.current_time
-                    or a is None
-                    or a.start > self.current_time
-                ):
-                    return s
-                pass
+        s, _ = self.current_policy[t]
+        return s
 
     def total_reward(self, policy: list[tuple[State, Action]], gamma: float) -> float:
         """
@@ -433,7 +449,11 @@ class PntSchedulingProblem:
         s0 = policy[0][0]
         sf = policy[-1][0]
         return [
-            sf.request_times[req.id] / req.duration * 100
+            (
+                sf.request_times[req.id] / req.duration * 100
+                if req.arrival <= self.current_time
+                else np.NaN
+            )
             for req in self.requests
             if req.id >= 0
         ]
@@ -495,8 +515,8 @@ class PntSchedulingProblem:
         new_policy = []
         s = policy[0][0]
         for a in all_actions:
-            if a.request is not None:
-                new_policy.append((s, a))
-                s = self.transition_function(s, a)
+            # if a.request is not None:
+            new_policy.append((s, a))
+            s = self.transition_function(s, a)
         new_policy.append((s, None))
         return new_policy

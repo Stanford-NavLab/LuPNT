@@ -13,6 +13,7 @@ from problem import (
 from typing import Tuple
 
 COLORS = [k for k in TABLEAU_COLORS.keys()]
+START_IDX = 0
 
 
 def plot_satellites_users(
@@ -185,7 +186,7 @@ def plot_requests_service_windows(
     N_satellites = len(set([w.satellite_id for w in service_windows]))
     dy = 0.06
     for win in service_windows:
-        y = win.user_id + 1
+        y = win.user_id + START_IDX
         y += -dy / 2 * N_satellites + dy * N_satellites * win.satellite_id / (
             N_satellites - 1
         )
@@ -196,10 +197,12 @@ def plot_requests_service_windows(
             lw=3,
         )
 
+    dx = 0.01
+
     if policy is None:
         # Plot average duration per window
         for win in service_windows:
-            y = win.user_id + 1
+            y = win.user_id + START_IDX
             # y += -0.15 + 0.3 * w.satellite_id / (N_satellites - 1)
             d = (
                 request_dict[win.user_id].duration
@@ -209,7 +212,7 @@ def plot_requests_service_windows(
             )
             m = (win.start + win.end) / 2
             plt.fill_between(
-                [m - d / 2, m + d / 2],
+                [m - d / 2 + dx, m + d / 2 - dx],
                 y - 0.4,
                 y + 0.4,
                 alpha=0.5,
@@ -220,9 +223,9 @@ def plot_requests_service_windows(
         for s, a in policy[:-1]:
             if a.request is None:
                 continue
-            y = a.request.user_id + 1
+            y = a.request.user_id + START_IDX
             plt.fill_between(
-                [a.start, a.start + a.duration],
+                [a.start + dx, a.start + a.duration - dx],
                 y - 0.3,
                 y + 0.3,
                 alpha=0.5,
@@ -232,7 +235,7 @@ def plot_requests_service_windows(
             plt.text(
                 a.start + a.duration / 2,
                 y,
-                f"{a.request.id + 1}",
+                f"{a.request.id + START_IDX}",
                 ha="center",
                 va="center",
                 color="white",
@@ -241,15 +244,20 @@ def plot_requests_service_windows(
     plt.plot([], [], color="black", lw=3, label=f"Window")
     plt.plot([], [], color="black", lw=10, label=f"Service", alpha=0.5)
     for i in range(N_satellites):
-        plt.plot([], [], color=COLORS[i], lw=3, label=f"Satellite {i+1}")
+        plt.plot([], [], color=COLORS[i], lw=3, label=f"Satellite {i+START_IDX}")
 
     # if policy is None:
     # plt.fill_between([], [], alpha=0.7, label="Average duration")
-    plt.yticks(np.arange(min(request_dict.keys()) + 1, max(request_dict.keys()) + 1.5))
+    plt.yticks(
+        np.arange(
+            min(request_dict.keys()) + START_IDX,
+            max(request_dict.keys()) + 0.5 + START_IDX,
+        )
+    )
     plt.xlim(0, np.max([w.end for w in service_windows]))
     plt.xlabel("Time")
     plt.ylabel("User")
-    plt.ylim(0.5, max(request_dict.keys()) + 0.5)
+    plt.ylim(-0.5 + START_IDX, max(request_dict.keys()) - 0.5 + START_IDX)
     plt.grid()
     # legend outside top
     plt.legend(
@@ -315,7 +323,7 @@ def plot_resources(
     for i in range(problem.N_satellites):
         x = np.array(times[i])
         y = np.array(data[i]) / d_lim * 100
-        plt.plot(x, y, lw=2, color=COLORS[i], label=f"Satellite {i+1}")
+        plt.plot(x, y, lw=2, color=COLORS[i], label=f"Satellite {i+START_IDX}")
     y = 100 * 0.8
     # plt.hlines(problem.min_data, 0, problem.tf, colors="tab:blue", linestyles="--")
     plt.hlines(
