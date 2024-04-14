@@ -171,6 +171,7 @@ def plot_requests_service_windows(
     service_windows: list[ServiceWindow],
     policy: list[tuple[State, Action]] = None,
     ax: plt.Axes = None,
+    current_time: float = 0,
 ) -> None:
     request_dict: dict[int, Request] = {req.id: req for req in requests}
     total_contact: dict[int, float] = {req.id: 0 for req in requests}
@@ -257,7 +258,10 @@ def plot_requests_service_windows(
     plt.xlim(0, np.max([w.end for w in service_windows]))
     plt.xlabel("Time")
     plt.ylabel("User")
-    plt.ylim(-0.5 + START_IDX, max(request_dict.keys()) - 0.5 + START_IDX)
+    ylims = [-0.5 + START_IDX, max(request_dict.keys()) - 0.5 + START_IDX]
+    if current_time > 0:
+        plt.axvline(current_time, color="black", linestyle=":", label="Current time")
+    plt.ylim(ylims)
     plt.grid()
     # legend outside top
     plt.legend(
@@ -265,7 +269,7 @@ def plot_requests_service_windows(
         framealpha=1,
         loc="upper center",
         bbox_to_anchor=(0.5, 1.3),
-        ncol=4,
+        ncol=4 + int(current_time > 0),
         frameon=False,
         handlelength=1,
     )

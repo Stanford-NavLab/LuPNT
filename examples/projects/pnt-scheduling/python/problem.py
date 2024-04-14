@@ -156,7 +156,9 @@ class PntSchedulingProblem:
         other_sat_user_ids = [
             req.user_id
             for other_sat_id, req in enumerate(s.requests)
-            if req is not None and other_sat_id != sat_id
+            if req is not None
+            and other_sat_id != sat_id
+            and s.times[other_sat_id] > s.times[sat_id]
         ]
 
         # List of available windows for each request
@@ -415,6 +417,9 @@ class PntSchedulingProblem:
             )
 
         s, _ = self.current_policy[t]
+        for sat_id in range(self.N_satellites):
+            if s.times[sat_id] < self.current_time:
+                s.times[sat_id] = self.current_time
         return s
 
     def total_reward(self, policy: list[tuple[State, Action]], gamma: float) -> float:
@@ -515,8 +520,8 @@ class PntSchedulingProblem:
         new_policy = []
         s = policy[0][0]
         for a in all_actions:
-            # if a.request is not None:
-            new_policy.append((s, a))
-            s = self.transition_function(s, a)
+            if a.request is not None:
+                new_policy.append((s, a))
+                s = self.transition_function(s, a)
         new_policy.append((s, None))
         return new_policy
