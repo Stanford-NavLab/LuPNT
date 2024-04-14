@@ -30,7 +30,7 @@ class SmdpForwardSearchSolver(Solver):
             _, vp = self.select_action(sp, d - 1)
             v = (
                 self.problem.reward_function(s, a)
-                + self.gamma ** (a.start - s.times[sat_id]) * vp
+                + self.gamma ** (a.start - s.times[sat_id] + 1e-3) * vp
             )
             if v > v_star:
                 a_star, v_star = a, v
@@ -66,6 +66,7 @@ class SmdpForwardSearchSolver(Solver):
 
         policy = []
         a, _ = self.select_action(s, d)
+        policy.append((s, a))
 
         # Progress bar
         if progress:
@@ -76,9 +77,9 @@ class SmdpForwardSearchSolver(Solver):
             )
 
         while a is not None:
-            policy.append((s, a))
             s = self.problem.transition_function(s, a)
             a, _ = self.select_action(s, d)
+            policy.append((s, a))
 
             # Update progress bar
             if progress:
@@ -89,5 +90,5 @@ class SmdpForwardSearchSolver(Solver):
         if progress:
             bar.update(int(tf - bar.n))
 
-        policy.append((s, None))
+        policy = self.problem.clean_policy(policy)
         return policy
