@@ -3,6 +3,8 @@ from tqdm.notebook import tqdm
 from problem import PntSchedulingProblem, State, Action, ServiceWindow
 from .Solver import Solver
 
+import networkx as nx
+
 
 class SmdpForwardSearchSolver(Solver):
     """
@@ -10,30 +12,43 @@ class SmdpForwardSearchSolver(Solver):
 
     Args:
         problem (PntSchedulingProblem): Problem instance
+        keep_tree (bool): Keep the search tree
     """
 
-    def __init__(self, problem: PntSchedulingProblem):
+    def __init__(self, problem: PntSchedulingProblem, keep_tree: bool = True):
         self.problem = problem
 
         self.gamma = None
         self.N_max = None
         self.d_min = None
+        self.tree = nx.DiGraph() if keep_tree else None
 
     def select_action(self, s: State, d: int) -> tuple[ServiceWindow, float]:
         actions = self.problem.available_actions(s, self.N_max, self.d_min)
         if d == 0 or not actions:
             return None, 0
         a_star, v_star = None, -np.inf
+
+        if self.tree is not None:
+            self.tree.add_node(s, value=v_star)
+
         for a in actions:
             sp = self.problem.transition_function(s, a)
             sat_id = a.satellite_id
             _, vp = self.select_action(sp, d - 1)
-            v = (
-                self.problem.reward_function(s, a)
-                + self.gamma ** (a.duration + 1e-3) * vp
-            )
+            r = self.problem.reward_function(s, a)
+            v = r + self.gamma ** (a.start - s.times[sat_id]) * vp
             if v > v_star:
                 a_star, v_star = a, v
+
+            if self.tree is not None:
+                self.tree.add_node(sp, value=v)
+                self.tree.add_node(a, reward=r, value=vp)
+                self.tree.add_edge(s, a)
+                self.tree.add_edge(a, sp)
+
+        self.tree.nodes[s]["value"] = v_star
+
         return a_star, v_star
 
     def solve(

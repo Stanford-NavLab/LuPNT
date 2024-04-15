@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from copy import deepcopy
 from typing import ClassVar
 
+from dataclasses import dataclass
+
 
 def reset_id_counters():
     Request._next_id = 0
@@ -170,7 +172,8 @@ class PntSchedulingProblem:
                 # Correct satellite
                 win.satellite_id == sat_id
                 # Still time left
-                and win.end >= s.times[sat_id]
+                and win.end
+                >= s.times[sat_id] + min(d_min, req.duration - s.request_times[req.id])
             ]
             for req in self.requests
             # Request has arrived
@@ -367,11 +370,21 @@ class PntSchedulingProblem:
         if a.request is None:
             return 0
 
+        sat_id = a.satellite_id
+        same_req = int(
+            a.request is not None
+            and s.requests[sat_id] == a.request
+            and s.times[sat_id] == a.start
+        )
+
         payload_on = a.request.user_id >= 0
         if payload_on:
-            return self.integrate_normalized_CN0(
+            cn0 = self.integrate_normalized_CN0(
                 a.start, a.start + a.duration, a.request.user_id, a.satellite_id
             )
+            bonus = same_req * 1.0
+            mult = 0.9 ** (a.start - a.request.start)
+            return mult * (cn0 + bonus)
         else:
             return 0
 
