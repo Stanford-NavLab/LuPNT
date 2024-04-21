@@ -120,6 +120,8 @@ class PntSchedulingProblem:
     # Online
     current_policy: list[tuple[State, Action]] = None  # Existing schedule
     current_time: float = 0  # Current time
+    constrained: bool = False  # Constrained problem
+    constrained_windows: list[ServiceWindow] = None  # Constrained windows
 
     def __post_init__(self):
         self.service_windows_dict = {
@@ -133,8 +135,57 @@ class PntSchedulingProblem:
     def set_current_time(self, current_time):
         self.current_time = current_time
 
-    def set_current_policy(self, policy: list[tuple[State, Action]]):
+    def set_current_policy(
+        self, policy: list[tuple[State, Action]], constrained: bool = False
+    ):
         self.current_policy = deepcopy(policy)
+        self.constrained = constrained
+
+        if not constrained:
+            return
+
+        # Create new windows for the constrained problem
+        actions_by_win = {
+            win.id: [
+                a
+                for _, a in self.current_policy
+                # Not last action
+                if a is not None
+                # Correct satellite
+                and a.satellite_id == win.satellite_id
+                # Correct window
+                and (a.start >= win.start and a.start + a.duration <= win.end)
+            ]
+            for win in self.service_windows
+        }
+
+        self.constrained_windows = []
+        for win_id, actions in actions_by_win.items():
+            win = self.service_windows[win_id]
+
+            ts = win.start
+            for a in actions:
+                te = a.start
+                if te > ts:
+                    self.constrained_windows.append(
+                        ServiceWindow(
+                            satellite_id=win.satellite_id,
+                            user_id=win.user_id,
+                            start=ts,
+                            end=te,
+                        )
+                    )
+                ts = a.start + a.duration
+
+            if ts < win.end:
+                self.constrained_windows.append(
+                    ServiceWindow(
+                        satellite_id=win.satellite_id,
+                        user_id=win.user_id,
+                        start=ts,
+                        end=win.end,
+                    )
+                )
 
     def available_actions(self, s: State, N_max: int, d_min: float) -> list[Action]:
         """
@@ -172,31 +223,29 @@ class PntSchedulingProblem:
                 # Correct satellite
                 win.satellite_id == sat_id
                 # Still time left
-                and win.end
-                >= s.times[sat_id] + min(d_min, req.duration - s.request_times[req.id])
+                and win.end >= s.times[sat_id]
             ]
             for req in self.requests
             # Request has arrived
             if req.arrival <= self.current_time
-        }
-
-        # List of available requests
-        available_requests = [
-            req
-            for req in self.requests
-            if
-            # Request has arrived
-            req.arrival <= self.current_time
             # There is still time to fulfill the request
             and req.end >= s.times[sat_id]
             # The request is not completed
             and s.request_times[req.id] < req.duration
-            # There is a service window for the request
-            and len(available_windows[req.id]) > 0
             # The user is not being served by another satellite
             and req.user_id not in other_sat_user_ids
-        ]
+        }
 
+        if self.constrained:
+            # Account for the current schedule
+            old_available_windows = deepcopy(available_windows)
+            available_windows = {req_id: [] for req_id in old_available_windows.keys()}
+            for req_id, win_list in available_windows.items():
+                for win in win_list:
+                    if win.start < s.times[sat_id]:
+                        win.start = s.times[sat_id]
+
+        # List of available actions
         actions = [
             Action(
                 satellite_id=sat_id,
@@ -205,8 +254,16 @@ class PntSchedulingProblem:
                 request=None,
             )
         ]
+
         actions_count = 0
-        for req in available_requests:
+        for req_id, win_list in available_windows.items():
+            # Check if there are available windows
+            if not win_list:
+                continue
+
+            # Request
+            req = self.requests[req_id]
+
             # Transition time
             trans_time = (
                 0
@@ -216,7 +273,8 @@ class PntSchedulingProblem:
                 ]
             )
 
-            for win in available_windows[req.id]:  # Only consider the first window
+            # Only consider the first window
+            for win in available_windows[req.id]:
                 # Action start and duration
                 a_start = max(
                     win.start,
@@ -230,16 +288,18 @@ class PntSchedulingProblem:
                 if a_duration <= 0:
                     continue
 
-                # Resources
-                energy_gen = self.energy_gen_func(s.times[sat_id], a_start + a_duration)
-                data_gen = self.data_gen_func(s.times[sat_id], a_start + a_duration)
+                # Resources (energy and data)
                 if (
-                    s.energy[sat_id] + energy_gen + self.payload_power_gen * a_duration
+                    s.energy[sat_id]
+                    + self.energy_gen_func(s.times[sat_id], a_start + a_duration)
+                    + self.payload_power_gen * a_duration
                     < self.min_energy
                 ):
                     continue
                 if (
-                    s.data[sat_id] + data_gen + self.payload_data_gen * a_duration
+                    s.data[sat_id]
+                    + self.data_gen_func(s.times[sat_id], a_start + a_duration)
+                    + self.payload_data_gen * a_duration
                     > self.max_data
                 ):
                     continue
@@ -433,6 +493,12 @@ class PntSchedulingProblem:
         for sat_id in range(self.N_satellites):
             if s.times[sat_id] < self.current_time:
                 s.times[sat_id] = self.current_time
+
+            if self.constrained:
+                # Account for the current schedule
+                sf = self.current_policy[-1][0]
+                for req_id in s.request_times:
+                    s.request_times[req_id] = sf.request_times[req_id]
         return s
 
     def total_reward(self, policy: list[tuple[State, Action]], gamma: float) -> float:
