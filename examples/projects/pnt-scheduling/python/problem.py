@@ -149,6 +149,9 @@ class PntSchedulingProblem:
     constrained_windows: list[ServiceWindow] = None
     constrained_windows_dict: dict[ReqId, list[ServiceWindow]] = None
     required_resources: dict[SatId, tuple[Time, Data, Energy]] = None
+    action_starts: np.ndarray = None
+    action_end: np.ndarray = None
+    action_sats_ids: np.ndarray = None
 
     # Computed
     service_windows_dict: dict[ReqId, list[ServiceWindow]] = None
@@ -183,11 +186,11 @@ class PntSchedulingProblem:
                 a
                 for _, a in self.current_policy
                 # Not last action
-                if a is not None
-                # Correct satellite
-                and a.satellite_id == win.satellite_id
-                # Correct window
-                and (a.start >= win.start and a.start + a.duration <= win.end)
+                if a is not None and a.request is not None
+                # Right user
+                and a.request.user_id == win.user_id
+                # Overlapping window
+                and (a.start + a.duration > win.start and a.start < win.end)
             ]
             for win in self.service_windows
         }
@@ -195,74 +198,98 @@ class PntSchedulingProblem:
         win_list = list[ServiceWindow]()
         for win_id, actions in actions_by_win.items():
             win = self.service_windows[win_id]
-
-            ts = win.start
             for a in actions:
-                te = a.start
-                if te > ts:
+                if a.start <= win.start and a.start + a.duration >= win.end:
+                    # Fully covered
+                    pass
+                elif a.start > win.start and a.start + a.duration < win.end:
+                    # Middle part
                     win_list.append(
                         ServiceWindow(
                             satellite_id=win.satellite_id,
                             user_id=win.user_id,
-                            start=ts,
-                            end=te,
+                            start=win.start,
+                            end=a.start,
                         )
                     )
-                ts = a.start + a.duration
-
-            if ts < win.end:
-                win_list.append(
-                    ServiceWindow(
-                        satellite_id=win.satellite_id,
-                        user_id=win.user_id,
-                        start=ts,
-                        end=win.end,
+                    win_list.append(
+                        ServiceWindow(
+                            satellite_id=win.satellite_id,
+                            user_id=win.user_id,
+                            start=a.start + a.duration,
+                            end=win.end,
+                        )
                     )
-                )
+                elif a.start <= win.start:
+                    # Left part
+                    win_list.append(
+                        ServiceWindow(
+                            satellite_id=win.satellite_id,
+                            user_id=win.user_id,
+                            start=a.start + a.duration,
+                            end=win.end,
+                        )
+                    )
+                elif a.start + a.duration >= win.end:
+                    # Right part
+                    win_list.append(
+                        ServiceWindow(
+                            satellite_id=win.satellite_id,
+                            user_id=win.user_id,
+                            start=win.start,
+                            end=a.start,
+                        )
+                    )
 
         self.constrained_windows = win_list
         self.constrained_windows_dict = {
             req.id: [win for win in win_list if win.user_id == req.user_id]
             for req in self.requests
         }
+        self.action_starts = np.array([a.start for _, a in self.current_policy if a])
+        self.action_ends = np.array(
+            [a.start + a.duration for _, a in self.current_policy if a]
+        )
+        self.action_sats_ids = np.array(
+            [a.satellite_id for _, a in self.current_policy if a]
+        )
 
-    def data_gen_func(self, sat_id, ts, te):
-        i_s, i_e = self.get_discrete_index(ts, te)
-        if isinstance(i_s, np.ndarray) or isinstance(i_e, np.ndarray):
-            return np.array(
-                [
-                    np.sum(self.data_gen[sat_id, i_s_:i_e_])
-                    for i_s_, i_e_ in zip(*np.broadcast_arrays(i_s, i_e))
-                ]
-            )
-        else:
-            return np.sum(self.data_gen[sat_id, i_s:i_e])
+        self.compute_required_resources(policy)
 
-    def energy_gen_func(self, sat_id, ts, te):
+    def intersection_with_current_actions(self, sat_id, ts, te):
+        if not self.constrained:
+            return 0
+        starts = np.maximum(ts, self.action_starts)
+        ends = np.minimum(te, self.action_ends)
+        same_sat = (self.action_sats_ids == sat_id).astype(int)
+        return np.sum(np.maximum(0, (ends - starts) * same_sat))
+
+    def data_gen_func(self, sat_id, ts, te, constr=True):
         i_s, i_e = self.get_discrete_index(ts, te)
-        if isinstance(i_s, np.ndarray) or isinstance(i_e, np.ndarray):
-            return np.array(
-                [
-                    np.sum(self.energy_gen[sat_id, i_s_:i_e_])
-                    for i_s_, i_e_ in zip(*np.broadcast_arrays(i_s, i_e))
-                ]
-            )
-        else:
-            return np.sum(self.energy_gen[sat_id, i_s:i_e])
+        duration = self.intersection_with_current_actions(sat_id, ts, te) * int(constr)
+        return np.sum(self.data_gen[sat_id, i_s:i_e]) + self.payload_data_gen * duration
+
+    def energy_gen_func(self, sat_id, ts, te, constr=True):
+        i_s, i_e = self.get_discrete_index(ts, te)
+        duration = self.intersection_with_current_actions(sat_id, ts, te) * int(constr)
+        return (
+            np.sum(self.energy_gen[sat_id, i_s:i_e])
+            + self.payload_energy_gen * duration
+        )
 
     def time_for_energy(self, sat_id, ts, energy):
         i_s = int(ts / self.t_step)
-        di = np.where(np.cumsum(self.energy_gen[sat_id, i_s:]) >= energy)[0]
-        if len(di) == 0:
-            return None
-        return self.times[i_s + di[0]]
+        for i_e in range(i_s, len(self.energy_gen[sat_id])):
+            te = i_e * self.t_step
+            if self.energy_gen_func(sat_id, ts, te) >= energy:
+                return te
 
     def time_for_data(self, sat_id, ts, data):
         i_s = int(ts / self.t_step)
-        di = np.where(np.cumsum(self.data_gen[sat_id, i_s:]) <= data)[0]
-        if len(di) == 0:
-            return None
-        return self.times[i_s + di[0]]
+        for i_e in range(i_s, len(self.data_gen[sat_id])):
+            te = i_e * self.t_step
+            if self.data_gen_func(sat_id, ts, te) <= data:
+                return te
 
     def get_arrival_times(self):
         return sorted(list(set(req.arrival for req in self.requests)))
@@ -285,16 +312,16 @@ class PntSchedulingProblem:
             for a in actions:
 
                 # From end of current action to start of next action
-                d -= self.data_gen_func(a.start + a.duration, t_prev)
-                e -= self.energy_gen_func(a.start + a.duration, t_prev)
+                d -= self.data_gen_func(sat_id, a.start + a.duration, t_prev)
+                e -= self.energy_gen_func(sat_id, a.start + a.duration, t_prev)
 
                 # Clip values
                 d = min(d, self.max_data)
                 e = max(e, self.min_energy)
 
                 # From start to end of current action
-                d -= self.data_gen_func(a.start, a.start + a.duration)
-                e -= self.energy_gen_func(a.start, a.start + a.duration)
+                d -= self.data_gen_func(sat_id, a.start, a.start + a.duration)
+                e -= self.energy_gen_func(sat_id, a.start, a.start + a.duration)
                 d -= self.payload_data_gen * a.duration
                 e -= self.payload_energy_gen * a.duration
 
@@ -368,33 +395,96 @@ class PntSchedulingProblem:
             t_earliest = max(t_trans, t_user)
 
             # Windows
+            win_dict = (
+                self.service_windows_dict[req.id]
+                if not self.constrained
+                else self.constrained_windows_dict[req.id]
+            )
             win_list = [
                 win
-                for win in self.service_windows_dict[req.id]
+                for win in win_dict
                 if win.satellite_id == sat_id  # Right satellite
-                and win.end
-                >= t_earliest + min(duration, win.end - win.start)  # Enough time
+                and win.end >= t_earliest + min(duration, win.end - win.start)
                 # Clipped for short windows below T_min
             ]
-            t_win_list = [max(t_earliest, win.start) for win in win_list]
 
             # Energy and data
             actions_req = []
             for win in win_list:
                 T = min(duration, win.end - win.start)
-                E = self.payload_energy_gen * T
-                D = self.payload_data_gen * T
-                t_E = self.time_for_energy(sat_id, t_earliest, self.min_energy - Ei - E)
-                t_D = self.time_for_data(sat_id, t_earliest, self.max_data - Di - D)
-                ts = max(t_earliest, t_E, t_D, win.start)
-                if ts + T <= win.end:
-                    actions_req.append(
-                        Action(satellite_id=sat_id, start=ts, duration=T, request=req)
-                    )
+                t_win = max(t_earliest, win.start)
+                # Earliest of action
+                Es = Ei + self.energy_gen_func(sat_id, ti, t_win)
+                Ds = Di + self.data_gen_func(sat_id, ti, t_win)
+                # Required energy and data
+                Ea = self.payload_energy_gen * T
+                Da = self.payload_data_gen * T
+
+                t_E = self.time_for_energy(sat_id, t_win, self.min_energy - Ea - Es)
+                t_D = self.time_for_data(sat_id, t_win, self.max_data - Da - Ds)
+
+                if t_E is None or t_D is None:
+                    # Not enough resources
+                    continue
+
+                ts = max(t_win, t_E, t_D, win.start)
+                Es = Ei + self.energy_gen_func(sat_id, ti, ts)
+                Ds = Di + self.data_gen_func(sat_id, ti, ts)
+
+                # Check if the action is feasible
+                if ts + T > win.end:
+                    continue
+
+                # Check required resources after the action
+                if self.constrained:
+                    constraints = [
+                        const
+                        for const in self.required_resources[sat_id]
+                        if const[0] >= ts + T
+                    ]
+                    if constraints:
+                        tc, Ec, Dc = constraints[0]
+                        if (
+                            Es + Ea + self.data_gen_func(sat_id, ts + T, tc) < Ec
+                            or Ds + Da + self.energy_gen_func(sat_id, ts + T, tc) > Dc
+                        ):
+                            continue
+
+                a = Action(satellite_id=sat_id, start=ts, duration=T, request=req)
+                self.transition_function(s, a)
+                actions_req.append(a)
 
             actions.extend(actions_req)
 
         return actions
+
+    def merge_policies(
+        self,
+        policy: list[tuple[State, Action]],
+    ) -> list[tuple[State, Action]]:
+
+        current_time = self.current_time
+        contrained = self.constrained
+        index = -1 if self.constrained else self.get_current_policy_index()
+
+        self.current_time = 0
+        self.constrained = False
+
+        actions = [a for _, a in self.current_policy[:index] if a is not None]
+        actions.extend([a for _, a in policy if a is not None])
+        actions.sort(key=lambda a: a.start)
+        new_policy = []
+        s = self.current_policy[0][0]
+        for a in actions:
+            if a.request is not None:
+                new_policy.append((s, a))
+                s = self.transition_function(s, a)
+        new_policy.append((s, None))
+
+        self.current_time = current_time
+        self.constrained = contrained
+
+        return new_policy
 
     def get_discrete_index(self, ts, te):
 
@@ -558,7 +648,7 @@ class PntSchedulingProblem:
                 ],
             )
 
-        s, _ = self.current_policy[t]
+        s, _ = deepcopy(self.current_policy[t])
         for sat_id in range(self.N_sat):
             if s.times[sat_id] < self.current_time:
                 s.times[sat_id] = self.current_time

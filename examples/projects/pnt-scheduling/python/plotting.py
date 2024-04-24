@@ -296,14 +296,14 @@ def plot_resources(
         # From current time to start of action
         N_points = max(int((a.start - s.times[sat_id]) / problem.t_step), 2)
         tt = np.linspace(s.times[sat_id], a.start, N_points)
-        e = np.minimum(
-            s.energy[sat_id] + problem.energy_gen_func(sat_id, tt[0], tt),
-            problem.max_energy,
+        e_gen = np.array(
+            [problem.energy_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
         )
-        d = np.maximum(
-            s.data[sat_id] + problem.data_gen_func(sat_id, tt[0], tt),
-            problem.min_data,
+        d_gen = np.array(
+            [problem.data_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
         )
+        e = np.minimum(s.energy[sat_id] + e_gen, problem.max_energy)
+        d = np.maximum(s.data[sat_id] + d_gen, problem.min_data)
         times[sat_id].extend(tt)
         energy[sat_id].extend(e)
         data[sat_id].extend(d)
@@ -311,16 +311,18 @@ def plot_resources(
         # From start to end of action
         N_points = max(int(a.duration / problem.t_step), 2)
         tt = np.linspace(a.start, a.start + a.duration, N_points)
+        e_gen = np.array(
+            [problem.energy_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
+        )
+        d_gen = np.array(
+            [problem.data_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
+        )
         e = np.minimum(
-            e[-1]
-            + problem.energy_gen_func(sat_id, tt[0], tt)
-            + problem.payload_energy_gen * (tt - a.start),
+            e[-1] + e_gen + problem.payload_energy_gen * (tt - a.start),
             problem.max_energy,
         )
         d = np.maximum(
-            d[-1]
-            + problem.data_gen_func(sat_id, tt[0], tt)
-            + problem.payload_data_gen * (tt - a.start),
+            d[-1] + d_gen + problem.payload_data_gen * (tt - a.start),
             problem.min_data,
         )
         times[sat_id].extend(tt)
@@ -331,14 +333,14 @@ def plot_resources(
         # From end of last action to end of time
         N_points = max(int((problem.t_final - times[sat_id][-1]) / problem.t_step), 2)
         tt = np.linspace(times[sat_id][-1], problem.t_final, N_points)
-        e = np.minimum(
-            energy[sat_id][-1] + problem.energy_gen_func(sat_id, tt[0], tt),
-            problem.max_energy,
+        e_gen = np.array(
+            [problem.energy_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
         )
-        d = np.maximum(
-            data[sat_id][-1] + problem.data_gen_func(sat_id, tt[0], tt),
-            problem.min_data,
+        d_gen = np.array(
+            [problem.data_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
         )
+        e = np.minimum(energy[sat_id][-1] + e_gen, problem.max_energy)
+        d = np.maximum(data[sat_id][-1] + d_gen, problem.min_data)
         times[sat_id].extend(tt)
         energy[sat_id].extend(e)
         data[sat_id].extend(d)
@@ -360,15 +362,19 @@ def plot_resources(
     plt.ylabel("Energy [\\%]")
     plt.xlim(0, problem.t_final)
     plt.ylim(0, 100)
-    plt.legend(
-        loc="upper center",
-        facecolor="white",
-        framealpha=1,
-        ncol=3,
-        bbox_to_anchor=(0.5, 1.4),
-        frameon=False,
-        handlelength=1,
+    # plt.legend(
+    #     loc="upper center",
+    #     facecolor="white",
+    #     framealpha=1,
+    #     ncol=3,
+    #     bbox_to_anchor=(0.5, 1.4),
+    #     frameon=False,
+    #     handlelength=1,
+    # )
+    p = plt.plot(
+        [], [], lw=2, color="black", linestyle="--", label="Resource constraint"
     )
+    # plt.legend(handles=p, loc="upper center", facecolor="white", framealpha=1)
     plt.grid()
 
     plt.sca(ax[1])
@@ -389,7 +395,7 @@ def plot_resources(
         linestyles="--",
         label="Resource constraint",
     )
-    plt.legend()
+    # plt.legend()
     plt.xlabel("Time")
     plt.ylabel("Data [\\%]")
     plt.xlim(0, problem.t_final)
