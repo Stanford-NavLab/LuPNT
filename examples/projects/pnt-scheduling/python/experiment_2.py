@@ -359,12 +359,12 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
     requests.append(
         Request(
             id=-1,
-            user_id=-1,
+            usr_id=-1,
             rv=None,
-            start=0,
-            end=tf / pnt.SECS_PER_HOUR,
-            duration=tf / pnt.SECS_PER_HOUR,
-            priority=0,
+            ts=0,
+            te=tf / pnt.SECS_PER_HOUR,
+            T=tf / pnt.SECS_PER_HOUR,
+            p=0,
         ),  # Dummy request
     )
     request_id = 0
@@ -373,11 +373,11 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
             requests.append(
                 Request(
                     id=request_id,
-                    user_id=user["id"],
+                    usr_id=user["id"],
                     rv=rv_moon_user_mi[i],
-                    start=j_day * 24,
-                    end=N_days * 24,
-                    duration=contact_durations_pathfinder[i] / 2 / 60,
+                    ts=j_day * 24,
+                    te=N_days * 24,
+                    T=contact_durations_pathfinder[i] / 2 / 60,
                 )
             )
             request_id += 1
@@ -390,29 +390,29 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
         service_windows.append(
             ServiceWindow(
                 id=-1,
-                satellite_id=i_sat,
+                sat_id=i_sat,
                 request_id=-1,
-                start=0,
-                end=tf / pnt.SECS_PER_HOUR,
+                ts=0,
+                te=tf / pnt.SECS_PER_HOUR,
             )  # Dummy service window
         )
         for request in requests[1:]:
-            for start, end in contact_start_ends[i_sat][request.user_id]:
+            for start, end in contact_start_ends[i_sat][request.usr_id]:
 
                 # Convert indexes to hours
                 start_h = start * Dt / pnt.SECS_PER_HOUR
                 end_h = end * Dt / pnt.SECS_PER_HOUR
 
-                if end_h <= request.start or start_h >= request.end:
+                if end_h <= request.ts or start_h >= request.te:
                     continue
 
                 service_windows.append(
                     ServiceWindow(
                         id=window_id,
-                        satellite_id=i_sat,
+                        sat_id=i_sat,
                         request_id=request.id,
-                        start=ceil(start_h * 10) / 10,
-                        end=floor(end_h * 10) / 10,
+                        ts=ceil(start_h * 10) / 10,
+                        te=floor(end_h * 10) / 10,
                     )
                 )
                 window_id += 1

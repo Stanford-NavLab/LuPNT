@@ -176,7 +176,7 @@ def plot_requests_service_windows(
     request_dict: dict[int, Request] = {req.id: req for req in requests}
     total_contact: dict[int, float] = {req.id: 0 for req in requests}
     for win in service_windows:
-        total_contact[win.user_id] += win.end - win.start
+        total_contact[win.usr_id] += win.te - win.ts
 
     if ax is None:
         plt.figure(figsize=(8, 6))
@@ -184,17 +184,17 @@ def plot_requests_service_windows(
         plt.sca(ax)
 
     # Plot service windows
-    N_satellites = len(set([w.satellite_id for w in service_windows]))
+    N_satellites = len(set([w.sat_id for w in service_windows]))
     dy = 0.06
     for win in service_windows:
-        y = win.user_id + START_IDX
-        y += -dy / 2 * N_satellites + dy * N_satellites * win.satellite_id / (
+        y = win.usr_id + START_IDX
+        y += -dy / 2 * N_satellites + dy * N_satellites * win.sat_id / (
             N_satellites - 1
         )
         plt.plot(
-            [win.start, win.end],
+            [win.ts, win.te],
             [y, y],
-            COLORS[win.satellite_id],
+            COLORS[win.sat_id],
             lw=3,
         )
 
@@ -203,39 +203,39 @@ def plot_requests_service_windows(
     if policy is None:
         # Plot average duration per window
         for win in service_windows:
-            y = win.user_id + START_IDX
-            # y += -0.15 + 0.3 * w.satellite_id / (N_satellites - 1)
+            y = win.usr_id + START_IDX
+            # y += -0.15 + 0.3 * w.sat_id / (N_satellites - 1)
             d = (
-                request_dict[win.user_id].duration
-                * (win.end - win.start)
-                / total_contact[win.user_id]
+                request_dict[win.usr_id].T
+                * (win.te - win.ts)
+                / total_contact[win.usr_id]
             )
-            m = (win.start + win.end) / 2
+            m = (win.ts + win.te) / 2
             plt.fill_between(
                 [m - d / 2 + dx, m + d / 2 - dx],
                 y - 0.4,
                 y + 0.4,
                 alpha=0.5,
-                color=COLORS[win.satellite_id],
+                color=COLORS[win.sat_id],
             )
     else:
         # Plot policy
         for s, a in policy[:-1]:
-            if a.request is None:
+            if a.req is None:
                 continue
-            y = a.request.user_id + START_IDX
+            y = a.req.usr_id + START_IDX
             plt.fill_between(
-                [a.start + dx, a.start + a.duration - dx],
+                [a.ts + dx, a.ts + a.T - dx],
                 y - 0.3,
                 y + 0.3,
                 alpha=0.5,
-                color=COLORS[a.satellite_id],
+                color=COLORS[a.sat_id],
                 edgecolor=None,
             )
             plt.text(
-                a.start + a.duration / 2,
+                a.ts + a.T / 2,
                 y,
-                f"{a.request.id + START_IDX}",
+                f"{a.req.id + START_IDX}",
                 ha="center",
                 va="center",
                 color="white",
@@ -256,7 +256,7 @@ def plot_requests_service_windows(
             max(request_dict.keys()) + 0.5 + START_IDX,
         )
     )
-    plt.xlim(0, np.max([w.end for w in service_windows]))
+    plt.xlim(0, np.max([w.te for w in service_windows]))
     plt.xlabel("Time")
     plt.ylabel("User")
     ylims = [-0.5 + START_IDX, max(request_dict.keys()) - 0.5 + START_IDX]
@@ -284,33 +284,33 @@ def plot_resources(
     ax: plt.Axes = None,
 ) -> None:
     s, a = policy[0]
-    times = [[s.times[sat_id]] for sat_id in range(problem.N_sat)]
-    energy = [[s.energy[sat_id]] for sat_id in range(problem.N_sat)]
-    data = [[s.data[sat_id]] for sat_id in range(problem.N_sat)]
+    times = [[s.t[sat_id]] for sat_id in range(problem.N_sat)]
+    energy = [[s.E[sat_id]] for sat_id in range(problem.N_sat)]
+    data = [[s.D[sat_id]] for sat_id in range(problem.N_sat)]
 
     for s, a in policy:
         if a is None:
             continue
-        sat_id = a.satellite_id
+        sat_id = a.sat_id
 
         # From current time to start of action
-        N_points = max(int((a.start - s.times[sat_id]) / problem.t_step), 2)
-        tt = np.linspace(s.times[sat_id], a.start, N_points)
+        N_points = max(int((a.ts - s.t[sat_id]) / problem.t_step), 2)
+        tt = np.linspace(s.t[sat_id], a.ts, N_points)
         e_gen = np.array(
             [problem.energy_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
         )
         d_gen = np.array(
             [problem.data_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
         )
-        e = np.minimum(s.energy[sat_id] + e_gen, problem.max_energy)
-        d = np.maximum(s.data[sat_id] + d_gen, problem.min_data)
+        e = np.minimum(s.E[sat_id] + e_gen, problem.max_energy)
+        d = np.maximum(s.D[sat_id] + d_gen, problem.min_data)
         times[sat_id].extend(tt)
         energy[sat_id].extend(e)
         data[sat_id].extend(d)
 
         # From start to end of action
-        N_points = max(int(a.duration / problem.t_step), 2)
-        tt = np.linspace(a.start, a.start + a.duration, N_points)
+        N_points = max(int(a.T / problem.t_step), 2)
+        tt = np.linspace(a.ts, a.ts + a.T, N_points)
         e_gen = np.array(
             [problem.energy_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
         )
@@ -318,11 +318,11 @@ def plot_resources(
             [problem.data_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
         )
         e = np.minimum(
-            e[-1] + e_gen + problem.payload_energy_gen * (tt - a.start),
+            e[-1] + e_gen + problem.payload_energy_gen * (tt - a.ts),
             problem.max_energy,
         )
         d = np.maximum(
-            d[-1] + d_gen + problem.payload_data_gen * (tt - a.start),
+            d[-1] + d_gen + problem.payload_data_gen * (tt - a.ts),
             problem.min_data,
         )
         times[sat_id].extend(tt)

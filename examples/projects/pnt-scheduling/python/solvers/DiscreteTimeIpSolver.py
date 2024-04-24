@@ -33,10 +33,10 @@ class DiscreteTimeIpSolver(Solver):
                 windows = [
                     win
                     for win in self.problem.service_windows
-                    if win.request_id == req.id and win.satellite_id == i_sat
+                    if win.request_id == req.id and win.sat_id == i_sat
                 ]
-                starts = np.ceil([w.start / dt for w in windows]).astype(int)
-                ends = np.floor([w.end / dt for w in windows]).astype(int)
+                starts = np.ceil([w.ts / dt for w in windows]).astype(int)
+                ends = np.floor([w.te / dt for w in windows]).astype(int)
                 for w, ts, te in zip(windows, starts, ends):
                     if ts >= te:
                         logging.debug(
@@ -98,10 +98,10 @@ class DiscreteTimeIpSolver(Solver):
             )
             for t in range(N_t + 1):
                 constraints.append(
-                    s.data[i_sat] + cp.sum(tmp_data[:t]) <= self.problem.max_data
+                    s.D[i_sat] + cp.sum(tmp_data[:t]) <= self.problem.max_data
                 )
                 constraints.append(
-                    s.energy[i_sat] + cp.sum(tmp_energy[:t]) >= self.problem.min_energy
+                    s.E[i_sat] + cp.sum(tmp_energy[:t]) >= self.problem.min_energy
                 )
 
         # One action at a time for each satellite
@@ -166,7 +166,7 @@ class DiscreteTimeIpSolver(Solver):
                 i_sat: [
                     w
                     for w in self.problem.service_windows
-                    if w.request_id == req.id and w.satellite_id == i_sat
+                    if w.request_id == req.id and w.sat_id == i_sat
                 ]
                 for i_sat in range(self.problem.N_sat)
             }
@@ -174,12 +174,12 @@ class DiscreteTimeIpSolver(Solver):
         }
 
         # Get window id given a time interval and a request id
-        def get_window(ts: int, te: int, request_id: int, satellite_id: int) -> int:
+        def get_window(ts: int, te: int, request_id: int, sat_id: int) -> int:
             windows = [
                 win
-                for win in service_windows_dict[request_id][satellite_id]
-                if ts >= int(np.ceil(win.start / dt)) - 1
-                and te <= int(np.floor(win.end / dt)) + 1
+                for win in service_windows_dict[request_id][sat_id]
+                if ts >= int(np.ceil(win.ts / dt)) - 1
+                and te <= int(np.floor(win.te / dt)) + 1
             ]
             return windows[0]
 
@@ -191,7 +191,7 @@ class DiscreteTimeIpSolver(Solver):
                 for ts, te in zip(start, end):
                     window = get_window(ts, te, req.id, i_sat)
                     a = Action(
-                        satellite_id=i_sat,
+                        sat_id=i_sat,
                         start=ts * dt,
                         duration=(te - ts) * dt,
                         window=window,

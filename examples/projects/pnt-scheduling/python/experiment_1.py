@@ -361,11 +361,11 @@ def get_problem(
     requests.append(
         Request(
             id=-1,
-            user_id=-1,
-            start=0,
-            end=tf / pnt.SECS_PER_HOUR,
-            duration=tf / pnt.SECS_PER_HOUR,
-            priority=0,
+            usr_id=-1,
+            ts=0,
+            te=tf / pnt.SECS_PER_HOUR,
+            T=tf / pnt.SECS_PER_HOUR,
+            p=0,
         ),  # Dummy request
     )
     resquest_id = 0
@@ -373,11 +373,11 @@ def get_problem(
         requests.append(
             Request(
                 id=resquest_id,
-                user_id=user["id"],
+                usr_id=user["id"],
                 rv=rv_moon_user_mi[i],
-                start=0,
-                end=tf / pnt.SECS_PER_HOUR,
-                duration=contact_durations_pathfinder[i]
+                ts=0,
+                te=tf / pnt.SECS_PER_HOUR,
+                T=contact_durations_pathfinder[i]
                 * pnt.SECS_PER_MINUTE
                 / pnt.SECS_PER_HOUR,
             )
@@ -392,10 +392,10 @@ def get_problem(
         service_windows.append(
             ServiceWindow(
                 id=-1,
-                satellite_id=i_sat,
+                sat_id=i_sat,
                 request_id=-1,
-                start=0,
-                end=tf / pnt.SECS_PER_HOUR,
+                ts=0,
+                te=tf / pnt.SECS_PER_HOUR,
             )  # Dummy service window
         )
         for i, request in enumerate(requests[1:]):
@@ -403,10 +403,10 @@ def get_problem(
                 service_windows.append(
                     ServiceWindow(
                         id=window_id,
-                        satellite_id=i_sat,
+                        sat_id=i_sat,
                         request_id=request.id,
-                        start=ceil(start * Dt / pnt.SECS_PER_HOUR * 10) / 10,
-                        end=floor(end * Dt / pnt.SECS_PER_HOUR * 10) / 10,
+                        ts=ceil(start * Dt / pnt.SECS_PER_HOUR * 10) / 10,
+                        te=floor(end * Dt / pnt.SECS_PER_HOUR * 10) / 10,
                     )
                 )
                 window_id += 1

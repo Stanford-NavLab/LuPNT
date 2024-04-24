@@ -25,20 +25,20 @@ figures_path = "../figures/AA229/"
 def main():
     reset_id_counters()
     requests = [
-        Request(user_id=0, start=0.0, end=10.0, duration=2.0, arrival=0.0),
-        Request(user_id=1, start=3.0, end=10.0, duration=3.0, arrival=0.0),
-        Request(user_id=1, start=0.0, end=10.0, duration=2.0, arrival=3.0),
+        Request(usr_id=0, ts=0.0, te=10.0, T=2.0, ta=0.0),
+        Request(usr_id=1, ts=3.0, te=10.0, T=3.0, ta=0.0),
+        Request(usr_id=1, ts=0.0, te=10.0, T=2.0, ta=3.0),
     ]
     request_dict = {r.id: r for r in requests}
 
     service_windows = [
         # Satellite 0
-        ServiceWindow(user_id=0, satellite_id=0, start=0.0, end=5.0),
-        ServiceWindow(user_id=1, satellite_id=0, start=0.0, end=3.0),
-        ServiceWindow(user_id=1, satellite_id=0, start=6.0, end=10.0),
+        ServiceWindow(usr_id=0, sat_id=0, ts=0.0, te=5.0),
+        ServiceWindow(usr_id=1, sat_id=0, ts=0.0, te=3.0),
+        ServiceWindow(usr_id=1, sat_id=0, ts=6.0, te=10.0),
         # Satellite 1
-        ServiceWindow(user_id=0, satellite_id=1, start=3.0, end=7.0),
-        ServiceWindow(user_id=1, satellite_id=1, start=5.0, end=7.0),
+        ServiceWindow(usr_id=0, sat_id=1, ts=3.0, te=7.0),
+        ServiceWindow(usr_id=1, sat_id=1, ts=5.0, te=7.0),
     ]
 
     N_sat = 2
@@ -107,8 +107,8 @@ def main():
     print("Total:", round(problem.total_reward(policy, gamma=gamma), 2))
 
     actions = [
-        Action(satellite_id=0, request=requests[1], start=6.0, duration=1.0),
-        Action(satellite_id=1, request=requests[0], start=4.0, duration=1.0),
+        Action(sat_id=0, request=requests[1], ts=6.0, T=1.0),
+        Action(sat_id=1, request=requests[0], ts=4.0, T=1.0),
     ]
 
     s = problem.initial_state()
@@ -129,12 +129,12 @@ def main():
     # Config
     old_policy = policy
     problem.set_current_time(3)
-    problem.set_current_policy(old_policy, constrained=True)
+    problem.set_current_policy(old_policy, constr=True)
     problem.initial_state()
     fig, axs = plt.subplots(3, 1, figsize=(6, 6))
     print(f"Total reward: {problem.total_reward(policy, gamma=gamma):.2f}")
     plotting.plot_requests_service_windows(
-        requests, problem.constrained_windows, policy, ax=axs[0]
+        requests, problem.constr_windows, policy, ax=axs[0]
     )
     plotting.plot_resources(problem, policy, ax=axs[1:])
 
@@ -144,7 +144,7 @@ def main():
     N_max = 5
     d_min = 10
     problem.set_current_time(3)
-    problem.set_current_policy(old_policy, constrained=True)
+    problem.set_current_policy(old_policy, constr=True)
     s = problem.initial_state()
 
     solver = SmdpForwardSearchSolver(problem)
