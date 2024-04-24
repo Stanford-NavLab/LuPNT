@@ -172,9 +172,13 @@ def plot_requests_service_windows(
     policy: list[tuple[State, Action]] = None,
     ax: plt.Axes = None,
     current_time: float = 0,
+    old_policy: list[tuple[State, Action]] = None,
 ) -> None:
+
     request_dict: dict[int, Request] = {req.id: req for req in requests}
     total_contact: dict[int, float] = {req.id: 0 for req in requests}
+    old_actions = [a for s, a in old_policy] if old_policy is not None else None
+
     for win in service_windows:
         total_contact[win.usr_id] += win.te - win.ts
 
@@ -198,7 +202,7 @@ def plot_requests_service_windows(
             lw=3,
         )
 
-    dx = 0.01
+    dx = 0.0
 
     if policy is None:
         # Plot average duration per window
@@ -211,12 +215,9 @@ def plot_requests_service_windows(
                 / total_contact[win.usr_id]
             )
             m = (win.ts + win.te) / 2
+            kwargs = dict(alpha=0.5, color=COLORS[win.sat_id])
             plt.fill_between(
-                [m - d / 2 + dx, m + d / 2 - dx],
-                y - 0.4,
-                y + 0.4,
-                alpha=0.5,
-                color=COLORS[win.sat_id],
+                [m - d / 2 + dx, m + d / 2 - dx], y - 0.4, y + 0.4, **kwargs
             )
     else:
         # Plot policy
@@ -224,22 +225,14 @@ def plot_requests_service_windows(
             if a.req is None:
                 continue
             y = a.req.usr_id + START_IDX
-            plt.fill_between(
-                [a.ts + dx, a.ts + a.T - dx],
-                y - 0.3,
-                y + 0.3,
-                alpha=0.5,
-                color=COLORS[a.sat_id],
-                edgecolor=None,
-            )
-            plt.text(
-                a.ts + a.T / 2,
-                y,
-                f"{a.req.id + START_IDX}",
-                ha="center",
-                va="center",
-                color="white",
-            )
+
+            kwargs = dict(alpha=0.5, color=COLORS[a.sat_id], edgecolor=None)
+            if old_policy is not None and a in old_actions:
+                kwargs["hatch"] = "/"
+            plt.fill_between([a.ts + dx, a.ts + a.T - dx], y - 0.3, y + 0.3, **kwargs)
+
+            kwargs = dict(ha="center", va="center", color="black")
+            plt.text(a.ts + a.T / 2, y, f"{a.req.id + START_IDX}", **kwargs)
 
     plt.plot([], [], color="black", lw=3, label=f"Window")
     plt.plot([], [], color="black", lw=10, label=f"Service", alpha=0.5)
