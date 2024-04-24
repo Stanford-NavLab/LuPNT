@@ -85,7 +85,7 @@ class SmdpForwardSearchSolver(Solver):
 
         # Progress bar
         if progress:
-            tf = self.problem.tf
+            tf = self.problem.t_final
             t = min(s.times)
             bar = tqdm(
                 total=int(tf - t), desc="Solving Forward Search (progress in hours)"

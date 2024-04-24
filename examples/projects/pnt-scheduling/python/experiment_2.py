@@ -435,7 +435,7 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
     R_dte_max = -2e3  # [kbps] Direct-To-Earth max data rate
 
     payload_data_gen = -1.9 * R_dte_max  # [kbps] Payload data generation
-    payload_power_gen = -1.9 * P_solar_max  # [W] Payload power generation
+    payload_energy_gen = -1.9 * P_solar_max  # [W] Payload power generation
 
     max_energy = np.abs(P_solar_max) * 12  # [Wh] Max energy capacity
     min_energy = max_energy * 0.2  # [Wh] Min energy capacity
@@ -462,7 +462,7 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
         max_data=max_data,
         min_data=min_data,
         payload_data_gen=payload_data_gen,
-        payload_power_gen=payload_power_gen,
+        payload_energy_gen=payload_energy_gen,
         energy_gen_func=e_func,
         data_gen_func=d_func,
     )

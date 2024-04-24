@@ -14,11 +14,11 @@ class DiscreteTimeIpSolver(Solver):
 
     def solve(self, s: State, time_step_factor: float) -> list[tuple[State, Action]]:
 
-        N_sat = self.problem.N_satellites
+        N_sat = self.problem.N_sat
         N_req = len(self.problem.request_dict)
-        Dt = self.problem.tf / self.problem.CN0_norm.shape[2]
+        Dt = self.problem.t_final / self.problem.CN0_norm.shape[2]
         dt = time_step_factor * Dt
-        N_t = int(self.problem.tf / dt)
+        N_t = int(self.problem.t_final / dt)
 
         durations = np.ceil(
             [r.duration / dt for r in self.problem.request_dict.values()]
@@ -62,7 +62,7 @@ class DiscreteTimeIpSolver(Solver):
                             self.problem.payload_data_gen * dt
                         )
                         energy_gen_requests[i_sat, j_req, ts:te] = (
-                            self.problem.payload_power_gen * dt
+                            self.problem.payload_energy_gen * dt
                         )
 
         data_gen = self.problem.data_gen_func(
@@ -168,7 +168,7 @@ class DiscreteTimeIpSolver(Solver):
                     for w in self.problem.service_windows
                     if w.request_id == req.id and w.satellite_id == i_sat
                 ]
-                for i_sat in range(self.problem.N_satellites)
+                for i_sat in range(self.problem.N_sat)
             }
             for req in self.problem.request_dict.values()
         }
@@ -186,7 +186,7 @@ class DiscreteTimeIpSolver(Solver):
         # Create actions by iterating over the requests
         actions: list[Action] = []
         for j_req, req in enumerate(self.problem.request_dict.values()):
-            for i_sat in range(self.problem.N_satellites):
+            for i_sat in range(self.problem.N_sat):
                 start, end = util.get_start_end_indexes(self.solution[i_sat, j_req])
                 for ts, te in zip(start, end):
                     window = get_window(ts, te, req.id, i_sat)

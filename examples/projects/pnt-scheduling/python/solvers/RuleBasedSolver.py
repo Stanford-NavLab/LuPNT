@@ -21,7 +21,7 @@ class RuleBasedSolver(Solver):
 
         def sorting_key(a: Action) -> float:
             return (
-                a.start * self.problem.tf + a.window.request_id
+                a.start * self.problem.t_final + a.window.request_id
                 if a.window.request_id >= 0
                 else np.inf
             )

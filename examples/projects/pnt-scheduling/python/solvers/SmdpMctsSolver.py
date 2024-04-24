@@ -117,7 +117,7 @@ class SmdpMctsSolver(Solver):
 
         # Progress bar
         if progress:
-            tf = self.problem.tf
+            tf = self.problem.t_final
             t = min(s.time)
             bar = tqdm(total=int(tf - t), desc="Solving MCTS (progress in hours)")
 

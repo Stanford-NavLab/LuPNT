@@ -64,8 +64,8 @@ def plot_satellites_users(
         fig.plot(rv_moon_sat[:, :3], color="black", mask=False, lw=1)
         fig.scatter(rv_moon_sat[0, :3], color="black", mask=False, depthshade=False)
     else:
-        for i in range(rv_moon_sat.shape[0]):
-            fig.plot(rv_moon_sat[i, :, :3], color="black", mask=False, lw=1)
+        for sat_id in range(rv_moon_sat.shape[0]):
+            fig.plot(rv_moon_sat[sat_id, :, :3], color="black", mask=False, lw=1)
         fig.scatter(
             rv_moon_sat[:, 0, :3], color="black", mask=False, s=25, depthshade=False
         )
@@ -209,7 +209,6 @@ def plot_requests_service_windows(
                 request_dict[win.user_id].duration
                 * (win.end - win.start)
                 / total_contact[win.user_id]
-                / N_satellites
             )
             m = (win.start + win.end) / 2
             plt.fill_between(
@@ -244,8 +243,10 @@ def plot_requests_service_windows(
 
     plt.plot([], [], color="black", lw=3, label=f"Window")
     plt.plot([], [], color="black", lw=10, label=f"Service", alpha=0.5)
-    for i in range(N_satellites):
-        plt.plot([], [], color=COLORS[i], lw=3, label=f"Satellite {i+START_IDX}")
+    for sat_id in range(N_satellites):
+        plt.plot(
+            [], [], color=COLORS[sat_id], lw=3, label=f"Satellite {sat_id+START_IDX}"
+        )
 
     # if policy is None:
     # plt.fill_between([], [], alpha=0.7, label="Average duration")
@@ -282,61 +283,82 @@ def plot_resources(
     policy: list[tuple[State, Action]],
     ax: plt.Axes = None,
 ) -> None:
-    times = [[] for _ in range(problem.N_satellites)]
-    data = [[] for _ in range(problem.N_satellites)]
-    energy = [[] for _ in range(problem.N_satellites)]
+    s, a = policy[0]
+    times = [[s.times[sat_id]] for sat_id in range(problem.N_sat)]
+    energy = [[s.energy[sat_id]] for sat_id in range(problem.N_sat)]
+    data = [[s.data[sat_id]] for sat_id in range(problem.N_sat)]
+
     for s, a in policy:
         if a is None:
             continue
-        i = a.satellite_id
-        times[i].append(s.times[i])
-        data[i].append(s.data[i])
-        energy[i].append(s.energy[i])
-        assert not np.isnan(s.energy).all()
-        d = max(
-            s.data[i] + problem.data_gen_func(s.times[i], a.start), problem.min_data
-        )
-        e = min(
-            s.energy[i] + problem.energy_gen_func(s.times[i], a.start),
-            problem.max_energy,
-        )
-        assert not np.isnan(e).all()
-        times[i].append(a.start)
-        data[i].append(d)
-        energy[i].append(e)
+        sat_id = a.satellite_id
 
-    for i in range(problem.N_satellites):
-        tt = np.linspace(s.times[i], problem.tf, 100)
-        d = np.maximum(
-            problem.min_data, s.data[i] + problem.data_gen_func(s.times[i], tt)
-        )
+        # From current time to start of action
+        N_points = max(int((a.start - s.times[sat_id]) / problem.t_step), 2)
+        tt = np.linspace(s.times[sat_id], a.start, N_points)
         e = np.minimum(
+            s.energy[sat_id] + problem.energy_gen_func(sat_id, tt[0], tt),
             problem.max_energy,
-            s.energy[i] + problem.energy_gen_func(s.times[i], tt),
         )
-        assert not np.isnan(e).all()
-        times[i].extend(tt)
-        data[i].extend(d)
-        energy[i].extend(e)
+        d = np.maximum(
+            s.data[sat_id] + problem.data_gen_func(sat_id, tt[0], tt),
+            problem.min_data,
+        )
+        times[sat_id].extend(tt)
+        energy[sat_id].extend(e)
+        data[sat_id].extend(d)
+
+        # From start to end of action
+        N_points = max(int(a.duration / problem.t_step), 2)
+        tt = np.linspace(a.start, a.start + a.duration, N_points)
+        e = np.minimum(
+            e[-1]
+            + problem.energy_gen_func(sat_id, tt[0], tt)
+            + problem.payload_energy_gen * (tt - a.start),
+            problem.max_energy,
+        )
+        d = np.maximum(
+            d[-1]
+            + problem.data_gen_func(sat_id, tt[0], tt)
+            + problem.payload_data_gen * (tt - a.start),
+            problem.min_data,
+        )
+        times[sat_id].extend(tt)
+        energy[sat_id].extend(e)
+        data[sat_id].extend(d)
+
+    for sat_id in range(problem.N_sat):
+        # From end of last action to end of time
+        N_points = max(int((problem.t_final - times[sat_id][-1]) / problem.t_step), 2)
+        tt = np.linspace(times[sat_id][-1], problem.t_final, N_points)
+        e = np.minimum(
+            energy[sat_id][-1] + problem.energy_gen_func(sat_id, tt[0], tt),
+            problem.max_energy,
+        )
+        d = np.maximum(
+            data[sat_id][-1] + problem.data_gen_func(sat_id, tt[0], tt),
+            problem.min_data,
+        )
+        times[sat_id].extend(tt)
+        energy[sat_id].extend(e)
+        data[sat_id].extend(d)
 
     if ax is None:
         fig, ax = plt.subplots(2, 1, figsize=(8, 6))
 
-    d_lim = problem.max_data / 0.8
     plt.sca(ax[0])
-    for i in range(problem.N_satellites):
-        x = np.array(times[i])
-        y = np.array(data[i]) / d_lim * 100
-        plt.plot(x, y, lw=2, color=COLORS[i], label=f"Satellite {i+START_IDX}")
-    y = 100 * 0.8
-    # plt.hlines(problem.min_data, 0, problem.tf, colors="tab:blue", linestyles="--")
+    for sat_id in range(problem.N_sat):
+        x = np.array(times[sat_id])
+        y = np.array(energy[sat_id]) / problem.max_energy * 100
+        plt.plot(x, y, lw=2, color=COLORS[sat_id])
+    y = problem.min_energy / problem.max_energy * 100
     plt.hlines(
-        y, 0, problem.tf, colors="black", linestyles="--", label="Resource constraint"
+        y, 0, problem.t_final, colors="black", linestyles="--", label="Min. energy"
     )
-    plt.legend()
+    # plt.hlines(problem.max_energy, 0, problem.t_final, colors="tab:green", linestyles="--")
     plt.xlabel("Time")
-    plt.ylabel("Data [\\%]")
-    plt.xlim(0, problem.tf)
+    plt.ylabel("Energy [\\%]")
+    plt.xlim(0, problem.t_final)
     plt.ylim(0, 100)
     plt.legend(
         loc="upper center",
@@ -349,20 +371,29 @@ def plot_resources(
     )
     plt.grid()
 
-    e_lim = problem.min_energy / 0.2
     plt.sca(ax[1])
-    for i in range(problem.N_satellites):
-        x = np.array(times[i])
-        y = np.array(energy[i]) / e_lim * 100
-        plt.plot(x, y, lw=2, color=COLORS[i])
-    y = problem.min_energy / e_lim * 100
-    plt.hlines(y, 0, problem.tf, colors="black", linestyles="--", label="Min. energy")
-    # plt.hlines(problem.max_energy, 0, problem.tf, colors="tab:green", linestyles="--")
+    d_lim = problem.max_data / 0.8
+    for sat_id in range(problem.N_sat):
+        x = np.array(times[sat_id])
+        y = np.array(data[sat_id]) / d_lim * 100
+        plt.plot(
+            x, y, lw=2, color=COLORS[sat_id], label=f"Satellite {sat_id+START_IDX}"
+        )
+    y = 100 * 0.8
+    # plt.hlines(problem.min_data, 0, problem.t_final, colors="tab:blue", linestyles="--")
+    plt.hlines(
+        y,
+        0,
+        problem.t_final,
+        colors="black",
+        linestyles="--",
+        label="Resource constraint",
+    )
+    plt.legend()
     plt.xlabel("Time")
-    plt.ylabel("Energy [\\%]")
-    plt.xlim(0, problem.tf)
+    plt.ylabel("Data [\\%]")
+    plt.xlim(0, problem.t_final)
     plt.ylim(0, 100)
-    # plt.legend(loc="upper right", facecolor="white", framealpha=1)
     plt.grid()
 
     plt.tight_layout()
