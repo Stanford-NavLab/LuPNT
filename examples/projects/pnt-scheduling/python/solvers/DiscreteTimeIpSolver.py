@@ -37,7 +37,7 @@ class DiscreteTimeIpSolver(Solver):
         t_curr = self.problem.current_time
 
         T = [
-            ((req.T - s.req_times[req_id]) / dt if req.ta <= t_curr else 0)
+            ((req.dur - s.req_times[req_id]) / dt if req.ta <= t_curr else 0)
             for req_id, req in req_dict.items()
         ]
         T = np.ceil(T).astype(int)
@@ -222,7 +222,7 @@ class DiscreteTimeIpSolver(Solver):
             for sat_id in range(self.problem.N_sat):
                 start, end = util.get_start_end_indexes(self.solution[sat_id, req_id])
                 for ts, te in zip(start, end):
-                    a = Action(sat_id=sat_id, ts=ts * dt, T=(te - ts) * dt, req=req)
+                    a = Action(sat_id=sat_id, ts=ts * dt, dur=(te - ts) * dt, req=req)
                     actions.append(a)
         actions.sort(key=lambda a: a.ts)
 

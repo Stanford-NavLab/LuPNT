@@ -363,7 +363,7 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
             rv=None,
             ts=0,
             te=tf / pnt.SECS_PER_HOUR,
-            T=tf / pnt.SECS_PER_HOUR,
+            dur=tf / pnt.SECS_PER_HOUR,
             p=0,
         ),  # Dummy request
     )
@@ -377,7 +377,7 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
                     rv=rv_moon_user_mi[i],
                     ts=j_day * 24,
                     te=N_days * 24,
-                    T=contact_durations_pathfinder[i] / 2 / 60,
+                    dur=contact_durations_pathfinder[i] / 2 / 60,
                 )
             )
             request_id += 1

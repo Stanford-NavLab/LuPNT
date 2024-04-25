@@ -25,9 +25,9 @@ figures_path = "../figures/AA229/"
 def main():
     reset_id_counters()
     requests = [
-        Request(usr_id=0, ts=0.0, te=10.0, T=2.0, ta=0.0),
-        Request(usr_id=1, ts=3.0, te=10.0, T=3.0, ta=0.0),
-        Request(usr_id=1, ts=0.0, te=10.0, T=2.0, ta=3.0),
+        Request(usr_id=0, ts=0.0, te=10.0, dur=2.0, ta=0.0),
+        Request(usr_id=1, ts=3.0, te=10.0, dur=3.0, ta=0.0),
+        Request(usr_id=1, ts=0.0, te=10.0, dur=2.0, ta=3.0),
     ]
     request_dict = {r.id: r for r in requests}
 
@@ -107,8 +107,8 @@ def main():
     print("Total:", round(problem.total_reward(policy, gamma=gamma), 2))
 
     actions = [
-        Action(sat_id=0, request=requests[1], ts=6.0, T=1.0),
-        Action(sat_id=1, request=requests[0], ts=4.0, T=1.0),
+        Action(sat_id=0, request=requests[1], ts=6.0, dur=1.0),
+        Action(sat_id=1, request=requests[0], ts=4.0, dur=1.0),
     ]
 
     s = problem.initial_state()

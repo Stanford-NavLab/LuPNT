@@ -202,7 +202,7 @@ def plot_requests_service_windows(
             y = win.usr_id + START_IDX
             # y += -0.15 + 0.3 * w.sat_id / (N_satellites - 1)
             d = (
-                request_dict[win.usr_id].T
+                request_dict[win.usr_id].dur
                 * (win.te - win.ts)
                 / total_contact[win.usr_id]
             )
@@ -221,10 +221,10 @@ def plot_requests_service_windows(
             kwargs = dict(alpha=0.5, color=COLORS[a.sat_id], edgecolor=None)
             if old_policy is not None and a in old_actions:
                 kwargs["hatch"] = "/"
-            plt.fill_between([a.ts + dx, a.ts + a.T - dx], y - 0.3, y + 0.3, **kwargs)
+            plt.fill_between([a.ts + dx, a.ts + a.dur - dx], y - 0.3, y + 0.3, **kwargs)
 
             kwargs = dict(ha="center", va="center", color="black")
-            plt.text(a.ts + a.T / 2, y + 0.15, f"{a.req.id + START_IDX}", **kwargs)
+            plt.text(a.ts + a.dur / 2, y + 0.15, f"{a.req.id + START_IDX}", **kwargs)
 
     # Axis settings
     plt.yticks(
@@ -292,8 +292,8 @@ def plot_resources(
         data[sat_id].extend(d)
 
         # From start to end of action
-        N_points = max(int(a.T / problem.t_step), 2)
-        tt = np.linspace(a.ts, a.ts + a.T, N_points)
+        N_points = max(int(a.dur / problem.t_step), 2)
+        tt = np.linspace(a.ts, a.ts + a.dur, N_points)
         e_gen = np.array(
             [problem.energy_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
         )

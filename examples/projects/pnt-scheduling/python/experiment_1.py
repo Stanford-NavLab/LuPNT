@@ -364,7 +364,7 @@ def get_problem(
             usr_id=-1,
             ts=0,
             te=tf / pnt.SECS_PER_HOUR,
-            T=tf / pnt.SECS_PER_HOUR,
+            dur=tf / pnt.SECS_PER_HOUR,
             priority=0,
         ),  # Dummy request
     )
@@ -377,7 +377,7 @@ def get_problem(
                 rv=rv_moon_user_mi[i],
                 ts=0,
                 te=tf / pnt.SECS_PER_HOUR,
-                T=contact_durations_pathfinder[i]
+                dur=contact_durations_pathfinder[i]
                 * pnt.SECS_PER_MINUTE
                 / pnt.SECS_PER_HOUR,
             )

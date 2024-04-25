@@ -45,7 +45,7 @@ class Request:
     usr_id: UsrId  # User id
     ts: float  # Start time
     te: float  # End time
-    T: float  # Duration
+    dur: float  # Duration
     ta: float = 0  # Arrival time
     id: int = field(default_factory=lambda: Request._next_id)  # Request id
 
@@ -96,7 +96,7 @@ class State:
 class Action:
     sat_id: int  # Satellite id
     ts: float  # Start time
-    T: float  # Duration
+    dur: float  # Duration
     req: Request  # Request
 
     def __repr__(self):
@@ -105,7 +105,7 @@ class Action:
         a += f"usr={self.req.usr_id if self.req is not None else None}, "
         a += f"req={self.req.id if self.req is not None else None}, "
         a += f"ts={self.ts:.2f}, "
-        a += f"T={self.T:.2f}"
+        a += f"T={self.dur:.2f}"
         a += ")"
         return a
 
@@ -173,7 +173,7 @@ class PntSchedulingProblem:
     # SMDP Functions
     # *********************************************************************************************
 
-    def available_actions(self, s: State, N_max: int, T_min: float) -> list[Action]:
+    def available_actions(self, s: State, N_max: int, dur_min: float) -> list[Action]:
         """
         Get available actions for a given state
 
@@ -201,19 +201,19 @@ class PntSchedulingProblem:
             for req in self.requests
             if req.ta <= self.current_time  # Arrived
             and ti < req.te  # Still valid
-            and s.req_times[req.id] < req.T  # Not fulfilled
+            and s.req_times[req.id] < req.dur  # Not fulfilled
         ]
 
         actions = [
             Action(
                 sat_id=sat_id,
                 ts=s.t[sat_id],
-                T=min(T_min, self.t_final - s.t[sat_id]),
+                dur=min(dur_min, self.t_final - s.t[sat_id]),
                 req=None,
             )
         ]
         for req in requests:
-            duration = min(T_min, req.T - s.req_times[req.id])
+            dur = min(dur_min, req.dur - s.req_times[req.id])
 
             # Transition time
             t_trans = (
@@ -243,21 +243,21 @@ class PntSchedulingProblem:
                 win
                 for win in win_dict
                 if win.sat_id == sat_id  # Right satellite
-                and win.te >= t_earliest + min(duration, win.te - win.ts)
+                and win.te >= t_earliest + min(dur, win.te - win.ts)
                 # Clipped for short windows below T_min
             ]
 
             # Energy and data
             actions_req = []
             for win in win_list:
-                T = min(duration, win.te - win.ts)
+                dur_win = min(dur, win.te - win.ts)
                 t_win = max(t_earliest, win.ts)
                 # Earliest of action
                 Es = Ei + self.energy_gen_func(sat_id, ti, t_win)
                 Ds = Di + self.data_gen_func(sat_id, ti, t_win)
                 # Required energy and data
-                Ea = self.payload_energy_gen * T
-                Da = self.payload_data_gen * T
+                Ea = self.payload_energy_gen * dur_win
+                Da = self.payload_data_gen * dur_win
 
                 t_E = self.time_for_energy(sat_id, t_win, self.min_energy - Ea - Es)
                 t_D = self.time_for_data(sat_id, t_win, self.max_data - Da - Ds)
@@ -271,7 +271,7 @@ class PntSchedulingProblem:
                 Ds = Di + self.data_gen_func(sat_id, ti, ts)
 
                 # Check if the action is feasible
-                if ts + T > win.te:
+                if ts + dur_win > win.te:
                     continue
 
                 # Check required resources after the action
@@ -279,17 +279,18 @@ class PntSchedulingProblem:
                     constraints = [
                         const
                         for const in self.required_resources[sat_id]
-                        if const[0] >= ts + T
+                        if const[0] >= ts + dur_win
                     ]
                     if constraints:
                         tc, Ec, Dc = constraints[0]
                         if (
-                            Es + Ea + self.data_gen_func(sat_id, ts + T, tc) < Ec
-                            or Ds + Da + self.energy_gen_func(sat_id, ts + T, tc) > Dc
+                            Es + Ea + self.data_gen_func(sat_id, ts + dur_win, tc) < Ec
+                            or Ds + Da + self.energy_gen_func(sat_id, ts + dur_win, tc)
+                            > Dc
                         ):
                             continue
 
-                a = Action(sat_id=sat_id, ts=ts, T=T, req=req)
+                a = Action(sat_id=sat_id, ts=ts, dur=dur_win, req=req)
                 self.transition_function(s, a)
                 actions_req.append(a)
 
@@ -341,7 +342,7 @@ class PntSchedulingProblem:
             State: New state
         """
 
-        time = a.ts + a.T
+        time = a.ts + a.dur
         sat_id = a.sat_id
 
         if a.req is not None:
@@ -349,12 +350,12 @@ class PntSchedulingProblem:
             req_id = a.req.id
             payload_on = usr_id >= 0
 
-            assert a.T <= a.req.T - s.req_times[req_id]
-            duration = min(a.T, a.req.T - s.req_times[req_id])
+            assert a.dur <= a.req.dur - s.req_times[req_id]
+            duration = min(a.dur, a.req.dur - s.req_times[req_id])
 
         else:
             payload_on = False
-            duration = a.T
+            duration = a.dur
 
         data = max(
             self.min_data,
@@ -381,7 +382,7 @@ class PntSchedulingProblem:
         sp.req[sat_id] = a.req
         if a.req is not None:
             sp.req_times[req_id] = s.req_times[req_id] + duration
-            assert sp.req_times[req_id] <= a.req.T
+            assert sp.req_times[req_id] <= a.req.dur
         sp.D[sat_id] = data
         sp.E[sat_id] = energy
         return sp
@@ -427,7 +428,7 @@ class PntSchedulingProblem:
         payload_on = a.req.usr_id >= 0
         if payload_on:
             cn0 = self.integrate_normalized_CN0(
-                a.ts, a.ts + a.T, a.req.usr_id, a.sat_id
+                a.ts, a.ts + a.dur, a.req.usr_id, a.sat_id
             )
             bonus = same_req * 1.0
             mult = 0.9 ** (a.ts - a.req.ts)
@@ -499,7 +500,7 @@ class PntSchedulingProblem:
                 np.min(s.t) > self.current_time  # Minimum time for all satellites
                 or a is None  # No more actions
                 or a.ts > self.current_time  # Next action is past the current time
-                or (a.req is None and a.ts + a.T > self.current_time)
+                or (a.req is None and a.ts + a.dur > self.current_time)
             ):
                 return t
         return len(self.current_policy) - 1
@@ -524,7 +525,7 @@ class PntSchedulingProblem:
                 if a is not None
                 and a.req is not None  # Not last action
                 and a.req.usr_id == win.usr_id  # Right user
-                and (a.ts + a.T > win.ts and a.ts < win.te)  # Overlap
+                and (a.ts + a.dur > win.ts and a.ts < win.te)  # Overlap
             ]
             for win in self.service_windows
         }
@@ -533,23 +534,23 @@ class PntSchedulingProblem:
         for win_id, actions in actions_by_win.items():
             win = self.service_windows[win_id]
             for a in actions:
-                if a.ts <= win.ts and a.ts + a.T >= win.te:
+                if a.ts <= win.ts and a.ts + a.dur >= win.te:
                     # Fully covered
                     pass
 
-                elif a.ts > win.ts and a.ts + a.T < win.te:
+                elif a.ts > win.ts and a.ts + a.dur < win.te:
                     # Middle part
                     win_ = ServiceWindow(win.sat_id, win.usr_id, win.ts, a.ts)
                     win_list.append(win_)
-                    win_ = ServiceWindow(win.sat_id, win.usr_id, a.ts + a.T, win.te)
+                    win_ = ServiceWindow(win.sat_id, win.usr_id, a.ts + a.dur, win.te)
                     win_list.append(win_)
 
                 elif a.ts <= win.ts:
                     # Left part
-                    win_ = ServiceWindow(win.sat_id, win.usr_id, a.ts + a.T, win.te)
+                    win_ = ServiceWindow(win.sat_id, win.usr_id, a.ts + a.dur, win.te)
                     win_list.append(win_)
 
-                elif a.ts + a.T >= win.te:
+                elif a.ts + a.dur >= win.te:
                     # Right part
                     win_ = ServiceWindow(win.sat_id, win.usr_id, win.ts, a.ts)
                     win_list.append(win_)
@@ -560,7 +561,7 @@ class PntSchedulingProblem:
             for req in self.requests
         }
         self.action_starts = np.array([a.ts for _, a in self.current_policy if a])
-        self.action_ends = np.array([a.ts + a.T for _, a in self.current_policy if a])
+        self.action_ends = np.array([a.ts + a.dur for _, a in self.current_policy if a])
         self.action_sats_ids = np.array([a.sat_id for _, a in self.current_policy if a])
 
         self.compute_required_resources(policy)
@@ -579,21 +580,21 @@ class PntSchedulingProblem:
             d = self.max_data
             e = self.min_energy
             a = actions[0]
-            t_prev = a.ts + a.T
+            t_prev = a.ts + a.dur
             for a in actions:
                 # From end of current action to start of next action
-                d -= self.data_gen_func(sat_id, a.ts + a.T, t_prev)
-                e -= self.energy_gen_func(sat_id, a.ts + a.T, t_prev)
+                d -= self.data_gen_func(sat_id, a.ts + a.dur, t_prev)
+                e -= self.energy_gen_func(sat_id, a.ts + a.dur, t_prev)
 
                 # Clip values
                 d = min(d, self.max_data)
                 e = max(e, self.min_energy)
 
                 # From start to end of current action
-                d -= self.data_gen_func(sat_id, a.ts, a.ts + a.T)
-                e -= self.energy_gen_func(sat_id, a.ts, a.ts + a.T)
-                d -= self.payload_data_gen * a.T
-                e -= self.payload_energy_gen * a.T
+                d -= self.data_gen_func(sat_id, a.ts, a.ts + a.dur)
+                e -= self.energy_gen_func(sat_id, a.ts, a.ts + a.dur)
+                d -= self.payload_data_gen * a.dur
+                e -= self.payload_energy_gen * a.dur
 
                 required_resources[sat_id].append((a.ts, d, e))
                 t_prev = a.ts
@@ -650,7 +651,7 @@ class PntSchedulingProblem:
         """
 
         rewards = np.array([self.reward_function(s, a) for s, a in policy[:-1]])
-        discounts = np.array([gamma ** (a.ts + 0.5 * a.T) for _, a in policy[:-1]])
+        discounts = np.array([gamma ** (a.ts + 0.5 * a.dur) for _, a in policy[:-1]])
         return np.sum(rewards * discounts)
 
     def percentage_completed(self, policy: list[tuple[State, Action]]) -> list[float]:
@@ -668,7 +669,7 @@ class PntSchedulingProblem:
         sf = policy[-1][0]
         return [
             (
-                sf.req_times[req.id] / req.T * 100
+                sf.req_times[req.id] / req.dur * 100
                 if req.ta <= self.current_time
                 else np.NaN
             )
@@ -691,7 +692,7 @@ class PntSchedulingProblem:
         sf = policy[-1][0]
         return (
             sum(sf.req_times[req.id] for req in self.requests if req.id >= 0)
-            / sum(req.T for req in self.requests if req.id >= 0)
+            / sum(req.dur for req in self.requests if req.id >= 0)
             * 100
         )
 
@@ -715,12 +716,12 @@ class PntSchedulingProblem:
             if (
                 not last_a  # Empty list
                 or a.req != last_a.req  # Different request
-                or a.ts != last_a.ts + last_a.T  # Not consecutive
+                or a.ts != last_a.ts + last_a.dur  # Not consecutive
             ):
                 actions_by_sat[sat_id].append(a)
             else:
                 new_a = Action(
-                    sat_id=a.sat_id, ts=last_a.ts, T=last_a.T + a.T, req=a.req
+                    sat_id=a.sat_id, ts=last_a.ts, dur=last_a.dur + a.dur, req=a.req
                 )
                 actions_by_sat[sat_id][-1] = new_a
         all_actions = sorted(
