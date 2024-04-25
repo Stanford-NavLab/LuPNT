@@ -20,3 +20,6 @@
 [submodule "third_party/tqdm.cpp"]
 	path = third_party/tqdm.cpp
 	url = https://github.com/tqdm/tqdm.cpp.git
+[submodule "examples/projects/contact-plan-with-od"]
+	path = examples/projects/contact-plan-with-od
+	url = git@github.com:kdricemt/contact-plan-with-od.git

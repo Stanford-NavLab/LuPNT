@@ -66,7 +66,7 @@ def print_directory_counts(directory, counts, prefix=""):
 
 # Example usage:
 directory_paths = ["python", "lupnt", "examples", "scripts", "test"]
-extensions = {".py", ".pyi", ".txt", ".cc", ".h", ".sh", ".cmake"}
+extensions = {".py", ".pyi", "ipynb", ".txt", ".cc", ".h", ".sh", ".cmake"}
 for directory_path in directory_paths:
     total_lines, total_files, counts = count_files_lines_in_dir(
         directory_path, extensions
