@@ -49,9 +49,10 @@ class SmdpMctsSolver(Solver):
             idx = np.random.choice(len(actions))
 
         a = actions[idx]
+        sat_id = a.sat_id
         r = self.problem.reward_function(s, a)
         sp = self.problem.transition_function(s, a)
-        return r + self.gamma ** (a.start - min(s.time)) * self.rollout(sp, d - 1)
+        return r + self.gamma ** (a.ts - s.t[sat_id]) * self.rollout(sp, d - 1)
 
     def bonus(self, N_s: int, N_sa: int) -> float:
         return self.c * np.sqrt(np.log(N_s) / N_sa) if N_sa > 0 else np.inf
@@ -72,9 +73,12 @@ class SmdpMctsSolver(Solver):
 
         N_s = sum(self.N[s][a] for a in actions)
         a = max(actions, key=lambda a: self.Q[s][a] + self.bonus(N_s, self.N[s][a]))
+        sat_id = a.sat_id
+
         sp = self.problem.transition_function(s, a)
         r = self.problem.reward_function(s, a)
-        q = r + self.gamma ** (a.start - min(s.time)) * self.simulate(sp, d - 1)
+        q = r + self.gamma ** (a.ts - s.t[sat_id]) * self.simulate(sp, d - 1)
+
         self.N[s][a] += 1
         self.Q[s][a] += (q - self.Q[s][a]) / self.N[s][a]
         return q
@@ -118,7 +122,7 @@ class SmdpMctsSolver(Solver):
         # Progress bar
         if progress:
             tf = self.problem.t_final
-            t = min(s.time)
+            t = min(s.t)
             bar = tqdm(total=int(tf - t), desc="Solving MCTS (progress in hours)")
 
         policy = []
@@ -134,12 +138,13 @@ class SmdpMctsSolver(Solver):
 
             if progress:
                 # Update progress bar
-                bar.update(int(min(s.time) - t))
-                t = min(s.time)
+                bar.update(int(min(s.t) - t))
+                t = min(s.t)
 
         if progress:
             # Close progress bar
             bar.update(int(tf - bar.n))
 
         policy.append((s, None))
+        policy = self.problem.clean_policy(policy)
         return policy

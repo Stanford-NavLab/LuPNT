@@ -188,21 +188,13 @@ def plot_requests_service_windows(
         plt.sca(ax)
 
     # Plot service windows
-    N_satellites = len(set([w.sat_id for w in service_windows]))
-    dy = 0.06
+    dx = 0.01
+    dy = 0.04
+    N_sat = len(set([w.sat_id for w in service_windows]))
     for win in service_windows:
         y = win.usr_id + START_IDX
-        y += -dy / 2 * N_satellites + dy * N_satellites * win.sat_id / (
-            N_satellites - 1
-        )
-        plt.plot(
-            [win.ts, win.te],
-            [y, y],
-            COLORS[win.sat_id],
-            lw=3,
-        )
-
-    dx = 0.0
+        y += -dy / 2 * N_sat + dy * N_sat * win.sat_id / (N_sat - 1)
+        plt.plot([win.ts, win.te], [y, y], COLORS[win.sat_id], lw=3)
 
     if policy is None:
         # Plot average duration per window
@@ -232,17 +224,9 @@ def plot_requests_service_windows(
             plt.fill_between([a.ts + dx, a.ts + a.T - dx], y - 0.3, y + 0.3, **kwargs)
 
             kwargs = dict(ha="center", va="center", color="black")
-            plt.text(a.ts + a.T / 2, y, f"{a.req.id + START_IDX}", **kwargs)
+            plt.text(a.ts + a.T / 2, y + 0.15, f"{a.req.id + START_IDX}", **kwargs)
 
-    plt.plot([], [], color="black", lw=3, label=f"Window")
-    plt.plot([], [], color="black", lw=10, label=f"Service", alpha=0.5)
-    for sat_id in range(N_satellites):
-        plt.plot(
-            [], [], color=COLORS[sat_id], lw=3, label=f"Satellite {sat_id+START_IDX}"
-        )
-
-    # if policy is None:
-    # plt.fill_between([], [], alpha=0.7, label="Average duration")
+    # Axis settings
     plt.yticks(
         np.arange(
             min(request_dict.keys()) + START_IDX,
@@ -250,25 +234,31 @@ def plot_requests_service_windows(
         )
     )
     plt.xlim(0, np.max([w.te for w in service_windows]))
-    plt.xlabel("Time")
+    # plt.xlabel("Time")
     plt.ylabel("User")
     ylims = [-0.5 + START_IDX, max(request_dict.keys()) - 0.5 + START_IDX]
-    if current_time > 0:
-        plt.axvline(current_time, color="black", linestyle=":", label="Current time")
     plt.ylim(ylims)
     plt.grid()
-    # legend outside top
+
+    # Legend
+    plt.plot([], [], color="black", lw=3, label=f"Window")
+    plt.plot([], [], color="black", lw=10, label=f"Service", alpha=0.5)
+    for sat_id in range(N_sat):
+        plt.plot(
+            [], [], color=COLORS[sat_id], lw=3, label=f"Satellite {sat_id+START_IDX}"
+        )
+    plt.plot([], [], lw=2, color="black", linestyle="--", label="Resource constraint")
+    if current_time > 0:
+        plt.axvline(current_time, color="black", linestyle=":", label="Current time")
     plt.legend(
         facecolor="white",
         framealpha=1,
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.3),
-        ncol=4 + int(current_time > 0),
+        bbox_to_anchor=(0.5, 1.5),
+        ncol=3,
         frameon=False,
-        handlelength=1,
+        handlelength=2,
     )
-    plt.gca().invert_yaxis()
-    plt.tight_layout()
 
 
 def plot_resources(
@@ -347,27 +337,26 @@ def plot_resources(
         y = np.array(energy[sat_id]) / problem.max_energy * 100
         plt.plot(x, y, lw=2, color=COLORS[sat_id])
     y = problem.min_energy / problem.max_energy * 100
-    plt.hlines(
-        y, 0, problem.t_final, colors="black", linestyles="--", label="Min. energy"
-    )
-    # plt.hlines(problem.max_energy, 0, problem.t_final, colors="tab:green", linestyles="--")
-    plt.xlabel("Time")
+    plt.hlines(y, 0, problem.t_final, colors="black", linestyles="--")
     plt.ylabel("Energy [\\%]")
     plt.xlim(0, problem.t_final)
     plt.ylim(0, 100)
+
+    # Legend
+    # plt.plot([], [], lw=2, color="black", linestyle="--", label="Resource constraint")
+    # for sat_id in range(problem.N_sat):
+    #     plt.plot(
+    #         [], [], color=COLORS[sat_id], lw=3, label=f"Satellite {sat_id+START_IDX}"
+    #     )
     # plt.legend(
-    #     loc="upper center",
     #     facecolor="white",
     #     framealpha=1,
+    #     loc="upper center",
+    #     bbox_to_anchor=(0.5, 1.6),
     #     ncol=3,
-    #     bbox_to_anchor=(0.5, 1.4),
     #     frameon=False,
-    #     handlelength=1,
+    #     handlelength=1.5,
     # )
-    p = plt.plot(
-        [], [], lw=2, color="black", linestyle="--", label="Resource constraint"
-    )
-    # plt.legend(handles=p, loc="upper center", facecolor="white", framealpha=1)
     plt.grid()
 
     plt.sca(ax[1])
@@ -394,134 +383,3 @@ def plot_resources(
     plt.xlim(0, problem.t_final)
     plt.ylim(0, 100)
     plt.grid()
-
-    plt.tight_layout()
-
-
-def plot_windows(
-    targets: np.array,  # Target ids
-    vtws: np.array,  # Visibility time windows (start, end)
-    durations: np.array,  # Task durations
-    #
-    task_otws: np.array,  # Opportunity time windows (start, end)
-    task_idxs: np.array,  # Target ids
-    #
-    rewards: np.array = None,  # Rewards
-    selected_tasks: np.array = None,  # Selected tasks
-    plot_labels: bool = True,
-):
-    color = TABLEAU_COLORS[0]
-    if selected_tasks is None:
-        selected_targets = None
-    else:
-        assert selected_tasks.dtype == bool
-        assert task_idxs.dtype == int
-        selected_targets = task_idxs[selected_tasks]
-
-    # Sort tasks by start time
-    indices = sorted(range(len(vtws)), key=lambda i: vtws[i][0])
-
-    # Add tasks to the minimum number of rows for plotting
-    rows = []
-    for idx in indices:
-        for row in rows:
-            if vtws[idx][0] > vtws[row[-1]][1]:
-                row.append(idx)
-                break
-        else:
-            rows.append([idx])
-
-    # Plot tasks
-    for r, row in enumerate(rows):
-
-        def add_text(ts, te, txt):
-            if plot_labels:
-                plt.text((ts + te) / 2, r + 0.15, txt, ha="center", va="center")
-
-        def add_rect(ts, te):
-            eps = 0
-            plt.fill_between(
-                [ts + eps, te - eps], r - 0.3, r + 0.3, alpha=0.5, color=color
-            )
-
-        def add_empty_rect(ts, te):
-            plt.fill_between(
-                [ts, te],
-                r - 0.3,
-                r + 0.3,
-                alpha=0.15,
-                hatch="/",
-                edgecolor="black",
-                color=color,
-            )
-
-        for idx in row:
-            # Opportunity window
-            vtw_s = vtws[idx][0]
-            vtw_e = vtws[idx][1]
-            dur = durations[idx]
-
-            if True:
-                # Plot lines for visibility time windows
-                plt.hlines(r, vtw_s, vtw_e, colors="k")
-                plt.vlines(vtw_s, r - 0.15, r + 0.15, colors="k")
-                plt.vlines(vtw_e, r - 0.15, r + 0.15, colors="k")
-
-                # Plot lines for opportunity time windows
-                otws = task_otws[task_idxs == idx]
-                if len(otws) > 0:
-                    for otw in otws:
-                        plt.vlines(otw[0], r - 0.05, r + 0.05, colors="k")
-
-                # Plot rectangles for tasks
-                if selected_targets is None:
-                    # Start times not resolved
-                    ts = (vtw_s + vtw_e - dur) / 2
-                    te = (vtw_s + vtw_e + dur) / 2
-                    add_rect(ts, te)
-                    add_text(vtw_s, vtw_e, str(targets[idx]))
-                else:
-
-                    if idx not in selected_targets:
-                        # Start times resolved and task is not selected
-                        ts = (vtw_s + vtw_e - dur) / 2
-                        te = (vtw_s + vtw_e + dur) / 2
-                        add_empty_rect(ts, te)
-                        add_text(vtw_s, vtw_e, str(targets[idx]))
-                    else:
-                        # Start times resolved and task is selected
-                        for ts, te in task_otws[selected_tasks & (task_idxs == idx)]:
-                            add_rect(ts, te)
-                            add_text(ts, te, str(targets[idx]))
-
-            else:
-                # Sun pointing or downlink opportunity
-                if start_end_times is None:
-                    add_rect(vtw_start, t_end)
-                    add_text(vtw_start, t_end, str(opp.id))
-                elif opp.id in start_end_times:
-                    for ts, te in zip(*start_end_times[opp.id]):
-                        add_rect(ts, te)
-                        add_text(ts, te, str(opp.id))
-                        add_text(ts, te, str(opp.id))
-
-    plt.xlabel("Time")
-    plt.xlim(0, np.max(vtws[:, 1]))
-    # plt.gca().spines[["left", "top", "right"]].set_visible(False)
-    # if start_end_times is not None:
-    #     legend = [
-    #         plt.Line2D(
-    #             [0], [0], color=COLORS[tt], lw=5, label=MODE_NAMES[tt], alpha=0.5
-    #         )
-    #         for tt in TaskType
-    #         if tt not in [TaskType.START]
-    #     ]
-    #     # Legend with 3 columns at the bottom outside the plot
-    #     plt.legend(
-    #         handles=legend,
-    #         loc="upper center",
-    #         bbox_to_anchor=(0.5, 1.3),
-    #         ncol=3,
-    #     )
-    plt.yticks([])
-    plt.ylabel("Tasks")

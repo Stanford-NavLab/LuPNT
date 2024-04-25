@@ -365,7 +365,7 @@ def get_problem(
             ts=0,
             te=tf / pnt.SECS_PER_HOUR,
             T=tf / pnt.SECS_PER_HOUR,
-            p=0,
+            priority=0,
         ),  # Dummy request
     )
     resquest_id = 0

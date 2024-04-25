@@ -35,10 +35,10 @@ def get_metrics(
     gamma: float,
 ) -> dict:
     # Metrics
-    percentages = [round(x, 2) for x in problem.percentage_completed(policy)]
-    percentage = round(problem.duration_fullfilled(policy), 2)
-    reward = round(problem.total_reward(policy, gamma=gamma), 2)
-    time = round(time, 2)
+    percentages = [round(x, 4) for x in problem.percentage_completed(policy)]
+    percentage = round(problem.duration_fullfilled(policy), 4)
+    reward = round(problem.total_reward(policy, gamma=gamma), 4)
+    time = round(time, 5)
     return {"total": percentage, "user": percentages, "reward": reward, "time": time}
 
 
@@ -56,11 +56,50 @@ def solve(
 ) -> dict:
     np.random.seed(seed)
     s = problem.initial_state()
-    solver = solver(problem)
+    solver_ = solver(problem)
     policy, time = timed(solver.solve, s, **params)
-    metrics = get_metrics(problem, policy, time, gamma=1)
-    metrics["params"] = params
-    return metrics
+    metric = get_metrics(problem, policy, time, gamma=1)
+    metric["params"] = params
+    return metric
+
+
+def solve_online(
+    params: dict,
+    problem: PntSchedulingProblem,
+    solver: Solver,
+    seed: int,
+    return_all=False,
+) -> dict:
+    np.random.seed(seed)
+    solver = solver(problem)
+
+    old_policy = None
+    problem.set_current_policy(None)
+
+    if return_all:
+        policies, metrics = [], []
+    for ta in problem.get_arrival_times():
+        # Set current time and policy
+        problem.set_current_time(ta)
+        if old_policy is not None:
+            problem.set_current_policy(old_policy)
+
+        # Solve
+        s = problem.initial_state()
+        policy, time = timed(solver.solve, s, **params)
+        policy = policy if old_policy is None else problem.merge_policies(policy)
+        metric = get_metrics(problem, policy, time, gamma=1)
+        metric["params"] = params
+        old_policy = policy
+
+        # Save results
+        if return_all:
+            policies.append(policy)
+            metrics.append(metric)
+
+    if return_all:
+        return metrics, policies
+    return metric, policy
 
 
 def run_parallel(func, it, n_jobs=4, desc="Multiprocessing", progress=True):

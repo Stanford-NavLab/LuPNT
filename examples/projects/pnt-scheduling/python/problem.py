@@ -80,15 +80,16 @@ class State:
     def __repr__(self):
         s = "State("
         s += f"t={np.round(self.t, 2)}, "
-        s += f"d={np.round(self.D, 2)}, "
-        s += f"e={np.round(self.E, 2)}, "
-        s += f"req={list(self.req_times.values())}"
+        s += f"D={np.round(self.D, 2)}, "
+        s += f"E={np.round(self.E, 2)}, "
+        s += f"req={list(req.id if req is not None else None for req in self.req)}"
+        s += f"req_times={list(self.req_times.values())}"
         s += ")"
         return s
 
     def __hash__(self):
         tmp = (self.t, self.req, self.req_times, self.D, self.E)
-        return hash(tuple(x) for x in tmp)
+        return hash(tuple(tuple(x) for x in tmp))
 
 
 @dataclass(frozen=True, repr=False)
@@ -506,13 +507,13 @@ class PntSchedulingProblem:
     def set_current_time(self, current_time):
         self.current_time = current_time
 
-    def set_current_policy(
-        self, policy: list[tuple[State, Action]], constr: bool = False
-    ):
-        self.current_policy = deepcopy(policy)
+    def set_contrained(self, constr):
         self.constr = constr
 
-        if not constr:
+    def set_current_policy(self, policy: list[tuple[State, Action]]):
+        self.current_policy = deepcopy(policy)
+
+        if not self.constr:
             return
 
         # Create new windows for the constr problem
@@ -607,7 +608,7 @@ class PntSchedulingProblem:
         policy: list[tuple[State, Action]],
     ) -> list[tuple[State, Action]]:
         current_time = self.current_time
-        contrained = self.constr
+        constr = self.constr
         index = -1 if self.constr else self.get_current_policy_index()
 
         self.current_time = 0
@@ -625,7 +626,7 @@ class PntSchedulingProblem:
         new_policy.append((s, None))
 
         self.current_time = current_time
-        self.constr = contrained
+        self.constr = constr
 
         return new_policy
 
