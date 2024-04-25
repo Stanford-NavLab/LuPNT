@@ -93,7 +93,8 @@ class DiscreteTimeIpSolver(Solver):
         energy_gen = np.zeros((N_sat, N_t))
         data_gen = np.zeros((N_sat, N_t))
         for sat_id in range(N_sat):
-            for t in range(N_t):
+            ti = int(np.ceil(s.t[sat_id] / dt))
+            for t in range(ti, N_t):
                 args = (sat_id, t * dt, (t + 1) * dt)
                 energy_gen[sat_id, t] = self.problem.energy_gen_func(*args)
                 data_gen[sat_id, t] = self.problem.data_gen_func(*args)
