@@ -16,7 +16,7 @@ import logging
 
 from functools import partial
 
-cache_path = "cache/"
+cache_path = "cache/quals/"
 
 solvers = {
     "RB": RuleBasedSolver,
@@ -109,17 +109,28 @@ def get_problem(date, duration_factor) -> PntSchedulingProblem:
     # *******************************************************************************
     orbital_elements = pathfinder_data.orbital_elements.copy()
     users = pathfinder_data.users.copy()
-    N_sat = 2
+    N_sat = 6
+    N_planes = 3
+    N_sat_plane = N_sat // N_planes
+
+    # Classical orbital elements (a, e, i, W, w, M) [km, -, rad, rad, rad, rad]
+    sma = 6142.4  # [km] Semi-major axis
+    ecc = [0.001, 0.6, 0.6]  # [-] Eccentricity
+    inc = np.deg2rad([0.001, 57.7, 57.7])  # [rad] Inclination
+    raan = np.deg2rad([0, -90, 0])  # [rad] Right ascension of the ascending node
+    aop = np.deg2rad([-45, -90, 90])  # [rad] Argument of periapsis
+    ma = np.deg2rad([0, 180])  # [rad] Mean anomaly
 
     # Epoch (TAI)
     epoch_0 = pnt.SpiceInterface.string_to_tai(date)
 
-    # Classical orbital elements (a, e, i, W, w, M) [km, -, rad, rad, rad, rad]
     coe_OP = np.zeros((N_sat, 6))
-    for i_sat in range(N_sat):
-        coe_OP[i_sat, :] = orbital_elements
-        coe_OP[i_sat, 2:] = np.deg2rad(coe_OP[i_sat, 2:])
-    coe_OP[i_sat, 5] += pnt.wrapToPi(coe_OP[i_sat, 5] + np.pi)
+    for i_pl in range(N_planes):
+        for i_spl in range(N_sat_plane):
+            coe_OP = np.array(
+                [sma, ecc[i_pl], inc[i_pl], raan[i_pl], aop[i_pl], ma[i_spl]]
+            )
+
     rv0_moon_sat_OP = pnt.classical_to_cartesian(coe_OP, pnt.MU_MOON)
     rv0_moon_sat_mi = pnt.CoordConverter.convert(
         epoch_0, rv0_moon_sat_OP, pnt.OP, pnt.MI

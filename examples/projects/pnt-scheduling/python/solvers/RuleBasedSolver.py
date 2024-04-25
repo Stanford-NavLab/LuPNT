@@ -8,7 +8,7 @@ class RuleBasedSolver(Solver):
     def __init__(self, problem: PntSchedulingProblem):
         self.problem = problem
 
-    def solve(self, s: State) -> list[tuple[State, Action]]:
+    def solve(self, s: State, N_max, dur_min) -> list[tuple[State, Action]]:
         """
         Solve the problem using a rule-based approach
 
@@ -20,17 +20,11 @@ class RuleBasedSolver(Solver):
         """
 
         def sorting_key(a: Action) -> float:
-            return (
-                a.start * self.problem.t_final + a.window.request_id
-                if a.window.request_id >= 0
-                else np.inf
-            )
-
-        N_max = 2
-        d_min = 1
+            return a.ts * self.problem.t_final + a.req.te if a.req else np.inf
 
         actions = sorted(
-            self.problem.available_actions(s, N_max=N_max, d_min=d_min), key=sorting_key
+            self.problem.available_actions(s, N_max=N_max, dur_min=dur_min),
+            key=sorting_key,
         )
         policy = []
         while actions:
@@ -38,8 +32,9 @@ class RuleBasedSolver(Solver):
             policy.append((s, a))
             s = self.problem.transition_function(s, a)
             actions = sorted(
-                self.problem.available_actions(s, N_max=N_max, d_min=d_min),
+                self.problem.available_actions(s, N_max=N_max, dur_min=dur_min),
                 key=sorting_key,
             )
         policy.append((s, None))
+        policy = self.problem.clean_policy(policy)
         return policy

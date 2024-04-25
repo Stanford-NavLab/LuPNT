@@ -87,7 +87,7 @@ class State:
         s += f"t={np.round(self.t, 2)}, "
         s += f"D={np.round(self.D, 2)}, "
         s += f"E={np.round(self.E, 2)}, "
-        s += f"req={list(req.id if req is not None else None for req in self.req)}, "
+        s += f"req={list(req.id if req else None for req in self.req)}, "
         s += f"req_times={list(self.req_times.values())}"
         s += ")"
         return s
@@ -107,8 +107,8 @@ class Action:
     def __repr__(self):
         a = "Action("
         a += f"sat={self.sat_id}, "
-        a += f"usr={self.req.usr_id if self.req is not None else None}, "
-        a += f"req={self.req.id if self.req is not None else None}, "
+        a += f"usr={self.req.usr_id if self.req else None}, "
+        a += f"req={self.req.id if self.req else None}, "
         a += f"ts={self.ts:.2f}, "
         a += f"dur={self.dur:.2f}"
         a += ")"
@@ -199,7 +199,7 @@ class PntSchedulingProblem:
         ti = s.t[sat_id]
         Ei = s.E[sat_id]
         Di = s.D[sat_id]
-        req_id = s.req[sat_id].id if s.req[sat_id] is not None else None
+        req_id = s.req[sat_id].id if s.req[sat_id] else None
 
         requests = [
             req
@@ -222,17 +222,13 @@ class PntSchedulingProblem:
             dur = min(dur_min, req.dur - s.req_times[req.id])
 
             # Transition time
-            t_trans = (
-                self.transition_times[sat_id, req_id, req.id]
-                if req_id is not None
-                else ti
-            )
+            t_trans = self.transition_times[sat_id, req_id, req.id] if req_id else ti
 
             # User available
             sat_id_other = [
                 sat_id_
                 for sat_id_ in range(self.N_sat)
-                if s.req[sat_id_] is not None and s.req[sat_id_].usr_id == req.usr_id
+                if s.req[sat_id_] and s.req[sat_id_].usr_id == req.usr_id
             ]
             t_user = s.t[sat_id_other[0]] if sat_id_other else ti
 
@@ -356,7 +352,7 @@ class PntSchedulingProblem:
         time = a.ts + a.dur
         sat_id = a.sat_id
 
-        if a.req is not None:
+        if a.req:
             usr_id = a.req.usr_id
             req_id = a.req.id
             payload_on = usr_id >= 0
@@ -381,6 +377,14 @@ class PntSchedulingProblem:
             + self.energy_gen_func(sat_id, s.t[sat_id], time),
         )
 
+        if data > self.max_data + ABS_TOL:
+            tmp = max(
+                self.min_data,
+                s.D[sat_id]
+                + self.payload_data_gen * duration * payload_on
+                + self.data_gen_func(sat_id, s.t[sat_id], time),
+            )
+
         assert s.t[sat_id] <= a.ts + ABS_TOL
         assert data >= self.min_data - ABS_TOL
         assert data <= self.max_data + ABS_TOL
@@ -390,7 +394,7 @@ class PntSchedulingProblem:
         sp = deepcopy(s)
         sp.t[sat_id] = time
         sp.req[sat_id] = a.req
-        if a.req is not None:
+        if a.req:
             sp.req_times[req_id] = s.req_times[req_id] + duration
             assert sp.req_times[req_id] <= a.req.dur
         sp.D[sat_id] = data
@@ -431,9 +435,7 @@ class PntSchedulingProblem:
             return 0
 
         sat_id = a.sat_id
-        same_req = int(
-            a.req is not None and s.req[sat_id] == a.req and s.t[sat_id] == a.ts
-        )
+        same_req = int(a.req and s.req[sat_id] == a.req and s.t[sat_id] == a.ts)
 
         payload_on = a.req.usr_id >= 0
         if payload_on:
@@ -543,16 +545,16 @@ class PntSchedulingProblem:
             for win in self.service_windows
         }
 
-        win_list = list[ServiceWindow]()
-        for win in self.service_windows:
-            if len(actions_by_win[win.id]) == 0:
-                # No conflict
-                win_list.append(deepcopy(win))
-                continue
+        win_list = deepcopy(self.service_windows)
+        actions = [a for _, a in self.current_policy if a]
+        for a in actions:
+            new_win_list = []
+            for win in win_list:
+                if a.ts + a.dur <= win.ts or a.ts >= win.te:
+                    # No intersection
+                    new_win_list.append(win)
 
-            actions = actions_by_win[win.id]
-            for a in actions:
-                if a.ts <= win.ts and a.ts + a.dur >= win.te:
+                elif a.ts <= win.ts and a.ts + a.dur >= win.te:
                     # Fully covered
                     pass
 
@@ -572,6 +574,10 @@ class PntSchedulingProblem:
                     # Right part
                     win_ = ServiceWindow(win.sat_id, win.usr_id, win.ts, a.ts)
                     win_list.append(win_)
+                else:
+                    raise ValueError("Invalid case")
+
+            win_list = new_win_list
 
         self.constr_windows = win_list
         self.constr_windows_dict = {
@@ -588,11 +594,7 @@ class PntSchedulingProblem:
         required_resources = dict[SatId, list[tuple[Time, Energy, Data]]]()
         for sat_id in range(self.N_sat):
             required_resources[sat_id] = list[tuple[Time, Energy, Data]]()
-            actions = [
-                a
-                for s, a in policy[::-1]
-                if a is not None and a.req is not None and a.sat_id == sat_id
-            ]
+            actions = [a for s, a in policy[::-1] if a and a.req and a.sat_id == sat_id]
             if len(actions) == 0:
                 continue
             d = self.max_data
@@ -645,7 +647,7 @@ class PntSchedulingProblem:
         new_policy = []
         s = self.current_policy[0][0] if self.current_policy else policy[0][0]
         for a in actions:
-            if a.req is not None:
+            if a.req:
                 new_policy.append((s, a))
                 s = self.transition_function(s, a)
         new_policy.append((s, None))
@@ -755,7 +757,7 @@ class PntSchedulingProblem:
         new_policy = []
         s = policy[0][0]
         for a in all_actions:
-            if a.req is not None:
+            if a.req:
                 new_policy.append((s, a))
                 s = self.transition_function(s, a)
         new_policy.append((s, None))

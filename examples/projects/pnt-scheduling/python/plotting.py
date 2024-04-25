@@ -24,7 +24,7 @@ def plot_satellites_users(
     user_type: np.ndarray,
 ) -> None:
     # Satellite orbit in MI frame
-    fig = pnt.plots.Plot3D(figsize=(5, 5), elev=15, azim=-50)
+    fig = pnt.plots.Plot3D(figsize=(5, 5), elev=31, azim=-128)
     fig.plot_surface(pnt.MOON, scale=3)
     rv_surface = rv_moon_user[user_type == "surface", :, :]
     rv_orbital = rv_moon_user[user_type == "orbital", :, :]
@@ -62,12 +62,12 @@ def plot_satellites_users(
     if len(rv_moon_sat.shape) == 2:
         # Single satellite
         fig.plot(rv_moon_sat[:, :3], color="black", mask=False, lw=1)
-        fig.scatter(rv_moon_sat[0, :3], color="black", mask=False, depthshade=False)
+        fig.scatter(rv_moon_sat[0, :3], color="black", mask=True, depthshade=False)
     else:
         for sat_id in range(rv_moon_sat.shape[0]):
-            fig.plot(rv_moon_sat[sat_id, :, :3], color="black", mask=False, lw=1)
+            fig.plot(rv_moon_sat[sat_id, :, :3], color="black", mask=True, lw=1)
         fig.scatter(
-            rv_moon_sat[:, 0, :3], color="black", mask=False, s=25, depthshade=False
+            rv_moon_sat[:, 0, :3], color="black", mask=True, s=25, depthshade=False
         )
 
     # Earth and Sun positions
@@ -88,7 +88,8 @@ def plot_satellites_users(
     fig.set_labels("X [$10^3$ km]", "Y [$10^3$ km]", "Z [$10^3$ km]")
     fig.set_pane_color([1, 1, 1])
     fig.set_labelpad(0, 0, 0)
-    fig.set_lims([-5e3, 5e3], [-5e3, 5e3], [-10e3, 5e3])
+    r, h = 7e3, 10e3
+    fig.set_lims([-r, r], [-r, r], [-h, h])
     plt.legend(facecolor="white", framealpha=1, loc="upper right")
 
 
@@ -189,17 +190,17 @@ def plot_requests_service_windows(
 
     # Plot service windows
     dx = 0.01
-    dy = 0.04
+    dy = 0.07
     N_sat = len(set([w.sat_id for w in service_windows]))
     for win in service_windows:
-        y = win.usr_id + START_IDX
+        y = win.usr_id + START_IDX + 0.5
         y += -dy / 2 * N_sat + dy * N_sat * win.sat_id / (N_sat - 1)
-        plt.plot([win.ts, win.te], [y, y], COLORS[win.sat_id], lw=3)
+        plt.plot([win.ts, win.te], [y, y], COLORS[win.sat_id], lw=2, alpha=0.5)
 
     if policy is None:
         # Plot average duration per window
         for win in service_windows:
-            y = win.usr_id + START_IDX
+            y = win.usr_id + START_IDX + 0.5
             # y += -0.15 + 0.3 * w.sat_id / (N_satellites - 1)
             d = (
                 request_dict[win.usr_id].dur
@@ -216,7 +217,7 @@ def plot_requests_service_windows(
         for s, a in policy[:-1]:
             if a.req is None:
                 continue
-            y = a.req.usr_id + START_IDX
+            y = a.req.usr_id + START_IDX + 0.5
 
             kwargs = dict(alpha=0.5, color=COLORS[a.sat_id], edgecolor=None)
             if old_policy is not None and a in old_actions:
@@ -229,16 +230,26 @@ def plot_requests_service_windows(
     # Axis settings
     plt.yticks(
         np.arange(
-            min(request_dict.keys()) + START_IDX,
-            max(request_dict.keys()) + 0.5 + START_IDX,
+            min(req.usr_id for req in requests) + START_IDX,
+            max(req.usr_id for req in requests) + 1 + START_IDX,
         )
     )
+    # ax.tick_params(labelleft=False)
+
     plt.xlim(0, np.max([w.te for w in service_windows]))
     # plt.xlabel("Time")
     plt.ylabel("User")
-    ylims = [-0.5 + START_IDX, max(request_dict.keys()) - 0.5 + START_IDX]
+    ylims = [
+        min(req.usr_id for req in requests) + START_IDX,
+        max(req.usr_id for req in requests) + 1 + START_IDX,
+    ]
     plt.ylim(ylims)
     plt.grid()
+
+    # Set text instead of ticks
+    # for i in range(ylims[0], ylims[1]):
+    #     plt.text(-1, i + 0.5, f"{i}", ha="center", va="center")
+    # plt.gca().yaxis.labelpad = 20
 
     # Legend
     plt.plot([], [], color="black", lw=3, label=f"Window")
@@ -255,9 +266,9 @@ def plot_requests_service_windows(
         framealpha=1,
         loc="upper center",
         bbox_to_anchor=(0.5, 1.5),
-        ncol=3,
+        ncol=5,
         frameon=False,
-        handlelength=2,
+        handlelength=1.5,
     )
 
 
