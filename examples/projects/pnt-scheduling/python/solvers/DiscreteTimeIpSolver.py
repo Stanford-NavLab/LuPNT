@@ -50,7 +50,7 @@ class DiscreteTimeIpSolver(Solver):
         # Service windows
         win_list = (
             self.problem.constr_windows
-            if self.problem.constr
+            if (self.problem.constr and self.problem.current_policy)
             else self.problem.service_windows
         )
         for sat_id in range(N_sat):

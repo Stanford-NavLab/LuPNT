@@ -3,12 +3,13 @@ import logging
 from dataclasses import dataclass, field
 from copy import deepcopy
 from typing import ClassVar
-
 from dataclasses import dataclass
 
 # *************************************************************************************************
 # Data types
 # *************************************************************************************************
+
+ABS_TOL = 1e-6
 
 
 def reset_id_counters():
@@ -25,6 +26,10 @@ class SatId(int):
 
 
 class ReqId(int):
+    pass
+
+
+class WinId(int):
     pass
 
 
@@ -61,9 +66,9 @@ class ServiceWindow:
     usr_id: int  # User id
     ts: float  # Start time
     te: float  # End time
-    id: int = field(default_factory=lambda: ServiceWindow._next_id)  # Window id
+    id: WinId = field(default_factory=lambda: ServiceWindow._next_id)  # Window id
 
-    _next_id: ClassVar[int] = 0
+    _next_id: ClassVar[WinId] = 0
 
     def __post_init__(self):
         ServiceWindow._next_id += 1
@@ -82,7 +87,7 @@ class State:
         s += f"t={np.round(self.t, 2)}, "
         s += f"D={np.round(self.D, 2)}, "
         s += f"E={np.round(self.E, 2)}, "
-        s += f"req={list(req.id if req is not None else None for req in self.req)}"
+        s += f"req={list(req.id if req is not None else None for req in self.req)}, "
         s += f"req_times={list(self.req_times.values())}"
         s += ")"
         return s
@@ -105,7 +110,7 @@ class Action:
         a += f"usr={self.req.usr_id if self.req is not None else None}, "
         a += f"req={self.req.id if self.req is not None else None}, "
         a += f"ts={self.ts:.2f}, "
-        a += f"T={self.dur:.2f}"
+        a += f"dur={self.dur:.2f}"
         a += ")"
         return a
 
@@ -186,8 +191,8 @@ class PntSchedulingProblem:
             list[Action]: List of available actions
         """
 
-        # Satellite to select an action
-        sat_id = np.argmin(s.t)
+        # Satellite to select an action (min ti, and min id)
+        sat_id = np.where(s.t == np.min(s.t))[0][0]
         if s.t[sat_id] >= self.t_final:
             return []
 
@@ -212,6 +217,7 @@ class PntSchedulingProblem:
                 req=None,
             )
         ]
+
         for req in requests:
             dur = min(dur_min, req.dur - s.req_times[req.id])
 
@@ -236,7 +242,7 @@ class PntSchedulingProblem:
             # Windows
             win_dict = (
                 self.service_windows_dict[req.id]
-                if not self.constr
+                if not (self.constr and self.current_policy)
                 else self.constr_windows_dict[req.id]
             )
             win_list = [
@@ -266,6 +272,10 @@ class PntSchedulingProblem:
                     # Not enough resources
                     continue
 
+                # Subtract the time of the action
+                t_E -= dur_win
+                t_D -= dur_win
+
                 ts = max(t_win, t_E, t_D, win.ts)
                 Es = Ei + self.energy_gen_func(sat_id, ti, ts)
                 Ds = Di + self.data_gen_func(sat_id, ti, ts)
@@ -275,7 +285,7 @@ class PntSchedulingProblem:
                     continue
 
                 # Check required resources after the action
-                if self.constr:
+                if self.constr and self.current_policy:
                     constraints = [
                         const
                         for const in self.required_resources[sat_id]
@@ -284,9 +294,8 @@ class PntSchedulingProblem:
                     if constraints:
                         tc, Ec, Dc = constraints[0]
                         if (
-                            Es + Ea + self.data_gen_func(sat_id, ts + dur_win, tc) < Ec
-                            or Ds + Da + self.energy_gen_func(sat_id, ts + dur_win, tc)
-                            > Dc
+                            Es + Ea + self.energy_gen_func(sat_id, ts, tc) < Ec
+                            or Ds + Da + self.data_gen_func(sat_id, ts, tc) > Dc
                         ):
                             continue
 
@@ -296,6 +305,8 @@ class PntSchedulingProblem:
 
             actions.extend(actions_req)
 
+        actions.sort(key=lambda a: a.ts)
+        actions = actions[:N_max]
         return actions
 
     def initial_state(self) -> State:
@@ -323,7 +334,7 @@ class PntSchedulingProblem:
             if s.t[sat_id] < self.current_time:
                 s.t[sat_id] = self.current_time
 
-            if self.constr:
+            if self.constr and self.current_policy:
                 # Account for the current schedule
                 sf = self.current_policy[-1][0]
                 for req_id in s.req_times:
@@ -370,12 +381,11 @@ class PntSchedulingProblem:
             + self.energy_gen_func(sat_id, s.t[sat_id], time),
         )
 
-        eps = 1e-6
-        assert s.t[sat_id] <= a.ts + eps
-        assert data >= self.min_data - eps
-        assert data <= self.max_data + eps
-        assert energy <= self.max_energy + eps
-        assert energy >= self.min_energy - eps
+        assert s.t[sat_id] <= a.ts + ABS_TOL
+        assert data >= self.min_data - ABS_TOL
+        assert data <= self.max_data + ABS_TOL
+        assert energy <= self.max_energy + ABS_TOL
+        assert energy >= self.min_energy - ABS_TOL
 
         sp = deepcopy(s)
         sp.t[sat_id] = time
@@ -454,7 +464,7 @@ class PntSchedulingProblem:
         return i_s, i_e
 
     def intersection_with_current_actions(self, sat_id, ts, te):
-        if not self.constr:
+        if not (self.constr and self.current_policy):
             return 0
         starts = np.maximum(ts, self.action_starts)
         ends = np.minimum(te, self.action_ends)
@@ -478,14 +488,14 @@ class PntSchedulingProblem:
         i_s = int(ts / self.t_step)
         for i_e in range(i_s, len(self.energy_gen[sat_id])):
             te = i_e * self.t_step
-            if self.energy_gen_func(sat_id, ts, te) >= energy:
+            if self.energy_gen_func(sat_id, ts, te) >= energy - ABS_TOL:
                 return te
 
     def time_for_data(self, sat_id, ts, data):
         i_s = int(ts / self.t_step)
         for i_e in range(i_s, len(self.data_gen[sat_id])):
             te = i_e * self.t_step
-            if self.data_gen_func(sat_id, ts, te) <= data:
+            if self.data_gen_func(sat_id, ts, te) <= data + ABS_TOL:
                 return te
 
     # *********************************************************************************************
@@ -514,7 +524,13 @@ class PntSchedulingProblem:
     def set_current_policy(self, policy: list[tuple[State, Action]]):
         self.current_policy = deepcopy(policy)
 
-        if not self.constr:
+        if not (self.constr and self.current_policy):
+            self.constr_windows = None
+            self.constr_windows_dict = None
+            self.action_starts = None
+            self.action_ends = None
+            self.action_sats_ids = None
+            self.required_resources = None
             return
 
         # Create new windows for the constr problem
@@ -522,17 +538,19 @@ class PntSchedulingProblem:
             win.id: [
                 a
                 for _, a in self.current_policy
-                if a is not None
-                and a.req is not None  # Not last action
-                and a.req.usr_id == win.usr_id  # Right user
-                and (a.ts + a.dur > win.ts and a.ts < win.te)  # Overlap
+                if a and a.req and (a.ts + a.dur > win.ts and a.ts < win.te)
             ]
             for win in self.service_windows
         }
 
         win_list = list[ServiceWindow]()
-        for win_id, actions in actions_by_win.items():
-            win = self.service_windows[win_id]
+        for win in self.service_windows:
+            if len(actions_by_win[win.id]) == 0:
+                # No conflict
+                win_list.append(deepcopy(win))
+                continue
+
+            actions = actions_by_win[win.id]
             for a in actions:
                 if a.ts <= win.ts and a.ts + a.dur >= win.te:
                     # Fully covered
@@ -610,16 +628,22 @@ class PntSchedulingProblem:
     ) -> list[tuple[State, Action]]:
         current_time = self.current_time
         constr = self.constr
-        index = -1 if self.constr else self.get_current_policy_index()
+        index = (
+            -1
+            if (self.constr and self.current_policy)
+            else self.get_current_policy_index()
+        )
 
         self.current_time = 0
         self.constr = False
 
-        actions = [a for _, a in self.current_policy[:index] if a is not None]
-        actions.extend([a for _, a in policy if a is not None])
+        actions = [
+            a for _, a in self.current_policy[:index] if a and self.current_policy
+        ]
+        actions.extend([a for _, a in policy if a])
         actions.sort(key=lambda a: a.ts)
         new_policy = []
-        s = self.current_policy[0][0]
+        s = self.current_policy[0][0] if self.current_policy else policy[0][0]
         for a in actions:
             if a.req is not None:
                 new_policy.append((s, a))

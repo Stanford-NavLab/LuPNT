@@ -79,6 +79,7 @@ def solve_online(
     if return_all:
         policies, metrics = [], []
     for ta in problem.get_arrival_times():
+
         # Set current time and policy
         problem.set_current_time(ta)
         if old_policy is not None:

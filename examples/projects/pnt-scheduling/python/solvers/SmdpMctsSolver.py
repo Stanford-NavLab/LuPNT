@@ -21,7 +21,7 @@ class SmdpMctsSolver(Solver):
         self.c = None
         self.gamma = None
         self.N_max = None
-        self.d_min = None
+        self.dur_min = None
 
     def get_N(self, s: State, a: Action) -> int:
         if s not in self.N or a not in self.N[s]:
@@ -34,7 +34,7 @@ class SmdpMctsSolver(Solver):
         return self.Q[s][a]
 
     def rollout(self, s: State, d: int) -> float:
-        actions = self.problem.available_actions(s, self.N_max, self.d_min)
+        actions = self.problem.available_actions(s, self.N_max, self.dur_min)
 
         if d == 0 or not actions:
             return 0
@@ -58,7 +58,7 @@ class SmdpMctsSolver(Solver):
         return self.c * np.sqrt(np.log(N_s) / N_sa) if N_sa > 0 else np.inf
 
     def simulate(self, s: State, d: int) -> float:
-        actions = self.problem.available_actions(s, self.N_max, self.d_min)
+        actions = self.problem.available_actions(s, self.N_max, self.dur_min)
 
         if d == 0 or not actions:
             return 0
@@ -91,7 +91,7 @@ class SmdpMctsSolver(Solver):
         n: int,
         c: float,
         N_max: int,
-        d_min: float,
+        dur_min: float,
         progress: bool = False,
     ) -> list[tuple[State, Action]]:
         """
@@ -104,7 +104,7 @@ class SmdpMctsSolver(Solver):
             n (int): Number of simulations
             c (float): Exploration constant
             N_max (int): Maximum number of actions
-            d_min (float): Minimum action duration
+            dur_min (float): Minimum action duration
             progress (bool): Show progress bar
 
         Returns:
@@ -114,7 +114,7 @@ class SmdpMctsSolver(Solver):
         self.c = c
         self.gamma = gamma
         self.N_max = N_max
-        self.d_min = d_min
+        self.dur_min = dur_min
 
         for _ in range(n):
             self.simulate(s, d)
@@ -126,7 +126,7 @@ class SmdpMctsSolver(Solver):
             bar = tqdm(total=int(tf - t), desc="Solving MCTS (progress in hours)")
 
         policy = []
-        actions = self.problem.available_actions(s, self.N_max, self.d_min)
+        actions = self.problem.available_actions(s, self.N_max, self.dur_min)
         while actions:
             a = max(actions, key=lambda a: self.get_Q(s, a))
             policy.append((s, a))
@@ -134,7 +134,7 @@ class SmdpMctsSolver(Solver):
 
             for _ in range(n):
                 self.simulate(s, d)
-            actions = self.problem.available_actions(s, self.N_max, self.d_min)
+            actions = self.problem.available_actions(s, self.N_max, self.dur_min)
 
             if progress:
                 # Update progress bar

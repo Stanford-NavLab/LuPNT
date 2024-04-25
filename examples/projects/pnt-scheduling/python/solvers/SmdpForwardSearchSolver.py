@@ -20,11 +20,11 @@ class SmdpForwardSearchSolver(Solver):
 
         self.gamma = None
         self.N_max = None
-        self.d_min = None
+        self.dur_min = None
         self.tree = nx.DiGraph() if keep_tree else None
 
     def select_action(self, s: State, d: int) -> tuple[ServiceWindow, float]:
-        actions = self.problem.available_actions(s, self.N_max, self.d_min)
+        actions = self.problem.available_actions(s, self.N_max, self.dur_min)
         if d == 0 or not actions:
             return None, 0
         a_star, v_star = None, -np.inf
@@ -57,7 +57,7 @@ class SmdpForwardSearchSolver(Solver):
         d: int,
         gamma: float,
         N_max: int,
-        d_min: float,
+        dur_min: float,
         progress: bool = False,
     ) -> list[tuple[State, Action]]:
         """
@@ -68,7 +68,7 @@ class SmdpForwardSearchSolver(Solver):
             d (int): Depth of the search
             gamma (float): Discount factor
             N_max (int): Maximum number of actions
-            d_min (float): Minimum action duration
+            dur_min (float): Minimum action duration
             progress (bool): Show progress bar
 
         Returns:
@@ -77,7 +77,7 @@ class SmdpForwardSearchSolver(Solver):
 
         self.gamma = gamma
         self.N_max = N_max
-        self.d_min = d_min
+        self.dur_min = dur_min
 
         policy = []
         a, _ = self.select_action(s, d)
