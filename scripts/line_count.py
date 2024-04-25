@@ -1,75 +1,65 @@
 import os
-
-
-def count_files_lines_in_dir(directory, extensions):
-    """
-    Recursively counts the files and lines in files with specified extensions within the given directory.
-
-    Args:
-    directory (str): The path to the directory to search.
-    extensions (set): A set of file extensions to include in the count.
-
-    Returns:
-    int, int: The total number of lines and files in the directory.
-    """
-    total_lines = 0
-    total_files = 0
-    subdirectory_counts = {}
-
-    # Walk through all subdirectories and files
-    for root, dirs, files in os.walk(directory):
-        # Count lines and files in the current directory
-        dir_lines = 0
-        dir_files = 0
-        for file in files:
-            if any(file.endswith(ext) for ext in extensions):
-                file_path = os.path.join(root, file)
-                with open(file_path, "r", encoding="utf-8") as f:
-                    line_count = sum(1 for line in f)
-                    dir_lines += line_count
-                dir_files += 1
-
-        # Accumulate line and file counts from subdirectories
-        if root != directory:
-            parent_dir = os.path.dirname(root)
-            subdirectory_counts.setdefault(parent_dir, (0, 0))
-            subdirectory_counts[parent_dir] = (
-                subdirectory_counts[parent_dir][0] + dir_lines,
-                subdirectory_counts[parent_dir][1] + dir_files,
-            )
-
-        if dir_lines > 0 or dir_files > 0:
-            total_lines += dir_lines
-            total_files += dir_files
-            subdirectory_counts[root] = (dir_lines, dir_files)
-
-    return total_lines, total_files, subdirectory_counts
-
-
-def print_directory_counts(directory, counts, prefix=""):
-    """
-    Prints the file and line counts in a hierarchical structure.
-
-    Args:
-    directory (str): The path to the directory.
-    counts (dict): A dictionary with paths as keys and tuples (line counts, file counts) as values.
-    prefix (str): A prefix for indentation to reflect hierarchy.
-    """
-    lines, files = counts[directory]
-    print(f"{prefix}{os.path.basename(directory)}: {files} files, {lines} lines")
-    for root, dirs, files in os.walk(directory):
-        for dir in sorted(dirs):
-            path = os.path.join(root, dir)
-            if path in counts and path != directory:
-                print_directory_counts(path, counts, prefix + "    ")
-
+import nbformat
 
 # Example usage:
-directory_paths = ["python", "lupnt", "examples", "scripts", "test"]
-extensions = {".py", ".pyi", "ipynb", ".txt", ".cc", ".h", ".sh", ".cmake"}
-for directory_path in directory_paths:
-    total_lines, total_files, counts = count_files_lines_in_dir(
-        directory_path, extensions
-    )
-    print_directory_counts(directory_path, counts)
-    print("\n")
+directories = ["python", "lupnt", "examples", "scripts", "test"]
+file_extensions = {".py", ".pyi", ".ipynb", ".txt", ".cc", ".h", ".sh", ".cmake"}
+
+
+def count_files_and_lines(root_directory, depth=0):
+    total_files = 0
+    total_lines = 0
+    items = os.listdir(root_directory)
+
+    # Accumulate files and line counts for current directory
+    for item in items:
+        path = os.path.join(root_directory, item)
+        if os.path.isdir(path):
+            files, lines = count_files_and_lines(path, depth + 1)
+            total_files += files
+            total_lines += lines
+        elif item.endswith(".ipynb") and ".ipynb" in file_extensions:
+            try:
+                with open(path, "r", encoding="utf-8") as file:
+                    nb = nbformat.read(file, as_version=4)
+                    for cell in nb.cells:
+                        if cell.cell_type == "code":
+                            line_count = (
+                                cell.source.count("\n") + 1
+                            )  # Count lines of code
+                            total_lines += line_count
+                    total_files += 1
+            except Exception as e:
+                print(f"Failed to read {path}: {str(e)}")
+        elif any(item.endswith(ext) for ext in file_extensions):
+            try:
+                with open(path, "r") as file:
+                    lines = file.readlines()
+                    line_count = len(lines)
+                    total_lines += line_count
+                    total_files += 1
+            except Exception as e:
+                print(f"Failed to read {path}: {str(e)}")
+
+    # Print the summary for the current directory if it has files
+    if total_files > 0:
+        indent = "    " * depth  # Control the level of indentation
+        print(
+            f"{indent}{os.path.basename(root_directory)}: {total_files} files, {total_lines} lines"
+        )
+
+    return total_files, total_lines
+
+
+if __name__ == "__main__":
+    total_files, total_lines = 0, 0
+    for directory in directories:
+        if os.path.exists(directory):
+            files, lines = count_files_and_lines(directory)
+            total_files += files
+            total_lines += lines
+            print("-" * 50)
+        else:
+            print(f"Directory does not exist: {directory}")
+
+    print(f"Total: {total_files} files, {total_lines} lines")
