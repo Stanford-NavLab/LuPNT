@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20) # C++20...
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # ...is required...
 set(CMAKE_CXX_EXTENSIONS OFF) # ...without compiler extensions like gnu++11
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 add_definitions(-D_USE_MATH_DEFINES)
 set(PYPI_PACKAGE_NAME "pylupnt")
 
