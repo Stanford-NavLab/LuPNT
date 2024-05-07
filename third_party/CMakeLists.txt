@@ -14,8 +14,6 @@ install(DIRECTORY autodiff/autodiff
 # Assert headers are found
 if(NOT autodiff_headers)
     message(FATAL_ERROR "Autodiff headers not found")
-else()
-    message("Autodiff headers found")
 endif()
 
 # cspice ----------------------------------------------------------------------
@@ -42,8 +40,6 @@ install(DIRECTORY cspice/include
 
 if(NOT cspice_headers)
     message(FATAL_ERROR "cspice headers not found")
-else()
-    message("cspice headers found")
 endif()
 
 # Boost -----------------------------------------------------------------------
@@ -63,7 +59,7 @@ else()
 endif()
 
 # Python ----------------------------------------------------------------------
-# set(PYBIND11_FINDPYTHON ON CACHE BOOL "Force pybind11 to use FindPython")
+# set(PYBIND11_FINDPYTHON ON CACHE BOOL "Force pybind11 to use FindPython") 
 add_subdirectory(pybind11)
 
 

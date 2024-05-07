@@ -13,6 +13,7 @@ from problem import (
 from typing import Tuple
 
 COLORS = [k for k in TABLEAU_COLORS.keys()]
+START_IDX = 0
 
 
 def plot_satellites_users(
@@ -23,9 +24,8 @@ def plot_satellites_users(
     user_type: np.ndarray,
 ) -> None:
     # Satellite orbit in MI frame
-    fig = pnt.plots.Plot3D(figsize=(5, 5), elev=15, azim=-50)
+    fig = pnt.plots.Plot3D(figsize=(5, 5), elev=31, azim=-128)
     fig.plot_surface(pnt.MOON, scale=3)
-    fig.label_axis()
     rv_surface = rv_moon_user[user_type == "surface", :, :]
     rv_orbital = rv_moon_user[user_type == "orbital", :, :]
     fig.scatter(
@@ -62,12 +62,12 @@ def plot_satellites_users(
     if len(rv_moon_sat.shape) == 2:
         # Single satellite
         fig.plot(rv_moon_sat[:, :3], color="black", mask=False, lw=1)
-        fig.scatter(rv_moon_sat[0, :3], color="black", mask=False, depthshade=False)
+        fig.scatter(rv_moon_sat[0, :3], color="black", mask=True, depthshade=False)
     else:
-        for i in range(rv_moon_sat.shape[0]):
-            fig.plot(rv_moon_sat[i, :, :3], color="black", mask=False, lw=1)
+        for sat_id in range(rv_moon_sat.shape[0]):
+            fig.plot(rv_moon_sat[sat_id, :, :3], color="black", mask=True, lw=1)
         fig.scatter(
-            rv_moon_sat[:, 0, :3], color="black", mask=False, s=25, depthshade=False
+            rv_moon_sat[:, 0, :3], color="black", mask=True, s=25, depthshade=False
         )
 
     # Earth and Sun positions
@@ -83,26 +83,14 @@ def plot_satellites_users(
     #     *org, *sun_dir, color="tab:orange", arrow_length_ratio=0.1, label="Sun"
     # )
 
-    # Change z-axis label margin
-    fig.ax.xaxis.labelpad = 0
-    fig.ax.yaxis.labelpad = 0
-    fig.ax.zaxis.labelpad = 0
-    fig.ax.tick_params(axis="both", which="major", pad=0)
-
-    fig.ax.set_xlim(-5e3, 5e3)
-    fig.ax.set_ylim(-5e3, 5e3)
-    fig.ax.set_zlim(-10e3, 5e3)
-    fig.ax.set_xticklabels([f"{int(x/1000)}" for x in fig.ax.get_xticks()])
-    fig.ax.set_yticklabels([f"{int(y/1000)}" for y in fig.ax.get_yticks()])
-    fig.ax.set_zticklabels([f"{int(z/1000)}" for z in fig.ax.get_zticks()])
-    fig.ax.set_xlabel("X [$10^3$ km]")
-    fig.ax.set_ylabel("Y [$10^3$ km]")
-    fig.ax.set_zlabel("Z [$10^3$ km]")
-    fig.ax.set_aspect("equal")
-    fig.ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    fig.ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    fig.ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    plt.legend(facecolor="white", framealpha=1)
+    fig.set_tickpad(0)
+    fig.set_tick_multiplier(1e-3)
+    fig.set_labels("X [$10^3$ km]", "Y [$10^3$ km]", "Z [$10^3$ km]")
+    fig.set_pane_color([1, 1, 1])
+    fig.set_labelpad(0, 0, 0)
+    r, h = 7e3, 10e3
+    fig.set_lims([-r, r], [-r, r], [-h, h])
+    plt.legend(facecolor="white", framealpha=1, loc="upper right")
 
 
 def plot_elevation_range(
@@ -184,12 +172,16 @@ def plot_requests_service_windows(
     service_windows: list[ServiceWindow],
     policy: list[tuple[State, Action]] = None,
     ax: plt.Axes = None,
+    current_time: float = 0,
+    old_policy: list[tuple[State, Action]] = None,
 ) -> None:
-    request_dict: dict[int, Request] = {r.id: r for r in requests}
-    window_dict: dict[int, ServiceWindow] = {w.id: w for w in service_windows}
-    total_contact: dict[int, float] = {r.id: 0 for r in requests}
-    for w in service_windows:
-        total_contact[w.request_id] += w.end - w.start
+
+    request_dict: dict[int, Request] = {req.id: req for req in requests}
+    total_contact: dict[int, float] = {req.id: 0 for req in requests}
+    old_actions = [a for s, a in old_policy] if old_policy is not None else None
+
+    for win in service_windows:
+        total_contact[win.usr_id] += win.te - win.ts
 
     if ax is None:
         plt.figure(figsize=(8, 6))
@@ -197,77 +189,87 @@ def plot_requests_service_windows(
         plt.sca(ax)
 
     # Plot service windows
-    N_satellites = len(set([w.satellite_id for w in service_windows]))
-    dy = 0.06
-    for w in service_windows:
-        y = w.request_id + 1
-        y += -dy / 2 * N_satellites + dy * N_satellites * w.satellite_id / (
-            N_satellites - 1
-        )
-        plt.plot(
-            [w.start, w.end],
-            [y, y],
-            COLORS[w.satellite_id],
-            lw=3,
-        )
+    dx = 0.01
+    dy = 0.07
+    N_sat = len(set([w.sat_id for w in service_windows]))
+    for win in service_windows:
+        y = win.usr_id + START_IDX + 0.5
+        y += -dy / 2 * N_sat + dy * N_sat * win.sat_id / (N_sat - 1)
+        plt.plot([win.ts, win.te], [y, y], COLORS[win.sat_id], lw=2, alpha=0.5)
 
     if policy is None:
         # Plot average duration per window
-        for w in service_windows:
-            y = w.request_id + 1
-            # y += -0.15 + 0.3 * w.satellite_id / (N_satellites - 1)
+        for win in service_windows:
+            y = win.usr_id + START_IDX + 0.5
+            # y += -0.15 + 0.3 * w.sat_id / (N_satellites - 1)
             d = (
-                request_dict[w.request_id].duration
-                * (w.end - w.start)
-                / total_contact[w.request_id]
-                / N_satellites
+                request_dict[win.usr_id].dur
+                * (win.te - win.ts)
+                / total_contact[win.usr_id]
             )
-            m = (w.start + w.end) / 2
+            m = (win.ts + win.te) / 2
+            kwargs = dict(alpha=0.5, color=COLORS[win.sat_id])
             plt.fill_between(
-                [m - d / 2, m + d / 2],
-                y - 0.4,
-                y + 0.4,
-                alpha=0.5,
-                color=COLORS[w.satellite_id],
+                [m - d / 2 + dx, m + d / 2 - dx], y - 0.4, y + 0.4, **kwargs
             )
     else:
         # Plot policy
         for s, a in policy[:-1]:
-            y = window_dict[a.window.id].request_id + 1
-            plt.fill_between(
-                [a.start, a.start + a.duration],
-                y - 0.3,
-                y + 0.3,
-                alpha=0.5,
-                color=COLORS[a.satellite_id],
-                edgecolor=None,
-            )
+            if a.req is None:
+                continue
+            y = a.req.usr_id + START_IDX + 0.5
 
+            kwargs = dict(alpha=0.5, color=COLORS[a.sat_id], edgecolor=None)
+            if old_policy is not None and a in old_actions:
+                kwargs["hatch"] = "/"
+            plt.fill_between([a.ts + dx, a.ts + a.dur - dx], y - 0.3, y + 0.3, **kwargs)
+
+            kwargs = dict(ha="center", va="center", color="black")
+            plt.text(a.ts + a.dur / 2, y + 0.15, f"{a.req.id + START_IDX}", **kwargs)
+
+    # Axis settings
+    plt.yticks(
+        np.arange(
+            min(req.usr_id for req in requests) + START_IDX,
+            max(req.usr_id for req in requests) + 1 + START_IDX,
+        )
+    )
+    # ax.tick_params(labelleft=False)
+
+    plt.xlim(0, np.max([w.te for w in service_windows]))
+    # plt.xlabel("Time")
+    plt.ylabel("User")
+    ylims = [
+        min(req.usr_id for req in requests) + START_IDX,
+        max(req.usr_id for req in requests) + 1 + START_IDX,
+    ]
+    plt.ylim(ylims)
+    plt.grid()
+
+    # Set text instead of ticks
+    # for i in range(ylims[0], ylims[1]):
+    #     plt.text(-1, i + 0.5, f"{i}", ha="center", va="center")
+    # plt.gca().yaxis.labelpad = 20
+
+    # Legend
     plt.plot([], [], color="black", lw=3, label=f"Window")
     plt.plot([], [], color="black", lw=10, label=f"Service", alpha=0.5)
-    for i in range(N_satellites):
-        plt.plot([], [], color=COLORS[i], lw=3, label=f"Satellite {i+1}")
-
-    # if policy is None:
-    # plt.fill_between([], [], alpha=0.7, label="Average duration")
-    plt.yticks(np.arange(min(request_dict.keys()), max(request_dict.keys()) + 1.5))
-    plt.xlim(0, np.max([w.end for w in service_windows]))
-    plt.xlabel("Time")
-    plt.ylabel("Request")
-    plt.ylim(0.5, max(request_dict.keys()) + 1.5)
-    plt.grid()
-    # legend outside top
+    for sat_id in range(N_sat):
+        plt.plot(
+            [], [], color=COLORS[sat_id], lw=3, label=f"Satellite {sat_id+START_IDX}"
+        )
+    plt.plot([], [], lw=2, color="black", linestyle="--", label="Resource constraint")
+    if current_time > 0:
+        plt.axvline(current_time, color="black", linestyle=":", label="Current time")
     plt.legend(
         facecolor="white",
         framealpha=1,
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.15),
-        ncol=4,
+        bbox_to_anchor=(0.5, 1.5),
+        ncol=5,
         frameon=False,
-        handlelength=1,
+        handlelength=1.5,
     )
-    plt.gca().invert_yaxis()
-    plt.tight_layout()
 
 
 def plot_resources(
@@ -275,206 +277,120 @@ def plot_resources(
     policy: list[tuple[State, Action]],
     ax: plt.Axes = None,
 ) -> None:
-    times = [[] for _ in range(problem.N_satellites)]
-    data = [[] for _ in range(problem.N_satellites)]
-    energy = [[] for _ in range(problem.N_satellites)]
+    s, a = policy[0]
+    times = [[s.t[sat_id]] for sat_id in range(problem.N_sat)]
+    energy = [[s.E[sat_id]] for sat_id in range(problem.N_sat)]
+    data = [[s.D[sat_id]] for sat_id in range(problem.N_sat)]
+
     for s, a in policy:
         if a is None:
             continue
-        i = a.satellite_id
-        times[i].append(s.time[i])
-        data[i].append(s.data[i])
-        energy[i].append(s.energy[i])
-        assert not np.isnan(s.energy).all()
-        d = max(s.data[i] + problem.data_gen_func(s.time[i], a.start), problem.min_data)
-        e = min(
-            s.energy[i] + problem.energy_gen_func(s.time[i], a.start),
+        sat_id = a.sat_id
+
+        # From current time to start of action
+        N_points = max(int((a.ts - s.t[sat_id]) / problem.t_step), 2)
+        tt = np.linspace(s.t[sat_id], a.ts, N_points)
+        e_gen = np.array(
+            [problem.energy_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
+        )
+        d_gen = np.array(
+            [problem.data_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
+        )
+        e = np.minimum(s.E[sat_id] + e_gen, problem.max_energy)
+        d = np.maximum(s.D[sat_id] + d_gen, problem.min_data)
+        times[sat_id].extend(tt)
+        energy[sat_id].extend(e)
+        data[sat_id].extend(d)
+
+        # From start to end of action
+        N_points = max(int(a.dur / problem.t_step), 2)
+        tt = np.linspace(a.ts, a.ts + a.dur, N_points)
+        e_gen = np.array(
+            [problem.energy_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
+        )
+        d_gen = np.array(
+            [problem.data_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
+        )
+        e = np.minimum(
+            e[-1] + e_gen + problem.payload_energy_gen * (tt - a.ts),
             problem.max_energy,
         )
-        assert not np.isnan(e).all()
-        times[i].append(a.start)
-        data[i].append(d)
-        energy[i].append(e)
+        d = np.maximum(
+            d[-1] + d_gen + problem.payload_data_gen * (tt - a.ts),
+            problem.min_data,
+        )
+        times[sat_id].extend(tt)
+        energy[sat_id].extend(e)
+        data[sat_id].extend(d)
 
-    for i in range(problem.N_satellites):
-        d = s.data[i] + problem.data_gen_func(s.time[i], problem.tf)
-        e = s.energy[i] + problem.energy_gen_func(s.time[i], problem.tf)
-        assert not np.isnan(e).all()
-        times[i].append(problem.tf)
-        data[i].append(d)
-        energy[i].append(e)
+    for sat_id in range(problem.N_sat):
+        # From end of last action to end of time
+        N_points = max(int((problem.t_final - times[sat_id][-1]) / problem.t_step), 2)
+        tt = np.linspace(times[sat_id][-1], problem.t_final, N_points)
+        e_gen = np.array(
+            [problem.energy_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
+        )
+        d_gen = np.array(
+            [problem.data_gen_func(sat_id, tt[0], tt_, constr=False) for tt_ in tt]
+        )
+        e = np.minimum(energy[sat_id][-1] + e_gen, problem.max_energy)
+        d = np.maximum(data[sat_id][-1] + d_gen, problem.min_data)
+        times[sat_id].extend(tt)
+        energy[sat_id].extend(e)
+        data[sat_id].extend(d)
 
     if ax is None:
         fig, ax = plt.subplots(2, 1, figsize=(8, 6))
 
     plt.sca(ax[0])
-    for i in range(problem.N_satellites):
-        x = np.array(times[i])
-        y = np.array(data[i]) / problem.max_data * 100 * 0.8
-        plt.plot(x, y, lw=2, color=COLORS[i], label=f"Satellite {i+1}")
-    y = 100 * 0.8
-    # plt.hlines(problem.min_data, 0, problem.tf, colors="tab:blue", linestyles="--")
-    plt.hlines(
-        y, 0, problem.tf, colors="black", linestyles="--", label="Resource constraint"
-    )
-    plt.legend()
-    plt.xlabel("Time")
-    plt.ylabel("Data [\\%]")
-    plt.xlim(0, problem.tf)
+    for sat_id in range(problem.N_sat):
+        x = np.array(times[sat_id])
+        y = np.array(energy[sat_id]) / problem.max_energy * 100
+        plt.plot(x, y, lw=2, color=COLORS[sat_id])
+    y = problem.min_energy / problem.max_energy * 100
+    plt.hlines(y, 0, problem.t_final, colors="black", linestyles="--")
+    plt.ylabel("Energy [\\%]")
+    plt.xlim(0, problem.t_final)
     plt.ylim(0, 100)
-    plt.legend(
-        loc="upper center",
-        facecolor="white",
-        framealpha=1,
-        ncol=3,
-        bbox_to_anchor=(0.5, 1.4),
-        frameon=False,
-        handlelength=1,
-    )
+
+    # Legend
+    # plt.plot([], [], lw=2, color="black", linestyle="--", label="Resource constraint")
+    # for sat_id in range(problem.N_sat):
+    #     plt.plot(
+    #         [], [], color=COLORS[sat_id], lw=3, label=f"Satellite {sat_id+START_IDX}"
+    #     )
+    # plt.legend(
+    #     facecolor="white",
+    #     framealpha=1,
+    #     loc="upper center",
+    #     bbox_to_anchor=(0.5, 1.6),
+    #     ncol=3,
+    #     frameon=False,
+    #     handlelength=1.5,
+    # )
     plt.grid()
 
     plt.sca(ax[1])
-    for i in range(problem.N_satellites):
-        x = np.array(times[i])
-        y = np.array(energy[i]) / problem.max_energy * 100
-        plt.plot(x, y, lw=2, color=COLORS[i])
-    y = problem.min_energy / problem.max_energy * 100
-    plt.hlines(y, 0, problem.tf, colors="black", linestyles="--", label="Min. energy")
-    # plt.hlines(problem.max_energy, 0, problem.tf, colors="tab:green", linestyles="--")
+    d_lim = problem.max_data / 0.8
+    for sat_id in range(problem.N_sat):
+        x = np.array(times[sat_id])
+        y = np.array(data[sat_id]) / d_lim * 100
+        plt.plot(
+            x, y, lw=2, color=COLORS[sat_id], label=f"Satellite {sat_id+START_IDX}"
+        )
+    y = 100 * 0.8
+    # plt.hlines(problem.min_data, 0, problem.t_final, colors="tab:blue", linestyles="--")
+    plt.hlines(
+        y,
+        0,
+        problem.t_final,
+        colors="black",
+        linestyles="--",
+        label="Resource constraint",
+    )
+    # plt.legend()
     plt.xlabel("Time")
-    plt.ylabel("Energy [\\%]")
-    plt.xlim(0, problem.tf)
+    plt.ylabel("Data [\\%]")
+    plt.xlim(0, problem.t_final)
     plt.ylim(0, 100)
-    # plt.legend(loc="upper right", facecolor="white", framealpha=1)
     plt.grid()
-
-    plt.tight_layout()
-
-
-def plot_windows(
-    targets: np.array,  # Target ids
-    vtws: np.array,  # Visibility time windows (start, end)
-    durations: np.array,  # Task durations
-    #
-    task_otws: np.array,  # Opportunity time windows (start, end)
-    task_idxs: np.array,  # Target ids
-    #
-    rewards: np.array = None,  # Rewards
-    selected_tasks: np.array = None,  # Selected tasks
-    plot_labels: bool = True,
-):
-    color = TABLEAU_COLORS[0]
-    if selected_tasks is None:
-        selected_targets = None
-    else:
-        assert selected_tasks.dtype == bool
-        assert task_idxs.dtype == int
-        selected_targets = task_idxs[selected_tasks]
-
-    # Sort tasks by start time
-    indices = sorted(range(len(vtws)), key=lambda i: vtws[i][0])
-
-    # Add tasks to the minimum number of rows for plotting
-    rows = []
-    for idx in indices:
-        for row in rows:
-            if vtws[idx][0] > vtws[row[-1]][1]:
-                row.append(idx)
-                break
-        else:
-            rows.append([idx])
-
-    # Plot tasks
-    for r, row in enumerate(rows):
-
-        def add_text(ts, te, txt):
-            if plot_labels:
-                plt.text((ts + te) / 2, r + 0.15, txt, ha="center", va="center")
-
-        def add_rect(ts, te):
-            eps = 0
-            plt.fill_between(
-                [ts + eps, te - eps], r - 0.3, r + 0.3, alpha=0.5, color=color
-            )
-
-        def add_empty_rect(ts, te):
-            plt.fill_between(
-                [ts, te],
-                r - 0.3,
-                r + 0.3,
-                alpha=0.15,
-                hatch="/",
-                edgecolor="black",
-                color=color,
-            )
-
-        for idx in row:
-            # Opportunity window
-            vtw_s = vtws[idx][0]
-            vtw_e = vtws[idx][1]
-            dur = durations[idx]
-
-            if True:
-                # Plot lines for visibility time windows
-                plt.hlines(r, vtw_s, vtw_e, colors="k")
-                plt.vlines(vtw_s, r - 0.15, r + 0.15, colors="k")
-                plt.vlines(vtw_e, r - 0.15, r + 0.15, colors="k")
-
-                # Plot lines for opportunity time windows
-                otws = task_otws[task_idxs == idx]
-                if len(otws) > 0:
-                    for otw in otws:
-                        plt.vlines(otw[0], r - 0.05, r + 0.05, colors="k")
-
-                # Plot rectangles for tasks
-                if selected_targets is None:
-                    # Start times not resolved
-                    ts = (vtw_s + vtw_e - dur) / 2
-                    te = (vtw_s + vtw_e + dur) / 2
-                    add_rect(ts, te)
-                    add_text(vtw_s, vtw_e, str(targets[idx]))
-                else:
-
-                    if idx not in selected_targets:
-                        # Start times resolved and task is not selected
-                        ts = (vtw_s + vtw_e - dur) / 2
-                        te = (vtw_s + vtw_e + dur) / 2
-                        add_empty_rect(ts, te)
-                        add_text(vtw_s, vtw_e, str(targets[idx]))
-                    else:
-                        # Start times resolved and task is selected
-                        for ts, te in task_otws[selected_tasks & (task_idxs == idx)]:
-                            add_rect(ts, te)
-                            add_text(ts, te, str(targets[idx]))
-
-            else:
-                # Sun pointing or downlink opportunity
-                if start_end_times is None:
-                    add_rect(vtw_start, t_end)
-                    add_text(vtw_start, t_end, str(opp.id))
-                elif opp.id in start_end_times:
-                    for ts, te in zip(*start_end_times[opp.id]):
-                        add_rect(ts, te)
-                        add_text(ts, te, str(opp.id))
-                        add_text(ts, te, str(opp.id))
-
-    plt.xlabel("Time")
-    plt.xlim(0, np.max(vtws[:, 1]))
-    # plt.gca().spines[["left", "top", "right"]].set_visible(False)
-    # if start_end_times is not None:
-    #     legend = [
-    #         plt.Line2D(
-    #             [0], [0], color=COLORS[tt], lw=5, label=MODE_NAMES[tt], alpha=0.5
-    #         )
-    #         for tt in TaskType
-    #         if tt not in [TaskType.START]
-    #     ]
-    #     # Legend with 3 columns at the bottom outside the plot
-    #     plt.legend(
-    #         handles=legend,
-    #         loc="upper center",
-    #         bbox_to_anchor=(0.5, 1.3),
-    #         ncol=3,
-    #     )
-    plt.yticks([])
-    plt.ylabel("Tasks")

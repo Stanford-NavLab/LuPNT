@@ -1,9 +1,9 @@
 # define variables
-set(groupName "examples")
+set(groupName "projects")
 set(linkLibraries "lupnt")
 
 # Get all script files
-file(GLOB script_files "example_*.cc" "**/example_*.cc")
+file(GLOB_RECURSE script_files "*.cc")
 
 # Separate into source files and headers (allows for adding headers to show up in
 # MSVC and Xcode projects).

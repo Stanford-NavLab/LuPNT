@@ -201,6 +201,13 @@ class NumericalOrbitDynamics : public NumericalDynamics {
   void PropagateWithStm(OrbitState &state, real t0, real tf, Matrix6d &stm);
   void PropagateWithStm(Vector6 &x, real t0, real tf, Matrix6d &stm);
 
+  // with returns
+  Vector6 PropagateR(Vector6 &x, real t0, real tf, real dt);
+  Vector6 PropagateWithStmR(Vector6 &x, real t0, real tf, real dt,
+                            Matrix6d &stm);
+  Vector6 PropagateR(Vector6 &x, real t0, real tf);
+  Vector6 PropagateWithStmR(Vector6 &x, real t0, real tf, Matrix6d &stm);
+
  protected:
   virtual VectorX ComputeRates(real t, const VectorX &x) const = 0;
 };

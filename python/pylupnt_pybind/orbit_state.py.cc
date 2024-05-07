@@ -47,8 +47,8 @@ void init_orbit_state(py::module &m) {
   // OrbitState
   py::class_<OrbitState>(m, "OrbitState")
       .def(py::init<const Vector6d &, const CoordSystem, const OrbitStateRepres,
-                    const std::array<const char *, kOrbitStateSize> &,
-                    const std::array<const char *, kOrbitStateSize> &>(),
+                    const std::vector<std::string> &,
+                    const std::vector<std::string> &>(),
            py::arg("vector"), py::arg("coord_sys"), py::arg("state_repres"),
            py::arg("names"), py::arg("units"))
       .def_property(

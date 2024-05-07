@@ -12,6 +12,13 @@ basepath = os.getenv("LUPNT_DATA_PATH")
 assert basepath is not None, "Environment variable LUPNT_DATA_PATH not set"
 
 
+def timed(func, *args, **kwargs):
+    start = time()
+    result = func(*args, **kwargs)
+    end = time()
+    return result, end - start
+
+
 # Load data
 def load_data(directory):
     data = {}

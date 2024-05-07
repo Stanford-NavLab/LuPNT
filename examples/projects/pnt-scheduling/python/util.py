@@ -1,155 +1,137 @@
-import matplotlib.pyplot as plt
-from typing import List, Dict, Tuple
 import numpy as np
-import matplotlib.colors as mcolors
-from dataclasses import dataclass, field
-from enum import Enum
+from tqdm.notebook import tqdm
+from multiprocessing import Pool
 import hashlib
+from problem import PntSchedulingProblem, State, Action
+from solvers import Solver
+from itertools import product
+import os
+import pickle
 
-TABLEAU_COLORS = list(mcolors.TABLEAU_COLORS.values())
+
+def load_or_recompute(filepath: os.PathLike, func, *args, **kwargs):
+    # Check if directory exists
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+    # Check if file exists
+    if os.path.exists(filepath):
+        with open(filepath, "rb") as f:
+            return pickle.load(f)
+    else:
+        result = func(*args, **kwargs)
+        with open(filepath, "wb") as f:
+            pickle.dump(result, f)
+        return result
 
 
-def create_hash(obj):
-    return hashlib.sha1(str(obj).encode()).hexdigest()
+def iterate_params(params: dict) -> list[dict]:
+    return [dict(zip(params.keys(), x)) for x in product(*params.values())]
 
 
-def normalize(v):
+def get_metrics(
+    problem: PntSchedulingProblem,
+    policy: list[tuple[State, Action]],
+    time: float,
+    gamma: float,
+) -> dict:
+    # Metrics
+    percentages = [round(x, 4) for x in problem.percentage_completed(policy)]
+    percentage = round(problem.duration_fullfilled(policy), 4)
+    reward = round(problem.total_reward(policy, gamma=gamma), 4)
+    time = round(time, 5)
+    return {"total": percentage, "user": percentages, "reward": reward, "time": time}
+
+
+def timed(func, *args, **kwargs):
+    import time
+
+    start = time.time()
+    result = func(*args, **kwargs)
+    end = time.time()
+    return result, end - start
+
+
+def solve(
+    params: dict, problem: PntSchedulingProblem, solver: Solver, seed: int
+) -> dict:
+    np.random.seed(seed)
+    s = problem.initial_state()
+    solver_ = solver(problem)
+    policy, time = timed(solver.solve, s, **params)
+    metric = get_metrics(problem, policy, time, gamma=1)
+    metric["params"] = params
+    return metric
+
+
+def solve_online(
+    params: dict,
+    problem: PntSchedulingProblem,
+    solver: Solver,
+    seed: int,
+    return_all=False,
+) -> dict:
+    np.random.seed(seed)
+    solver = solver(problem)
+
+    old_policy = None
+    problem.set_current_policy(None)
+
+    if return_all:
+        policies, metrics = [], []
+    for ta in problem.get_arrival_times():
+
+        # Set current time and policy
+        problem.set_current_time(ta)
+        if old_policy is not None:
+            problem.set_current_policy(old_policy)
+
+        # Solve
+        s = problem.initial_state()
+        policy, time = timed(solver.solve, s, **params)
+        policy = policy if old_policy is None else problem.merge_policies(policy)
+        metric = get_metrics(problem, policy, time, gamma=1)
+        metric["params"] = params
+        old_policy = policy
+
+        # Save results
+        if return_all:
+            policies.append(policy)
+            metrics.append(metric)
+
+    if return_all:
+        return metrics, policies
+    return metric, policy
+
+
+def run_parallel(func, it, n_jobs=4, desc="Multiprocessing", progress=True):
+    if n_jobs > 1:
+        with Pool(n_jobs) as p:
+            if progress:
+                results = list(tqdm(p.imap(func, it), total=len(it), desc=desc))
+            else:
+                results = p.map(func, it)
+    else:
+        results = [func(x) for x in tqdm(it, desc=desc)]
+
+    return results
+
+
+def cross_norm(a, b):
+    return np.cross(a, b) / np.linalg.norm(np.cross(a, b), axis=2)[:, :, None]
+
+
+def create_hash(*args):
+    return hashlib.sha1(str(args).encode()).hexdigest()
+
+
+def normalize(v: np.ndarray) -> np.ndarray:
     if v.ndim == 1:
         return v / np.linalg.norm(v)
     else:
         return v / np.linalg.norm(v, axis=1)[:, None]
 
 
-def plot_windows(
-    targets: np.array,  # Target ids
-    vtws: np.array,  # Visibility time windows (start, end)
-    durations: np.array,  # Task durations
-    #
-    task_otws: np.array,  # Opportunity time windows (start, end)
-    task_idxs: np.array,  # Target ids
-    #
-    rewards: np.array = None,  # Rewards
-    selected_tasks: np.array = None,  # Selected tasks
-    plot_labels: bool = True,
-):
-    color = TABLEAU_COLORS[0]
-    if selected_tasks is None:
-        selected_targets = None
-    else:
-        assert selected_tasks.dtype == bool
-        assert task_idxs.dtype == int
-        selected_targets = task_idxs[selected_tasks]
-
-    # Sort tasks by start time
-    indices = sorted(range(len(vtws)), key=lambda i: vtws[i][0])
-
-    # Add tasks to the minimum number of rows for plotting
-    rows = []
-    for idx in indices:
-        for row in rows:
-            if vtws[idx][0] > vtws[row[-1]][1]:
-                row.append(idx)
-                break
-        else:
-            rows.append([idx])
-
-    # Plot tasks
-    for r, row in enumerate(rows):
-
-        def add_text(ts, te, txt):
-            if plot_labels:
-                plt.text((ts + te) / 2, r + 0.15, txt, ha="center", va="center")
-
-        def add_rect(ts, te):
-            eps = 0
-            plt.fill_between(
-                [ts + eps, te - eps], r - 0.3, r + 0.3, alpha=0.5, color=color
-            )
-
-        def add_empty_rect(ts, te):
-            plt.fill_between(
-                [ts, te],
-                r - 0.3,
-                r + 0.3,
-                alpha=0.15,
-                hatch="/",
-                edgecolor="black",
-                color=color,
-            )
-
-        for idx in row:
-            # Opportunity window
-            vtw_s = vtws[idx][0]
-            vtw_e = vtws[idx][1]
-            dur = durations[idx]
-
-            if True:
-                # Plot lines for visibility time windows
-                plt.hlines(r, vtw_s, vtw_e, colors="k")
-                plt.vlines(vtw_s, r - 0.15, r + 0.15, colors="k")
-                plt.vlines(vtw_e, r - 0.15, r + 0.15, colors="k")
-
-                # Plot lines for opportunity time windows
-                otws = task_otws[task_idxs == idx]
-                if len(otws) > 0:
-                    for otw in otws:
-                        plt.vlines(otw[0], r - 0.05, r + 0.05, colors="k")
-
-                # Plot rectangles for tasks
-                if selected_targets is None:
-                    # Start times not resolved
-                    ts = (vtw_s + vtw_e - dur) / 2
-                    te = (vtw_s + vtw_e + dur) / 2
-                    add_rect(ts, te)
-                    add_text(vtw_s, vtw_e, str(targets[idx]))
-                else:
-
-                    if idx not in selected_targets:
-                        # Start times resolved and task is not selected
-                        ts = (vtw_s + vtw_e - dur) / 2
-                        te = (vtw_s + vtw_e + dur) / 2
-                        add_empty_rect(ts, te)
-                        add_text(vtw_s, vtw_e, str(targets[idx]))
-                    else:
-                        # Start times resolved and task is selected
-                        for ts, te in task_otws[selected_tasks & (task_idxs == idx)]:
-                            add_rect(ts, te)
-                            add_text(ts, te, str(targets[idx]))
-
-            else:
-                # Sun pointing or downlink opportunity
-                if start_end_times is None:
-                    add_rect(vtw_start, t_end)
-                    add_text(vtw_start, t_end, str(opp.id))
-                elif opp.id in start_end_times:
-                    for ts, te in zip(*start_end_times[opp.id]):
-                        add_rect(ts, te)
-                        add_text(ts, te, str(opp.id))
-                        add_text(ts, te, str(opp.id))
-
-    plt.xlabel("Time")
-    plt.xlim(0, np.max(vtws[:, 1]))
-    # plt.gca().spines[["left", "top", "right"]].set_visible(False)
-    # if start_end_times is not None:
-    #     legend = [
-    #         plt.Line2D(
-    #             [0], [0], color=COLORS[tt], lw=5, label=MODE_NAMES[tt], alpha=0.5
-    #         )
-    #         for tt in TaskType
-    #         if tt not in [TaskType.START]
-    #     ]
-    #     # Legend with 3 columns at the bottom outside the plot
-    #     plt.legend(
-    #         handles=legend,
-    #         loc="upper center",
-    #         bbox_to_anchor=(0.5, 1.3),
-    #         ncol=3,
-    #     )
-    plt.yticks([])
-    plt.ylabel("Tasks")
-
-
-def get_start_end_indexes(sequence: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def get_start_end_indexes(sequence: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     tmp = np.concatenate(([False], sequence.astype(bool), [False]))
     starts = np.where(np.logical_and(~tmp[:-1], tmp[1:]))[0]
     ends = np.where(np.logical_and(tmp[:-1], ~tmp[1:]))[0]
