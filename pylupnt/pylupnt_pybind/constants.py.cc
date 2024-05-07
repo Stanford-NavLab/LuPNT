@@ -15,7 +15,7 @@ void init_constants(py::module &m) {
   // Time System Constants
   m.attr("SECS_PER_DAY") = py::float_(SECS_PER_DAY);
   m.attr("SECS_PER_HOUR") = py::float_(SECS_PER_HOUR);
-  m.attr("SECS_PER_MIN") = py::float_(SECS_PER_MINUTE);
+  m.attr("SECS_PER_MINUTE") = py::float_(SECS_PER_MINUTE);
   m.attr("DAYS_PER_YEAR") = py::float_(DAYS_PER_YEAR);
   m.attr("DAYS_PER_JULIAN_CENTURY") = py::float_(DAYS_PER_JULIAN_CENTURY);
   m.attr("DAYS_PER_SEC") = py::float_(DAYS_PER_SEC);
@@ -48,4 +48,27 @@ void init_constants(py::module &m) {
   m.attr("S_AU") = py::float_(S_AU);
   m.attr("C") = py::float_(C);
   m.attr("P_SUN") = py::float_(P_SUN);
+
+  py::enum_<NaifId>(m, "NaifId")
+      .value("SOLAR_SYSTEM_BARYCENTER", NaifId::SOLAR_SYSTEM_BARYCENTER)
+      .value("MERCURY_BARYCENTER", NaifId::MERCURY_BARYCENTER)
+      .value("VENUS_BARYCENTER", NaifId::VENUS_BARYCENTER)
+      .value("EARTH_BARYCENTER", NaifId::EARTH_BARYCENTER)
+      .value("EARTH_MOON_BARYCENTER", NaifId::EARTH_MOON_BARYCENTER)
+      .value("MARS_BARYCENTER", NaifId::MARS_BARYCENTER)
+      .value("JUPITER_BARYCENTER", NaifId::JUPITER_BARYCENTER)
+      .value("SATURN_BARYCENTER", NaifId::SATURN_BARYCENTER)
+      .value("URANUS_BARYCENTER", NaifId::URANUS_BARYCENTER)
+      .value("NEPTUNE_BARYCENTER", NaifId::NEPTUNE_BARYCENTER)
+      .value("PLUTO_BARYCENTER", NaifId::PLUTO_BARYCENTER)
+      .value("SUN", NaifId::SUN)
+      .value("MERCURY", NaifId::MERCURY)
+      .value("VENUS", NaifId::VENUS)
+      .value("EARTH", NaifId::EARTH)
+      .value("MOON", NaifId::MOON)
+      .value("MARS", NaifId::MARS)
+      .value("PHOBOS", NaifId::PHOBOS)
+      .value("DEIMOS", NaifId::DEIMOS)
+      .value("JUPITER", NaifId::JUPITER)
+      .export_values();
 }
