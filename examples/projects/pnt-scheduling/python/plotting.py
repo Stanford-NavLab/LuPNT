@@ -176,6 +176,7 @@ def plot_requests_service_windows(
     old_policy: list[tuple[State, Action]] = None,
 ) -> None:
 
+    offset = 0
     request_dict: dict[int, Request] = {req.id: req for req in requests}
     total_contact: dict[int, float] = {req.id: 0 for req in requests}
     old_actions = [a for s, a in old_policy] if old_policy is not None else None
@@ -193,14 +194,14 @@ def plot_requests_service_windows(
     dy = 0.07
     N_sat = len(set([w.sat_id for w in service_windows]))
     for win in service_windows:
-        y = win.usr_id + START_IDX + 0.5
+        y = win.usr_id + START_IDX + offset
         y += -dy / 2 * N_sat + dy * N_sat * win.sat_id / (N_sat - 1)
         plt.plot([win.ts, win.te], [y, y], COLORS[win.sat_id], lw=2, alpha=0.5)
 
     if policy is None:
         # Plot average duration per window
         for win in service_windows:
-            y = win.usr_id + START_IDX + 0.5
+            y = win.usr_id + START_IDX + offset
             # y += -0.15 + 0.3 * w.sat_id / (N_satellites - 1)
             d = (
                 request_dict[win.usr_id].dur
@@ -217,7 +218,7 @@ def plot_requests_service_windows(
         for s, a in policy[:-1]:
             if a.req is None:
                 continue
-            y = a.req.usr_id + START_IDX + 0.5
+            y = a.req.usr_id + START_IDX + offset
 
             kwargs = dict(alpha=0.5, color=COLORS[a.sat_id], edgecolor=None)
             if old_policy is not None and a in old_actions:
@@ -225,7 +226,7 @@ def plot_requests_service_windows(
             plt.fill_between([a.ts + dx, a.ts + a.dur - dx], y - 0.3, y + 0.3, **kwargs)
 
             kwargs = dict(ha="center", va="center", color="black")
-            plt.text(a.ts + a.dur / 2, y + 0.15, f"{a.req.id + START_IDX}", **kwargs)
+            # plt.text(a.ts + a.dur / 2, y + 0.15, f"{a.req.id + START_IDX}", **kwargs)
 
     # Axis settings
     plt.yticks(
@@ -240,11 +241,11 @@ def plot_requests_service_windows(
     # plt.xlabel("Time")
     plt.ylabel("User")
     ylims = [
-        min(req.usr_id for req in requests) + START_IDX,
-        max(req.usr_id for req in requests) + 1 + START_IDX,
+        min(req.usr_id for req in requests) + START_IDX - 0.5,
+        max(req.usr_id for req in requests) + 1 + START_IDX - 0.5,
     ]
     plt.ylim(ylims)
-    plt.grid()
+    plt.grid(axis="x")
 
     # Set text instead of ticks
     # for i in range(ylims[0], ylims[1]):
@@ -258,7 +259,7 @@ def plot_requests_service_windows(
         plt.plot(
             [], [], color=COLORS[sat_id], lw=3, label=f"Satellite {sat_id+START_IDX}"
         )
-    plt.plot([], [], lw=2, color="black", linestyle="--", label="Resource constraint")
+    # plt.plot([], [], lw=2, color="black", linestyle="--", label="Resource constraint")
     if current_time > 0:
         plt.axvline(current_time, color="black", linestyle=":", label="Current time")
     plt.legend(

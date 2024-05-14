@@ -2,6 +2,7 @@ import numpy as np
 from tqdm.notebook import tqdm
 from problem import PntSchedulingProblem, State, Action, ServiceWindow
 from .Solver import Solver
+from . import RuleBasedSolver
 
 import networkx as nx
 
@@ -21,12 +22,19 @@ class SmdpForwardSearchSolver(Solver):
         self.gamma = None
         self.N_max = None
         self.dur_min = None
+        self.use_rule_based = False
         self.tree = nx.DiGraph() if keep_tree else None
 
     def select_action(self, s: State, d: int) -> tuple[ServiceWindow, float]:
         actions = self.problem.available_actions(s, self.N_max, self.dur_min)
         if d == 0 or not actions:
+            if self.use_rule_based:
+                policy = RuleBasedSolver(self.problem).solve(
+                    s, N_max=self.N_max, dur_min=self.dur_min
+                )
+                return None, self.problem.total_reward(policy, gamma=self.gamma)
             return None, 0
+
         a_star, v_star = None, -np.inf
 
         if self.tree is not None:
@@ -58,6 +66,7 @@ class SmdpForwardSearchSolver(Solver):
         gamma: float,
         N_max: int,
         dur_min: float,
+        use_rule_based: bool = False,
         progress: bool = False,
     ) -> list[tuple[State, Action]]:
         """
@@ -78,6 +87,7 @@ class SmdpForwardSearchSolver(Solver):
         self.gamma = gamma
         self.N_max = N_max
         self.dur_min = dur_min
+        self.use_rule_based = use_rule_based
 
         policy = []
         a, _ = self.select_action(s, d)

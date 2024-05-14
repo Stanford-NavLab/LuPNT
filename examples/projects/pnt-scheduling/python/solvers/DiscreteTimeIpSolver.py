@@ -13,6 +13,7 @@ from problem import (
     Request,
 )
 from .Solver import Solver
+from copy import deepcopy
 
 
 class DiscreteTimeIpSolver(Solver):
@@ -20,7 +21,7 @@ class DiscreteTimeIpSolver(Solver):
         self.problem: PntSchedulingProblem = problem
         self.solution: np.array = None
 
-    def solve(self, s: State, time_step_factor: float) -> list[tuple[State, Action]]:
+    def solve(self, s0: State, time_step_factor: float) -> list[tuple[State, Action]]:
 
         req_dict: dict[ReqId, Request] = {req.id: req for req in self.problem.requests}
         req_by_user: dict[UsrId, list[ReqId]] = {}
@@ -37,7 +38,7 @@ class DiscreteTimeIpSolver(Solver):
         t_curr = self.problem.current_time
 
         T = [
-            ((req.dur - s.req_times[req_id]) / dt if req.ta <= t_curr else 0)
+            ((req.dur - s0.req_times[req_id]) / dt if req.ta <= t_curr else 0)
             for req_id, req in req_dict.items()
         ]
         T = np.ceil(T).astype(int)
@@ -66,10 +67,11 @@ class DiscreteTimeIpSolver(Solver):
                 ends = np.floor([w.te / dt for w in windows]).astype(int)
                 for w, ts, te in zip(windows, starts, ends):
                     if ts >= te:
+                        te = ts + 1
                         logging.debug(
                             f"Service window {w.id} has duration 0. Try decreasing time step."
                         )
-                        continue
+                        # continue
                         # if te < N_time_steps:
                         #     te += 1
                         # else:
@@ -93,7 +95,7 @@ class DiscreteTimeIpSolver(Solver):
         energy_gen = np.zeros((N_sat, N_t))
         data_gen = np.zeros((N_sat, N_t))
         for sat_id in range(N_sat):
-            ti = int(np.ceil(s.t[sat_id] / dt))
+            ti = int(np.ceil(s0.t[sat_id] / dt))
             for t in range(ti, N_t):
                 args = (sat_id, t * dt, (t + 1) * dt)
                 energy_gen[sat_id, t] = self.problem.energy_gen_func(*args)
@@ -104,7 +106,7 @@ class DiscreteTimeIpSolver(Solver):
 
         # Objective
         lambda_sep = 1e-5 / (N_req * N_t)
-        discount = np.power(0.99, np.arange(10))
+        discount = np.power(0.99, np.arange(N_t))
         inner_sum = [
             cp.sum(
                 cp.multiply(x[i], rewards[i] * discount)
@@ -118,7 +120,7 @@ class DiscreteTimeIpSolver(Solver):
         constraints = []
 
         # Current time
-        ti = int(np.ceil(s.t[sat_id] / dt))
+        ti = int(np.ceil(s0.t[sat_id] / dt))
         if ti > 0:
             for sat_id in range(N_sat):
                 constraints.append(x[sat_id][:, :ti] == 0)
@@ -130,12 +132,14 @@ class DiscreteTimeIpSolver(Solver):
             tmp_energy = energy_gen[sat_id] + cp.sum(
                 cp.multiply(energy_gen_requests[sat_id], x[sat_id]), axis=0
             )
-            for t in range(N_t + 1):
+            for t in range(N_t):
                 constraints.append(
-                    s.D[sat_id] + cp.sum(tmp_data[:t]) <= self.problem.max_data
+                    s0.D[sat_id] + cp.sum(tmp_data[: t + 1])
+                    <= self.problem.max_data * 0.98
                 )
                 constraints.append(
-                    s.E[sat_id] + cp.sum(tmp_energy[:t]) >= self.problem.min_energy
+                    s0.E[sat_id] + cp.sum(tmp_energy[: t + 1])
+                    >= self.problem.min_energy * 1.02
                 )
 
         # One action at a time for each satellite
@@ -177,9 +181,7 @@ class DiscreteTimeIpSolver(Solver):
         env.start()
         problem = cp.Problem(objective, constraints)
         # verbose if logging is set to debug
-        problem.solve(
-            solver=cp.GUROBI, env=env, verbose=logging.DEBUG <= logging.root.level
-        )
+        problem.solve(solver=cp.GUROBI, env=env, verbose=False)
 
         # Convert to integer
         self.solution = np.zeros((N_sat, N_req, N_t))
@@ -244,11 +246,12 @@ class DiscreteTimeIpSolver(Solver):
 
         # Create policy
         policy = []
+        s = deepcopy(s0)
         for a in actions:
             # Fix the duration of the action
             policy.append((s, a))
-            s = self.problem.transition_function(s, a)
-
+            s = self.problem.transition_function(s, a, duration_tol=dt - Dt)
         policy.append((s, None))
-        policy = self.problem.clean_policy(policy)
+
+        policy = self.problem.clean_policy(policy, duration_tol=dt)
         return policy

@@ -2,6 +2,7 @@ import numpy as np
 from tqdm.notebook import tqdm
 from problem import PntSchedulingProblem, State, Action
 from .Solver import Solver
+from . import RuleBasedSolver
 
 
 class SmdpMctsSolver(Solver):
@@ -22,6 +23,7 @@ class SmdpMctsSolver(Solver):
         self.gamma = None
         self.N_max = None
         self.dur_min = None
+        self.use_rule_based = False
 
     def get_N(self, s: State, a: Action) -> int:
         if s not in self.N or a not in self.N[s]:
@@ -37,6 +39,11 @@ class SmdpMctsSolver(Solver):
         actions = self.problem.available_actions(s, self.N_max, self.dur_min)
 
         if d == 0 or not actions:
+            if self.use_rule_based:
+                policy = RuleBasedSolver(self.problem).solve(
+                    s, N_max=self.N_max, dur_min=self.dur_min
+                )
+                return self.problem.total_reward(policy, gamma=self.gamma)
             return 0
 
         use_rewards = True
@@ -61,6 +68,11 @@ class SmdpMctsSolver(Solver):
         actions = self.problem.available_actions(s, self.N_max, self.dur_min)
 
         if d == 0 or not actions:
+            if self.use_rule_based:
+                policy = RuleBasedSolver(self.problem).solve(
+                    s, N_max=self.N_max, dur_min=self.dur_min
+                )
+                return self.problem.total_reward(policy, gamma=self.gamma)
             return 0
 
         if s not in self.N:
@@ -92,6 +104,7 @@ class SmdpMctsSolver(Solver):
         c: float,
         N_max: int,
         dur_min: float,
+        use_rule_based: bool = False,
         progress: bool = False,
     ) -> list[tuple[State, Action]]:
         """
@@ -115,6 +128,7 @@ class SmdpMctsSolver(Solver):
         self.gamma = gamma
         self.N_max = N_max
         self.dur_min = dur_min
+        self.use_rule_based = use_rule_based
 
         for _ in range(n):
             self.simulate(s, d)

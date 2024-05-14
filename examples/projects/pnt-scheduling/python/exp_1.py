@@ -5,13 +5,14 @@ import numpy as np
 import pylupnt as pnt
 import pathfinder_data
 from math import ceil, floor
-from problem import Request, ServiceWindow, PntSchedulingProblem
+from problem import Request, ServiceWindow, PntSchedulingProblem, reset_id_counters
 from solvers import (
     SmdpForwardSearchSolver,
     SmdpMctsSolver,
     DiscreteTimeIpSolver,
     RuleBasedSolver,
 )
+import math
 import logging
 
 from functools import partial
@@ -62,7 +63,7 @@ def solve_wrapper(
     )
 
     # Sort results by duration percentage and computing time
-    results.sort(key=lambda x: 1e3 * x["total"] - x["time"], reverse=True)
+    # results.sort(key=lambda x: 1e3 * x["total"] - x["time"], reverse=True)
     return results
 
 
@@ -255,28 +256,6 @@ def get_problem(
     # Contacts
     # *******************************************************************************
 
-    # Contact durations
-    contact_durations = list[np.array]([] for _ in range(N_sat))
-    contact_start_ends = list[np.array]([] for _ in range(N_sat))
-    for i_sat in range(N_sat):
-        for i, user in enumerate(users):
-            starts, ends = util.get_start_end_indexes(user_visible[i_sat, i])
-            contact_start_ends[i_sat].append(np.vstack((starts, ends)).T)
-            contact_durations[i_sat].append((ends - starts) * Dt / pnt.SECS_PER_MINUTE)
-    total_contact_durations = np.array(
-        [[x.sum() for x in contact_durations[i_sat]] for i_sat in range(N_sat)]
-    )
-    contact_durations_pathfinder = np.array([user["contact"] for user in users])
-    contact_durations_pathfinder = total_contact_durations[0] * duration_factor
-    contact_durations_pathfinder = (
-        np.round(contact_durations_pathfinder / 60 * 2) * 60 / 2
-    )
-    logging.debug(
-        "Contact durations [minutes]",
-        np.round(total_contact_durations / 60, 1),
-        contact_durations_pathfinder / 60,
-    )
-
     # Navigation signal
     fs = 2492.028e6  # Carrier frequency [Hz]
     fc = 5.115e6  # Spread code frequency [Hz]
@@ -356,60 +335,57 @@ def get_problem(
     # Problem
     # *******************************************************************************
 
+    # Contact durations
+    contact_durations = list[np.array]([] for _ in range(N_sat))
+    contact_start_ends = list[np.array]([] for _ in range(N_sat))
+    for i_sat in range(N_sat):
+        for i, user in enumerate(users):
+            starts, ends = util.get_start_end_indexes(user_visible[i_sat, i])
+            contact_start_ends[i_sat].append(np.vstack((starts, ends)).T)
+            contact_durations[i_sat].append((ends - starts) * Dt / pnt.SECS_PER_MINUTE)
+    total_contact_durations = np.array(
+        [[x.sum() for x in contact_durations[i_sat]] for i_sat in range(N_sat)]
+    )
+    contact_durations_pathfinder = np.array([user["contact"] for user in users])
+    contact_durations_pathfinder = total_contact_durations[0] * duration_factor
+    contact_durations_pathfinder = (
+        np.round(contact_durations_pathfinder / 60 * 2) * 60 / 2
+    )
+    logging.debug(
+        "Contact durations [minutes]",
+        np.round(total_contact_durations / 60, 1),
+        contact_durations_pathfinder / 60,
+    )
+
+    reset_id_counters()
+
     # Requests
     requests = list[Request]()
-    requests.append(
-        Request(
-            id=-1,
-            usr_id=-1,
-            ts=0,
-            te=tf / pnt.SECS_PER_HOUR,
-            dur=tf / pnt.SECS_PER_HOUR,
-            priority=0,
-        ),  # Dummy request
-    )
-    resquest_id = 0
-    for i, user in enumerate(users):
-        requests.append(
-            Request(
-                id=resquest_id,
-                usr_id=user["id"],
-                rv=rv_moon_user_mi[i],
-                ts=0,
-                te=tf / pnt.SECS_PER_HOUR,
-                dur=contact_durations_pathfinder[i]
-                * pnt.SECS_PER_MINUTE
-                / pnt.SECS_PER_HOUR,
+    for j_day in range(N_days):
+        for i, user in enumerate(users):
+            dur = contact_durations_pathfinder[i] / 2 / 60
+            requests.append(
+                Request(usr_id=user["id"], ts=j_day * 24, te=N_days * 24, dur=dur)
             )
-        )
-        resquest_id += 1
     N_req = len(requests)
 
     # Service windows
     service_windows = list[ServiceWindow]()
-    window_id = 0
     for i_sat in range(N_sat):
-        service_windows.append(
-            ServiceWindow(
-                id=-1,
-                sat_id=i_sat,
-                request_id=-1,
-                ts=0,
-                te=tf / pnt.SECS_PER_HOUR,
-            )  # Dummy service window
-        )
-        for i, request in enumerate(requests[1:]):
-            for start, end in contact_start_ends[i_sat][i]:
+        for request in requests:
+            for start, end in contact_start_ends[i_sat][request.usr_id]:
+                # Convert indexes to hours
+                start_h = start * Dt / pnt.SECS_PER_HOUR
+                end_h = end * Dt / pnt.SECS_PER_HOUR
+
+                if end_h <= request.ts or start_h >= request.te:
+                    continue
+
+                ts = np.ceil(max(start_h, request.ts) * 100) / 100
+                te = np.floor(min(end_h, request.te) * 100) / 100
                 service_windows.append(
-                    ServiceWindow(
-                        id=window_id,
-                        sat_id=i_sat,
-                        request_id=request.id,
-                        ts=ceil(start * Dt / pnt.SECS_PER_HOUR * 10) / 10,
-                        te=floor(end * Dt / pnt.SECS_PER_HOUR * 10) / 10,
-                    )
+                    ServiceWindow(sat_id=i_sat, usr_id=request.usr_id, ts=ts, te=te)
                 )
-                window_id += 1
     N_win = len(service_windows)
 
     # Transition times
@@ -428,25 +404,21 @@ def get_problem(
     P_solar_max = 50  # [W] Max power generation
     R_dte_max = -2e3  # [kbps] Direct-To-Earth max data rate
 
-    payload_data_gen = -1.9 * R_dte_max  # [kbps] Payload data generation
-    payload_energy_gen = -1.9 * P_solar_max  # [W] Payload power generation
-
-    max_energy = np.abs(P_solar_max) * 12  # [Wh] Max energy capacity
+    max_energy = 1.0  # [Wh] Max energy capacity
     min_energy = max_energy * 0.2  # [Wh] Min energy capacity
-    max_data = np.abs(R_dte_max) * 12  # [Mb] Max data capacity
+    max_data = 0.8  # [Mb] Max data capacity
     min_data = max_data * 0.2  # [Mb] Min data capacity
 
-    e_func = partial(
-        energy_gen_func,
-        sun_angle_cos=sun_angle_cos,
-        P_solar_max=P_solar_max,
-        Dt=Dt,
-    )
-    d_func = partial(data_gen_func, R_dte_max=R_dte_max)
+    payload_data_gen = 0.1
+    payload_energy_gen = -0.1
+
+    energy_gen = 0.075 * sun_angle_cos * Dt / pnt.SECS_PER_HOUR
+    data_gen = -0.075 * np.ones_like(energy_gen) * Dt / pnt.SECS_PER_HOUR
 
     # Problem
     problem = PntSchedulingProblem(
-        time_step=Dt / pnt.SECS_PER_HOUR,
+        t_step=Dt / pnt.SECS_PER_HOUR,
+        t_final=tf / pnt.SECS_PER_HOUR,
         requests=requests,
         service_windows=service_windows,
         transition_times=transition_times,
@@ -457,8 +429,8 @@ def get_problem(
         min_data=min_data,
         payload_data_gen=payload_data_gen,
         payload_energy_gen=payload_energy_gen,
-        energy_gen_func=e_func,
-        data_gen_func=d_func,
+        energy_gen=energy_gen,
+        data_gen=data_gen,
     )
 
     return problem

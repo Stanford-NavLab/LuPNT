@@ -337,7 +337,9 @@ class PntSchedulingProblem:
                     s.req_times[req_id] = sf.req_times[req_id]
         return s
 
-    def transition_function(self, s: State, a: Action) -> State:
+    def transition_function(
+        self, s: State, a: Action, duration_tol: float = 0
+    ) -> State:
         """
         Transition function
 
@@ -357,7 +359,7 @@ class PntSchedulingProblem:
             req_id = a.req.id
             payload_on = usr_id >= 0
 
-            assert a.dur <= a.req.dur - s.req_times[req_id]
+            assert a.dur <= a.req.dur - s.req_times[req_id] + duration_tol
             duration = min(a.dur, a.req.dur - s.req_times[req_id])
 
         else:
@@ -723,7 +725,7 @@ class PntSchedulingProblem:
         )
 
     def clean_policy(
-        self, policy: list[tuple[State, Action]]
+        self, policy: list[tuple[State, Action]], duration_tol: float = 0
     ) -> list[tuple[State, Action]]:
         """
         Clean policy by removing consecutive actions
@@ -759,6 +761,6 @@ class PntSchedulingProblem:
         for a in all_actions:
             if a.req:
                 new_policy.append((s, a))
-                s = self.transition_function(s, a)
+                s = self.transition_function(s, a, duration_tol=duration_tol)
         new_policy.append((s, None))
         return new_policy

@@ -57,7 +57,11 @@ def solve(
     np.random.seed(seed)
     s = problem.initial_state()
     solver_ = solver(problem)
-    policy, time = timed(solver.solve, s, **params)
+    try:
+        policy, time = timed(solver_.solve, s, **params)
+    except Exception as e:
+        policy, time = [(s, None)], 0
+
     metric = get_metrics(problem, policy, time, gamma=1)
     metric["params"] = params
     return metric
