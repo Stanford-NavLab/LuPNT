@@ -21,6 +21,11 @@ import lldb
 from typing import List
 import bisect
 
+import numpy as np
+
+MAX_ROWS = 100
+MAX_COLS = 100
+
 
 def __lldb_init_module(debugger, internal_dict):
     # real
@@ -39,30 +44,54 @@ def __lldb_init_module(debugger, internal_dict):
 def summary(valobj, internalr_dict, options):
     names = [str(x.GetName()) for x in valobj.get_value_child_list()]
     values = [float(x.GetValue()) for x in valobj.get_value_child_list()]
+    matrix = MatrixChildProvider(valobj, internalr_dict)
+    filetered_names = [x for x in names if x not in ("m_rows", "m_cols")]
+    filtered_values = [
+        v for n, v in zip(names, values) if n not in ("m_rows", "m_cols")
+    ]
 
-    if len(names[0]) == 3:
+    cols = (
+        matrix._cols_compile_time
+        if matrix._cols_compile_time != -1
+        else int(values[names.index("m_cols")])
+    )
+    rows = (
+        matrix._rows_compile_time
+        if matrix._rows_compile_time != -1
+        else int(values[names.index("m_rows")])
+    )
+    cols_desc = "dynamic" if matrix._cols_compile_time == -1 else "static"
+    rows_desc = "dynamic" if matrix._rows_compile_time == -1 else "static"
+
+    if len(names[-1]) == 3:
         # Vector "[i]"
-        row_idxs = [int(x[1:-1]) for x in names]
-        rows = max(row_idxs) + 1
-        col_idxs = [0] * rows
-        cols = 1
+        row_idxs = [int(x[1:-1]) for x in filetered_names]
+        n_rows = max(row_idxs) + 1
+        col_idxs = [0] * n_rows
+        n_cols = 1
     else:
         # Matrix "[i,j]"
-        tmp = [x[1:-1].split(",") for x in names]
+        tmp = [x[1:-1].split(",") for x in filetered_names]
         row_idxs = [int(x[0]) for x in tmp]
-        rows = max(row_idxs) + 1
+        n_rows = max(row_idxs) + 1
         col_idxs = [int(x[1]) for x in tmp]
-        cols = max(col_idxs) + 1
+        n_cols = max(col_idxs) + 1
 
     # Array
-    array = [[0.0] * cols for _ in range(rows)]
-    for i, j, x in zip(row_idxs, col_idxs, values):
+    array = [[0.0] * n_cols for _ in range(n_rows)]
+    for i, j, x in zip(row_idxs, col_idxs, filtered_values):
         array[i][j] = x
 
-    return print_aligned(array)
+    summary_txt = "(" + str(rows) + "," + str(cols) + ") "
+    summary_txt += "(" + cols_desc + "," + rows_desc + ")\n"
+    summary_txt += print_aligned(
+        array, all_rows=rows == n_rows, all_columns=cols == n_cols
+    )
+    # summary_txt += "\n" + str(np.array(array))
+    return summary_txt
 
 
-def print_aligned(matrix):
+def print_aligned(matrix, all_rows=True, all_columns=True):
     num_columns = len(matrix[0])
     max_before_decimal = [0] * num_columns
     max_after_decimal = [0] * num_columns
@@ -70,17 +99,17 @@ def print_aligned(matrix):
     # Step 1: Find the maximum length before and after decimal for each column
     for row in matrix:
         for i, value in enumerate(row):
-            parts = str(value).split(".")
+            parts = format_element(value).split(".")
             max_before_decimal[i] = max(max_before_decimal[i], len(parts[0]))
             if len(parts) > 1:
                 max_after_decimal[i] = max(max_after_decimal[i], len(parts[1]))
 
     # Step 2: Format each number with padding and accumulate in a string
-    txt = "\n["
+    txt = "["
     for r, row in enumerate(matrix):
         line = "[" if r == 0 else " ["
         for i, value in enumerate(row):
-            value = float(format_element(value))
+            value = format_element(value)
             before, after = (
                 str(value).split(".") if "." in str(value) else (str(value), "")
             )
@@ -88,8 +117,17 @@ def print_aligned(matrix):
             padding_right = " " * (max_after_decimal[i] - len(after))
             formatted_value = f"{padding_left}{before}.{after}{padding_right}"
             line += formatted_value + (" " if i < num_columns - 1 else "")
-        txt += line + "]\n"
+        if not all_columns:
+            line += " ...]"
+        else:
+            line += "]"
 
+        txt += line
+        if r < len(matrix) - 1:
+            txt += "\n"
+    if not all_rows:
+        txt += "\n [" + " " * (len(line) - 6) + "...]"
+    txt += "]"
     return txt
 
 
@@ -97,20 +135,7 @@ def format_element(x):
     if x == 0.0:
         return "0.0"
     else:
-        return f"{x}"
-
-
-def format_array(array):
-    txt = "\n"
-    txt += "["
-    for i, row in enumerate(array):
-        if i != 0:
-            txt += "\n "
-        txt += "["
-        txt += " ".join(format_element(x) for x in row)
-        txt += "]"
-    txt += "]"
-    return txt
+        return f"{x:.6g}"
 
 
 def split_template_args(s):
@@ -179,10 +204,16 @@ class MatrixChildProvider:
         max_rows = int(template_args[4])
         max_cols = int(template_args[5])
 
-        self._fixed_storage = max_rows != -1 and max_cols != -1
+        self._fixed_rows = max_rows != -1
+        self._fixed_cols = max_cols != -1
+        self._fixed_storage = self._fixed_rows and self._fixed_cols
 
     def num_children(self):
-        return self._cols() * self._rows()
+        return (
+            min(self._cols(), MAX_COLS) * min(self._rows(), MAX_ROWS)
+            + (not self._fixed_rows)
+            + (not self._fixed_cols)
+        )
 
     def get_child_index(self, name):
         return int(name.lstrip("[").rstrip("]"))
@@ -190,19 +221,35 @@ class MatrixChildProvider:
     def get_child_at_index(self, index):
         storage = self._valobj.GetChildMemberWithName("m_storage")
         data = storage.GetChildMemberWithName("m_data")
-        offset = self._scalar_size * index
 
-        if self._row_major:
-            row = index // self._cols()
-            col = index % self._cols()
-        else:
-            row = index % self._rows()
-            col = index // self._rows()
+        if not self._fixed_rows:
+            if index == 0:
+                return storage.GetChildMemberWithName("m_rows")
+            index -= 1
+        if not self._fixed_cols:
+            if (index == 0 and not self._fixed_rows) or (
+                index == 1 and self._fixed_rows
+            ):
+                return storage.GetChildMemberWithName("m_cols")
+            index -= 1
         if self._fixed_storage:
             data = data.GetChildMemberWithName("array")
-        if self._cols() == 1:
+
+        n_cols = min(self._cols(), MAX_COLS)
+        n_rows = min(self._rows(), MAX_ROWS)
+        if self._row_major:
+            row = index // n_cols
+            col = index % n_cols
+            new_index = row * self._cols() + col
+        else:
+            row = index % n_rows
+            col = index // n_rows
+            new_index = col * self._rows() + row
+        offset = self._scalar_size * new_index
+
+        if n_cols == 1:
             name = "[{}]".format(row)
-        elif self._rows() == 1:
+        elif n_rows == 1:
             name = "[{}]".format(col)
         else:
             name = "[{},{}]".format(row, col)
@@ -212,10 +259,13 @@ class MatrixChildProvider:
             child = data.CreateChildAtOffset(name, offset, self._scalar_type)
         else:
             # real
-            child = data.GetChildAtIndex(index)
+            if self._fixed_storage:
+                child = data.GetChildAtIndex(new_index)
+            else:
+                child = data.CreateChildAtOffset(name, offset, self._scalar_type)
             child = child.GetChildMemberWithName("m_data")
             child = child.GetChildMemberWithName("__elems_")
-            offset = child.GetChildAtIndex(0).GetByteSize() * index
+            offset = child.GetChildAtIndex(0).GetByteSize() * new_index
             scalar_type = child.GetChildAtIndex(0).GetType()
             child = child.CreateChildAtOffset(name, 0, scalar_type)
         return child
@@ -224,14 +274,16 @@ class MatrixChildProvider:
         if self._cols_compile_time == -1:
             storage = self._valobj.GetChildMemberWithName("m_storage")
             cols = storage.GetChildMemberWithName("m_cols")
-            return cols.GetValueAsUnsigned()
+            n_cols = cols.GetValueAsUnsigned()
         else:
-            return self._cols_compile_time
+            n_cols = self._cols_compile_time
+        return n_cols
 
     def _rows(self):
         if self._rows_compile_time == -1:
             storage = self._valobj.GetChildMemberWithName("m_storage")
             rows = storage.GetChildMemberWithName("m_rows")
-            return rows.GetValueAsUnsigned()
+            n_rows = rows.GetValueAsUnsigned()
         else:
-            return self._rows_compile_time
+            n_rows = self._rows_compile_time
+        return n_rows

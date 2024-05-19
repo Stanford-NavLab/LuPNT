@@ -59,13 +59,8 @@ void LoadSpiceKernel(void) {
   furnsh_c(
       "earth_000101_230805_230512.bpc");  // shorter histrory precise earth EOP
 
-  std::cout << "Loaded All SPICE Kernels" << std::endl;
-
   // Load Chebyshev coefficients
   cheby_s = spk_extract("de440.bsp", &cheby_n);
-  std::cout << "Loaded Chebyshev coefficients for " + std::to_string(cheby_n) +
-                   " planets."
-            << std::endl;
 
   if (cheby_s == NULL) {
     cheby_err(
@@ -349,11 +344,15 @@ real ConvertTime(real t, std::string from_time_type, std::string to_time_type) {
   return t_out;
 }
 
-Vector6 GetBodyPosVel(const real tai, int center, int target) {
-  // cast to NaifId
-  NaifId center_id_naif = (NaifId)center;
-  NaifId target_id_naif = (NaifId)target;
-  return GetBodyPosVel(tai, center_id_naif, target_id_naif);
+Matrix<-1, 6> GetBodyPosVel(const VectorX &tai, NaifId center, NaifId target) {
+  LoadSpiceKernel();
+  Matrix<-1, 6> retState(tai.size(), 6);
+
+  for (int i = 0; i < tai.size(); i++) {
+    retState.row(i) = GetBodyPosVel(tai(i), center, target).transpose();
+  }
+
+  return retState;
 }
 
 /**
@@ -368,8 +367,8 @@ Vector6 GetBodyPosVel(const real tai, int center, int target) {
 Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target) {
   LoadSpiceKernel();
 
-  bool load_cent = false;
-  bool load_targ = false;
+  bool found_center = false;
+  bool found_target = false;
   Vector6 rv_center;
   Vector6 rv_target;
 
@@ -379,25 +378,27 @@ Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target) {
   // find the segment for the center and target body
   if (center == NaifId::SOLAR_SYSTEM_BARYCENTER) {
     rv_center = Vector6::Zero();
+    found_center = true;
   }
   if (target == NaifId::SOLAR_SYSTEM_BARYCENTER) {
     rv_target = Vector6::Zero();
+    found_target = true;
   }
 
   for (int i = 0; i < cheby_n; i++) {
     if (cheby_s[i].target == (int)target) {
       rv_target = cheby_posvel_ad(t_s, cheby_s[i].seg, cheby_s[i].len);
-      load_cent = true;
+      found_target = true;
     } else if (cheby_s[i].target == (int)center) {
       rv_center = cheby_posvel_ad(t_s, cheby_s[i].seg, cheby_s[i].len);
-      load_targ = true;
+      found_center = true;
     }
 
-    if (load_cent && load_targ) {
+    if (found_center && found_target) {
       break;
     }
   }
-  assert(load_cent && load_targ && "Chebyshev coefficients not found");
+  assert(found_center && found_target && "Chebyshev coefficients not found");
 
   Vector6 retState = rv_target - rv_center;
   return retState;

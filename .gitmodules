@@ -14,3 +14,12 @@
 [submodule "third_party/matplotplusplus"]
 	path = third_party/matplotplusplus
 	url = https://github.com/alandefreitas/matplotplusplus.git
+[submodule "third_party/AI-Toolbox"]
+	path = third_party/AI-Toolbox
+	url = https://github.com/Svalorzen/AI-Toolbox
+[submodule "third_party/tqdm.cpp"]
+	path = third_party/tqdm.cpp
+	url = https://github.com/tqdm/tqdm.cpp.git
+[submodule "examples/projects/contact-plan-with-od"]
+	path = examples/projects/contact-plan-with-od
+	url = git@github.com:kdricemt/contact-plan-with-od.git

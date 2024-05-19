@@ -14,11 +14,20 @@
 #include <lupnt/core/constants.h>
 
 #include <random>
+#include <tuple>
+#include <utility>
 
 namespace lupnt {
 
-std::tuple<real, real, real> unpack(const Vector3 &vec);
-std::tuple<real, real, real, real, real, real> unpack(const Vector6 &vec);
+template <typename Vector, std::size_t... Indices>
+auto unpackImpl(const Vector &vec, std::index_sequence<Indices...>) {
+  return std::make_tuple(vec(Indices)...);
+}
+
+template <typename T, int Size>
+auto unpack(const Eigen::Matrix<T, Size, 1> &vec) {
+  return unpackImpl(vec, std::make_index_sequence<Size>{});
+}
 
 /**
  * @brief Compute the angle between two vectors
@@ -38,6 +47,12 @@ real angleBetweenVectors(const VectorX &a, const VectorX &b);
 real wrapToPi(real angle);
 VectorX wrapToPi(VectorX angle);
 
+real decimal2dB(real x);
+real dB2decimal(real x);
+
+MatrixX decimal2dB(MatrixX x);
+MatrixX dB2decimal(MatrixX x);
+
 /**
  * @brief Wrap the angles between 0 and 2pi
  *
@@ -54,6 +69,11 @@ VectorX wrapTo2Pi(VectorX angle);
  * @return real
  */
 real deg2rad(real deg);
+double rad2deg(double rad);
+
+real floor(real x);
+Vector3 degrees2dms(real deg);
+real dms2degrees(Vector3 hms);
 
 /**
  * @brief Arccosine function with input bounds
@@ -78,6 +98,7 @@ real safe_asin(real x);
  * @return real
  */
 real rad2deg(real rad);
+double deg2rad(double deg);
 
 /**
  * @brief Compute the root mean square of a vector
@@ -186,5 +207,7 @@ Matrix3 Rot3(real phi);
  * @return Matrix3
  */
 Matrix3 Skew(Vector3 x);
+
+std::vector<double> EigenToStdVector(const VectorX &vec);
 
 }  // namespace lupnt

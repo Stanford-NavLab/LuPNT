@@ -48,7 +48,7 @@ Todo: Create a bashfile to do the installation process.
     - [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
       - For vector and matrix computation
       - Tested with v3.4.0
-      - Place the entire folder to "Eigen", and place it under thirdparty
+      - Rename the entire folder to "eigen", and place it under thirdparty
     - [pybind](https://pybind11.readthedocs.io/en/stable/installing.html)
         ```
         git submodule add -b stable ../../pybind/pybind11 pybind11
@@ -152,15 +152,15 @@ For developers, see [here](bindings/readme.md) for details on how to add new pyt
 2. (activate your local virtual environment e.g. venv, conda)
 3. Add permission to run the install script
 ```
-$ sudo chmod 755 ./scripts/install_pylupnt.zsh
+$ sudo chmod 755 ./scripts/install_pylupnt.sh
 ```
 3. Build and install the lupnt library (run this every time you change your c++ or python library)
 ```
-$ ./scripts/install_pylupnt.zsh
+$ ./scripts/install_pylupnt.sh
 ```
 4. Now you can use the pylupnt library inside your project (see the codes under `examples_python/`)
 ```
-$ install pylupnt as pnt
+$ import pylupnt as pnt
 ```
 
 ### Step 5: Run Unit Tests
@@ -186,7 +186,14 @@ $ python3 -m pytest test/python
 ## Testing with GMAT
 - Some of the dynamics functions are tested by comparing outputs with the [GMAT](library) python API
 - See [here](https://sourceforge.net/p/gmat/git/ci/GMAT-R2020a/tree/application/api/API_README.txt) for instructions on how to setup the GMAT API for function
-
+- If you are a MAC OS user in Apple Silicon, the current python interface for GMAT only works for x86 platforms. You can create a conda environment with x86 python with the following commands.
+```
+CONDA_SUBDIR=osx-64 conda create -n gmat-env python=3.9 -y
+conda activate gmat-env
+conda env config vars set CONDA_SUBDIR=osx-64
+conda deactivate
+conda activate gmat-env
+```
 
 ## Working with VSCODE
 - This project uses the [Google C++ Style](https://google.github.io/styleguide/cppguide.html).
@@ -230,3 +237,7 @@ $ python3 -m pytest test/python
   [5] = 1.8768878200960224
 )
 ```
+
+# Install for Windows
+1. Clone the repo
+2. 

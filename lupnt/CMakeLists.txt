@@ -21,11 +21,20 @@ include_directories("${CMAKE_SOURCE_DIR}/lupnt")
 message(STATUS "Configuring modules")
 foreach(subdir ${LuPNT_subdirs})
   # Build convenience libraries
-  file(GLOB_RECURSE subdir_srcs "${subdir}/*.cc" "${subdir}/*.h") # Include header files so they show up in Visual Studio
-  set(${subdir}_srcs ${subdir_srcs})
 
   # Build local library and tests
   message(STATUS "   ${subdir}")
+
+  # Include header files so they show up in Visual Studio
+  file(GLOB_RECURSE subdir_srcs "${subdir}/*.cc" "${subdir}/*.h") 
+  # Print the source files (only the filename, not the full path)
+  foreach(file ${subdir_srcs})
+    get_filename_component(file_name ${file} NAME)
+    message(STATUS "     ${file_name}")
+  endforeach(file)
+  
+  set(${subdir}_srcs ${subdir_srcs})
+
   add_subdirectory(${subdir})
 endforeach(subdir)
 
@@ -68,8 +77,8 @@ target_include_directories(lupnt SYSTEM BEFORE PUBLIC
   $<INSTALL_INTERFACE:include/lupnt/third_party/autodiff>
 
   # Eigen
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/Eigen>
-  $<INSTALL_INTERFACE:${include/lupnt/third_party/Eigen}>
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/eigen>
+  $<INSTALL_INTERFACE:${include/lupnt/third_party/eigen}>
 
   # cspice
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/cspice>

@@ -20,8 +20,6 @@
 
 // Autodiff includes
 
-
-
 // Eigen includes
 
 #include <Eigen/QR>
@@ -50,7 +48,7 @@ int main() {
     NBodyDynamics dynamics;
     dynamics.AddBody(moon);
     // dynamics.AddBody(earth);
-    dynamics.SetCentralBody(moon);
+    dynamics.SetPrimaryBody(moon);
 
     // State
     VectorX rv0(6);

@@ -3,9 +3,9 @@ import numpy as np
 import pytest
 
 try:
-    from .utils import data
+    from ..gmat.utils import data
 except ImportError:
-    from utils import data
+    from test.gmat.utils import data
 
 
 class TestOrbitState:

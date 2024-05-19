@@ -3,7 +3,7 @@ set(groupName "examples")
 set(linkLibraries "lupnt")
 
 # Get all script files
-file(GLOB script_files "*.cc" "**/*.cc")
+file(GLOB script_files "example_*.cc" "**/example_*.cc")
 
 # Separate into source files and headers (allows for adding headers to show up in
 # MSVC and Xcode projects).
@@ -26,7 +26,7 @@ source_group("" FILES ${script_srcs} ${script_headers})
 # Print script_srcs (only filenames, not full paths)
 foreach(script_src IN ITEMS ${script_srcs})
     get_filename_component(script_name ${script_src} NAME)
-    message(STATUS "  ${script_name}")
+    message(STATUS "    ${script_name}")
 endforeach()
 
 # Create executables

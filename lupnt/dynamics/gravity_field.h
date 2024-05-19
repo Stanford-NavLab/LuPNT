@@ -22,22 +22,21 @@
 
 namespace lupnt {
 
-std::tuple<double, double> spharm_vwmm(int m_in, double Vm_1m_1, double Wm_1m_1,
-                                       const Vector3d &x_R, double Re);
+std::tuple<real, real> spharm_vwmm(int m_in, real Vm_1m_1, real Wm_1m_1,
+                                   const Vector3 &x_R, double Re);
 
-std::tuple<double, double> spharm_vwm1m(int m_in, double Vmm, double Wmm,
-                                        const Vector3d &x_R, double Re);
+std::tuple<real, real> spharm_vwm1m(int m_in, real Vmm, real Wmm,
+                                    const Vector3 &x_R, double Re);
 
-std::tuple<double, double> spharm_vwnm(int n_in, int m_in, double Vn_1m,
-                                       double Vn_2m, double Wn_1m, double Wn_2m,
-                                       const Vector3d &x_R, double Re);
+std::tuple<real, real> spharm_vwnm(int n_in, int m_in, real Vn_1m, real Vn_2m,
+                                   real Wn_1m, real Wn_2m, const Vector3 &x_R,
+                                   double Re);
 
-Vector3d Facc_j(const Vector3d &facc_R, const Matrix3d &Ur2j);
+Vector3 Facc_j(const Vector3 &facc_R, const Matrix3 &Ur2j);
 
-std::tuple<Vector3d, Vector3d> spharm_dvwdx(int n_in, int m_in, double Vn1m,
-                                            double Vn1m1, double Vn1m_1,
-                                            double Wn1m, double Wn1m1,
-                                            double Wn1m_1, double Re);
+std::tuple<Vector3, Vector3> spharm_dvwdx(int n_in, int m_in, real Vn1m,
+                                          real Vn1m1, real Vn1m_1, real Wn1m,
+                                          real Wn1m1, real Wn1m_1, double Re);
 
 std::tuple<Matrix3d, Matrix3d> spharm_d2vwdx2(int n_in, int m_in, double Vn2m,
                                               double Vn2m1, double Vn2m2,
@@ -46,7 +45,7 @@ std::tuple<Matrix3d, Matrix3d> spharm_d2vwdx2(int n_in, int m_in, double Vn2m,
                                               double Wn2m2, double Wn2m_1,
                                               double Wn2m_2, double Re);
 
-Vector3d spharm_acc_ecr(int nmax, int mmax, const Vector3 &x_R_in, double Re,
-                        double GMe, const MatrixXd &Cnm, const MatrixXd &Snm);
+Vector3 spharm_acc_ecr(int nmax, int mmax, const Vector3 &x_R_in, double Re,
+                       double GMe, const MatrixXd &Cnm, const MatrixXd &Snm);
 
 }  // namespace lupnt

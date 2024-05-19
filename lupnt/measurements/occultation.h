@@ -11,11 +11,14 @@
 
 #pragma once
 
-#include "lupnt/core/constants.h"
-#include "lupnt/numerics/math_utils.h"
-
 #include <cmath>
 #include <map>
+
+#include "lupnt/core/constants.h"
+#include "lupnt/numerics/math_utils.h"
+#include "lupnt/physics/coord_converter.h"
+
+#pragma once
 
 namespace lupnt {
 
@@ -26,10 +29,6 @@ class Occultation {
   static constexpr double r_ionos_ = R_EARTH + 965.0;  // ionospheric mask
 
  public:
-  // TODO: Generalize this
-  Occultation();
-  ~Occultation();
-
   /**
    * @brief Compute occultation between a tx and a rx
    *
@@ -41,65 +40,26 @@ class Occultation {
    * @return std::map<std::string, bool>
    */
   static std::map<std::string, bool> ComputeOccultation(
-      const Vector3d tx_eci, const Vector3d tx_mci,
-      const Vector3d rx_eci, const Vector3d rx_mci,
-      const std::string tx_planet) {
-    Vector3d tx2usr = rx_eci - tx_eci;
-    double tx2usr_norm = tx2usr.norm();
+      const Vector3d tx_eci, const Vector3d tx_mci, const Vector3d rx_eci,
+      const Vector3d rx_mci, const std::string tx_planet);
 
-    // COMPUTE EARTH OCCULTATION
+  // VectorX = func(real, Vector3, Vector3, ...)
+  static VectorX ComputeOccultation(real epoch, const Vector3& r1,
+                                    const Vector3& r2, CoordSystem cs1,
+                                    CoordSystem cs2,
+                                    const std::vector<NaifId>& bodies);
 
-    // Compute angle between (tx->Earth center) and (tx->rx)
-    Vector3d tx2earth = -tx_eci;
-    double tx2earth_norm = tx2earth.norm();
-    double alpha_earth =
-        acos(tx2usr.dot(tx2earth) / (tx2earth_norm * tx2usr_norm));
+  // MatrixX = func(real, Matrix<-1, 3>, Matrix<-1, 3>, ...)
+  static MatrixX ComputeOccultation(real epoch, const Matrix<-1, 3>& r1,
+                                    const Matrix<-1, 3>& r2, CoordSystem cs1,
+                                    CoordSystem cs2,
+                                    const std::vector<NaifId>& bodies);
 
-    bool occ_earth, occ_atmos, occ_ionos;
-    if (tx_planet != "EARTH") {
-      // Compute angle between (tx>Earth center) and (tx->horizon)
-      double beta_earth = asin(R_EARTH / tx2earth_norm);
-      double beta_atmos = asin(r_atmos_ / tx2earth_norm);
-      double beta_ionos = asin(r_ionos_ / tx2earth_norm);
-
-      // Compute occultation (alpha_earth < beta and tx2usr_norm >
-      // tx2hor_norm)
-      occ_earth = ((alpha_earth < beta_earth) &&
-                   (tx2usr_norm > tx2earth_norm * cos(beta_earth)));
-      occ_atmos = ((alpha_earth < beta_atmos) &&
-                   (tx2usr_norm > tx2earth_norm * cos(beta_atmos)));
-      occ_ionos = ((alpha_earth < beta_ionos) &&
-                   (tx2usr_norm > tx2earth_norm * cos(beta_ionos)));
-    } else {
-      occ_earth = (alpha_earth < (M_PI / 2.0 + min_elevation_));
-      occ_atmos = true;
-      occ_ionos = true;
-    }
-
-    // COMPUTE MOON OCCULTATION
-
-    // Compute angle between (tx->Moon center) and (tx->rx)
-    Vector3d tx2moon = -tx_mci;
-    double tx2moon_norm = tx2moon.norm();
-    double alpha_moon =
-        acos(tx2moon.dot(tx2usr) / (tx2moon_norm * tx2usr_norm));
-
-    bool occ_moon;
-    if (tx_planet != "MOON") {
-      // Compute angle between (tx->Moon center) and (tx->horizon)
-      double beta_moon = asin(R_MOON / tx2moon_norm);
-
-      // Compute occultation (alpha_moon < beta and tx2usr_norm > tx2hor_norm)
-      occ_moon = ((alpha_moon < beta_moon) &&
-                  (tx2usr_norm > tx2moon_norm * cos(beta_moon)));
-    } else {
-      occ_moon = (alpha_moon < (M_PI / 2.0 + min_elevation_));
-    }
-
-    return {{"earth", occ_earth},
-            {"atmos", occ_atmos},
-            {"ionos", occ_ionos},
-            {"moon", occ_moon}};
-  }
+  // MatrixX = func(VectorX, Matrix<-1, 3>, Matrix<-1, 3>, ...)
+  static MatrixX ComputeOccultation(const VectorX& epoch,
+                                    const Matrix<-1, 3>& r1,
+                                    const Matrix<-1, 3>& r2, CoordSystem cs1,
+                                    CoordSystem cs2,
+                                    const std::vector<NaifId>& bodies);
 };
 }  // namespace lupnt

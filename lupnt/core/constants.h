@@ -17,6 +17,13 @@
 
 #include "user_file_path.h"
 
+#define ASSERT_WITH_MESSAGE(condition, message) \
+  if (!(condition)) {                           \
+    std::ostringstream oss;                     \
+    oss << message;                             \
+    throw std::runtime_error(oss.str());        \
+  }
+
 #define DEFINE_STATIC_VECTORS_MATRICES(size)                 \
   using Vector##size##d = Eigen::Matrix<double, size, 1>;    \
   using Matrix##size##d = Eigen::Matrix<double, size, size>; \
@@ -49,6 +56,17 @@
 namespace lupnt {
 
 using real = autodiff::real;
+template <int rows, int cols>
+using Matrix = Eigen::Matrix<real, rows, cols>;
+template <int rows, int cols>
+using Matrixd = Eigen::Matrix<double, rows, cols>;
+template <int size>
+using Vector = Eigen::Matrix<real, size, 1>;
+template <int size>
+using Vectord = Eigen::Matrix<double, size, 1>;
+template <int size>
+using RowVectord = Eigen::Matrix<double, 1, size>;
+using RowVectorXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;
 
 DEFINE_VECTORS_MATRICES()
 

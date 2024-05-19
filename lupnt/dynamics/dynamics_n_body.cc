@@ -37,7 +37,7 @@ VectorX NBodyDynamics::ComputeRates(real epoch, const VectorX &x) const {
     Vector3 r_body2sun =
         SpiceInterface::GetBodyPos("SUN", epoch, "J2000", "MOON", "NONE");
     Vector3 r_sun2sc = r_body2sc - r_body2sun;
-    double R_body = centralBody.R;
+    double R_body = central_body_.R;
     real B_srp = CR_ * (area_ / mass_);  // ballistic coefficient [m^2/kg]
     Vector3 a_srp =
         ComputeSolarRadiationPressure(r_body2sc, r_sun2sc, B_srp, R_body);
@@ -56,14 +56,14 @@ Vector3 NBodyDynamics::ComputeNBodyGravity(real epoch,
   Vector3 a = Vector3::Zero();   // s/c acceleration w.r.t. the
                                  // center body [km/s^2]
 
-  for (Body body : bodies) {
+  for (Body body : bodies_) {
     VectorX rv_i, rv_body;
     Vector3 a_i, a_i_C, r_i;
 
     // Correction for non-central body
-    if (body.id != centralBody.id) {
+    if (body.id != central_body_.id) {
       // i-th body pos and vel w.r.t. the center body [km, km/s]
-      rv_body = SpiceInterface::GetBodyPosVel(epoch, centralBody.id, body.id);
+      rv_body = SpiceInterface::GetBodyPosVel(epoch, central_body_.id, body.id);
 
       // s/c pos and vel w.r.t. the i-th body [km, km/s]
       rv_i = rv - rv_body;
@@ -116,7 +116,7 @@ Vector3 NBodyDynamics::ComputeSolarRadiationPressure(const Vector3 &r_body2sc,
   real a = asin(R_SUN / r_sun2sc.norm());
   // Apparent radius of the occulting body
   real b = asin(R_body / r_body2sc.norm());
-  // Apparent separation of the centers of both bodies
+  // Apparent separation of the centers of both bodies_
   real c =
       safe_acos(r_body2sc.dot(r_sun2sc) / (r_body2sc.norm() * r_sun2sc.norm()));
 

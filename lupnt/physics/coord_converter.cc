@@ -16,11 +16,91 @@
 #include "cheby.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/numerics/math_utils.h"
+#include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/orbit_state_utils.h"
 #include "spice_interface.h"
 
 using namespace lupnt;
 using namespace SpiceInterface;
+
+CartesianOrbitState CoordConverter::Convert(real epoch,
+                                            const CartesianOrbitState &state_in,
+                                            CoordSystem coord_sys_out) {
+  Vector6 rv_in = state_in.GetVector();
+  Vector6 rv_out =
+      Convert(epoch, rv_in, state_in.GetCoordSystem(), coord_sys_out);
+  return CartesianOrbitState(rv_out, coord_sys_out);
+}
+
+Vector3 CoordConverter::Convert(real epoch, Vector3 rv_in,
+                                CoordSystem coord_sys_in,
+                                CoordSystem coord_sys_out) {
+  Vector6 rv_in_6;
+  rv_in_6 << rv_in, Vector3::Zero();
+  Vector6 rv_out_6 = Convert(epoch, rv_in_6, coord_sys_in, coord_sys_out);
+  return rv_out_6.head(3);
+}
+
+Matrix<-1, 6> CoordConverter::Convert(real epoch, const Matrix<-1, 6> &rv_in,
+                                      CoordSystem coord_sys_in,
+                                      CoordSystem coord_sys_out) {
+  Matrix<-1, 6> rv_out(rv_in.rows(), 6);
+  for (int i = 0; i < rv_in.rows(); i++) {
+    rv_out.row(i) = Convert(epoch, rv_in.row(i).transpose().eval(),
+                            coord_sys_in, coord_sys_out);
+  }
+  return rv_out;
+}
+
+Matrix<-1, 3> CoordConverter::Convert(real epoch, const Matrix<-1, 3> &r_in,
+                                      CoordSystem coord_sys_in,
+                                      CoordSystem coord_sys_out) {
+  Matrix<-1, 6> rv_in(r_in.rows(), 6);
+  rv_in << r_in, Matrix<-1, 3>::Zero(r_in.rows(), 3);
+  Matrix<-1, 6> rv_out = Convert(epoch, rv_in, coord_sys_in, coord_sys_out);
+  return rv_out.leftCols(3);
+}
+
+Matrix<-1, 6> CoordConverter::Convert(VectorX epoch, const Vector6 &rv_in,
+                                      CoordSystem coord_sys_in,
+                                      CoordSystem coord_sys_out) {
+  Matrix<-1, 6> rv_out(epoch.size(), 6);
+  for (int i = 0; i < epoch.size(); i++) {
+    rv_out.row(i) = Convert(epoch(i), rv_in, coord_sys_in, coord_sys_out);
+  }
+  return rv_out;
+}
+
+Matrix<-1, 3> CoordConverter::Convert(VectorX epoch, const Vector3 &r_in,
+                                      CoordSystem coord_sys_in,
+                                      CoordSystem coord_sys_out) {
+  Matrix<-1, 6> rv_in(epoch.size(), 6);
+  rv_in << r_in, Matrix<-1, 3>::Zero(epoch.size(), 3);
+  Matrix<-1, 6> rv_out = Convert(epoch, rv_in, coord_sys_in, coord_sys_out);
+  return rv_out.leftCols(3);
+}
+
+Matrix<-1, 6> CoordConverter::Convert(VectorX epoch, const Matrix<-1, 6> &rv_in,
+                                      CoordSystem coord_sys_in,
+                                      CoordSystem coord_sys_out) {
+  assert(epoch.size() == rv_in.rows() && "Epoch and rv_in must have same size");
+  Matrix<-1, 6> rv_out(epoch.size(), 6);
+  for (int i = 0; i < epoch.size(); i++) {
+    rv_out.row(i) = Convert(epoch(i), rv_in.row(i).transpose().eval(),
+                            coord_sys_in, coord_sys_out);
+  }
+  return rv_out;
+}
+
+Matrix<-1, 3> CoordConverter::Convert(VectorX epoch, const Matrix<-1, 3> &r_in,
+                                      CoordSystem coord_sys_in,
+                                      CoordSystem coord_sys_out) {
+  assert(epoch.size() == r_in.rows() && "Epoch and r_in must have same size");
+  Matrix<-1, 6> rv_in(epoch.size(), 6);
+  rv_in << r_in, Matrix<-1, 3>::Zero(epoch.size(), 3);
+  Matrix<-1, 6> rv_out = Convert(epoch, rv_in, coord_sys_in, coord_sys_out);
+  return rv_out.leftCols(3);
+}
 
 /**
  * @brief Convert the state vector from one coordinate system to another (with
@@ -168,6 +248,11 @@ Vector6 CoordConverter::Convert(real epoch, Vector6 rv_in,
           Vector6 rv_out = Convert(epoch, rv_pa, PA, coord_sys_out);
           return rv_out;
         }
+        case OP: {
+          Matrix6 R_op2mi = ComputeOpToMi(epoch);
+          Vector6 rv_op = R_op2mi.transpose() * rv_in;
+          return rv_op;
+        }
         default: {
           Vector6 rv_gcrf = Convert(epoch, rv_in, MI, GCRF);
           Vector6 rv_out = Convert(epoch, rv_gcrf, GCRF, coord_sys_out);
@@ -179,7 +264,8 @@ Vector6 CoordConverter::Convert(real epoch, Vector6 rv_in,
     case ICRF: {
       switch (coord_sys_out) {
         case GCRF: {
-          Vector6 rv_icrf_ssb_earth = GetBodyPosVel(epoch, NaifId::SOLAR_SYSTEM_BARYCENTER, NaifId::EARTH);
+          Vector6 rv_icrf_ssb_earth = GetBodyPosVel(
+              epoch, NaifId::SOLAR_SYSTEM_BARYCENTER, NaifId::EARTH);
           Vector6 rv_gcrf = rv_in - rv_icrf_ssb_earth;
           return rv_gcrf;
         }
@@ -194,13 +280,29 @@ Vector6 CoordConverter::Convert(real epoch, Vector6 rv_in,
     case EMR: {
       switch (coord_sys_out) {
         case GCRF: {
-          Vector6 rv_icrf_emb_earth = GetBodyPosVel(epoch, NaifId::EARTH, NaifId::EARTH_MOON_BARYCENTER);
+          Vector6 rv_icrf_emb_earth = GetBodyPosVel(
+              epoch, NaifId::EARTH, NaifId::EARTH_MOON_BARYCENTER);
           Vector6 rv_gcrf = RtnToInertial(rv_icrf_emb_earth, rv_in);
           return rv_gcrf;
         }
         default: {
           Vector6 rv_gcrf = Convert(epoch, rv_in, EMR, GCRF);
           Vector6 rv_out = Convert(epoch, rv_gcrf, GCRF, coord_sys_out);
+          return rv_out;
+        }
+      }
+    }
+
+    case OP: {
+      switch (coord_sys_out) {
+        case MI: {
+          Matrix6 R_op2mi = ComputeOpToMi(epoch);
+          Vector6 rv_mi = R_op2mi * rv_in;
+          return rv_mi;
+        }
+        default: {
+          Vector6 rv_mi = Convert(epoch, rv_in, OP, MI);
+          Vector6 rv_out = Convert(epoch, rv_mi, MI, coord_sys_out);
           return rv_out;
         }
       }
@@ -238,4 +340,35 @@ Matrix6 CoordConverter::ComputeGCRFtoITRF(real tai) {
                             // Mrot temporaly
   Matrix6 Mrot = GetFrameConversionMatrix(et, "J2000", "ITRF93");
   return Mrot;
+}
+
+Matrix6 CoordConverter::ComputeOpToMi(real epoch) {
+  Vector6 rv_earth_icrf = GetBodyPosVel(epoch, NaifId::SUN, NaifId::EARTH);
+  Vector6 rv_moon_icrf = GetBodyPosVel(epoch, NaifId::SUN, NaifId::MOON);
+
+  // Moon axis
+  MatrixX iau_moon2icrf;
+  iau_moon2icrf =
+      GetFrameConversionMatrix(epoch, "IAU_MOON", "J2000").block(0, 0, 3, 3);
+
+  // IAU pole
+  Vector3 iau_pole{0, 0, 1};
+  Vector3 iau_pole_icrf = iau_moon2icrf * iau_pole;
+
+  // OP unit vectors
+  Vector3 dr = rv_earth_icrf.head(3) - rv_moon_icrf.head(3);
+  Vector3 dv = rv_earth_icrf.tail(3) - rv_moon_icrf.tail(3);
+  Vector3 z_op = dr.cross(dv).normalized();
+  Vector3 x_op = iau_pole_icrf.cross(z_op).normalized();
+  Vector3 y_op = z_op.cross(x_op).normalized();
+
+  // create rotation matrix from OP to MI
+  Matrix3 R_op2mi;
+  R_op2mi << x_op, y_op, z_op;
+
+  Matrix6 R_op2mi_tot = Matrix6::Zero();
+  R_op2mi_tot.topLeftCorner(3, 3) = R_op2mi;
+  R_op2mi_tot.bottomRightCorner(3, 3) = R_op2mi;
+
+  return R_op2mi_tot.cast<double>();
 }

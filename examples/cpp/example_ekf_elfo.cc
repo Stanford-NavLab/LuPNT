@@ -12,7 +12,7 @@
 // lupnt includes
 #include <vector>
 
-#include "example_utils.cc"
+#include "utils.cc"
 
 using namespace lupnt;
 namespace sp = SpiceInterface;
@@ -57,7 +57,7 @@ int main() {
 
   // Dynamics Model   Todo: Refine this to a more high fidelity model
   int moon_sph_true = 5;  // moon spherical harmonics order in true dynamics
-  int moon_sph_est = 0;   // moon spherical harmonics order in filter dynamics
+  int moon_sph_est = 5;   // moon spherical harmonics order in filter dynamics
   bool add_earth = true;  // add earth to true and filter dynamics
 
   // Onboard Clock Model
@@ -73,7 +73,7 @@ int main() {
   double vel_err = 1e-3;       // Initial Velocity error [km/s]
   double clk_bias_err = 1e-6;  // Initial Clock bias error [s]
   double clk_drift_err = 1e-9;  // Initial Clock drift error [s/s]
-  double sigma_acc = 1e-12;     // Process noise Acceleration [km/s^2]  <-- tune
+  double sigma_acc = 1e-10;     // Process noise Acceleration [km/s^2]  <-- tune
                                 // this for optimal performance!
 
   // Debug mode
@@ -107,10 +107,10 @@ int main() {
   auto moon_est = Body::Moon(moon_sph_est, moon_sph_est);
 
   dyn_true->AddBody(moon_true);
-  dyn_true->SetCentralBody(moon_true);
+  dyn_true->SetPrimaryBody(moon_true);
 
   dyn_est->AddBody(moon_est);
-  dyn_est->SetCentralBody(moon_est);
+  dyn_est->SetPrimaryBody(moon_est);
 
   if (add_earth) {
     dyn_true->AddBody(earth);
@@ -131,9 +131,9 @@ int main() {
   std::cout << "Initial Epoch: " << epoch_string << std::endl;
 
   // Set dynamics integration time
-  dyn_earth_tb->SetDt(dt);
-  dyn_est->SetDt(dt);
-  dyn_true->SetDt(dt);
+  dyn_earth_tb->SetTimeStep(dt);
+  dyn_est->SetTimeStep(dt);
+  dyn_true->SetTimeStep(dt);
 
   // Moon spacecraft
   ClassicalOE coe_moon({a, e, i, Omega, w, M}, CoordSystem::MI);
