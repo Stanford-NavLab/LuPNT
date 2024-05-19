@@ -4,22 +4,25 @@
 	branch = stable
 [submodule "docs/doxygen-awesome-css"]
 	path = docs/doxygen-awesome-css
-	url = https://github.com/jothepro/doxygen-awesome-css.git
+	url = git@github.com:jothepro/doxygen-awesome-css.git
+	branch = main
 [submodule "third_party/autodiff"]
 	path = third_party/autodiff
 	url = git@github.com:autodiff/autodiff.git
+	branch = main
 [submodule "third_party/eigen"]
 	path = third_party/eigen
 	url = https://gitlab.com/libeigen/eigen.git
+	branch = 3.4
 [submodule "third_party/matplotplusplus"]
 	path = third_party/matplotplusplus
-	url = https://github.com/alandefreitas/matplotplusplus.git
+	url = git@github.com:alandefreitas/matplotplusplus.git
 [submodule "third_party/AI-Toolbox"]
 	path = third_party/AI-Toolbox
-	url = https://github.com/Svalorzen/AI-Toolbox
+	url = git@github.com:Svalorzen/AI-Toolbox
 [submodule "third_party/tqdm.cpp"]
 	path = third_party/tqdm.cpp
-	url = https://github.com/tqdm/tqdm.cpp.git
+	url = git@github.com:tqdm/tqdm.cpp.git
 [submodule "examples/projects/contact-plan-with-od"]
 	path = examples/projects/contact-plan-with-od
 	url = git@github.com:kdricemt/contact-plan-with-od.git

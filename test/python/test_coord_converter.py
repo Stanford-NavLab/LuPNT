@@ -19,6 +19,7 @@ def map_string_pnt_coordinate(str):
     else:
         raise ValueError("Unknown coordinate system: " + str)
 
+
 class TestCoordConverter:
     def test_conversions(self):
         # load data
