@@ -20,9 +20,11 @@
 [submodule "third_party/AI-Toolbox"]
 	path = third_party/AI-Toolbox
 	url = git@github.com:Svalorzen/AI-Toolbox
+	branch = master
 [submodule "third_party/tqdm.cpp"]
 	path = third_party/tqdm.cpp
 	url = git@github.com:tqdm/tqdm.cpp.git
+	branch = master
 [submodule "examples/projects/contact-plan-with-od"]
 	path = examples/projects/contact-plan-with-od
 	url = git@github.com:kdricemt/contact-plan-with-od.git
