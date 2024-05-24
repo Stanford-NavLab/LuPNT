@@ -28,12 +28,11 @@ void init_coord_converter(py::module &m) {
   py::class_<CoordConverter>(m, "CoordConverter")
       .def_static(
           "convert",
-          [](double epoch, const Vector6d &rv_in, Frame coord_sys_in,
-             Frame coord_sys_out) -> Vector6d {
-            return CoordConverter::Convert(epoch, rv_in, coord_sys_in,
-                                           coord_sys_out)
+          [](double epoch, const Vector6d &rv_in, Frame frame_in,
+             Frame frame_out) -> Vector6d {
+            return CoordConverter::Convert(epoch, rv_in, frame_in, frame_out)
                 .cast<double>();
           },
           "Convert coordinate system", py::arg("rv_in"), py::arg("epoch"),
-          py::arg("coord_sys_in"), py::arg("coord_sys_out"));
+          py::arg("frame_in"), py::arg("frame_out"));
 }

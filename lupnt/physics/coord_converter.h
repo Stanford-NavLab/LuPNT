@@ -66,7 +66,6 @@ class CoordConverter {
                                      Frame coord_sys_out);
 
  private:
-  static Matrix6 ComputeITRFtoGCRF(real tai);
   static Matrix6 ComputeGCRFtoITRF(real tai);
   static Matrix6 ComputeOpToMi(real epoch);
 };

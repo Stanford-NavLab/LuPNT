@@ -49,7 +49,7 @@ void init_orbit_state(py::module &m) {
       .def(py::init<const Vector6d &, const Frame, const OrbitStateRepres,
                     const std::vector<std::string> &,
                     const std::vector<std::string> &>(),
-           py::arg("vector"), py::arg("coord_sys"), py::arg("state_repres"),
+           py::arg("vector"), py::arg("frame"), py::arg("state_repres"),
            py::arg("names"), py::arg("units"))
       .def_property(
           "vector",
@@ -59,7 +59,7 @@ void init_orbit_state(py::module &m) {
           [](OrbitState &s, const Vector6d &vec) {
             s.SetVector(vec.cast<real>());
           })
-      .def_property("coord_sys", &OrbitState::GetCoordSystem,
+      .def_property("frame", &OrbitState::GetCoordSystem,
                     &OrbitState::SetCoordSystem)
       .def_property("state_repres", &OrbitState::GetOrbitStateRepres,
                     &OrbitState::SetOrbitStateRepres)
@@ -75,7 +75,7 @@ void init_orbit_state(py::module &m) {
   // ClassicalOE
   py::class_<ClassicalOE, OrbitState>(m, "ClassicalOE")
       .def(py::init<const Vector6d &, const Frame>(),
-           py::arg("[a, e, i, Omega, w, M]"), py::arg("coord_sys") = Frame::MI)
+           py::arg("[a, e, i, Omega, w, M]"), py::arg("frame") = Frame::MI)
       .def_property("a", DEFINE_GETSET_REAL(ClassicalOE, a))
       .def_property("e", DEFINE_GETSET_REAL(ClassicalOE, e))
       .def_property("i", DEFINE_GETSET_REAL(ClassicalOE, i))
@@ -87,7 +87,7 @@ void init_orbit_state(py::module &m) {
   // CartesianOrbitState
   py::class_<CartesianOrbitState, OrbitState>(m, "CartesianOrbitState")
       .def(py::init<const Vector6d &, const Frame>(), py::arg("rv"),
-           py::arg("coord_sys") = Frame::MI)
+           py::arg("frame") = Frame::MI)
       .def_property(
           "r",
           [](const CartesianOrbitState &s) -> Vector3d {

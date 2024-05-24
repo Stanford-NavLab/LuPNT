@@ -310,15 +310,6 @@ Vector6 CoordConverter::Convert(real t_tai, Vector6 rv_in, Frame coord_sys_in,
   }
 }
 
-Matrix6 CoordConverter::ComputeGCRFtoITRF(real tai) {
-  // Get the rotation matrix using SPICE
-  auto tdb_s = ConvertTime(tai, TimeSystems::TAI, "TDB");
-  double et = tdb_s.val();  // this cuts of the relationship between t and
-                            // Mrot temporaly
-  Matrix6 Mrot = GetFrameConversionMatrix(et, Frame::GCRF, Frame::ITRF);
-  return Mrot;
-}
-
 Matrix6 CoordConverter::ComputeOpToMi(real t_tai) {
   Vector6 rv_earth_icrf = GetBodyPosVel(t_tai, NaifId::SUN, NaifId::EARTH);
   Vector6 rv_moon_icrf = GetBodyPosVel(t_tai, NaifId::SUN, NaifId::MOON);
