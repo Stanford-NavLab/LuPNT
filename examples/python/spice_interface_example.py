@@ -8,7 +8,7 @@ tai = sp.string_to_tai("2000/01/01 12:00:00")
 utc = sp.tdb_to_string_utc(tdb, 3)
 et = sp.convert_time(tdb, "TDB", "ET")
 earth_et0 = sp.get_body_pos_vel(tai, 10, 399)
-rot_j2i = sp.get_frame_conversion_matrix(et, "J2000", "ITRF93")
+rot_j2i = sp.get_frame_conversion_matrix(et, pnt.GCRF, pnt.ITRF)
 
 print("tdb at 2000/01/01 12:00:00  :", tdb)
 print("tai at 2000/01/01 12:00:00  :", tai)

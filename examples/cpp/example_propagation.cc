@@ -18,7 +18,7 @@
 #include <lupnt/measurements/gnss_measurement.h>
 #include <lupnt/measurements/gnss_receiver.h>
 #include <lupnt/numerics/math_utils.h>
-#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/frame_converter.h>
 #include <lupnt/physics/orbit_state.h>
 #include <lupnt/physics/spice_interface.h>
 
@@ -62,7 +62,7 @@ int main() {
   real w = 0.0 * RAD_PER_DEG;
   real M = 0.0 * RAD_PER_DEG;
   ClassicalOE coeMoon({a, e, i, Omega, w, M});
-  coeMoon.SetCoordSystem(CoordSystem::MI);
+  coeMoon.SetCoordSystem(Frame::MI);
 
   auto cartOrbitStateMoon = std::make_shared<CartesianOrbitState>(
       ClassicalToCartesian(coeMoon, MU_MOON));
@@ -111,8 +111,8 @@ int main() {
 
     // Moon spacecraft
     auto state = moonSat1->GetCartesianGCRFStateAtEpoch(t);
-    auto stateMi = ConvertOrbitStateCoordSystem(state, t, CoordSystem::MI);
-    auto stateGcrf = ConvertOrbitStateCoordSystem(state, t, CoordSystem::GCRF);
+    auto stateMi = ConvertOrbitStateFrame(state, t, Frame::MI);
+    auto stateGcrf = ConvertOrbitStateFrame(state, t, Frame::GCRF);
     dataHistory.AddData("moonSatMi", t, stateMi->GetVector());
     dataHistory.AddData("moonSatGcrf", t, stateGcrf->GetVector());
 
@@ -120,8 +120,8 @@ int main() {
     for (int i = 0; i < gpsConstellation.GetNumSatellites(); i++) {
       auto sate =
           gpsConstellation.GetSatellite(i)->GetCartesianGCRFStateAtEpoch(t);
-      auto stateMi = ConvertOrbitStateCoordSystem(sate, t, CoordSystem::MI);
-      auto stateGcrf = ConvertOrbitStateCoordSystem(sate, t, CoordSystem::GCRF);
+      auto stateMi = ConvertOrbitStateFrame(sate, t, Frame::MI);
+      auto stateGcrf = ConvertOrbitStateFrame(sate, t, Frame::GCRF);
 
       std::string name = "sat" + std::to_string(i);
       dataHistory.AddData(name + "Mi", t, sate->GetVector());
@@ -131,12 +131,10 @@ int main() {
     // Bodies
     Vector6 v6;
     v6.setZero();
-    dataHistory.AddData(
-        "earthMi", t,
-        CoordConverter::Convert(t, v6, CoordSystem::GCRF, CoordSystem::MI));
-    dataHistory.AddData(
-        "moonGcrf", t,
-        CoordConverter::Convert(t, v6, CoordSystem::MI, CoordSystem::GCRF));
+    dataHistory.AddData("earthMi", t,
+                        FrameConverter::Convert(t, v6, Frame::GCRF, Frame::MI));
+    dataHistory.AddData("moonGcrf", t,
+                        FrameConverter::Convert(t, v6, Frame::MI, Frame::GCRF));
 
     // Print progress
     if (fmod(t, printEvery) < 1e-3) {

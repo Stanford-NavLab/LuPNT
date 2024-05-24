@@ -11,7 +11,7 @@
 #include <lupnt/core/constants.h>
 #include <lupnt/measurements/occultation.h>
 #include <lupnt/numerics/math_utils.h>
-#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/frame_converter.h>
 
 #include <memory>
 
@@ -23,17 +23,13 @@ void printOccultation(Vector6 state_tx_vec, Vector6 state_rx_vec,
   Vector3d segment_eci, segment_mi, user_eci, user_mi;
   double t = 0.0;
 
-  tmp_ad = CoordConverter::Convert(t, state_tx_vec, CoordSystem::GCRF,
-                                   CoordSystem::MI);
+  tmp_ad = FrameConverter::Convert(t, state_tx_vec, Frame::GCRF, Frame::MI);
   segment_mi = tmp_ad.segment(0, 3).cast<double>();
-  tmp_ad = CoordConverter::Convert(t, state_tx_vec, CoordSystem::GCRF,
-                                   CoordSystem::GCRF);
+  tmp_ad = FrameConverter::Convert(t, state_tx_vec, Frame::GCRF, Frame::GCRF);
   segment_eci = tmp_ad.segment(0, 3).cast<double>();
-  tmp_ad = CoordConverter::Convert(t, state_rx_vec, CoordSystem::MI,
-                                   CoordSystem::GCRF);
+  tmp_ad = FrameConverter::Convert(t, state_rx_vec, Frame::MI, Frame::GCRF);
   user_mi = tmp_ad.segment(0, 3).cast<double>();
-  tmp_ad = CoordConverter::Convert(t, state_rx_vec, CoordSystem::MI,
-                                   CoordSystem::GCRF);
+  tmp_ad = FrameConverter::Convert(t, state_rx_vec, Frame::MI, Frame::GCRF);
   user_eci = tmp_ad.segment(0, 3).cast<double>();
 
   std::map<std::string, bool> occ = Occultation::ComputeOccultation(

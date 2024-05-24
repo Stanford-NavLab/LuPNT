@@ -5,6 +5,7 @@ import numpy as np
 def degToRad(deg):
     return deg * np.pi / 180
 
+
 p = 11067.790
 e = 0.83285
 a = p / (1 - pow(e, 2))
@@ -17,7 +18,7 @@ M = pnt.true_to_mean_anomaly(nu, e)
 oe = np.array([a, e, i, Omega, w, M])
 
 # State
-x_oe = pnt.ClassicalOE(oe, coord_sys=pnt.CoordSystem.MI)
+x_oe = pnt.ClassicalOE(oe, frame=pnt.Frame.MI)
 print(" ")
 print("Classical orbital elements:")
 print(x_oe.vector)

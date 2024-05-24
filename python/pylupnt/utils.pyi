@@ -6,20 +6,16 @@ import os as os
 import pandas as pd
 import pickle as pickle
 from time import time
-__all__ = ['GridSpec', 'arr_to_mat_idx', 'basepath', 'dump_pickle', 'format_element', 'i_to_arr_idxs', 'load_data', 'load_pickle', 'mat_to_arr_idx', 'np', 'os', 'pd', 'pickle', 'plot_RTN', 'plt', 'print_aligned', 'set_axes_equal', 'time', 'timed', 'timer_func', 'wrapToPi']
-def arr_to_mat_idx(k, n):
-    ...
+__all__ = ['GridSpec', 'LUPNT_DATA_PATH', 'dump_pickle', 'format_element', 'get_basepath', 'load_data', 'load_pickle', 'np', 'os', 'pd', 'pickle', 'plot_RTN', 'plt', 'print_aligned', 'set_axes_equal', 'time', 'timed', 'timer_func']
 def dump_pickle(obj, path):
     ...
 def format_element(x, fmt = '{}'):
     ...
-def i_to_arr_idxs(i, N):
+def get_basepath():
     ...
 def load_data(directory):
     ...
 def load_pickle(path):
-    ...
-def mat_to_arr_idx(i, j, n):
     ...
 def plot_RTN(rv_RTN, labels = None, legend_text = None, init = False, final = True, center = True):
     ...
@@ -39,15 +35,4 @@ def timed(func, *args, **kwargs):
     ...
 def timer_func(func):
     ...
-def wrapToPi(x):
-    """
-    
-        Wrap angle in radians to [-pi pi]
-    
-        Args:
-            x (float): angle in radians
-        Returns:
-            x (float): angle in radians wrapped to [-pi pi]
-        
-    """
-basepath: str = '/Users/guillemcv/Development/NavLab/LuPNT/data'
+LUPNT_DATA_PATH: str = '/Users/guillemcv/Development/NavLab/LuPNT/data'

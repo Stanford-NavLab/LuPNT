@@ -25,29 +25,28 @@ int main() {
   std::cout << "Current working directory: " << std::filesystem::current_path()
             << std::endl;
 
-  real et = sp::StringToTDB("2023-04-15 00:00:00 TDB");
+  real t_tai = sp::StringToTAI("2022-04-15 00:00:00 TDB");
 
   int prec = 3;
-  std::string str = sp::TDBtoStringUTC(et, prec);
-  std::cout << "TDB: " << et << std::endl;
+  std::string str = sp::TAItoStringUTC(t_tai, prec);
+  std::cout << "TAI: " << t_tai << std::endl;
 
-  real tai = sp::ConvertTime(et, "TDB", "TAI");
+  real t_tdb = sp::ConvertTime(t_tai, TimeSystems::TAI, TimeSystems::TDB);
 
-  std::cout << "TAI: " << tai << std::endl;
+  std::cout << "TDB: " << t_tdb << std::endl;
 
   MatrixX xform(6, 6);
 
-  xform = sp::GetFrameConversionMatrix(et, "J2000", "ITRF93");
-  std::cout << "XFORM_ITRF: " << std::endl << xform << std::endl;
+  xform = sp::GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::ITRF);
+  std::cout << "XFORM_ITRF:\n" << xform << std::endl;
 
-  xform = sp::GetFrameConversionMatrix(et, "J2000", "IAU_EARTH");
-  std::cout << "XFORM_IAUEARTH: " << std::endl << xform << std::endl;
+  xform = sp::GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::PA);
+  std::cout << "XFORM_MOONPA:\n" << xform << std::endl;
 
-  xform = sp::GetFrameConversionMatrix(et, "J2000", "MOON_PA");
-  std::cout << "XFORM_MOONPA: " << std::endl << xform << std::endl;
-
-  xform = sp::GetFrameConversionMatrix(et, "J2000", "IAU_MOON");
-  std::cout << "XFORM_IAU: " << std::endl << xform << std::endl;
-
+  Vector3d x =
+      sp::GetBodyPos(NaifId::EARTH, t_tai, Frame::GCRF, NaifId::MOON, "NONE");
+  std::cout << "EARTH2MOON:\n"
+            << x.format(Eigen::IOFormat(3, 0, ", ", "\n", "[", "]"))
+            << std::endl;
   return 0;
 }

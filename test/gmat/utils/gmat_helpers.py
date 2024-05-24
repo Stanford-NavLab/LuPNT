@@ -84,13 +84,13 @@ def get_coordinate_system(name):
         return gmat.Construct("CoordinateSystem", "TOD", "Earth", "TODEq")
     elif name == "EMR":
         # GMAT Code Broken. Not working
-        coord_sys = gmat.Construct("CoordinateSystem", "EMR")
-        coord_sys.SetField("Origin", "Earth")
-        coord_sys.SetField("Axes", "ObjectReferenced")
-        coord_sys.SetField("XAxis", "R")
-        coord_sys.SetField("ZAxis", "N")
-        coord_sys.SetField("Primary", "Earth")
-        coord_sys.SetField("Secondary", "Luna")
+        frame = gmat.Construct("CoordinateSystem", "EMR")
+        frame.SetField("Origin", "Earth")
+        frame.SetField("Axes", "ObjectReferenced")
+        frame.SetField("XAxis", "R")
+        frame.SetField("ZAxis", "N")
+        frame.SetField("Primary", "Earth")
+        frame.SetField("Secondary", "Luna")
     elif name == "MI":
         return gmat.Construct("CoordinateSystem", "MI", "Luna", "MJ2000Eq")
     elif name == "PA":
@@ -101,16 +101,16 @@ def get_coordinate_system(name):
         assert False, "Coordinate system not found"
 
 
-def convert_coord(epoch, rv, coord_sys_from, coord_sys_to):
+def convert_coord(epoch, rv, frame_from, frame_to):
     epoch_gmat = gmat.GmatTime(convert_pylupnt_to_gmat_epoch(epoch))
-    coord_from = get_coordinate_system(coord_sys_from)
-    coord_to = get_coordinate_system(coord_sys_to)
+    frame_from = get_coordinate_system(frame_from)
+    frame_to = get_coordinate_system(frame_to)
     state_from = gmat.Rvector6(rv)
     state_to = gmat.Rvector6()
     gmat.Initialize()
 
     converter = gmat.CoordinateConverter()
-    converter.Convert(epoch_gmat, state_from, coord_from, state_to, coord_to)
+    converter.Convert(epoch_gmat, state_from, frame_from, state_to, frame_to)
     return np.array([state_to[i] for i in range(state_to.GetSize())])
 
 

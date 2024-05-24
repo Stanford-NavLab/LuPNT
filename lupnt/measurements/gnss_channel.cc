@@ -58,10 +58,8 @@ std::vector<Transmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
     double t_tx = t - tau;
 
     // Convert to Moon Inertial frame
-    auto rv_tx_mi =
-        ConvertOrbitStateCoordSystem(rv_tx_gcrf, t_tx, CoordSystem::MI);
-    auto rv_rx_mi =
-        ConvertOrbitStateCoordSystem(rv_rx_gcrf, t_rx, CoordSystem::MI);
+    auto rv_tx_mi = ConvertOrbitStateFrame(rv_tx_gcrf, t_tx, Frame::MI);
+    auto rv_rx_mi = ConvertOrbitStateFrame(rv_rx_gcrf, t_rx, Frame::MI);
 
     // Occultation
     std::string tx_planet = "";

@@ -16,7 +16,7 @@
 
 #include "lupnt/core/constants.h"
 #include "lupnt/numerics/math_utils.h"
-#include "lupnt/physics/coord_converter.h"
+#include "lupnt/physics/frame_converter.h"
 
 #pragma once
 
@@ -45,21 +45,20 @@ class Occultation {
 
   // VectorX = func(real, Vector3, Vector3, ...)
   static VectorX ComputeOccultation(real epoch, const Vector3& r1,
-                                    const Vector3& r2, CoordSystem cs1,
-                                    CoordSystem cs2,
+                                    const Vector3& r2, Frame cs1, Frame cs2,
                                     const std::vector<NaifId>& bodies);
 
   // MatrixX = func(real, Matrix<-1, 3>, Matrix<-1, 3>, ...)
   static MatrixX ComputeOccultation(real epoch, const Matrix<-1, 3>& r1,
-                                    const Matrix<-1, 3>& r2, CoordSystem cs1,
-                                    CoordSystem cs2,
+                                    const Matrix<-1, 3>& r2, Frame cs1,
+                                    Frame cs2,
                                     const std::vector<NaifId>& bodies);
 
   // MatrixX = func(VectorX, Matrix<-1, 3>, Matrix<-1, 3>, ...)
   static MatrixX ComputeOccultation(const VectorX& epoch,
                                     const Matrix<-1, 3>& r1,
-                                    const Matrix<-1, 3>& r2, CoordSystem cs1,
-                                    CoordSystem cs2,
+                                    const Matrix<-1, 3>& r2, Frame cs1,
+                                    Frame cs2,
                                     const std::vector<NaifId>& bodies);
 };
 }  // namespace lupnt

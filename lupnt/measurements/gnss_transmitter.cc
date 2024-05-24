@@ -116,9 +116,10 @@ void GnssTransmitter::InitializeBEIDOUTransmitter() {
  */
 std::vector<Vector3d> GnssTransmitter::GetTransmitterOrientation(
     double t, Vector3d& r_tx_gcrf) {
-  auto r_sat2sun = SpiceInterface::GetBodyPos("SUN", t, "J2000", "EARTH",
-                                              "NONE") -
-                   r_tx_gcrf;               // (Sun-Earth) - (Sat-Earth)
+  auto r_sat2sun =
+      SpiceInterface::GetBodyPos(NaifId::SUN, t, Frame::GCRF, NaifId::EARTH,
+                                 "NONE") -
+      r_tx_gcrf;                            // (Sun-Earth) - (Sat-Earth)
   auto e_z_gnss = -r_tx_gcrf.normalized();  // Face towards earth center
   auto e_y_gnss = r_sat2sun.cross(r_tx_gcrf).normalized();
   auto e_x_gnss = e_y_gnss.cross(e_z_gnss).normalized();
@@ -149,7 +150,7 @@ double GnssTransmitter::GetTransmittionAntennaGain(double t, Vector3d r_tx_gcrf,
  */
 Transmission GnssTransmitter::GenerateTransmission(double t) {
   auto cart_state = agent->GetCartesianGCRFStateAtEpoch(t);
-  ConvertOrbitStateCoordSystem(cart_state, t, CoordSystem::GCRF);
+  ConvertOrbitStateFrame(cart_state, t, Frame::GCRF);
 
   Transmission trans;
   trans.dt_tx = 0.0;

@@ -1,4 +1,5 @@
 #include <lupnt/core/constants.h>
+#include <lupnt/physics/frame_converter.h>
 #include <lupnt/physics/spice_interface.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
@@ -14,7 +15,7 @@ void init_spice_interface(py::module &m) {
                   &lupnt::SpiceInterface::ExtractPckCoeffs)
       .def_static(
           "get_frame_conversion_matrix",
-          [](double et, std::string from, std::string to) -> lupnt::Matrix6d {
+          [](double et, lupnt::Frame from, lupnt::Frame to) -> lupnt::Matrix6d {
             return lupnt::SpiceInterface::GetFrameConversionMatrix(et, from, to)
                 .cast<double>();
           })
@@ -54,12 +55,13 @@ void init_spice_interface(py::module &m) {
                                                                 target)
                         .cast<double>();
                   })
-      .def_static(
-          "get_body_pos",
-          [](std::string targetName, lupnt::real epoch, std::string refFrame,
-             std::string obsName, std::string abCorrection) -> lupnt::Vector3d {
-            return lupnt::SpiceInterface::GetBodyPos(
-                       targetName, epoch, refFrame, obsName, abCorrection)
-                .cast<double>();
-          });
+      .def_static("get_body_pos",
+                  [](lupnt::NaifId targetName, lupnt::real epoch,
+                     lupnt::Frame refFrame, lupnt::NaifId obsName,
+                     std::string abCorrection) -> lupnt::Vector3d {
+                    return lupnt::SpiceInterface::GetBodyPos(targetName, epoch,
+                                                             refFrame, obsName,
+                                                             abCorrection)
+                        .cast<double>();
+                  });
 }

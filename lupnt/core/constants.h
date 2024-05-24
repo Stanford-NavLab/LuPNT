@@ -197,7 +197,8 @@ enum class NaifId {
 
 namespace TimeSystems {
 const std::string TAI = "TAI";
-}
+const std::string TDB = "TDB";
+}  // namespace TimeSystems
 // TAI         International Atomic Time
 //    TDB         Barycentric Dynamical Time
 //    TT          Terrestrial Time

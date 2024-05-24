@@ -12,7 +12,7 @@
 
 #include <lupnt/measurements/occultation.h>
 #include <lupnt/measurements/space_channel.h>
-#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/frame_converter.h>
 
 #include <vector>
 

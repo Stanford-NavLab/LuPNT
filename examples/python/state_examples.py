@@ -1,8 +1,10 @@
 import pylupnt as pnt
 import numpy as np
 
+
 def degToRad(deg):
     return deg * np.pi / 180
+
 
 x_cart = np.array([6524.834, 6862.875, 6448.296, 4.901327, 5.533756, -1.976341])
 print(" ")
@@ -18,7 +20,7 @@ w = degToRad(53.38)
 nu = degToRad(92.335)
 M = pnt.true_to_mean_anomaly(nu, e)
 
-x_oe = pnt.ClassicalOE(np.array([a, e, i, Omega, w, M]), coord_sys=pnt.CoordSystem.ITRF)
+x_oe = pnt.ClassicalOE(np.array([a, e, i, Omega, w, M]), frame=pnt.Frame.ITRF)
 print(" ")
 print("Classical orbital elements:")
 print(x_oe.vector)

@@ -62,13 +62,13 @@ class IFilter {
   FilterMeasurementFunction measurement_;
 
   void SetDynamicsFunction(FilterDynamicsFunction dynamics) {
-    this->dynamics_ = dynamics;
+    dynamics_ = dynamics;
   }
   void SetProcessNoiseFunction(FilterProcessNoiseFunction process_noise) {
-    this->process_noise_ = process_noise;
+    process_noise_ = process_noise;
   }
   void SetMeasurementFunction(FilterMeasurementFunction measurement) {
-    this->measurement_ = measurement;
+    measurement_ = measurement;
   }
 };
 
@@ -101,9 +101,9 @@ class EKF : public IFilter {
 
   EKF(FilterDynamicsFunction dynamics, FilterProcessNoiseFunction process_noise,
       FilterMeasurementFunction measurement) {
-    this->dynamics_ = dynamics;
-    this->process_noise_ = process_noise;
-    this->measurement_ = measurement;
+    dynamics_ = dynamics;
+    process_noise_ = process_noise;
+    measurement_ = measurement;
   }
 
   void Initialize(const VectorX &x0, const MatrixXd &P0) {
@@ -112,26 +112,24 @@ class EKF : public IFilter {
   }
 
   VectorX GetPredictedStateEstimate(MatrixXd &Pbar) {
-    Pbar = this->Pbar_;
-    return this->xbar_;
+    Pbar = Pbar_;
+    return xbar_;
   }
-  VectorX GetPredictedStateEstimate() { return this->xbar_; }
+  VectorX GetPredictedStateEstimate() { return xbar_; }
   VectorX GetUpdatedStateEstimate(MatrixXd &Phat) {
-    Phat = this->P_;
-    return this->x_;
+    Phat = P_;
+    return x_;
   }
-  VectorX GetUpdatedStateEstimate() { return this->x_; }
-  VectorX GetMeasurementResidual() { return this->dy_; }
-  MatrixX GetKalmanGain() { return this->K_; }
-  MatrixX GetMeasurementNoiseCov() { return this->R_; }
-  MatrixX GetMeasurementJacobian() { return this->H_; }
-  int GetMeasurementSize() { return this->H_.rows(); }
+  VectorX GetUpdatedStateEstimate() { return x_; }
+  VectorX GetMeasurementResidual() { return dy_; }
+  MatrixX GetKalmanGain() { return K_; }
+  MatrixX GetMeasurementNoiseCov() { return R_; }
+  MatrixX GetMeasurementJacobian() { return H_; }
+  int GetMeasurementSize() { return H_.rows(); }
 
   void SetOutlierThreshold(double outlier_threshold) {
-    if (outlier_threshold < 0) {
-      throw std::invalid_argument("Outlier threshold must be positive");
-    }
-    this->outlier_threshold_ = outlier_threshold;
+    assert(outlier_threshold >= 0 && "Outlier threshold must be positive");
+    outlier_threshold_ = outlier_threshold;
   }
 
   /**

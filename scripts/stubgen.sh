@@ -43,6 +43,6 @@
 #   --stub-extension EXT  The file extension of the generated stubs. Must be 'pyi' (default) or 'py'
 
 pybind11-stubgen pylupnt \
---enum-class-locations "CoordSystem:pylupnt" \
 --output-dir "python/" \
+--enum-class-locations "Frame:pylupnt" \
 # --print-invalid-expressions-as-is

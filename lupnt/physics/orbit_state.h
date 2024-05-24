@@ -13,7 +13,7 @@
 
 #include <stdexcept>
 
-#include "coord_converter.h"
+#include "frame_converter.h"
 #include "state.h"
 
 #define kOrbitStateSize 6
@@ -45,15 +45,15 @@ class OrbitState : public IState {
  private:
   Vector6 x_;
   OrbitStateRepres repres_;
-  CoordSystem coord_;
+  Frame frame_;
   std::vector<std::string> names_;
   std::vector<std::string> units_;
 
  public:
-  OrbitState(const Vector6 &x, CoordSystem coord, OrbitStateRepres repres,
+  OrbitState(const Vector6 &x, Frame coord, OrbitStateRepres repres,
              const std::vector<std::string> &names,
              const std::vector<std::string> &units)
-      : x_(x), coord_(coord), repres_(repres), names_(names), units_(units) {}
+      : x_(x), frame_(coord), repres_(repres), names_(names), units_(units) {}
 
   Vector6 GetVector() const { return x_; }
 
@@ -70,7 +70,7 @@ class OrbitState : public IState {
   inline int GetSize() const { return kOrbitStateSize; }
   inline real GetValue(int i) const { return x_(i); }
   inline OrbitStateRepres GetOrbitStateRepres() const { return repres_; }
-  inline CoordSystem GetCoordSystem() const { return coord_; }
+  inline Frame GetCoordSystem() const { return frame_; }
 
   inline void SetValue(real val, int idx) { x_(idx) = val; }
   inline void SetVector(const Vector6 &x) { x_ = x; }
@@ -85,7 +85,7 @@ class OrbitState : public IState {
   }
 
   inline void SetOrbitStateRepres(const OrbitStateRepres rep) { repres_ = rep; }
-  inline void SetCoordSystem(CoordSystem sys) { coord_ = sys; }
+  inline void SetCoordSystem(Frame sys) { frame_ = sys; }
 
   inline real operator()(int idx) const { return x_(idx); }
 };
@@ -110,7 +110,7 @@ class CartesianOrbitState : public OrbitState {
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CARTESIAN;
 
  public:
-  CartesianOrbitState(const Vector6 &x, CoordSystem sys = CoordSystem::MI)
+  CartesianOrbitState(const Vector6 &x, Frame sys = Frame::MI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   inline Vector3 r() const { return GetVector().head(3); }
@@ -144,7 +144,7 @@ class ClassicalOE : public OrbitState {
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CLASSICAL_OE;
 
  public:
-  ClassicalOE(const Vector6 &x, const CoordSystem sys = CoordSystem::MI)
+  ClassicalOE(const Vector6 &x, const Frame sys = Frame::MI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(a, 0);
@@ -177,7 +177,7 @@ class QuasiNonsingularOE : public OrbitState {
       OrbitStateRepres::QUASI_NONSINGULAR_OE;
 
  public:
-  QuasiNonsingularOE(const Vector6 &x, const CoordSystem sys = CoordSystem::MI)
+  QuasiNonsingularOE(const Vector6 &x, const Frame sys = Frame::MI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(a, 0);
@@ -208,7 +208,7 @@ class DelaunayOE : public OrbitState {
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::DELAUNAY_OE;
 
  public:
-  DelaunayOE(const Vector6 &x, const CoordSystem sys = CoordSystem::MI)
+  DelaunayOE(const Vector6 &x, const Frame sys = Frame::MI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(l, 0);
@@ -240,7 +240,7 @@ class EquinoctialOE : public OrbitState {
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::EQUINOCTIAL_OE;
 
  public:
-  EquinoctialOE(const Vector6 &x, const CoordSystem sys = CoordSystem::MI)
+  EquinoctialOE(const Vector6 &x, const Frame sys = Frame::MI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(a, 0);
@@ -272,7 +272,7 @@ class SingularROE : public OrbitState {
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::SINGULAR_ROE;
 
  public:
-  SingularROE(const Vector6 &x, const CoordSystem sys = CoordSystem::MI)
+  SingularROE(const Vector6 &x, const Frame sys = Frame::MI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(ada, 0);
@@ -306,7 +306,7 @@ class QuasiNonsingularROE : public OrbitState {
 
  public:
   // ada, adl, adex, adey, adix, adiy
-  QuasiNonsingularROE(const Vector6 &x, const CoordSystem sys = CoordSystem::MI)
+  QuasiNonsingularROE(const Vector6 &x, const Frame sys = Frame::MI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(ada, 0);

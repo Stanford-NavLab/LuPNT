@@ -25,13 +25,13 @@ class TestOrbitState:
     def test_ClassicalOE(self):
         # Constructor
         coe = data.coe_array_elfo
-        coe_state = pnt.ClassicalOE(coe, pnt.CoordSystem.MI)
+        coe_state = pnt.ClassicalOE(coe, pnt.Frame.MI)
         attributes = ["a", "e", "i", "Omega", "w", "M"]
 
         # Getters
         for i, attr in enumerate(attributes):
             assert getattr(coe_state, attr) == coe[i]
-        assert coe_state.coord_sys == pnt.CoordSystem.MI
+        assert coe_state.frame == pnt.Frame.MI
         assert coe_state.state_repres == pnt.OrbitStateRepres.CLASSICAL_OE
         assert coe_state.size == 6
         assert np.allclose(coe_state.vector, coe)
@@ -57,13 +57,13 @@ class TestOrbitState:
     def test_CartesianOrbitState(self):
         # Constructor
         rv = pnt.classical_to_cartesian(data.coe_array_elfo, pnt.MU_MOON)
-        cart_state = pnt.CartesianOrbitState(rv, pnt.CoordSystem.MI)
+        cart_state = pnt.CartesianOrbitState(rv, pnt.Frame.MI)
 
         # Getters
         assert np.allclose(cart_state.r, rv[0:3])
         assert np.allclose(cart_state.v, rv[3:6])
 
-        assert cart_state.coord_sys == pnt.CoordSystem.MI
+        assert cart_state.frame == pnt.Frame.MI
         assert cart_state.state_repres == pnt.OrbitStateRepres.CARTESIAN
         assert cart_state.size == 6
         assert np.allclose(cart_state.vector, rv)
@@ -90,13 +90,13 @@ class TestOrbitState:
     def test_QuasiNonsingularOE(self):
         # Constructor
         qns_oe = pnt.classical_to_quasi_nonsingular(data.coe_array_elfo)
-        qns_oe_state = pnt.QuasiNonsingularOE(qns_oe, pnt.CoordSystem.MI)
+        qns_oe_state = pnt.QuasiNonsingularOE(qns_oe, pnt.Frame.MI)
         attributes = ["a", "u", "ex", "ey", "i", "Omega"]
 
         # Getters
         for i, attr in enumerate(attributes):
             assert getattr(qns_oe_state, attr) == qns_oe[i]
-        assert qns_oe_state.coord_sys == pnt.CoordSystem.MI
+        assert qns_oe_state.frame == pnt.Frame.MI
         assert qns_oe_state.state_repres == pnt.OrbitStateRepres.QUASI_NONSINGULAR_OE
         assert qns_oe_state.size == 6
         assert np.allclose(qns_oe_state.vector, qns_oe)
@@ -122,13 +122,13 @@ class TestOrbitState:
     def test_EquinoctialOE(self):
         # Constructor
         eq_oe = pnt.classical_to_equinoctial(data.coe_array_elfo)
-        eq_oe_state = pnt.EquinoctialOE(eq_oe, pnt.CoordSystem.MI)
+        eq_oe_state = pnt.EquinoctialOE(eq_oe, pnt.Frame.MI)
         attributes = ["a", "h", "k", "p", "q", "lon"]
 
         # Getters
         for i, attr in enumerate(attributes):
             assert getattr(eq_oe_state, attr) == eq_oe[i]
-        assert eq_oe_state.coord_sys == pnt.CoordSystem.MI
+        assert eq_oe_state.frame == pnt.Frame.MI
         assert eq_oe_state.state_repres == pnt.OrbitStateRepres.EQUINOTICAL_OE
         assert eq_oe_state.size == 6
 
@@ -153,13 +153,13 @@ class TestOrbitState:
     def test_SingularROE(self):
         # Constructor
         roe = data.roe_array_1
-        roe_state = pnt.SingularROE(roe, pnt.CoordSystem.MI)
+        roe_state = pnt.SingularROE(roe, pnt.Frame.MI)
         attributes = ["ada", "adM", "ade", "adw", "adi", "adOmega"]
 
         # Getters
         for i, attr in enumerate(attributes):
             assert getattr(roe_state, attr) == roe[i]
-        assert roe_state.coord_sys == pnt.CoordSystem.MI
+        assert roe_state.frame == pnt.Frame.MI
         assert roe_state.state_repres == pnt.OrbitStateRepres.SINGULAR_ROE
         assert roe_state.size == 6
 
@@ -184,13 +184,13 @@ class TestOrbitState:
     def test_QuasiNonsingularROE(self):
         # Constructor
         roe = data.roe_array_1
-        roe_state = pnt.QuasiNonsingularROE(roe, pnt.CoordSystem.MI)
+        roe_state = pnt.QuasiNonsingularROE(roe, pnt.Frame.MI)
         attributes = ["ada", "adl", "adex", "adey", "adix", "adiy"]
 
         # Getters
         for i, attr in enumerate(attributes):
             assert getattr(roe_state, attr) == roe[i]
-        assert roe_state.coord_sys == pnt.CoordSystem.MI
+        assert roe_state.frame == pnt.Frame.MI
         assert roe_state.state_repres == pnt.OrbitStateRepres.QUASINONSINGULAR_ROE
         assert roe_state.size == 6
 

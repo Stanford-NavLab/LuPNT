@@ -1,6 +1,6 @@
 // lupnt
 #include <lupnt/core/constants.h>
-#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/frame_converter.h>
 
 // pybind11
 #include <pybind11/eigen.h>
@@ -9,31 +9,30 @@
 namespace py = pybind11;
 using namespace lupnt;
 
-void init_coord_converter(py::module &m) {
-  py::enum_<CoordSystem>(m, "CoordSystem")
-      .value("ITRF", CoordSystem::ITRF)
-      .value("GCRF", CoordSystem::GCRF)
-      .value("ICRF", CoordSystem::ICRF)
-      .value("SER", CoordSystem::SER)
-      .value("GSE", CoordSystem::GSE)
-      .value("EME", CoordSystem::EME)
-      .value("MOD", CoordSystem::MOD)
-      .value("TOD", CoordSystem::TOD)
-      .value("EMR", CoordSystem::EMR)
-      .value("MI", CoordSystem::MI)
-      .value("PA", CoordSystem::PA)
-      .value("ME", CoordSystem::ME)
+void init_frame_converter(py::module &m) {
+  py::enum_<Frame>(m, "Frame")
+      .value("ITRF", Frame::ITRF)
+      .value("GCRF", Frame::GCRF)
+      .value("ICRF", Frame::ICRF)
+      .value("SER", Frame::SER)
+      .value("GSE", Frame::GSE)
+      .value("EME", Frame::EME)
+      .value("MOD", Frame::MOD)
+      .value("TOD", Frame::TOD)
+      .value("EMR", Frame::EMR)
+      .value("MI", Frame::MI)
+      .value("PA", Frame::PA)
+      .value("ME", Frame::ME)
       .export_values();
 
-  py::class_<CoordConverter>(m, "CoordConverter")
+  py::class_<FrameConverter>(m, "FrameConverter")
       .def_static(
           "convert",
-          [](double epoch, const Vector6d &rv_in, CoordSystem coord_sys_in,
-             CoordSystem coord_sys_out) -> Vector6d {
-            return CoordConverter::Convert(epoch, rv_in, coord_sys_in,
-                                           coord_sys_out)
+          [](double epoch, const Vector6d &rv_in, Frame frame_in,
+             Frame frame_out) -> Vector6d {
+            return FrameConverter::Convert(epoch, rv_in, frame_in, frame_out)
                 .cast<double>();
           },
           "Convert coordinate system", py::arg("rv_in"), py::arg("epoch"),
-          py::arg("coord_sys_in"), py::arg("coord_sys_out"));
+          py::arg("frame_in"), py::arg("frame_out"));
 }

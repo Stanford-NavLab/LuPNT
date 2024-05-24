@@ -82,7 +82,7 @@ void ExtractPckCoeffs() {
   int handle;
   SpiceInt pck_handle;
   ConstSpiceChar *pck_file = "../data/ephemeris/moon_pa_de440_200625.bpc";
-  double et = 8000.0;
+  double t_tdb = 8000.0;
   int body = 301;
   double descr[5];
   char ident[40];
@@ -104,22 +104,22 @@ void ExtractPckCoeffs() {
   //              3                1               3
   // To directly retrieve these angles, use the call:
 
-  // bodeul_( &body, &et, &ra, &dec, &w, &lambda );
+  // bodeul_( &body, &t_tdb, &ra, &dec, &w, &lambda );
   // std::cout << "body: " << body << std::endl;
-  // std::cout << "et: " << et << std::endl;
+  // std::cout << "t_tdb: " << t_tdb << std::endl;
   // std::cout << "ra: " << ra << std::endl;
   // std::cout << "dec: " << dec << std::endl;
   // std::cout << "w: " << w << std::endl;
   // std::cout << " " << std::endl;
 
-  pckeul_(&body, &et, &found, bref, eulang, (ftnlen)32);
+  pckeul_(&body, &t_tdb, &found, bref, eulang, (ftnlen)32);
   std::cout << "found:" << found << std::endl;
   std::cout << "phi: " << eulang[0] << std::endl;
   std::cout << "delta: " << eulang[1] << std::endl;
   std::cout << " " << std::endl;
 
   pcklof_c(pck_file, &pck_handle);  // load the PCK file
-  pcksfs_(&body, &et, &handle, descr, ident, &found, (ftnlen)40);
+  pcksfs_(&body, &t_tdb, &handle, descr, ident, &found, (ftnlen)40);
 
   std::cout << "pck handle: :" << pck_handle << std::endl;
   std::cout << "handle: :" << handle << std::endl;
@@ -128,7 +128,7 @@ void ExtractPckCoeffs() {
   std::cout << "found:" << found << std::endl;
 
   if (found) {
-    pckr02_(&handle, descr, &et, record);
+    pckr02_(&handle, descr, &t_tdb, record);
     rsize = record[1];
     pdeg = (rsize - 2) / 3 - 1;
     std::cout << "Polynomial Size:" << rsize << std::endl;
@@ -136,32 +136,37 @@ void ExtractPckCoeffs() {
   }
 
   // extract coefficients from the CSPICE PCK file
-  //    pcksfs_(body, et, &handle, descr, ident, found, (ftnlen)40);
+  //    pcksfs_(body, t_tdb, &handle, descr, ident, found, (ftnlen)40);
   //    pckr02_c(handle, target)
 }
 
-Vector3d GetBodyPos(std::string targetName, real epoch, std::string refFrame,
-                    std::string obsName, std::string abCorrection) {
+Vector3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
+                    std::string abCorrection) {
   LoadSpiceKernel();
 
   SpiceDouble ptarg[3];
   Vector3d targetPos;
 
-  SpiceDouble et =
-      (SpiceDouble)
-          epoch.val();  // ToDO: this cuts the relatonship between et and matrix
-  const char *targ =
+  std::string targetName = std::to_string((int)target);
+  std::string obsName = std::to_string((int)obs);
+  std::string frame_str = frametem_string.at(refFrame);
+
+  // TODO: this cuts the relatonship between t_tdb and matrix
+  real t_tdb = ConvertTime(t_tai, TimeSystems::TAI, TimeSystems::TDB);
+  SpiceDouble t_tdb_spice = (SpiceDouble)t_tdb.val();
+  const char *target_spice =
       strcpy(new char[targetName.length() + 1], targetName.c_str());
-  const char *ref = strcpy(new char[refFrame.length() + 1], refFrame.c_str());
+  const char *ref = strcpy(new char[frame_str.length() + 1], frame_str.c_str());
   const char *abcorr =
       strcpy(new char[abCorrection.length() + 1], abCorrection.c_str());
-  const char *obs = strcpy(new char[obsName.length() + 1], obsName.c_str());
+  const char *obs_spice =
+      strcpy(new char[obsName.length() + 1], obsName.c_str());
   SpiceDouble lt;
 
-  // void spkpos_c(ConstSpiceChar * targ, SpiceDouble et, ConstSpiceChar * ref,
-  // ConstSpiceChar * abcorr,
+  // void spkpos_c(ConstSpiceChar * targ, SpiceDouble t_tdb, ConstSpiceChar *
+  // ref, ConstSpiceChar * abcorr,
   //               ConstSpiceChar * obs, SpiceDouble ptarg[3], SpiceDouble * lt)
-  spkpos_c(targ, et, ref, abcorr, obs, ptarg, &lt);
+  spkpos_c(target_spice, t_tdb_spice, ref, abcorr, obs_spice, ptarg, &lt);
 
   for (int i = 0; i < 3; i++) {
     targetPos(i) = ptarg[i];
@@ -173,25 +178,28 @@ Vector3d GetBodyPos(std::string targetName, real epoch, std::string refFrame,
 /**
  * @brief Get the Frame Conversion Matrix object
  *
- * @param et
+ * @param t_tdb
  * @param from_frame
  * @param to_frame
  * @return MatrixXd
  */
-Matrix6d GetFrameConversionMatrix(real et, std::string from_frame,
-                                  std::string to_frame) {
+Matrix6d GetFrameConversionMatrix(real t_tai, Frame from_frame,
+                                  Frame to_frame) {
   LoadSpiceKernel();
   SpiceInt bodyname;
-  SpiceDouble et_spice =
-      (SpiceDouble)
-          et.val();  // ToDO: this cuts the relatonship between et and matrix
+  // TODO: this cuts the relatonship between t_tdb and matrix
+  real t_tdb = ConvertTime(t_tai, TimeSystems::TAI, TimeSystems::TDB);
+  SpiceDouble et_spice = (SpiceDouble)t_tdb.val();
   double xform[6][6];
   Matrix6d M_rot;
 
+  std::string from_frame_str = frametem_string.at(from_frame);
+  std::string to_frame_str = frametem_string.at(to_frame);
+
   const char *from_frame_char =
-      strcpy(new char[from_frame.length() + 1], from_frame.c_str());
+      strcpy(new char[from_frame_str.length() + 1], from_frame_str.c_str());
   const char *to_frame_char =
-      strcpy(new char[to_frame.length() + 1], to_frame.c_str());
+      strcpy(new char[to_frame_str.length() + 1], to_frame_str.c_str());
 
   sxform_c(from_frame_char, to_frame_char, et_spice, xform);
 
@@ -262,9 +270,9 @@ Julian Date Strings.
  */
 real StringToTDB(std::string str) {
   LoadSpiceKernel();
-  SpiceDouble et;
-  str2et_c(str.c_str(), &et);
-  return et;
+  SpiceDouble t_tdb;
+  str2et_c(str.c_str(), &t_tdb);
+  return t_tdb;
 }
 
 /**
@@ -275,8 +283,8 @@ real StringToTDB(std::string str) {
  */
 real StringToTAI(std::string str) {
   LoadSpiceKernel();
-  real et = StringToTDB(str);
-  real tai = ConvertTime(et, "TDB", "TAI");
+  real t_tdb = StringToTDB(str);
+  real tai = ConvertTime(t_tdb, TimeSystems::TDB, TimeSystems::TAI);
   return tai;
 }
 
@@ -289,9 +297,9 @@ real StringToTAI(std::string str) {
  */
 std::string TDBtoStringUTC(real tdb, int prec = 3) {
   LoadSpiceKernel();
-  SpiceDouble et = tdb.val();
+  SpiceDouble t_tdb = tdb.val();
   SpiceChar str[100];
-  et2utc_c(et, "C", prec, 100, str);
+  et2utc_c(t_tdb, "C", prec, 100, str);
 
   return std::string(str);
 }
@@ -305,7 +313,7 @@ std::string TDBtoStringUTC(real tdb, int prec = 3) {
  */
 std::string TAItoStringUTC(real tai, int prec = 3) {
   LoadSpiceKernel();
-  real et_tdb = ConvertTime(tai, "TAI", "TDB");
+  real et_tdb = ConvertTime(tai, TimeSystems::TAI, TimeSystems::TDB);
   std::string str = TDBtoStringUTC(et_tdb, prec);
   return str;
 }
@@ -373,7 +381,7 @@ Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target) {
   Vector6 rv_target;
 
   // convert TAI to TDB past J2000
-  real t_s = ConvertTime(tai, "TAI", "TDB");
+  real t_s = ConvertTime(tai, TimeSystems::TAI, TimeSystems::TDB);
 
   // find the segment for the center and target body
   if (center == NaifId::SOLAR_SYSTEM_BARYCENTER) {

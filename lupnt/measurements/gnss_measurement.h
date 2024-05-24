@@ -12,7 +12,7 @@
 
 #include <lupnt/core/constants.h>
 #include <lupnt/measurements/transmission.h>
-#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/frame_converter.h>
 
 #include <memory>
 #include <vector>
@@ -211,12 +211,12 @@ class GnssMeasurement {
    * @param epoch     epoch time
    * @param rv_pred   predicted position and velocity
    * @param clk_pred  predicted clock offset and drift
-   * @param coord_in  coordinate system of the input state
+   * @param frame_in  coordinate system of the input state
    */
   VectorX GetPredictedGnssMeasurement(
       double epoch, Vector6 rv_pred, Vector2 clk_pred, VectorX N_pred,
       MatrixXd &H_gnss, std::vector<GnssMeasurementType> meas_type,
-      CoordSystem coord_in = CoordSystem::MI);
+      Frame frame_in = Frame::MI);
 
   /**
    * @brief Get the Pseudorange for the predicted state
@@ -225,12 +225,12 @@ class GnssMeasurement {
    * @param rv_pred   predicted position and velocity
    * @param clk_pred  predicted clock offset and drift
    * @param H_pr       Jacobian of the measurement function
-   * @param coord_in  coordinate system of the input state
+   * @param frame_in  coordinate system of the input state
    * @return VectorX
    */
   VectorX GetPredictedPseudorange(double epoch, Vector6 rv_pred,
                                   Vector2 clk_pred, MatrixXd &H_pr,
-                                  CoordSystem coord_in = CoordSystem::MI);
+                                  Frame frame_in = Frame::MI);
 
   /**
    * @brief Get the Pseudorange Analytical Jacobian object
@@ -239,12 +239,14 @@ class GnssMeasurement {
    * @param rv_pred   predicted position and velocity
    * @param clk_pred  predicted clock offset and drift
    * @param H_pr      Jacobian of the measurement function
-   * @param coord_in  coordinate system of the input state
+   * @param frame_in  coordinate system of the input state
    * @return * VectorX
    */
-  VectorX GetPredictedPseudorangeAnalyticalJacobian(
-      double epoch, Vector6 rv_pred, Vector2 clk_pred, MatrixXd &H_pr,
-      CoordSystem coord_in = CoordSystem::MI);
+  VectorX GetPredictedPseudorangeAnalyticalJacobian(double epoch,
+                                                    Vector6 rv_pred,
+                                                    Vector2 clk_pred,
+                                                    MatrixXd &H_pr,
+                                                    Frame frame_in = Frame::MI);
 
   /**
    * @brief Get the Pseudorange Rate object
@@ -253,12 +255,12 @@ class GnssMeasurement {
    * @param rv_pred   predicted position and velocity
    * @param clk_pred  predicted clock offset and drift
    * @param H_prr     Jacobian of the measurement function
-   * @param coord_in  coordinate system of the input state
+   * @param frame_in  coordinate system of the input state
    * @return VectorX
    */
   VectorX GetPredictedPseudorangerate(double epoch, Vector6 rv_pred,
                                       Vector2 clk_pred, MatrixXd &H_prr,
-                                      CoordSystem coord_in = CoordSystem::MI);
+                                      Frame frame_in = Frame::MI);
 
   /**
    * @brief Get the Carrier Phase object
@@ -267,13 +269,12 @@ class GnssMeasurement {
    * @param rv_pred   predicted position and velocity
    * @param clk_pred  predicted clock offset and drift
    * @param H_cp      Jacobian of the measurement function
-   * @param coord_in  coordinate system of the input state
+   * @param frame_in  coordinate system of the input state
    * @return VectorX
    */
   VectorX GetPredictedCarrierPhase(double epoch, Vector6 rv_pred,
                                    Vector2 clk_pred, VectorX N_pred,
-                                   MatrixXd &H_cp,
-                                   CoordSystem coord_in = CoordSystem::MI);
+                                   MatrixXd &H_cp, Frame frame_in = Frame::MI);
 
   /*********************************************************************
    * Noise Models

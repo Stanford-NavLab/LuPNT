@@ -5,6 +5,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "lupnt/physics/frame_converter.h"
+
 namespace lupnt {
 Body Body::Moon(int n_max, int m_max) {
   Body moon;
@@ -14,6 +16,7 @@ Body Body::Moon(int n_max, int m_max) {
   moon.normalized = true;
   moon.n_max = n_max;
   moon.m_max = m_max;
+  moon.fixed_frame = Frame::PA;
 
   BodyData bd = GetBodyData(moon.id);
   moon.mu = bd.GM;
@@ -32,6 +35,7 @@ Body Body::Earth(int n_max, int m_max) {
   earth.normalized = true;
   earth.n_max = n_max;
   earth.m_max = m_max;
+  earth.fixed_frame = Frame::ITRF;
 
   BodyData bd = GetBodyData(earth.id);
   earth.mu = bd.GM;
