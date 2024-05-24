@@ -1,13 +1,16 @@
-from PIL import Image
 from __future__ import annotations
-from matplotlib import colors as mcolors
 from matplotlib.gridspec import GridSpec
 from matplotlib import pyplot as plt
 import numpy as np
 import os as os
 import pandas as pd
 import pickle as pickle
-from pylupnt.plots import Plot3D
+import pkg_resources as pkg_resources
+from pylupnt.math_utils import arr_to_mat_idx
+from pylupnt.math_utils import cross_norm
+from pylupnt.math_utils import i_to_arr_idxs
+from pylupnt.math_utils import mat_to_arr_idx
+from pylupnt.math_utils import wrapToPi
 from pylupnt.pylupnt_pybind import Body
 from pylupnt.pylupnt_pybind import CartesianOrbitState
 from pylupnt.pylupnt_pybind import CartesianTwoBodyDynamics
@@ -55,24 +58,22 @@ from pylupnt.pylupnt_pybind import spherical_to_cartesian
 from pylupnt.pylupnt_pybind import true_to_eccentric_anomaly
 from pylupnt.pylupnt_pybind import true_to_mean_anomaly
 from pylupnt.pylupnt_pybind import wrapTo2Pi
-from pylupnt.utils import arr_to_mat_idx
 from pylupnt.utils import dump_pickle
 from pylupnt.utils import format_element
-from pylupnt.utils import i_to_arr_idxs
+from pylupnt.utils import get_basepath
 from pylupnt.utils import load_data
 from pylupnt.utils import load_pickle
-from pylupnt.utils import mat_to_arr_idx
 from pylupnt.utils import plot_RTN
 from pylupnt.utils import print_aligned
 from pylupnt.utils import set_axes_equal
 from pylupnt.utils import timed
 from pylupnt.utils import timer_func
-from pylupnt.utils import wrapToPi
 from time import time
-from . import plots
+from . import math_utils
+from . import plotting
 from . import pylupnt_pybind
 from . import utils
-__all__ = ['A1MJD_OF_J2000', 'A1_TAI_OFFSET', 'AU', 'Body', 'C', 'C22_MOON', 'CARTESIAN', 'CLASSICAL_OE', 'COLORS', 'CartesianOrbitState', 'CartesianTwoBodyDynamics', 'ClassicalOE', 'CoordConverter', 'CoordSystem', 'DAYS_PER_JULIAN_CENTURY', 'DAYS_PER_SEC', 'DAYS_PER_YEAR', 'DEG_PER_RAD', 'DEIMOS', 'DELAUNAY_OE', 'E', 'EARTH', 'EARTH_BARYCENTER', 'EARTH_MOON_BARYCENTER', 'ECEF', 'ECI', 'EME', 'EMR', 'EQUINOTICAL_OE', 'EquinoctialOE', 'GCRF', 'GSE', 'GridSpec', 'ICRF', 'ITRF', 'Image', 'J2_EARTH', 'J2_MOON', 'JD_JAN_5_1941', 'JD_MJD_OFFSET', 'JD_NOV_17_1858', 'JD_OF_J2000', 'JUPITER', 'JUPITER_BARYCENTER', 'KeplerianDynamics', 'MARS', 'MARS_BARYCENTER', 'ME', 'MERCURY', 'MERCURY_BARYCENTER', 'MI', 'MJD_OF_J2000', 'MOD', 'MOON', 'MU_EARTH', 'MU_MOON', 'NBodyDynamics', 'NEPTUNE_BARYCENTER', 'NaifId', 'NumericalOrbitDynamics', 'OMEGA_E_M', 'OP', 'OrbitState', 'OrbitStateRepres', 'PA', 'PHOBOS', 'PI', 'PI_OVER_TWO', 'PLUTO_BARYCENTER', 'P_SUN', 'Plot3D', 'QUASINONSINGULAR_ROE', 'QUASI_NONSINGULAR_OE', 'QuasiNonsingularOE', 'QuasiNonsingularROE', 'RAD_PER_DEG', 'R_EARTH', 'R_MOON', 'SATURN_BARYCENTER', 'SECS_PER_DAY', 'SECS_PER_HOUR', 'SECS_PER_MINUTE', 'SER', 'SINGULAR_ROE', 'SOLAR_SYSTEM_BARYCENTER', 'SUN', 'S_AU', 'SingularROE', 'SpiceInterface', 'TIME_OF_J2000', 'TOD', 'TT_TAI_OFFSET', 'TWO_PI', 'URANUS_BARYCENTER', 'VENUS', 'VENUS_BARYCENTER', 'arr_to_mat_idx', 'azimuth_elevation_range_to_cartesian', 'basepath', 'cartesian_to_azimuth_elevation_range', 'cartesian_to_classical', 'cartesian_to_east_north_up', 'cartesian_to_geographical', 'cartesian_to_spherical', 'classical_to_cartesian', 'classical_to_delaunay', 'classical_to_equinoctial', 'classical_to_quasi_nonsingular', 'compute_occultation', 'convert_orbit_state', 'dB2decimal', 'd_E_EMB', 'd_E_M', 'd_M_EMB', 'decimal2dB', 'degrees2dms', 'delaunay_to_classical', 'dms2degrees', 'dump_pickle', 'east_north_up_to_cartesian', 'eccentric_to_mean_anomaly', 'eccentric_to_true_anomaly', 'equinoctial_to_classical', 'format_element', 'geographical_to_cartesian', 'i_to_arr_idxs', 'load_data', 'load_pickle', 'mat_to_arr_idx', 'mcolors', 'mean_to_eccentric_anomaly', 'mean_to_true_anomaly', 'np', 'os', 'pd', 'pickle', 'plot_RTN', 'plot_data', 'plots', 'plt', 'print_aligned', 'pylupnt_pybind', 'quasi_nonsingular_to_classical', 'relative_quasi_nonsingular_to_classical', 'set_axes_equal', 'spherical_to_cartesian', 'time', 'timed', 'timer_func', 'true_to_eccentric_anomaly', 'true_to_mean_anomaly', 'u', 'utils', 'wrapTo2Pi', 'wrapToPi']
+__all__ = ['A1MJD_OF_J2000', 'A1_TAI_OFFSET', 'AU', 'Body', 'C', 'C22_MOON', 'CARTESIAN', 'CLASSICAL_OE', 'CartesianOrbitState', 'CartesianTwoBodyDynamics', 'ClassicalOE', 'CoordConverter', 'CoordSystem', 'DAYS_PER_JULIAN_CENTURY', 'DAYS_PER_SEC', 'DAYS_PER_YEAR', 'DEG_PER_RAD', 'DEIMOS', 'DELAUNAY_OE', 'E', 'EARTH', 'EARTH_BARYCENTER', 'EARTH_MOON_BARYCENTER', 'ECEF', 'ECI', 'EME', 'EMR', 'EQUINOTICAL_OE', 'EquinoctialOE', 'GCRF', 'GSE', 'GridSpec', 'ICRF', 'ITRF', 'J2_EARTH', 'J2_MOON', 'JD_JAN_5_1941', 'JD_MJD_OFFSET', 'JD_NOV_17_1858', 'JD_OF_J2000', 'JUPITER', 'JUPITER_BARYCENTER', 'KeplerianDynamics', 'LUPNT_DATA_PATH', 'MARS', 'MARS_BARYCENTER', 'ME', 'MERCURY', 'MERCURY_BARYCENTER', 'MI', 'MJD_OF_J2000', 'MOD', 'MOON', 'MU_EARTH', 'MU_MOON', 'NBodyDynamics', 'NEPTUNE_BARYCENTER', 'NaifId', 'NumericalOrbitDynamics', 'OMEGA_E_M', 'OP', 'OrbitState', 'OrbitStateRepres', 'PA', 'PHOBOS', 'PI', 'PI_OVER_TWO', 'PLUTO_BARYCENTER', 'P_SUN', 'QUASINONSINGULAR_ROE', 'QUASI_NONSINGULAR_OE', 'QuasiNonsingularOE', 'QuasiNonsingularROE', 'RAD_PER_DEG', 'R_EARTH', 'R_MOON', 'SATURN_BARYCENTER', 'SECS_PER_DAY', 'SECS_PER_HOUR', 'SECS_PER_MINUTE', 'SER', 'SINGULAR_ROE', 'SOLAR_SYSTEM_BARYCENTER', 'SUN', 'S_AU', 'SingularROE', 'SpiceInterface', 'TIME_OF_J2000', 'TOD', 'TT_TAI_OFFSET', 'TWO_PI', 'URANUS_BARYCENTER', 'VENUS', 'VENUS_BARYCENTER', 'arr_to_mat_idx', 'azimuth_elevation_range_to_cartesian', 'cartesian_to_azimuth_elevation_range', 'cartesian_to_classical', 'cartesian_to_east_north_up', 'cartesian_to_geographical', 'cartesian_to_spherical', 'classical_to_cartesian', 'classical_to_delaunay', 'classical_to_equinoctial', 'classical_to_quasi_nonsingular', 'compute_occultation', 'convert_orbit_state', 'cross_norm', 'dB2decimal', 'd_E_EMB', 'd_E_M', 'd_M_EMB', 'decimal2dB', 'degrees2dms', 'delaunay_to_classical', 'dms2degrees', 'dump_pickle', 'east_north_up_to_cartesian', 'eccentric_to_mean_anomaly', 'eccentric_to_true_anomaly', 'equinoctial_to_classical', 'format_element', 'geographical_to_cartesian', 'get_basepath', 'i_to_arr_idxs', 'load_data', 'load_pickle', 'mat_to_arr_idx', 'math_utils', 'mean_to_eccentric_anomaly', 'mean_to_true_anomaly', 'np', 'os', 'pd', 'pickle', 'pkg_resources', 'plot_RTN', 'plotting', 'plt', 'print_aligned', 'pylupnt_pybind', 'quasi_nonsingular_to_classical', 'relative_quasi_nonsingular_to_classical', 'set_axes_equal', 'spherical_to_cartesian', 'time', 'timed', 'timer_func', 'true_to_eccentric_anomaly', 'true_to_mean_anomaly', 'utils', 'wrapTo2Pi', 'wrapToPi']
 A1MJD_OF_J2000: float = 21545.0
 A1_TAI_OFFSET: float = 0.0343817
 AU: float = 149597970.0
@@ -80,7 +81,6 @@ C: float = 299792.458
 C22_MOON: float = 3.470983013194e-05
 CARTESIAN: pylupnt_pybind.OrbitStateRepres  # value = <OrbitStateRepres.CARTESIAN: 0>
 CLASSICAL_OE: pylupnt_pybind.OrbitStateRepres  # value = <OrbitStateRepres.CLASSICAL_OE: 1>
-COLORS: list = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
 DAYS_PER_JULIAN_CENTURY: float = 36525.0
 DAYS_PER_SEC: float = 1.1574074074074073e-05
 DAYS_PER_YEAR: float = 365.25
@@ -108,6 +108,7 @@ JD_NOV_17_1858: float = 2400000.5
 JD_OF_J2000: float = 2451545.0
 JUPITER: pylupnt_pybind.NaifId  # value = <NaifId.JUPITER: 599>
 JUPITER_BARYCENTER: pylupnt_pybind.NaifId  # value = <NaifId.JUPITER_BARYCENTER: 5>
+LUPNT_DATA_PATH: str = '/Users/guillemcv/Development/NavLab/LuPNT/data'
 MARS: pylupnt_pybind.NaifId  # value = <NaifId.MARS: 499>
 MARS_BARYCENTER: pylupnt_pybind.NaifId  # value = <NaifId.MARS_BARYCENTER: 4>
 ME: pylupnt_pybind.CoordSystem  # value = <CoordSystem.ME: 11>
@@ -150,9 +151,7 @@ URANUS_BARYCENTER: pylupnt_pybind.NaifId  # value = <NaifId.URANUS_BARYCENTER: 7
 VENUS: pylupnt_pybind.NaifId  # value = <NaifId.VENUS: 299>
 VENUS_BARYCENTER: pylupnt_pybind.NaifId  # value = <NaifId.VENUS_BARYCENTER: 2>
 __version__: str = '@PROJECT_VERSION@'
-basepath: str = '/Users/guillemcv/Development/NavLab/LuPNT/data'
+__warningregistry__: dict = {'version': 121}
 d_E_EMB: float = 4671.0
 d_E_M: float = 384400.0
 d_M_EMB: float = 379729.0
-plot_data: dict  # value = {<NaifId.EARTH: 399>: {'filename': 'earth_surface.jpg', 'RE': 6378.137, 'lim': 25000.0, 'brightness': 3}, <NaifId.MOON: 301>: {'filename': 'moon_surface.jpeg', 'RE': 1737.1, 'lim': 10000.0, 'brightness': 1.5}}
-u = utils

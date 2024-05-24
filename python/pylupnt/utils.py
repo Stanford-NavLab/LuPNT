@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 # import array_to_latex as a2l
 from matplotlib.gridspec import GridSpec
 
-basepath = os.getenv("LUPNT_DATA_PATH")
-assert basepath is not None, "Environment variable LUPNT_DATA_PATH not set"
+LUPNT_DATA_PATH = os.getenv("LUPNT_DATA_PATH")
+assert LUPNT_DATA_PATH is not None, "Environment variable LUPNT_DATA_PATH not set"
 
 
 def timed(func, *args, **kwargs):
@@ -22,7 +22,7 @@ def timed(func, *args, **kwargs):
 # Load data
 def load_data(directory):
     data = {}
-    output_path = os.path.join(basepath, "output", directory)
+    output_path = os.path.join(LUPNT_DATA_PATH, "output", directory)
     for filename in os.listdir(output_path):
         name, ext = os.path.splitext(filename)
         if ext == ".csv":
@@ -53,39 +53,9 @@ def timer_func(func):
 
     return wrap_func
 
+
 def get_basepath():
-    return basepath
-
-def wrapToPi(x):
-    """
-    Wrap angle in radians to [-pi pi]
-
-    Args:
-        x (float): angle in radians
-    Returns:
-        x (float): angle in radians wrapped to [-pi pi]
-    """
-    x = np.mod(x + np.pi, 2 * np.pi) - np.pi
-    return x
-
-
-def mat_to_arr_idx(i, j, n):
-    assert i != j, "Diagonal elements are not stored"
-    assert j > i, "This function is only valid for j > i"
-    k = (n * (n - 1) / 2) - (n - i) * ((n - i) - 1) / 2 + j - i - 1
-    return int(k)
-
-
-def arr_to_mat_idx(k, n):
-    i = n - 2 - np.floor(np.sqrt(-8 * k + 4 * n * (n - 1) - 7) / 2.0 - 0.5)
-    j = k + i + 1 - n * (n - 1) / 2 + (n - i) * ((n - i) - 1) / 2
-    return int(i), int(j)
-
-
-def i_to_arr_idxs(i, N):
-    arr1 = [mat_to_arr_idx(i, j, N) for j in range(i + 1, N)]
-    arr2 = [mat_to_arr_idx(j, i, N) for j in range(0, i)]
-    return sorted(arr1 + arr2)
+    return LUPNT_DATA_PATH
 
 
 def load_pickle(path):

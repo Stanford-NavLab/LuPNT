@@ -32,7 +32,7 @@ enum CoordSystem {
   MOD,          // Mean of date equatorial system
   TOD,          // True of date equatorial system
   EMR,          // Earth-Moon Rotating Frame
-  MI,           // Moon-centered Inertial Frame  (Axis aligened with ICRF)
+  MI,           // Moon-centered Inertial Frame (Axis aligened with ICRF)
   PA,           // Moon-Fixed with principal axes
   ME,           // Moon-Fixed with mean-Earth / polar axes
   OP,           // Earth Orbit Frame
