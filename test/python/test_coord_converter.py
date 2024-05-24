@@ -7,15 +7,15 @@ import os
 
 def map_string_pnt_coordinate(str):
     if str == "ITRF":
-        return pnt.CoordSystem.ITRF
+        return pnt.Frame.ITRF
     elif str == "GCRF":
-        return pnt.CoordSystem.GCRF
+        return pnt.Frame.GCRF
     elif str == "ICRF":
-        return pnt.CoordSystem.ICRF
+        return pnt.Frame.ICRF
     elif str == "MI":
-        return pnt.CoordSystem.MI
+        return pnt.Frame.MI
     elif str == "PA":
-        return pnt.CoordSystem.PA
+        return pnt.Frame.PA
     else:
         raise ValueError("Unknown coordinate system: " + str)
 

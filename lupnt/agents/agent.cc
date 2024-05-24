@@ -22,7 +22,7 @@ std::shared_ptr<CartesianOrbitState> Agent::GetCartesianGCRFStateAtEpoch(
   double mu = GetBodyData(bodyId_).GM;
   auto cartOrbitState = std::static_pointer_cast<CartesianOrbitState>(
       ConvertOrbitStateRepresentation(state, OrbitStateRepres::CARTESIAN, mu));
-  return ConvertOrbitStateCoordSystem(cartOrbitState, epoch, Frame::GCRF);
+  return ConvertOrbitStateFrame(cartOrbitState, epoch, Frame::GCRF);
 }
 
 };  // namespace lupnt

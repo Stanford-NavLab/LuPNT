@@ -11,7 +11,9 @@ print(
 print(rv_in)
 print(" ")
 
-rv_out = pnt.CoordConverter.convert(epoch, rv_in, coord_sys_in=pnt.CoordSystem.GCRF, coord_sys_out=pnt.CoordSystem.ITRF)
+rv_out = pnt.CoordConverter.convert(
+    epoch, rv_in, coord_sys_in=pnt.Frame.GCRF, coord_sys_out=pnt.Frame.ITRF
+)
 
 print("ITRF:")
 print(rv_out)

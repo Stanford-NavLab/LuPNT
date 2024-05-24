@@ -132,7 +132,7 @@ TEST_CASE("Test_CartesianJ2Dynamics") {
   double Rbody = R_MOON;
   real dt = 10.0;
 
-  ClassicalOE coe_state({a, e, i, Omega, w, M}, CoordSystem::MI);
+  ClassicalOE coe_state({a, e, i, Omega, w, M}, Frame::MI);
   CartesianOrbitState cart_state = ClassicalToCartesian(coe_state, mu);
   Vector6 cart_vector = cart_state.GetVector();
   VectorX cart_vector_kep;
@@ -154,7 +154,7 @@ TEST_CASE("Test_CartesianJ2Dynamics") {
 
   // Propagation with STM
   auto propagate_function = [&](VectorX &vec, real dt) {
-    CartesianOrbitState state(vec, CoordSystem::MI);
+    CartesianOrbitState state(vec, Frame::MI);
     j2_dyn.Propagate(state, 0.0, dt, 0.1);
     vec = state.GetVector();
   };

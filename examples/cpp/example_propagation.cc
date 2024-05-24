@@ -111,8 +111,8 @@ int main() {
 
     // Moon spacecraft
     auto state = moonSat1->GetCartesianGCRFStateAtEpoch(t);
-    auto stateMi = ConvertOrbitStateCoordSystem(state, t, Frame::MI);
-    auto stateGcrf = ConvertOrbitStateCoordSystem(state, t, Frame::GCRF);
+    auto stateMi = ConvertOrbitStateFrame(state, t, Frame::MI);
+    auto stateGcrf = ConvertOrbitStateFrame(state, t, Frame::GCRF);
     dataHistory.AddData("moonSatMi", t, stateMi->GetVector());
     dataHistory.AddData("moonSatGcrf", t, stateGcrf->GetVector());
 
@@ -120,8 +120,8 @@ int main() {
     for (int i = 0; i < gpsConstellation.GetNumSatellites(); i++) {
       auto sate =
           gpsConstellation.GetSatellite(i)->GetCartesianGCRFStateAtEpoch(t);
-      auto stateMi = ConvertOrbitStateCoordSystem(sate, t, Frame::MI);
-      auto stateGcrf = ConvertOrbitStateCoordSystem(sate, t, Frame::GCRF);
+      auto stateMi = ConvertOrbitStateFrame(sate, t, Frame::MI);
+      auto stateGcrf = ConvertOrbitStateFrame(sate, t, Frame::GCRF);
 
       std::string name = "sat" + std::to_string(i);
       dataHistory.AddData(name + "Mi", t, sate->GetVector());

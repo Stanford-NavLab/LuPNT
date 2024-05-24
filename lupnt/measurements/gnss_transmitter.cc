@@ -150,7 +150,7 @@ double GnssTransmitter::GetTransmittionAntennaGain(double t, Vector3d r_tx_gcrf,
  */
 Transmission GnssTransmitter::GenerateTransmission(double t) {
   auto cart_state = agent->GetCartesianGCRFStateAtEpoch(t);
-  ConvertOrbitStateCoordSystem(cart_state, t, Frame::GCRF);
+  ConvertOrbitStateFrame(cart_state, t, Frame::GCRF);
 
   Transmission trans;
   trans.dt_tx = 0.0;

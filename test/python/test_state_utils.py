@@ -17,7 +17,7 @@ class TestStateUtils:
         # Cartesian to Classical
 
         cart_array = pnt.classical_to_cartesian(data.coe_array_elfo, pnt.MU_MOON)
-        cart_state = pnt.CartesianOrbitState(cart_array, pnt.CoordSystem.MI)
+        cart_state = pnt.CartesianOrbitState(cart_array, pnt.Frame.MI)
 
         coe_array = pnt.cartesian_to_classical(cart_array, pnt.MU_MOON)
         coe_state = pnt.cartesian_to_classical(cart_state, pnt.MU_MOON)
@@ -36,7 +36,7 @@ class TestStateUtils:
         # Classical to Cartesian
 
         coe_array = data.coe_array_elfo
-        coe_state = pnt.ClassicalOE(coe_array, pnt.CoordSystem.MI)
+        coe_state = pnt.ClassicalOE(coe_array, pnt.Frame.MI)
 
         cart_array = pnt.classical_to_cartesian(coe_array, pnt.MU_MOON)
         cart_state = pnt.classical_to_cartesian(coe_state, pnt.MU_MOON)

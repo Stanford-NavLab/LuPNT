@@ -7,7 +7,7 @@ namespace py = pybind11;
 using namespace lupnt;
 
 void init_coord_converter(py::module &m) {
-  py::enum_<Frame>(m, "CoordSystem")
+  py::enum_<Frame>(m, "Frame")
       .value("ITRF", Frame::ITRF)
       .value("ECEF", Frame::ECEF)
       .value("GCRF", Frame::GCRF)

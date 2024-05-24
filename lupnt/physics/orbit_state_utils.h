@@ -219,7 +219,7 @@ class TLE {
   static std::vector<TLE> FromFile(const std::string &filename);
 };
 
-static std::shared_ptr<CartesianOrbitState> ConvertOrbitStateCoordSystem(
+static std::shared_ptr<CartesianOrbitState> ConvertOrbitStateFrame(
     const std::shared_ptr<CartesianOrbitState> state_in, const real epoch,
     const Frame coord_sys_out) {
   auto rv_in = state_in->GetVector();

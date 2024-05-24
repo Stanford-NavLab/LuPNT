@@ -2,8 +2,8 @@ from PIL import Image
 from __future__ import annotations
 from matplotlib import colors as mcolors
 from matplotlib import pyplot as plt
-import numpy as np
 import numpy
+import numpy as np
 import os as os
 from plotly import express as px
 from plotly import graph_objs as go

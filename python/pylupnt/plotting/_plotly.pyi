@@ -1,7 +1,7 @@
 from PIL import Image
 from __future__ import annotations
-import numpy
 import numpy as np
+import numpy
 import os as os
 from plotly import express as px
 from plotly import graph_objs as go
@@ -12,7 +12,7 @@ from pylupnt import utils
 from sklearn.cluster._kmeans import KMeans
 from sklearn.utils._indexing import shuffle
 __all__ = ['Image', 'KMeans', 'RE', 'add_3d_arrow', 'axis_dict', 'create_sphere_meshgrid', 'get_moon_trace', 'go', 'image2zvals', 'img', 'mesh_data', 'np', 'os', 'pio', 'plot_constellation', 'px', 'regular_tri', 'set_equal_aspect_ratio', 'set_view', 'shuffle', 'utils']
-def add_3d_arrow(fig: plotly.graph_objs._figure.Figure, origin: numpy.ndarray, direction: numpy.ndarray, length: float = 1, tip: float = 1, color: str = 'black', width: float = 2) -> None:
+def add_3d_arrow(fig: plotly.graph_objs._figure.Figure, origin: numpy.ndarray, direction: numpy.ndarray, length_scale: float = 1, tip_scale: float = 1, color: typing.Union[str, list[str]] = 'black', width: float = 2) -> None:
     """
     
         Add 3D arrow to a plotly figure
@@ -21,8 +21,8 @@ def add_3d_arrow(fig: plotly.graph_objs._figure.Figure, origin: numpy.ndarray, d
             fig (go.Figure): plotly figure
             origin (np.ndarray): origin of the arrow
             direction (np.ndarray): direction of the arrow
-            length (float): length of the arrow
-            tip (float): tip size of the arrow
+            length_scale (float): scale factor for the length of the arrow
+            tip_scale (float): scale factor for the tip of the arrow
             color (str): color of the arrow
             width (float): width of the arrow
         
@@ -39,13 +39,11 @@ def create_sphere_meshgrid(rows: int, cols: int) -> tuple[numpy.ndarray, numpy.n
             tuple[np.ndarray, np.ndarray, np.ndarray]: x, y, z coordinates of the sphere
         
     """
-def get_moon_trace(scale: float = 1.0) -> plotly.graph_objs._mesh3d.Mesh3d:
+def get_moon_trace() -> plotly.graph_objs._mesh3d.Mesh3d:
     """
     
         Get the moon trace
     
-        Args:
-            scale (float): scale factor
         Returns:
             go.Mesh3d: plotly mesh3d trace
         
