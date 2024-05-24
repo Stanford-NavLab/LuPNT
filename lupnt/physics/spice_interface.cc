@@ -140,7 +140,7 @@ void ExtractPckCoeffs() {
   //    pckr02_c(handle, target)
 }
 
-Vector3d GetBodyPos(NaifId target, real t_tai, CoordSystem refFrame, NaifId obs,
+Vector3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
                     std::string abCorrection) {
   LoadSpiceKernel();
 
@@ -183,8 +183,8 @@ Vector3d GetBodyPos(NaifId target, real t_tai, CoordSystem refFrame, NaifId obs,
  * @param to_frame
  * @return MatrixXd
  */
-Matrix6d GetFrameConversionMatrix(real t_tai, CoordSystem from_frame,
-                                  CoordSystem to_frame) {
+Matrix6d GetFrameConversionMatrix(real t_tai, Frame from_frame,
+                                  Frame to_frame) {
   LoadSpiceKernel();
   SpiceInt bodyname;
   // TODO: this cuts the relatonship between t_tdb and matrix

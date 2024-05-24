@@ -20,7 +20,7 @@ namespace lupnt {
 
 class CartesianOrbitState;
 
-enum CoordSystem {
+enum Frame {
   ITRF,         // International Terrestrial Reference Frame
   ECEF = ITRF,  // Earth-Centered Earth-Fixed
   GCRF,         // Geocentric Reference System
@@ -41,35 +41,29 @@ enum CoordSystem {
 class CoordConverter {
  public:
   // Vector = func(real, Vector)
-  static Vector6 Convert(real epoch, Vector6 rv_in, CoordSystem coord_sys_in,
-                         CoordSystem coord_sys_out);
-  static Vector3 Convert(real epoch, Vector3 r_in, CoordSystem coord_sys_in,
-                         CoordSystem coord_sys_out);
+  static Vector6 Convert(real epoch, Vector6 rv_in, Frame coord_sys_in,
+                         Frame coord_sys_out);
+  static Vector3 Convert(real epoch, Vector3 r_in, Frame coord_sys_in,
+                         Frame coord_sys_out);
   // Matrix = func(real, Matrix)
   static Matrix<-1, 6> Convert(real epoch, const Matrix<-1, 6> &rv_in,
-                               CoordSystem coord_sys_in,
-                               CoordSystem coord_sys_out);
+                               Frame coord_sys_in, Frame coord_sys_out);
   static Matrix<-1, 3> Convert(real epoch, const Matrix<-1, 3> &r_in,
-                               CoordSystem coord_sys_in,
-                               CoordSystem coord_sys_out);
+                               Frame coord_sys_in, Frame coord_sys_out);
   // Matrix = func(Vector, Vector)
   static Matrix<-1, 6> Convert(VectorX epoch, const Vector6 &rv_in,
-                               CoordSystem coord_sys_in,
-                               CoordSystem coord_sys_out);
+                               Frame coord_sys_in, Frame coord_sys_out);
   static Matrix<-1, 3> Convert(VectorX epoch, const Vector3 &r_in,
-                               CoordSystem coord_sys_in,
-                               CoordSystem coord_sys_out);
+                               Frame coord_sys_in, Frame coord_sys_out);
   // Matrix = func(Vector, Matrix)
   static Matrix<-1, 6> Convert(VectorX epoch, const Matrix<-1, 6> &rv_in,
-                               CoordSystem coord_sys_in,
-                               CoordSystem coord_sys_out);
+                               Frame coord_sys_in, Frame coord_sys_out);
   static Matrix<-1, 3> Convert(VectorX epoch, const Matrix<-1, 3> &r_in,
-                               CoordSystem coord_sys_in,
-                               CoordSystem coord_sys_out);
+                               Frame coord_sys_in, Frame coord_sys_out);
 
   static CartesianOrbitState Convert(real epoch,
                                      const CartesianOrbitState &state_in,
-                                     CoordSystem coord_sys_out);
+                                     Frame coord_sys_out);
 
  private:
   static Matrix6 ComputeITRFtoGCRF(real tai);

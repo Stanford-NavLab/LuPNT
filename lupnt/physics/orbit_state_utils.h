@@ -221,7 +221,7 @@ class TLE {
 
 static std::shared_ptr<CartesianOrbitState> ConvertOrbitStateCoordSystem(
     const std::shared_ptr<CartesianOrbitState> state_in, const real epoch,
-    const CoordSystem coord_sys_out) {
+    const Frame coord_sys_out) {
   auto rv_in = state_in->GetVector();
   auto coord_sys_in = state_in->GetCoordSystem();
   auto rv_out =

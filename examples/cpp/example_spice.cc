@@ -37,16 +37,14 @@ int main() {
 
   MatrixX xform(6, 6);
 
-  xform =
-      sp::GetFrameConversionMatrix(t_tai, CoordSystem::GCRF, CoordSystem::ITRF);
+  xform = sp::GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::ITRF);
   std::cout << "XFORM_ITRF:\n" << xform << std::endl;
 
-  xform =
-      sp::GetFrameConversionMatrix(t_tai, CoordSystem::GCRF, CoordSystem::PA);
+  xform = sp::GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::PA);
   std::cout << "XFORM_MOONPA:\n" << xform << std::endl;
 
-  Vector3d x = sp::GetBodyPos(NaifId::EARTH, t_tai, CoordSystem::GCRF,
-                              NaifId::MOON, "NONE");
+  Vector3d x =
+      sp::GetBodyPos(NaifId::EARTH, t_tai, Frame::GCRF, NaifId::MOON, "NONE");
   std::cout << "EARTH2MOON:\n"
             << x.format(Eigen::IOFormat(3, 0, ", ", "\n", "[", "]"))
             << std::endl;

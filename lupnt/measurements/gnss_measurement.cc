@@ -235,7 +235,7 @@ VectorX GnssMeasurement::GetCarrierPhase(bool with_noise, int seed) {
 VectorX GnssMeasurement::GetPredictedGnssMeasurement(
     double epoch, Vector6 rv_pred, Vector2 clk_pred, VectorX N_pred,
     MatrixXd &H_gnss, std::vector<GnssMeasurementType> meas_type,
-    CoordSystem coord_in) {
+    Frame coord_in) {
   // number of measurements
   int n_meas_all = n_meas * meas_type.size();
   bool use_cp = false;
@@ -287,10 +287,10 @@ VectorX GnssMeasurement::GetPredictedGnssMeasurement(
 VectorX GnssMeasurement::GetPredictedPseudorange(double epoch, Vector6 rv_pred,
                                                  Vector2 clk_pred,
                                                  MatrixXd &H_pr,
-                                                 CoordSystem coord_in) {
+                                                 Frame coord_in) {
   auto func = [epoch, coord_in, this](const Vector6 rv_in, const Vector2 clk) {
     Vector6 rv_gcrf =
-        CoordConverter::Convert(epoch, rv_in, coord_in, CoordSystem::GCRF);
+        CoordConverter::Convert(epoch, rv_in, coord_in, Frame::GCRF);
     Vector3 r_rx = rv_gcrf.head(3);
     real dt_rx = clk(0);
     return ComputePseudorange(r_rx, dt_rx);
@@ -309,9 +309,8 @@ VectorX GnssMeasurement::GetPredictedPseudorange(double epoch, Vector6 rv_pred,
 
 VectorX GnssMeasurement::GetPredictedPseudorangeAnalyticalJacobian(
     double epoch, Vector6 rv_pred, Vector2 clk_pred, MatrixXd &H_pr,
-    CoordSystem coord_in) {
-  auto rv_gcrf =
-      CoordConverter::Convert(epoch, rv_pred, coord_in, CoordSystem::GCRF);
+    Frame coord_in) {
+  auto rv_gcrf = CoordConverter::Convert(epoch, rv_pred, coord_in, Frame::GCRF);
   Vector3 r_rx = rv_gcrf.head(3);
   real dt_rx = clk_pred(0);
 
@@ -340,10 +339,10 @@ VectorX GnssMeasurement::GetPredictedPseudorangerate(double epoch,
                                                      Vector6 rv_pred,
                                                      Vector2 clk_pred,
                                                      MatrixXd &H_prr,
-                                                     CoordSystem coord_in) {
+                                                     Frame coord_in) {
   auto func = [epoch, coord_in, this](const Vector6 rv_in, const Vector2 clk) {
     Vector6 rv_gcrf =
-        CoordConverter::Convert(epoch, rv_in, coord_in, CoordSystem::GCRF);
+        CoordConverter::Convert(epoch, rv_in, coord_in, Frame::GCRF);
     Vector3 r_rx = rv_gcrf.head(3);
     Vector3 v_rx = rv_gcrf.tail(3);
     real dt_rx_dot = clk(1);
@@ -365,11 +364,11 @@ VectorX GnssMeasurement::GetPredictedCarrierPhase(double epoch, Vector6 rv_pred,
                                                   Vector2 clk_pred,
                                                   VectorX N_pred,
                                                   MatrixXd &H_cp,
-                                                  CoordSystem coord_in) {
+                                                  Frame coord_in) {
   auto func = [epoch, coord_in, this](const Vector6 rv_in, const Vector2 clk,
                                       const VectorX N_pred) {
     Vector6 rv_gcrf =
-        CoordConverter::Convert(epoch, rv_in, coord_in, CoordSystem::GCRF);
+        CoordConverter::Convert(epoch, rv_in, coord_in, Frame::GCRF);
     Vector3 r_rx = rv_gcrf.head(3);
     real dt_rx = clk(0);
     return ComputeCarrierPhase(r_rx, dt_rx, N_pred);

@@ -29,7 +29,7 @@ struct Body {
   int m_max;
   MatrixXd Cnm;
   MatrixXd Snm;
-  CoordSystem fixed_frame;
+  Frame fixed_frame;
 
   static Body Moon(int n_max = 0, int m_max = 0);
   static Body Earth(int n_max = 0, int m_max = 0);

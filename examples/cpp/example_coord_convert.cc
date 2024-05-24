@@ -26,8 +26,8 @@ int main() {
 
   // Get the position and velocity of the target body relative to the center
   // body
-  auto from = CoordSystem::GCRF;  // J2000
-  auto to = CoordSystem::ITRF;    // Earth fixed frame
+  auto from = Frame::GCRF;  // J2000
+  auto to = Frame::ITRF;    // Earth fixed frame
 
   // Vallado, p87
   Vector6 posvel_GCRF;

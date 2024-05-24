@@ -25,16 +25,15 @@ using namespace SpiceInterface;
 
 CartesianOrbitState CoordConverter::Convert(real t_tai,
                                             const CartesianOrbitState &state_in,
-                                            CoordSystem coord_sys_out) {
+                                            Frame coord_sys_out) {
   Vector6 rv_in = state_in.GetVector();
   Vector6 rv_out =
       Convert(t_tai, rv_in, state_in.GetCoordSystem(), coord_sys_out);
   return CartesianOrbitState(rv_out, coord_sys_out);
 }
 
-Vector3 CoordConverter::Convert(real t_tai, Vector3 rv_in,
-                                CoordSystem coord_sys_in,
-                                CoordSystem coord_sys_out) {
+Vector3 CoordConverter::Convert(real t_tai, Vector3 rv_in, Frame coord_sys_in,
+                                Frame coord_sys_out) {
   Vector6 rv_in_6;
   rv_in_6 << rv_in, Vector3::Zero();
   Vector6 rv_out_6 = Convert(t_tai, rv_in_6, coord_sys_in, coord_sys_out);
@@ -42,8 +41,7 @@ Vector3 CoordConverter::Convert(real t_tai, Vector3 rv_in,
 }
 
 Matrix<-1, 6> CoordConverter::Convert(real t_tai, const Matrix<-1, 6> &rv_in,
-                                      CoordSystem coord_sys_in,
-                                      CoordSystem coord_sys_out) {
+                                      Frame coord_sys_in, Frame coord_sys_out) {
   Matrix<-1, 6> rv_out(rv_in.rows(), 6);
   for (int i = 0; i < rv_in.rows(); i++) {
     rv_out.row(i) = Convert(t_tai, rv_in.row(i).transpose().eval(),
@@ -53,8 +51,7 @@ Matrix<-1, 6> CoordConverter::Convert(real t_tai, const Matrix<-1, 6> &rv_in,
 }
 
 Matrix<-1, 3> CoordConverter::Convert(real t_tai, const Matrix<-1, 3> &r_in,
-                                      CoordSystem coord_sys_in,
-                                      CoordSystem coord_sys_out) {
+                                      Frame coord_sys_in, Frame coord_sys_out) {
   Matrix<-1, 6> rv_in(r_in.rows(), 6);
   rv_in << r_in, Matrix<-1, 3>::Zero(r_in.rows(), 3);
   Matrix<-1, 6> rv_out = Convert(t_tai, rv_in, coord_sys_in, coord_sys_out);
@@ -62,8 +59,7 @@ Matrix<-1, 3> CoordConverter::Convert(real t_tai, const Matrix<-1, 3> &r_in,
 }
 
 Matrix<-1, 6> CoordConverter::Convert(VectorX t_tai, const Vector6 &rv_in,
-                                      CoordSystem coord_sys_in,
-                                      CoordSystem coord_sys_out) {
+                                      Frame coord_sys_in, Frame coord_sys_out) {
   Matrix<-1, 6> rv_out(t_tai.size(), 6);
   for (int i = 0; i < t_tai.size(); i++) {
     rv_out.row(i) = Convert(t_tai(i), rv_in, coord_sys_in, coord_sys_out);
@@ -72,8 +68,7 @@ Matrix<-1, 6> CoordConverter::Convert(VectorX t_tai, const Vector6 &rv_in,
 }
 
 Matrix<-1, 3> CoordConverter::Convert(VectorX t_tai, const Vector3 &r_in,
-                                      CoordSystem coord_sys_in,
-                                      CoordSystem coord_sys_out) {
+                                      Frame coord_sys_in, Frame coord_sys_out) {
   Matrix<-1, 6> rv_in(t_tai.size(), 6);
   rv_in << r_in, Matrix<-1, 3>::Zero(t_tai.size(), 3);
   Matrix<-1, 6> rv_out = Convert(t_tai, rv_in, coord_sys_in, coord_sys_out);
@@ -81,8 +76,7 @@ Matrix<-1, 3> CoordConverter::Convert(VectorX t_tai, const Vector3 &r_in,
 }
 
 Matrix<-1, 6> CoordConverter::Convert(VectorX t_tai, const Matrix<-1, 6> &rv_in,
-                                      CoordSystem coord_sys_in,
-                                      CoordSystem coord_sys_out) {
+                                      Frame coord_sys_in, Frame coord_sys_out) {
   assert(t_tai.size() == rv_in.rows() && "Epoch and rv_in must have same size");
   Matrix<-1, 6> rv_out(t_tai.size(), 6);
   for (int i = 0; i < t_tai.size(); i++) {
@@ -93,8 +87,7 @@ Matrix<-1, 6> CoordConverter::Convert(VectorX t_tai, const Matrix<-1, 6> &rv_in,
 }
 
 Matrix<-1, 3> CoordConverter::Convert(VectorX t_tai, const Matrix<-1, 3> &r_in,
-                                      CoordSystem coord_sys_in,
-                                      CoordSystem coord_sys_out) {
+                                      Frame coord_sys_in, Frame coord_sys_out) {
   assert(t_tai.size() == r_in.rows() && "Epoch and r_in must have same size");
   Matrix<-1, 6> rv_in(t_tai.size(), 6);
   rv_in << r_in, Matrix<-1, 3>::Zero(t_tai.size(), 3);
@@ -112,9 +105,8 @@ Matrix<-1, 3> CoordConverter::Convert(VectorX t_tai, const Matrix<-1, 3> &r_in,
  * @param coord_sys_out Coordinate system of the converted state vector
  * @return Vector6  State vector in the converted coordinate system
  */
-Vector6 CoordConverter::Convert(real t_tai, Vector6 rv_in,
-                                CoordSystem coord_sys_in,
-                                CoordSystem coord_sys_out) {
+Vector6 CoordConverter::Convert(real t_tai, Vector6 rv_in, Frame coord_sys_in,
+                                Frame coord_sys_out) {
   if (coord_sys_in == coord_sys_out) {
     return rv_in;
   }
@@ -124,8 +116,8 @@ Vector6 CoordConverter::Convert(real t_tai, Vector6 rv_in,
       switch (coord_sys_out) {
         case GCRF: {
           // Convert to GCRF
-          Matrix6 Rrv_itrf2gcrf = GetFrameConversionMatrix(
-              t_tai, CoordSystem::ITRF, CoordSystem::GCRF);
+          Matrix6 Rrv_itrf2gcrf =
+              GetFrameConversionMatrix(t_tai, Frame::ITRF, Frame::GCRF);
           Vector6 rv_gcrf = Rrv_itrf2gcrf * rv_in;
           return rv_gcrf;
         }
@@ -183,8 +175,8 @@ Vector6 CoordConverter::Convert(real t_tai, Vector6 rv_in,
           return rv_me;
         }
         case MI: {  // Convert to Moon Inertial
-          Matrix6 Mrot = GetFrameConversionMatrix(t_tai, CoordSystem::PA,
-                                                  CoordSystem::GCRF);
+          Matrix6 Mrot =
+              GetFrameConversionMatrix(t_tai, Frame::PA, Frame::GCRF);
           Vector6 rv_mi = Mrot * rv_in;
           return rv_mi;
         }
@@ -205,8 +197,8 @@ Vector6 CoordConverter::Convert(real t_tai, Vector6 rv_in,
           return rv_icrf;
         }
         case ITRF: {
-          Matrix6 Rrv_gcrf2itrf = GetFrameConversionMatrix(
-              t_tai, CoordSystem::GCRF, CoordSystem::ITRF);
+          Matrix6 Rrv_gcrf2itrf =
+              GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::ITRF);
           Vector6 rv_itrf = Rrv_gcrf2itrf * rv_in;
           return rv_itrf;
         }
@@ -242,8 +234,8 @@ Vector6 CoordConverter::Convert(real t_tai, Vector6 rv_in,
           return rv_gcrf;
         }
         case PA: {
-          Matrix6 Mrot = GetFrameConversionMatrix(t_tai, CoordSystem::GCRF,
-                                                  CoordSystem::PA);
+          Matrix6 Mrot =
+              GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::PA);
           Vector6 rv_pa = Mrot * rv_in;
           return rv_pa;
         }
@@ -323,8 +315,7 @@ Matrix6 CoordConverter::ComputeGCRFtoITRF(real tai) {
   auto tdb_s = ConvertTime(tai, TimeSystems::TAI, "TDB");
   double et = tdb_s.val();  // this cuts of the relationship between t and
                             // Mrot temporaly
-  Matrix6 Mrot =
-      GetFrameConversionMatrix(et, CoordSystem::GCRF, CoordSystem::ITRF);
+  Matrix6 Mrot = GetFrameConversionMatrix(et, Frame::GCRF, Frame::ITRF);
   return Mrot;
 }
 
@@ -335,8 +326,7 @@ Matrix6 CoordConverter::ComputeOpToMi(real t_tai) {
   // Moon axis
   MatrixX iau_moon2icrf;
   iau_moon2icrf =
-      GetFrameConversionMatrix(t_tai, CoordSystem::PA, CoordSystem::GCRF)
-          .block(0, 0, 3, 3);
+      GetFrameConversionMatrix(t_tai, Frame::PA, Frame::GCRF).block(0, 0, 3, 3);
 
   // IAU pole
   Vector3 iau_pole{0, 0, 1};

@@ -35,7 +35,7 @@ VectorX NBodyDynamics::ComputeRates(real epoch, const VectorX &x) const {
   if (use_srp_) {
     Vector3 r_body2sc = x.head(3);
     Vector3 r_body2sun = SpiceInterface::GetBodyPos(
-        NaifId::SUN, epoch, CoordSystem::GCRF, NaifId::MOON, "NONE");
+        NaifId::SUN, epoch, Frame::GCRF, NaifId::MOON, "NONE");
     Vector3 r_sun2sc = r_body2sc - r_body2sun;
     double R_body = central_body_.R;
     real B_srp = CR_ * (area_ / mass_);  // ballistic coefficient [m^2/kg]
@@ -78,7 +78,7 @@ Vector3 NBodyDynamics::ComputeNBodyGravity(real epoch,
     // Check spherical harmonics
     if (body.sphericalHarmonics) {
       Matrix3d Ur2j = SpiceInterface::GetFrameConversionMatrix(
-                          epoch, body.fixed_frame, CoordSystem::GCRF)
+                          epoch, body.fixed_frame, Frame::GCRF)
                           .block(0, 0, 3, 3);
       Vector3 r_i_rot = Ur2j.transpose() * r_i;
       Vector3 a_i_rot = spharm_acc_ecr(body.n_max, body.m_max, r_i_rot, body.R,

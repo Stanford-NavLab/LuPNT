@@ -80,12 +80,11 @@ std::map<std::string, bool> Occultation::ComputeOccultation(
 // Return distance from the line of sight to the center of each body
 // VectorX = func(real, Vector3, Vector3)
 VectorX Occultation::ComputeOccultation(real epoch, const Vector3& r1,
-                                        const Vector3& r2, CoordSystem cs1,
-                                        CoordSystem cs2,
+                                        const Vector3& r2, Frame cs1, Frame cs2,
                                         const std::vector<NaifId>& bodies) {
   // Convert to ICRF
-  Vector3 r1_icrf = CoordConverter::Convert(epoch, r1, cs1, CoordSystem::ICRF);
-  Vector3 r2_icrf = CoordConverter::Convert(epoch, r2, cs2, CoordSystem::ICRF);
+  Vector3 r1_icrf = CoordConverter::Convert(epoch, r1, cs1, Frame::ICRF);
+  Vector3 r2_icrf = CoordConverter::Convert(epoch, r2, cs2, Frame::ICRF);
 
   // Compute distance between line of sight and center of each body
   VectorX distances(bodies.size());
@@ -124,8 +123,8 @@ VectorX Occultation::ComputeOccultation(real epoch, const Vector3& r1,
 
 // MatrixX = func(real, Matrix<-1, 3>, Matrix<-1, 3>)
 MatrixX Occultation::ComputeOccultation(real epoch, const Matrix<-1, 3>& r1,
-                                        const Matrix<-1, 3>& r2,
-                                        CoordSystem cs1, CoordSystem cs2,
+                                        const Matrix<-1, 3>& r2, Frame cs1,
+                                        Frame cs2,
                                         const std::vector<NaifId>& bodies) {
   assert((r1.rows() == r2.rows() || r1.rows() == 1 || r2.rows() == 1) &&
          "r1 and r2 must have the same number of rows or one of them must have "
@@ -143,8 +142,8 @@ MatrixX Occultation::ComputeOccultation(real epoch, const Matrix<-1, 3>& r1,
 // MatrixX = func(VectorX, Matrix<-1, 3>, Matrix<-1, 3>)
 MatrixX Occultation::ComputeOccultation(const VectorX& epoch,
                                         const Matrix<-1, 3>& r1,
-                                        const Matrix<-1, 3>& r2,
-                                        CoordSystem cs1, CoordSystem cs2,
+                                        const Matrix<-1, 3>& r2, Frame cs1,
+                                        Frame cs2,
                                         const std::vector<NaifId>& bodies) {
   assert((epoch.size() == r1.rows() || r1.rows() == 1) &&
          "epoch and r1 must have the same size or r1 must have only one row");

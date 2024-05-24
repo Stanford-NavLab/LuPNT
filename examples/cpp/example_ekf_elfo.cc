@@ -136,7 +136,7 @@ int main() {
   dyn_true->SetTimeStep(dt);
 
   // Moon spacecraft
-  ClassicalOE coe_moon({a, e, i, Omega, w, M}, CoordSystem::MI);
+  ClassicalOE coe_moon({a, e, i, Omega, w, M}, Frame::MI);
   auto cart_state_moon = std::make_shared<CartesianOrbitState>(
       ClassicalToCartesian(coe_moon, MU_MOON));
 
@@ -194,7 +194,7 @@ int main() {
     H = MatrixXd::Zero(mtot, x.size());
     R = MatrixXd::Zero(mtot, mtot);
     VectorX x_N = VectorX::Zero(mtot);  // a dummy variable for carrier phase
-    CoordSystem coord_in = CoordSystem::MI;
+    Frame coord_in = Frame::MI;
 
     VectorX z = meas.GetPredictedGnssMeasurement(
         epoch, x.head(6), x.tail(2), x_N, H, meas_types,

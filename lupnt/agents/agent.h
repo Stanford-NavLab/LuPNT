@@ -80,7 +80,7 @@ class Agent {
 
   // Cartesian OrbitState at epoch in GCRF frame
   std::shared_ptr<CartesianOrbitState> GetCartesianGCRFStateAtEpoch(
-      real epoch, CoordSystem coord_sys = CoordSystem::GCRF);
+      real epoch, Frame coord_sys = Frame::GCRF);
 
   void Propagate(const real epoch) {
     if (epoch == epoch_) return;

@@ -216,7 +216,7 @@ class GnssMeasurement {
   VectorX GetPredictedGnssMeasurement(
       double epoch, Vector6 rv_pred, Vector2 clk_pred, VectorX N_pred,
       MatrixXd &H_gnss, std::vector<GnssMeasurementType> meas_type,
-      CoordSystem coord_in = CoordSystem::MI);
+      Frame coord_in = Frame::MI);
 
   /**
    * @brief Get the Pseudorange for the predicted state
@@ -230,7 +230,7 @@ class GnssMeasurement {
    */
   VectorX GetPredictedPseudorange(double epoch, Vector6 rv_pred,
                                   Vector2 clk_pred, MatrixXd &H_pr,
-                                  CoordSystem coord_in = CoordSystem::MI);
+                                  Frame coord_in = Frame::MI);
 
   /**
    * @brief Get the Pseudorange Analytical Jacobian object
@@ -242,9 +242,11 @@ class GnssMeasurement {
    * @param coord_in  coordinate system of the input state
    * @return * VectorX
    */
-  VectorX GetPredictedPseudorangeAnalyticalJacobian(
-      double epoch, Vector6 rv_pred, Vector2 clk_pred, MatrixXd &H_pr,
-      CoordSystem coord_in = CoordSystem::MI);
+  VectorX GetPredictedPseudorangeAnalyticalJacobian(double epoch,
+                                                    Vector6 rv_pred,
+                                                    Vector2 clk_pred,
+                                                    MatrixXd &H_pr,
+                                                    Frame coord_in = Frame::MI);
 
   /**
    * @brief Get the Pseudorange Rate object
@@ -258,7 +260,7 @@ class GnssMeasurement {
    */
   VectorX GetPredictedPseudorangerate(double epoch, Vector6 rv_pred,
                                       Vector2 clk_pred, MatrixXd &H_prr,
-                                      CoordSystem coord_in = CoordSystem::MI);
+                                      Frame coord_in = Frame::MI);
 
   /**
    * @brief Get the Carrier Phase object
@@ -272,8 +274,7 @@ class GnssMeasurement {
    */
   VectorX GetPredictedCarrierPhase(double epoch, Vector6 rv_pred,
                                    Vector2 clk_pred, VectorX N_pred,
-                                   MatrixXd &H_cp,
-                                   CoordSystem coord_in = CoordSystem::MI);
+                                   MatrixXd &H_cp, Frame coord_in = Frame::MI);
 
   /*********************************************************************
    * Noise Models

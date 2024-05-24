@@ -54,7 +54,7 @@ class ISLMeasurement {
                                       Vector2 clk_trans_pred,
                                       Vector2 clk_rec_pred,
                                       std::vector<ISLMeasurementType> meas_type,
-                                      CoordSystem coord_in = CoordSystem::MI);
+                                      Frame coord_in = Frame::MI);
   VectorXd GetPredictedISLPR(double epoch, Vector6)
 }
 
