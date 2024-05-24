@@ -1,6 +1,6 @@
 // lupnt
 #include <lupnt/core/constants.h>
-#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/frame_converter.h>
 
 // pybind11
 #include <pybind11/eigen.h>
@@ -9,7 +9,7 @@
 namespace py = pybind11;
 using namespace lupnt;
 
-void init_coord_converter(py::module &m) {
+void init_frame_converter(py::module &m) {
   py::enum_<Frame>(m, "Frame")
       .value("ITRF", Frame::ITRF)
       .value("GCRF", Frame::GCRF)
@@ -25,12 +25,12 @@ void init_coord_converter(py::module &m) {
       .value("ME", Frame::ME)
       .export_values();
 
-  py::class_<CoordConverter>(m, "CoordConverter")
+  py::class_<FrameConverter>(m, "FrameConverter")
       .def_static(
           "convert",
           [](double epoch, const Vector6d &rv_in, Frame frame_in,
              Frame frame_out) -> Vector6d {
-            return CoordConverter::Convert(epoch, rv_in, frame_in, frame_out)
+            return FrameConverter::Convert(epoch, rv_in, frame_in, frame_out)
                 .cast<double>();
           },
           "Convert coordinate system", py::arg("rv_in"), py::arg("epoch"),

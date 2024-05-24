@@ -125,7 +125,7 @@ def get_problem(
         coe_OP[i_sat, 2:] = np.deg2rad(coe_OP[i_sat, 2:])
     coe_OP[i_sat, 5] += pnt.wrapToPi(coe_OP[i_sat, 5] + np.pi)
     rv0_moon_sat_OP = pnt.classical_to_cartesian(coe_OP, pnt.MU_MOON)
-    rv0_moon_sat_mi = pnt.CoordConverter.convert(
+    rv0_moon_sat_mi = pnt.FrameConverter.convert(
         epoch_0, rv0_moon_sat_OP, pnt.OP, pnt.MI
     )
 
@@ -153,15 +153,15 @@ def get_problem(
         rv_moon_sat_mi[i_sat] = dynamics.propagate(
             rv0_moon_sat_mi[i_sat], epoch_0, epochs
         )
-        rv_moon_sat_pa[i_sat] = pnt.CoordConverter.convert(
+        rv_moon_sat_pa[i_sat] = pnt.FrameConverter.convert(
             epochs, rv_moon_sat_mi[i_sat], pnt.MI, pnt.PA
         )
     rv_moon_earth_mi = pnt.SpiceInterface.get_body_pos_vel(epochs, pnt.MOON, pnt.EARTH)
-    rv_moon_earth_pa = pnt.CoordConverter.convert(
+    rv_moon_earth_pa = pnt.FrameConverter.convert(
         epochs, rv_moon_earth_mi, pnt.MI, pnt.PA
     )
     rv_moon_sun_mi = pnt.SpiceInterface.get_body_pos_vel(epochs, pnt.MOON, pnt.SUN)
-    rv_moon_sun_pa = pnt.CoordConverter.convert(epochs, rv_moon_sun_mi, pnt.MI, pnt.PA)
+    rv_moon_sun_pa = pnt.FrameConverter.convert(epochs, rv_moon_sun_mi, pnt.MI, pnt.PA)
 
     # Attitude
     r_sun = rv_moon_sun_mi[None, :, 0:3] - rv_moon_sat_mi[:, :, 0:3]
@@ -200,7 +200,7 @@ def get_problem(
         frame = user["frame"]
         coe[2:] = np.deg2rad(coe[2:])
         rv0 = pnt.classical_to_cartesian(coe, pnt.MU_MOON)
-        rv0_mi = pnt.CoordConverter.convert(epoch_0, rv0, frame, pnt.MI)
+        rv0_mi = pnt.FrameConverter.convert(epoch_0, rv0, frame, pnt.MI)
         rv_mi = dynamics.propagate(rv0_mi, epoch_0, epochs)
         return rv_mi
 
@@ -226,12 +226,12 @@ def get_problem(
     for i_usr, user in enumerate(users):
         if user["type"] == "orbital":
             rv_moon_user_mi[i_usr] = propagate_orbital_user(user)
-            rv_moon_user_pa[i_usr] = pnt.CoordConverter.convert(
+            rv_moon_user_pa[i_usr] = pnt.FrameConverter.convert(
                 epochs, rv_moon_user_mi[i_usr], pnt.MI, pnt.PA
             )
         elif user["type"] == "surface":
             rv_moon_user_pa[i_usr] = propagate_surface_user(user)
-            rv_moon_user_mi[i_usr] = pnt.CoordConverter.convert(
+            rv_moon_user_mi[i_usr] = pnt.FrameConverter.convert(
                 epochs, rv_moon_user_pa[i_usr], pnt.PA, pnt.MI
             )
         else:

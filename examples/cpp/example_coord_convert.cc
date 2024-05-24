@@ -10,7 +10,7 @@
  */
 
 #include <lupnt/core/constants.h>
-#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/frame_converter.h>
 #include <lupnt/physics/spice_interface.h>
 
 #include <fstream>
@@ -37,7 +37,7 @@ int main() {
   posvel_GCRF << pos, vel;
   real tai = sp::StringToTAI("2001/04/06 07:51:28.788 UTC");
 
-  VectorX posvel_ITRF = CoordConverter::Convert(tai, posvel_GCRF, from, to);
+  VectorX posvel_ITRF = FrameConverter::Convert(tai, posvel_GCRF, from, to);
 
   std::cout << "Posvel at J2000 = " << posvel_GCRF << std::endl;
   std::cout << "Posvel at ITRF = " << posvel_ITRF << std::endl;

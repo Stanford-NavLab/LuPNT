@@ -18,7 +18,7 @@
 #include "lupnt/core/constants.h"
 #include "lupnt/dynamics/dynamics.h"
 #include "lupnt/physics/clock.h"
-#include "lupnt/physics/coord_converter.h"
+#include "lupnt/physics/frame_converter.h"
 #include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/orbit_state_utils.h"
 
@@ -80,7 +80,7 @@ class Agent {
 
   // Cartesian OrbitState at epoch in GCRF frame
   std::shared_ptr<CartesianOrbitState> GetCartesianGCRFStateAtEpoch(
-      real epoch, Frame coord_sys = Frame::GCRF);
+      real epoch, Frame frame = Frame::GCRF);
 
   void Propagate(const real epoch) {
     if (epoch == epoch_) return;

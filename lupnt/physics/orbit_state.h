@@ -13,7 +13,7 @@
 
 #include <stdexcept>
 
-#include "coord_converter.h"
+#include "frame_converter.h"
 #include "state.h"
 
 #define kOrbitStateSize 6
@@ -45,7 +45,7 @@ class OrbitState : public IState {
  private:
   Vector6 x_;
   OrbitStateRepres repres_;
-  Frame coord_;
+  Frame frame_;
   std::vector<std::string> names_;
   std::vector<std::string> units_;
 
@@ -53,7 +53,7 @@ class OrbitState : public IState {
   OrbitState(const Vector6 &x, Frame coord, OrbitStateRepres repres,
              const std::vector<std::string> &names,
              const std::vector<std::string> &units)
-      : x_(x), coord_(coord), repres_(repres), names_(names), units_(units) {}
+      : x_(x), frame_(coord), repres_(repres), names_(names), units_(units) {}
 
   Vector6 GetVector() const { return x_; }
 
@@ -70,7 +70,7 @@ class OrbitState : public IState {
   inline int GetSize() const { return kOrbitStateSize; }
   inline real GetValue(int i) const { return x_(i); }
   inline OrbitStateRepres GetOrbitStateRepres() const { return repres_; }
-  inline Frame GetCoordSystem() const { return coord_; }
+  inline Frame GetCoordSystem() const { return frame_; }
 
   inline void SetValue(real val, int idx) { x_(idx) = val; }
   inline void SetVector(const Vector6 &x) { x_ = x; }
@@ -85,7 +85,7 @@ class OrbitState : public IState {
   }
 
   inline void SetOrbitStateRepres(const OrbitStateRepres rep) { repres_ = rep; }
-  inline void SetCoordSystem(Frame sys) { coord_ = sys; }
+  inline void SetCoordSystem(Frame sys) { frame_ = sys; }
 
   inline real operator()(int idx) const { return x_(idx); }
 };

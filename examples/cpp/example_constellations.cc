@@ -20,7 +20,7 @@
 #include <lupnt/measurements/transmission.h>
 #include <lupnt/numerics/filters.h>
 #include <lupnt/numerics/math_utils.h>
-#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/frame_converter.h>
 #include <lupnt/physics/orbit_state.h>
 #include <lupnt/physics/spice_interface.h>
 
@@ -73,8 +73,11 @@ int main() {
       // GPS constellation
       for (int i = 0; i < gnss_const.GetNumSatellites(); i++) {
         auto sat_name = "sat" + std::to_string(i);
-        auto sat_state = 
-            gnss_const.GetSatellite(i)->GetOrbitState()->GetVector().head(3).cast<double>();
+        auto sat_state = gnss_const.GetSatellite(i)
+                             ->GetOrbitState()
+                             ->GetVector()
+                             .head(3)
+                             .cast<double>();
         data_history.AddData(sat_name, t, sat_state);
       }
 

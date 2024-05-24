@@ -5,7 +5,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "lupnt/physics/coord_converter.h"
+#include "lupnt/physics/frame_converter.h"
 
 namespace lupnt {
 Body Body::Moon(int n_max, int m_max) {

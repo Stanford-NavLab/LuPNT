@@ -16,7 +16,7 @@
 
 #include "lupnt/core/constants.h"
 #include "lupnt/numerics/math_utils.h"
-#include "lupnt/physics/coord_converter.h"
+#include "lupnt/physics/frame_converter.h"
 
 #pragma once
 

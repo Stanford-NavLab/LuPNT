@@ -194,11 +194,11 @@ int main() {
     H = MatrixXd::Zero(mtot, x.size());
     R = MatrixXd::Zero(mtot, mtot);
     VectorX x_N = VectorX::Zero(mtot);  // a dummy variable for carrier phase
-    Frame coord_in = Frame::MI;
+    Frame frame_in = Frame::MI;
 
     VectorX z = meas.GetPredictedGnssMeasurement(
         epoch, x.head(6), x.tail(2), x_N, H, meas_types,
-        coord_in);  // Jacobian with autodiff
+        frame_in);  // Jacobian with autodiff
 
     // Get the Measurement Noise
     VectorXd noise_std_vec = meas.GetGnssNoiseStdVector(meas_types);

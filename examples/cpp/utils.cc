@@ -23,7 +23,7 @@
 #include <lupnt/numerics/filters.h>
 #include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/clock.h>
-#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/frame_converter.h>
 #include <lupnt/physics/orbit_state.h>
 #include <lupnt/physics/spice_interface.h>
 
@@ -110,10 +110,10 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
   vz6.setZero();
   data_history->AddData(
       "earth_mi", t,
-      CoordConverter::Convert(epoch, vz6, Frame::GCRF, Frame::MI));
+      FrameConverter::Convert(epoch, vz6, Frame::GCRF, Frame::MI));
   data_history->AddData(
       "moon_gcrf", t,
-      CoordConverter::Convert(epoch, vz6, Frame::MI, Frame::GCRF));
+      FrameConverter::Convert(epoch, vz6, Frame::MI, Frame::GCRF));
 };
 
 void PrintProgressHeader() {

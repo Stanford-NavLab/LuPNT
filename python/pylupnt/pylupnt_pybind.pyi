@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy
 import pylupnt
 import typing
-__all__ = ['A1MJD_OF_J2000', 'A1_TAI_OFFSET', 'AU', 'Body', 'C', 'C22_MOON', 'CARTESIAN', 'CLASSICAL_OE', 'CartesianOrbitState', 'CartesianTwoBodyDynamics', 'ClassicalOE', 'CoordConverter', 'DAYS_PER_JULIAN_CENTURY', 'DAYS_PER_SEC', 'DAYS_PER_YEAR', 'DEG_PER_RAD', 'DEIMOS', 'DELAUNAY_OE', 'E', 'EARTH', 'EARTH_BARYCENTER', 'EARTH_MOON_BARYCENTER', 'ECEF', 'ECI', 'EME', 'EMR', 'EQUINOTICAL_OE', 'EquinoctialOE', 'Frame', 'GCRF', 'GSE', 'ICRF', 'ITRF', 'J2_EARTH', 'J2_MOON', 'JD_JAN_5_1941', 'JD_MJD_OFFSET', 'JD_NOV_17_1858', 'JD_OF_J2000', 'JUPITER', 'JUPITER_BARYCENTER', 'KeplerianDynamics', 'MARS', 'MARS_BARYCENTER', 'ME', 'MERCURY', 'MERCURY_BARYCENTER', 'MI', 'MJD_OF_J2000', 'MOD', 'MOON', 'MU_EARTH', 'MU_MOON', 'NBodyDynamics', 'NEPTUNE_BARYCENTER', 'NaifId', 'NumericalOrbitDynamics', 'OMEGA_E_M', 'OP', 'OrbitState', 'OrbitStateRepres', 'PA', 'PHOBOS', 'PI', 'PI_OVER_TWO', 'PLUTO_BARYCENTER', 'P_SUN', 'QUASINONSINGULAR_ROE', 'QUASI_NONSINGULAR_OE', 'QuasiNonsingularOE', 'QuasiNonsingularROE', 'RAD_PER_DEG', 'R_EARTH', 'R_MOON', 'SATURN_BARYCENTER', 'SECS_PER_DAY', 'SECS_PER_HOUR', 'SECS_PER_MINUTE', 'SER', 'SINGULAR_ROE', 'SOLAR_SYSTEM_BARYCENTER', 'SUN', 'S_AU', 'SingularROE', 'SpiceInterface', 'TIME_OF_J2000', 'TOD', 'TT_TAI_OFFSET', 'TWO_PI', 'URANUS_BARYCENTER', 'VENUS', 'VENUS_BARYCENTER', 'azimuth_elevation_range_to_cartesian', 'cartesian_to_azimuth_elevation_range', 'cartesian_to_classical', 'cartesian_to_east_north_up', 'cartesian_to_geographical', 'cartesian_to_spherical', 'classical_to_cartesian', 'classical_to_delaunay', 'classical_to_equinoctial', 'classical_to_quasi_nonsingular', 'compute_occultation', 'convert_orbit_state', 'dB2decimal', 'd_E_EMB', 'd_E_M', 'd_M_EMB', 'decimal2dB', 'degrees2dms', 'delaunay_to_classical', 'dms2degrees', 'east_north_up_to_cartesian', 'eccentric_to_mean_anomaly', 'eccentric_to_true_anomaly', 'equinoctial_to_classical', 'geographical_to_cartesian', 'mean_to_eccentric_anomaly', 'mean_to_true_anomaly', 'quasi_nonsingular_to_classical', 'relative_quasi_nonsingular_to_classical', 'spherical_to_cartesian', 'true_to_eccentric_anomaly', 'true_to_mean_anomaly', 'wrapTo2Pi', 'wrapToPi']
+__all__ = ['A1MJD_OF_J2000', 'A1_TAI_OFFSET', 'AU', 'Body', 'C', 'C22_MOON', 'CARTESIAN', 'CLASSICAL_OE', 'CartesianOrbitState', 'CartesianTwoBodyDynamics', 'ClassicalOE', 'DAYS_PER_JULIAN_CENTURY', 'DAYS_PER_SEC', 'DAYS_PER_YEAR', 'DEG_PER_RAD', 'DEIMOS', 'DELAUNAY_OE', 'E', 'EARTH', 'EARTH_BARYCENTER', 'EARTH_MOON_BARYCENTER', 'ECEF', 'ECI', 'EME', 'EMR', 'EQUINOTICAL_OE', 'EquinoctialOE', 'Frame', 'FrameConverter', 'GCRF', 'GSE', 'ICRF', 'ITRF', 'J2_EARTH', 'J2_MOON', 'JD_JAN_5_1941', 'JD_MJD_OFFSET', 'JD_NOV_17_1858', 'JD_OF_J2000', 'JUPITER', 'JUPITER_BARYCENTER', 'KeplerianDynamics', 'MARS', 'MARS_BARYCENTER', 'ME', 'MERCURY', 'MERCURY_BARYCENTER', 'MI', 'MJD_OF_J2000', 'MOD', 'MOON', 'MU_EARTH', 'MU_MOON', 'NBodyDynamics', 'NEPTUNE_BARYCENTER', 'NaifId', 'NumericalOrbitDynamics', 'OMEGA_E_M', 'OP', 'OrbitState', 'OrbitStateRepres', 'PA', 'PHOBOS', 'PI', 'PI_OVER_TWO', 'PLUTO_BARYCENTER', 'P_SUN', 'QUASINONSINGULAR_ROE', 'QUASI_NONSINGULAR_OE', 'QuasiNonsingularOE', 'QuasiNonsingularROE', 'RAD_PER_DEG', 'R_EARTH', 'R_MOON', 'SATURN_BARYCENTER', 'SECS_PER_DAY', 'SECS_PER_HOUR', 'SECS_PER_MINUTE', 'SER', 'SINGULAR_ROE', 'SOLAR_SYSTEM_BARYCENTER', 'SUN', 'S_AU', 'SingularROE', 'SpiceInterface', 'TIME_OF_J2000', 'TOD', 'TT_TAI_OFFSET', 'TWO_PI', 'URANUS_BARYCENTER', 'VENUS', 'VENUS_BARYCENTER', 'azimuth_elevation_range_to_cartesian', 'cartesian_to_azimuth_elevation_range', 'cartesian_to_classical', 'cartesian_to_east_north_up', 'cartesian_to_geographical', 'cartesian_to_spherical', 'classical_to_cartesian', 'classical_to_delaunay', 'classical_to_equinoctial', 'classical_to_quasi_nonsingular', 'compute_occultation', 'convert_orbit_state', 'dB2decimal', 'd_E_EMB', 'd_E_M', 'd_M_EMB', 'decimal2dB', 'degrees2dms', 'delaunay_to_classical', 'dms2degrees', 'east_north_up_to_cartesian', 'eccentric_to_mean_anomaly', 'eccentric_to_true_anomaly', 'equinoctial_to_classical', 'geographical_to_cartesian', 'mean_to_eccentric_anomaly', 'mean_to_true_anomaly', 'quasi_nonsingular_to_classical', 'relative_quasi_nonsingular_to_classical', 'spherical_to_cartesian', 'true_to_eccentric_anomaly', 'true_to_mean_anomaly', 'wrapTo2Pi', 'wrapToPi']
 class Body:
     @staticmethod
     def Earth(n_max: int = 0, m_max: int = 0) -> Body:
@@ -17,7 +17,7 @@ class Body:
 class CartesianOrbitState(OrbitState):
     r: numpy.ndarray[numpy.float64[3, 1]]
     v: numpy.ndarray[numpy.float64[3, 1]]
-    def __init__(self, rv: numpy.ndarray[numpy.float64[6, 1]], coord_sys: Frame = pylupnt.Frame.MI) -> None:
+    def __init__(self, rv: numpy.ndarray[numpy.float64[6, 1]], frame: Frame = pylupnt.Frame.MI) -> None:
         ...
     def __repr__(self) -> str:
         ...
@@ -38,61 +38,6 @@ class ClassicalOE(OrbitState):
         ...
     def __repr__(self) -> str:
         ...
-class CoordConverter:
-    @staticmethod
-    @typing.overload
-    def convert(epoch: float, rv_in: numpy.ndarray[numpy.float64[6, 1]], coord_sys_in: Frame, coord_sys_out: Frame) -> numpy.ndarray[numpy.float64[6, 1]]:
-        """
-        Convert coordinate system
-        """
-    @staticmethod
-    @typing.overload
-    def convert(epoch: float, r_in: numpy.ndarray[numpy.float64[3, 1]], coord_sys_in: Frame, coord_sys_out: Frame) -> numpy.ndarray[numpy.float64[3, 1]]:
-        """
-        Convert coordinate system
-        """
-    @staticmethod
-    @typing.overload
-    def convert(epoch: float, state_in: ..., coord_sys_out: Frame) -> ...:
-        """
-        Convert coordinate system
-        """
-    @staticmethod
-    @typing.overload
-    def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], rv_in: numpy.ndarray[numpy.float64[6, 1]], coord_sys_in: Frame, coord_sys_out: Frame) -> numpy.ndarray[numpy.float64[m, n]]:
-        """
-        Convert coordinate system
-        """
-    @staticmethod
-    @typing.overload
-    def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], r_in: numpy.ndarray[numpy.float64[3, 1]], coord_sys_in: Frame, coord_sys_out: Frame) -> numpy.ndarray[numpy.float64[m, n]]:
-        """
-        Convert coordinate system
-        """
-    @staticmethod
-    @typing.overload
-    def convert(epoch: float, rv_in: numpy.ndarray[numpy.float64[m, 6]], coord_sys_in: Frame, coord_sys_out: Frame) -> numpy.ndarray[numpy.float64[m, 6]]:
-        """
-        Convert coordinate system
-        """
-    @staticmethod
-    @typing.overload
-    def convert(epoch: float, r_in: numpy.ndarray[numpy.float64[m, 3]], coord_sys_in: Frame, coord_sys_out: Frame) -> numpy.ndarray[numpy.float64[m, 3]]:
-        """
-        Convert coordinate system
-        """
-    @staticmethod
-    @typing.overload
-    def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], rv_in: numpy.ndarray[numpy.float64[m, 6]], coord_sys_in: Frame, coord_sys_out: Frame) -> numpy.ndarray[numpy.float64[m, 6]]:
-        """
-        Convert coordinate system
-        """
-    @staticmethod
-    @typing.overload
-    def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], r_in: numpy.ndarray[numpy.float64[m, 3]], coord_sys_in: Frame, coord_sys_out: Frame) -> numpy.ndarray[numpy.float64[m, 3]]:
-        """
-        Convert coordinate system
-        """
 class EquinoctialOE(OrbitState):
     a: float
     h: float
@@ -180,6 +125,61 @@ class Frame:
     @property
     def value(self) -> int:
         ...
+class FrameConverter:
+    @staticmethod
+    @typing.overload
+    def convert(epoch: float, rv_in: numpy.ndarray[numpy.float64[6, 1]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[6, 1]]:
+        """
+        Convert coordinate system
+        """
+    @staticmethod
+    @typing.overload
+    def convert(epoch: float, r_in: numpy.ndarray[numpy.float64[3, 1]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[3, 1]]:
+        """
+        Convert coordinate system
+        """
+    @staticmethod
+    @typing.overload
+    def convert(epoch: float, state_in: ..., frame_out: Frame) -> ...:
+        """
+        Convert coordinate system
+        """
+    @staticmethod
+    @typing.overload
+    def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], rv_in: numpy.ndarray[numpy.float64[6, 1]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, n]]:
+        """
+        Convert coordinate system
+        """
+    @staticmethod
+    @typing.overload
+    def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], r_in: numpy.ndarray[numpy.float64[3, 1]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, n]]:
+        """
+        Convert coordinate system
+        """
+    @staticmethod
+    @typing.overload
+    def convert(epoch: float, rv_in: numpy.ndarray[numpy.float64[m, 6]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, 6]]:
+        """
+        Convert coordinate system
+        """
+    @staticmethod
+    @typing.overload
+    def convert(epoch: float, r_in: numpy.ndarray[numpy.float64[m, 3]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, 3]]:
+        """
+        Convert coordinate system
+        """
+    @staticmethod
+    @typing.overload
+    def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], rv_in: numpy.ndarray[numpy.float64[m, 6]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, 6]]:
+        """
+        Convert coordinate system
+        """
+    @staticmethod
+    @typing.overload
+    def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], r_in: numpy.ndarray[numpy.float64[m, 3]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, 3]]:
+        """
+        Convert coordinate system
+        """
 class KeplerianDynamics:
     def __init__(self, arg0: float) -> None:
         ...
@@ -322,10 +322,10 @@ class NumericalOrbitDynamics:
     def propagate_with_stm(self, state: numpy.ndarray[numpy.float64[6, 1]], t0: float, tf: float, dt: float) -> tuple[numpy.ndarray[numpy.float64[6, 1]], numpy.ndarray[numpy.float64[6, 6]]]:
         ...
 class OrbitState:
-    coord_sys: Frame
+    frame: Frame
     state_repres: OrbitStateRepres
     vector: numpy.ndarray[numpy.float64[6, 1]]
-    def __init__(self, vector: numpy.ndarray[numpy.float64[6, 1]], coord_sys: Frame, state_repres: OrbitStateRepres, names: ..., std: ..., std: ..., std: ..., std: ..., std: ..., units: ..., std: ..., std: ..., std: ..., std: ..., std: ...) -> None:
+    def __init__(self, vector: numpy.ndarray[numpy.float64[6, 1]], frame: Frame, state_repres: OrbitStateRepres, names: ..., std: ..., std: ..., std: ..., std: ..., std: ..., units: ..., std: ..., std: ..., std: ..., std: ..., std: ...) -> None:
         ...
     def __repr__(self) -> str:
         ...

@@ -18,7 +18,7 @@
 #include <tuple>
 
 #include "lupnt/core/constants.h"
-#include "lupnt/physics/coord_converter.h"
+#include "lupnt/physics/frame_converter.h"
 #include "lupnt/physics/orbit_state.h"
 
 // Function:
@@ -221,12 +221,11 @@ class TLE {
 
 static std::shared_ptr<CartesianOrbitState> ConvertOrbitStateFrame(
     const std::shared_ptr<CartesianOrbitState> state_in, const real epoch,
-    const Frame coord_sys_out) {
+    const Frame frame_out) {
   auto rv_in = state_in->GetVector();
-  auto coord_sys_in = state_in->GetCoordSystem();
-  auto rv_out =
-      CoordConverter::Convert(epoch, rv_in, coord_sys_in, coord_sys_out);
-  auto state_out = std::make_shared<CartesianOrbitState>(rv_out, coord_sys_out);
+  auto frame_in = state_in->GetCoordSystem();
+  auto rv_out = FrameConverter::Convert(epoch, rv_in, frame_in, frame_out);
+  auto state_out = std::make_shared<CartesianOrbitState>(rv_out, frame_out);
   return state_out;
 }
 

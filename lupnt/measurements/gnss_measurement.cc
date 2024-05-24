@@ -235,7 +235,7 @@ VectorX GnssMeasurement::GetCarrierPhase(bool with_noise, int seed) {
 VectorX GnssMeasurement::GetPredictedGnssMeasurement(
     double epoch, Vector6 rv_pred, Vector2 clk_pred, VectorX N_pred,
     MatrixXd &H_gnss, std::vector<GnssMeasurementType> meas_type,
-    Frame coord_in) {
+    Frame frame_in) {
   // number of measurements
   int n_meas_all = n_meas * meas_type.size();
   bool use_cp = false;
@@ -259,19 +259,19 @@ VectorX GnssMeasurement::GetPredictedGnssMeasurement(
       case GnssMeasurementType::PR:
         H_pr = MatrixXd::Zero(n_meas, state_size);
         z.segment(i * n_meas, n_meas) =
-            GetPredictedPseudorange(epoch, rv_pred, clk_pred, H_pr, coord_in);
+            GetPredictedPseudorange(epoch, rv_pred, clk_pred, H_pr, frame_in);
         H_gnss.block(i * n_meas, 0, n_meas, 8) = H_pr;
         break;
       case GnssMeasurementType::PRR:
         H_prr = MatrixXd::Zero(n_meas, state_size);
         z.segment(i * n_meas, n_meas) = GetPredictedPseudorangerate(
-            epoch, rv_pred, clk_pred, H_prr, coord_in);
+            epoch, rv_pred, clk_pred, H_prr, frame_in);
         H_gnss.block(i * n_meas, 0, n_meas, 8) = H_prr;
         break;
       case GnssMeasurementType::CP:
         H_cp = MatrixXd::Zero(n_meas, state_size);
         z.segment(i * n_meas, n_meas) = GetPredictedCarrierPhase(
-            epoch, rv_pred, clk_pred, N_pred, H_cp, coord_in);
+            epoch, rv_pred, clk_pred, N_pred, H_cp, frame_in);
         H_gnss.block(i * n_meas, 0, n_meas, 9) = H_cp;
         break;
       default:
@@ -287,10 +287,10 @@ VectorX GnssMeasurement::GetPredictedGnssMeasurement(
 VectorX GnssMeasurement::GetPredictedPseudorange(double epoch, Vector6 rv_pred,
                                                  Vector2 clk_pred,
                                                  MatrixXd &H_pr,
-                                                 Frame coord_in) {
-  auto func = [epoch, coord_in, this](const Vector6 rv_in, const Vector2 clk) {
+                                                 Frame frame_in) {
+  auto func = [epoch, frame_in, this](const Vector6 rv_in, const Vector2 clk) {
     Vector6 rv_gcrf =
-        CoordConverter::Convert(epoch, rv_in, coord_in, Frame::GCRF);
+        FrameConverter::Convert(epoch, rv_in, frame_in, Frame::GCRF);
     Vector3 r_rx = rv_gcrf.head(3);
     real dt_rx = clk(0);
     return ComputePseudorange(r_rx, dt_rx);
@@ -309,8 +309,8 @@ VectorX GnssMeasurement::GetPredictedPseudorange(double epoch, Vector6 rv_pred,
 
 VectorX GnssMeasurement::GetPredictedPseudorangeAnalyticalJacobian(
     double epoch, Vector6 rv_pred, Vector2 clk_pred, MatrixXd &H_pr,
-    Frame coord_in) {
-  auto rv_gcrf = CoordConverter::Convert(epoch, rv_pred, coord_in, Frame::GCRF);
+    Frame frame_in) {
+  auto rv_gcrf = FrameConverter::Convert(epoch, rv_pred, frame_in, Frame::GCRF);
   Vector3 r_rx = rv_gcrf.head(3);
   real dt_rx = clk_pred(0);
 
@@ -339,10 +339,10 @@ VectorX GnssMeasurement::GetPredictedPseudorangerate(double epoch,
                                                      Vector6 rv_pred,
                                                      Vector2 clk_pred,
                                                      MatrixXd &H_prr,
-                                                     Frame coord_in) {
-  auto func = [epoch, coord_in, this](const Vector6 rv_in, const Vector2 clk) {
+                                                     Frame frame_in) {
+  auto func = [epoch, frame_in, this](const Vector6 rv_in, const Vector2 clk) {
     Vector6 rv_gcrf =
-        CoordConverter::Convert(epoch, rv_in, coord_in, Frame::GCRF);
+        FrameConverter::Convert(epoch, rv_in, frame_in, Frame::GCRF);
     Vector3 r_rx = rv_gcrf.head(3);
     Vector3 v_rx = rv_gcrf.tail(3);
     real dt_rx_dot = clk(1);
@@ -364,11 +364,11 @@ VectorX GnssMeasurement::GetPredictedCarrierPhase(double epoch, Vector6 rv_pred,
                                                   Vector2 clk_pred,
                                                   VectorX N_pred,
                                                   MatrixXd &H_cp,
-                                                  Frame coord_in) {
-  auto func = [epoch, coord_in, this](const Vector6 rv_in, const Vector2 clk,
+                                                  Frame frame_in) {
+  auto func = [epoch, frame_in, this](const Vector6 rv_in, const Vector2 clk,
                                       const VectorX N_pred) {
     Vector6 rv_gcrf =
-        CoordConverter::Convert(epoch, rv_in, coord_in, Frame::GCRF);
+        FrameConverter::Convert(epoch, rv_in, frame_in, Frame::GCRF);
     Vector3 r_rx = rv_gcrf.head(3);
     real dt_rx = clk(0);
     return ComputeCarrierPhase(r_rx, dt_rx, N_pred);

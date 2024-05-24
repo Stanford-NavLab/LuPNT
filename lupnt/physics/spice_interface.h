@@ -17,13 +17,13 @@
 
 #include "lupnt/core/constants.h"
 #include "lupnt/physics/cheby.h"
-#include "lupnt/physics/coord_converter.h"
+#include "lupnt/physics/frame_converter.h"
 
 namespace lupnt {
 namespace SpiceInterface {
 
 // map from CoordSytem to string
-const std::map<Frame, std::string> coord_system_string = {
+const std::map<Frame, std::string> frametem_string = {
     {Frame::ITRF, "ITRF93"},
     {Frame::GCRF, "J2000"},
     {Frame::PA, "MOON_PA"},

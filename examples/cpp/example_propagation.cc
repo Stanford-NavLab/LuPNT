@@ -18,7 +18,7 @@
 #include <lupnt/measurements/gnss_measurement.h>
 #include <lupnt/measurements/gnss_receiver.h>
 #include <lupnt/numerics/math_utils.h>
-#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/frame_converter.h>
 #include <lupnt/physics/orbit_state.h>
 #include <lupnt/physics/spice_interface.h>
 
@@ -132,9 +132,9 @@ int main() {
     Vector6 v6;
     v6.setZero();
     dataHistory.AddData("earthMi", t,
-                        CoordConverter::Convert(t, v6, Frame::GCRF, Frame::MI));
+                        FrameConverter::Convert(t, v6, Frame::GCRF, Frame::MI));
     dataHistory.AddData("moonGcrf", t,
-                        CoordConverter::Convert(t, v6, Frame::MI, Frame::GCRF));
+                        FrameConverter::Convert(t, v6, Frame::MI, Frame::GCRF));
 
     // Print progress
     if (fmod(t, printEvery) < 1e-3) {

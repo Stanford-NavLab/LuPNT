@@ -20,7 +20,7 @@ w = degToRad(53.38)
 nu = degToRad(92.335)
 M = pnt.true_to_mean_anomaly(nu, e)
 
-x_oe = pnt.ClassicalOE(np.array([a, e, i, Omega, w, M]), coord_sys=pnt.Frame.ITRF)
+x_oe = pnt.ClassicalOE(np.array([a, e, i, Omega, w, M]), frame=pnt.Frame.ITRF)
 print(" ")
 print("Classical orbital elements:")
 print(x_oe.vector)

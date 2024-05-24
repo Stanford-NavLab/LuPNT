@@ -1,5 +1,5 @@
 #include <lupnt/core/constants.h>
-#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/frame_converter.h>
 #include <lupnt/physics/spice_interface.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>

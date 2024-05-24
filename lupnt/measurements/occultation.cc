@@ -12,7 +12,7 @@
 #include "occultation.h"
 
 #include "lupnt/core/constants.h"
-#include "lupnt/physics/coord_converter.h"
+#include "lupnt/physics/frame_converter.h"
 #include "lupnt/physics/spice_interface.h"
 
 namespace lupnt {
@@ -83,8 +83,8 @@ VectorX Occultation::ComputeOccultation(real epoch, const Vector3& r1,
                                         const Vector3& r2, Frame cs1, Frame cs2,
                                         const std::vector<NaifId>& bodies) {
   // Convert to ICRF
-  Vector3 r1_icrf = CoordConverter::Convert(epoch, r1, cs1, Frame::ICRF);
-  Vector3 r2_icrf = CoordConverter::Convert(epoch, r2, cs2, Frame::ICRF);
+  Vector3 r1_icrf = FrameConverter::Convert(epoch, r1, cs1, Frame::ICRF);
+  Vector3 r2_icrf = FrameConverter::Convert(epoch, r2, cs2, Frame::ICRF);
 
   // Compute distance between line of sight and center of each body
   VectorX distances(bodies.size());

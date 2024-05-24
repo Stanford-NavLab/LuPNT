@@ -18,7 +18,7 @@ M = pnt.true_to_mean_anomaly(nu, e)
 oe = np.array([a, e, i, Omega, w, M])
 
 # State
-x_oe = pnt.ClassicalOE(oe, coord_sys=pnt.Frame.MI)
+x_oe = pnt.ClassicalOE(oe, frame=pnt.Frame.MI)
 print(" ")
 print("Classical orbital elements:")
 print(x_oe.vector)

@@ -20,7 +20,7 @@
 #include <lupnt/measurements/gnss_receiver.h>
 #include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/clock.h>
-#include <lupnt/physics/coord_converter.h>
+#include <lupnt/physics/frame_converter.h>
 #include <lupnt/physics/orbit_state.h>
 #include <lupnt/physics/spice_interface.h>
 
@@ -146,10 +146,10 @@ int main() {
     v6.setZero();
 
     data_history->AddData("earth_mi", t,
-                          CoordConverter::Convert(epoch, VectorX::Zero(6),
+                          FrameConverter::Convert(epoch, VectorX::Zero(6),
                                                   Frame::GCRF, Frame::MI));
     data_history->AddData("moon_gcrf", t,
-                          CoordConverter::Convert(epoch, VectorX::Zero(6),
+                          FrameConverter::Convert(epoch, VectorX::Zero(6),
                                                   Frame::MI, Frame::GCRF));
 
     // Print progress

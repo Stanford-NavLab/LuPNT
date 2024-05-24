@@ -20,28 +20,28 @@ def map_string_pnt_coordinate(str):
         raise ValueError("Unknown coordinate system: " + str)
 
 
-class TestCoordConverter:
+class TestFrameConverter:
     def test_conversions(self):
         # load data
         basepath = pnt.utils.get_basepath()
         gmat_data_path = os.path.join(basepath, "..", "test", "gmat", "data")
-        filename = os.path.join(gmat_data_path, "coord_conversions.pkl")
+        filename = os.path.join(gmat_data_path, "frame_conversions.pkl")
         with open(filename, "rb") as f:
             data = pickle.load(f)
 
         cart_from = data["cart_from"]
-        coord_froms = data["coord_froms"]
-        coord_tos = data["coord_tos"]
+        frame_froms = data["frame_froms"]
+        frame_tos = data["frame_tos"]
         cart_to = data["cart_to"]
         epoch = data["epoch"]
 
-        for i, coord_sys_from in enumerate(coord_froms):
-            coord_sys_from = map_string_pnt_coordinate(coord_sys_from)
-            for j, coord_sys_to in enumerate(coord_tos):
-                coord_sys_to = map_string_pnt_coordinate(coord_sys_to)
-                print("From", coord_sys_from, "to", coord_sys_to)
-                cart_to_pnt = pnt.CoordConverter.convert(
-                    epoch, cart_from, coord_sys_from, coord_sys_to
+        for i, frame_from in enumerate(frame_froms):
+            frame_from = map_string_pnt_coordinate(frame_from)
+            for j, frame_to in enumerate(frame_tos):
+                frame_to = map_string_pnt_coordinate(frame_to)
+                print("From", frame_from, "to", frame_to)
+                cart_to_pnt = pnt.FrameConverter.convert(
+                    epoch, cart_from, frame_from, frame_to
                 )
                 cart_to_gmat = cart_to[i][j]
 
@@ -50,4 +50,4 @@ class TestCoordConverter:
 
 if __name__ == "__main__":
     # pytest.main([__file__])
-    TestCoordConverter().test_conversions()
+    TestFrameConverter().test_conversions()

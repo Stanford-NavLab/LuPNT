@@ -149,7 +149,7 @@ Vector3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
 
   std::string targetName = std::to_string((int)target);
   std::string obsName = std::to_string((int)obs);
-  std::string frame_str = coord_system_string.at(refFrame);
+  std::string frame_str = frametem_string.at(refFrame);
 
   // TODO: this cuts the relatonship between t_tdb and matrix
   real t_tdb = ConvertTime(t_tai, TimeSystems::TAI, TimeSystems::TDB);
@@ -193,8 +193,8 @@ Matrix6d GetFrameConversionMatrix(real t_tai, Frame from_frame,
   double xform[6][6];
   Matrix6d M_rot;
 
-  std::string from_frame_str = coord_system_string.at(from_frame);
-  std::string to_frame_str = coord_system_string.at(to_frame);
+  std::string from_frame_str = frametem_string.at(from_frame);
+  std::string to_frame_str = frametem_string.at(to_frame);
 
   const char *from_frame_char =
       strcpy(new char[from_frame_str.length() + 1], from_frame_str.c_str());
