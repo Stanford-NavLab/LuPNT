@@ -130,55 +130,55 @@ class FrameConverter:
     @typing.overload
     def convert(epoch: float, rv_in: numpy.ndarray[numpy.float64[6, 1]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[6, 1]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: float, r_in: numpy.ndarray[numpy.float64[3, 1]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[3, 1]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: float, state_in: ..., frame_out: Frame) -> ...:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], rv_in: numpy.ndarray[numpy.float64[6, 1]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, n]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], r_in: numpy.ndarray[numpy.float64[3, 1]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, n]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: float, rv_in: numpy.ndarray[numpy.float64[m, 6]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, 6]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: float, r_in: numpy.ndarray[numpy.float64[m, 3]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, 3]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], rv_in: numpy.ndarray[numpy.float64[m, 6]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, 6]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], r_in: numpy.ndarray[numpy.float64[m, 3]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, 3]]:
         """
-        Convert coordinate system
+        Convert frame
         """
 class KeplerianDynamics:
     def __init__(self, arg0: float) -> None:
@@ -425,7 +425,7 @@ class SingularROE(OrbitState):
         ...
 class SpiceInterface:
     @staticmethod
-    def convert_time(arg0: float, arg1: str, arg2: str) -> float:
+    def convert_time(t_tai: float, from: str, to: str) -> float:
         ...
     @staticmethod
     def extract_pck_coeffs() -> None:
@@ -435,14 +435,14 @@ class SpiceInterface:
         ...
     @staticmethod
     @typing.overload
-    def get_body_pos_vel(arg0: float, arg1: NaifId, arg2: NaifId) -> numpy.ndarray[numpy.float64[6, 1]]:
+    def get_body_pos_vel(t_tai: float, center: NaifId, target: NaifId) -> numpy.ndarray[numpy.float64[6, 1]]:
         ...
     @staticmethod
     @typing.overload
-    def get_body_pos_vel(arg0: numpy.ndarray[numpy.float64[m, 1]], arg1: NaifId, arg2: NaifId) -> numpy.ndarray[numpy.float64[m, 6]]:
+    def get_body_pos_vel(t_tai: numpy.ndarray[numpy.float64[m, 1]], center: NaifId, target: NaifId) -> numpy.ndarray[numpy.float64[m, 6]]:
         ...
     @staticmethod
-    def get_frame_conversion_matrix(arg0: float, arg1: Frame, arg2: Frame) -> numpy.ndarray[numpy.float64[6, 6]]:
+    def get_frame_conversion_matrix(t_tai: float, from: Frame, to: Frame) -> numpy.ndarray[numpy.float64[6, 6]]:
         ...
     @staticmethod
     def load_spice_kernel() -> None:
@@ -454,7 +454,7 @@ class SpiceInterface:
     def string_to_tdb(gregorian_date: str) -> float:
         ...
     @staticmethod
-    def tdb_to_string_utc(arg0: float, arg1: int) -> str:
+    def tdb_to_string_utc(t_tdb: float, precision: int) -> str:
         ...
 @typing.overload
 def azimuth_elevation_range_to_cartesian(r_aer_ref: numpy.ndarray[numpy.float64[3, 1]], r_aer: numpy.ndarray[numpy.float64[3, 1]]) -> numpy.ndarray[numpy.float64[3, 1]]:

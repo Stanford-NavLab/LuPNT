@@ -31,11 +31,17 @@ static std::optional<std::filesystem::path> FindFileInDir(
     const std::filesystem::path& basePath, const std::string& filename) {
   for (const auto& entry :
        std::filesystem::recursive_directory_iterator(basePath)) {
-    if (entry.path().stem().string() == filename) {
+    if (entry.path().filename().string() == filename) {
       return entry.path();
     }
   }
   return std::nullopt;
 };
+
+static std::filesystem::path GetFilePath(const std::string& filename) {
+  auto filepath = FindFileInDir(GetDataPath(), filename);
+  assert(filepath.has_value() && "File not found.");
+  return filepath.value();
+}
 
 }  // namespace lupnt

@@ -1,6 +1,6 @@
 from __future__ import annotations
-import numpy as np
 import numpy
+import numpy as np
 __all__ = ['arr_to_mat_idx', 'cross_norm', 'i_to_arr_idxs', 'mat_to_arr_idx', 'np', 'wrapToPi']
 def arr_to_mat_idx(k: int, n: int) -> tuple:
     """

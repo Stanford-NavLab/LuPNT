@@ -5,9 +5,11 @@ import numpy as np
 import os as os
 import pandas as pd
 import pickle as pickle
-from time import time
-__all__ = ['GridSpec', 'LUPNT_DATA_PATH', 'dump_pickle', 'format_element', 'get_basepath', 'load_data', 'load_pickle', 'np', 'os', 'pd', 'pickle', 'plot_RTN', 'plt', 'print_aligned', 'set_axes_equal', 'time', 'timed', 'timer_func']
+import time as time
+__all__ = ['GridSpec', 'LUPNT_DATA_PATH', 'dump_pickle', 'find_file', 'format_element', 'get_basepath', 'load_data', 'load_pickle', 'np', 'os', 'pd', 'pickle', 'plot_RTN', 'plt', 'print_aligned', 'set_axes_equal', 'time', 'timed', 'timer_func']
 def dump_pickle(obj, path):
+    ...
+def find_file(filename, path = '/Users/guillemcv/Development/NavLab/LuPNT/data'):
     ...
 def format_element(x, fmt = '{}'):
     ...

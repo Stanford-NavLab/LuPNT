@@ -11,12 +11,13 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
 namespace lupnt {
 
 std::vector<std::string> SplitString(const std::string& str, char separator);
-std::vector<std::vector<std::string>> ReadCSV(std::string fname);
+std::vector<std::vector<std::string>> ReadCSV(std::filesystem::path fname);
 
 }  // namespace lupnt
