@@ -14,6 +14,7 @@ third_party/cspice
 third_party/filament
 **/sensor_fusion/data
 **/sensor_fusion/output
+**/sensor_fusion/repos
 
 # internal
 build

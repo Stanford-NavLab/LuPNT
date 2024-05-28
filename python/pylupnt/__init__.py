@@ -6,8 +6,9 @@ try:
     from . import render
     from .math_utils import *
     from . import scenarios
+    from . import crater_detection
 
-except ImportError:
+except ImportError as e:
     # this was installed with as a python wheel
     from pylupnt_pybind import *
 
@@ -16,6 +17,7 @@ except ImportError:
     from utils import *
     from math_utils import *
     import scenarios
+    import dataset
 
 try:
     import pkg_resources  # part of setuptools

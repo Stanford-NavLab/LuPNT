@@ -5,6 +5,7 @@ project(lupnt LANGUAGES CXX)
 # The following variable is the master list of subdirs to add
 set(LuPNT_subdirs
   core
+  datasets
   dynamics
   numerics
   agents

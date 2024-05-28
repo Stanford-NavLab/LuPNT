@@ -9,21 +9,23 @@
  *
  */
 
+#pragma once
+
 #include <lupnt/agents/agent.h>
+#include <lupnt/core/constants.h>
 
 #include <vector>
 
 #include "radio_measurement.h"
 
-#pragma once
-
 namespace lupnt {
-enum ISLMeasurementType {
-  PR;    // Pseudorange
-  PRR;   // Pseudorange rate
-  TWR;   // Twoway range
-  TWRR;  // Two-way range rate
-}
+
+enum class ISLMeasurementType {
+  PR,   // Pseudorange
+  PRR,  // Pseudorange rate
+  TWR,  // Two-way range
+  TWRR  // Two-way range rate
+};
 
 class ISLMeasurement {
  private:
@@ -32,7 +34,7 @@ class ISLMeasurement {
 
   // visibility
   std::vector<NaifId> occult_planets;
-  std::VectorXd vis_body;  // visibility body
+  VectorXd vis_body;  // visibility body
   VectorXd vis_anttena;
 
   // Link Budget
@@ -55,7 +57,7 @@ class ISLMeasurement {
                                       Vector2 clk_rec_pred,
                                       std::vector<ISLMeasurementType> meas_type,
                                       Frame frame_in = Frame::MI);
-  VectorXd GetPredictedISLPR(double epoch, Vector6)
-}
+  VectorXd GetPredictedISLPR(double epoch, Vector6);
+};
 
 }  // namespace lupnt

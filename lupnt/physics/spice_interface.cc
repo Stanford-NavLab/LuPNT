@@ -381,7 +381,7 @@ Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target) {
   Vector6 rv_target;
 
   // convert TAI to TDB past J2000
-  real t_s = ConvertTime(tai, TimeSystems::TAI, TimeSystems::TDB);
+  real t_tdb = ConvertTime(tai, TimeSystems::TAI, TimeSystems::TDB);
 
   // find the segment for the center and target body
   if (center == NaifId::SOLAR_SYSTEM_BARYCENTER) {
@@ -395,10 +395,10 @@ Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target) {
 
   for (int i = 0; i < cheby_n; i++) {
     if (cheby_s[i].target == (int)target) {
-      rv_target = cheby_posvel_ad(t_s, cheby_s[i].seg, cheby_s[i].len);
+      rv_target = cheby_posvel_ad(t_tdb, cheby_s[i].seg, cheby_s[i].len);
       found_target = true;
     } else if (cheby_s[i].target == (int)center) {
-      rv_center = cheby_posvel_ad(t_s, cheby_s[i].seg, cheby_s[i].len);
+      rv_center = cheby_posvel_ad(t_tdb, cheby_s[i].seg, cheby_s[i].len);
       found_center = true;
     }
 

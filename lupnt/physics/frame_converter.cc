@@ -9,19 +9,20 @@
  *
  */
 
+#include "frame_converter.h"
+
 #include <filesystem>
 
 #include "cheby.h"
-#include "frame_converter.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/orbit_state_utils.h"
 #include "spice_interface.h"
 
-using namespace lupnt;
-using namespace SpiceInterface;
+using namespace lupnt::SpiceInterface;
 
+namespace lupnt {
 CartesianOrbitState FrameConverter::Convert(real t_tai,
                                             const CartesianOrbitState &state_in,
                                             Frame frame_out) {
@@ -338,3 +339,5 @@ Matrix6 FrameConverter::ComputeOpToMi(real t_tai) {
 
   return R_op2mi_tot.cast<double>();
 }
+
+}  // namespace lupnt

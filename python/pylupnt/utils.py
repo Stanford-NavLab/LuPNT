@@ -12,6 +12,13 @@ LUPNT_DATA_PATH = os.getenv("LUPNT_DATA_PATH")
 assert LUPNT_DATA_PATH is not None, "Environment variable LUPNT_DATA_PATH not set"
 
 
+def find_file(filename, path=LUPNT_DATA_PATH):
+    for root, dirs, files in os.walk(path):
+        if filename in files:
+            return os.path.join(root, filename)
+    return None
+
+
 def timed(func, *args, **kwargs):
     start = time.time()
     result = func(*args, **kwargs)

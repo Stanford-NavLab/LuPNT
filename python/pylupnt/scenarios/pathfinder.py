@@ -2,6 +2,7 @@ import numpy as np
 import pylupnt as pnt
 
 # Epoch(TAI)
+t0_tai_str = "2022-01-15T00:00:00"
 N_sat, N_planes = 1, 1
 
 # Classical orbital elements (a, e, i, W, w, M) [km, -, rad, rad, rad, rad]
@@ -12,7 +13,7 @@ raan = np.deg2rad([0])  # [rad] Right ascension of the ascending node
 aop = np.deg2rad([86.322])  # [rad] Argument of periapsis
 ma = np.deg2rad([0])  # [rad] Mean anomaly
 
-t0_tai = pnt.SpiceInterface.string_to_tai("2024-01-15T00:00:00")
+t0_tai = pnt.SpiceInterface.string_to_tai(t0_tai_str)
 coe_op = np.zeros((N_sat, 6))
 N_sat_plane = N_sat // N_planes
 for i_pl in range(N_planes):

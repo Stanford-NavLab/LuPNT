@@ -5,14 +5,19 @@
 #include "agents/gnss_constellation.h"
 #include "agents/state_estimation_app.h"
 #include "agents/state_estimation_app_gnss.h"
+#include "agents/task_scheduling.h"
 
 // core
 #include "core/constants.h"
 #include "core/event.h"
 #include "core/file.h"
 #include "core/plot.h"
+#include "core/progress_bar.h"
 #include "core/scheduler.h"
 #include "core/user_file_path.h"
+
+// datasets
+#include "datasets/crater_data.h"
 
 // dynamics
 #include "dynamics/dynamics.h"
@@ -26,6 +31,7 @@
 #include "measurements/gnss_receiver.h"
 #include "measurements/gnss_receiver_param.h"
 #include "measurements/gnss_transmitter.h"
+#include "measurements/intersatellite_link.h"
 #include "measurements/occultation.h"
 #include "measurements/radio_measurement.h"
 #include "measurements/space_channel.h"

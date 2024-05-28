@@ -18,11 +18,11 @@ SUN = bpy.data.objects["Sun"]
 ALBEDO = 0.169  # TBD
 SUN_ENERGY = 30  # TBD
 BODY = bpy.data.objects["Moon"]
-body_secondary = None
+BODY_SECONDARY = None
 SCALE_BU = 1e-3  # [km] to [Blender Units]
 R_ocv2ogl = np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]], dtype=float)
 
-scene = dict(
+SCENE = dict(
     fov=60,  # [deg]
     resx=1024,
     resy=1024,
@@ -36,48 +36,61 @@ scene = dict(
     viewtransform="Filmic",
     filmexposure=1,
 )
-
-# Camera properties
-CAMERA.data.type = "PERSP"
-CAMERA.data.lens_unit = "FOV"
-CAMERA.data.angle = scene["fov"] * np.pi / 180
-CAMERA.data.clip_start = 0.1  # [m]
-CAMERA.data.clip_end = 10000  # [m]
-if ENGINE == "CYCLES":
-    bpy.context.scene.cycles.film_exposure = scene["filmexposure"]
-bpy.context.scene.view_settings.view_transform = scene["viewtransform"]
-bpy.context.scene.render.pixel_aspect_x = 1
-bpy.context.scene.render.pixel_aspect_y = 1
-bpy.context.scene.render.resolution_x = scene["resx"]  # CAM resolution (x)
-bpy.context.scene.render.resolution_y = scene["resy"]  # CAM resolution (y)
-bpy.context.scene.render.image_settings.color_mode = "BW"
-bpy.context.scene.render.image_settings.color_depth = str(scene["encoding"])
-if ENGINE == "CYCLES":
-    bpy.context.scene.cycles.diffuse_bounces = 0
+_SCENE_OLD = None
 
 
-# Sun properties
-SUN.data.type = "SUN"
-SUN.data.energy = SUN_ENERGY  # To perform quantitative analysis
-SUN.data.angle = 0.53 * np.pi / 180
+def update_scene():
+    # CAMERA properties
+    CAMERA.data.type = "PERSP"
+    CAMERA.data.lens_unit = "FOV"
+    CAMERA.data.angle = SCENE["fov"] * np.pi / 180
+    CAMERA.data.clip_start = 0.1  # [m]
+    CAMERA.data.clip_end = 10000  # [m]
+    if ENGINE == "CYCLES":
+        bpy.context.scene.cycles.film_exposure = SCENE["filmexposure"]
+    bpy.context.scene.view_settings.view_transform = SCENE["viewtransform"]
+    bpy.context.scene.render.pixel_aspect_x = 1
+    bpy.context.scene.render.pixel_aspect_y = 1
+    bpy.context.scene.render.resolution_x = SCENE["resx"]  # CAM resolution (x)
+    bpy.context.scene.render.resolution_y = SCENE["resy"]  # CAM resolution (y)
+    bpy.context.scene.render.image_settings.color_mode = "BW"
+    bpy.context.scene.render.image_settings.color_depth = str(SCENE["encoding"])
+    if ENGINE == "CYCLES":
+        bpy.context.scene.cycles.diffuse_bounces = 0
 
-# WORLD properties
-# black = (0, 0, 0, 1)
-# bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[0].default_value = black
+    # SUN properties
+    SUN.data.type = "SUN"
+    SUN.data.energy = SUN_ENERGY  # To perform quantitative analysis
+    SUN.data.angle = 0.53 * np.pi / 180
 
-# RENDERING ENGINE properties
-bpy.context.scene.render.engine = ENGINE
-if ENGINE == "CYCLES":
-    bpy.context.scene.cycles.device = "GPU"
-    bpy.context.scene.cycles.samples = scene["rendSamples"]
-    bpy.context.scene.cycles.preview_samples = scene["viewSamples"]
+    # WORLD properties
+    # black = (0, 0, 0, 1)
+    # bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[0].default_value = black
+
+    # RENDERING ENGINE properties
+    bpy.context.scene.render.engine = ENGINE
+    if ENGINE == "CYCLES":
+        bpy.context.scene.cycles.device = "GPU"
+        bpy.context.scene.cycles.samples = SCENE["rendSamples"]
+        bpy.context.scene.cycles.preview_samples = SCENE["viewSamples"]
+
+    _SCENE_OLD = SCENE.copy()
 
 
-def render(r_c_pa, R_pa2ocv, r_s_pa, filepath):
+update_scene()
+
+
+def render(r_c_pa, R_pa2c, r_s_pa, filepath, frame="OpenCV"):
+    if SCENE != _SCENE_OLD:
+        update_scene()
+
     SUN_DISTANCE = 3e6  # [km]
 
-    # Position
-    q_c_pa = R.from_matrix((R_ocv2ogl @ R_pa2ocv).T).as_quat()
+    if frame == "OpenCV":
+        R_pa2ogl = R_ocv2ogl @ R_pa2c
+    elif frame == "OpenGL":
+        R_pa2ogl = R_pa2c
+    q_c_pa = R.from_matrix(R_pa2ogl.T).as_quat()
     q_c_pa = q_c_pa[[3, 0, 1, 2]]
     r_m_pa = np.zeros(3)
     q_m_pa = np.array([1, 0, 0, 0])
