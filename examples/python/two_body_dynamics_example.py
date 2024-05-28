@@ -18,18 +18,24 @@ oe = np.array([a, e, i, Omega, w, M])
 
 # State
 x_oe = pnt.ClassicalOE(oe, coord_sys=pnt.CoordSystem.MI)
-print(" ")
-print("Classical orbital elements:")
-print(x_oe.vector)
+# print(" ")
+# print("Classical orbital elements:")
+# print(x_oe.vector)
+
+x_cart = pnt.classical_to_cartesian(x_oe, pnt.MU_MOON).vector
 
 # Dynamics
 mu_moon = 4902.800066
-keplerian_dynamics = pnt.KeplerianDynamics(mu_moon)
+cart_dynamics = pnt.CartesianTwoBodyDynamics(mu_moon)
 
 # Propagate
 t_end = 600.0
-keplerian_dynamics.propagate(x_oe, t_end)
+dt = t_end / 10.0
+print(' ')
+print('Initial state:')
+print(x_cart)
+x_prop = cart_dynamics.propagate(x_cart, 0.0, t_end, dt)
 print(" ")
 print("Propagated state:")
-print(x_oe.vector)
+print(x_prop)
 
