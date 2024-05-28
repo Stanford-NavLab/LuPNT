@@ -130,55 +130,55 @@ class FrameConverter:
     @typing.overload
     def convert(epoch: float, rv_in: numpy.ndarray[numpy.float64[6, 1]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[6, 1]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: float, r_in: numpy.ndarray[numpy.float64[3, 1]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[3, 1]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: float, state_in: ..., frame_out: Frame) -> ...:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], rv_in: numpy.ndarray[numpy.float64[6, 1]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, n]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], r_in: numpy.ndarray[numpy.float64[3, 1]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, n]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: float, rv_in: numpy.ndarray[numpy.float64[m, 6]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, 6]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: float, r_in: numpy.ndarray[numpy.float64[m, 3]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, 3]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], rv_in: numpy.ndarray[numpy.float64[m, 6]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, 6]]:
         """
-        Convert coordinate system
+        Convert frame
         """
     @staticmethod
     @typing.overload
     def convert(epoch: numpy.ndarray[numpy.float64[m, 1]], r_in: numpy.ndarray[numpy.float64[m, 3]], frame_in: Frame, frame_out: Frame) -> numpy.ndarray[numpy.float64[m, 3]]:
         """
-        Convert coordinate system
+        Convert frame
         """
 class KeplerianDynamics:
     def __init__(self, arg0: float) -> None:

@@ -12,7 +12,8 @@ venv
 
 third_party/cspice
 third_party/filament
-**/opnav/data
+**/sensor_fusion/data
+**/sensor_fusion/output
 
 # internal
 build
@@ -20,6 +21,7 @@ doc
 local
 output
 data/ephemeris
+data/surface
 examples/figures
 lupnt.egg-info
 docs/html

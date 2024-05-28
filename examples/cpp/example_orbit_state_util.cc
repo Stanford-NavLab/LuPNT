@@ -29,4 +29,9 @@ int main() {
 
   auto rv = CartesianOrbitState(cart);
   std::cout << "type = " << typeid(rv.r()).name() << std::endl;
+
+  Vector3 r_cart_ref{0, 0, 0};
+  Vector3 r_aer{1e-3, 1e-3, 5e3};
+  Vector3 r = AzimuthElevationRangeToCartesian(r_cart_ref, r_aer);
+  std::cout << "r = " << r.transpose() << std::endl;
 }

@@ -2,7 +2,7 @@ import os
 import pickle
 import numpy as np
 import pandas as pd
-from time import time
+import time
 import matplotlib.pyplot as plt
 
 # import array_to_latex as a2l
@@ -13,9 +13,9 @@ assert LUPNT_DATA_PATH is not None, "Environment variable LUPNT_DATA_PATH not se
 
 
 def timed(func, *args, **kwargs):
-    start = time()
+    start = time.time()
     result = func(*args, **kwargs)
-    end = time()
+    end = time.time()
     return result, end - start
 
 
