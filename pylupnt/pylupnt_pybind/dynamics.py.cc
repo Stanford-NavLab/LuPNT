@@ -70,7 +70,7 @@ void init_dynamics(py::module &m) {
              double dt) -> Vector6d {
             Vector6 x_real = x.cast<real>();
             dyn.Propagate(x_real, t0, tf, dt);
-            return x.cast<double>();
+            return x_real.cast<double>();
           },
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
       .def(
@@ -95,11 +95,13 @@ void init_dynamics(py::module &m) {
           py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](NumericalOrbitDynamics &dyn, Vector6 &state, double t0, double tf,
+          [](NumericalOrbitDynamics &dyn, Vector6d &x, double t0, double tf,
              double dt) -> std::tuple<Vector6d, Matrix6d> {
             Matrix6d stm;
-            dyn.PropagateWithStm(state, t0, tf, dt, stm);
-            return std::make_tuple(state.cast<double>(), stm);
+            Vector6 x_real = x.cast<real>();
+            dyn.PropagateWithStm(x_real, t0, tf, dt, stm);
+            x_out = x_real.cast<double>();
+            return std::make_tuple(x_out, stm);
           },
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"));
 
