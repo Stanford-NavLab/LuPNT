@@ -1,4 +1,8 @@
-import bpy
+try:
+    import bpy
+except ImportError:
+    # raise warning
+    ImportError("Blender is not installed")
 import os
 import mathutils
 import numpy as np
