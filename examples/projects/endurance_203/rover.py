@@ -12,6 +12,7 @@ class Rover:
         self.g = 1.62       # m/s^2
         self.m = 487        # kg (Endurance report states 487 fully margined)
         self.dt = 0.01      # s
+        self.N = 50         # grid size
 
         # define any relevant control constraints here
         # define any additional rover constants here
@@ -63,7 +64,22 @@ class Rover:
         # returns the next state
         return A @ state + B @ control
     
+    def grid_world(self):
+        """Create a grid world for the rover to navigate"""
+        # define the grid world
+        grid = jnp.zeros((self.N, self.N))
+        # define the obstacles
+        # crater = [center_x, center_y, radius, depth]
+        crater1 = jnp.array([12, 23, 4, 1]) 
 
+        #add crater to the grid
+        for i in range(self.N):
+            for j in range(self.N):
+                if (i - crater1[0])**2 + (j - crater1[1])**2 < crater1[2]**2:
+                    grid[i, j] = crater1[3]
+
+        # define the goal
+        return grid
 
 # class EKF:
 #     def __init__(self) -> None:
