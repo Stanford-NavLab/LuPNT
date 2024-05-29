@@ -134,7 +134,7 @@ class GridWorld:
 
         # bring back to the grid any values that are outside the grid
         traj_discrete[traj_discrete < 0] = 0
-        traj_discrete[traj_discrete >= self.N] = self.N
+        traj_discrete[traj_discrete >= self.N-1] = self.N - 1
         
         # A function that discretizes the trajectory
         return traj_discrete
