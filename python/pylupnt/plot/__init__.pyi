@@ -27,7 +27,7 @@ from . import _mpl
 from . import _plotly
 __all__ = ['COLORS', 'Image', 'KMeans', 'MOON_SURFACE', 'Plot3D', 'axis_dict', 'create_sphere_meshgrid', 'get_moon_trace', 'go', 'image2zvals', 'img', 'mcolors', 'mesh_data', 'np', 'os', 'pio', 'plot_3d_arrow', 'plot_constellation', 'plot_data', 'plot_frame', 'plt', 'px', 'regular_tri', 'set_equal_aspect_ratio', 'set_view', 'shuffle', 'utils']
 COLORS: list = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
-MOON_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x16F3D8290>
+MOON_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x16A2C0710>
 axis_dict: dict = {'mirror': True, 'ticks': 'outside', 'showline': True, 'showgrid': True, 'automargin': True}
 img: numpy.ndarray  # value = array([[[183, 180, 173],...
 plot_data: dict  # value = {<NaifId.EARTH: 399>: {'filename': 'earth_surface.jpg', 'RE': 6378.137, 'lim': 25000.0, 'brightness': 3}, <NaifId.MOON: 301>: {'filename': 'moon_surface.jpeg', 'RE': 1737.1, 'lim': 10000.0, 'brightness': 1.5}}

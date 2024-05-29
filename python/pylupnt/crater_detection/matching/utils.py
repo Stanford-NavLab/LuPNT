@@ -166,7 +166,7 @@ def eps_array(n, start_n=0, batch_size=int(1e4)):
 
 @njit
 def shift_nd(arr: np.ndarray, shift: np.ndarray):
-    out = np.zeros_like(arr, arr.dtype)
+    out = np.empty_like(arr)
     for ii in range(arr.shape[0]):
         out[ii] = np.roll(arr[ii], shift[ii])
     return out
