@@ -22,7 +22,8 @@ x_oe = pnt.ClassicalOE(oe, coord_sys=pnt.CoordSystem.MI)
 # print("Classical orbital elements:")
 # print(x_oe.vector)
 
-x_cart = pnt.classical_to_cartesian(x_oe, pnt.MU_MOON).vector
+x_cart = pnt.classical_to_cartesian(x_oe, pnt.MU_MOON)
+x_cart_v = x_cart.vector
 
 # Dynamics
 mu_moon = 4902.800066
@@ -33,9 +34,17 @@ t_end = 600.0
 dt = t_end / 10.0
 print(' ')
 print('Initial state:')
-print(x_cart)
-x_prop = cart_dynamics.propagate(x_cart, 0.0, t_end, dt)
+print(x_cart_v)
+stm = cart_dynamics.propagate_with_stm(x_cart, 0.0, t_end, dt)
 print(" ")
 print("Propagated state:")
-print(x_prop)
+print(x_cart.vector)
+# print("stm:")
+# print(stm)
 
+x_prop2, stm2 = cart_dynamics.propagate_with_stm(x_cart_v, 0.0, t_end, dt)
+print(" ")
+print("Second Verion -- Propagated state:")
+print(x_prop2)
+# print("stm:")
+# print(stm2)

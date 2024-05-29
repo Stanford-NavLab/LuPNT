@@ -21,6 +21,7 @@ init_vel_std = init_pos_std*1e-3
 
 # batch filter params
 tol_batch = 1e-4
+verbose_in_batch_filter = False
 
 
 # Define satellite parameters (ELFO, Lunar Pathfinder)
@@ -271,7 +272,7 @@ X0_star = init_sat_est_pv_MI_km.reshape([-1,1]) + state_dev
 
 not_converged_yet = True
 i_batch = 0
-while i_batch < 1 and not_converged_yet:
+while i_batch < 5 and not_converged_yet:
 
     # create array of cartesian estimates
     # TODO: update filter so we don't save all of these?
@@ -283,8 +284,6 @@ while i_batch < 1 and not_converged_yet:
     Lambda = np.linalg.inv(P0)
     Eta = np.linalg.inv(P0)@state_dev    # used with Gamma to solve for updated state deviation
     Phi_0toim1 = np.eye(6)               # state transition matrix
-    print('Eta', Eta)
-
 
     # start going forward through orbit, collecting observations, updating Gamma/Eta
     # iterator is i-1 (i minus 1, im1 for short), since we propagate to the next time step during the loop
@@ -301,14 +300,14 @@ while i_batch < 1 and not_converged_yet:
         # Integrate reference trajectory and STM from t_(i-1) to t_i
         # TODO: check if in km for propagation?
         sat_pv_im1 = sat_est_pv_MI_km_arr[i-1,:]
-        if i==1:
+        if verbose_in_batch_filter and i==1:
             print()
             print('i =', i)
             print('State at i-1:', sat_pv_im1)
             print()
         sat_pv_i, Phi_im1toi = cart2body_dynamics.propagate_with_stm(sat_pv_im1.reshape([-1,1]), t_tai_im1, t_tai_i, dt)
         Phi_0toi = Phi_im1toi @ Phi_0toim1    # Get complete STM from 0 to i
-        if i==1:
+        if verbose_in_batch_filter and i==1:
             print()
             print('i =', i)
             print('TAI times:', t_tai_im1, t_tai_i)
@@ -318,8 +317,7 @@ while i_batch < 1 and not_converged_yet:
             print()
         
         # Check if visible at time i -- if so, accumulate current observations    
-        # TODO: bring back visibility
-        if True: #vis_arr[i] == 1:
+        if vis_arr[i] == 1:
 
             # get observation and expected range
             rng_obs_km = rng_obs_km_arr[i].reshape([-1,1])
@@ -331,7 +329,7 @@ while i_batch < 1 and not_converged_yet:
             Hi = np.dot(Hi_tilde, Phi_0toi)
 
 
-            if i == 1 or (i == 10000) or i == len_t_arr :
+            if verbose_in_batch_filter and i == 1 or (i == 10000) or i == len_t_arr :
                 print()
                 print('--------------------------------------------')
                 print('i =', i)
@@ -361,45 +359,47 @@ while i_batch < 1 and not_converged_yet:
         Phi_0toim1 = Phi_0toi # save STM for next iteration
 
         # print progress of i periodically
-        if i % 10000 == 0:
+        if i % 3000 == 0:
             print('Current iteration:', i, ' (out of', str(len_t_arr) +')')
         
-    # plot propagated satellite state (in MI)
-    fig_vis = plots.Plot3D(elev=-25, azim=-50, figsize=(10, 10))
-    fig_vis.plot_surface(pnt.MOON)
-    fig_vis.set_labels("x", "y", "z")
-    plt.title("Propagated satellite orbit (MI)")
-    fig_vis.plot(sat_est_pv_MI_km_arr[0:int(len_t_arr),0:3])
-    plt.show()
+    
+    if verbose_in_batch_filter:
+        # plot propagated satellite state (in MI)
+        fig_vis = plots.Plot3D(elev=-25, azim=-50, figsize=(10, 10))
+        fig_vis.plot_surface(pnt.MOON)
+        fig_vis.set_labels("x", "y", "z")
+        plt.title("Propagated satellite orbit (MI)")
+        fig_vis.plot(sat_est_pv_MI_km_arr[0:int(len_t_arr),0:3])
+        plt.show()
 
-    # plot difference between true and propagated state for x, y, and z on a 3x1 subplot
-    plt.figure()
-    plt.subplot(3,1,1)
-    plt.plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,0])
-    plt.grid()
-    plt.subplot(3,1,2)
-    plt.plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,1])
-    plt.grid()
-    plt.subplot(3,1,3)
-    plt.plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,2])
-    plt.grid()
-    plt.xlabel('Time [hrs]')
-    plt.title('Propagated satellite orbit (MI)')
-    plt.show()
+        # plot difference between true and propagated state for x, y, and z on a 3x1 subplot
+        plt.figure()
+        plt.subplot(3,1,1)
+        plt.plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,0])
+        plt.grid()
+        plt.subplot(3,1,2)
+        plt.plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,1])
+        plt.grid()
+        plt.subplot(3,1,3)
+        plt.plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,2])
+        plt.grid()
+        plt.xlabel('Time [hrs]')
+        plt.title('Propagated satellite orbit (MI)')
+        plt.show()
 
-    # plot difference between true and propagated state for x, y, and z on a 3x1 subplot
-    plt.figure()
-    plt.xlabel('Time [hrs]')
-    plt.subplot(3,1,1)
-    plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,0] - sat_est_pv_MI_km_arr[:,0])
-    plt.grid()
-    plt.subplot(3,1,2)
-    plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,1] - sat_est_pv_MI_km_arr[:,1])
-    plt.grid()
-    plt.subplot(3,1,3)
-    plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,2] - sat_est_pv_MI_km_arr[:,2])
-    plt.grid()
-    plt.show()
+        # plot difference between true and propagated state for x, y, and z on a 3x1 subplot
+        plt.figure()
+        plt.xlabel('Time [hrs]')
+        plt.subplot(3,1,1)
+        plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,0] - sat_est_pv_MI_km_arr[:,0])
+        plt.grid()
+        plt.subplot(3,1,2)
+        plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,1] - sat_est_pv_MI_km_arr[:,1])
+        plt.grid()
+        plt.subplot(3,1,3)
+        plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,2] - sat_est_pv_MI_km_arr[:,2])
+        plt.grid()
+        plt.show()
 
 
     
@@ -415,10 +415,13 @@ while i_batch < 1 and not_converged_yet:
     i_batch += 1
     norm_state_dev = np.linalg.norm(state_dev_hat)
     if norm_state_dev < tol_batch:
+        print()
         print('Converged to solution? Yes!')
-        print('     State deviation:', state_dev)
+        print('     State deviation:', state_dev.T)
+        print('     Final error vector:', X0_star.T-sat_true_pv_MI_km_arr[0,:])
         not_converged_yet = False
     else:
+        print()
         print('Converged to solution? No')
         print('     State deviation:', state_dev)
 
