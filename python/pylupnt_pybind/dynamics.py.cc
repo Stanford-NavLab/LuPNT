@@ -70,7 +70,7 @@ void init_dynamics(py::module &m) {
              double dt) -> Vector6d {
             Vector6 x_real = x.cast<real>();
             dyn.Propagate(x_real, t0, tf, dt);
-            return x.cast<double>();
+            return x_real.cast<double>();
           },
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
       .def(
@@ -100,7 +100,7 @@ void init_dynamics(py::module &m) {
             Matrix6d stm;
             Vector6 state_real = state.cast<real>();
             dyn.PropagateWithStm(state_real, t0, tf, dt, stm);
-            return std::make_tuple(state.cast<double>(), stm);
+            return std::make_tuple(state_real.cast<double>(), stm);
           },
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"));
 

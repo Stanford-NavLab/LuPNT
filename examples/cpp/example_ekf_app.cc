@@ -145,12 +145,13 @@ int main() {
     Vector6 v6;
     v6.setZero();
 
-    data_history->AddData("earth_mi", t,
-                          FrameConverter::Convert(epoch, VectorX::Zero(6),
-                                                  Frame::GCRF, Frame::MI));
-    data_history->AddData("moon_gcrf", t,
-                          FrameConverter::Convert(epoch, VectorX::Zero(6),
-                                                  Frame::MI, Frame::GCRF));
+    // Vector6 vec6_mi = FrameConverter::Convert(epoch, VectorX::Zero(6),
+    //                                           Frame::GCRF, Frame::MI);
+    // Vector6 vec6_gcrf = FrameConverter::Convert(epoch, VectorX::Zero(6),
+    //                                             Frame::MI, Frame::GCRF);
+
+    // data_history->AddData("earth_mi", t, vec6_mi);
+    // data_history->AddData("moon_gcrf", t, vec6_gcrf);
 
     // Print progress
     if (fmod(t, print_every) < 1e-3) {
