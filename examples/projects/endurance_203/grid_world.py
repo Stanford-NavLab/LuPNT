@@ -7,24 +7,61 @@ import pylupnt as pnt
 import scipy as sc
 
 class GridWorld:
-    def __init__(self, N = 100):
+    def __init__(self, N = 100, res = 1, Nt = 3600, moon_pa_origin = np.array([0, 0, 0])):
         # constants
-        self.N = N                                    # grid size
+        self.N = N                                      # grid size
+        # TODO: change this up
         self.params = 3                                 # number of parameters for each cell
+        self.params_names = ['elevation', 'sat_visibility', 'DOP']
+        self.moon_pa_origin = moon_pa_origin            # moon PA origin (to change)
+        self.res = res                                  # resolution of the grid (KILOMETERS)
+        self.lent = Nt                                  # length of simulation (s)
+
+        # create the grid (which is time dependent, we will see how that actually plays out)
         self.grid = self.create_grid()                  # grid
-        self.moon_pa_origin = np.array([0, 0, 0])       # moon PA origin (to change)
 
     def create_grid(self):
-        """
-        Returns a 2D grid of size N x N where each cell is a tuple (x,y) representing the coordinates of the cell.
-        Output:
-            grid: N x N numpy array of tuples
-        """
-        grid = np.zeros((self.N, self.N, self.params))
-
+        grid = np.zeros((self.N, self.N, self.lent, self.params))
         # TODO: add noise to the elevation of the grid
-
         return grid
+    
+    def get_grid(self):
+        # provide the grid, perhaps to populate with satellite metrics
+        return self.grid
+    
+    #TODO --> make sure that the rover movement is REPRESENTATIVE of EAST/NORTH movement!!!
+
+    def grid_PA_coords(self, lat_0, lon_0):
+        # lets assume that x is E and y is N
+        # converting origin from PA to ENU
+        R_Moon = 1737.4  # km
+        M_mcmf_2enu = mcmf_to_enu(lat_0, lon_0)
+        print(M_mcmf_2enu)
+        origin_enu = M_mcmf_2enu @ self.moon_pa_origin
+        print(self.moon_pa_origin)
+        print(origin_enu)
+
+        # store all the grid coordinates
+        grid_coords = np.zeros((self.N, self.N, 3))
+        grid_lat_long = np.zeros((self.N, self.N, 2))
+
+        for i in range(self.N):
+            for j in range(self.N):
+                # move in east and north in the Moon PA frame
+                delta_east = i*self.res
+                delta_north = j*self.res
+
+                # get change in latitude and longitude
+                delta_lat = delta_north/R_Moon
+                delta_long = delta_east/R_Moon
+
+                lat = lat_0 + delta_lat; long = lon_0 + delta_long
+
+                grid_coords[i, j, :] = latlong_to_MoonPA(lat, long)
+                grid_lat_long[i, j] = [lat, long]
+
+        return grid_coords, grid_lat_long
+
     
     def create_crater(self, radius, max_depth, loc = None) :
         if loc is not None:
@@ -35,7 +72,7 @@ class GridWorld:
     
     def add_elevation(self, loc, param_idx, elevation):
         # add the elevation to a grid cell
-        self.grid[loc[0], loc[1], param_idx] = elevation
+        self.grid[loc[0], loc[1], :, param_idx] = elevation
         # return self.grid
     
     def add_crater(self, crater, slope_factor):
@@ -58,18 +95,18 @@ class GridWorld:
                     # we are inside the crater
                     if (i - crater[0])**2 + (j - crater[1])**2 < crater_ri**2:
                         # we are very much inside the crater
-                        self.grid[i, j, 0] = crater[3] + self.grid[i, j, 0]
+                        self.grid[i, j, :, 0] = crater[3] + self.grid[i, j, :, 0]
                     else:
                         # we are going down the crater
                         # radial distance from the center of the crater
                         rad_loc = np.sqrt((i - crater[0])**2 + (j - crater[1])**2)
                         # calculate the elevation
                         elevation = m*rad_loc + b
-                        self.grid[i, j, 0] = elevation + self.grid[i, j, 0]
+                        self.grid[i, j, :, 0] = elevation + self.grid[i, j, :, 0]
 
-    def plot_grid(self, param_idx = 0):
+    def plot_grid_elev(self, param_idx = 0):
         fig, ax = plt.subplots(dpi=150)
-        heatmap = ax.pcolor(self.grid[:,:,0])
+        heatmap = ax.pcolor(self.grid[:,:,0,0])
         plt.colorbar(heatmap)
         plt.axis('equal')
         plt.xlim(0, self.N)
@@ -77,7 +114,6 @@ class GridWorld:
         # plt.show()
 
         return fig, ax
-    
 
     def generate_deterministic_trajectory(self, state_0, state_f, p, N = 10):
         # A function that generates trajectories as quadratic approximations of the p-function
@@ -195,3 +231,26 @@ class GridWorld:
                     y.append(y0)
 
         return x, y
+
+def mcmf_to_enu(lat_user, lon_user):
+    # convert from MCMF to ENU coordinates
+    # lat_user = rover latitude in radians (1x1)
+    # lon_user = rover longitude in radians (1x1)
+    phi, lmda = lat_user, lon_user
+    M = np.array([
+        [-np.sin(lmda), np.cos(lmda), 0],
+        [-np.cos(lmda)*np.sin(phi), -np.sin(lmda)*np.sin(phi), np.cos(phi)],
+        [np.cos(lmda)*np.cos(phi), np.sin(lmda)*np.cos(phi), np.sin(phi)]
+    ])
+    return M
+
+def latlong_to_MoonPA(lat, long):
+    # convert latitude and longitude to MoonPA
+    R_Moon = 1737.4  # km
+    user_mcmf_pos_x = R_Moon * np.cos(lat) * np.cos(long)
+    user_mcmf_pos_y = R_Moon * np.cos(lat) * np.sin(long)
+    user_mcmf_pos_z = R_Moon * np.sin(lat)
+
+    # 3x1 position vector
+    user_mcmf_loc = np.array([user_mcmf_pos_x, user_mcmf_pos_y, user_mcmf_pos_z])
+    return user_mcmf_loc
