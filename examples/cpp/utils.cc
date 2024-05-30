@@ -77,7 +77,7 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
 
   // Moon spacecraft
   auto state = sat->GetCartesianGCRFStateAtEpoch(epoch);
-  auto sate_mi = ConvertOrbitStateFrame(state, epoch, Frame::MI);
+  auto sate_mi = ConvertOrbitStateFrame(state, epoch, Frame::MOON_CI);
   auto state_gcrf = ConvertOrbitStateFrame(state, epoch, Frame::GCRF);
   data_history->AddData("rv_moon_mi", t, sate_mi->GetVector());
   data_history->AddData("rv_moon_gcrf", t, state_gcrf->GetVector());
@@ -97,7 +97,7 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
   // GPS constellation
   for (int i = 0; i < gps_const->GetNumSatellites(); i++) {
     auto sate = gps_const->GetSatellite(i)->GetCartesianGCRFStateAtEpoch(epoch);
-    auto sate_mi = ConvertOrbitStateFrame(sate, epoch, Frame::MI);
+    auto sate_mi = ConvertOrbitStateFrame(sate, epoch, Frame::MOON_CI);
     auto state_gcrf = ConvertOrbitStateFrame(sate, epoch, Frame::GCRF);
 
     std::string name = "sat" + std::to_string(i);
@@ -110,10 +110,10 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
   vz6.setZero();
   data_history->AddData(
       "earth_mi", t,
-      FrameConverter::Convert(epoch, vz6, Frame::GCRF, Frame::MI));
+      FrameConverter::Convert(epoch, vz6, Frame::GCRF, Frame::MOON_CI));
   data_history->AddData(
       "moon_gcrf", t,
-      FrameConverter::Convert(epoch, vz6, Frame::MI, Frame::GCRF));
+      FrameConverter::Convert(epoch, vz6, Frame::MOON_CI, Frame::GCRF));
 };
 
 void PrintProgressHeader() {

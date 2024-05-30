@@ -40,9 +40,9 @@ int main() {
   xform = sp::GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::ITRF);
   std::cout << "XFORM_ITRF:\n" << xform << std::endl;
 
-  xform = sp::GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::PA);
+  xform = sp::GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::MOON_PA);
   std::cout << "XFORM_MOONPA:\n" << xform << std::endl;
-  xform = sp::GetFrameConversionMatrix(t_tai, Frame::MI, Frame::PA);
+  xform = sp::GetFrameConversionMatrix(t_tai, Frame::MOON_CI, Frame::MOON_PA);
 
   Vector3d x =
       sp::GetBodyPos(NaifId::EARTH, t_tai, Frame::GCRF, NaifId::MOON, "NONE");

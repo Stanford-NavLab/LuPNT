@@ -216,7 +216,7 @@ class GnssMeasurement {
   VectorX GetPredictedGnssMeasurement(
       double epoch, Vector6 rv_pred, Vector2 clk_pred, VectorX N_pred,
       MatrixXd &H_gnss, std::vector<GnssMeasurementType> meas_type,
-      Frame frame_in = Frame::MI);
+      Frame frame_in = Frame::MOON_CI);
 
   /**
    * @brief Get the Pseudorange for the predicted state
@@ -230,7 +230,7 @@ class GnssMeasurement {
    */
   VectorX GetPredictedPseudorange(double epoch, Vector6 rv_pred,
                                   Vector2 clk_pred, MatrixXd &H_pr,
-                                  Frame frame_in = Frame::MI);
+                                  Frame frame_in = Frame::MOON_CI);
 
   /**
    * @brief Get the Pseudorange Analytical Jacobian object
@@ -242,11 +242,9 @@ class GnssMeasurement {
    * @param frame_in  coordinate system of the input state
    * @return * VectorX
    */
-  VectorX GetPredictedPseudorangeAnalyticalJacobian(double epoch,
-                                                    Vector6 rv_pred,
-                                                    Vector2 clk_pred,
-                                                    MatrixXd &H_pr,
-                                                    Frame frame_in = Frame::MI);
+  VectorX GetPredictedPseudorangeAnalyticalJacobian(
+      double epoch, Vector6 rv_pred, Vector2 clk_pred, MatrixXd &H_pr,
+      Frame frame_in = Frame::MOON_CI);
 
   /**
    * @brief Get the Pseudorange Rate object
@@ -260,7 +258,7 @@ class GnssMeasurement {
    */
   VectorX GetPredictedPseudorangerate(double epoch, Vector6 rv_pred,
                                       Vector2 clk_pred, MatrixXd &H_prr,
-                                      Frame frame_in = Frame::MI);
+                                      Frame frame_in = Frame::MOON_CI);
 
   /**
    * @brief Get the Carrier Phase object
@@ -274,7 +272,8 @@ class GnssMeasurement {
    */
   VectorX GetPredictedCarrierPhase(double epoch, Vector6 rv_pred,
                                    Vector2 clk_pred, VectorX N_pred,
-                                   MatrixXd &H_cp, Frame frame_in = Frame::MI);
+                                   MatrixXd &H_cp,
+                                   Frame frame_in = Frame::MOON_CI);
 
   /*********************************************************************
    * Noise Models

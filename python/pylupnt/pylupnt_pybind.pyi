@@ -17,7 +17,7 @@ class Body:
 class CartesianOrbitState(OrbitState):
     r: numpy.ndarray[numpy.float64[3, 1]]
     v: numpy.ndarray[numpy.float64[3, 1]]
-    def __init__(self, rv: numpy.ndarray[numpy.float64[6, 1]], frame: Frame = pylupnt.Frame.MI) -> None:
+    def __init__(self, rv: numpy.ndarray[numpy.float64[6, 1]], frame: Frame = pylupnt.Frame.MOON_CI) -> None:
         ...
     def __repr__(self) -> str:
         ...

@@ -75,7 +75,7 @@ void init_orbit_state(py::module &m) {
   // ClassicalOE
   py::class_<ClassicalOE, OrbitState>(m, "ClassicalOE")
       .def(py::init<const Vector6d &, const Frame>(),
-           py::arg("[a, e, i, Omega, w, M]"), py::arg("frame") = Frame::MI)
+           py::arg("[a, e, i, Omega, w, M]"), py::arg("frame") = Frame::MOON_CI)
       .def_property("a", DEFINE_GETSET_REAL(ClassicalOE, a))
       .def_property("e", DEFINE_GETSET_REAL(ClassicalOE, e))
       .def_property("i", DEFINE_GETSET_REAL(ClassicalOE, i))

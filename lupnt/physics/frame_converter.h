@@ -32,10 +32,12 @@ enum Frame {
   MOD,          // Mean of date equatorial system
   TOD,          // True of date equatorial system
   EMR,          // Earth-Moon Rotating Frame
-  MI,           // Moon-centered Inertial Frame (Axis aligened with ICRF)
-  PA,           // Moon-Fixed with principal axes
-  ME,           // Moon-Fixed with mean-Earth / polar axes
-  OP,           // Earth Orbit Frame
+  MOON_CI,      // Moon-centered Inertial Frame (Axis aligened with ICRF)
+  MOON_PA,      // Moon-Fixed with principal axes
+  MOON_ME,      // Moon-Fixed with mean-Earth / polar axes
+  MOON_OP,      // Earth Orbit Frame
+  MARS_FIXED,   // Mars fixed frame
+  VENUS_FIXED,  // Venus fixed frame
 };
 
 class FrameConverter {

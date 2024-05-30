@@ -132,5 +132,10 @@ void init_dynamics(py::module &m) {
                   py::arg("m_max") = 0)
       .def_static("Earth", &Body::Earth, py::arg("n_max") = 0,
                   py::arg("m_max") = 0)
+      .def_static("Mars", &Body::Mars, py::arg("n_max") = 0,
+                  py::arg("m_max") = 0)
+      .def_static("Venus", &Body::Venus, py::arg("n_max") = 0,
+                  py::arg("m_max") = 0)
+      .def_static("Sun", &Body::Sun)
       .def("__repr__", [](const Body &body) { return "<pylupnt.Body>"; });
 }

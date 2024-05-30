@@ -13,9 +13,9 @@ def map_string_pnt_coordinate(str):
     elif str == "ICRF":
         return pnt.Frame.ICRF
     elif str == "MI":
-        return pnt.Frame.MI
+        return pnt.Frame.MOON_CI
     elif str == "PA":
-        return pnt.Frame.PA
+        return pnt.Frame.MOON_PA
     else:
         raise ValueError("Unknown coordinate system: " + str)
 
