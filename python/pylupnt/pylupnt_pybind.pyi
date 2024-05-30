@@ -431,7 +431,7 @@ class SpiceInterface:
     def extract_pck_coeffs() -> None:
         ...
     @staticmethod
-    def get_body_pos(*args, **kwargs) -> numpy.ndarray[numpy.float64[3, 1]]:
+    def get_body_pos(target_name: NaifId, t_tai: float, ref_frame: Frame, obs_name: NaifId, ab_correction: str) -> numpy.ndarray[numpy.float64[3, 1]]:
         ...
     @staticmethod
     @typing.overload
