@@ -73,14 +73,12 @@ class AStarPlanner(object):
 
         # print(f"euc_dist: {euc_dist}, elev_diff: {elev_diff}")
 
-        return (euc_dist + elev_diff)
+        return np.sqrt(euc_dist**2 + elev_diff**2)
 
     def h_cost(self, x1, x2):
         # scale it according to resolution
         euc_dist = self.resolution*(np.linalg.norm(np.array(x2) - np.array(x1)))
         return euc_dist
-
-
 
     def get_neighbors(self, x):
         """
@@ -148,16 +146,18 @@ class AStarPlanner(object):
 
         solution_path = np.asarray(self.path)
 
-        plt.plot(solution_path[:,0],solution_path[:,1], color="red", linewidth=2, label="A* solution path", zorder=10)
+        plt.plot(solution_path[:,0],solution_path[:,1], color="red", linewidth=2, label="A* path", zorder=10)
         plt.scatter([self.x_init[0], self.x_goal[0]], [self.x_init[1], self.x_goal[1]], color="red", s=30, zorder=10)
 
         if show_init_label:
-            plt.annotate(r"$x_{init}$", np.array(self.x_init) + np.array([1, 1]), fontsize=16)
+            plt.annotate(r"$x_{init}$", np.array(self.x_init) + np.array([-2, -2]), fontsize=16)
             
-        plt.annotate(r"$x_{goal}$", np.array(self.x_goal) + np.array([.5, .5]), fontsize=16)
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, ncol=3)
+        plt.annotate(r"$x_{goal}$", np.array(self.x_goal) + np.array([1, 1]), fontsize=16)
+        plt.legend()
+        # plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, ncol=3)
 
         plt.axis([0, self.grid.shape[0], 0,self.grid.shape[1]])
+        # plt.tight_layout()
 
         if self.obstacles is not None:
             for obs in self.obstacles:
@@ -288,35 +288,11 @@ class AStarPlanner(object):
                 return False
         return True
 
-# might not even need to do this.....
-# class DetOccupancyGrid2D(object):
-#     """
-#     A 2D state space grid with a set of rectangular obstacles. The grid is
-#     fully deterministic
-#     """
-#     def __init__(self, width, height, obstacles):
-#         self.width = width
-#         self.height = height
-#         self.obstacles = obstacles
 
-#     def is_free(self, x):
-#         """Verifies that point is not inside any obstacles by some margin"""
-#         for obs in self.obstacles:
-#             if x[0] >= obs[0][0] - self.width * .01 and \
-#                x[0] <= obs[1][0] + self.width * .01 and \
-#                x[1] >= obs[0][1] - self.height * .01 and \
-#                x[1] <= obs[1][1] + self.height * .01:
-#                 return False
-#         return True
-
-#     def plot(self, fig_num=0):
-#         """Plots the space and its obstacles"""
-#         fig = plt.figure(fig_num)
-#         ax = fig.add_subplot(111, aspect='equal')
-#         for obs in self.obstacles:
-#             ax.add_patch(
-#             patches.Rectangle(
-#             obs[0],
-#             obs[1][0]-obs[0][0],
-#             obs[1][1]-obs[0][1],))
-#         ax.set(xlim=(0,self.width), ylim=(0,self.height))
+    def get_waypoints(self, num_points):
+        """Returns the waypoints that define the path"""
+        solution_path = np.asarray(self.path)
+        path_plan_red = solution_path[::len(solution_path)//(num_points-2)]
+        path_plan_red = np.vstack([path_plan_red, solution_path[-1]])
+        # print(path_plan_red.shape)
+        return path_plan_red
