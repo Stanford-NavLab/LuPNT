@@ -288,11 +288,10 @@ class AStarPlanner(object):
                 return False
         return True
 
-
     def get_waypoints(self, num_points):
         """Returns the waypoints that define the path"""
         solution_path = np.asarray(self.path)
-        path_plan_red = solution_path[::len(solution_path)//(num_points-2)]
-        path_plan_red = np.vstack([path_plan_red, solution_path[-1]])
+        waypoints = solution_path[::len(solution_path)//(num_points-2)]
+        waypoints = np.vstack([waypoints, solution_path[-1]])
         # print(path_plan_red.shape)
-        return path_plan_red
+        return waypoints

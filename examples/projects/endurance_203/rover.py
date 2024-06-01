@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pylupnt as pnt
 import scipy as sc
+import cvxpy as cvx
 
 
 class Rover_Agent:
@@ -21,7 +22,6 @@ class Rover_Agent:
 
         # define any relevant control constraints here
         # define any additional rover constants here
-
 
 
     def dynamics(self, state, control):
@@ -112,8 +112,52 @@ class EKF:
 
 
 
+class MPC:
+    def __init__(self, rover, horizon=10) -> None:
+        self.rover = rover
+        self.horizon = horizon
 
+    def mpc_no_nav(
+        x0: np.ndarray,
+        A: np.ndarray,
+        B: np.ndarray,
+        P: np.ndarray,
+        Q: np.ndarray,
+        R: np.ndarray,
+        W: np.ndarray,
+        N: int,
+        rx: float,
+        ru: float,
+    ) -> tuple[np.ndarray, np.ndarray, str]:
+        """Solve the MPC problem starting at state `x0`."""
+        n, m = Q.shape[0], R.shape[0]
+        x_cvx = cvx.Variable((N + 1, n))
+        u_cvx = cvx.Variable((N, m))
 
+        # Construct and solve the MPC problem using CVXPY.
+        # set up cost and constraints
+        cost = 0
+        constraints = [x_cvx[0] == x0]
+        # iterate over time steps
+        for k in range(N):
+            cost = cost + cvx.quad_form(x_cvx[k], Q) + cvx.quad_form(u_cvx[k], R)
+            # constraints on state and control values
+            constraints += [cvx.norm(u_cvx[k]) <= ru]
+            constraints += [cvx.norm(x_cvx[k]) <= rx]
+            # dynamics constraints
+            constraints += [x_cvx[k + 1] == A @ x_cvx[k] + B @ u_cvx[k]]
+
+        # terminal constraint
+        cost = cost + cvx.quad_form(x_cvx[N], P)
+        constraints += [cvx.quad_form(x_cvx[N], W) <= 1]
+        # solve the problem
+        prob = cvx.Problem(cvx.Minimize(cost), constraints)
+        prob.solve()
+        x = x_cvx.value
+        u = u_cvx.value
+        status = prob.status
+        return x, u, status
+        # define the cost function
 
 # def generate_deterministic_trajectory():
 #     # A function that generates geometrically diverse trajectories
