@@ -119,14 +119,17 @@ class GridWorld:
                         elevation = m*rad_loc + b
                         self.grid[i, j, :, 0] = elevation + self.grid[i, j, :, 0]
 
-    def plot_grid_elev(self, param_idx = 0):
+    def plot_grid_elev(self, t = 0, param_idx = 0):
         fig, ax = plt.subplots(dpi=150)
-        heatmap = ax.pcolor(self.grid[:,:,0,0])
+        heatmap = ax.pcolor(self.grid[:,:, t, param_idx])
         cbar = plt.colorbar(heatmap,fraction=0.046, pad=0.04)
         plt.axis('equal')
         ax.set_xlim(0, self.N)
         ax.set_ylim(0, self.N)
-        cbar.set_label('Elevation [km]')
+        if param_idx == 0:
+            cbar.set_label('Elevation [km]')
+        elif param_idx == 2:
+            cbar.set_label('PDOP')
         # plt.show()
 
         return fig, ax
