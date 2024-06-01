@@ -61,9 +61,9 @@ class GridWorld:
 
                 lat = lat_0 + delta_lat; long = lon_0 + delta_long
                 cell_elevation = self.get_elevation(i, j)
-
-                grid_coords[i, j, :] = latlong_to_MoonPA(lat, long, cell_elevation)
-                grid_lat_long[i, j] = [lat, long]
+                
+                grid_coords[i, j, :] = latlong_to_MoonPA(lat, long, cell_elevation) # N x N x 3
+                grid_lat_long[i, j] = [lat, long] # N x N x 2
         
 
         return grid_coords, grid_lat_long
@@ -122,10 +122,11 @@ class GridWorld:
     def plot_grid_elev(self, param_idx = 0):
         fig, ax = plt.subplots(dpi=150)
         heatmap = ax.pcolor(self.grid[:,:,0,0])
-        plt.colorbar(heatmap,fraction=0.046, pad=0.04)
+        cbar = plt.colorbar(heatmap,fraction=0.046, pad=0.04)
         plt.axis('equal')
         ax.set_xlim(0, self.N)
         ax.set_ylim(0, self.N)
+        cbar.set_label('Elevation [km]')
         # plt.show()
 
         return fig, ax
