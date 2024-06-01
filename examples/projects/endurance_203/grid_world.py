@@ -7,7 +7,7 @@ import pylupnt as pnt
 import scipy as sc
 
 class GridWorld:
-    def __init__(self, N = 100, res = 1, Nt = 3600, moon_pa_origin = np.array([0, 0, 0])):
+    def __init__(self, N = 100, res = 1, Nt = 3600, moon_pa_origin = np.array([0, 0, 0]), mu_noise = 0.0, sigma_noise = 1.0):
         # constants
         self.N = N                                      # grid size
         # TODO: change this up
@@ -18,11 +18,13 @@ class GridWorld:
         self.lent = Nt                                  # length of simulation (s)
 
         # create the grid (which is time dependent, we will see how that actually plays out)
-        self.grid = self.create_grid()                  # grid
+        self.grid = self.create_grid(mu_noise, sigma_noise)                  # grid
 
-    def create_grid(self):
+    def create_grid(self, mu_noise, sigma_noise):
         grid = np.zeros((self.N, self.N, self.lent, self.params))
         # TODO: add noise to the elevation of the grid
+        elevation_noise = np.random.normal(mu_noise, sigma_noise, size=(self.N,self.N, self.lent))
+        grid[:, :, :, 0] += elevation_noise
         return grid
     
     def get_grid(self):
