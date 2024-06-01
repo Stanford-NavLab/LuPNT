@@ -12,7 +12,7 @@ class GridWorld:
         self.N = N                                      # grid size
         # TODO: change this up
         self.params = 3                                 # number of parameters for each cell
-        self.params_names = ['elevation', 'sat_visibility', 'DOP']
+        self.params_names = ['elevation', 'sat_visibility', 'PDOP']
         self.moon_pa_origin = moon_pa_origin            # moon PA origin (to change)
         self.res = res                                  # resolution of the grid (KILOMETERS)
         self.lent = Nt                                  # length of simulation (s)
@@ -23,7 +23,9 @@ class GridWorld:
     def create_grid(self, mu_noise, sigma_noise):
         grid = np.zeros((self.N, self.N, self.lent, self.params))
         # TODO: add noise to the elevation of the grid
-        elevation_noise = np.random.normal(mu_noise, sigma_noise, size=(self.N,self.N, self.lent))
+        elevation_noise = np.random.normal(mu_noise, sigma_noise, size=(self.N,self.N))
+        elevation_noise = elevation_noise.reshape(self.N, self.N, 1)
+        elevation_noise = np.tile(elevation_noise, (1, 1, self.lent))
         grid[:, :, :, 0] += elevation_noise
         return grid
     
@@ -38,10 +40,10 @@ class GridWorld:
         # converting origin from PA to ENU
         R_Moon = 1737.4  # km
         M_mcmf_2enu = mcmf_to_enu(lat_0, lon_0)
-        print(M_mcmf_2enu)
+        # print(M_mcmf_2enu)
         origin_enu = M_mcmf_2enu @ self.moon_pa_origin
-        print(self.moon_pa_origin)
-        print(origin_enu)
+        # print(self.moon_pa_origin)
+        # print(origin_enu)
 
         # store all the grid coordinates
         grid_coords = np.zeros((self.N, self.N, 3))
@@ -58,9 +60,11 @@ class GridWorld:
                 delta_long = delta_east/R_Moon
 
                 lat = lat_0 + delta_lat; long = lon_0 + delta_long
+                cell_elevation = self.get_elevation(i, j)
 
-                grid_coords[i, j, :] = latlong_to_MoonPA(lat, long)
+                grid_coords[i, j, :] = latlong_to_MoonPA(lat, long, cell_elevation)
                 grid_lat_long[i, j] = [lat, long]
+        
 
         return grid_coords, grid_lat_long
 
@@ -72,10 +76,19 @@ class GridWorld:
             crater = np.array([np.random.randint(0, self.N), np.random.randint(0, self.N), radius, -max_depth])
         return crater
     
-    def add_elevation(self, loc, param_idx, elevation):
+    def add_elevation(self, loc, elevation, param_idx=0):
         # add the elevation to a grid cell
         self.grid[loc[0], loc[1], :, param_idx] = elevation
         # return self.grid
+        
+    def add_PDOP(self, loc, param_idx, PDOP):
+        # add the PDOP to a grid cell
+        self.grid[loc[0], loc[1], :, param_idx] = PDOP
+        
+    def get_elevation(self, x, y):
+        elevation = self.grid[:, :, :, 0] # of size 40 x 40 x time length
+        elevation = elevation[:, :, 0] # of size 40 x 40
+        return elevation[x, y]
     
     def add_crater(self, crater, slope_factor):
         # add the crater to the grid
@@ -185,7 +198,7 @@ class GridWorld:
         absdx = np.abs(dx)
         absdy = np.abs(dy)
 
-        x = [x0]; y = [y0];
+        x = [x0]; y = [y0]
 
         if absdx > absdy:
             p = 2*absdy - absdx
@@ -246,12 +259,13 @@ def mcmf_to_enu(lat_user, lon_user):
     ])
     return M
 
-def latlong_to_MoonPA(lat, long):
+def latlong_to_MoonPA(lat, long, cell_elevation):
     # convert latitude and longitude to MoonPA
+    # cell_elevation is a float
     R_Moon = 1737.4  # km
-    user_mcmf_pos_x = R_Moon * np.cos(lat) * np.cos(long)
-    user_mcmf_pos_y = R_Moon * np.cos(lat) * np.sin(long)
-    user_mcmf_pos_z = R_Moon * np.sin(lat)
+    user_mcmf_pos_x = (R_Moon + cell_elevation) * np.cos(lat) * np.cos(long)
+    user_mcmf_pos_y = (R_Moon + cell_elevation) * np.cos(lat) * np.sin(long)
+    user_mcmf_pos_z = (R_Moon + cell_elevation) * np.sin(lat)
 
     # 3x1 position vector
     user_mcmf_loc = np.array([user_mcmf_pos_x, user_mcmf_pos_y, user_mcmf_pos_z])
