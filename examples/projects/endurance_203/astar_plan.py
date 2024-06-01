@@ -67,13 +67,22 @@ class AStarPlanner(object):
         # scale it according to resolution
         euc_dist = self.resolution*(np.linalg.norm(np.array(x2) - np.array(x1)))
         #take into account elevation of the grid
-        elev1 = self.grid_env.get_elevation(x1[0], x1[1])
-        elev2 = self.grid_env.get_elevation(x2[0], x2[1])
+        elev1 = self.grid[x1[0], x1[1], 0, 0]
+        elev2 = self.grid[x2[0], x2[1], 0, 0]
+        # print('current cell')
+        # print(elev1)
+        # print('neigh cell')
+        # print(elev2)
+
         elev_diff = self.elev_weight*np.abs(elev2 - elev1)
+        # print(elev_diff)
 
         # print(f"euc_dist: {euc_dist}, elev_diff: {elev_diff}")
 
-        return np.sqrt(euc_dist**2 + elev_diff**2)
+        # return elev_diff
+        # print(elev_diff)
+        return elev_diff
+        # return np.sqrt(euc_dist**2 + elev_diff**2)
 
     def h_cost(self, x1, x2):
         # scale it according to resolution
@@ -146,13 +155,13 @@ class AStarPlanner(object):
 
         solution_path = np.asarray(self.path)
 
-        plt.plot(solution_path[:,0],solution_path[:,1], color="red", linewidth=2, label="A* path", zorder=10)
-        plt.scatter([self.x_init[0], self.x_goal[0]], [self.x_init[1], self.x_goal[1]], color="red", s=30, zorder=10)
+        plt.plot(solution_path[:,1],solution_path[:,0], color="red", linewidth=2, label="A* path", zorder=10)
+        plt.scatter([self.x_init[1], self.x_goal[1]], [self.x_init[0], self.x_goal[0]], color="red", s=30, zorder=10)
 
         if show_init_label:
-            plt.annotate(r"$x_{init}$", np.array(self.x_init) + np.array([-2, -2]), fontsize=16)
+            plt.annotate(r"$x_{init}$", np.array([self.x_init[1], self.x_init[0]]) + np.array([-2, -2]), fontsize=16)
             
-        plt.annotate(r"$x_{goal}$", np.array(self.x_goal) + np.array([1, 1]), fontsize=16)
+        plt.annotate(r"$x_{goal}$", np.array([self.x_goal[1], self.x_goal[0]]) + np.array([1, 1]), fontsize=16)
         plt.legend()
         # plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, ncol=3)
 
@@ -224,7 +233,6 @@ class AStarPlanner(object):
                 
                 # set the tentative cost to arrive --> 
                 # C_tilde(q') = C(q) [cost to come] + C(q,q') [immediate cost to come]
-                # for testing purposes, let's just have distance
                 tent_cost_to_arrive = self.cost_to_arrive[x_current] + self.cost_to_go(x_current, x_neigh)
 
                 # if the neighbor state is not already in the queue, add it

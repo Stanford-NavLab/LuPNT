@@ -86,8 +86,8 @@ class GridWorld:
         self.grid[loc[0], loc[1], :, param_idx] = PDOP
         
     def get_elevation(self, x, y):
-        elevation = self.grid[:, :, :, 0] # of size 40 x 40 x time length
-        elevation = elevation[:, :, 0] # of size 40 x 40
+        elevation = self.grid[:, :, 0, 0] # of size 40 x 40 x time length
+        # elevation = elevation[:, :, 0] # of size 40 x 40
         return elevation[x, y]
     
     def add_crater(self, crater, slope_factor):
@@ -126,6 +126,9 @@ class GridWorld:
         plt.axis('equal')
         ax.set_xlim(0, self.N)
         ax.set_ylim(0, self.N)
+        ax.set_xlabel('y [km]')
+        ax.set_ylabel('x [km]')
+
         if param_idx == 0:
             cbar.set_label('Elevation [km]')
         elif param_idx == 2:
