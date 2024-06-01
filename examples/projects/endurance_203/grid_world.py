@@ -109,10 +109,10 @@ class GridWorld:
     def plot_grid_elev(self, param_idx = 0):
         fig, ax = plt.subplots(dpi=150)
         heatmap = ax.pcolor(self.grid[:,:,0,0])
-        plt.colorbar(heatmap)
+        plt.colorbar(heatmap,fraction=0.046, pad=0.04)
         plt.axis('equal')
-        plt.xlim(0, self.N)
-        plt.ylim(0, self.N)
+        ax.set_xlim(0, self.N)
+        ax.set_ylim(0, self.N)
         # plt.show()
 
         return fig, ax

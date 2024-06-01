@@ -102,7 +102,7 @@ class EKF:
     def update(self, rover, state, measurement):
         # update the state estimate
         #TODO: fix this to match the satellites
-        rover = Rover()
+        # rover = Rover()
         H = np.eye(3)
         K = self.P @ H.T @ np.linalg.inv(H @ self.P @ H.T + self.R)
         x_hat = self.x_hat + K @ (measurement - state)
