@@ -5,7 +5,7 @@ import matplotlib.patches as patches
 
 class AStarPlanner(object):
 
-    def __init__(self, statespace_lo, statespace_hi, x_init, x_goal, grid_env, resolution=1, diag=False, obstacles=None):
+    def __init__(self, statespace_lo, statespace_hi, x_init, x_goal, grid_env, resolution=1, diag=False, obstacles=None, elev_weight = 10):
 
         self.statespace_lo = statespace_lo
         self.statespace_hi = statespace_hi
@@ -30,9 +30,12 @@ class AStarPlanner(object):
         self.cost_to_arrive = {}    # dictionary of the cost-to-arrive at state from start (often called g score)
         self.came_from = {}         # dictionary keeping track of each state's parent to reconstruct the path
 
+        # for path planning
+        self.elev_weight = elev_weight
+
         self.open_set.add(self.x_init)
         self.cost_to_arrive[self.x_init] = 0
-        self.est_cost_through[self.x_init] = self.distance(self.x_init,self.x_goal)
+        self.est_cost_through[self.x_init] = self.h_cost(self.x_init,self.x_goal)
 
         self.path = None        # the final path as a list of states
 
@@ -49,7 +52,7 @@ class AStarPlanner(object):
         )
 
     # change this to cost-to-go
-    def distance(self, x1, x2):
+    def cost_to_go(self, x1, x2):
         """
         Computes the Euclidean distance between two states.
         Inputs:
@@ -59,7 +62,25 @@ class AStarPlanner(object):
             Float Euclidean distance
         """
 
-        return np.linalg.norm(np.array(x2) - np.array(x1))
+        # print(f"x1: {x1}, x2: {x2}")
+
+        # scale it according to resolution
+        euc_dist = self.resolution*(np.linalg.norm(np.array(x2) - np.array(x1)))
+        #take into account elevation of the grid
+        elev1 = self.grid_env.get_elevation(x1[0], x1[1])
+        elev2 = self.grid_env.get_elevation(x2[0], x2[1])
+        elev_diff = self.elev_weight*np.abs(elev2 - elev1)
+
+        # print(f"euc_dist: {euc_dist}, elev_diff: {elev_diff}")
+
+        return (euc_dist + elev_diff)
+
+    def h_cost(self, x1, x2):
+        # scale it according to resolution
+        euc_dist = self.resolution*(np.linalg.norm(np.array(x2) - np.array(x1)))
+        return euc_dist
+
+
 
     def get_neighbors(self, x):
         """
@@ -204,7 +225,7 @@ class AStarPlanner(object):
                 # set the tentative cost to arrive --> 
                 # C_tilde(q') = C(q) [cost to come] + C(q,q') [immediate cost to come]
                 # for testing purposes, let's just have distance
-                tent_cost_to_arrive = self.cost_to_arrive[x_current] + self.distance(x_current, x_neigh)
+                tent_cost_to_arrive = self.cost_to_arrive[x_current] + self.cost_to_go(x_current, x_neigh)
 
                 # if the neighbor state is not already in the queue, add it
                 if x_neigh not in self.open_set:
@@ -220,7 +241,7 @@ class AStarPlanner(object):
                 self.cost_to_arrive[x_neigh] = tent_cost_to_arrive
                 # set the est cost from start to finish to C(q') + h(q') -- (f score)
                 # for now, h(q') = distance(q', goal)
-                self.est_cost_through[x_neigh] = tent_cost_to_arrive + self.distance(x_neigh, self.x_goal)
+                self.est_cost_through[x_neigh] = tent_cost_to_arrive + self.h_cost(x_neigh, self.x_goal)
             
         return False
         # raise NotImplementedError("solve not implemented")
@@ -243,13 +264,13 @@ class AStarPlanner(object):
 
         # get_occup = self.occupancy              # get the corresponding DetOccupancyGrid2D
         if self.obstacles is None:
-            bound_check = True
+            obstacle_check = True
         else:
             obstacle_check = self.is_occupied(x)  
 
         # check within bounds
         bound_check = True
-        if x[0] < self.statespace_lo[0] or x[0] > self.statespace_hi[0] or x[1] < self.statespace_lo[1] or x[1] > self.statespace_hi[1]:
+        if x[0] < self.statespace_lo[0] or x[0] >= self.statespace_hi[0] or x[1] < self.statespace_lo[1] or x[1] >= self.statespace_hi[1]:
             bound_check = False
 
         if bound_check and obstacle_check:
