@@ -16,9 +16,10 @@ class AStarPlanner(object):
         self.resolution = resolution
         self.diag = diag
 
-        self.rover_speed = 1                         # km/hr
-        self.t = tspan[0]                            # time 
-        self.tspan = tspan   
+        self.rover_speed = 1                            # km/hr
+        self.t = tspan[0]                               # time 
+        self.tspan = tspan  
+        self.t_max = tspan[-1]                          # max time 
 
         self.width = self.grid.shape[0]
         self.height = self.grid.shape[1]
@@ -68,22 +69,18 @@ class AStarPlanner(object):
         elev2 = self.grid[x2_idx[0], x2_idx[1], t, 0]
         elev_diff = np.abs(elev2 - elev1)
 
-        # # take into account the pdop of the grid
-        # pdop1 = self.grid[x1[0], x1[1], t, 2]
-        # pdop2 = self.grid[x2[0], x2[1], t, 2]
-        # pdop_cost = self.pdop_weight*(pdop2 - pdop1)
+        # take into account the pdop of the grid
+        pdop1 = self.grid[x1_idx[0], x1_idx[1], t, 2]
+        pdop2 = self.grid[x2_idx[0], x2_idx[1], t, 2]
+        pdop_cost = (pdop2 - pdop1)*10000
 
-        # if np.isnan(pdop_cost):
-        #     pdop_cost = 0
-        # else:
-        #     pdop_cost = np.abs(pdop_cost)
-        #     # print(pdop_cost)
+        if np.isnan(pdop_cost):
+            pdop_cost = 5
+        else:
+            pdop_cost = pdop_cost
 
-        print(np.sqrt(euc_dist**2 + elev_diff**2))
-        print("elevation diff")
-        print(self.elev_weight*(elev_diff))
-
-        return np.sqrt(euc_dist**2 + elev_diff**2) +  self.elev_weight*(elev_diff)
+        # return np.sqrt(euc_dist**2 + elev_diff**2) 
+        return np.sqrt(euc_dist**2 + elev_diff**2) + self.elev_weight*(elev_diff) + self.pdop_weight*pdop_cost
     
     def distance_traveled(self, x1, x2):
         """
@@ -154,19 +151,25 @@ class AStarPlanner(object):
         """
         return min(self.open_set, key=lambda x: self.est_cost_through[x])
 
-    def reconstruct_path(self):
+    def reconstruct_path(self, goal):
         """
         Use the came_from map to reconstruct a path from the initial location to
         the goal location
         Output:
             A list of tuples, which is a list of the states that go from start to goal
         """
-        path = [self.x_goal]
+        path = [goal]
         current = path[-1]
         while current != self.x_init:
             path.append(self.came_from[current])
             current = path[-1]
         return list(reversed(path))
+
+    def reconstruct_time(self, path):
+        time = []
+        for x in path:
+            time.append(self.travel_time[x])
+        return np.array(time)
 
     def plot_path(self, fig_num=0, show_init_label=True):
         """Plots the path found in self.path and the obstacles"""
@@ -244,29 +247,42 @@ class AStarPlanner(object):
             # check if the current state is the goal state --> if so, update the path and end the search
             if x_current == self.x_goal:
                 # make sure to update the path
-                self.path = self.reconstruct_path()
+                self.path = self.reconstruct_path(self.x_goal)
                 return True
+
+            # the grid evolves over time, so we need to check if we have visibility or not
+            current_time = self.travel_time[x_current]
+            # print(current_time/3600)
+            # x_idx = [int(x_current[0]/self.resolution), int(x_current[1]/self.resolution)]
+            # print(x_idx)
+
+            if current_time > self.t_max:
+                print("Time exceeded")
+                # find out the closest point to the goal
+                dist_from_goal = []
+                for x in self.closed_set:
+                    dist_from_goal.append(self.h_cost(x, self.x_goal))
+                x_current = [key for key in self.closed_set if self.h_cost(key, self.x_goal) == min(dist_from_goal)][0]
+                self.path = self.reconstruct_path(x_current)
+                return True
+
+            # print(current_time/3600)
+            t_idx = (np.abs(self.tspan - (current_time))).argmin()
+            pdop_check = self.pdop_check(x_current, t_idx)
+            # print(pdop_check)
+            if not pdop_check and self.pdop_weight > 0:
+                # we do not have any satellites in view, so we are going to stay still for 10 minutes
+                self.travel_time[x_current] += (60*10)
+                continue
 
             # remove the current state from the queue and add it to the considered state set
             self.open_set.remove(x_current)
             self.closed_set.add(x_current)
 
-            current_time = self.travel_time[x_current]
-            # print(current_time)
-            # self.t += self.travel_time[x_current]
-            # print(self.t/3600)
-            # if x_current != self.x_init:
-            #     print(f"Current state: {x_current}")
-            #     print(f"Previous state: {self.came_from[x_current]}")            # print(f"x2: {x2}")
-            #     print(f"Distance traveled: {self.distance_traveled(x_current, self.came_from[x_current])}")
-
             # search tree
             for x_neigh in self.get_neighbors(x_current):
 
                 # ### NEW --> get how long it takes to get to the neighbor based on rover speed
-                # time_to_get_there = (self.distance_traveled(x_current, x_neigh) / self.rover_speed)*3600  #seconds
-                # t_idx = (np.abs(self.tspan - (self.t+time_to_get_there))).argmin()
-                
                 time_to_get_there = self.get_travel_time(x_current, x_neigh)
                 t_idx = (np.abs(self.tspan - (current_time+time_to_get_there))).argmin()
                 # print(t_idx)
@@ -298,10 +314,17 @@ class AStarPlanner(object):
                 self.est_cost_through[x_neigh] = tent_cost_to_arrive + self.h_cost(x_neigh, self.x_goal)
 
 
-            
         return False
         # raise NotImplementedError("solve not implemented")
         ########## Code ends here ##########
+
+    def pdop_check(self, x, t):
+        """check if we have enough satellites in view"""
+        x_idx = [int(x[0]/self.resolution), int(x[1]/self.resolution)]
+        if np.isnan(self.grid[x_idx[0], x_idx[1], t, 2]):
+            return False
+        else:
+            return True
 
     def is_free(self, x):
         """
@@ -330,6 +353,10 @@ class AStarPlanner(object):
         bound_check = True
         if x_idx[0] < self.statespace_lo[0] or x_idx[0] >= self.statespace_hi[0] or x_idx[1] < self.statespace_lo[1] or x_idx[1] >= self.statespace_hi[1]:
             bound_check = False
+
+        # pdop_check = True
+        # if np.isnan(self.grid[x_idx[0], x_idx[1], 0, 2]):
+        #     pdop_check = False
 
         if bound_check and obstacle_check:
             return True
