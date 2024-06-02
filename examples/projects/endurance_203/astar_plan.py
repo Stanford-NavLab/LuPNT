@@ -5,7 +5,7 @@ import matplotlib.patches as patches
 
 class AStarPlanner(object):
 
-    def __init__(self, statespace_lo, statespace_hi, x_init, x_goal, grid_env, resolution=1, diag=False, obstacles=None, elev_weight = 10):
+    def __init__(self, statespace_lo, statespace_hi, x_init, x_goal, grid_env, tspan, resolution=1, diag=False, obstacles=None, weights = [0,0]):
 
         self.statespace_lo = statespace_lo
         self.statespace_hi = statespace_hi
@@ -15,6 +15,10 @@ class AStarPlanner(object):
         self.obstacles = obstacles
         self.resolution = resolution
         self.diag = diag
+
+        self.rover_speed = 1                         # km/hr
+        self.t = tspan[0]                            # time 
+        self.tspan = tspan   
 
         self.width = self.grid.shape[0]
         self.height = self.grid.shape[1]
@@ -29,9 +33,11 @@ class AStarPlanner(object):
         self.est_cost_through = {}  # dictionary of the estimated cost from start to goal passing through state (often called f score)
         self.cost_to_arrive = {}    # dictionary of the cost-to-arrive at state from start (often called g score)
         self.came_from = {}         # dictionary keeping track of each state's parent to reconstruct the path
+        self.travel_time = {}      
 
         # for path planning
-        self.elev_weight = elev_weight
+        self.elev_weight = weights[0]
+        self.pdop_weight = weights[1]
 
         self.open_set.add(self.x_init)
         self.cost_to_arrive[self.x_init] = 0
@@ -51,8 +57,35 @@ class AStarPlanner(object):
             self.resolution * round((x[1] - self.x_offset[1]) / self.resolution) + self.x_offset[1],
         )
 
-    # change this to cost-to-go
-    def cost_to_go(self, x1, x2):
+    def cost_to_go(self, x1, x2, t=0):
+        # scale it according to resolution
+        euc_dist = np.linalg.norm(np.array(x2) - np.array(x1))
+        # get the index of the states to relate to the grid
+        x1_idx = [int(x1[0]/self.resolution), int(x1[1]/self.resolution)]
+        x2_idx = [int(x2[0]/self.resolution), int(x2[1]/self.resolution)]
+        #take into account elevation of the grid
+        elev1 = self.grid[x1_idx[0], x1_idx[1], t, 0]
+        elev2 = self.grid[x2_idx[0], x2_idx[1], t, 0]
+        elev_diff = np.abs(elev2 - elev1)
+
+        # # take into account the pdop of the grid
+        # pdop1 = self.grid[x1[0], x1[1], t, 2]
+        # pdop2 = self.grid[x2[0], x2[1], t, 2]
+        # pdop_cost = self.pdop_weight*(pdop2 - pdop1)
+
+        # if np.isnan(pdop_cost):
+        #     pdop_cost = 0
+        # else:
+        #     pdop_cost = np.abs(pdop_cost)
+        #     # print(pdop_cost)
+
+        print(np.sqrt(euc_dist**2 + elev_diff**2))
+        print("elevation diff")
+        print(self.elev_weight*(elev_diff))
+
+        return np.sqrt(euc_dist**2 + elev_diff**2) +  self.elev_weight*(elev_diff)
+    
+    def distance_traveled(self, x1, x2):
         """
         Computes the Euclidean distance between two states.
         Inputs:
@@ -61,28 +94,17 @@ class AStarPlanner(object):
         Output:
             Float Euclidean distance
         """
-
-        # print(f"x1: {x1}, x2: {x2}")
-
         # scale it according to resolution
-        euc_dist = self.resolution*(np.linalg.norm(np.array(x2) - np.array(x1)))
+        euc_dist = np.linalg.norm(np.array(x2) - np.array(x1))
+        x1_idx = [int(x1[0]/self.resolution), int(x1[1]/self.resolution)]
+        x2_idx = [int(x2[0]/self.resolution), int(x2[1]/self.resolution)]
         #take into account elevation of the grid
-        elev1 = self.grid[x1[0], x1[1], 0, 0]
-        elev2 = self.grid[x2[0], x2[1], 0, 0]
-        # print('current cell')
-        # print(elev1)
-        # print('neigh cell')
-        # print(elev2)
-
+        elev1 = self.grid[x1_idx[0], x1_idx[1], 0, 0]
+        elev2 = self.grid[x2_idx[0], x2_idx[1], 0, 0]
         elev_diff = self.elev_weight*np.abs(elev2 - elev1)
-        # print(elev_diff)
 
-        # print(f"euc_dist: {euc_dist}, elev_diff: {elev_diff}")
 
-        # return elev_diff
-        # print(elev_diff)
-        return elev_diff
-        # return np.sqrt(euc_dist**2 + elev_diff**2)
+        return np.sqrt(euc_dist**2 + elev_diff**2)
 
     def h_cost(self, x1, x2):
         # scale it according to resolution
@@ -153,15 +175,17 @@ class AStarPlanner(object):
 
         fig, ax = self.grid_env.plot_grid_elev()
 
-        solution_path = np.asarray(self.path)
+        solution_path = np.asarray(self.path)/self.resolution
+        xi_plot = [self.x_init[1]/self.resolution, self.x_goal[1]/self.resolution]
+        yi_plot = [self.x_init[0]/self.resolution, self.x_goal[0]/self.resolution]
 
         plt.plot(solution_path[:,1],solution_path[:,0], color="red", linewidth=2, label="A* path", zorder=10)
-        plt.scatter([self.x_init[1], self.x_goal[1]], [self.x_init[0], self.x_goal[0]], color="red", s=30, zorder=10)
+        plt.scatter(xi_plot, yi_plot, color="red", s=30, zorder=10)
 
         if show_init_label:
-            plt.annotate(r"$x_{init}$", np.array([self.x_init[1], self.x_init[0]]) + np.array([-2, -2]), fontsize=16)
+            plt.annotate(r"$x_{init}$", np.array([self.x_init[1], self.x_init[0]])/self.resolution + np.array([-2, -2]), fontsize=16)
             
-        plt.annotate(r"$x_{goal}$", np.array([self.x_goal[1], self.x_goal[0]]) + np.array([1, 1]), fontsize=16)
+        plt.annotate(r"$x_{goal}$", np.array([self.x_goal[1], self.x_goal[0]])/self.resolution + np.array([1, 1]), fontsize=16)
         plt.legend()
         # plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, ncol=3)
 
@@ -177,13 +201,13 @@ class AStarPlanner(object):
                 obs[1][1]-obs[0][1], color = "tab:gray"))
         return fig, ax
 
-    # def plot_tree(self, point_size=15):
-    #     plot_line_segments([(x, self.came_from[x]) for x in self.open_set if x != self.x_init], linewidth=1, color="blue", alpha=0.2)
-    #     plot_line_segments([(x, self.came_from[x]) for x in self.closed_set if x != self.x_init], linewidth=1, color="blue", alpha=0.2)
-    #     px = [x[0] for x in self.open_set | self.closed_set if x != self.x_init and x != self.x_goal]
-    #     py = [x[1] for x in self.open_set | self.closed_set if x != self.x_init and x != self.x_goal]
-    #     plt.scatter(px, py, color="blue", s=point_size, zorder=10, alpha=0.2)
-
+    def get_travel_time(self, x1, x2):
+        # get the distance between the two states
+        dist = self.distance_traveled(x1, x2)
+        # get the time it takes to travel that distance
+        time = dist/self.rover_speed*3600
+        return time
+    
     def solve(self):
         """
         Solves the planning problem using the A* search algorithm. It places
@@ -210,6 +234,8 @@ class AStarPlanner(object):
         ## add to cost thru ( the estimated cost to get to the goal, cost-to-go )
         # self.est_cost_through[self.x_init] = self.distance(self.x_init, self.x_goal)
 
+        self.travel_time[self.x_init] = 0
+
         while len(self.open_set) > 0:
             # get the current state by choosing the one with the minimum f score in the open set
             min_val = min( [ self.est_cost_through[k] for k in self.open_set ] )
@@ -225,7 +251,26 @@ class AStarPlanner(object):
             self.open_set.remove(x_current)
             self.closed_set.add(x_current)
 
+            current_time = self.travel_time[x_current]
+            # print(current_time)
+            # self.t += self.travel_time[x_current]
+            # print(self.t/3600)
+            # if x_current != self.x_init:
+            #     print(f"Current state: {x_current}")
+            #     print(f"Previous state: {self.came_from[x_current]}")            # print(f"x2: {x2}")
+            #     print(f"Distance traveled: {self.distance_traveled(x_current, self.came_from[x_current])}")
+
+            # search tree
             for x_neigh in self.get_neighbors(x_current):
+
+                # ### NEW --> get how long it takes to get to the neighbor based on rover speed
+                # time_to_get_there = (self.distance_traveled(x_current, x_neigh) / self.rover_speed)*3600  #seconds
+                # t_idx = (np.abs(self.tspan - (self.t+time_to_get_there))).argmin()
+                
+                time_to_get_there = self.get_travel_time(x_current, x_neigh)
+                t_idx = (np.abs(self.tspan - (current_time+time_to_get_there))).argmin()
+                # print(t_idx)
+
                 # if the neighbor has already been considered as part of the frontier queue, skip it
                 # we don't need to check it again, we know what the minimum cost path to get to it is
                 if x_neigh in self.closed_set:
@@ -233,7 +278,7 @@ class AStarPlanner(object):
                 
                 # set the tentative cost to arrive --> 
                 # C_tilde(q') = C(q) [cost to come] + C(q,q') [immediate cost to come]
-                tent_cost_to_arrive = self.cost_to_arrive[x_current] + self.cost_to_go(x_current, x_neigh)
+                tent_cost_to_arrive = self.cost_to_arrive[x_current] + self.cost_to_go(x_current, x_neigh, t_idx)
 
                 # if the neighbor state is not already in the queue, add it
                 if x_neigh not in self.open_set:
@@ -244,12 +289,15 @@ class AStarPlanner(object):
                     continue
                 # keep track of the parent of this node
                 self.came_from[x_neigh] = x_current
+                self.travel_time[x_neigh] = time_to_get_there + current_time
                 # in this case, the neighbor was not in the queue and we are getting to it for the first time
                 # set the cost to come to the tentative cost C(q') = C_tilde(q') -- (g score)
                 self.cost_to_arrive[x_neigh] = tent_cost_to_arrive
                 # set the est cost from start to finish to C(q') + h(q') -- (f score)
                 # for now, h(q') = distance(q', goal)
                 self.est_cost_through[x_neigh] = tent_cost_to_arrive + self.h_cost(x_neigh, self.x_goal)
+
+
             
         return False
         # raise NotImplementedError("solve not implemented")
@@ -270,6 +318,8 @@ class AStarPlanner(object):
         # Note to self: yes, this is where you check for collisions AND being outside bounds
         # since there are no obstacles, we just need to check if the point is within the bounds
 
+        x_idx = [int(x[0]/self.resolution), int(x[1]/self.resolution)]
+
         # get_occup = self.occupancy              # get the corresponding DetOccupancyGrid2D
         if self.obstacles is None:
             obstacle_check = True
@@ -278,7 +328,7 @@ class AStarPlanner(object):
 
         # check within bounds
         bound_check = True
-        if x[0] < self.statespace_lo[0] or x[0] >= self.statespace_hi[0] or x[1] < self.statespace_lo[1] or x[1] >= self.statespace_hi[1]:
+        if x_idx[0] < self.statespace_lo[0] or x_idx[0] >= self.statespace_hi[0] or x_idx[1] < self.statespace_lo[1] or x_idx[1] >= self.statespace_hi[1]:
             bound_check = False
 
         if bound_check and obstacle_check:

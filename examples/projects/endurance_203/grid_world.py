@@ -277,3 +277,18 @@ def latlong_to_MoonPA(lat, long, cell_elevation):
     # 3x1 position vector
     user_mcmf_loc = np.array([user_mcmf_pos_x, user_mcmf_pos_y, user_mcmf_pos_z])
     return user_mcmf_loc
+
+def get_PDOP(satpos, x_est):
+    # PDOP should be in Moon PA
+    # A function that computes the PDOP of a given set of satellites at a single time instance
+    # Input satellite position and the rover position estimate
+    # Outputs PDOP
+    n_meas = satpos.shape[0]
+    los = np.tile(x_est, (n_meas, 1)) - satpos # Nx3
+    range = np.linalg.norm(los, axis=1) # 1xN
+    # Matrix of normalized line of sight vectors
+    H = los / np.tile(range, (3, 1)).T # Nx3
+    Q = np.linalg.inv(H.T @ H)
+    variance = Q.diagonal()
+    PDOP = np.sqrt(np.sum(variance))
+    return PDOP
