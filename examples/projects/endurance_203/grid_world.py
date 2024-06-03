@@ -21,6 +21,7 @@ class GridWorld:
         self.grid = self.create_grid(mu_noise, sigma_noise)                  # grid
 
     def create_grid(self, mu_noise, sigma_noise):
+        np.random.seed(4)
         grid = np.zeros((self.N, self.N, self.lent, self.params))
         # TODO: add noise to the elevation of the grid
         elevation_noise = np.random.normal(mu_noise, sigma_noise, size=(self.N,self.N))
