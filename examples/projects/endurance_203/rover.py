@@ -95,20 +95,29 @@ class EKF:
     def predict(self, rover, state, control):
         # predict the next state estimate
         A, B = rover.ss_model_dynamics(state, control)
-        x_hat = rover.propagate_dynamics(state, control)
-        P = A @ self.P @ A.T + self.Q
-        return x_hat, P
+        self.x_hat = rover.propagate_dynamics(state, control)
+        self.P = A @ self.P @ A.T + self.Q
+        # return x_hat, P
     
-    def update(self, rover, state, measurement):
+    def update(self, rover, state, satpos, measurement):
         # update the state estimate
         #TODO: fix this to match the satellites
         # rover = Rover()
-        H = np.eye(3)
+
+        # expecting measurement to be a Nx1 vector (N = number of satellites)
+        # "measurement" is the pseudorange
+        # "satpos" is the satellite position in MoonPA
+        n_meas = satpos.shape[0]
+        los = np.tile(self.x_hat, (n_meas, 1)) - satpos # Nx3
+        geom_range = np.linalg.norm(los, axis=1) # 1xN
+        e = los / np.tile(geom_range, (3, 1)).T # Nx3
+        # compute the measurement matrix
+        H = np.copy(e)
+        # Kalman gain
         K = self.P @ H.T @ np.linalg.inv(H @ self.P @ H.T + self.R)
-        x_hat = self.x_hat + K @ (measurement - state)
-        P = (np.eye(3) - K @ H) @ self.P
-        return x_hat, P
-    
+        self.x_hat = self.x_hat + K @ (measurement - state)
+        self.P = (np.eye(3) - K @ H) @ self.P
+
 
 
 
@@ -130,6 +139,22 @@ class MPC:
         ru: float,
     ) -> tuple[np.ndarray, np.ndarray, str]:
         """Solve the MPC problem starting at state `x0`."""
+
+
+        # A --> state transition matrix
+        # B --> control matrix
+        # P --> terminal cost matrix
+        # Q --> state cost matrix
+        # R --> control cost matrix
+        # W --> terminal constraint matrix
+        # N --> horizon
+        # rx --> state constraint
+        # ru --> control constraint
+
+        A, B = self.rover.ss_model_dynamics(state, control)
+
+
+
         n, m = Q.shape[0], R.shape[0]
         x_cvx = cvx.Variable((N + 1, n))
         u_cvx = cvx.Variable((N, m))
@@ -168,3 +193,15 @@ class MPC:
 #     # A function that propagates the rover dynamics (discretized in time)
 #     # Note, this might not be needed until after the midterm report
 #     raise NotImplementedError
+
+
+# class LQR:
+#     def __init__(self, rover) -> None:
+#         self.rover = rover
+    
+#     def lqr(self, A, B, Q, R):
+#         """Solve the continuous time LQR problem."""
+#         # solve the continuous time LQR problem
+#         P = sc.linalg.solve_continuous_are(A, B, Q, R)
+#         K = np.linalg.inv(R) @ B.T @ P
+#         return K
