@@ -41,12 +41,12 @@ class Rover_Agent:
         v, omega = control
 
         # define the state space model
-        A = self.dt * jnp.array([[1, 0, -v * jnp.sin(theta)],
-                        [0, 1, v * jnp.cos(theta)],
+        A = self.dt * np.array([[1, 0, -v * np.sin(theta)],
+                        [0, 1, v * np.cos(theta)],
                         [0, 0, 1]])
         
-        B = self.dt * jnp.array([[jnp.cos(theta), 0],
-                        [jnp.sin(theta), 0],
+        B = self.dt * np.array([[np.cos(theta), 0],
+                        [np.sin(theta), 0],
                         [0, 1]]) 
         
         # return the state space model

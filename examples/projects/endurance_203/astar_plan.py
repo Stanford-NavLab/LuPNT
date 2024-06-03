@@ -379,4 +379,9 @@ class AStarPlanner(object):
         waypoints = solution_path[::len(solution_path)//(num_points-2)]
         waypoints = np.vstack([waypoints, solution_path[-1]])
         # print(path_plan_red.shape)
+        # add the desired heading to the waypoints
+        headings = np.zeros((waypoints.shape[0], 1))
+        # stack the headings
+        waypoints = np.hstack([waypoints, headings])
+
         return waypoints
