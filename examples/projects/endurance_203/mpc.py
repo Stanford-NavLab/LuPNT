@@ -16,8 +16,6 @@ def dynamics(s, u, dt = 0.1):
     y_next = y + (dt * v * np.sin(theta))
     theta_next = theta + (dt * omega)
     s_next = np.array([x_next, y_next, theta_next])
-    # A, B = affinize(s, u)
-    # s_next = A @ s + B @ u
     return s_next
 
 def affinize(s, u, dt = 0.1):
@@ -26,17 +24,13 @@ def affinize(s, u, dt = 0.1):
     A = np.array([[1, 0, -dt * v * np.sin(theta)],
                         [0, 1, dt * v * np.cos(theta)],
                         [0, 0, 1]])
-    # A = np.eye(3)
     B = dt * np.array([[np.cos(theta), 0],
                         [np.sin(theta), 0],
                         [0, 1]]) 
-    # B = dt * np.array([[0, 0],
-    #                     [0, 0],
-    #                     [0, 1]]) 
     c = dynamics(s, u) - A @ s - B @ u
     return A, B, c
 
-def scp_iteration(f, s0, s_goal, s_prev, u_prev, P, Q, R):
+def scp_iteration(f, s0, s_goal, s_prev, u_prev, P, Q, R, dt = 0.1):
     n = s_prev.shape[-1]  # state dimension
     m = u_prev.shape[-1]  # control dimension
     N = u_prev.shape[0]  # number of steps
@@ -50,7 +44,7 @@ def scp_iteration(f, s0, s_goal, s_prev, u_prev, P, Q, R):
     # print(f' Previous traj: {s_prev}')
     
     for k in range(N):
-        A_k, B_k, c_k = affinize(s_prev[k], u_prev[k])
+        A_k, B_k, c_k = affinize(s_prev[k], u_prev[k], dt)
         A[k,:,:] = A_k
         B[k,:,:] = B_k
         c[k,:] = c_k
@@ -95,6 +89,7 @@ def solve_mpc(
     R,
     eps,
     max_iters,
+    dt=0.1,
     s_init=None,
     u_init=None,
     convergence_error=False,
@@ -126,97 +121,94 @@ def solve_mpc(
     J = np.zeros(max_iters + 1)
     J[0] = np.inf
     for i in range(max_iters):
-        s, u, J[i + 1] = scp_iteration(f, s0, s_goal, s, u, P, Q, R)
+        s, u, J[i + 1] = scp_iteration(f, s0, s_goal, s, u, P, Q, R, dt)
         dJ = np.abs(J[i + 1] - J[i])
         if dJ < eps:
             converged = True
-            print(f'Converged! # of iterations: {i}')
+            # print(f'Converged in {i} iterations!')
             break
     if not converged and convergence_error:
         raise RuntimeError("SCP did not converge!")
     return s, u
 
-n = 3 # state dimension
-m = 2 # control dimension
-N = 5 # MPC horizon length
-# P = 1e2 * np.eye(n)  # terminal state cost matrix
-# Q = np.eye(n)
-P = np.diag([10, 10, 1]) * 1e2
-Q = np.diag([1, 1, 1])
-R = 1e-2 * np.eye(m)  # control cost matrix
-s0 = np.array([2.0, 3.0, -np.pi/2]) # initial state (should be previous waypoint)
-s_goal = np.array([7.0, 5.0, -np.pi/4]) # desired final state (should be next waypoint)
+def run_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt):
+    n = 3 # state dimension
+    m = 2 # control dimension
+    eps = 1e-3 # SCP convergence tolerance
 
-T = 30 # total simulation time
-eps = 1e-3 # SCP convergence tolerance
-N_scp = 10 # maximum number of SCP iterations
+    # N = 5 # MPC horizon length
+    # # P = 1e2 * np.eye(n)  # terminal state cost matrix
+    # # Q = np.eye(n)
+    # P = np.diag([10, 10, 1])*1e2
+    # Q = np.diag([1, 1, 1])
+    # R = 1e-2 * np.eye(m)  # control cost matrix
+    # s0 = np.array([2.0, 3.0, -np.pi/2]) # initial state (should be previous waypoint)
+    # s_goal = np.array([7.0, 5.0, -np.pi/4]) # desired final state (should be next waypoint)
+    # T = 30 # total simulation time
+    # N_scp = 10 # maximum number of SCP iterations
+    # dt = 0.1 # time step
 
-f = dynamics
-s_mpc = np.zeros((T, N + 1, n))
-u_mpc = np.zeros((T, N, m))
-s = np.copy(s0)
-total_time = time()
-total_control_cost = 0.0
-s_init = None
-u_init = None
+    f = dynamics
+    s_mpc = np.zeros((T, N + 1, n))
+    u_mpc = np.zeros((T, N, m))
+    s = np.copy(s0)
+    total_time = time()
+    total_control_cost = 0.0
+    s_init = None
+    u_init = None
 
-for t in tqdm(range(T)):
-    s_mpc[t], u_mpc[t] = solve_mpc(f, s, s_goal, N, P, Q, R, eps, N_scp, s_init, u_init)
-    s = f(s, u_mpc[t, 0])
-    print(f'Applied u = {u_mpc[t, 0]}')
-    
-    # s = f(s, np.array([0.5, 0.2]))
-    
-    total_control_cost += u_mpc[t, 0].T @ R @ u_mpc[t, 0]
+    for t in tqdm(range(T)):
+        s_mpc[t], u_mpc[t] = solve_mpc(f, s, s_goal, N, P, Q, R, eps, N_scp, dt, s_init, u_init)
+        s = f(s, u_mpc[t, 0])
+        # print(f'Applied u = {u_mpc[t, 0]}')
+        
+        total_control_cost += u_mpc[t, 0].T @ R @ u_mpc[t, 0]
 
-    # Use this solution to warm-start the next iteration
-    u_init = np.concatenate([u_mpc[t, 1:], u_mpc[t, -1:]])
-    s_init = np.concatenate(
-        [s_mpc[t, 1:], f(s_mpc[t, -1], u_mpc[t, -1]).reshape([1, -1])]
-    )
-total_time = time() - total_time
-print("Total elapsed time:", total_time, "seconds")
-print("Total control cost:", total_control_cost)
-print(s_mpc[:, 0, 1])
+        # Use this solution to warm-start the next iteration
+        u_init = np.concatenate([u_mpc[t, 1:], u_mpc[t, -1:]])
+        s_init = np.concatenate(
+            [s_mpc[t, 1:], f(s_mpc[t, -1], u_mpc[t, -1]).reshape([1, -1])]
+        )
+    total_time = time() - total_time
+    print("Total elapsed time:", total_time, "seconds")
+    print("Total control cost:", total_control_cost)
+    # print(s_mpc[:, 0, 1])
+    return s_mpc, u_mpc
 
+def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp):
+    fig, ax = plt.subplots(2, 2, dpi=150, figsize=(15, 10))
+    fig.suptitle("$N = {}$, ".format(N) + r"$N_\mathrm{SCP} = " + "{}$".format(N_scp))
 
-fig, ax = plt.subplots(2, 2, dpi=150, figsize=(15, 10))
-fig.suptitle("$N = {}$, ".format(N) + r"$N_\mathrm{SCP} = " + "{}$".format(N_scp))
+    for t in range(T):
+        ax[0, 0].plot(s_mpc[t, :, 0], s_mpc[t, :, 1], "--*", color="k")
+    ax[0, 0].plot(s_mpc[:, 0, 0], s_mpc[:, 0, 1], "-o")
+    ax[0, 0].set_xlabel(r"$x(t)$")
+    ax[0, 0].set_ylabel(r"$y(t)$")
+    ax[0, 0].axis("equal")
+    ax[0, 0].scatter(s0[0], s0[1],color='r',zorder=3)
+    ax[0, 0].scatter(s_goal[0], s_goal[1],color='r',zorder=3)
 
-for t in range(T):
-    ax[0, 0].plot(s_mpc[t, :, 0], s_mpc[t, :, 1], "--*", color="k")
-ax[0, 0].plot(s_mpc[:, 0, 0], s_mpc[:, 0, 1], "-o")
-ax[0, 0].set_xlabel(r"$x(t)$")
-ax[0, 0].set_ylabel(r"$y(t)$")
-ax[0, 0].axis("equal")
-s0_1 = np.array([2.0, 3.0, -np.pi/4])
-ax[0, 0].scatter(s0_1[0], s0_1[1],color='r',zorder=3)
-ax[0, 0].scatter(s_goal[0], s_goal[1],color='r',zorder=3)
+    ax[0, 1].plot(s_mpc[:, 0, 2]*180/np.pi, "-o", label=r"$\theta(t)$")
+    ax[0, 1].set_xlabel(r"$t$")
+    ax[0, 1].set_ylabel(r"$\theta(t)$")
+    ax[0, 1].legend()
+    ax[0, 1].axhline(s_goal[2]*180/np.pi)
 
-ax[0, 1].plot(s_mpc[:, 0, 2]*180/np.pi, "-o", label=r"$\theta(t)$")
-ax[0, 1].set_xlabel(r"$t$")
-ax[0, 1].set_ylabel(r"$\theta(t)$")
-ax[0, 1].legend()
-ax[0, 1].axhline(s_goal[2]*180/np.pi)
-# ax[3].set_ylim([-3.1, 3.1])
+    ax[1, 0].plot(u_mpc[:, 0, 0], "-o", label=r"$u_1(t)$")
+    ax[1, 0].set_xlabel(r"$t$")
+    ax[1, 0].set_ylabel(r"$v(t)$")
+    ax[1, 0].legend()
+    ax[1, 0].set_ylim([-0.1, 5.1])
 
-ax[1, 0].plot(u_mpc[:, 0, 0], "-o", label=r"$u_1(t)$")
-ax[1, 0].set_xlabel(r"$t$")
-ax[1, 0].set_ylabel(r"$v(t)$")
-ax[1, 0].legend()
-ax[1, 0].set_ylim([-0.1, 5.1])
+    ax[1, 1].plot(u_mpc[:, 0, 1]*180/np.pi, "-o", label=r"$u_2(t)$")
+    ax[1, 1].set_xlabel(r"$t$")
+    ax[1, 1].set_ylabel(r"$\omega(t)$")
+    ax[1, 1].legend()
+    ax[1, 1].set_ylim(np.array([-3.1, 3.1])*180/np.pi)
 
-ax[1, 1].plot(u_mpc[:, 0, 1]*180/np.pi, "-o", label=r"$u_2(t)$")
-ax[1, 1].set_xlabel(r"$t$")
-ax[1, 1].set_ylabel(r"$\omega(t)$")
-ax[1, 1].legend()
-ax[1, 1].set_ylim(np.array([-3.1, 3.1])*180/np.pi)
+    suffix = "_N={}_Nscp={}".format(N, N_scp)
+    plt.tight_layout()
+    # plt.savefig("soln_obstacle_avoidance" + suffix + ".png", bbox_inches="tight")
+    plt.savefig("mpc_plot.png", bbox_inches="tight")
 
-
-
-suffix = "_N={}_Nscp={}".format(N, N_scp)
-plt.tight_layout()
-# plt.savefig("soln_obstacle_avoidance" + suffix + ".png", bbox_inches="tight")
-plt.savefig("mpc_plot.png", bbox_inches="tight")
-
-# plt.show()
+    # plt.show()
