@@ -1,0 +1,179 @@
+import os
+import jax
+import jax.numpy as jnp
+import numpy as np
+import matplotlib.pyplot as plt
+import pylupnt as pnt
+import scipy as sc
+import cvxpy as cvx
+from time import time
+from tqdm.auto import tqdm
+
+def dynamics(s, u, dt = 0.1):
+    x, y, theta = s
+    v, omega = u
+    x_next = x + dt * v * np.cos(theta)
+    y_next = y + dt * v * np.sin(theta)
+    theta_next = theta + dt * omega
+    s_next = np.array([x_next, y_next, theta_next])
+    return s_next
+
+def affinize(s, u, dt = 0.1):
+    x, y, theta = s
+    v, omega = u
+    A = dt * np.array([[1, 0, -v * np.sin(theta)],
+                        [0, 1, v * np.cos(theta)],
+                        [0, 0, 1]])
+    B = dt * np.array([[np.cos(theta), 0],
+                        [np.sin(theta), 0],
+                        [0, 1]]) 
+    return A, B
+
+def scp_iteration(f, s0, s_goal, s_prev, u_prev, P, Q, R):
+    n = s_prev.shape[-1]  # state dimension
+    m = u_prev.shape[-1]  # control dimension
+    N = u_prev.shape[0]  # number of steps
+    v_bound = 0.1 # km/hr (upper bound on rover velocity)
+    omega_bound = 1 # rad/hr ?
+    
+    A = np.zeros((N, n, n))
+    B = np.zeros((N, n, m))
+    
+    for k in range(N):
+        A_k, B_k = affinize(s_prev[k], u_prev[k])
+        A[k,:,:] = A_k
+        B[k,:,:] = B_k
+    
+    s_cvx = cvx.Variable((N + 1, n))
+    u_cvx = cvx.Variable((N, m))
+    
+    objective = 0.0
+    constraints = []
+    for k in range(N):
+        objective += cvx.quad_form((s_cvx[k] - s_goal), Q) + cvx.quad_form(u_cvx[k], R) # sum the cost
+        constraints.append(s_cvx[k+1] == A[k] @ s_cvx[k] + B[k] @ u_cvx[k]) # dynamics constraint
+        constraints.append(cvx.abs(u_cvx[k, 0]) <= v_bound)
+        constraints.append(cvx.abs(u_cvx[k, 1]) <= omega_bound)
+    objective += cvx.quad_form((s_cvx[N] - s_goal), P) # sum the terminal cost
+    constraints.append(s_cvx[0] == s0) # add initial constraint
+    
+    prob = cvx.Problem(cvx.Minimize(objective), constraints)
+    prob.solve()
+    if prob.status != "optimal":
+        raise RuntimeError("SCP solve failed. Problem status: " + prob.status)
+    s = s_cvx.value
+    u = u_cvx.value
+    J = prob.objective.value
+    return s, u, J
+
+def solve_mpc(
+    f,
+    s0,
+    s_goal,
+    N,
+    P,
+    Q,
+    R,
+    eps,
+    max_iters,
+    s_init=None,
+    u_init=None,
+    convergence_error=False,
+):
+    """Solve the obstacle avoidance problem via SCP."""
+    n = Q.shape[0]  # state dimension
+    m = R.shape[0]  # control dimension
+
+    # Initialize trajectory
+    if s_init is None or u_init is None:
+        s = np.zeros((N + 1, n))
+        u = np.zeros((N, m))
+        s[0] = s0
+        for k in range(N):
+            s[k + 1] = f(s[k], u[k])
+    else:
+        s = np.copy(s_init)
+        u = np.copy(u_init)
+
+    # Do SCP until convergence or maximum number of iterations is reached
+    converged = False
+    J = np.zeros(max_iters + 1)
+    J[0] = np.inf
+    for i in range(max_iters):
+        s, u, J[i + 1] = scp_iteration(f, s0, s_goal, s, u, P, Q, R)
+        dJ = np.abs(J[i + 1] - J[i])
+        if dJ < eps:
+            converged = True
+            print(f'Converged! # of iterations: {i}')
+            break
+    if not converged and convergence_error:
+        raise RuntimeError("SCP did not converge!")
+    return s, u
+
+n = 3 # state dimension
+m = 2 # control dimension
+N = 5 # MPC horizon length
+P = 1e2 * np.eye(n)  # terminal state cost matrix
+Q = np.eye(n)
+# P = np.diag([10, 10, 1e-1]) * 10
+# Q = np.diag([10, 10, 1e-1])
+R = 1e-4 * np.eye(m)  # control cost matrix
+s0 = np.array([0.0, 0.0, -np.pi/4]) # initial state (should be previous waypoint)
+s_goal = np.array([1.0, 1.0, np.pi/2]) # desired final state (should be next waypoint)
+
+T = 100 # total simulation time
+eps = 1e-3 # SCP convergence tolerance
+N_scp = 3 # maximum number of SCP iterations
+
+f = dynamics
+s_mpc = np.zeros((T, N + 1, n))
+u_mpc = np.zeros((T, N, m))
+s = np.copy(s0)
+total_time = time()
+total_control_cost = 0.0
+s_init = None
+u_init = None
+
+for t in tqdm(range(T)):
+    s_mpc[t], u_mpc[t] = solve_mpc(f, s, s_goal, N, P, Q, R, eps, N_scp, s_init, u_init)
+    s = f(s, u_mpc[t, 0])
+    
+    # s = f(s, np.array([0.5, 0.2]))
+    
+    total_control_cost += u_mpc[t, 0].T @ R @ u_mpc[t, 0]
+
+    # Use this solution to warm-start the next iteration
+    u_init = np.concatenate([u_mpc[t, 1:], u_mpc[t, -1:]])
+    s_init = np.concatenate(
+        [s_mpc[t, 1:], f(s_mpc[t, -1], u_mpc[t, -1]).reshape([1, -1])]
+    )
+total_time = time() - total_time
+print("Total elapsed time:", total_time, "seconds")
+print("Total control cost:", total_control_cost)
+print(s_mpc[:, 0, 1])
+
+
+fig, ax = plt.subplots(1, 3, dpi=150, figsize=(15, 5))
+fig.suptitle("$N = {}$, ".format(N) + r"$N_\mathrm{SCP} = " + "{}$".format(N_scp))
+
+for t in range(T):
+    ax[0].plot(s_mpc[t, :, 0], s_mpc[t, :, 1], "--*", color="k")
+ax[0].plot(s_mpc[:, 0, 0], s_mpc[:, 0, 1], "-o")
+ax[0].set_xlabel(r"$x(t)$")
+ax[0].set_ylabel(r"$y(t)$")
+ax[0].axis("equal")
+
+ax[1].plot(u_mpc[:, 0, 0], "-o", label=r"$u_1(t)$")
+ax[2].plot(u_mpc[:, 0, 1], "-o", label=r"$u_2(t)$")
+ax[1].set_xlabel(r"$t$")
+ax[1].set_ylabel(r"$v(t)$")
+ax[1].legend()
+
+ax[2].set_xlabel(r"$t$")
+ax[2].set_ylabel(r"$\omega(t)$")
+ax[2].legend()
+
+suffix = "_N={}_Nscp={}".format(N, N_scp)
+plt.tight_layout()
+plt.savefig("soln_obstacle_avoidance" + suffix + ".png", bbox_inches="tight")
+plt.show()
