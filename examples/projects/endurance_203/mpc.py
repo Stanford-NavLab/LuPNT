@@ -9,7 +9,7 @@ import cvxpy as cvx
 from time import time
 from tqdm.auto import tqdm
 
-def dynamics(s, u, dt = 0.01):
+def dynamics(s, u, dt = 0.1):
     x, y, theta = s
     v, omega = u
     x_next = x + (dt * v * np.cos(theta))
@@ -20,7 +20,7 @@ def dynamics(s, u, dt = 0.01):
     # s_next = A @ s + B @ u
     return s_next
 
-def affinize(s, u, dt = 0.01):
+def affinize(s, u, dt = 0.1):
     x, y, theta = s
     v, omega = u
     A = np.array([[1, 0, -dt * v * np.sin(theta)],
@@ -33,24 +33,27 @@ def affinize(s, u, dt = 0.01):
     # B = dt * np.array([[0, 0],
     #                     [0, 0],
     #                     [0, 1]]) 
-    return A, B
+    c = dynamics(s, u) - A @ s - B @ u
+    return A, B, c
 
 def scp_iteration(f, s0, s_goal, s_prev, u_prev, P, Q, R):
     n = s_prev.shape[-1]  # state dimension
     m = u_prev.shape[-1]  # control dimension
     N = u_prev.shape[0]  # number of steps
     v_bound = 5 # km/hr (upper bound on rover velocity)
-    omega_bound = 1.0 # rad/hr ?
+    omega_bound = 3.0 # rad/hr ?
     
     A = np.zeros((N, n, n))
     B = np.zeros((N, n, m))
+    c = np.zeros((N, n))
     
     # print(f' Previous traj: {s_prev}')
     
     for k in range(N):
-        A_k, B_k = affinize(s_prev[k], u_prev[k])
+        A_k, B_k, c_k = affinize(s_prev[k], u_prev[k])
         A[k,:,:] = A_k
         B[k,:,:] = B_k
+        c[k,:] = c_k
     
     s_cvx = cvx.Variable((N + 1, n))
     u_cvx = cvx.Variable((N, m))
@@ -59,7 +62,7 @@ def scp_iteration(f, s0, s_goal, s_prev, u_prev, P, Q, R):
     constraints = []
     for k in range(N):
         objective += cvx.quad_form((s_cvx[k] - s_goal), Q) + cvx.quad_form(u_cvx[k], R) # sum the cost
-        constraints.append(s_cvx[k+1] == A[k] @ s_cvx[k] + B[k] @ u_cvx[k]) # dynamics constraint
+        constraints.append(s_cvx[k+1] == A[k] @ s_cvx[k] + B[k] @ u_cvx[k] + c[k]) # dynamics constraint
         constraints.append(u_cvx[k, 0] <= v_bound)
         constraints.append(u_cvx[k, 0] >= 0.0)
         constraints.append(cvx.abs(u_cvx[k, 1]) <= omega_bound)
@@ -135,18 +138,18 @@ def solve_mpc(
 
 n = 3 # state dimension
 m = 2 # control dimension
-N = 3 # MPC horizon length
+N = 5 # MPC horizon length
 # P = 1e2 * np.eye(n)  # terminal state cost matrix
 # Q = np.eye(n)
-P = np.diag([10, 10, 10]) * 10
-Q = np.diag([10, 10, 10])
+P = np.diag([10, 10, 1]) * 1e2
+Q = np.diag([1, 1, 1])
 R = 1e-2 * np.eye(m)  # control cost matrix
-s0 = np.array([2.0, 3.0, np.pi/2]) # initial state (should be previous waypoint)
-s_goal = np.array([7.0, 5.0, -np.pi/2]) # desired final state (should be next waypoint)
+s0 = np.array([2.0, 3.0, -np.pi/2]) # initial state (should be previous waypoint)
+s_goal = np.array([7.0, 5.0, -np.pi/4]) # desired final state (should be next waypoint)
 
-T = 300 # total simulation time
+T = 30 # total simulation time
 eps = 1e-3 # SCP convergence tolerance
-N_scp = 30 # maximum number of SCP iterations
+N_scp = 10 # maximum number of SCP iterations
 
 f = dynamics
 s_mpc = np.zeros((T, N + 1, n))
@@ -194,6 +197,7 @@ ax[0, 1].plot(s_mpc[:, 0, 2]*180/np.pi, "-o", label=r"$\theta(t)$")
 ax[0, 1].set_xlabel(r"$t$")
 ax[0, 1].set_ylabel(r"$\theta(t)$")
 ax[0, 1].legend()
+ax[0, 1].axhline(s_goal[2]*180/np.pi)
 # ax[3].set_ylim([-3.1, 3.1])
 
 ax[1, 0].plot(u_mpc[:, 0, 0], "-o", label=r"$u_1(t)$")
