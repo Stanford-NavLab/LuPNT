@@ -37,8 +37,9 @@ class AStarPlanner(object):
         self.travel_time = {}      
 
         # for path planning
-        self.elev_weight = weights[0]
-        self.pdop_weight = weights[1]
+        self.dist_weight = weights[0]
+        self.elev_weight = weights[1]
+        self.pdop_weight = weights[2]
 
         self.open_set.add(self.x_init)
         self.cost_to_arrive[self.x_init] = 0
@@ -67,7 +68,7 @@ class AStarPlanner(object):
         #take into account elevation of the grid
         elev1 = self.grid[x1_idx[0], x1_idx[1], t, 0]
         elev2 = self.grid[x2_idx[0], x2_idx[1], t, 0]
-        # elev_diff = np.abs(elev2 - elev1)
+        elev_diff = np.abs(elev2 - elev1)
 
         state1 = np.array([x1[0], x1[1], elev1])
         state2 = np.array([x2[0], x2[1], elev2])
@@ -76,7 +77,7 @@ class AStarPlanner(object):
         # take into account the pdop of the grid
         pdop1 = self.grid[x1_idx[0], x1_idx[1], t, 2]
         pdop2 = self.grid[x2_idx[0], x2_idx[1], t, 2]
-        pdop_cost = (pdop2 - pdop1)*1e5
+        pdop_cost = (pdop2 - pdop1)*1e3
 
         # check for nan and ensure cost is never negative
         if np.isnan(pdop_cost):
@@ -92,12 +93,11 @@ class AStarPlanner(object):
             else:
                 pdop_cost = pdop_cost
 
-        # return np.sqrt(euc_dist**2 + elev_diff**2) 
-        # print('Distance')
-        # print(np.sqrt(euc_dist**2 + elev_diff**2))
-        # print('PDOP')
-        # print(pdop_cost)
-        return self.elev_weight*np.linalg.norm(state1-state2) + self.pdop_weight*pdop_cost
+        # print(f'Distance cost {self.dist_weight*np.linalg.norm(state1-state2)}')
+        # print(f'Elevation cost {self.elev_weight*(elev_diff)}')
+        # print(f'PDOP cost {self.pdop_weight*pdop_cost}')
+
+        return self.dist_weight*np.linalg.norm(state1-state2) + self.elev_weight*(elev_diff) + self.pdop_weight*pdop_cost
     
     def distance_traveled(self, x1, x2):
         """
