@@ -19,9 +19,22 @@ rng_obs_std_dev_m = 0.1 #1   # (in meters) standard deviation of passive ranging
 init_pos_std = 0.1 #100 #km
 init_vel_std = init_pos_std*1e-3
 
+# dynamics models
+truth_dynamics = pnt.KeplerianDynamics(pnt.MU_MOON)
+batchfilter_dynamics = pnt.CartesianTwoBodyDynamics(pnt.MU_MOON, integrator='RK4')
+# batchfilter_dynamics = pnt.NBodyDynamics()
+# batchfilter_dynamics.set_primary_body(pnt.Body.MOON)
+# batchfilter_dynamics.add_body(pnt.Body.EARTH)
+
+
+# 
+dt_meas = 60 # seconds
+num_sat_periods = 5
+
 # batch filter params
 tol_batch = 1e-4
 verbose_in_batch_filter = False
+max_batch = 10
 
 
 # Define satellite parameters (ELFO, Lunar Pathfinder)
@@ -47,7 +60,7 @@ tai_string = "2022/08/01 00:00:00"
 
 
 colors = plots.COLORS
-fig_vis = plots.Plot3D(elev=-25, azim=-50, figsize=(10, 10))
+fig_vis = plots.Plot3D(elev=-25, azim=-50, figsize=(8, 8))
 fig_vis.plot_surface(pnt.MOON)
 fig_vis.set_labels("x", "y", "z")
 plt.title("Satellite orbit (PA)")
@@ -128,14 +141,6 @@ print(" ")
 print("Classical orbital elements:")
 print(x_oe.vector)
 
-# 2. Keplarian dynamics
-keplarian_dynamics = pnt.KeplerianDynamics(pnt.MU_MOON)
-print(keplarian_dynamics)
-
-# Use Cartesian two-body dynamics to get STM
-cart2body_dynamics = pnt.CartesianTwoBodyDynamics(pnt.MU_MOON, integrator='RK4')
-print(cart2body_dynamics)
-
 # get orbital period from orbital elements
 n = np.sqrt(pnt.MU_MOON / a ** 3)
 T = 2*np.pi / n
@@ -157,9 +162,8 @@ print('Lunar station 6D state (Cartesian):', lss_pv_PA_km)
 print()
 
 # Propagate satellite orbit for certain amount of time and save state
-dt = 60 # seconds
-tot_duration = T
-t_arr = np.arange(0, tot_duration + dt, dt)
+tot_duration = num_sat_periods * T
+t_arr = np.arange(0, tot_duration + dt_meas, dt_meas)
 t_arr_tai = tai_time + t_arr 
 len_t_arr = len(t_arr)
 x_oe_arr = np.zeros((len(t_arr), 6))
@@ -167,7 +171,7 @@ sat_true_pv_MI_km_arr = np.zeros((len(t_arr), 6))
 sat_true_pv_PA_km_arr = np.zeros((len(t_arr), 6))
 lss_pv_MI_km_arr = np.zeros((len(t_arr), 6))
 for i, t in enumerate(t_arr):
-    keplarian_dynamics.propagate(x_oe, dt)
+    truth_dynamics.propagate(x_oe, dt_meas)
     # save propagated state
     x_oe_arr[i,:] = x_oe.vector
 
@@ -206,8 +210,6 @@ inv_Ri_km = np.linalg.inv(Ri_km)
 print('inverse Ri shape:', inv_Ri_km.shape)
 rng_obs_km_arr = rng_km_arr + np.random.normal(0, rng_obs_std_dev_m*1e-3, len(rng_km_arr))
 print('difference in noisy and true ranges (km):', np.max(rng_obs_km_arr - rng_km_arr))
-
-
 
 # Use matplotlib to plot the range and use latex for the labels
 plt.figure()
@@ -272,7 +274,7 @@ X0_star = init_sat_est_pv_MI_km.reshape([-1,1]) + state_dev
 
 not_converged_yet = True
 i_batch = 0
-while i_batch < 5 and not_converged_yet:
+while i_batch < max_batch and not_converged_yet:
 
     # create array of cartesian estimates
     # TODO: update filter so we don't save all of these?
@@ -295,7 +297,7 @@ while i_batch < 5 and not_converged_yet:
         # TODO: check that times are in TAI
         t_tai_im1 = t_arr_tai[im1]
         t_tai_i = t_arr_tai[i]
-        dt = (t_tai_i - t_tai_im1)/10.0
+        dt_integ = (t_tai_i - t_tai_im1)/10.0
 
         # Integrate reference trajectory and STM from t_(i-1) to t_i
         # TODO: check if in km for propagation?
@@ -305,7 +307,7 @@ while i_batch < 5 and not_converged_yet:
             print('i =', i)
             print('State at i-1:', sat_pv_im1)
             print()
-        sat_pv_i, Phi_im1toi = cart2body_dynamics.propagate_with_stm(sat_pv_im1.reshape([-1,1]), t_tai_im1, t_tai_i, dt)
+        sat_pv_i, Phi_im1toi = batchfilter_dynamics.propagate_with_stm(sat_pv_im1.reshape([-1,1]), t_tai_im1, t_tai_i, dt_integ)
         Phi_0toi = Phi_im1toi @ Phi_0toim1    # Get complete STM from 0 to i
         if verbose_in_batch_filter and i==1:
             print()
@@ -426,4 +428,68 @@ while i_batch < 5 and not_converged_yet:
         print('     State deviation:', state_dev)
 
     
+# Compare with true orbit
+# from the updated X0_star, propagate the orbit and compare with true orbit
+# create array of cartesian estimates
+sat_est_pv_MI_km_arr = np.zeros((len_t_arr, 6))
+sat_est_pv_MI_km_arr[0,:] = X0_star.reshape([-1])
+for i in range(1, len_t_arr):
+    # using two-body dynamics, get the STM to convert to the next time step
+    t_tai_im1 = t_arr_tai[i-1]
+    t_tai_i = t_arr_tai[i]
+    dt_integ = (t_tai_i - t_tai_im1)/10.0
+
+    # Integrate reference trajectory and STM from t_(i-1) to t_i
+    sat_pv_im1 = sat_est_pv_MI_km_arr[i-1,:]
+    sat_pv_i, Phi_im1toi = batchfilter_dynamics.propagate_with_stm(sat_pv_im1.reshape([-1,1]), t_tai_im1, t_tai_i, dt_integ)
+    sat_est_pv_MI_km_arr[i,:] = sat_pv_i # save propagated state
+
+# plot difference between true and propagated state for x, y, and z on a 3x1 subplot
+# fig, axs = plt.subplots(3) 
+# axs[0].plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,0] - sat_est_pv_MI_km_arr[:,0])
+# axs[1].plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,1] - sat_est_pv_MI_km_arr[:,1])
+# axs[2].plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,2] - sat_est_pv_MI_km_arr[:,2])
+# fig.show()
+
+fig, ax = plt.subplots(3,1)
+ax[0].set_title('Difference between true and filter''s estimated orbit (MI)')
+# .title('Difference between true and filter''s estimated orbit (MI)')
+ax[0].plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,0] - sat_est_pv_MI_km_arr[:,0])
+ax[0].set_ylabel('x [km]')
+ax[0].grid()
+ax[1].plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,1] - sat_est_pv_MI_km_arr[:,1])
+ax[1].set_ylabel('y [km]')
+ax[1].grid()
+ax[2].plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,2] - sat_est_pv_MI_km_arr[:,2])
+ax[2].set_ylabel('z [km]')
+ax[2].grid()
+ax[2].set_xlabel('Time [hrs]')
+plt.show()
+
+plt.figure()
+plt.title('Total orbital error')
+plt.plot(t_arr/3600.0, np.linalg.norm(sat_true_pv_MI_km_arr - sat_est_pv_MI_km_arr, axis=1))
+plt.grid()
+plt.xlabel('Time [hrs]')
+plt.ylabel('Error [km]')
+plt.show()
+
+# plt.figure()
+# plt.title('Difference between true and filter''s estimated orbit (MI)')
+# plt.subplot(3,1,1)
+# plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,0] - sat_est_pv_MI_km_arr[:,0])
+# plt.grid()
+# plt.ylabel('x [km]')
+# plt.subplot(3,1,2)
+# plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,1] - sat_est_pv_MI_km_arr[:,1])
+# plt.grid()
+# plt.ylabel('y [km]')
+# plt.subplot(3,1,3)
+# plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,2] - sat_est_pv_MI_km_arr[:,2])
+# plt.grid()
+# plt.ylabel('z [km]')
+# plt.xlabel('Time [hrs]')
+# plt.tight_layout()
+# plt.show()
+
 
