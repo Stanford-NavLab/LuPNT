@@ -183,9 +183,9 @@ def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt):
     fig.suptitle('State and Control Input Over Time')
 
     ms = 2
-    for t in range(T):
-        ax[0, 0].plot(s_mpc[t, :, 1], s_mpc[t, :, 0], "--*", color="k", markersize=ms, linewidth=0.5)
-    ax[0, 0].plot(s_mpc[:-1, 0, 1], s_mpc[:-1, 0, 0], "-o", markersize=ms, linewidth=0.5)
+    # for t in range(T):
+        # ax[0, 0].plot(s_mpc[t, :, 1], s_mpc[t, :, 0], "--*", color="k", markersize=ms, linewidth=0.5)
+    ax[0, 0].plot(s_mpc[:, 0, 1], s_mpc[:, 0, 0], "-o", markersize=ms, linewidth=0.5)
     ax[0, 0].set_xlabel(r"$y(t)$")
     ax[0, 0].set_ylabel(r"$x(t)$")
     ax[0, 0].axis("equal")
@@ -229,6 +229,6 @@ def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt):
     # suffix = "_N={}_Nscp={}".format(N, N_scp)
     plt.tight_layout()
     # plt.savefig("soln_obstacle_avoidance" + suffix + ".png", bbox_inches="tight")
-    plt.savefig("mpc_state_control_over_time.png", bbox_inches="tight",dpi=300)
+    plt.savefig("figures/mpc_state_control_over_time.png", bbox_inches="tight",dpi=300)
 
     # plt.show()

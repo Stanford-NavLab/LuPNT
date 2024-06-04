@@ -77,7 +77,7 @@ class AStarPlanner(object):
         # take into account the pdop of the grid
         pdop1 = self.grid[x1_idx[0], x1_idx[1], t, 2]
         pdop2 = self.grid[x2_idx[0], x2_idx[1], t, 2]
-        pdop_cost = (pdop2 - pdop1)*1e3
+        pdop_cost = (pdop2 - pdop1)*1e4
 
         # check for nan and ensure cost is never negative
         if np.isnan(pdop_cost):
@@ -86,12 +86,12 @@ class AStarPlanner(object):
         else:
             # pdop_cost = min([pdop1, pdop2])*10000
 
-            if pdop_cost <=0:
-                # if the cost is negative, we want to encourage the path to go through this point
-                # therefore, we add a small positive value to it (10% of its og value)
+            if pdop_cost >=0:
+                # if the cost is positive, neighbor has higher PDOP, we don't want that
                 pdop_cost = np.abs(pdop_cost)*10
             else:
-                pdop_cost = pdop_cost
+                # if the cost is negative, neighbor has lower PDOP, we want that
+                pdop_cost = np.abs(pdop_cost)
 
         # print(f'Distance cost {self.dist_weight*np.linalg.norm(state1-state2)}')
         # print(f'Elevation cost {self.elev_weight*(elev_diff)}')
@@ -109,16 +109,18 @@ class AStarPlanner(object):
             Float Euclidean distance
         """
         # scale it according to resolution
-        euc_dist = np.linalg.norm(np.array(x2) - np.array(x1))
+        # euc_dist = np.linalg.norm(np.array(x2) - np.array(x1))
         x1_idx = [int(x1[0]/self.resolution), int(x1[1]/self.resolution)]
         x2_idx = [int(x2[0]/self.resolution), int(x2[1]/self.resolution)]
         #take into account elevation of the grid
         elev1 = self.grid[x1_idx[0], x1_idx[1], 0, 0]
         elev2 = self.grid[x2_idx[0], x2_idx[1], 0, 0]
-        elev_diff = self.elev_weight*np.abs(elev2 - elev1)
+        # elev_diff = self.elev_weight*np.abs(elev2 - elev1)
+        state1 = np.array([x1[0], x1[1], elev1])
+        state2 = np.array([x2[0], x2[1], elev2])
 
-
-        return np.sqrt(euc_dist**2 + elev_diff**2)
+        return np.linalg.norm(state1-state2)
+        # return np.sqrt(euc_dist**2 + elev_diff**2)
 
     def h_cost(self, x1, x2):
         # scale it according to resolution
