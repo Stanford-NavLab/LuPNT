@@ -394,12 +394,16 @@ class AStarPlanner(object):
     def get_waypoints(self, num_points):
         """Returns the waypoints that define the path"""
         solution_path = np.asarray(self.path)
-        waypoints = solution_path[::len(solution_path)//(num_points-2)]
-        waypoints = np.vstack([waypoints, solution_path[-1]])
+        print(solution_path.shape)
+        index = np.linspace(0, solution_path.shape[0] - 1, num_points, dtype=int)
+        waypoints = solution_path[index, :]
+        # waypoints = solution_path[::len(solution_path)//(num_points-2)]
+        # print(waypoints)
+        # waypoints = np.vstack([waypoints, solution_path[-1]])
         # print(path_plan_red.shape)
         # add the desired heading to the waypoints
-        headings = np.zeros((waypoints.shape[0], 1))
+        # headings = np.zeros((waypoints.shape[0], 1))
         # stack the headings
-        waypoints = np.hstack([waypoints, headings])
+        # waypoints = np.hstack([waypoints, headings])
 
         return waypoints
