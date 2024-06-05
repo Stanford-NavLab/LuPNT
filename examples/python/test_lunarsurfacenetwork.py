@@ -10,7 +10,6 @@ from pylupnt import SpiceInterface as sp
 
 
 def degToRad(deg):
-    print(pnt.RAD_PER_DEG)
     return deg * pnt.RAD_PER_DEG
 
 
@@ -84,8 +83,7 @@ def get_range_elevation_and_visibility(pos_arr1, ref_pos_arr2, el_mask_deg=5):
     diff_vect = pos_arr1 - ref_pos_arr2
     # compute the range
     rng_arr = np.linalg.norm(diff_vect, axis=1)
-    print('diff vector shape', diff_vect.shape)
-    print('rng arr shape', rng_arr.shape)
+
     # # compute the unit vector
     # unit_vect = diff_vect / rng[:, np.newaxis]
 
@@ -200,16 +198,12 @@ plt.show()
 # 4. Compute the range and range rate from the satellite to the base station
 rng_km_arr, el_rad_arr, vis_arr = get_range_elevation_and_visibility(sat_true_pv_MI_km_arr[:, 0:3], lss_pv_MI_km_arr[:, 0:3])
 el_deg_arr = el_rad_arr / pnt.RAD_PER_DEG
-print('shape of range array:', rng_km_arr.shape)
-print('shape of time array:', t_arr.shape)
 
 
 # induce noise in the range measurements
 Ri_km = np.array([[(rng_obs_std_dev_m * 1e-3)**2]])
 inv_Ri_km = np.linalg.inv(Ri_km)
-print('inverse Ri shape:', inv_Ri_km.shape)
 rng_obs_km_arr = rng_km_arr + np.random.normal(0, rng_obs_std_dev_m*1e-3, len(rng_km_arr))
-print('difference in noisy and true ranges (km):', np.max(rng_obs_km_arr - rng_km_arr))
 
 # Use matplotlib to plot the range and use latex for the labels
 plt.figure()
@@ -272,17 +266,22 @@ init_sat_est_pv_MI_km = sat_true_pv_MI_km_arr[0,:] + init_noise
 state_dev = np.zeros((6,1))
 X0_star = init_sat_est_pv_MI_km.reshape([-1,1]) + state_dev
 
+# things to plot later
+norm_state_dev_change_pos_arr = []
+norm_state_dev_change_vel_arr = []
+init_sat_est_pv_MI_km_arr = np.zeros((len_t_arr, 6))
+ave_pos_err_arr = []
+ave_vel_err_arr = []
+
 not_converged_yet = True
 i_batch = 0
 while i_batch < max_batch and not_converged_yet:
 
     # create array of cartesian estimates
-    # TODO: update filter so we don't save all of these?
     sat_est_pv_MI_km_arr = np.zeros((len_t_arr, 6))
     sat_est_pv_MI_km_arr[0,:] = X0_star.reshape([-1])
 
     # key initializations for batch filter
-    # TODO: include this in the loop? or outside the loop?
     Lambda = np.linalg.inv(P0)
     Eta = np.linalg.inv(P0)@state_dev    # used with Gamma to solve for updated state deviation
     Phi_0toim1 = np.eye(6)               # state transition matrix
@@ -294,13 +293,12 @@ while i_batch < max_batch and not_converged_yet:
         i = im1 + 1
 
         # using two-body dynamics, get the STM to convert to the next time step
-        # TODO: check that times are in TAI
         t_tai_im1 = t_arr_tai[im1]
         t_tai_i = t_arr_tai[i]
         dt_integ = (t_tai_i - t_tai_im1)/10.0
 
         # Integrate reference trajectory and STM from t_(i-1) to t_i
-        # TODO: check if in km for propagation?
+        # Propagation occurs in km
         sat_pv_im1 = sat_est_pv_MI_km_arr[i-1,:]
         if verbose_in_batch_filter and i==1:
             print()
@@ -416,6 +414,12 @@ while i_batch < max_batch and not_converged_yet:
     # update batch filter iteration and check convergence
     i_batch += 1
     norm_state_dev = np.linalg.norm(state_dev_hat)
+
+    # append to position and velocity norm error for this iteration
+    ave_pos_err_arr.append(np.linalg.norm(sat_true_pv_MI_km_arr[:,0:3] - sat_est_pv_MI_km_arr[:,0:3]))
+    ave_vel_err_arr.append(np.linalg.norm(sat_true_pv_MI_km_arr[:,3:6] - sat_est_pv_MI_km_arr[:,3:6]))
+    norm_state_dev_change_pos_arr.append(np.linalg.norm(state_dev_hat[0:3]))
+    norm_state_dev_change_vel_arr.append(np.linalg.norm(state_dev_hat[3:6]))
     if norm_state_dev < tol_batch:
         print()
         print('Converged to solution? Yes!')
@@ -427,6 +431,12 @@ while i_batch < max_batch and not_converged_yet:
         print('Converged to solution? No')
         print('     State deviation:', state_dev)
 
+    # if iteration is the first, update the initial array
+    if i_batch == 0:
+        # update with a deepy copy
+        init_sat_est_pv_MI_km_arr = np.copy(sat_est_pv_MI_km_arr)
+
+        
     
 # Compare with true orbit
 # from the updated X0_star, propagate the orbit and compare with true orbit
@@ -454,13 +464,13 @@ for i in range(1, len_t_arr):
 fig, ax = plt.subplots(3,1)
 ax[0].set_title('Difference between true and filter''s estimated orbit (MI)')
 # .title('Difference between true and filter''s estimated orbit (MI)')
-ax[0].plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,0] - sat_est_pv_MI_km_arr[:,0])
+ax[0].plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,0] - sat_true_pv_MI_km_arr[:,0])
 ax[0].set_ylabel('x [km]')
 ax[0].grid()
-ax[1].plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,1] - sat_est_pv_MI_km_arr[:,1])
+ax[1].plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,1] - sat_true_pv_MI_km_arr[:,1])
 ax[1].set_ylabel('y [km]')
 ax[1].grid()
-ax[2].plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,2] - sat_est_pv_MI_km_arr[:,2])
+ax[2].plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,2] - sat_true_pv_MI_km_arr[:,2])
 ax[2].set_ylabel('z [km]')
 ax[2].grid()
 ax[2].set_xlabel('Time [hrs]')
@@ -468,11 +478,104 @@ plt.show()
 
 plt.figure()
 plt.title('Total orbital error')
-plt.plot(t_arr/3600.0, np.linalg.norm(sat_true_pv_MI_km_arr - sat_est_pv_MI_km_arr, axis=1))
+plt.plot(t_arr/3600.0, np.linalg.norm(sat_est_pv_MI_km_arr - sat_true_pv_MI_km_arr, axis=1))
 plt.grid()
 plt.xlabel('Time [hrs]')
 plt.ylabel('Error [km]')
 plt.show()
+
+fig, ax = plt.subplots(2,1)
+ax[0].set_title('Iterative updates in state deviation vector')
+ax[0].plot(np.arange(len(norm_state_dev_change_pos_arr))+1, norm_state_dev_change_pos_arr)
+ax[0].set_ylabel('Norm position update [km]')
+ax[0].grid()
+ax[1].plot(np.arange(len(norm_state_dev_change_vel_arr))+1, norm_state_dev_change_vel_arr)
+ax[1].set_ylabel('Norm velocity update [km/s]')
+ax[1].grid()
+ax[1].set_xlabel('batch filter iterations')
+plt.show()
+
+fig, ax = plt.subplots(2,1)
+ax[0].set_title('Average error in position and velocity')
+ax[0].plot(np.arange(len(ave_pos_err_arr)), ave_pos_err_arr)
+ax[0].set_ylabel('Position error [km]')
+ax[0].grid()
+ax[1].plot(np.arange(len(ave_vel_err_arr)), ave_vel_err_arr)
+ax[1].set_ylabel('Velocity error [km/s]')
+ax[1].grid()
+ax[1].set_xlabel('batch filter iterations')
+plt.show()
+
+# plot initial satellite orbit error
+fig, ax = plt.subplots(3,1)
+ax[0].set_title('Initial satellite position error')
+ax[0].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,0] - sat_true_pv_MI_km_arr[:,0])
+ax[0].set_ylabel('x [km]')
+ax[0].grid()
+ax[1].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,1] - sat_true_pv_MI_km_arr[:,1])
+ax[1].set_ylabel('y [km]')
+ax[1].grid()
+ax[2].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,2] - sat_true_pv_MI_km_arr[:,2])
+ax[2].set_ylabel('z [km]')
+ax[2].grid()
+ax[2].set_xlabel('Time [hrs]')
+plt.show()
+
+fig, ax = plt.subplots(3,1)
+ax[0].set_title('Initial satellite velocity error')
+ax[0].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,3] - sat_true_pv_MI_km_arr[:,3])
+ax[0].set_ylabel('x vel [km/s]')
+ax[0].grid()
+ax[1].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,4] - sat_true_pv_MI_km_arr[:,4])
+ax[1].set_ylabel('y vel [km/s]')
+ax[1].grid()
+ax[2].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,5] - sat_true_pv_MI_km_arr[:,5])
+ax[2].set_ylabel('z vel [km/s]')
+ax[2].grid()
+ax[2].set_xlabel('Time [hrs]')
+plt.show()
+
+# if similar order of magnitude, plot initial/final on the same plot
+fig, ax = plt.subplots(3,1)
+ax[0].set_title('Initial/final satellite position error')
+ax[0].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,0] - sat_true_pv_MI_km_arr[:,0])
+ax[0].plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,0] - sat_true_pv_MI_km_arr[:,0])
+ax[0].legend(['Initial', 'Final'])
+ax[0].set_ylabel('x [km]')
+ax[0].grid()
+ax[1].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,1] - sat_true_pv_MI_km_arr[:,1])
+ax[1].plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,1] - sat_true_pv_MI_km_arr[:,1])
+ax[1].set_ylabel('y [km]')
+ax[1].legend(['Initial', 'Final'])
+ax[1].grid()
+ax[2].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,2] - sat_true_pv_MI_km_arr[:,2])
+ax[2].plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,2] - sat_true_pv_MI_km_arr[:,2])
+ax[2].set_ylabel('z [km]')
+ax[2].legend(['Initial', 'Final'])
+ax[2].grid()
+ax[2].set_xlabel('Time [hrs]')
+plt.show()
+
+fig, ax = plt.subplots(3,1)
+ax[0].set_title('Initial/final satellite velocity error')
+ax[0].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,3] - sat_true_pv_MI_km_arr[:,3])
+ax[0].plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,3] - sat_true_pv_MI_km_arr[:,3])
+ax[0].set_ylabel('x vel [km/s]')
+ax[0].legend(['Initial', 'Final'])
+ax[0].grid()
+ax[1].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,4] - sat_true_pv_MI_km_arr[:,4])
+ax[1].plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,4] - sat_true_pv_MI_km_arr[:,4])
+ax[1].set_ylabel('y vel [km/s]')
+ax[1].legend(['Initial', 'Final'])
+ax[1].grid()
+ax[2].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,5] - sat_true_pv_MI_km_arr[:,5])
+ax[2].plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,5] - sat_true_pv_MI_km_arr[:,5])
+ax[2].set_ylabel('z vel [km/s]')
+ax[2].legend(['Initial', 'Final'])
+ax[2].grid()
+ax[2].set_xlabel('Time [hrs]')
+plt.show()
+
 
 # plt.figure()
 # plt.title('Difference between true and filter''s estimated orbit (MI)')
