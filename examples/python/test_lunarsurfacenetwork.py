@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib as mpl
+import os
 import matplotlib.pyplot as plt
 import pylupnt as pnt
 
@@ -12,6 +13,10 @@ from pylupnt import SpiceInterface as sp
 def degToRad(deg):
     return deg * pnt.RAD_PER_DEG
 
+# check if folder exists, if not, create it
+parent_dir = '/mnt/g/My Drive/Stanford_Documents/Documents/Research/Lunar_Surface_Station_ION2024'
+sub_dir = 'simplebatch_keplarian'
+show_plots = False
 
 # Simulation parameters
 rng_obs_std_dev_m = 0.1 #1   # (in meters) standard deviation of passive ranging measurements
@@ -65,6 +70,28 @@ fig_vis.set_labels("x", "y", "z")
 plt.title("Satellite orbit (PA)")
 
 
+###########################################################################
+#
+# Create folder to save plots
+#
+
+# concatenate parent and sub directory
+fldr_path = os.path.join(parent_dir, sub_dir)
+# check if folder exists, if not, create it
+run_num = 1
+run_num_str = 'run' + str(run_num)
+save_path = os.path.join(fldr_path, run_num_str)
+while os.path.exists(save_path):
+    print('run_num', run_num, 'already exists!')
+    run_num += 1
+    run_num_str = 'run' + str(run_num)
+    save_path = os.path.join(fldr_path, run_num_str)
+# create directory
+os.makedirs(save_path)
+print('Directory to save: ', save_path)
+#
+#
+###########################################################################
 
 def get_range(pos_arr1, pos_arr2):
     # assert that both arrays are of dimension X x 3
@@ -193,7 +220,8 @@ fig_vis.plot(sat_true_pv_PA_km_arr[0:int(len_t_arr),0:3])
 
 # Plot base station (in PA frame)
 fig_vis.plot(lss_pos_PA_km, '*')
-plt.show()
+if show_plots:
+    plt.show()
 
 # 4. Compute the range and range rate from the satellite to the base station
 rng_km_arr, el_rad_arr, vis_arr = get_range_elevation_and_visibility(sat_true_pv_MI_km_arr[:, 0:3], lss_pv_MI_km_arr[:, 0:3])
@@ -205,45 +233,30 @@ Ri_km = np.array([[(rng_obs_std_dev_m * 1e-3)**2]])
 inv_Ri_km = np.linalg.inv(Ri_km)
 rng_obs_km_arr = rng_km_arr + np.random.normal(0, rng_obs_std_dev_m*1e-3, len(rng_km_arr))
 
-# Use matplotlib to plot the range and use latex for the labels
-plt.figure()
-plt.plot(t_arr/3600.0, rng_km_arr)
-plt.grid()
-plt.xlabel('Time [hrs]')
-plt.ylabel('Range [km]')
-plt.title('Range to lunar station')
-plt.show()
-
-plt.figure()
-plt.plot(t_arr/3600.0, vis_arr)
-plt.grid()
-plt.xlabel('Time [hrs]')
-plt.ylabel('Visibility')
-plt.title('Visibility of lunar station')
-plt.show()
-
 # get times, ranges, and elevations when visible
 t_arr_vis = t_arr[vis_arr == 1]
 rng_arr_vis = rng_km_arr[vis_arr == 1]
 el_deg_arr_vis = el_deg_arr[vis_arr == 1]
 
 # plot ranges when visible
-plt.plot()
+plt.figure()
 plt.plot(t_arr_vis/3600.0, rng_arr_vis, '.')
 plt.grid()
 plt.xlabel('Time [hrs]')
 plt.ylabel('Range [km]')
 plt.title('Range to lunar station, when visible')
-plt.show()
+if show_plots:
+    plt.show()
 
 # plot elevation wrt station when visible
-plt.plot()
+plt.figure()
 plt.plot(t_arr_vis/3600.0, el_deg_arr_vis, '.')
 plt.grid()
 plt.xlabel('Time [hrs]')
 plt.ylabel('Elevation [deg]')
 plt.title('Elevation to lunar station')
-plt.show()
+if show_plots:
+    plt.show()
 
 
 
@@ -260,6 +273,7 @@ plt.show()
 P0 = np.diag([init_pos_std**2, init_pos_std**2, init_pos_std**2, init_vel_std**2, init_vel_std**2, init_vel_std**2])
 init_noise = np.concatenate((np.random.normal(0, init_pos_std, 3), np.random.normal(0, init_vel_std, 3)), axis=0)
 init_sat_est_pv_MI_km = sat_true_pv_MI_km_arr[0,:] + init_noise
+print('initial error magnitude [km]:', np.linalg.norm(init_noise[0:3]), np.linalg.norm(init_noise[3:6]))
 
 
 # start with state deviation of 0
@@ -370,7 +384,8 @@ while i_batch < max_batch and not_converged_yet:
         fig_vis.set_labels("x", "y", "z")
         plt.title("Propagated satellite orbit (MI)")
         fig_vis.plot(sat_est_pv_MI_km_arr[0:int(len_t_arr),0:3])
-        plt.show()
+        if show_plots:
+            plt.show()
 
         # plot difference between true and propagated state for x, y, and z on a 3x1 subplot
         plt.figure()
@@ -385,7 +400,8 @@ while i_batch < max_batch and not_converged_yet:
         plt.grid()
         plt.xlabel('Time [hrs]')
         plt.title('Propagated satellite orbit (MI)')
-        plt.show()
+        if show_plots:
+            plt.show()
 
         # plot difference between true and propagated state for x, y, and z on a 3x1 subplot
         plt.figure()
@@ -399,7 +415,8 @@ while i_batch < max_batch and not_converged_yet:
         plt.subplot(3,1,3)
         plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,2] - sat_est_pv_MI_km_arr[:,2])
         plt.grid()
-        plt.show()
+        if show_plots:
+            plt.show()
 
 
     
@@ -474,7 +491,9 @@ ax[2].plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,2] - sat_true_pv_MI_km_arr[:,2])
 ax[2].set_ylabel('z [km]')
 ax[2].grid()
 ax[2].set_xlabel('Time [hrs]')
-plt.show()
+plt.savefig(save_path + '/final_orbital_error_xyz.svg')
+if show_plots:
+    plt.show()
 
 plt.figure()
 plt.title('Total orbital error')
@@ -482,7 +501,10 @@ plt.plot(t_arr/3600.0, np.linalg.norm(sat_est_pv_MI_km_arr - sat_true_pv_MI_km_a
 plt.grid()
 plt.xlabel('Time [hrs]')
 plt.ylabel('Error [km]')
-plt.show()
+plt.savefig(save_path + '/final_orbital_error_total.svg')
+if show_plots:
+    plt.show()
+
 
 fig, ax = plt.subplots(2,1)
 ax[0].set_title('Iterative updates in state deviation vector')
@@ -493,7 +515,10 @@ ax[1].plot(np.arange(len(norm_state_dev_change_vel_arr))+1, norm_state_dev_chang
 ax[1].set_ylabel('Norm velocity update [km/s]')
 ax[1].grid()
 ax[1].set_xlabel('batch filter iterations')
-plt.show()
+plt.savefig(save_path + '/update_over_iterations.svg')
+if show_plots:
+    plt.show()
+
 
 fig, ax = plt.subplots(2,1)
 ax[0].set_title('Average error in position and velocity')
@@ -504,7 +529,10 @@ ax[1].plot(np.arange(len(ave_vel_err_arr)), ave_vel_err_arr)
 ax[1].set_ylabel('Velocity error [km/s]')
 ax[1].grid()
 ax[1].set_xlabel('batch filter iterations')
-plt.show()
+plt.savefig(save_path + '/error_over_iterations.svg')
+if show_plots:
+    plt.show()
+
 
 # plot initial satellite orbit error
 fig, ax = plt.subplots(3,1)
@@ -519,7 +547,10 @@ ax[2].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,2] - sat_true_pv_MI_km_arr[
 ax[2].set_ylabel('z [km]')
 ax[2].grid()
 ax[2].set_xlabel('Time [hrs]')
-plt.show()
+plt.savefig(save_path + '/init_orbit_error_pos.svg')
+if show_plots:
+    plt.show()
+
 
 fig, ax = plt.subplots(3,1)
 ax[0].set_title('Initial satellite velocity error')
@@ -533,7 +564,10 @@ ax[2].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,5] - sat_true_pv_MI_km_arr[
 ax[2].set_ylabel('z vel [km/s]')
 ax[2].grid()
 ax[2].set_xlabel('Time [hrs]')
-plt.show()
+plt.savefig(save_path + '/init_orbit_error_vel.svg')
+if show_plots:
+    plt.show()
+
 
 # if similar order of magnitude, plot initial/final on the same plot
 fig, ax = plt.subplots(3,1)
@@ -554,7 +588,11 @@ ax[2].set_ylabel('z [km]')
 ax[2].legend(['Initial', 'Final'])
 ax[2].grid()
 ax[2].set_xlabel('Time [hrs]')
-plt.show()
+plt.savefig(save_path + '/init_final_orbit_error_pos.svg')
+if show_plots:
+    plt.show()
+
+
 
 fig, ax = plt.subplots(3,1)
 ax[0].set_title('Initial/final satellite velocity error')
@@ -574,25 +612,9 @@ ax[2].set_ylabel('z vel [km/s]')
 ax[2].legend(['Initial', 'Final'])
 ax[2].grid()
 ax[2].set_xlabel('Time [hrs]')
-plt.show()
+plt.savefig(save_path + '/init_final_orbit_error_vel.svg')
+if show_plots:
+    plt.show()
 
-
-# plt.figure()
-# plt.title('Difference between true and filter''s estimated orbit (MI)')
-# plt.subplot(3,1,1)
-# plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,0] - sat_est_pv_MI_km_arr[:,0])
-# plt.grid()
-# plt.ylabel('x [km]')
-# plt.subplot(3,1,2)
-# plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,1] - sat_est_pv_MI_km_arr[:,1])
-# plt.grid()
-# plt.ylabel('y [km]')
-# plt.subplot(3,1,3)
-# plt.plot(t_arr/3600.0, sat_true_pv_MI_km_arr[:,2] - sat_est_pv_MI_km_arr[:,2])
-# plt.grid()
-# plt.ylabel('z [km]')
-# plt.xlabel('Time [hrs]')
-# plt.tight_layout()
-# plt.show()
 
 
