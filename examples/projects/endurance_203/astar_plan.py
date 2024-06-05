@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+np.random.seed(4)
 
 class AStarPlanner(object):
 

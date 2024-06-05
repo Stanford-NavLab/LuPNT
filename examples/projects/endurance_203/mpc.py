@@ -9,6 +9,8 @@ import cvxpy as cvx
 from time import time
 from tqdm.auto import tqdm
 
+np.random.seed(4)
+
 def dynamics(s, u, dt = 0.1):
     x, y, theta = s
     v, omega = u
@@ -159,10 +161,14 @@ def run_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound):
     s_init = None
     u_init = None
 
+    s_true = np.zeros((T+1, n))
+    s_true[0] = s0
+
     for t in tqdm(range(T)):
         s_mpc[t], u_mpc[t] = solve_mpc(f, s, s_goal, N, P, Q, R, eps, N_scp, dt, v_bound, omega_bound, s_init, u_init)
         s = f(s, u_mpc[t, 0])
         # print(f'Applied u = {u_mpc[t, 0]}')
+        s_true[t+1] = s
 
         total_control_cost += u_mpc[t, 0].T @ R @ u_mpc[t, 0]
 
@@ -175,7 +181,7 @@ def run_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound):
     print("Total elapsed time:", total_time, "seconds")
     print("Total control cost:", total_control_cost)
     # print(s_mpc[:, 0, 1])
-    return s_mpc, u_mpc
+    return s_mpc, u_mpc, s_true
 
 def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt, resolution=0.1):
     fig, ax = plt.subplots(2, 2, dpi=150, figsize=(8, 6))
@@ -210,9 +216,14 @@ def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt, resolution=0.1)
         ax[0, 1].axvline(t_vec[index],linestyle='--',color='k',zorder=0, linewidth=ls)
         ax[1, 0].axvline(t_vec[index],linestyle='--',color='k',zorder=0, linewidth=ls)
         ax[1, 1].axvline(t_vec[index],linestyle='--',color='k',zorder=0, linewidth=ls)
+
+        print(f'Waypoint {i+1} at t = {t_vec[index]}')
+
     ax[0, 1].axvline(t_vec[-1],linestyle='--',color='k',zorder=0, linewidth=ls)
     ax[1, 0].axvline(t_vec[-1],linestyle='--',color='k',zorder=0, linewidth=ls)
     ax[1, 1].axvline(t_vec[-1],linestyle='--',color='k',zorder=0, linewidth=ls)
+
+
 
     ax[1, 0].plot(t_vec, u_mpc[:, 0, 0], "-o", markersize=ms, linewidth=ls) #, label=r"$u_1(t)$")
     ax[1, 0].set_xlabel(r"$t$ [hr]")

@@ -9,7 +9,7 @@ import cvxpy as cvx
 from time import time
 from tqdm.auto import tqdm
 
-np.random.seed(11)
+np.random.seed(4)
 
 class EKF:
     def __init__(self, x0, P0, lat_long_0, elev_grid, heading, cell_elevation) -> None:
@@ -200,7 +200,7 @@ def solve_mpc(
         raise RuntimeError("SCP did not converge!")
     return s, u
 
-def run_ekf_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound, sat_data, tspan, t0, lat_long_0, elev_grid, sigma_init=10/1000):
+def run_ekf_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound, sat_data, tspan, t0, lat_long_0, elev_grid, x_est = None, cov_final = None, sigma_init=10/1000):
 
     # sat_data (N_satellite, time, 6)
 
@@ -221,10 +221,16 @@ def run_ekf_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound, sat_
 
     # this is in the MoonPA frame
     # sigma_init = 10/1000 # 10m
-    x0_hat, cell_elevation, heading = state2MoonPA(s0, 0.1, lat_long_0, elev_grid)
-    # print(f'Check: {MoonPA_to_DEM(x0_hat, cell_elevation, lat_long_0, heading)}')
-    x0_hat += np.random.randn(3) * sigma_init
-    P0 = np.eye(3) * (sigma_init**2)
+    if x_est is None:
+        x0_hat, cell_elevation, heading = state2MoonPA(s0, 0.1, lat_long_0, elev_grid)
+        # print(f'Check: {MoonPA_to_DEM(x0_hat, cell_elevation, lat_long_0, heading)}')
+        x0_hat += np.random.randn(3) * sigma_init
+        P0 = np.eye(3) * (sigma_init**2)
+
+    else:
+        x0_hat, cell_elevation, heading = state2MoonPA(x_est, 0.1, lat_long_0, elev_grid)
+        P0 = cov_final
+    
     ekf = EKF(x0_hat, P0, lat_long_0, elev_grid, heading, cell_elevation)
     t_true = t0
     s_est = MoonPA_to_DEM(x0_hat, ekf.cell_elevation, ekf.lat_long_0, ekf.heading)
@@ -232,15 +238,17 @@ def run_ekf_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound, sat_
     print(f'Initial state estimate: {ekf.x_hat}')
     print(f'Initial rover estimate: {s_est}')
     print(f'Intial covariance: {ekf.P}')
-    print(f'Starting time: {t_true}')
+
     # print(f'Current EKF state: {ekf.x_hat}')
     # print(f'Cell elevation: {ekf.cell_elevation}')
     # print(f'Heading: {ekf.heading}')
     # print('----------')
 
-    true_state_array = np.zeros((T, 3))
-    est_state_array = np.zeros((T, 3))
-    # true_state_array[0] = s_true
+    true_state_array = np.zeros((T+1, 3))
+    est_state_array = np.zeros((T+1, 3))
+
+    true_state_array[0] = s_true
+    est_state_array[0] = s_est
 
 
     for t in tqdm(range(T)):
@@ -276,15 +284,14 @@ def run_ekf_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound, sat_
             [s_mpc[t, 1:], f(s_mpc[t, -1], u_mpc[t, -1]).reshape([1, -1])]
         )
 
-        true_state_array[t] = s_true
-        est_state_array[t] = s_est
+        true_state_array[t+1] = s_true
+        est_state_array[t+1] = s_est
 
     total_time = time() - total_time
-    # print("Total elapsed time:", total_time, "seconds")
-    # print("Total control cost:", total_control_cost)
+    print("Total elapsed time:", total_time, "seconds")
+    print("Total control cost:", total_control_cost)
     # print(s_mpc[:, 0, 1])
-    print(f'End time: {t_true}')
-    return s_mpc, u_mpc, t_true, true_state_array, est_state_array
+    return s_mpc, u_mpc, t_true, true_state_array, est_state_array, ekf.P
 
 
 def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt):

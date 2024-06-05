@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pylupnt as pnt
 import scipy as sc
+np.random.seed(4)
 
 class GridWorld:
     def __init__(self, N = 100, res = 1, Nt = 3600, moon_pa_origin = np.array([0, 0, 0]), mu_noise = 0.0, sigma_noise = 1.0):
