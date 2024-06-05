@@ -24,7 +24,7 @@ for i_pl in range(N_planes):
         )
 
 rv0_m2sc_op = pnt.classical_to_cartesian(coe_op, pnt.MU_MOON)
-rv0_m2sc_mi = pnt.FrameConverter.convert(t0_tai, rv0_m2sc_op,pnt.MOON_OP, pnt.MOON_CI)
+rv0_m2sc_mi = pnt.FrameConverter.convert(t0_tai, rv0_m2sc_op, pnt.MOON_OP, pnt.MOON_CI)
 
 # Time
 sma = coe_op[0, 0]  # [km] Semi-major axis

@@ -63,7 +63,7 @@ void init_dynamics(py::module &m) {
           [](NumericalOrbitDynamics &dyn, OrbitState &state, double t0,
              double tf,
              double dt) -> void { dyn.Propagate(state, t0, tf, dt); },
-          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
+          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt") = 0.0)
       .def(
           "propagate",
           [](NumericalOrbitDynamics &dyn, Vector6d &x, double t0, double tf,
@@ -72,16 +72,16 @@ void init_dynamics(py::module &m) {
             dyn.Propagate(x_real, t0, tf, dt);
             return x_real.cast<double>();
           },
-          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
+          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt") = 0.0)
       .def(
           "propagate",
           [](NumericalOrbitDynamics &dyn, Vector6d &x, double t0, VectorXd &tfs,
-             bool progress) -> MatrixXd {
+             double dt, bool progress) -> MatrixXd {
             Vector6 x_real = x.cast<real>();
             VectorX tfs_real = tfs.cast<real>();
             return dyn.Propagate(x_real, t0, tfs_real, progress).cast<double>();
           },
-          py::arg("state"), py::arg("t0"), py::arg("tfs"),
+          py::arg("state"), py::arg("t0"), py::arg("tfs"), py::arg("dt") = 0.0,
           py::arg("progress") = false)
       .def(
           "propagate_with_stm",
@@ -102,7 +102,19 @@ void init_dynamics(py::module &m) {
             dyn.PropagateWithStm(state_real, t0, tf, dt, stm);
             return std::make_tuple(state_real.cast<double>(), stm);
           },
-          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"));
+          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
+      .def("set_time_step",
+           [](NumericalOrbitDynamics &dyn, double dt) { dyn.SetTimeStep(dt); });
+  // .def(
+  //     "propagate_with_stm",
+  //     [](NumericalOrbitDynamics &dyn, RowVector6d &state, double t0,
+  //        double tf, double dt) -> std::tuple<Vector6d, Matrix6d> {
+  //       Matrix6d stm;
+  //       Vector6 state_real = state.cast<real>();
+  //       dyn.PropagateWithStm(state_real, t0, tf, dt, stm);
+  //       return std::make_tuple(state_real.cast<double>(), stm);
+  //     },
+  //     py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"));
 
   // CartesianTwoBodyDynamics
   py::class_<CartesianTwoBodyDynamics, NumericalOrbitDynamics>(
@@ -118,10 +130,6 @@ void init_dynamics(py::module &m) {
       .def(py::init<>())
       .def("set_primary_body", &NBodyDynamics::SetPrimaryBody, py::arg("body"))
       .def("add_body", &NBodyDynamics::AddBody, py::arg("body"))
-      .def(
-          "set_time_step",
-          [](NBodyDynamics &dyn, double dt) { dyn.SetTimeStep(dt); },
-          py::arg("dt"))
       .def("__repr__",
            [](const NBodyDynamics &dyn) { return "<pylupnt.NBodyDynamics>"; });
 

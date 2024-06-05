@@ -52,7 +52,7 @@ Body Body::Sun() {
   sun.id = NaifId::SUN;
   sun.sphericalHarmonics = false;
   sun.normalized = false;
-  sun.fixed_frame = Frame::GCRF;
+  sun.fixed_frame = Frame::ICRF;
 
   BodyData bd = GetBodyData(sun.id);
   sun.mu = bd.GM;

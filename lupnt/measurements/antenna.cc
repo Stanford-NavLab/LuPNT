@@ -46,11 +46,8 @@ void Antenna::LoadAntennaPattern() {
 
   // Find file
   std::filesystem::path antennaPath(GetDataPath() / "antenna");
-  auto filePath = FindFileInDir(antennaPath, comms_name_);
-  if (!filePath) {
-    throw std::runtime_error("Could not find antenna pattern file: " +
-                             antennaPath.string());
-  }
+  auto filePath = FindFileInDir(antennaPath, comms_name_ + ".txt");
+  assert(filePath.has_value() && "Antenna pattern file not found.");
 
   // Open file
   std::ifstream file(filePath->string(), std::ifstream::in);

@@ -7,7 +7,7 @@ from typing import Union
 import plotly.graph_objs as go
 import plotly.express as px
 import plotly.io as pio
-
+import pylupnt as pnt
 from .. import utils
 
 axis_dict = dict(
@@ -26,11 +26,22 @@ pio.templates["lupnt"] = go.layout.Template(
         margin=dict(l=100, r=10, t=10, b=10),
     )
 )
+PLOTLY_COLORS = px.colors.qualitative.D3
 pio.templates.default = "plotly_white+lupnt"
 MOON_SURFACE = Image.open(
     os.path.join(utils.LUPNT_DATA_PATH, "topo", "moon_surface.jpeg")
 )
-img = np.asarray(MOON_SURFACE)
+EARTH_SURFACE = Image.open(
+    os.path.join(utils.LUPNT_DATA_PATH, "topo", "earth_surface.jpg")
+)
+IMAGES = {
+    pnt.MOON: np.asarray(MOON_SURFACE),
+    pnt.EARTH: np.asarray(EARTH_SURFACE),
+}
+RADII = {
+    pnt.MOON: pnt.R_MOON,
+    pnt.EARTH: pnt.R_EARTH,
+}
 
 
 def set_view(fig: go.Figure, azimuth: float, elevation: float, zoom: float = 1.0):
@@ -90,41 +101,48 @@ def create_sphere_meshgrid(
     )
 
 
-def get_moon_trace(
+def get_body_trace(
+    body=pnt.MOON,
     size_factor: int = 5,
-    R_pa2frame: np.ndarray = None,
-    r_m2s_pa: np.ndarray = None,
+    R_b2frame: np.ndarray = None,
+    r_b2s_pa: np.ndarray = None,
+    r_body: np.ndarray = None,
     alpha: float = 0.2,
 ) -> go.Mesh3d:
     """
     Get the moon trace
 
     Args:
+        body (int): celestial body
         size_factor (int): size factor
-        R_pa2frame (np.ndarray[3, 3]): rotation matrix from the PA frame to the new frame
-        r_m2s_pa (np.ndarray[3, 1]): vector from the moon to the sun in the PA frame
+        R_b2frame (np.ndarray): rotation matrix from body to frame
+        r_b2s_pa (np.ndarray): vector from body to sun in the frame
+        alpha (float): light intensity
     """
-    radius = 1737.1
+    img = IMAGES[body]
+    radius = RADII[body]
+    if r_body is None:
+        r_body = np.zeros(3)
     reduced_img = img[::size_factor, ::size_factor]
     reduced_img = reduced_img[:, ::-1]
     r, c, _ = reduced_img.shape
     x, y, z = create_sphere_meshgrid(r, c, radius)
     xyz = np.array([x.flatten(), y.flatten(), z.flatten()]).T
-    if r_m2s_pa is not None:
-        light = xyz @ r_m2s_pa / np.linalg.norm(xyz, axis=1) / np.linalg.norm(r_m2s_pa)
+    if r_b2s_pa is not None:
+        light = xyz @ r_b2s_pa / np.linalg.norm(xyz, axis=1) / np.linalg.norm(r_b2s_pa)
         reduced_img = reduced_img * (alpha + (1 - alpha) * light.reshape(r, c, 1))
 
-    if R_pa2frame is not None:
-        xyz = xyz @ R_pa2frame.T
+    if R_b2frame is not None:
+        xyz = xyz @ R_b2frame.T
 
     I, J, K, tri_color_intensity, pl_colorscale = mesh_data(
         reduced_img, n_colors=32, n_training_pixels=10000
     )
 
     return go.Mesh3d(
-        x=xyz[:, 0],
-        y=xyz[:, 1],
-        z=xyz[:, 2],
+        x=xyz[:, 0] + r_body[0],
+        y=xyz[:, 1] + r_body[1],
+        z=xyz[:, 2] + r_body[2],
         i=I,
         j=J,
         k=K,
@@ -202,8 +220,11 @@ def plot_3d_arrow(
         )
 
 
-def plot_constellation(rv: np.ndarray, t: int = 0, **kwargs) -> go.Figure:
-    fig = go.Figure()
+def plot_constellation(
+    rv: np.ndarray, t: int = 0, marker_size=4, fig=None, **kwargs
+) -> go.Figure:
+    if fig is None:
+        fig = go.Figure()
 
     if rv.ndim == 2:
         rv = rv[np.newaxis, :, :]
@@ -217,19 +238,22 @@ def plot_constellation(rv: np.ndarray, t: int = 0, **kwargs) -> go.Figure:
             name="sat_lines",
             showlegend=False,
         )
-    fig.add_scatter3d(
-        **dict(x=rv[:, t, 0], y=rv[:, t, 1], z=rv[:, t, 2]),
-        mode="markers",
-        marker=dict(color="black", size=4, line=dict(color="black", width=0.5)),
-        name="sat_markers",
-        showlegend=False,
-    )
+    if t is not None:
+        fig.add_scatter3d(
+            **dict(x=rv[:, t, 0], y=rv[:, t, 1], z=rv[:, t, 2]),
+            mode="markers",
+            marker=dict(color="black", size=4, line=dict(color="black", width=0.5)),
+            name="sat_markers",
+            showlegend=False,
+        )
 
     # Dummy trace
     fig.add_scatter3d(
-        **dict(x=[0], y=[0], z=[0]),
+        **dict(x=None, y=None, z=None),
         mode="markers+lines",
-        marker=dict(color="black", size=4, line=dict(color="black", width=0.5)),
+        marker=dict(
+            color="black", size=marker_size, line=dict(color="black", width=0.5)
+        ),
         line=dict(color="black", width=3),
         name="Satellite",
     )
@@ -266,13 +290,14 @@ def plot_constellation(rv: np.ndarray, t: int = 0, **kwargs) -> go.Figure:
     xticks = fig.layout.scene.xaxis.tickvals
     yticks = fig.layout.scene.yaxis.tickvals
     zticks = fig.layout.scene.zaxis.tickvals
-    fig.update_layout(
-        scene=dict(
-            xaxis_ticktext=[f"{x/1e3:.0f}" for x in xticks],
-            yaxis_ticktext=[f"{y/1e3:.0f}" for y in yticks],
-            zaxis_ticktext=[f"{z/1e3:.0f}" for z in zticks],
+    if xticks is not None and yticks is not None and zticks is not None:
+        fig.update_layout(
+            scene=dict(
+                xaxis_ticktext=[f"{x/1e3:.0f}" for x in xticks],
+                yaxis_ticktext=[f"{y/1e3:.0f}" for y in yticks],
+                zaxis_ticktext=[f"{z/1e3:.0f}" for z in zticks],
+            )
         )
-    )
 
     return fig
 

@@ -28,6 +28,7 @@ void KeplerianDynamics::Propagate(ClassicalOE &state, real dt) {
   real n = sqrt(mu_ / pow(a, 3));
   state.Set_M(wrapToPi(state.M() + n * dt));
 }
+
 void KeplerianDynamics::PropagateWithStm(ClassicalOE &state, real dt,
                                          Matrix6d &stm) {
   real a = state.a();

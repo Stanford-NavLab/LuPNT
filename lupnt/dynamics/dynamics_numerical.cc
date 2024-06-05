@@ -55,12 +55,14 @@ void NumericalDynamics::PropagateWithStmX(VectorX &x, real t0, real tf,
 void NumericalOrbitDynamics::Propagate(OrbitState &state, real t0, real tf,
                                        real dt) {
   assert(state.GetOrbitStateRepres() == state_representation_);
+  real dt_prop = (dt > 0.0) ? dt : dt_;
   Vector6 x0 = state.GetVector();
   Vector6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt);
   state.SetVector(xf);
 }
 
 void NumericalOrbitDynamics::Propagate(Vector6 &x, real t0, real tf, real dt) {
+  real dt_prop = (dt > 0.0) ? dt : dt_;
   Vector6 x0 = x;
   Vector6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt);
   x = xf;
@@ -78,6 +80,7 @@ void NumericalOrbitDynamics::PropagateWithStm(OrbitState &state, real t0,
 
 void NumericalOrbitDynamics::PropagateWithStm(Vector6 &x, real t0, real tf,
                                               real dt, Matrix6d &stm) {
+  real dt_prop = (dt > 0.0) ? dt : dt_;
   Vector6 x0 = x;
   MatrixXd J(6, 6);
   VectorX xf = propagator_.PropagateWithStm(odefunc_, t0, tf, x0, dt, J);
@@ -85,35 +88,26 @@ void NumericalOrbitDynamics::PropagateWithStm(Vector6 &x, real t0, real tf,
   stm = J;
 }
 
-void NumericalOrbitDynamics::Propagate(OrbitState &state, real t0, real tf) {
-  real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
-  Propagate(state, t0, tf, dt_prop);
-}
-
-void NumericalOrbitDynamics::Propagate(Vector6 &x, real t0, real tf) {
-  real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
-  Propagate(x, t0, tf, dt_prop);
-}
-
 MatrixX NumericalOrbitDynamics::Propagate(Vector6 &x, real t0, VectorX &tf,
-                                          bool progress) {
+                                          real dt, bool progress) {
+  real dt_prop = (dt > 0.0) ? dt : dt_;
   Vector6 x0 = x;
   MatrixX xf(tf.size(), 6);
 
   ProgressBar pb(tf.size());
   for (int i = 0; i < tf.size(); i++) {
     if (i == 0)
-      xf.row(i) = propagator_.Propagate(odefunc_, t0, tf(i), x0, dt_);
+      xf.row(i) = propagator_.Propagate(odefunc_, t0, tf(i), x0, dt_prop);
     else
-      xf.row(i) =
-          propagator_.Propagate(odefunc_, tf(i - 1), tf(i), xf.row(i - 1), dt_);
+      xf.row(i) = propagator_.Propagate(odefunc_, tf(i - 1), tf(i),
+                                        xf.row(i - 1), dt_prop);
     if (progress) pb.Update();
   }
   return xf;
 }
 
 MatrixX NumericalOrbitDynamics::Propagate(OrbitState &state, real t0,
-                                          VectorX &tf, bool progress) {
+                                          VectorX &tf, real dt, bool progress) {
   Vector6 x0 = state.GetVector();
   return Propagate(x0, t0, tf, progress);
 }
