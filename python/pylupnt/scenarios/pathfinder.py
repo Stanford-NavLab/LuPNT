@@ -24,7 +24,7 @@ for i_pl in range(N_planes):
         )
 
 rv0_m2sc_op = pnt.classical_to_cartesian(coe_op, pnt.MU_MOON)
-rv0_m2sc_mi = pnt.FrameConverter.convert(t0_tai, rv0_m2sc_op, pnt.OP, pnt.MI)
+rv0_m2sc_mi = pnt.FrameConverter.convert(t0_tai, rv0_m2sc_op, pnt.MOON_OP, pnt.MOON_CI)
 
 # Time
 sma = coe_op[0, 0]  # [km] Semi-major axis
@@ -49,13 +49,13 @@ rv_m2sc_pa = np.zeros((N_sat, Nt, 6))
 for i_sat in range(N_sat):
     rv_m2sc_mi[i_sat] = dyn.propagate(rv0_m2sc_mi[i_sat], t0_tai, t_tai)
     rv_m2sc_pa[i_sat] = pnt.FrameConverter.convert(
-        t_tai, rv_m2sc_mi[i_sat], pnt.MI, pnt.PA
+        t_tai, rv_m2sc_mi[i_sat], pnt.MOON_CI, pnt.MOON_PA
     )
 
 rv_m2e_mi = pnt.SpiceInterface.get_body_pos_vel(t_tai, pnt.MOON, pnt.EARTH)
-rv_m2e_pa = pnt.FrameConverter.convert(t_tai, rv_m2e_mi, pnt.MI, pnt.PA)
+rv_m2e_pa = pnt.FrameConverter.convert(t_tai, rv_m2e_mi, pnt.MOON_CI, pnt.MOON_PA)
 rv_m2s_mi = pnt.SpiceInterface.get_body_pos_vel(t_tai, pnt.MOON, pnt.SUN)
-rv_m2s_pa = pnt.FrameConverter.convert(t_tai, rv_m2s_mi, pnt.MI, pnt.PA)
+rv_m2s_pa = pnt.FrameConverter.convert(t_tai, rv_m2s_mi, pnt.MOON_CI, pnt.MOON_PA)
 
 # Directions
 e_sc2m = np.array(-rv_m2sc_mi[:, :, 0:3])
@@ -87,7 +87,7 @@ assert np.allclose(np.linalg.norm(ez_sc, axis=-1), 1)
 R_pa2mi = np.zeros((Nt, 3, 3))
 for i in range(Nt):
     R_pa2mi[i] = pnt.SpiceInterface.get_frame_conversion_matrix(
-        t_tai[i], pnt.PA, pnt.MI
+        t_tai[i], pnt.MOON_PA, pnt.MOON_CI
     )[:3, :3]
 
 # Spacecraft frame

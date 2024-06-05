@@ -62,7 +62,7 @@ int main() {
   real w = 0.0 * RAD_PER_DEG;
   real M = 0.0 * RAD_PER_DEG;
   ClassicalOE coeMoon({a, e, i, Omega, w, M});
-  coeMoon.SetCoordSystem(Frame::MI);
+  coeMoon.SetCoordSystem(Frame::MOON_CI);
 
   auto cartOrbitStateMoon = std::make_shared<CartesianOrbitState>(
       ClassicalToCartesian(coeMoon, MU_MOON));
@@ -111,7 +111,7 @@ int main() {
 
     // Moon spacecraft
     auto state = moonSat1->GetCartesianGCRFStateAtEpoch(t);
-    auto stateMi = ConvertOrbitStateFrame(state, t, Frame::MI);
+    auto stateMi = ConvertOrbitStateFrame(state, t, Frame::MOON_CI);
     auto stateGcrf = ConvertOrbitStateFrame(state, t, Frame::GCRF);
     dataHistory.AddData("moonSatMi", t, stateMi->GetVector());
     dataHistory.AddData("moonSatGcrf", t, stateGcrf->GetVector());
@@ -120,7 +120,7 @@ int main() {
     for (int i = 0; i < gpsConstellation.GetNumSatellites(); i++) {
       auto sate =
           gpsConstellation.GetSatellite(i)->GetCartesianGCRFStateAtEpoch(t);
-      auto stateMi = ConvertOrbitStateFrame(sate, t, Frame::MI);
+      auto stateMi = ConvertOrbitStateFrame(sate, t, Frame::MOON_CI);
       auto stateGcrf = ConvertOrbitStateFrame(sate, t, Frame::GCRF);
 
       std::string name = "sat" + std::to_string(i);
@@ -131,10 +131,12 @@ int main() {
     // Bodies
     Vector6 v6;
     v6.setZero();
-    dataHistory.AddData("earthMi", t,
-                        FrameConverter::Convert(t, v6, Frame::GCRF, Frame::MI));
-    dataHistory.AddData("moonGcrf", t,
-                        FrameConverter::Convert(t, v6, Frame::MI, Frame::GCRF));
+    dataHistory.AddData(
+        "earthMi", t,
+        FrameConverter::Convert(t, v6, Frame::GCRF, Frame::MOON_CI));
+    dataHistory.AddData(
+        "moonGcrf", t,
+        FrameConverter::Convert(t, v6, Frame::MOON_CI, Frame::GCRF));
 
     // Print progress
     if (fmod(t, printEvery) < 1e-3) {

@@ -20,9 +20,9 @@ void init_frame_converter(py::module &m) {
       .value("MOD", Frame::MOD)
       .value("TOD", Frame::TOD)
       .value("EMR", Frame::EMR)
-      .value("MI", Frame::MI)
-      .value("PA", Frame::PA)
-      .value("ME", Frame::ME)
+      .value("MI", Frame::MOON_CI)
+      .value("PA", Frame::MOON_PA)
+      .value("ME", Frame::MOON_ME)
       .export_values();
 
   py::class_<FrameConverter>(m, "FrameConverter")

@@ -2,13 +2,22 @@ from __future__ import annotations
 import numpy
 import pylupnt
 import typing
-__all__ = ['A1MJD_OF_J2000', 'A1_TAI_OFFSET', 'AU', 'Body', 'C', 'C22_MOON', 'CARTESIAN', 'CLASSICAL_OE', 'CartesianOrbitState', 'CartesianTwoBodyDynamics', 'ClassicalOE', 'DAYS_PER_JULIAN_CENTURY', 'DAYS_PER_SEC', 'DAYS_PER_YEAR', 'DEG_PER_RAD', 'DEIMOS', 'DELAUNAY_OE', 'E', 'EARTH', 'EARTH_BARYCENTER', 'EARTH_MOON_BARYCENTER', 'ECEF', 'ECI', 'EME', 'EMR', 'EQUINOTICAL_OE', 'EquinoctialOE', 'Frame', 'FrameConverter', 'GCRF', 'GSE', 'ICRF', 'ITRF', 'J2_EARTH', 'J2_MOON', 'JD_JAN_5_1941', 'JD_MJD_OFFSET', 'JD_NOV_17_1858', 'JD_OF_J2000', 'JUPITER', 'JUPITER_BARYCENTER', 'KeplerianDynamics', 'MARS', 'MARS_BARYCENTER', 'ME', 'MERCURY', 'MERCURY_BARYCENTER', 'MI', 'MJD_OF_J2000', 'MOD', 'MOON', 'MU_EARTH', 'MU_MOON', 'NBodyDynamics', 'NEPTUNE_BARYCENTER', 'NaifId', 'NumericalOrbitDynamics', 'OMEGA_E_M', 'OP', 'OrbitState', 'OrbitStateRepres', 'PA', 'PHOBOS', 'PI', 'PI_OVER_TWO', 'PLUTO_BARYCENTER', 'P_SUN', 'QUASINONSINGULAR_ROE', 'QUASI_NONSINGULAR_OE', 'QuasiNonsingularOE', 'QuasiNonsingularROE', 'RAD_PER_DEG', 'R_EARTH', 'R_MOON', 'SATURN_BARYCENTER', 'SECS_PER_DAY', 'SECS_PER_HOUR', 'SECS_PER_MINUTE', 'SER', 'SINGULAR_ROE', 'SOLAR_SYSTEM_BARYCENTER', 'SUN', 'S_AU', 'SingularROE', 'SpiceInterface', 'TIME_OF_J2000', 'TOD', 'TT_TAI_OFFSET', 'TWO_PI', 'URANUS_BARYCENTER', 'VENUS', 'VENUS_BARYCENTER', 'azimuth_elevation_range_to_cartesian', 'cartesian_to_azimuth_elevation_range', 'cartesian_to_classical', 'cartesian_to_east_north_up', 'cartesian_to_geographical', 'cartesian_to_spherical', 'classical_to_cartesian', 'classical_to_delaunay', 'classical_to_equinoctial', 'classical_to_quasi_nonsingular', 'compute_occultation', 'convert_orbit_state', 'dB2decimal', 'd_E_EMB', 'd_E_M', 'd_M_EMB', 'decimal2dB', 'degrees2dms', 'delaunay_to_classical', 'dms2degrees', 'east_north_up_to_cartesian', 'eccentric_to_mean_anomaly', 'eccentric_to_true_anomaly', 'equinoctial_to_classical', 'geographical_to_cartesian', 'mean_to_eccentric_anomaly', 'mean_to_true_anomaly', 'quasi_nonsingular_to_classical', 'relative_quasi_nonsingular_to_classical', 'spherical_to_cartesian', 'true_to_eccentric_anomaly', 'true_to_mean_anomaly', 'wrapTo2Pi', 'wrapToPi']
+__all__ = ['A1MJD_OF_J2000', 'A1_TAI_OFFSET', 'AU', 'Body', 'C', 'C22_MOON', 'CARTESIAN', 'CLASSICAL_OE', 'CartesianOrbitState', 'CartesianTwoBodyDynamics', 'ClassicalOE', 'DAYS_PER_JULIAN_CENTURY', 'DAYS_PER_SEC', 'DAYS_PER_YEAR', 'DEG_PER_RAD', 'DEIMOS', 'DELAUNAY_OE', 'E', 'EARTH', 'EARTH_BARYCENTER', 'EARTH_MOON_BARYCENTER', 'ECEF', 'ECI', 'EME', 'EMR', 'EQUINOTICAL_OE', 'EquinoctialOE', 'Frame', 'FrameConverter', 'GCRF', 'GSE', 'ICRF', 'ITRF', 'J2_EARTH', 'J2_MOON', 'JD_JAN_5_1941', 'JD_MJD_OFFSET', 'JD_NOV_17_1858', 'JD_OF_J2000', 'JUPITER', 'JUPITER_BARYCENTER', 'KeplerianDynamics', 'MARS', 'MARS_BARYCENTER', 'MARS_FIXED', 'MERCURY', 'MERCURY_BARYCENTER', 'MJD_OF_J2000', 'MOD', 'MOON', 'MOON_CI', 'MOON_ME', 'MOON_OP', 'MOON_PA', 'MU_EARTH', 'MU_MOON', 'NBodyDynamics', 'NEPTUNE_BARYCENTER', 'NaifId', 'NumericalOrbitDynamics', 'OMEGA_E_M', 'OrbitState', 'OrbitStateRepres', 'PHOBOS', 'PI', 'PI_OVER_TWO', 'PLUTO_BARYCENTER', 'P_SUN', 'QUASINONSINGULAR_ROE', 'QUASI_NONSINGULAR_OE', 'QuasiNonsingularOE', 'QuasiNonsingularROE', 'RAD_PER_DEG', 'R_EARTH', 'R_MOON', 'SATURN_BARYCENTER', 'SECS_PER_DAY', 'SECS_PER_HOUR', 'SECS_PER_MINUTE', 'SER', 'SINGULAR_ROE', 'SOLAR_SYSTEM_BARYCENTER', 'SUN', 'S_AU', 'SingularROE', 'SpiceInterface', 'TIME_OF_J2000', 'TOD', 'TT_TAI_OFFSET', 'TWO_PI', 'URANUS_BARYCENTER', 'VENUS', 'VENUS_BARYCENTER', 'VENUS_FIXED', 'azimuth_elevation_range_to_cartesian', 'cartesian_to_azimuth_elevation_range', 'cartesian_to_classical', 'cartesian_to_east_north_up', 'cartesian_to_geographical', 'cartesian_to_spherical', 'classical_to_cartesian', 'classical_to_delaunay', 'classical_to_equinoctial', 'classical_to_quasi_nonsingular', 'compute_occultation', 'convert_orbit_state', 'dB2decimal', 'd_E_EMB', 'd_E_M', 'd_M_EMB', 'decimal2dB', 'degrees2dms', 'delaunay_to_classical', 'dms2degrees', 'east_north_up_to_cartesian', 'eccentric_to_mean_anomaly', 'eccentric_to_true_anomaly', 'equinoctial_to_classical', 'geographical_to_cartesian', 'mean_to_eccentric_anomaly', 'mean_to_true_anomaly', 'quasi_nonsingular_to_classical', 'relative_quasi_nonsingular_to_classical', 'spherical_to_cartesian', 'true_to_eccentric_anomaly', 'true_to_mean_anomaly', 'wrapTo2Pi', 'wrapToPi']
 class Body:
     @staticmethod
     def Earth(n_max: int = 0, m_max: int = 0) -> Body:
         ...
     @staticmethod
+    def Mars(n_max: int = 0, m_max: int = 0) -> Body:
+        ...
+    @staticmethod
     def Moon(n_max: int = 0, m_max: int = 0) -> Body:
+        ...
+    @staticmethod
+    def Sun() -> Body:
+        ...
+    @staticmethod
+    def Venus(n_max: int = 0, m_max: int = 0) -> Body:
         ...
     def __init__(self) -> None:
         ...
@@ -17,7 +26,7 @@ class Body:
 class CartesianOrbitState(OrbitState):
     r: numpy.ndarray[numpy.float64[3, 1]]
     v: numpy.ndarray[numpy.float64[3, 1]]
-    def __init__(self, rv: numpy.ndarray[numpy.float64[6, 1]], frame: Frame = pylupnt.Frame.MI) -> None:
+    def __init__(self, rv: numpy.ndarray[numpy.float64[6, 1]], frame: Frame = pylupnt.Frame.GCRF) -> None:
         ...
     def __repr__(self) -> str:
         ...
@@ -45,7 +54,7 @@ class EquinoctialOE(OrbitState):
     lon: float
     p: float
     q: float
-    def __init__(self, arg0: numpy.ndarray[numpy.float64[6, 1]], arg1: Frame) -> None:
+    def __init__(self, rv: numpy.ndarray[numpy.float64[6, 1]], frame: Frame = pylupnt.Frame.GCRF) -> None:
         ...
     def __repr__(self) -> str:
         ...
@@ -75,13 +84,17 @@ class Frame:
     
       EMR
     
-      MI
+      MOON_CI
     
-      PA
+      MOON_PA
     
-      ME
+      MOON_ME
     
-      OP
+      MOON_OP
+    
+      MARS_FIXED
+    
+      VENUS_FIXED
     """
     ECEF: typing.ClassVar[Frame]  # value = <Frame.ITRF: 0>
     ECI: typing.ClassVar[Frame]  # value = <Frame.GCRF: 1>
@@ -91,14 +104,16 @@ class Frame:
     GSE: typing.ClassVar[Frame]  # value = <Frame.GSE: 4>
     ICRF: typing.ClassVar[Frame]  # value = <Frame.ICRF: 2>
     ITRF: typing.ClassVar[Frame]  # value = <Frame.ITRF: 0>
-    ME: typing.ClassVar[Frame]  # value = <Frame.ME: 11>
-    MI: typing.ClassVar[Frame]  # value = <Frame.MI: 9>
+    MARS_FIXED: typing.ClassVar[Frame]  # value = <Frame.MARS_FIXED: 13>
     MOD: typing.ClassVar[Frame]  # value = <Frame.MOD: 6>
-    OP: typing.ClassVar[Frame]  # value = <Frame.OP: 12>
-    PA: typing.ClassVar[Frame]  # value = <Frame.PA: 10>
+    MOON_CI: typing.ClassVar[Frame]  # value = <Frame.MOON_CI: 9>
+    MOON_ME: typing.ClassVar[Frame]  # value = <Frame.MOON_ME: 11>
+    MOON_OP: typing.ClassVar[Frame]  # value = <Frame.MOON_OP: 12>
+    MOON_PA: typing.ClassVar[Frame]  # value = <Frame.MOON_PA: 10>
     SER: typing.ClassVar[Frame]  # value = <Frame.SER: 3>
     TOD: typing.ClassVar[Frame]  # value = <Frame.TOD: 7>
-    __members__: typing.ClassVar[dict[str, Frame]]  # value = {'ITRF': <Frame.ITRF: 0>, 'ECEF': <Frame.ITRF: 0>, 'GCRF': <Frame.GCRF: 1>, 'ECI': <Frame.GCRF: 1>, 'ICRF': <Frame.ICRF: 2>, 'SER': <Frame.SER: 3>, 'GSE': <Frame.GSE: 4>, 'EME': <Frame.EME: 5>, 'MOD': <Frame.MOD: 6>, 'TOD': <Frame.TOD: 7>, 'EMR': <Frame.EMR: 8>, 'MI': <Frame.MI: 9>, 'PA': <Frame.PA: 10>, 'ME': <Frame.ME: 11>, 'OP': <Frame.OP: 12>}
+    VENUS_FIXED: typing.ClassVar[Frame]  # value = <Frame.VENUS_FIXED: 14>
+    __members__: typing.ClassVar[dict[str, Frame]]  # value = {'ITRF': <Frame.ITRF: 0>, 'ECEF': <Frame.ITRF: 0>, 'GCRF': <Frame.GCRF: 1>, 'ECI': <Frame.GCRF: 1>, 'ICRF': <Frame.ICRF: 2>, 'SER': <Frame.SER: 3>, 'GSE': <Frame.GSE: 4>, 'EME': <Frame.EME: 5>, 'MOD': <Frame.MOD: 6>, 'TOD': <Frame.TOD: 7>, 'EMR': <Frame.EMR: 8>, 'MOON_CI': <Frame.MOON_CI: 9>, 'MOON_PA': <Frame.MOON_PA: 10>, 'MOON_ME': <Frame.MOON_ME: 11>, 'MOON_OP': <Frame.MOON_OP: 12>, 'MARS_FIXED': <Frame.MARS_FIXED: 13>, 'VENUS_FIXED': <Frame.VENUS_FIXED: 14>}
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:
@@ -212,8 +227,6 @@ class NBodyDynamics(NumericalOrbitDynamics):
         ...
     def set_primary_body(self, body: ...) -> None:
         ...
-    def set_time_step(self, dt: float) -> None:
-        ...
 class NaifId:
     """
     Members:
@@ -307,19 +320,21 @@ class NaifId:
         ...
 class NumericalOrbitDynamics:
     @typing.overload
-    def propagate(self, state: OrbitState, t0: float, tf: float, dt: float) -> None:
+    def propagate(self, state: OrbitState, t0: float, tf: float, dt: float = 0.0) -> None:
         ...
     @typing.overload
-    def propagate(self, state: numpy.ndarray[numpy.float64[6, 1]], t0: float, tf: float, dt: float) -> numpy.ndarray[numpy.float64[6, 1]]:
+    def propagate(self, state: numpy.ndarray[numpy.float64[6, 1]], t0: float, tf: float, dt: float = 0.0) -> numpy.ndarray[numpy.float64[6, 1]]:
         ...
     @typing.overload
-    def propagate(self, state: numpy.ndarray[numpy.float64[6, 1]], t0: float, tfs: numpy.ndarray[numpy.float64[m, 1]], progress: bool = False) -> numpy.ndarray[numpy.float64[m, n]]:
+    def propagate(self, state: numpy.ndarray[numpy.float64[6, 1]], t0: float, tfs: numpy.ndarray[numpy.float64[m, 1]], dt: float = 0.0, progress: bool = False) -> numpy.ndarray[numpy.float64[m, n]]:
         ...
     @typing.overload
     def propagate_with_stm(self, state: CartesianOrbitState, t0: float, tf: float, dt: float) -> numpy.ndarray[numpy.float64[6, 6]]:
         ...
     @typing.overload
     def propagate_with_stm(self, state: numpy.ndarray[numpy.float64[6, 1]], t0: float, tf: float, dt: float) -> tuple[numpy.ndarray[numpy.float64[6, 1]], numpy.ndarray[numpy.float64[6, 6]]]:
+        ...
+    def set_time_step(self, arg0: float) -> None:
         ...
 class OrbitState:
     frame: Frame
@@ -397,7 +412,7 @@ class QuasiNonsingularOE(OrbitState):
     ey: float
     i: float
     u: float
-    def __init__(self, arg0: numpy.ndarray[numpy.float64[6, 1]], arg1: Frame) -> None:
+    def __init__(self, rv: numpy.ndarray[numpy.float64[6, 1]], frame: Frame = pylupnt.Frame.GCRF) -> None:
         ...
     def __repr__(self) -> str:
         ...
@@ -863,19 +878,20 @@ JUPITER: NaifId  # value = <NaifId.JUPITER: 599>
 JUPITER_BARYCENTER: NaifId  # value = <NaifId.JUPITER_BARYCENTER: 5>
 MARS: NaifId  # value = <NaifId.MARS: 499>
 MARS_BARYCENTER: NaifId  # value = <NaifId.MARS_BARYCENTER: 4>
-ME: Frame  # value = <Frame.ME: 11>
+MARS_FIXED: Frame  # value = <Frame.MARS_FIXED: 13>
 MERCURY: NaifId  # value = <NaifId.MERCURY: 199>
 MERCURY_BARYCENTER: NaifId  # value = <NaifId.MERCURY_BARYCENTER: 1>
-MI: Frame  # value = <Frame.MI: 9>
 MJD_OF_J2000: float = 21545.0
 MOD: Frame  # value = <Frame.MOD: 6>
 MOON: NaifId  # value = <NaifId.MOON: 301>
+MOON_CI: Frame  # value = <Frame.MOON_CI: 9>
+MOON_ME: Frame  # value = <Frame.MOON_ME: 11>
+MOON_OP: Frame  # value = <Frame.MOON_OP: 12>
+MOON_PA: Frame  # value = <Frame.MOON_PA: 10>
 MU_EARTH: float = 398600.4418
 MU_MOON: float = 4902.800066
 NEPTUNE_BARYCENTER: NaifId  # value = <NaifId.NEPTUNE_BARYCENTER: 8>
 OMEGA_E_M: float = 2.6617e-06
-OP: Frame  # value = <Frame.OP: 12>
-PA: Frame  # value = <Frame.PA: 10>
 PHOBOS: NaifId  # value = <NaifId.PHOBOS: 401>
 PI: float = 3.141592653589793
 PI_OVER_TWO: float = 1.5707963267948966
@@ -902,6 +918,7 @@ TWO_PI: float = 6.283185307179586
 URANUS_BARYCENTER: NaifId  # value = <NaifId.URANUS_BARYCENTER: 7>
 VENUS: NaifId  # value = <NaifId.VENUS: 299>
 VENUS_BARYCENTER: NaifId  # value = <NaifId.VENUS_BARYCENTER: 2>
+VENUS_FIXED: Frame  # value = <Frame.VENUS_FIXED: 14>
 d_E_EMB: float = 4671.0
 d_E_M: float = 384400.0
 d_M_EMB: float = 379729.0

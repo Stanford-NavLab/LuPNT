@@ -33,6 +33,9 @@ struct Body {
 
   static Body Moon(int n_max = 0, int m_max = 0);
   static Body Earth(int n_max = 0, int m_max = 0);
+  static Body Sun();
+  static Body Venus(int n_max = 0, int m_max = 0);
+  static Body Mars(int n_max = 0, int m_max = 0);
 };
 
 struct BodyData {

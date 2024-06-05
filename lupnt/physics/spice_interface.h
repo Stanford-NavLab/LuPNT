@@ -26,8 +26,8 @@ namespace SpiceInterface {
 const std::map<Frame, std::string> frametem_string = {
     {Frame::ITRF, "ITRF93"},
     {Frame::GCRF, "J2000"},
-    {Frame::PA, "MOON_PA"},
-    {Frame::MI, "J2000"},
+    {Frame::MOON_PA, "MOON_PA"},
+    {Frame::MOON_CI, "J2000"},
 };
 
 static segment_t *cheby_s;

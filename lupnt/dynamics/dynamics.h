@@ -185,19 +185,15 @@ class NumericalOrbitDynamics : public NumericalDynamics {
       : NumericalDynamics(odefunc, integrator),
         state_representation_(state_representation) {}
 
-  // with dt
-  void Propagate(OrbitState &state, real t0, real tf, real dt);
-  void Propagate(Vector6 &x, real t0, real tf, real dt);
+  void Propagate(OrbitState &state, real t0, real tf, real dt = 0.0);
+  void Propagate(Vector6 &x, real t0, real tf, real dt = 0.0);
   void PropagateWithStm(OrbitState &state, real t0, real tf, real dt,
                         Matrix6d &stm);
-  void PropagateWithStm(Vector6 &x, real t0, real tf, real dt, Matrix6d &stm);
-
-  // without dt (uses dt_)
-  void Propagate(OrbitState &state, real t0, real tf);
-  void Propagate(Vector6 &x, real t0, real tf);
-  MatrixX Propagate(OrbitState &state, real t0, VectorX &tf,
+  MatrixX Propagate(OrbitState &state, real t0, VectorX &tf, real dt = 0.0,
                     bool progress = false);
-  MatrixX Propagate(Vector6 &x, real t0, VectorX &tf, bool progress = false);
+  MatrixX Propagate(Vector6 &x, real t0, VectorX &tf, real dt = 0.0,
+                    bool progress = false);
+  void PropagateWithStm(Vector6 &x, real t0, real tf, real dt, Matrix6d &stm);
   void PropagateWithStm(OrbitState &state, real t0, real tf, Matrix6d &stm);
   void PropagateWithStm(Vector6 &x, real t0, real tf, Matrix6d &stm);
 

@@ -82,7 +82,7 @@ int main() {
   real w = 90.0 * RAD_PER_DEG;
   real M = 0.0 * RAD_PER_DEG;
   ClassicalOE coe_moon({a, e, i, Omega, w, M});
-  coe_moon.SetCoordSystem(Frame::MI);
+  coe_moon.SetCoordSystem(Frame::MOON_CI);
 
   auto cart_state_moon = std::make_shared<CartesianOrbitState>(
       ClassicalToCartesian(coe_moon, MU_MOON));
@@ -124,7 +124,7 @@ int main() {
 
     // Moon spacecraft
     auto state = moon_sat->GetCartesianGCRFStateAtEpoch(epoch);
-    auto sate_mi = ConvertOrbitStateFrame(state, epoch, Frame::MI);
+    auto sate_mi = ConvertOrbitStateFrame(state, epoch, Frame::MOON_CI);
     auto state_gcrf = ConvertOrbitStateFrame(state, epoch, Frame::GCRF);
     data_history->AddData("rv_moon_mi", t, sate_mi->GetVector());
     data_history->AddData("rv_moon_gcrf", t, state_gcrf->GetVector());
@@ -133,7 +133,7 @@ int main() {
     for (int i = 0; i < gps_const.GetNumSatellites(); i++) {
       auto sate =
           gps_const.GetSatellite(i)->GetCartesianGCRFStateAtEpoch(epoch);
-      auto sate_mi = ConvertOrbitStateFrame(sate, epoch, Frame::MI);
+      auto sate_mi = ConvertOrbitStateFrame(sate, epoch, Frame::MOON_CI);
       auto state_gcrf = ConvertOrbitStateFrame(sate, epoch, Frame::GCRF);
 
       std::string name = "sat" + std::to_string(i);
@@ -145,12 +145,13 @@ int main() {
     Vector6 v6;
     v6.setZero();
 
-    data_history->AddData("earth_mi", t,
-                          FrameConverter::Convert(epoch, VectorX::Zero(6),
-                                                  Frame::GCRF, Frame::MI));
-    data_history->AddData("moon_gcrf", t,
-                          FrameConverter::Convert(epoch, VectorX::Zero(6),
-                                                  Frame::MI, Frame::GCRF));
+    // Vector6 vec6_mi = FrameConverter::Convert(epoch, VectorX::Zero(6),
+    //                                           Frame::GCRF, Frame::MOON_CI);
+    // Vector6 vec6_gcrf = FrameConverter::Convert(epoch, VectorX::Zero(6),
+    //                                             Frame::MOON_CI, Frame::GCRF);
+
+    // data_history->AddData("earth_mi", t, vec6_mi);
+    // data_history->AddData("moon_gcrf", t, vec6_gcrf);
 
     // Print progress
     if (fmod(t, print_every) < 1e-3) {

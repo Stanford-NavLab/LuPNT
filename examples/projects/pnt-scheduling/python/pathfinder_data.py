@@ -14,7 +14,7 @@ users = [
         "type": "orbital",
         "altitude": 100,  # [km]
         "orbital_elements": [pnt.R_MOON + 100, 0, 28.5, 0, 0, 0],
-        "frame": pnt.MI,
+        "frame": pnt.MOON_CI,
         "duration": 30,  # [days]
         "EIRP": 9,  # [dBW]
         "GT": -23.4,  # [dB/K]
@@ -65,7 +65,7 @@ users = [
         "altitude": 100,  # [km]
         "orbital_elements": [pnt.R_MOON + 100, 0, 60, 90, 0, 90],
         # "orbital_elements": [pnt.R_MOON + 3000, 0, 75, 90, 0, 90],
-        "frame": pnt.MI,
+        "frame": pnt.MOON_CI,
         "duration": 181,  # [days]
         "EIRP": 5.7,  # [dBW]
         "GT": -23.4,  # [dB/K]

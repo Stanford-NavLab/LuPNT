@@ -128,13 +128,13 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
       }
     }
 
-    case ME: {
+    case MOON_ME: {
       switch (frame_out) {
-        case PA: {  // Convert to PA
+        case MOON_PA: {  // Convert to MOON_PA
           Vector3 r_ME = rv_in.head(3);
           Vector3 v_ME = rv_in.tail(3);
 
-          // Rotation Matrix ME (in DE421) -> PA (in DE440)
+          // Rotation Matrix MOON_ME (in DE421) -> MOON_PA (in DE440)
           // Reference:
           // https://iopscience.iop.org/article/10.3847/1538-3881/abd414/pdf
           Matrix3 B_M = Rot1(-0.2785 * DEG_PER_ARCSEC) *
@@ -148,18 +148,18 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
           rv_PA << r_PA, v_PA;
           return rv_PA;
         }
-        default: {  // first convert to PA and then to the desired frame
-          Vector6 rv_pa = Convert(t_tai, rv_in, ME, PA);
-          Vector6 rv_out = Convert(t_tai, rv_pa, PA, frame_out);
+        default: {  // first convert to MOON_PA and then to the desired frame
+          Vector6 rv_pa = Convert(t_tai, rv_in, MOON_ME, MOON_PA);
+          Vector6 rv_out = Convert(t_tai, rv_pa, MOON_PA, frame_out);
           return rv_out;
         }
       }
     }
 
-    case PA: {
+    case MOON_PA: {
       switch (frame_out) {
-        case ME: {
-          // Rotation Matrix ME (in DE421) -> PA (in DE440)
+        case MOON_ME: {
+          // Rotation Matrix MOON_ME (in DE421) -> MOON_PA (in DE440)
           // Reference:
           // https://iopscience.iop.org/article/10.3847/1538-3881/abd414/pdf
           Vector3 r_PA = rv_in.head(3);
@@ -173,15 +173,15 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
           rv_me << r_ME, v_ME;
           return rv_me;
         }
-        case MI: {  // Convert to Moon Inertial
+        case MOON_CI: {  // Convert to Moon Inertial
           Matrix6 Mrot =
-              GetFrameConversionMatrix(t_tai, Frame::PA, Frame::GCRF);
+              GetFrameConversionMatrix(t_tai, Frame::MOON_PA, Frame::GCRF);
           Vector6 rv_mi = Mrot * rv_in;
           return rv_mi;
         }
-        default: {  // first convert to MI and then to the desired frame
-          Vector6 rv_mi = Convert(t_tai, rv_in, PA, MI);
-          Vector6 rv_out = Convert(t_tai, rv_mi, MI, frame_out);
+        default: {  // first convert to MOON_CI and then to the desired frame
+          Vector6 rv_mi = Convert(t_tai, rv_in, MOON_PA, MOON_CI);
+          Vector6 rv_out = Convert(t_tai, rv_mi, MOON_CI, frame_out);
           return rv_out;
         }
       }
@@ -201,7 +201,7 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
           Vector6 rv_itrf = Rrv_gcrf2itrf * rv_in;
           return rv_itrf;
         }
-        case MI: {
+        case MOON_CI: {
           Vector6 rv_icrf_m2e =
               GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH);
           Vector6 rv_mi = rv_in + rv_icrf_m2e;
@@ -213,10 +213,10 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
           Vector6 rv_emr = InertialToRtn(rv_icrf_emb2e, rv_in);
           return rv_emr;
         }
-        case PA:
-        case ME: {
-          Vector6 rv_mi = Convert(t_tai, rv_in, GCRF, MI);
-          Vector6 rv_out = Convert(t_tai, rv_mi, MI, frame_out);
+        case MOON_PA:
+        case MOON_ME: {
+          Vector6 rv_mi = Convert(t_tai, rv_in, GCRF, MOON_CI);
+          Vector6 rv_out = Convert(t_tai, rv_mi, MOON_CI, frame_out);
           return rv_out;
         }
         default:
@@ -224,7 +224,7 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
       }
     }
 
-    case MI: {
+    case MOON_CI: {
       switch (frame_out) {
         case GCRF: {
           Vector6 rv_icrf_e2m =
@@ -232,24 +232,24 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
           Vector6 rv_gcrf = rv_in + rv_icrf_e2m;
           return rv_gcrf;
         }
-        case PA: {
+        case MOON_PA: {
           Matrix6 Mrot =
-              GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::PA);
+              GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::MOON_PA);
           Vector6 rv_pa = Mrot * rv_in;
           return rv_pa;
         }
-        case ME: {
-          Vector6 rv_pa = Convert(t_tai, rv_in, MI, PA);
-          Vector6 rv_out = Convert(t_tai, rv_pa, PA, frame_out);
+        case MOON_ME: {
+          Vector6 rv_pa = Convert(t_tai, rv_in, MOON_CI, MOON_PA);
+          Vector6 rv_out = Convert(t_tai, rv_pa, MOON_PA, frame_out);
           return rv_out;
         }
-        case OP: {
+        case MOON_OP: {
           Matrix6 R_op2mi = ComputeOpToMi(t_tai);
           Vector6 rv_op = R_op2mi.transpose() * rv_in;
           return rv_op;
         }
         default: {
-          Vector6 rv_gcrf = Convert(t_tai, rv_in, MI, GCRF);
+          Vector6 rv_gcrf = Convert(t_tai, rv_in, MOON_CI, GCRF);
           Vector6 rv_out = Convert(t_tai, rv_gcrf, GCRF, frame_out);
           return rv_out;
         }
@@ -288,16 +288,16 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
       }
     }
 
-    case OP: {
+    case MOON_OP: {
       switch (frame_out) {
-        case MI: {
+        case MOON_CI: {
           Matrix6 R_op2mi = ComputeOpToMi(t_tai);
           Vector6 rv_mi = R_op2mi * rv_in;
           return rv_mi;
         }
         default: {
-          Vector6 rv_mi = Convert(t_tai, rv_in, OP, MI);
-          Vector6 rv_out = Convert(t_tai, rv_mi, MI, frame_out);
+          Vector6 rv_mi = Convert(t_tai, rv_in, MOON_OP, MOON_CI);
+          Vector6 rv_out = Convert(t_tai, rv_mi, MOON_CI, frame_out);
           return rv_out;
         }
       }
@@ -315,21 +315,21 @@ Matrix6 FrameConverter::ComputeOpToMi(real t_tai) {
 
   // Moon axis
   MatrixX iau_moon2icrf;
-  iau_moon2icrf =
-      GetFrameConversionMatrix(t_tai, Frame::PA, Frame::GCRF).block(0, 0, 3, 3);
+  iau_moon2icrf = GetFrameConversionMatrix(t_tai, Frame::MOON_PA, Frame::GCRF)
+                      .block(0, 0, 3, 3);
 
   // IAU pole
   Vector3 iau_pole{0, 0, 1};
   Vector3 iau_pole_icrf = iau_moon2icrf * iau_pole;
 
-  // OP unit vectors
+  // MOON_OP unit vectors
   Vector3 dr = rv_earth_icrf.head(3) - rv_moon_icrf.head(3);
   Vector3 dv = rv_earth_icrf.tail(3) - rv_moon_icrf.tail(3);
   Vector3 z_op = dr.cross(dv).normalized();
   Vector3 x_op = iau_pole_icrf.cross(z_op).normalized();
   Vector3 y_op = z_op.cross(x_op).normalized();
 
-  // create rotation matrix from OP to MI
+  // create rotation matrix from MOON_OP to MOON_CI
   Matrix3 R_op2mi;
   R_op2mi << x_op, y_op, z_op;
 

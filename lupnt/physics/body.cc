@@ -16,7 +16,7 @@ Body Body::Moon(int n_max, int m_max) {
   moon.normalized = true;
   moon.n_max = n_max;
   moon.m_max = m_max;
-  moon.fixed_frame = Frame::PA;
+  moon.fixed_frame = Frame::MOON_PA;
 
   BodyData bd = GetBodyData(moon.id);
   moon.mu = bd.GM;
@@ -44,6 +44,58 @@ Body Body::Earth(int n_max, int m_max) {
   if (earth.sphericalHarmonics)
     std::tie(earth.Cnm, earth.Snm) = LoadGravityCoefficients(bd, n_max);
   return earth;
+}
+
+Body Body::Sun() {
+  Body sun;
+  sun.name = "SUN";
+  sun.id = NaifId::SUN;
+  sun.sphericalHarmonics = false;
+  sun.normalized = false;
+  sun.fixed_frame = Frame::ICRF;
+
+  BodyData bd = GetBodyData(sun.id);
+  sun.mu = bd.GM;
+  sun.R = bd.R;
+  return sun;
+}
+
+Body Body::Mars(int n_max, int m_max) {
+  Body mars;
+  mars.name = "MARS";
+  mars.id = NaifId::MARS;
+  mars.sphericalHarmonics = n_max > 0 || m_max > 0;
+  mars.normalized = true;
+  mars.n_max = n_max;
+  mars.m_max = m_max;
+  mars.fixed_frame = Frame::MARS_FIXED;
+
+  BodyData bd = GetBodyData(mars.id);
+  mars.mu = bd.GM;
+  mars.R = bd.R;
+
+  if (mars.sphericalHarmonics)
+    std::tie(mars.Cnm, mars.Snm) = LoadGravityCoefficients(bd, n_max);
+  return mars;
+}
+
+Body Body::Venus(int n_max, int m_max) {
+  Body venus;
+  venus.name = "VENUS";
+  venus.id = NaifId::VENUS;
+  venus.sphericalHarmonics = n_max > 0 || m_max > 0;
+  venus.normalized = true;
+  venus.n_max = n_max;
+  venus.m_max = m_max;
+  venus.fixed_frame = Frame::VENUS_FIXED;
+
+  BodyData bd = GetBodyData(venus.id);
+  venus.mu = bd.GM;
+  venus.R = bd.R;
+
+  if (venus.sphericalHarmonics)
+    std::tie(venus.Cnm, venus.Snm) = LoadGravityCoefficients(bd, n_max);
+  return venus;
 }
 
 BodyData GetBodyData(const NaifId bodyID) {
@@ -80,6 +132,14 @@ BodyData GetBodyData(const NaifId bodyID) {
       bd.delimiter = ",";
       bd.GM = 0.4282837566395650E+05;
       bd.R = 0.3396000000000000E+04;
+      break;
+
+    case NaifId::SUN:  // SUN (10x10)
+      bd.filepath = "shgm405c.bsp";
+      bd.headerlines = 3;
+      bd.delimiter = ",";
+      bd.GM = 132712440041.9394;
+      bd.R = 696342.0;
       break;
 
     default:

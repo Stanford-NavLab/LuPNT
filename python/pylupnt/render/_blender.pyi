@@ -1,5 +1,6 @@
 from __future__ import annotations
 import bpy as bpy
+import logging as logging
 import mathutils as mathutils
 import numpy as np
 import numpy
@@ -7,7 +8,7 @@ import os as os
 from pylupnt import utils
 from scipy.spatial.transform._rotation import Rotation as R
 import typing
-__all__ = ['Blender', 'R', 'bpy', 'mathutils', 'np', 'os', 'utils']
+__all__ = ['Blender', 'R', 'bpy', 'logging', 'mathutils', 'np', 'os', 'utils']
 class Blender:
     ALBEDO: typing.ClassVar[float] = 0.169
     BODY = None

@@ -75,7 +75,7 @@ void init_orbit_state(py::module &m) {
   // ClassicalOE
   py::class_<ClassicalOE, OrbitState>(m, "ClassicalOE")
       .def(py::init<const Vector6d &, const Frame>(),
-           py::arg("[a, e, i, Omega, w, M]"), py::arg("frame") = Frame::MI)
+           py::arg("[a, e, i, Omega, w, M]"), py::arg("frame") = Frame::MOON_CI)
       .def_property("a", DEFINE_GETSET_REAL(ClassicalOE, a))
       .def_property("e", DEFINE_GETSET_REAL(ClassicalOE, e))
       .def_property("i", DEFINE_GETSET_REAL(ClassicalOE, i))
@@ -87,7 +87,7 @@ void init_orbit_state(py::module &m) {
   // CartesianOrbitState
   py::class_<CartesianOrbitState, OrbitState>(m, "CartesianOrbitState")
       .def(py::init<const Vector6d &, const Frame>(), py::arg("rv"),
-           py::arg("frame") = Frame::MI)
+           py::arg("frame") = Frame::GCRF)
       .def_property(
           "r",
           [](const CartesianOrbitState &s) -> Vector3d {
@@ -108,7 +108,8 @@ void init_orbit_state(py::module &m) {
 
   // QuasiNonsingularOE
   py::class_<QuasiNonsingularOE, OrbitState>(m, "QuasiNonsingularOE")
-      .def(py::init<const Vector6d &, const Frame>())
+      .def(py::init<const Vector6d &, const Frame>(), py::arg("rv"),
+           py::arg("frame") = Frame::GCRF)
       .def_property("a", DEFINE_GETSET_REAL(QuasiNonsingularOE, a))
       .def_property("u", DEFINE_GETSET_REAL(QuasiNonsingularOE, u))
       .def_property("ex", DEFINE_GETSET_REAL(QuasiNonsingularOE, ex))
@@ -119,7 +120,8 @@ void init_orbit_state(py::module &m) {
 
   // EquinoctialOE
   py::class_<EquinoctialOE, OrbitState>(m, "EquinoctialOE")
-      .def(py::init<const Vector6d &, const Frame>())
+      .def(py::init<const Vector6d &, const Frame>(), py::arg("rv"),
+           py::arg("frame") = Frame::GCRF)
       .def_property("a", DEFINE_GETSET_REAL(EquinoctialOE, a))
       .def_property("h", DEFINE_GETSET_REAL(EquinoctialOE, h))
       .def_property("k", DEFINE_GETSET_REAL(EquinoctialOE, k))

@@ -26,8 +26,8 @@ int main() {
 
   // Initial state
   auto rv_sat_OP = ClassicalToCartesian(coe_sat_OP, MU_MOON);
-  auto rv_sat_mi =
-      FrameConverter::Convert(epoch0, rv_sat_OP, Frame::OP, Frame::MI);
+  auto rv_sat_mi = FrameConverter::Convert(epoch0, rv_sat_OP, Frame::MOON_OP,
+                                           Frame::MOON_CI);
 
   // Time
   double T = 2 * M_PI * sqrt(pow(sma, 3) / MU_MOON);  // [s] Orbital period
@@ -76,8 +76,8 @@ int main() {
     epoch += dT;
     dynamics.Propagate(rv_sat_mi, epoch - dT, epoch);
 
-    auto rv_sat_pa =
-        FrameConverter::Convert(epoch, rv_sat_mi, Frame::MI, Frame::PA);
+    auto rv_sat_pa = FrameConverter::Convert(epoch, rv_sat_mi, Frame::MOON_CI,
+                                             Frame::MOON_PA);
     rv_sat_mi_hist.row(i) = rv_sat_mi.transpose();
     rv_sat_pa_hist.row(i) = rv_sat_pa.transpose();
   }

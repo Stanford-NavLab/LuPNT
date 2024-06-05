@@ -19,10 +19,12 @@ void init_frame_converter(py::module &m) {
       .value("MOD", Frame::MOD)
       .value("TOD", Frame::TOD)
       .value("EMR", Frame::EMR)
-      .value("MI", Frame::MI)
-      .value("PA", Frame::PA)
-      .value("ME", Frame::ME)
-      .value("OP", Frame::OP)
+      .value("MOON_CI", Frame::MOON_CI)
+      .value("MOON_PA", Frame::MOON_PA)
+      .value("MOON_ME", Frame::MOON_ME)
+      .value("MOON_OP", Frame::MOON_OP)
+      .value("MARS_FIXED", Frame::MARS_FIXED)
+      .value("VENUS_FIXED", Frame::VENUS_FIXED)
       .export_values();
 
   py::class_<FrameConverter>(m, "FrameConverter")

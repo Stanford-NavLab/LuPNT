@@ -77,7 +77,7 @@ from . import pylupnt_pybind
 from . import render
 from . import scenarios
 from . import utils
-__all__ = ['A1MJD_OF_J2000', 'A1_TAI_OFFSET', 'AU', 'Body', 'C', 'C22_MOON', 'CARTESIAN', 'CLASSICAL_OE', 'CartesianOrbitState', 'CartesianTwoBodyDynamics', 'ClassicalOE', 'DAYS_PER_JULIAN_CENTURY', 'DAYS_PER_SEC', 'DAYS_PER_YEAR', 'DEG_PER_RAD', 'DEIMOS', 'DELAUNAY_OE', 'E', 'EARTH', 'EARTH_BARYCENTER', 'EARTH_MOON_BARYCENTER', 'ECEF', 'ECI', 'EME', 'EMR', 'EQUINOTICAL_OE', 'EquinoctialOE', 'Frame', 'FrameConverter', 'GCRF', 'GSE', 'GridSpec', 'ICRF', 'ITRF', 'J2_EARTH', 'J2_MOON', 'JD_JAN_5_1941', 'JD_MJD_OFFSET', 'JD_NOV_17_1858', 'JD_OF_J2000', 'JUPITER', 'JUPITER_BARYCENTER', 'KeplerianDynamics', 'LUPNT_DATA_PATH', 'MARS', 'MARS_BARYCENTER', 'ME', 'MERCURY', 'MERCURY_BARYCENTER', 'MI', 'MJD_OF_J2000', 'MOD', 'MOON', 'MU_EARTH', 'MU_MOON', 'NBodyDynamics', 'NEPTUNE_BARYCENTER', 'NaifId', 'NumericalOrbitDynamics', 'OMEGA_E_M', 'OP', 'OrbitState', 'OrbitStateRepres', 'PA', 'PHOBOS', 'PI', 'PI_OVER_TWO', 'PLUTO_BARYCENTER', 'P_SUN', 'QUASINONSINGULAR_ROE', 'QUASI_NONSINGULAR_OE', 'QuasiNonsingularOE', 'QuasiNonsingularROE', 'RAD_PER_DEG', 'R_EARTH', 'R_MOON', 'SATURN_BARYCENTER', 'SECS_PER_DAY', 'SECS_PER_HOUR', 'SECS_PER_MINUTE', 'SER', 'SINGULAR_ROE', 'SOLAR_SYSTEM_BARYCENTER', 'SUN', 'S_AU', 'SingularROE', 'SpiceInterface', 'TIME_OF_J2000', 'TOD', 'TT_TAI_OFFSET', 'TWO_PI', 'URANUS_BARYCENTER', 'VENUS', 'VENUS_BARYCENTER', 'arr_to_mat_idx', 'azimuth_elevation_range_to_cartesian', 'cartesian_to_azimuth_elevation_range', 'cartesian_to_classical', 'cartesian_to_east_north_up', 'cartesian_to_geographical', 'cartesian_to_spherical', 'classical_to_cartesian', 'classical_to_delaunay', 'classical_to_equinoctial', 'classical_to_quasi_nonsingular', 'compute_occultation', 'convert_orbit_state', 'crater_detection', 'cross_norm', 'dB2decimal', 'd_E_EMB', 'd_E_M', 'd_M_EMB', 'decimal2dB', 'degrees2dms', 'delaunay_to_classical', 'dms2degrees', 'dump_pickle', 'east_north_up_to_cartesian', 'eccentric_to_mean_anomaly', 'eccentric_to_true_anomaly', 'equinoctial_to_classical', 'find_file', 'format_element', 'geographical_to_cartesian', 'get_basepath', 'i_to_arr_idxs', 'load_data', 'load_pickle', 'mat_to_arr_idx', 'math_utils', 'mean_to_eccentric_anomaly', 'mean_to_true_anomaly', 'np', 'os', 'pd', 'pickle', 'pkg_resources', 'plot', 'plot_RTN', 'plt', 'print_aligned', 'pylupnt_pybind', 'quasi_nonsingular_to_classical', 'relative_quasi_nonsingular_to_classical', 'render', 'scenarios', 'set_axes_equal', 'spherical_to_cartesian', 'time', 'timed', 'timer_func', 'true_to_eccentric_anomaly', 'true_to_mean_anomaly', 'utils', 'wrapTo2Pi', 'wrapToPi']
+__all__ = ['A1MJD_OF_J2000', 'A1_TAI_OFFSET', 'AU', 'Body', 'C', 'C22_MOON', 'CARTESIAN', 'CLASSICAL_OE', 'CartesianOrbitState', 'CartesianTwoBodyDynamics', 'ClassicalOE', 'DAYS_PER_JULIAN_CENTURY', 'DAYS_PER_SEC', 'DAYS_PER_YEAR', 'DEG_PER_RAD', 'DEIMOS', 'DELAUNAY_OE', 'E', 'EARTH', 'EARTH_BARYCENTER', 'EARTH_MOON_BARYCENTER', 'ECEF', 'ECI', 'EME', 'EMR', 'EQUINOTICAL_OE', 'EquinoctialOE', 'Frame', 'FrameConverter', 'GCRF', 'GSE', 'GridSpec', 'ICRF', 'ITRF', 'J2_EARTH', 'J2_MOON', 'JD_JAN_5_1941', 'JD_MJD_OFFSET', 'JD_NOV_17_1858', 'JD_OF_J2000', 'JUPITER', 'JUPITER_BARYCENTER', 'KeplerianDynamics', 'LUPNT_DATA_PATH', 'MARS', 'MARS_BARYCENTER', 'MARS_FIXED', 'MERCURY', 'MERCURY_BARYCENTER', 'MJD_OF_J2000', 'MOD', 'MOON', 'MOON_CI', 'MOON_ME', 'MOON_OP', 'MOON_PA', 'MU_EARTH', 'MU_MOON', 'NBodyDynamics', 'NEPTUNE_BARYCENTER', 'NaifId', 'NumericalOrbitDynamics', 'OMEGA_E_M', 'OrbitState', 'OrbitStateRepres', 'PHOBOS', 'PI', 'PI_OVER_TWO', 'PLUTO_BARYCENTER', 'P_SUN', 'QUASINONSINGULAR_ROE', 'QUASI_NONSINGULAR_OE', 'QuasiNonsingularOE', 'QuasiNonsingularROE', 'RAD_PER_DEG', 'R_EARTH', 'R_MOON', 'SATURN_BARYCENTER', 'SECS_PER_DAY', 'SECS_PER_HOUR', 'SECS_PER_MINUTE', 'SER', 'SINGULAR_ROE', 'SOLAR_SYSTEM_BARYCENTER', 'SUN', 'S_AU', 'SingularROE', 'SpiceInterface', 'TIME_OF_J2000', 'TOD', 'TT_TAI_OFFSET', 'TWO_PI', 'URANUS_BARYCENTER', 'VENUS', 'VENUS_BARYCENTER', 'VENUS_FIXED', 'arr_to_mat_idx', 'azimuth_elevation_range_to_cartesian', 'cartesian_to_azimuth_elevation_range', 'cartesian_to_classical', 'cartesian_to_east_north_up', 'cartesian_to_geographical', 'cartesian_to_spherical', 'classical_to_cartesian', 'classical_to_delaunay', 'classical_to_equinoctial', 'classical_to_quasi_nonsingular', 'compute_occultation', 'convert_orbit_state', 'crater_detection', 'cross_norm', 'dB2decimal', 'd_E_EMB', 'd_E_M', 'd_M_EMB', 'decimal2dB', 'degrees2dms', 'delaunay_to_classical', 'dms2degrees', 'dump_pickle', 'east_north_up_to_cartesian', 'eccentric_to_mean_anomaly', 'eccentric_to_true_anomaly', 'equinoctial_to_classical', 'find_file', 'format_element', 'geographical_to_cartesian', 'get_basepath', 'i_to_arr_idxs', 'load_data', 'load_pickle', 'mat_to_arr_idx', 'math_utils', 'mean_to_eccentric_anomaly', 'mean_to_true_anomaly', 'np', 'os', 'pd', 'pickle', 'pkg_resources', 'plot', 'plot_RTN', 'plt', 'print_aligned', 'pylupnt_pybind', 'quasi_nonsingular_to_classical', 'relative_quasi_nonsingular_to_classical', 'render', 'scenarios', 'set_axes_equal', 'spherical_to_cartesian', 'time', 'timed', 'timer_func', 'true_to_eccentric_anomaly', 'true_to_mean_anomaly', 'utils', 'wrapTo2Pi', 'wrapToPi']
 A1MJD_OF_J2000: float = 21545.0
 A1_TAI_OFFSET: float = 0.0343817
 AU: float = 149597970.0
@@ -115,19 +115,20 @@ JUPITER_BARYCENTER: pylupnt_pybind.NaifId  # value = <NaifId.JUPITER_BARYCENTER:
 LUPNT_DATA_PATH: str = '/Users/guillemcv/Development/NavLab/LuPNT/data'
 MARS: pylupnt_pybind.NaifId  # value = <NaifId.MARS: 499>
 MARS_BARYCENTER: pylupnt_pybind.NaifId  # value = <NaifId.MARS_BARYCENTER: 4>
-ME: pylupnt_pybind.Frame  # value = <Frame.ME: 11>
+MARS_FIXED: pylupnt_pybind.Frame  # value = <Frame.MARS_FIXED: 13>
 MERCURY: pylupnt_pybind.NaifId  # value = <NaifId.MERCURY: 199>
 MERCURY_BARYCENTER: pylupnt_pybind.NaifId  # value = <NaifId.MERCURY_BARYCENTER: 1>
-MI: pylupnt_pybind.Frame  # value = <Frame.MI: 9>
 MJD_OF_J2000: float = 21545.0
 MOD: pylupnt_pybind.Frame  # value = <Frame.MOD: 6>
 MOON: pylupnt_pybind.NaifId  # value = <NaifId.MOON: 301>
+MOON_CI: pylupnt_pybind.Frame  # value = <Frame.MOON_CI: 9>
+MOON_ME: pylupnt_pybind.Frame  # value = <Frame.MOON_ME: 11>
+MOON_OP: pylupnt_pybind.Frame  # value = <Frame.MOON_OP: 12>
+MOON_PA: pylupnt_pybind.Frame  # value = <Frame.MOON_PA: 10>
 MU_EARTH: float = 398600.4418
 MU_MOON: float = 4902.800066
 NEPTUNE_BARYCENTER: pylupnt_pybind.NaifId  # value = <NaifId.NEPTUNE_BARYCENTER: 8>
 OMEGA_E_M: float = 2.6617e-06
-OP: pylupnt_pybind.Frame  # value = <Frame.OP: 12>
-PA: pylupnt_pybind.Frame  # value = <Frame.PA: 10>
 PHOBOS: pylupnt_pybind.NaifId  # value = <NaifId.PHOBOS: 401>
 PI: float = 3.141592653589793
 PI_OVER_TWO: float = 1.5707963267948966
@@ -154,6 +155,7 @@ TWO_PI: float = 6.283185307179586
 URANUS_BARYCENTER: pylupnt_pybind.NaifId  # value = <NaifId.URANUS_BARYCENTER: 7>
 VENUS: pylupnt_pybind.NaifId  # value = <NaifId.VENUS: 299>
 VENUS_BARYCENTER: pylupnt_pybind.NaifId  # value = <NaifId.VENUS_BARYCENTER: 2>
+VENUS_FIXED: pylupnt_pybind.Frame  # value = <Frame.VENUS_FIXED: 14>
 __version__: str = '@PROJECT_VERSION@'
 d_E_EMB: float = 4671.0
 d_E_M: float = 384400.0

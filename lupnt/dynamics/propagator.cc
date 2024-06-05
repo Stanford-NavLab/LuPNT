@@ -27,6 +27,7 @@ NumericalPropagator::NumericalPropagator(std::string integratorType) {
 
 VectorX NumericalPropagator::Propagate(ODE odefunc, real t0, real tf,
                                        VectorX x0, real dt) {
+  assert(dt > 0 && "dt must be greater than 0");
   VectorX x = x0;
   real t = t0;
   real step;

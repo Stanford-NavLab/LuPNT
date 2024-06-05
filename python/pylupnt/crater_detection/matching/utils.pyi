@@ -2,7 +2,6 @@ from __future__ import annotations
 import networkx as nx
 from numba.core.decorators import njit
 import numpy as np
-import numpy
 from numpy import linalg as LA
 __all__ = ['LA', 'all_clockwise', 'cw_or_ccw', 'cyclic_permutations', 'enhanced_pattern_shifting', 'eps_array', 'get_cliques_by_length', 'is_clockwise', 'is_colinear', 'latlong2cartesian', 'njit', 'np', 'np_swap_columns', 'nx', 'shift_nd', 'triad_splice']
 def all_clockwise(x_triads_, y_triads_):
@@ -75,7 +74,7 @@ def latlong2cartesian(lat, long, alt = 0, rad = 1737.1):
     """
 def np_swap_columns(arr):
     ...
-def shift_nd(arr: numpy.ndarray, shift: numpy.ndarray):
+def shift_nd(*args, **kwargs):
     ...
 def triad_splice(arr, triads):
     ...
