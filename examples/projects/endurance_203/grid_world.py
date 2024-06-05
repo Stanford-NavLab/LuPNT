@@ -303,4 +303,5 @@ def get_PDOP(satpos, x_est):
     Q = np.linalg.inv(H.T @ H)
     variance = Q.diagonal()
     PDOP = np.sqrt(np.sum(variance))
+    # PDOP = np.sqrt(np.trace(Q))
     return PDOP
