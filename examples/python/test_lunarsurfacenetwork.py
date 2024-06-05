@@ -15,31 +15,26 @@ def degToRad(deg):
 
 # check if folder exists, if not, create it
 parent_dir = '/mnt/g/My Drive/Stanford_Documents/Documents/Research/Lunar_Surface_Station_ION2024'
-sub_dir = 'simplebatch_keplarian'
-show_plots = False
+show_plots = True
+save_results = True
 
 # Simulation parameters
-rng_obs_std_dev_m = 0.1 #1   # (in meters) standard deviation of passive ranging measurements
-init_pos_std = 0.1 #100 #km
+rng_obs_std_dev_m = 1 #1   # (in meters) standard deviation of passive ranging measurements
+init_pos_std = 10 #100 #km
 init_vel_std = init_pos_std*1e-3
-
-# dynamics models
-truth_dynamics = pnt.KeplerianDynamics(pnt.MU_MOON)
-batchfilter_dynamics = pnt.CartesianTwoBodyDynamics(pnt.MU_MOON, integrator='RK4')
-# batchfilter_dynamics = pnt.NBodyDynamics()
-# batchfilter_dynamics.set_primary_body(pnt.Body.MOON)
-# batchfilter_dynamics.add_body(pnt.Body.EARTH)
-
 
 # 
 dt_meas = 60 # seconds
-num_sat_periods = 5
+num_sat_periods = 2
+
+# dynamics models
+truth_dynamics_str = 'NBody'
+batchfilter_dynamics_str = 'NBody'
 
 # batch filter params
 tol_batch = 1e-4
 verbose_in_batch_filter = False
 max_batch = 10
-
 
 # Define satellite parameters (ELFO, Lunar Pathfinder)
 # 13.2 hr ELFO, defined in a J2000 frame
@@ -60,8 +55,34 @@ tai_string = "2022/08/01 00:00:00"
 # M = degToRad(180)
 # tai_string = "2030/10/01 00:00:00"
 
+# get orbital period from orbital elements
+n = np.sqrt(pnt.MU_MOON / a ** 3)
+T = 2*np.pi / n
+tot_duration = num_sat_periods * T
+print('Orbital period [hrs]:', T/3600)
 
 
+if truth_dynamics_str == 'Keplerian':
+    truth_dynamics = pnt.KeplerianDynamics(pnt.MU_MOON)
+elif truth_dynamics_str == 'NBody':
+    truth_dynamics = pnt.NBodyDynamics()
+    truth_dynamics.set_primary_body(pnt.Body.Moon())
+    truth_dynamics.add_body(pnt.Body.Earth())
+    truth_dynamics.set_time_step(dt_meas/10.0)
+else:
+    # throw an error
+    raise ValueError('Dynamics model not recognized')
+
+if batchfilter_dynamics_str == 'TwoBody':
+    batchfilter_dynamics = pnt.CartesianTwoBodyDynamics(pnt.MU_MOON, integrator='RK4')
+elif batchfilter_dynamics_str == 'NBody':
+    batchfilter_dynamics = pnt.NBodyDynamics()
+    batchfilter_dynamics.set_primary_body(pnt.Body.Moon())
+    batchfilter_dynamics.add_body(pnt.Body.Earth())
+    batchfilter_dynamics.set_time_step(dt_meas/5.0)
+else:
+    # throw an error
+    raise ValueError('Dynamics model not recognized')
 
 colors = plots.COLORS
 fig_vis = plots.Plot3D(elev=-25, azim=-50, figsize=(8, 8))
@@ -75,20 +96,27 @@ plt.title("Satellite orbit (PA)")
 # Create folder to save plots
 #
 
-# concatenate parent and sub directory
-fldr_path = os.path.join(parent_dir, sub_dir)
-# check if folder exists, if not, create it
-run_num = 1
-run_num_str = 'run' + str(run_num)
-save_path = os.path.join(fldr_path, run_num_str)
-while os.path.exists(save_path):
-    print('run_num', run_num, 'already exists!')
-    run_num += 1
+if save_results:
+    # define sub directory
+    sub_dir = 'simplebatch_' + truth_dynamics_str + 'Truth_' + batchfilter_dynamics_str + 'Batch/'
+    sub_sub_dir = 'InitDev' + str(round(init_pos_std,1)) + 'km_RngDev' + str(round(rng_obs_std_dev_m,1)) 
+    sub_sub_dir += 'm_Meas' + str(dt_meas) + 'sec_' + str(round(tot_duration/3600,1)) + 'hrs' 
+
+    # concatenate parent and sub directory
+    fldr_path = os.path.join(parent_dir, sub_dir+sub_sub_dir)
+
+    # check if folder exists, if not, create it
+    run_num = 1
     run_num_str = 'run' + str(run_num)
     save_path = os.path.join(fldr_path, run_num_str)
-# create directory
-os.makedirs(save_path)
-print('Directory to save: ', save_path)
+    while os.path.exists(save_path):
+        print('run_num', run_num, 'already exists!')
+        run_num += 1
+        run_num_str = 'run' + str(run_num)
+        save_path = os.path.join(fldr_path, run_num_str)
+    # create directory
+    os.makedirs(save_path)
+    print('Directory to save: ', save_path)
 #
 #
 ###########################################################################
@@ -166,11 +194,6 @@ print(" ")
 print("Classical orbital elements:")
 print(x_oe.vector)
 
-# get orbital period from orbital elements
-n = np.sqrt(pnt.MU_MOON / a ** 3)
-T = 2*np.pi / n
-print('Orbital period [hrs]:', T/3600)
-
 # Add base station
 az_stat_rad = pnt.RAD_PER_DEG * 0
 el_stat_rad = pnt.RAD_PER_DEG * (-90) 
@@ -187,7 +210,6 @@ print('Lunar station 6D state (Cartesian):', lss_pv_PA_km)
 print()
 
 # Propagate satellite orbit for certain amount of time and save state
-tot_duration = num_sat_periods * T
 t_arr = np.arange(0, tot_duration + dt_meas, dt_meas)
 t_arr_tai = tai_time + t_arr 
 len_t_arr = len(t_arr)
@@ -195,16 +217,28 @@ x_oe_arr = np.zeros((len(t_arr), 6))
 sat_true_pv_MI_km_arr = np.zeros((len(t_arr), 6))
 sat_true_pv_PA_km_arr = np.zeros((len(t_arr), 6))
 lss_pv_MI_km_arr = np.zeros((len(t_arr), 6))
-for i, t in enumerate(t_arr):
-    truth_dynamics.propagate(x_oe, dt_meas)
-    # save propagated state
-    x_oe_arr[i,:] = x_oe.vector
 
-    # convert from orbital elements to cartesian (inertial frame)
-    # x_cart_arr[i,:] = pnt.classical_to_cartesian(x_oe, pnt.MU_MOON).vector
-    sat_MI_pos = pnt.classical_to_cartesian(x_oe, pnt.MU_MOON).vector
+# initialize at time 0
+x_oe_arr[0,:] = x_oe.vector
+sat_pv_curr_MI = pnt.classical_to_cartesian(x_oe, pnt.MU_MOON).vector
+sat_true_pv_MI_km_arr[0,:] = pnt.classical_to_cartesian(x_oe, pnt.MU_MOON).vector
+sat_true_pv_PA_km_arr[0,:] = pnt.CoordConverter.convert(t_arr_tai[0], sat_true_pv_MI_km_arr[0,:], coord_sys_in=pnt.CoordSystem.MI, coord_sys_out=pnt.CoordSystem.PA)
+lss_pv_MI_km_arr[0,:] = pnt.CoordConverter.convert(t_arr_tai[0], lss_pv_PA_km, coord_sys_in=pnt.CoordSystem.PA, coord_sys_out=pnt.CoordSystem.MI)
+for im1 in range(len_t_arr-1):
+    i = im1 + 1
+    if truth_dynamics_str == 'Keplerian':
+        truth_dynamics.propagate(x_oe, dt_meas)
+        x_oe_arr[i,:] = x_oe.vector
+        # convert from orbital elements to cartesian (inertial frame)
+        sat_pv_curr_MI = pnt.classical_to_cartesian(x_oe, pnt.MU_MOON).vector
+    elif truth_dynamics_str == 'NBody':
+        t_tai_i = t_arr_tai[i]
+        t_tai_im1 = t_arr_tai[i-1]
+        dt_integ = (t_tai_i - t_tai_im1)/10.0
+        sat_pv_curr_MI = truth_dynamics.propagate(sat_pv_curr_MI, t_tai_im1, t_tai_i, dt_integ)
 
-    sat_true_pv_MI_km_arr[i,:] = sat_MI_pos 
+    # save state
+    sat_true_pv_MI_km_arr[i,:] = sat_pv_curr_MI 
     
     # convert base station position from PA frame to MI (at current TAI time)
     curr_tai_time = t_arr_tai[i]
@@ -212,7 +246,7 @@ for i, t in enumerate(t_arr):
     lss_pv_MI_km_arr[i,:] = rv_stat_MI_km
 
     # get satellite position in PA frame (just for plotting)
-    sat_true_pv_PA_km_arr[i,:] = pnt.CoordConverter.convert(curr_tai_time, sat_MI_pos, coord_sys_in=pnt.CoordSystem.MI, coord_sys_out=pnt.CoordSystem.PA)
+    sat_true_pv_PA_km_arr[i,:] = pnt.CoordConverter.convert(curr_tai_time, sat_pv_curr_MI, coord_sys_in=pnt.CoordSystem.MI, coord_sys_out=pnt.CoordSystem.PA)
 
 
 # plot satellite position (in PA frame)
@@ -491,7 +525,8 @@ ax[2].plot(t_arr/3600.0, sat_est_pv_MI_km_arr[:,2] - sat_true_pv_MI_km_arr[:,2])
 ax[2].set_ylabel('z [km]')
 ax[2].grid()
 ax[2].set_xlabel('Time [hrs]')
-plt.savefig(save_path + '/final_orbital_error_xyz.svg')
+if save_results:
+    plt.savefig(save_path + '/final_orbital_error_xyz.svg')
 if show_plots:
     plt.show()
 
@@ -501,7 +536,8 @@ plt.plot(t_arr/3600.0, np.linalg.norm(sat_est_pv_MI_km_arr - sat_true_pv_MI_km_a
 plt.grid()
 plt.xlabel('Time [hrs]')
 plt.ylabel('Error [km]')
-plt.savefig(save_path + '/final_orbital_error_total.svg')
+if save_results:
+    plt.savefig(save_path + '/final_orbital_error_total.svg')
 if show_plots:
     plt.show()
 
@@ -515,7 +551,8 @@ ax[1].plot(np.arange(len(norm_state_dev_change_vel_arr))+1, norm_state_dev_chang
 ax[1].set_ylabel('Norm velocity update [km/s]')
 ax[1].grid()
 ax[1].set_xlabel('batch filter iterations')
-plt.savefig(save_path + '/update_over_iterations.svg')
+if save_results:
+    plt.savefig(save_path + '/update_over_iterations.svg')
 if show_plots:
     plt.show()
 
@@ -529,7 +566,8 @@ ax[1].plot(np.arange(len(ave_vel_err_arr)), ave_vel_err_arr)
 ax[1].set_ylabel('Velocity error [km/s]')
 ax[1].grid()
 ax[1].set_xlabel('batch filter iterations')
-plt.savefig(save_path + '/error_over_iterations.svg')
+if save_results:
+    plt.savefig(save_path + '/error_over_iterations.svg')
 if show_plots:
     plt.show()
 
@@ -547,7 +585,8 @@ ax[2].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,2] - sat_true_pv_MI_km_arr[
 ax[2].set_ylabel('z [km]')
 ax[2].grid()
 ax[2].set_xlabel('Time [hrs]')
-plt.savefig(save_path + '/init_orbit_error_pos.svg')
+if save_results:
+    plt.savefig(save_path + '/init_orbit_error_pos.svg')
 if show_plots:
     plt.show()
 
@@ -564,7 +603,8 @@ ax[2].plot(t_arr/3600.0, init_sat_est_pv_MI_km_arr[:,5] - sat_true_pv_MI_km_arr[
 ax[2].set_ylabel('z vel [km/s]')
 ax[2].grid()
 ax[2].set_xlabel('Time [hrs]')
-plt.savefig(save_path + '/init_orbit_error_vel.svg')
+if save_results:
+    plt.savefig(save_path + '/init_orbit_error_vel.svg')
 if show_plots:
     plt.show()
 
@@ -588,7 +628,8 @@ ax[2].set_ylabel('z [km]')
 ax[2].legend(['Initial', 'Final'])
 ax[2].grid()
 ax[2].set_xlabel('Time [hrs]')
-plt.savefig(save_path + '/init_final_orbit_error_pos.svg')
+if save_results:
+    plt.savefig(save_path + '/init_final_orbit_error_pos.svg')
 if show_plots:
     plt.show()
 
@@ -612,7 +653,8 @@ ax[2].set_ylabel('z vel [km/s]')
 ax[2].legend(['Initial', 'Final'])
 ax[2].grid()
 ax[2].set_xlabel('Time [hrs]')
-plt.savefig(save_path + '/init_final_orbit_error_vel.svg')
+if save_results:
+    plt.savefig(save_path + '/init_final_orbit_error_vel.svg')
 if show_plots:
     plt.show()
 
