@@ -295,19 +295,19 @@ def run_ekf_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound, sat_
 
 
 def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt):
-    fig, ax = plt.subplots(2, 2, dpi=150, figsize=(8, 6))
+    fig, ax = plt.subplots(2, 2, dpi=150, figsize=(8, 4))
     # fig.suptitle("$N = {}$, ".format(N) + r"$N_\mathrm{SCP} = " + "{}$".format(N_scp))
-    fig.suptitle('State and Control Input Over Time')
+    # fig.suptitle('State and Control Input Over Time')
 
     ms = 2
     # for t in range(T):
         # ax[0, 0].plot(s_mpc[t, :, 1], s_mpc[t, :, 0], "--*", color="k", markersize=ms, linewidth=0.5)
-    ax[0, 0].plot(s_mpc[:, 0, 1], s_mpc[:, 0, 0], "-o", markersize=ms, linewidth=0.5)
-    ax[0, 0].set_xlabel(r"$y(t)$")
-    ax[0, 0].set_ylabel(r"$x(t)$")
-    ax[0, 0].axis("equal")
-    ax[0, 0].scatter(s0[1], s0[0], color='r', zorder=3,s=ms)
-    ax[0, 0].scatter(s_goal[1], s_goal[0], color='r', zorder=3, s=ms)
+    # ax[0, 0].plot(s_mpc[:, 0, 1], s_mpc[:, 0, 0], "-o", markersize=ms, linewidth=0.5)
+    # ax[0, 0].set_xlabel(r"$y(t)$")
+    # ax[0, 0].set_ylabel(r"$x(t)$")
+    # ax[0, 0].axis("equal")
+    # ax[0, 0].scatter(s0[1], s0[0], color='r', zorder=3,s=ms)
+    # ax[0, 0].scatter(s_goal[1], s_goal[0], color='r', zorder=3, s=ms)
 
     t_vec = np.linspace(0, T*(n_waypt - 1)*dt, len(s_mpc[:, 0, 2]))
     ax[0, 1].plot(t_vec, s_mpc[:, 0, 2]*180/np.pi, "-o", markersize=ms) #, label=r"$\theta(t)$")
@@ -341,13 +341,14 @@ def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt):
     # ax[1, 1].legend()
     # ax[1, 1].set_ylim(np.array([-3.1, 3.1])*180/np.pi)
     
-    ax[0, 0].grid(True)
+    # ax[0, 0].grid(True)
 
     # suffix = "_N={}_Nscp={}".format(N, N_scp)
     plt.tight_layout()
     # plt.savefig("soln_obstacle_avoidance" + suffix + ".png", bbox_inches="tight")
     plt.savefig("figures/mpc_state_control_over_time.png", bbox_inches="tight",dpi=300)
 
+    return fig, ax
     # plt.show()
 
 

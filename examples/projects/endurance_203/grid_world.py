@@ -116,7 +116,7 @@ class GridWorld:
                         self.grid[i, j, :, 0] = elevation + self.grid[i, j, :, 0]
 
     def plot_grid_elev(self, t = 0, param_idx = 0, lat_long = False):
-        fig, ax = plt.subplots(dpi=150)
+        fig, ax = plt.subplots(dpi=150, figsize=(5, 4))
         heatmap = ax.pcolor(self.grid[:,:, t, param_idx])
         cbar = plt.colorbar(heatmap,fraction=0.046, pad=0.04)
         plt.axis('equal')
