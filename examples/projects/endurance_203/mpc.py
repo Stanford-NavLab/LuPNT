@@ -163,7 +163,7 @@ def run_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound):
         s_mpc[t], u_mpc[t] = solve_mpc(f, s, s_goal, N, P, Q, R, eps, N_scp, dt, v_bound, omega_bound, s_init, u_init)
         s = f(s, u_mpc[t, 0])
         # print(f'Applied u = {u_mpc[t, 0]}')
-        
+
         total_control_cost += u_mpc[t, 0].T @ R @ u_mpc[t, 0]
 
         # Use this solution to warm-start the next iteration
@@ -177,7 +177,7 @@ def run_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound):
     # print(s_mpc[:, 0, 1])
     return s_mpc, u_mpc
 
-def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt):
+def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt, resolution=0.1):
     fig, ax = plt.subplots(2, 2, dpi=150, figsize=(8, 6))
     # fig.suptitle("$N = {}$, ".format(N) + r"$N_\mathrm{SCP} = " + "{}$".format(N_scp))
     fig.suptitle('State and Control Input Over Time')
@@ -185,9 +185,13 @@ def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt):
     ms = 2
     # for t in range(T):
         # ax[0, 0].plot(s_mpc[t, :, 1], s_mpc[t, :, 0], "--*", color="k", markersize=ms, linewidth=0.5)
+    
+    # s_mpc[:,:,0] = s_mpc[:,:,0]
+    # s_mpc[:,:,1] = s_mpc[:,:,1]
+    
     ax[0, 0].plot(s_mpc[:, 0, 1], s_mpc[:, 0, 0], "-o", markersize=ms, linewidth=0.5)
-    ax[0, 0].set_xlabel(r"$y(t)$")
-    ax[0, 0].set_ylabel(r"$x(t)$")
+    ax[0, 0].set_xlabel(r"$y$ [km]")
+    ax[0, 0].set_ylabel(r"$x$ [km]")
     ax[0, 0].axis("equal")
     ax[0, 0].scatter(s0[1], s0[0], color='r', zorder=3,s=ms)
     ax[0, 0].scatter(s_goal[1], s_goal[0], color='r', zorder=3, s=ms)

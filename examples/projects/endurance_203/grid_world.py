@@ -43,8 +43,6 @@ class GridWorld:
         M_mcmf_2enu = mcmf_to_enu(lat_0, lon_0)
         # print(M_mcmf_2enu)
         origin_enu = M_mcmf_2enu @ self.moon_pa_origin
-        # print(self.moon_pa_origin)
-        # print(origin_enu)
 
         # store all the grid coordinates
         grid_coords = np.zeros((self.N, self.N, 3))
@@ -81,40 +79,6 @@ class GridWorld:
         # add the elevation to a grid cell
         self.grid[loc[0], loc[1], :, param_idx] = elevation
         # return self.grid
-        
-    # def populate_PDOP(self, lat_0, lon_0, rv_moon_sat_pa, N_t, N_sat, EIRP_beta_dBW = 14, rec_gain_theta_dBi = 3):
-    #     grid_coords, grid_lat_long= self.grid_PA_coords(lat_0, lon_0)
-
-    #     # rv_moon_sat_pa: Number of satellites x time vector x 6-state (x, y, z, vx, vy, vz)
-    #     N_grid = self.grid.shape[0]
-
-    #     for i in range(N_grid):
-    #         for j in range(N_grid):
-    #             cell_lat, cell_lon = grid_lat_long[i, j, :]
-    #             cell_pos_pa = grid_coords[i, j, :]
-    #             M = mcmf_to_enu(cell_lat, cell_lon)
-    #             user_pa = np.array([cell_pos_pa[0], cell_pos_pa[1], cell_pos_pa[2], 0, 0, 0])
-    #             el_sat, az_sat = get_elev_azim(M, rv_moon_sat_pa, user_pa)
-    #             t_PDOP = np.zeros(N_t)
-    #             for t in range(N_t):
-    #                 visible_satpos = np.zeros((N_sat, 3))
-    #                 # Save the satellite position only if the satellite is visible
-    #                 for i_sat in range(N_sat):
-    #                     dist_m = np.linalg.norm(rv_moon_sat_pa[i_sat, t, :3] - user_pa[:3]) * 1000 # only this is in meters
-    #                     cn0 = get_CN0(dist_m, EIRP_beta_dBW, rec_gain_theta_dBi) # dBHz
-    #                     # if elevation is greater than 10 and cn0 > 30 dBHz, then the satellite is considered visible
-    #                     if (el_sat[i_sat, t] > 10) and (cn0 > 30): 
-    #                         visible_satpos[i_sat] = rv_moon_sat_pa[i_sat, t, :3]
-    #                     elif cn0 <= 30:
-    #                         print('Signal is not strong enough.')
-    #                 # Remove the zero rows (i.e., the rows corresponding to the satellites that are not visible)
-    #                 non_zero_rows = ~np.all(visible_satpos == 0, axis = 1)
-    #                 visible_satpos = visible_satpos[non_zero_rows]
-    #                 if visible_satpos.shape[0] >= 3:
-    #                     t_PDOP[t] = get_PDOP(visible_satpos, cell_pos_pa)
-    #                 else:
-    #                     t_PDOP[t] = np.NaN
-    #             self.grid[i, j, :, 2] = t_PDOP
         
     def get_elevation(self, x, y):
         elevation = self.grid[:, :, 0, 0] # of size 40 x 40 x time length
@@ -158,13 +122,23 @@ class GridWorld:
         ax.set_xlim(0, self.N)
         ax.set_ylim(0, self.N)
 
-        if lat_long:
-            ax.set_xlabel('North')
-            ax.set_ylabel('East')
+        # because heatmap is flipped
+        ax.set_xlabel('North [km]')
+        ax.set_ylabel('East [km]')
 
-        else:
-            ax.set_xlabel('y [km]')
-            ax.set_ylabel('x [km]')
+        # change the tick labels according to map resolution
+        # xticks = np.linspace(0, self.N*self.res, self.N + 1)
+        # ax.set_xticklabels(xticks)
+        # ax.set_yticklabels(xticks)
+
+        ticks = np.arange(0, self.N+1, self.N//5)
+        tick_labels = [f'{c:.1f}' for c in ticks*self.res]
+
+        ax.set_xticks(ticks)
+        ax.set_xticklabels(tick_labels)
+
+        ax.set_yticks(ticks)
+        ax.set_yticklabels(tick_labels)
 
         if param_idx == 0:
             cbar.set_label('Elevation [km]')
