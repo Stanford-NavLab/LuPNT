@@ -245,5 +245,5 @@ def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt, resolution=0.1)
     plt.tight_layout()
     # plt.savefig("soln_obstacle_avoidance" + suffix + ".png", bbox_inches="tight")
     plt.savefig("figures/mpc_state_control_over_time.png", bbox_inches="tight",dpi=300)
-
+    return fig, ax
     # plt.show()

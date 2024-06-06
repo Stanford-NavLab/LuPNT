@@ -10,31 +10,19 @@ from time import time
 from tqdm.auto import tqdm
 
 np.random.seed(4)
-
 class EKF:
     def __init__(self, x0, P0, lat_long_0, elev_grid, heading, cell_elevation) -> None:
-        # define the process noise covariance
-        # self.Q = np.eye(3) * 0.0001
-        # define the measurement noise covariance
-        # self.R = np.eye(3) * 0.0001
         # define the initial state estimate
         self.x_hat = x0
         # define the initial state estimate covariance
         self.P = P0
-        # self.s_mpc = 
         self.lat_long_0 = lat_long_0
         self.elev_grid = elev_grid
         self.cell_elevation = cell_elevation
         self.heading = heading
         self.res = 0.1
 
-
     def predict(self, control):
-        # predict the next state estimate
-        # print(f'Current EKF state: {self.x_hat}')
-        # print(f'Cell elevation: {self.cell_elevation}')
-        # print(f'Heading: {self.heading}')
-
         mpc_state = MoonPA_to_DEM(self.x_hat, self.cell_elevation, self.lat_long_0, self.heading)
         # print(f'Current MPC state: {mpc_state}')
         A, B, _ = affinize(mpc_state, control)
@@ -43,7 +31,6 @@ class EKF:
         self.x_hat, self.cell_elevation, self.heading = state2MoonPA(mpc_state_next, self.res, self.lat_long_0, self.elev_grid)
         Q =  np.eye(3) * 0.0001
         self.P = A @ self.P @ A.T + Q
-        # return x_hat, P
     
     def update(self, satpos, true_state):
         # update the state estimate
@@ -56,7 +43,6 @@ class EKF:
         range_std = (5)/1000              # 5m    
         # range_std = 0
         measurement = geom_range + np.random.normal(0.0, range_std, size=n_meas)
-
         # measurement model and estimated parameters
         los_est = np.zeros((n_meas, 3))
         for i in range(n_meas):
@@ -67,26 +53,15 @@ class EKF:
 
         # Kalman gain
         K = self.P @ H.T @ np.linalg.inv(H @ self.P @ H.T + R)
-        #TODO: need measurement models
         self.x_hat = self.x_hat + K @ (measurement - g_x)
         self.P = (np.eye(3) - K @ H) @ self.P
 
     def ekf_step(self, control, satpos_t, true_state):
-
-        # given a state and control, predict the next state
-        # ekf.ekf_step(u_mpc[t, 0], satpos_t, s_true)
-
         # predicts in the MoonPA frame of reference
         self.predict(control)
-
         # true_state needs to be in PA frame
         self.update(satpos_t, true_state)
-
-        # return self.x_hat
         
-
-
-
 
 def dynamics(s, u, dt = 0.1):
     x, y, theta = s
@@ -113,14 +88,10 @@ def scp_iteration(f, s0, s_goal, s_prev, u_prev, P, Q, R, dt = 0.1, v_bound=5.0,
     n = s_prev.shape[-1]  # state dimension
     m = u_prev.shape[-1]  # control dimension
     N = u_prev.shape[0]  # number of steps
-    # v_bound = 5 # km/hr (upper bound on rover velocity)
-    # omega_bound = 3.0 # rad/hr ?
-    
+
     A = np.zeros((N, n, n))
     B = np.zeros((N, n, m))
     c = np.zeros((N, n))
-    
-    # print(f' Previous traj: {s_prev}')
     
     for k in range(N):
         A_k, B_k, c_k = affinize(s_prev[k], u_prev[k], dt)
@@ -141,8 +112,7 @@ def scp_iteration(f, s0, s_goal, s_prev, u_prev, P, Q, R, dt = 0.1, v_bound=5.0,
         constraints.append(cvx.abs(u_cvx[k, 1]) <= omega_bound)
     objective += cvx.quad_form((s_cvx[N] - s_goal), P) # sum the terminal cost
     constraints.append(s_cvx[0] == s0) # add initial constraint
-    # print(f's0 = {s0}')
-    # print(f's_goal = {s_goal}')
+
     prob = cvx.Problem(cvx.Minimize(objective), constraints)
     prob.solve()
     if prob.status != "optimal":
@@ -150,12 +120,7 @@ def scp_iteration(f, s0, s_goal, s_prev, u_prev, P, Q, R, dt = 0.1, v_bound=5.0,
     s = s_cvx.value
     u = u_cvx.value
     J = prob.objective.value
-    # print(f'u = {u[0]}')
-    # print(f's_cvx[0] = {s[0]}')
-    # print(f's_cvx[1] (linear) = {A[0] @ s[0] + B[0] @ u[0]}')
-    # print(f's_cvx[1] = {s[1]}')
-    # print(f'A = \n{A[0]}')
-    # print(f'B = \n{B[0]}')
+
     return s, u, J
 
 def solve_mpc(
@@ -179,11 +144,8 @@ def solve_mpc(
     n = Q.shape[0]  # state dimension
     m = R.shape[0]  # control dimension
 
-
     s = np.linspace(s0, s_goal, N+1)
     u = np.ones((N, m))
-
-    # print(f'Intial traj :{s}')
     
     # Do SCP until convergence or maximum number of iterations is reached
     converged = False
@@ -202,8 +164,6 @@ def solve_mpc(
 
 def run_ekf_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound, sat_data, tspan, t0, lat_long_0, elev_grid, x_est = None, cov_final = None, sigma_init=10/1000):
 
-    # sat_data (N_satellite, time, 6)
-
     n = 3 # state dimension
     m = 2 # control dimension
     eps = 1e-3 # SCP convergence tolerance
@@ -218,12 +178,8 @@ def run_ekf_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound, sat_
     u_init = None
 
     # initialize the EKF as well (with some random noise added to the initial state estimate)
-
-    # this is in the MoonPA frame
-    # sigma_init = 10/1000 # 10m
     if x_est is None:
         x0_hat, cell_elevation, heading = state2MoonPA(s0, 0.1, lat_long_0, elev_grid)
-        # print(f'Check: {MoonPA_to_DEM(x0_hat, cell_elevation, lat_long_0, heading)}')
         x0_hat += np.random.randn(3) * sigma_init
         P0 = np.eye(3) * (sigma_init**2)
 
@@ -238,11 +194,6 @@ def run_ekf_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound, sat_
     print(f'Initial state estimate: {ekf.x_hat}')
     print(f'Initial rover estimate: {s_est}')
     print(f'Intial covariance: {ekf.P}')
-
-    # print(f'Current EKF state: {ekf.x_hat}')
-    # print(f'Cell elevation: {ekf.cell_elevation}')
-    # print(f'Heading: {ekf.heading}')
-    # print('----------')
 
     true_state_array = np.zeros((T+1, 3))
     est_state_array = np.zeros((T+1, 3))
@@ -272,12 +223,7 @@ def run_ekf_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound, sat_
         ekf.ekf_step(u_mpc[t, 0], satpos_t, x_true)
         s_est = MoonPA_to_DEM(ekf.x_hat, ekf.cell_elevation, ekf.lat_long_0, ekf.heading)
 
-        # print(s_est)/
-        # print(f'Estimated state: {s_est}')
-        # print(f'True state: {s_true}')
-
         total_control_cost += u_mpc[t, 0].T @ R @ u_mpc[t, 0]
-
         # Use this solution to warm-start the next iteration
         u_init = np.concatenate([u_mpc[t, 1:], u_mpc[t, -1:]])
         s_init = np.concatenate(
@@ -290,14 +236,11 @@ def run_ekf_mpc(s0, s_goal, N, P, Q, R, T, N_scp, dt, v_bound, omega_bound, sat_
     total_time = time() - total_time
     print("Total elapsed time:", total_time, "seconds")
     print("Total control cost:", total_control_cost)
-    # print(s_mpc[:, 0, 1])
     return s_mpc, u_mpc, t_true, true_state_array, est_state_array, ekf.P
 
 
 def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt):
     fig, ax = plt.subplots(2, 2, dpi=150, figsize=(8, 4))
-    # fig.suptitle("$N = {}$, ".format(N) + r"$N_\mathrm{SCP} = " + "{}$".format(N_scp))
-    # fig.suptitle('State and Control Input Over Time')
 
     ms = 2
     # for t in range(T):
@@ -314,9 +257,7 @@ def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt):
     ax[0, 1].set_xlabel(r"$t$ [hr]")
     ax[0, 1].set_ylabel(r"$\theta(t)$ [deg]")
     ax[0, 1].set_xlim([0, t_vec[-1]])
-    # ax[0, 1].legend()
-    # ax[0, 1].axhline(s_goal[2]*180/np.pi)
-    
+
     ls = 1
     for i in range(n_waypt-1):
         index = T * i
@@ -338,27 +279,17 @@ def plot_mpc(s0, s_goal, s_mpc, u_mpc, N, T, N_scp, n_waypt, dt):
     ax[1, 1].set_xlabel(r"$t$ [hr]")
     ax[1, 1].set_ylabel(r"$\omega(t)$ [deg/sec]")
     ax[1, 1].set_xlim([0, t_vec[-1]])
-    # ax[1, 1].legend()
-    # ax[1, 1].set_ylim(np.array([-3.1, 3.1])*180/np.pi)
-    
-    # ax[0, 0].grid(True)
 
-    # suffix = "_N={}_Nscp={}".format(N, N_scp)
     plt.tight_layout()
-    # plt.savefig("soln_obstacle_avoidance" + suffix + ".png", bbox_inches="tight")
     plt.savefig("figures/mpc_state_control_over_time.png", bbox_inches="tight",dpi=300)
 
     return fig, ax
-    # plt.show()
-
 
 
 def state2MoonPA(state, res, lat_long_0, elev_grid):
     x, y, theta = state
     # print(f'x = {x}, y = {y}')
     x_grid = x/res; y_grid = y/res
-
-    # print(f'x_grid = {x_grid}, y_grid = {y_grid}')
 
     # snap to the grid and get the corresponding indices
     state_idx = [int(x_grid), int(y_grid)]
