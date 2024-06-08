@@ -1,7 +1,7 @@
 from __future__ import annotations
 from numba.core.decorators import njit
-import numpy as np
 import numpy
+import numpy as np
 from numpy import linalg as LA
 from pylupnt.crater_detection.common.conics import ConicProjector
 from pylupnt.crater_detection.common.conics import ellipse_axes

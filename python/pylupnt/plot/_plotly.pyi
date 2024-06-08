@@ -1,8 +1,8 @@
 from PIL import Image
 import PIL.JpegImagePlugin
 from __future__ import annotations
-import numpy as np
 import numpy
+import numpy as np
 import os as os
 from plotly import express as px
 from plotly import graph_objs as go
@@ -26,7 +26,7 @@ def create_sphere_meshgrid(rows: int, cols: int, radius: float = 1.0) -> tuple[n
             tuple[np.ndarray, np.ndarray, np.ndarray]: x, y, z coordinates of the sphere
         
     """
-def get_body_trace(body = ..., size_factor: int = 5, R_b2frame: numpy.ndarray = None, r_b2s_pa: numpy.ndarray = None, alpha: float = 0.2) -> plotly.graph_objs._mesh3d.Mesh3d:
+def get_body_trace(body = ..., size_factor: int = 5, R_b2frame: numpy.ndarray = None, r_b2s_pa: numpy.ndarray = None, r_body: numpy.ndarray = None, alpha: float = 0.2) -> plotly.graph_objs._mesh3d.Mesh3d:
     """
     
         Get the moon trace
@@ -70,7 +70,7 @@ def plot_3d_arrow(fig: plotly.graph_objs._figure.Figure, origin: numpy.ndarray, 
             width (float): width of the arrow
         
     """
-def plot_constellation(rv: numpy.ndarray, t: int = 0, fig = None, **kwargs) -> plotly.graph_objs._figure.Figure:
+def plot_constellation(rv: numpy.ndarray, t: int = 0, marker_size = 4, fig = None, **kwargs) -> plotly.graph_objs._figure.Figure:
     ...
 def plot_frame(fig: plotly.graph_objs._figure.Figure, origin: numpy.ndarray, rotation: numpy.ndarray, length_scale: float = 1, tip_scale: float = 1, width: float = 2) -> None:
     ...
@@ -80,9 +80,9 @@ def set_equal_aspect_ratio(fig: plotly.graph_objs._figure.Figure):
     ...
 def set_view(fig: plotly.graph_objs._figure.Figure, azimuth: float, elevation: float, zoom: float = 1.0):
     ...
-EARTH_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x1698F5C50>
+EARTH_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x1699F7CD0>
 IMAGES: dict  # value = {<NaifId.MOON: 301>: array([[[183, 180, 173],...
-MOON_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x1698D8450>
+MOON_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x169101790>
 PLOTLY_COLORS: list = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F', '#BCBD22', '#17BECF']
 RADII: dict  # value = {<NaifId.MOON: 301>: 1737.4, <NaifId.EARTH: 399>: 6378.137}
 axis_dict: dict = {'mirror': True, 'ticks': 'outside', 'showline': True, 'showgrid': True, 'automargin': True}

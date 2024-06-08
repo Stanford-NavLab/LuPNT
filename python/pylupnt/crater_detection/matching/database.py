@@ -348,7 +348,7 @@ class CraterDatabase:
 
         df_craters = load_craters(path, latlims, longlims, diamlims, ellipse_limit)
 
-        return cls.from_df(df_craters, column_keys, Rbody, radius)
+        return cls.from_df(df_craters, column_keys, Rbody, radius, **kwargs)
 
     def query(self, key, k=1, return_distance=False, max_distance=0.1, batch_size=100):
 

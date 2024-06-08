@@ -1,8 +1,8 @@
 from __future__ import annotations
 from astropy.coordinates.funcs import spherical_to_cartesian
 from collections.abc import Iterable
-import numpy as np
 import numpy
+import numpy as np
 from numpy import linalg as LA
 from pylupnt.crater_detection.common import constants as const
 import pylupnt.crater_detection.common.coordinates
