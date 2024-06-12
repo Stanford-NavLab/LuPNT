@@ -164,27 +164,67 @@ def horizon_matching(
     u: np.ndarray,
     K_inv: np.ndarray,
     R_cam2pa: np.ndarray,
+    sigma_pix: float,
+    d_x: float,
     a: float,
     b: float = None,
     c: float = None,
+    compute_P=False,
 ):
     if b is None:
         b = a
     if c is None:
         c = a
+
     D = np.diag([1 / a, 1 / b, 1 / c])
     R = D @ R_cam2pa @ K_inv
     H = u @ R.T
     H /= np.linalg.norm(H, axis=-1)[:, None]
+
     n = np.linalg.lstsq(H, np.ones((len(H), 1)), rcond=None)[0]
+
     R_pa2cam = R_cam2pa.T
     D_inv = np.diag([a, b, c])
+
+    if compute_P:
+        R_s = (sigma_pix / d_x) ** 2 * np.diag([1, 1, 0])
+
+        sigma_y_list = []
+        for i in range(len(u)):
+            s_i = u[i]
+            s_i_norm = np.linalg.norm(s_i)
+            s_i_hat = s_i / s_i_norm
+            J_i = (1 / s_i_norm) * n.T @ (np.eye(3) - np.outer(s_i_hat, s_i_hat))
+            sigma_y_i = J_i @ D @ R_pa2cam @ R_s @ R_cam2pa @ D.T @ J_i.T
+            sigma_y_list.append(sigma_y_i.squeeze())
+
+        diag_elements = np.array([1 / sigma_y_i**2 for sigma_y_i in sigma_y_list])
+        W = np.diag(diag_elements)
+        H_transpose = H.T
+        P_n = np.linalg.inv(H_transpose @ W @ H)
+    else:
+        P_n = np.eye(3)
+
+    n_norm_sq = np.dot(n.T, n)
+    F = (
+        -((n_norm_sq - 1) ** -0.5)
+        * R_pa2cam
+        @ np.linalg.inv(D)
+        @ (np.eye(3) - np.outer(n, n) / (n_norm_sq - 1))
+    )
+
+    P_r_cam = F @ P_n @ F.T
+    P_r_pa = R_cam2pa @ P_r_cam @ R_pa2cam
+
     rC = (n.T @ n - 1) ** -0.5 * R_pa2cam @ D_inv @ n
     rP = R_cam2pa @ rC
-    return np.ravel(rP)
+
+    return np.ravel(rP), P_r_pa
 
 
-def horizon_detection(img, R_pa2cam, r_sun_pa, K, N_lines=200, threshold=110):
+def horizon_detection(
+    img, R_pa2cam, r_sun_pa, K, d_x, sigma_pix, N_lines=200, threshold=110
+):
     R_cam2pa = R_pa2cam.T
 
     # Sun direction
@@ -208,7 +248,7 @@ def horizon_detection(img, R_pa2cam, r_sun_pa, K, N_lines=200, threshold=110):
 
     uv_horizon = np.ones((np.count_nonzero(final_mask), 3))
     uv_horizon[:, :2] = np.vstack(np.where(final_mask)).T
-    r_cam_pa_horizon = horizon_matching(
-        uv_horizon, np.linalg.inv(K), R_cam2pa, pnt.R_MOON
+    r_cam_pa_horizon, P_r_pa = horizon_matching(
+        uv_horizon, np.linalg.inv(K), R_cam2pa, d_x, sigma_pix, pnt.R_MOON
     )
-    return r_cam_pa_horizon
+    return r_cam_pa_horizon, P_r_pa
