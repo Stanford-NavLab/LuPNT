@@ -17,9 +17,13 @@ from copy import deepcopy
 
 
 class DiscreteTimeIpSolver(Solver):
-    def __init__(self, problem: PntSchedulingProblem):
+    def __init__(
+        self, problem: PntSchedulingProblem, sep_corr: float = 1e-5, gamma: float = 0.99
+    ):
         self.problem: PntSchedulingProblem = problem
         self.solution: np.array = None
+        self.sep_corr = sep_corr
+        self.gamma = gamma
 
     def solve(self, s0: State, time_step_factor: float) -> list[tuple[State, Action]]:
 
@@ -105,8 +109,8 @@ class DiscreteTimeIpSolver(Solver):
         x = [cp.Variable((N_req, N_t), boolean=True) for _ in range(N_sat)]
 
         # Objective
-        lambda_sep = 1e-5 / (N_req * N_t)
-        discount = np.power(0.99, np.arange(N_t))
+        lambda_sep = self.sep_corr / (N_req * N_t)
+        discount = np.power(self.gamma, np.arange(N_t))
         inner_sum = [
             cp.sum(
                 cp.multiply(x[i], rewards[i] * discount)

@@ -3,4 +3,4 @@ cmake --build build --config Debug --target lupnt pylupnt_pybind python-package 
 # cp build/third_party/AI-Toolbox/AIToolbox.dylib .venv/lib/python3.12/site-packages/AIToolbox.so
 ./scripts/stubgen.sh
 cp build/lib/python_package/pylupnt/pylupnt_pybind.cpython-*-darwin.so python/pylupnt
-echo "PyLuPNT installed in .venv"
+echo "PyLuPNT installed"

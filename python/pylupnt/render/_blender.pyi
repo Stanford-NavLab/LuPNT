@@ -2,8 +2,8 @@ from __future__ import annotations
 import bpy as bpy
 import logging as logging
 import mathutils as mathutils
-import numpy
 import numpy as np
+import numpy
 import os as os
 from pylupnt import utils
 from scipy.spatial.transform._rotation import Rotation as R

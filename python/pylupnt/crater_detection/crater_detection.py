@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import cv2
-from scipy.ndimage.morphology import binary_dilation
+from scipy.ndimage import binary_dilation
 import pylupnt as pnt
 from PIL import Image
 from .common.robbins import (

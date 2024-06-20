@@ -1,8 +1,8 @@
 from PIL import Image
 import PIL.JpegImagePlugin
 from __future__ import annotations
-import numpy
 import numpy as np
+import numpy
 import os as os
 from plotly import express as px
 from plotly import graph_objs as go
@@ -80,9 +80,9 @@ def set_equal_aspect_ratio(fig: plotly.graph_objs._figure.Figure):
     ...
 def set_view(fig: plotly.graph_objs._figure.Figure, azimuth: float, elevation: float, zoom: float = 1.0):
     ...
-EARTH_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x1699F7CD0>
+EARTH_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x16B4F5D90>
 IMAGES: dict  # value = {<NaifId.MOON: 301>: array([[[183, 180, 173],...
-MOON_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x169101790>
+MOON_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x16AC088D0>
 PLOTLY_COLORS: list = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F', '#BCBD22', '#17BECF']
 RADII: dict  # value = {<NaifId.MOON: 301>: 1737.4, <NaifId.EARTH: 399>: 6378.137}
 axis_dict: dict = {'mirror': True, 'ticks': 'outside', 'showline': True, 'showgrid': True, 'automargin': True}

@@ -17,7 +17,7 @@ import logging
 
 from functools import partial
 
-cache_path = "cache/"
+cache_path = "cache/quals"
 
 solvers = {
     "RB": RuleBasedSolver,
@@ -25,6 +25,31 @@ solvers = {
     "MCTS": SmdpMctsSolver,
     "IP": DiscreteTimeIpSolver,
 }
+
+
+def process_month(base_config, duration_factor, month):
+    print(f"Month: {month}")
+
+    # Update config
+    config = base_config.copy()
+    config["date"] = config["date"].format(month=month)
+    config["duration_factor"] = duration_factor
+
+    # Solve problem
+    res = solve_problem(config, n_jobs=1)
+
+    # Store results
+    results = []
+    for solver, res_solver in res.items():
+        for r in res_solver:
+            tmp = r.copy()
+            tmp["params"] = str(r["params"])
+            tmp["solver"] = solver
+            tmp["duration_factor"] = duration_factor
+            tmp["month"] = month
+            results.append(tmp)
+
+    return results
 
 
 def solve_wrapper(
@@ -126,7 +151,7 @@ def get_problem(
     coe_OP[i_sat, 5] += pnt.wrapToPi(coe_OP[i_sat, 5] + np.pi)
     rv0_moon_sat_OP = pnt.classical_to_cartesian(coe_OP, pnt.MU_MOON)
     rv0_moon_sat_mi = pnt.FrameConverter.convert(
-        epoch_0, rv0_moon_sat_OP,pnt.MOON_OP, pnt.MOON_CI
+        epoch_0, rv0_moon_sat_OP, pnt.MOON_OP, pnt.MOON_CI
     )
 
     # Time
@@ -161,7 +186,9 @@ def get_problem(
         epochs, rv_moon_earth_mi, pnt.MOON_CI, pnt.MOON_PA
     )
     rv_moon_sun_mi = pnt.SpiceInterface.get_body_pos_vel(epochs, pnt.MOON, pnt.SUN)
-    rv_moon_sun_pa = pnt.FrameConverter.convert(epochs, rv_moon_sun_mi, pnt.MOON_CI, pnt.MOON_PA)
+    rv_moon_sun_pa = pnt.FrameConverter.convert(
+        epochs, rv_moon_sun_mi, pnt.MOON_CI, pnt.MOON_PA
+    )
 
     # Attitude
     r_sun = rv_moon_sun_mi[None, :, 0:3] - rv_moon_sat_mi[:, :, 0:3]

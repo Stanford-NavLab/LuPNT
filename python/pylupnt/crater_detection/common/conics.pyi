@@ -4,8 +4,8 @@ import cv2 as cv2
 from matplotlib.collections import EllipseCollection
 from matplotlib import pyplot as plt
 from numba.core.decorators import njit
-import numpy
 import numpy as np
+import numpy
 from numpy import linalg as LA
 import pylupnt.crater_detection.common.camera
 from pylupnt.crater_detection.common.camera import Camera

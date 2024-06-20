@@ -1,8 +1,8 @@
 from PIL import Image
 from __future__ import annotations
 import cv2 as cv2
-import numpy
 import numpy as np
+import numpy
 import os as os
 import pylupnt as pnt
 from pylupnt.crater_detection.common.conics import conic_center
@@ -18,22 +18,14 @@ from pylupnt.crater_detection.common.robbins import extract_robbins_dataset
 from pylupnt.crater_detection.common.robbins import load_craters
 from scipy.ndimage._morphology import binary_dilation
 __all__ = ['ENU_system', 'Image', 'a_crater', 'b_crater', 'binary_dilation', 'conic_center', 'conic_matrix', 'crater_detection', 'cv2', 'ellipse_angle', 'ellipse_axes', 'extract_robbins_dataset', 'horizon_detection', 'horizon_matching', 'id_crater', 'lat_crater', 'load_craters', 'lon_crater', 'nadir_attitude', 'np', 'os', 'plot_conics', 'pnt', 'project_crater_centers', 'psi_crater', 'scale_det', 'trace_lines_and_record']
-def crater_detection(r_cam_pa, R_pa2cam, r_sun_pa, fov_cam, res_cam, seed = None):
+def crater_detection(r_cam_pa, R_pa2cam, r_sun_pa, fov_cam, res_cam, seed = None, alpha_sun = -0.05, alpha_cam = 0.5):
     ...
-def horizon_detection(img, R_pa2cam, r_sun_pa, K, N_lines = 200, threshold = 110):
+def horizon_detection(img, R_pa2cam, r_sun_pa, K, d_x, sigma_pix, N_lines = 200, threshold = 110):
     ...
-def horizon_matching(u: numpy.ndarray, K_inv: numpy.ndarray, R_cam2pa: numpy.ndarray, a: float, b: float = None, c: float = None):
-    """
-    
-        Christian-Robinson OPNAV algorithm
-    
-        Args:
-            u (np.ndarray):
-        
-    """
+def horizon_matching(u: numpy.ndarray, K_inv: numpy.ndarray, R_cam2pa: numpy.ndarray, sigma_pix: float, d_x: float, a: float, b: float = None, c: float = None, compute_P = False):
+    ...
 def trace_lines_and_record(img, u_illum, N_lines, threshold, return_lines = False):
     ...
-__warningregistry__: dict = {'version': 194}
 a_crater: numpy.ndarray  # value = array([289.44  , 233.763 , 234.321 , ...,  72.8571,  30.0635,  72.1062])
 b_crater: numpy.ndarray  # value = array([245.786 , 225.266 , 212.619 , ...,  69.2105,  25.1541,  61.5883])
 id_crater: numpy.ndarray  # value = array(['00-1-000001', '00-1-000020', '00-1-000023', ..., '10-2-014982',...

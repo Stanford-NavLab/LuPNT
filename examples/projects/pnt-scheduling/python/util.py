@@ -108,7 +108,7 @@ def solve_online(
 
 
 def run_parallel(func, it, n_jobs=4, desc="Multiprocessing", progress=True):
-    if n_jobs > 1:
+    if n_jobs > 1 and len(it) > 1:
         with Pool(n_jobs) as p:
             if progress:
                 results = list(tqdm(p.imap(func, it), total=len(it), desc=desc))

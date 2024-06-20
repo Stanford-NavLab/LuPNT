@@ -27,9 +27,9 @@ from . import _mpl
 from . import _plotly
 __all__ = ['COLORS', 'EARTH_SURFACE', 'IMAGES', 'Image', 'KMeans', 'MOON_SURFACE', 'PLOTLY_COLORS', 'Plot3D', 'RADII', 'axis_dict', 'create_sphere_meshgrid', 'get_body_trace', 'go', 'image2zvals', 'mcolors', 'mesh_data', 'np', 'os', 'pio', 'plot_3d_arrow', 'plot_constellation', 'plot_data', 'plot_frame', 'plt', 'pnt', 'px', 'regular_tri', 'set_equal_aspect_ratio', 'set_view', 'shuffle', 'utils']
 COLORS: list = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
-EARTH_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x1699F7CD0>
+EARTH_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x16B4F5D90>
 IMAGES: dict  # value = {<NaifId.MOON: 301>: array([[[183, 180, 173],...
-MOON_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x169101790>
+MOON_SURFACE: PIL.JpegImagePlugin.JpegImageFile  # value = <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=1024x512 at 0x16AC088D0>
 PLOTLY_COLORS: list = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B', '#E377C2', '#7F7F7F', '#BCBD22', '#17BECF']
 RADII: dict  # value = {<NaifId.MOON: 301>: 1737.4, <NaifId.EARTH: 399>: 6378.137}
 axis_dict: dict = {'mirror': True, 'ticks': 'outside', 'showline': True, 'showgrid': True, 'automargin': True}

@@ -13,7 +13,7 @@ from problem import (
 from typing import Tuple
 
 COLORS = [k for k in TABLEAU_COLORS.keys()]
-START_IDX = 0
+START_IDX = 1
 
 
 def plot_satellites_users(
@@ -22,9 +22,11 @@ def plot_satellites_users(
     rv_moon_earth: np.ndarray,
     rv_moon_sun: np.ndarray,
     user_type: np.ndarray,
-) -> None:
+    elev: float = 31,
+    azim: float = -128,
+) -> pnt.plot.Plot3D:
     # Satellite orbit in MI frame
-    fig = pnt.plots.Plot3D(figsize=(5, 5), elev=31, azim=-128)
+    fig = pnt.plot.Plot3D(figsize=(5, 5), elev=elev, azim=azim)
     fig.plot_surface(pnt.MOON, scale=3)
     rv_surface = rv_moon_user[user_type == "surface", :, :]
     rv_orbital = rv_moon_user[user_type == "orbital", :, :]
@@ -91,6 +93,8 @@ def plot_satellites_users(
     r, h = 7e3, 10e3
     fig.set_lims([-r, r], [-r, r], [-h, h])
     plt.legend(facecolor="white", framealpha=1, loc="upper right")
+
+    return fig
 
 
 def plot_elevation_range(
@@ -253,8 +257,8 @@ def plot_requests_service_windows(
     # plt.gca().yaxis.labelpad = 20
 
     # Legend
-    plt.plot([], [], color="black", lw=3, label=f"Window")
-    plt.plot([], [], color="black", lw=10, label=f"Service", alpha=0.5)
+    # plt.plot([], [], color="black", lw=3, label=f"Window")
+    # plt.plot([], [], color="black", lw=10, label=f"Service", alpha=0.5)
     for sat_id in range(N_sat):
         plt.plot(
             [], [], color=COLORS[sat_id], lw=3, label=f"Satellite {sat_id+START_IDX}"
@@ -266,8 +270,8 @@ def plot_requests_service_windows(
         facecolor="white",
         framealpha=1,
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.5),
-        ncol=5,
+        bbox_to_anchor=(0.5, 1.4),
+        ncol=2,
         frameon=False,
         handlelength=1.5,
     )
@@ -352,6 +356,7 @@ def plot_resources(
     plt.hlines(y, 0, problem.t_final, colors="black", linestyles="--")
     plt.ylabel("Energy [\\%]")
     plt.xlim(0, problem.t_final)
+    plt.yticks([0, 50, 100])
     plt.ylim(0, 100)
 
     # Legend
@@ -393,5 +398,6 @@ def plot_resources(
     plt.xlabel("Time")
     plt.ylabel("Data [\\%]")
     plt.xlim(0, problem.t_final)
+    plt.yticks([0, 50, 100])
     plt.ylim(0, 100)
     plt.grid()
