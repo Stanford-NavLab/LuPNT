@@ -46,7 +46,7 @@ class Agent {
   std::unique_ptr<ClockDynamics> clock_dynamics_;
 
  public:
-  Agent() : id_(id_counter_++), clock_(ClockState(Vector2d::Zero())){};
+  Agent() : id_(id_counter_++), clock_(ClockState(Vector2d::Zero())) {};
 
   // Getters
   real GetEpoch() { return epoch_; }
