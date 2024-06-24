@@ -1,7 +1,8 @@
 # Define variables
 set(groupName "examples")
-set(linkLibraries "lupnt")
-
+# Enable OpenMP
+find_package(OpenMP REQUIRED)
+set(linkLibraries "lupnt" OpenMP::OpenMP_CXX)
 # Get all script files
 file(GLOB_RECURSE script_files "example_*.cc" "**/example_*.cc")
 

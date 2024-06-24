@@ -142,10 +142,17 @@ class ClassicalOE : public OrbitState {
   inline static const std::vector<std::string> units_ = {"km",  "-",   "rad",
                                                          "rad", "rad", "rad"};
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CLASSICAL_OE;
+  static Vector6 to_deg(const Vector6 &x, bool deg) {
+    if (!deg) return x;
+    Vector6 x_deg = x;
+    x_deg.segment(2, 4) *= RAD_PER_DEG;
+    return x_deg;
+  }
 
  public:
-  ClassicalOE(const Vector6 &x, const Frame sys = Frame::MOON_CI)
-      : OrbitState(x, sys, repres_, names_, units_) {}
+  ClassicalOE(const Vector6 &x, const Frame sys = Frame::MOON_CI,
+              bool deg = false)
+      : OrbitState(to_deg(x, deg), sys, repres_, names_, units_) {}
 
   GETSET_ELEM(a, 0);
   GETSET_ELEM(e, 1);
@@ -157,8 +164,8 @@ class ClassicalOE : public OrbitState {
 
 /**
  * @class QuasiNonsingularOE
- * @brief Extends OrbitState to represent an orbit in quasi-nonsingular orbital
- * elements
+ * @brief Extends OrbitState to represent an orbit in quasi-nonsingular
+ * orbital elements
  * @details The state vector is
  * - $a$ [km] (semi-major axis)
  * - $u$ [-] (mean argument of latitude)
@@ -190,7 +197,8 @@ class QuasiNonsingularOE : public OrbitState {
 
 /**
  * @class DelaunayOE
- * @brief Extends OrbitState to represent an orbit in Delaunay orbital elements
+ * @brief Extends OrbitState to represent an orbit in Delaunay orbital
+ * elements
  * @details The state vector is
  * - $l$ [rad] (mean longitude)
  * - $g$ [rad] (longitude of periapsis)
@@ -253,8 +261,8 @@ class EquinoctialOE : public OrbitState {
 
 /**
  * @class SingularROE
- * @brief Extends OrbitState to represent an orbit in singular relative orbital
- * elements
+ * @brief Extends OrbitState to represent an orbit in singular relative
+ * orbital elements
  * @details The state vector is
  * - $a\delta a$ [m] (semi-major axis)
  * - $a\delta M$ [m] (mean anomaly)
@@ -285,8 +293,8 @@ class SingularROE : public OrbitState {
 
 /**
  * @class QuasiNonsingularROE
- * @brief Extends OrbitState to represent an orbit in quasi-nonsingular relative
- * orbital elements
+ * @brief Extends OrbitState to represent an orbit in quasi-nonsingular
+ * relative orbital elements
  * @details The state vector is
  * - $a\delta a$ [m] (semi-major axis)
  * - $a\delta l$ [m] (mean longitude)

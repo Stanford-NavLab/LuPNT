@@ -174,6 +174,7 @@ static const std::filesystem::path CSPICE_KER_DIR = GetDataPath() / "ephemeris";
 // https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/req/naif_ids.html
 enum class NaifId {
   SOLAR_SYSTEM_BARYCENTER = 0,
+  SSB = 0,
   MERCURY_BARYCENTER = 1,
   VENUS_BARYCENTER = 2,
   EARTH_BARYCENTER = 3,

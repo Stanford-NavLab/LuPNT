@@ -51,6 +51,7 @@ void init_constants(py::module &m) {
 
   py::enum_<NaifId>(m, "NaifId")
       .value("SOLAR_SYSTEM_BARYCENTER", NaifId::SOLAR_SYSTEM_BARYCENTER)
+      .value("SSB", NaifId::SSB)
       .value("MERCURY_BARYCENTER", NaifId::MERCURY_BARYCENTER)
       .value("VENUS_BARYCENTER", NaifId::VENUS_BARYCENTER)
       .value("EARTH_BARYCENTER", NaifId::EARTH_BARYCENTER)

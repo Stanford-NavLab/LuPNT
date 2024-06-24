@@ -59,6 +59,10 @@ target_link_libraries(lupnt PUBLIC "${CMAKE_SOURCE_DIR}/third_party/cspice/cspic
 # add MatPlot++
 target_link_libraries(lupnt PUBLIC matplot)
 
+# add OpenMP
+find_package(OpenMP REQUIRED)
+target_link_libraries(lupnt PUBLIC OpenMP::OpenMP_CXX)
+
 # add Boost
 target_link_libraries(lupnt PUBLIC ${Boost_LIBRARIES})
 

@@ -44,8 +44,10 @@ std::string TDBtoStringUTC(real t_tdb, int prec);
 
 real ConvertTime(real t, std::string from_time, std::string to_time);
 
-Vector6 GetBodyPosVel(const real t_tai, NaifId center, NaifId target);
-Matrix<-1, 6> GetBodyPosVel(const VectorX &t_tai, NaifId center, NaifId target);
+Vector6 GetBodyPosVel(const real t_tai, NaifId center, NaifId target,
+                      Frame frame);
+Matrix<-1, 6> GetBodyPosVel(const VectorX &t_tai, NaifId center, NaifId target,
+                            Frame frame);
 Vector3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
                     std::string abCorrection);
 

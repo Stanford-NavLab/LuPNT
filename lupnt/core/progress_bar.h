@@ -16,7 +16,8 @@ class ProgressBar {
         currentProgress_(-1),
         startTime_(std::chrono::system_clock::now()),
         lastUpdate_(startTime_),
-        valueAtLastUpdate_(0) {}
+        valueAtLastUpdate_(0),
+        currentValue_(0) {}
 
   void Update() { Update(currentValue_ + 1); }
   void Update(int value) {

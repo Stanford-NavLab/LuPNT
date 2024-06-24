@@ -72,7 +72,9 @@ class GnssStateEstimationApp : public Application {
 
  public:
   void SetAgent(std::shared_ptr<Agent> agent) { this->agent = agent; }
-  void SetDynamics(std::shared_ptr<NumericalOrbitDynamics> dyn) { this->dyn = dyn; }
+  void SetDynamics(std::shared_ptr<NumericalOrbitDynamics> dyn) {
+    this->dyn = dyn;
+  }
   void SetReceiver(std::shared_ptr<GnssReceiver> receiver) {
     this->receiver = receiver;
   }

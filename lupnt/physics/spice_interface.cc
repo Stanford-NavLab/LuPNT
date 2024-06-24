@@ -25,6 +25,25 @@
 namespace lupnt {
 namespace SpiceInterface {
 
+real TAItoTT(real tai) { return tai + TT_TAI_OFFSET; }
+
+real TAItoJulianDateTT(real tai) {
+  real tt = TAItoTT(tai);
+  return JD_OF_J2000 + tt / SECS_PER_DAY;
+}
+
+real TTtoTDB(real tt, real jdtt) {
+  real ME = M_E_OFFSET + 0.9856003 * (jdtt - JD_OF_J2000);
+  real ME_rad = ME * (M_PI / 180.0);
+  return tt + TDB_COEFF1 * sin(ME_rad) + TDB_COEFF2 * sin(2 * ME_rad);
+}
+
+real TAItoTDB(real tai) {
+  real tt = TAItoTT(tai);
+  real jd_tt = TAItoJulianDateTT(tai);
+  return TTtoTDB(tt, jd_tt);
+}
+
 /**
  * @brief load the Spice kernels
  *
@@ -186,9 +205,9 @@ Vector3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
 Matrix6d GetFrameConversionMatrix(real t_tai, Frame from_frame,
                                   Frame to_frame) {
   LoadSpiceKernel();
+  real t_tdb = TAItoTDB(t_tai);
+
   SpiceInt bodyname;
-  // TODO: this cuts the relatonship between t_tdb and matrix
-  real t_tdb = ConvertTime(t_tai, TimeSystems::TAI, TimeSystems::TDB);
   SpiceDouble et_spice = (SpiceDouble)t_tdb.val();
   double xform[6][6];
   Matrix6d M_rot;
@@ -352,12 +371,13 @@ real ConvertTime(real t, std::string from_time_type, std::string to_time_type) {
   return t_out;
 }
 
-Matrix<-1, 6> GetBodyPosVel(const VectorX &tai, NaifId center, NaifId target) {
+Matrix<-1, 6> GetBodyPosVel(const VectorX &tai, NaifId center, NaifId target,
+                            Frame frame) {
   LoadSpiceKernel();
   Matrix<-1, 6> retState(tai.size(), 6);
 
   for (int i = 0; i < tai.size(); i++) {
-    retState.row(i) = GetBodyPosVel(tai(i), center, target).transpose();
+    retState.row(i) = GetBodyPosVel(tai(i), center, target, frame).transpose();
   }
 
   return retState;
@@ -372,33 +392,48 @@ Matrix<-1, 6> GetBodyPosVel(const VectorX &tai, NaifId center, NaifId target) {
  * @return VectorX  6x1 vector of position and velocity of target body
  * in center body J2000 frame
  */
-Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target) {
+Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target,
+                      Frame frame) {
   LoadSpiceKernel();
 
-  bool found_center = false;
-  bool found_target = false;
-  Vector6 rv_center;
-  Vector6 rv_target;
+  bool found_center = center == NaifId::SSB;
+  bool found_target = target == NaifId::SSB;
+  Vector6 rv_center = Vector6::Zero();
+  Vector6 rv_target = Vector6::Zero();
+
+  auto fetchPosVel = [&](NaifId body, Vector6 &rv) {
+    switch (body) {
+      case NaifId::MOON:
+      case NaifId::EARTH:
+        rv += GetBodyPosVel(tai, NaifId::SSB, NaifId::EARTH_BARYCENTER, frame);
+        break;
+      case NaifId::MERCURY:
+        rv +=
+            GetBodyPosVel(tai, NaifId::SSB, NaifId::MERCURY_BARYCENTER, frame);
+        break;
+      case NaifId::VENUS:
+        rv += GetBodyPosVel(tai, NaifId::SSB, NaifId::VENUS_BARYCENTER, frame);
+        break;
+      case NaifId::MARS:
+        rv += GetBodyPosVel(tai, NaifId::SSB, NaifId::MARS_BARYCENTER, frame);
+        break;
+      default:
+        break;
+    }
+  };
+
+  fetchPosVel(center, rv_center);
+  fetchPosVel(target, rv_target);
 
   // convert TAI to TDB past J2000
-  real t_tdb = ConvertTime(tai, TimeSystems::TAI, TimeSystems::TDB);
-
-  // find the segment for the center and target body
-  if (center == NaifId::SOLAR_SYSTEM_BARYCENTER) {
-    rv_center = Vector6::Zero();
-    found_center = true;
-  }
-  if (target == NaifId::SOLAR_SYSTEM_BARYCENTER) {
-    rv_target = Vector6::Zero();
-    found_target = true;
-  }
+  real t_tdb = TAItoTDB(tai);
 
   for (int i = 0; i < cheby_n; i++) {
     if (cheby_s[i].target == (int)target) {
-      rv_target = cheby_posvel_ad(t_tdb, cheby_s[i].seg, cheby_s[i].len);
+      rv_target += cheby_posvel_ad(t_tdb, cheby_s[i].seg, cheby_s[i].len);
       found_target = true;
     } else if (cheby_s[i].target == (int)center) {
-      rv_center = cheby_posvel_ad(t_tdb, cheby_s[i].seg, cheby_s[i].len);
+      rv_center += cheby_posvel_ad(t_tdb, cheby_s[i].seg, cheby_s[i].len);
       found_center = true;
     }
 
@@ -409,6 +444,10 @@ Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target) {
   assert(found_center && found_target && "Chebyshev coefficients not found");
 
   Vector6 retState = rv_target - rv_center;
+
+  if (frame != Frame::GCRF) {
+    retState = FrameConverter::Convert(tai, retState, Frame::GCRF, frame);
+  }
   return retState;
 }
 

@@ -116,10 +116,12 @@ void GnssTransmitter::InitializeBEIDOUTransmitter() {
  */
 std::vector<Vector3d> GnssTransmitter::GetTransmitterOrientation(
     double t, Vector3d& r_tx_gcrf) {
-  auto r_sat2sun =
-      SpiceInterface::GetBodyPos(NaifId::SUN, t, Frame::GCRF, NaifId::EARTH,
-                                 "NONE") -
-      r_tx_gcrf;                            // (Sun-Earth) - (Sat-Earth)
+  // (Sun-Earth) - (Sat-Earth)
+  Vector3d r_sat2sun =
+      SpiceInterface::GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN, Frame::GCRF)
+          .cast<double>()
+          .head(3) -
+      r_tx_gcrf;
   auto e_z_gnss = -r_tx_gcrf.normalized();  // Face towards earth center
   auto e_y_gnss = r_sat2sun.cross(r_tx_gcrf).normalized();
   auto e_x_gnss = e_y_gnss.cross(e_z_gnss).normalized();

@@ -22,32 +22,33 @@ NBodyDynamics::NBodyDynamics(std::string integratorType)
     : NumericalOrbitDynamics(
           std::bind(&NBodyDynamics::ComputeRates, this, std::placeholders::_1,
                     std::placeholders::_2),
-          OrbitStateRepres::CARTESIAN, integratorType){};
+          OrbitStateRepres::CARTESIAN, integratorType) {};
 
-VectorX NBodyDynamics::ComputeRates(real epoch, const VectorX &x) const {
-  VectorX acc = VectorX::Zero(6);
+VectorX NBodyDynamics::ComputeRates(real t_tai, const VectorX &rv) const {
+  VectorX rv_dot = VectorX::Zero(6);
 
   // N-body gravity
-  acc.head(3) = x.segment(3, 3);  // extract velocity
-  acc.tail(3) += ComputeNBodyGravity(epoch, x);
+  rv_dot.head(3) = rv.segment(3, 3);  // extract velocity
+  rv_dot.tail(3) += ComputeNBodyGravity(t_tai, rv);
 
   // Solar radiation pressure
   if (use_srp_) {
-    Vector3 r_body2sc = x.head(3);
-    Vector3 r_body2sun = SpiceInterface::GetBodyPos(
-        NaifId::SUN, epoch, Frame::GCRF, NaifId::MOON, "NONE");
+    Vector3 r_body2sc = rv.head(3);
+    Vector3 r_body2sun = SpiceInterface::GetBodyPosVel(
+                             t_tai, NaifId::MOON, NaifId::SUN, Frame::MOON_CI)
+                             .head(3);
     Vector3 r_sun2sc = r_body2sc - r_body2sun;
     double R_body = central_body_.R;
     real B_srp = CR_ * (area_ / mass_);  // ballistic coefficient [m^2/kg]
     Vector3 a_srp =
         ComputeSolarRadiationPressure(r_body2sc, r_sun2sc, B_srp, R_body);
-    acc.tail(3) += a_srp;
+    rv_dot.tail(3) += a_srp;
   }
 
-  return acc;
+  return rv_dot;
 }
 
-Vector3 NBodyDynamics::ComputeNBodyGravity(real epoch,
+Vector3 NBodyDynamics::ComputeNBodyGravity(real t_tai,
                                            const VectorX &rv) const {
   assert(rv.size() == 6);
 
@@ -57,18 +58,19 @@ Vector3 NBodyDynamics::ComputeNBodyGravity(real epoch,
                                  // center body [km/s^2]
 
   for (Body body : bodies_) {
-    VectorX rv_i, rv_body;
+    VectorX rv_i, r_body;
     Vector3 a_i, a_i_C, r_i;
 
     // Correction for non-central body
     if (body.id != central_body_.id) {
       // i-th body pos and vel w.r.t. the center body [km, km/s]
-      rv_body = SpiceInterface::GetBodyPosVel(epoch, central_body_.id, body.id);
+      r_body = SpiceInterface::GetBodyPosVel(t_tai, central_body_.id, body.id,
+                                             Frame::MOON_CI)
+                   .head(3);
 
       // s/c pos and vel w.r.t. the i-th body [km, km/s]
-      rv_i = rv - rv_body;
-      r_i = rv_i.head(3);
-      a_i_C = -body.mu * rv_body.head(3) / pow((rv_body.head(3)).norm(), 3);  //
+      r_i = rv.head(3) - r_body.head(3);
+      a_i_C = -body.mu * r_body / pow((r_body).norm(), 3);  //
     } else {
       rv_i = rv;
       r_i = rv_i.head(3);
@@ -78,7 +80,7 @@ Vector3 NBodyDynamics::ComputeNBodyGravity(real epoch,
     // Check spherical harmonics
     if (body.sphericalHarmonics) {
       Matrix3d Ur2j = SpiceInterface::GetFrameConversionMatrix(
-                          epoch, body.fixed_frame, Frame::GCRF)
+                          t_tai, body.fixed_frame, Frame::GCRF)
                           .block(0, 0, 3, 3);
       Vector3 r_i_rot = Ur2j.transpose() * r_i;
       Vector3 a_i_rot = spharm_acc_ecr(body.n_max, body.m_max, r_i_rot, body.R,

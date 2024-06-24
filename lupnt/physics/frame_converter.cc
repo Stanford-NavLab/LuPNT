@@ -190,8 +190,9 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
     case GCRF: {
       switch (frame_out) {
         case ICRF: {
-          Vector6 rv_icrf_ssb2e = GetBodyPosVel(
-              t_tai, NaifId::SOLAR_SYSTEM_BARYCENTER, NaifId::EARTH);
+          Vector6 rv_icrf_ssb2e =
+              GetBodyPosVel(t_tai, NaifId::SOLAR_SYSTEM_BARYCENTER,
+                            NaifId::EARTH, Frame::GCRF);
           Vector6 rv_icrf = rv_in + rv_icrf_ssb2e;
           return rv_icrf;
         }
@@ -203,13 +204,13 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
         }
         case MOON_CI: {
           Vector6 rv_icrf_m2e =
-              GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH);
+              GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH, Frame::GCRF);
           Vector6 rv_mi = rv_in + rv_icrf_m2e;
           return rv_mi;
         }
         case EMR: {
           Vector6 rv_icrf_emb2e = GetBodyPosVel(
-              t_tai, NaifId::EARTH_MOON_BARYCENTER, NaifId::EARTH);
+              t_tai, NaifId::EARTH_MOON_BARYCENTER, NaifId::EARTH, Frame::GCRF);
           Vector6 rv_emr = InertialToRtn(rv_icrf_emb2e, rv_in);
           return rv_emr;
         }
@@ -228,7 +229,7 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
       switch (frame_out) {
         case GCRF: {
           Vector6 rv_icrf_e2m =
-              GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON);
+              GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::MOON_CI);
           Vector6 rv_gcrf = rv_in + rv_icrf_e2m;
           return rv_gcrf;
         }
@@ -259,8 +260,9 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
     case ICRF: {
       switch (frame_out) {
         case GCRF: {
-          Vector6 rv_icrf_ssb2e = GetBodyPosVel(
-              t_tai, NaifId::SOLAR_SYSTEM_BARYCENTER, NaifId::EARTH);
+          Vector6 rv_icrf_ssb2e =
+              GetBodyPosVel(t_tai, NaifId::SOLAR_SYSTEM_BARYCENTER,
+                            NaifId::EARTH, Frame::ICRF);
           Vector6 rv_gcrf = rv_in - rv_icrf_ssb2e;
           return rv_gcrf;
         }
@@ -275,8 +277,8 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
     case EMR: {
       switch (frame_out) {
         case GCRF: {
-          Vector6 rv_icrf_emb2e = GetBodyPosVel(t_tai, NaifId::EARTH,
-                                                NaifId::EARTH_MOON_BARYCENTER);
+          Vector6 rv_icrf_emb2e = GetBodyPosVel(
+              t_tai, NaifId::EARTH, NaifId::EARTH_MOON_BARYCENTER, Frame::GCRF);
           Vector6 rv_gcrf = RtnToInertial(rv_icrf_emb2e, rv_in);
           return rv_gcrf;
         }
@@ -310,8 +312,10 @@ Vector6 FrameConverter::Convert(real t_tai, Vector6 rv_in, Frame frame_in,
 }
 
 Matrix6 FrameConverter::ComputeOpToMi(real t_tai) {
-  Vector6 rv_earth_icrf = GetBodyPosVel(t_tai, NaifId::SUN, NaifId::EARTH);
-  Vector6 rv_moon_icrf = GetBodyPosVel(t_tai, NaifId::SUN, NaifId::MOON);
+  Vector6 rv_earth_icrf =
+      GetBodyPosVel(t_tai, NaifId::SUN, NaifId::EARTH, Frame::ICRF);
+  Vector6 rv_moon_icrf =
+      GetBodyPosVel(t_tai, NaifId::SUN, NaifId::MOON, Frame::ICRF);
 
   // Moon axis
   MatrixX iau_moon2icrf;

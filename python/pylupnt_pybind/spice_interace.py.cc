@@ -48,17 +48,19 @@ void init_spice_interface(py::module &m) {
           py::arg("t_tai"), py::arg("from"), py::arg("to"))
       .def_static(
           "get_body_pos_vel",
-          [](double t_tai, lupnt::NaifId center,
-             lupnt::NaifId target) -> lupnt::Vector6d {
-            return lupnt::SpiceInterface::GetBodyPosVel(t_tai, center, target)
+          [](double t_tai, lupnt::NaifId center, lupnt::NaifId target,
+             lupnt::Frame frame) -> lupnt::Vector6d {
+            return lupnt::SpiceInterface::GetBodyPosVel(t_tai, center, target,
+                                                        frame)
                 .cast<double>();
           },
           py::arg("t_tai"), py::arg("center"), py::arg("target"))
       .def_static(
           "get_body_pos_vel",
-          [](lupnt::VectorXd t_tai, lupnt::NaifId center,
-             lupnt::NaifId target) -> lupnt::Matrixd<-1, 6> {
-            return lupnt::SpiceInterface::GetBodyPosVel(t_tai, center, target)
+          [](lupnt::VectorXd t_tai, lupnt::NaifId center, lupnt::NaifId target,
+             lupnt::Frame frame) -> lupnt::Matrixd<-1, 6> {
+            return lupnt::SpiceInterface::GetBodyPosVel(t_tai, center, target,
+                                                        frame)
                 .cast<double>();
           },
           py::arg("t_tai"), py::arg("center"), py::arg("target"))
