@@ -29,7 +29,7 @@ VectorX NBodyDynamics::ComputeRates(real t_tai, const VectorX &rv) const {
 
   // N-body gravity
   rv_dot.head(3) = rv.segment(3, 3);  // extract velocity
-  rv_dot.tail(3) += ComputeNBodyGravity(t_tai, rv);
+  rv_dot.tail(3) += ComputeNBodyGravity(t_tai, rv.head(3));
 
   // Solar radiation pressure
   if (use_srp_) {
@@ -48,14 +48,10 @@ VectorX NBodyDynamics::ComputeRates(real t_tai, const VectorX &rv) const {
   return rv_dot;
 }
 
-Vector3 NBodyDynamics::ComputeNBodyGravity(real t_tai,
-                                           const VectorX &rv) const {
-  assert(rv.size() == 6);
-
-  Vector3 r = rv.head(3);        // s/c position w.r.t. the center body [km]
-  Vector3 v = rv.segment(3, 3);  // s/c velocity w.r.t. the center body [km/s]
-  Vector3 a = Vector3::Zero();   // s/c acceleration w.r.t. the
-                                 // center body [km/s^2]
+Vector3 NBodyDynamics::ComputeNBodyGravity(real t_tai, const Vector3 &r) const {
+  assert(r.size() == 3);
+  Vector3 a = Vector3::Zero();  // s/c acceleration w.r.t. the
+                                // center body [km/s^2]
 
   for (Body body : bodies_) {
     VectorX rv_i, r_body;
@@ -69,19 +65,19 @@ Vector3 NBodyDynamics::ComputeNBodyGravity(real t_tai,
                    .head(3);
 
       // s/c pos and vel w.r.t. the i-th body [km, km/s]
-      r_i = rv.head(3) - r_body.head(3);
+      r_i = r - r_body.head(3);
       a_i_C = -body.mu * r_body / pow((r_body).norm(), 3);  //
     } else {
-      rv_i = rv;
-      r_i = rv_i.head(3);
+      r_i = r;
       a_i_C = Vector3::Zero();
     }
 
     // Check spherical harmonics
     if (body.sphericalHarmonics) {
-      Matrix3d Ur2j = SpiceInterface::GetFrameConversionMatrix(
-                          t_tai, body.fixed_frame, Frame::GCRF)
-                          .block(0, 0, 3, 3);
+      // Matrix3d Ur2j = SpiceInterface::GetFrameConversionMatrix(
+      //                     t_tai, body.fixed_frame, Frame::GCRF)
+      //                     .block(0, 0, 3, 3);
+      Matrix3d Ur2j = Matrix3d::Identity();
       Vector3 r_i_rot = Ur2j.transpose() * r_i;
       Vector3 a_i_rot = spharm_acc_ecr(body.n_max, body.m_max, r_i_rot, body.R,
                                        body.mu, body.Cnm, body.Snm);

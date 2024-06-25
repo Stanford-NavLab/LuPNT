@@ -10,6 +10,8 @@
  */
 #include "propagator.h"
 
+#include "unistd.h"
+
 namespace lupnt {
 
 NumericalPropagator::NumericalPropagator() {

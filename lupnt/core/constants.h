@@ -82,6 +82,7 @@ static constexpr double PI_OVER_TWO =
     1.57079632679489661923132169163975144209858469968756;
 static constexpr double E =
     2.71828182845904523536028747135266249775724709369996;
+static constexpr double EPS = 1.0e-10;
 
 // Angle conversion
 static constexpr double RAD_PER_DEG =

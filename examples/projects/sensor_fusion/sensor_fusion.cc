@@ -40,10 +40,17 @@ int main() {
   NBodyDynamics dyn_true;
   dyn_true.SetPrimaryBody(Body::Moon(5, 5));
   dyn_true.AddBody(Body::Earth());
-  dyn_true.SetTimeStep(15.0);
+  dyn_true.SetTimeStep(1.0);
+
+  std::vector<NBodyDynamics> dyns(N_sat);
+  for (int i = 0; i < N_sat; i++) {
+    dyns[i].SetPrimaryBody(Body::Moon(5, 5));
+    dyns[i].AddBody(Body::Earth());
+    dyns[i].SetTimeStep(1.0);
+  }
 
   // Propagate
-  real Dt = 30.0;
+  real Dt = 15.0;
   real tf = 1.0 * orbit_period;
   std::cout << "tf = " << tf / SECS_PER_HOUR << " h" << std::endl;
   int N_steps = (tf / Dt).val();
@@ -51,10 +58,24 @@ int main() {
   VectorX tai = tai0 + tspan.array();
 
   std::vector<MatrixX> rv_hist(N_sat);
+  // compute time
+  auto start = omp_get_wtime();
+  // Print number of threads
+  std::cout << "Number of threads: " << omp_get_max_threads() << std::endl;
 #pragma omp parallel for
   for (int i = 0; i < N_sat; i++) {
-    rv_hist[i] = dyn_true.Propagate(rv0_mci[i], tai0, tai, Dt, true);
+    std::cout << "Thread " << i << " start." << std::endl;
+    NBodyDynamics dyn_true;
+    dyn_true.SetPrimaryBody(Body::Moon(5, 5));
+    dyn_true.AddBody(Body::Earth());
+    dyn_true.SetTimeStep(1.0);
+    dyn_true.Propagate(rv0_mci[i], tai0, tai, Dt, true);
+    std::cout << "Thread " << i << " end." << std::endl;
+    // rv_hist[i] = dyns[i].Propagate(rv0_mci[i], tai0, tai, Dt, true);
   }
+  auto end = omp_get_wtime();
+  std::cout << "Time: " << end - start << " s" << std::endl;
+  return 0;
 
   // Plotting
   auto fig = figure(true);
@@ -94,7 +115,7 @@ int main() {
   ylim({-lim, lim});
   zlim({-lim, lim});
 
-  fig->draw();
+  // fig->draw();
 
   // Create 3 2D plots for x, y, z vs time
   auto fig2 = figure(true);
@@ -109,5 +130,5 @@ int main() {
     ylabel("Position [km]");
   }
 
-  show();
+  // show();
 }

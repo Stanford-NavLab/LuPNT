@@ -13,29 +13,25 @@
 
 #include "lupnt/core/constants.h"
 
-
-
 namespace lupnt {
 
 using ODE = std::function<VectorX(const real, const VectorX &)>;
 
 class IIntegrator {
  public:
-  virtual VectorX Step(const ODE &f, const real t, const VectorX &x,
-                           const real dt) = 0;
-  virtual ~IIntegrator(){};
+  virtual VectorX Step(const ODE f, const real t, const VectorX x,
+                       const real dt) = 0;
+  virtual ~IIntegrator() {};
 };
 
 class RK4 : public IIntegrator {
  public:
-  VectorX Step(const ODE &f, const real t, const VectorX &x,
-                   const real dt);
+  VectorX Step(const ODE f, const real t, const VectorX x, const real dt);
 };
 
 class RK8 : public IIntegrator {
  public:
-  VectorX Step(const ODE &f, const real t, const VectorX &x,
-                   const real dt);
+  VectorX Step(const ODE f, const real t, const VectorX x, const real dt);
 };
 
 }  // namespace lupnt

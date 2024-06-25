@@ -88,7 +88,7 @@ void NumericalOrbitDynamics::PropagateWithStm(Vector6 &x, real t0, real tf,
   stm = J;
 }
 
-MatrixX NumericalOrbitDynamics::Propagate(Vector6 &x, real t0, VectorX &tf,
+MatrixX NumericalOrbitDynamics::Propagate(Vector6 x, real t0, VectorX tf,
                                           real dt, bool progress) {
   real dt_prop = (dt > 0.0) ? dt : dt_;
   Vector6 x0 = x;
@@ -161,7 +161,7 @@ CartesianTwoBodyDynamics::CartesianTwoBodyDynamics(double mu,
       NumericalOrbitDynamics(
           std::bind(&CartesianTwoBodyDynamics::ComputeRates, this,
                     std::placeholders::_1, std::placeholders::_2),
-          OrbitStateRepres::CARTESIAN, integratorType){};
+          OrbitStateRepres::CARTESIAN, integratorType) {};
 
 VectorX CartesianTwoBodyDynamics::ComputeRates(real t, const VectorX &x) const {
   Vector6 dxdt;
@@ -184,7 +184,7 @@ MoonFixedDynamics::MoonFixedDynamics(double mu, std::string integratorType)
       NumericalOrbitDynamics(
           std::bind(&MoonFixedDynamics::ComputeRates, this,
                     std::placeholders::_1, std::placeholders::_2),
-          OrbitStateRepres::CARTESIAN, integratorType){};
+          OrbitStateRepres::CARTESIAN, integratorType) {};
 
 VectorX MoonFixedDynamics::ComputeRates(real t, const VectorX &x) const {
   Vector6 dxdt;
@@ -210,7 +210,7 @@ J2CartesianTwoBodyDynamics::J2CartesianTwoBodyDynamics(
       NumericalOrbitDynamics(
           std::bind(&J2CartesianTwoBodyDynamics::ComputeRates, this,
                     std::placeholders::_1, std::placeholders::_2),
-          OrbitStateRepres::CARTESIAN, integratorType){};
+          OrbitStateRepres::CARTESIAN, integratorType) {};
 
 VectorX J2CartesianTwoBodyDynamics::ComputeRates(real t,
                                                  const VectorX &x) const {
@@ -248,7 +248,7 @@ J2KeplerianDynamics::J2KeplerianDynamics(double mu_in, double J2_in,
       NumericalOrbitDynamics(
           std::bind(&J2KeplerianDynamics::ComputeRates, this,
                     std::placeholders::_1, std::placeholders::_2),
-          OrbitStateRepres::CARTESIAN, integratorType){};
+          OrbitStateRepres::CARTESIAN, integratorType) {};
 
 VectorX J2KeplerianDynamics::ComputeRates(real t, const VectorX &x) const {
   real p = x(0) * (1.0 - x(1) * x(1));
@@ -275,7 +275,7 @@ MoonMeanDynamics::MoonMeanDynamics(std::string integratorType)
     : NumericalOrbitDynamics(
           std::bind(&MoonMeanDynamics::ComputeRates, this,
                     std::placeholders::_1, std::placeholders::_2),
-          OrbitStateRepres::CARTESIAN, integratorType){};
+          OrbitStateRepres::CARTESIAN, integratorType) {};
 
 VectorX MoonMeanDynamics::ComputeRates(real t, const VectorX &x) const {
   real a = x(0);

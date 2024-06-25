@@ -44,7 +44,7 @@ class NumericalDynamics : public IDynamics {
 
  public:
   NumericalDynamics(ODE odefunc, std::string integrator = "RK4")
-      : odefunc_(odefunc), propagator_(integrator){};
+      : odefunc_(odefunc), propagator_(integrator) {};
 
   void SetTimeStep(real dt) { dt_ = dt.val(); };
   void PropagateX(VectorX &x, real t0, real tf);
@@ -64,7 +64,7 @@ class NumericalDynamics : public IDynamics {
  */
 class AnalyticalDynamics : public IDynamics {
  public:
-  virtual ~AnalyticalDynamics(){};
+  virtual ~AnalyticalDynamics() {};
   virtual OrbitState CreateOrbitState(Vector6 &x) = 0;
   virtual void Propagate(OrbitState &state, real t0, real dt) = 0;
   virtual void PropagateWithSTM(OrbitState &state, real t0, real dt,
@@ -191,7 +191,7 @@ class NumericalOrbitDynamics : public NumericalDynamics {
                         Matrix6d &stm);
   MatrixX Propagate(OrbitState &state, real t0, VectorX &tf, real dt = 0.0,
                     bool progress = false);
-  MatrixX Propagate(Vector6 &x, real t0, VectorX &tf, real dt = 0.0,
+  MatrixX Propagate(Vector6 x, real t0, VectorX tf, real dt = 0.0,
                     bool progress = false);
   void PropagateWithStm(Vector6 &x, real t0, real tf, real dt, Matrix6d &stm);
   void PropagateWithStm(OrbitState &state, real t0, real tf, Matrix6d &stm);
@@ -289,7 +289,7 @@ class NBodyDynamics : public NumericalOrbitDynamics {
   void SetSrpCoeff(double CR) { CR_ = CR; }
   void SetSolarRadiationPressure(bool use_srp) { use_srp_ = use_srp; }
 
-  Vector3 ComputeNBodyGravity(const real epoch, const VectorX &rv) const;
+  Vector3 ComputeNBodyGravity(const real epoch, const Vector3 &r) const;
   Vector3 ComputeSolarRadiationPressure(const Vector3 &r_body2sc,
                                         const Vector3 &r_sun2sc,
                                         const real B_srp, double R_body) const;

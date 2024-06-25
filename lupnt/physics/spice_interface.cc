@@ -25,6 +25,8 @@
 namespace lupnt {
 namespace SpiceInterface {
 
+bool spice_loaded = false;
+
 real TAItoTT(real tai) { return tai + TT_TAI_OFFSET; }
 
 real TAItoJulianDateTT(real tai) {
@@ -90,6 +92,7 @@ void LoadSpiceKernel(void) {
   // move back to original directory
   std::filesystem::current_path(orig_dir);
 
+  spice_loaded = true;
   return;
 }
 
@@ -161,7 +164,9 @@ void ExtractPckCoeffs() {
 
 Vector3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
                     std::string abCorrection) {
-  LoadSpiceKernel();
+  if (!spice_loaded) {
+    LoadSpiceKernel();
+  }
 
   SpiceDouble ptarg[3];
   Vector3d targetPos;
@@ -204,7 +209,10 @@ Vector3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
  */
 Matrix6d GetFrameConversionMatrix(real t_tai, Frame from_frame,
                                   Frame to_frame) {
-  LoadSpiceKernel();
+  if (!spice_loaded) {
+    LoadSpiceKernel();
+  }
+
   real t_tdb = TAItoTDB(t_tai);
 
   SpiceInt bodyname;
@@ -288,7 +296,10 @@ Julian Date Strings.
  * @return real     ephemeris time (TDB) (seconds past the J2000 epoch)
  */
 real StringToTDB(std::string str) {
-  LoadSpiceKernel();
+  if (!spice_loaded) {
+    LoadSpiceKernel();
+  }
+
   SpiceDouble t_tdb;
   str2et_c(str.c_str(), &t_tdb);
   return t_tdb;
@@ -301,7 +312,10 @@ real StringToTDB(std::string str) {
  * @return real
  */
 real StringToTAI(std::string str) {
-  LoadSpiceKernel();
+  if (!spice_loaded) {
+    LoadSpiceKernel();
+  }
+
   real t_tdb = StringToTDB(str);
   real tai = ConvertTime(t_tdb, TimeSystems::TDB, TimeSystems::TAI);
   return tai;
@@ -315,7 +329,10 @@ real StringToTAI(std::string str) {
  * @return std::string
  */
 std::string TDBtoStringUTC(real tdb, int prec = 3) {
-  LoadSpiceKernel();
+  if (!spice_loaded) {
+    LoadSpiceKernel();
+  }
+
   SpiceDouble t_tdb = tdb.val();
   SpiceChar str[100];
   et2utc_c(t_tdb, "C", prec, 100, str);
@@ -331,7 +348,10 @@ std::string TDBtoStringUTC(real tdb, int prec = 3) {
  * @return std::string
  */
 std::string TAItoStringUTC(real tai, int prec = 3) {
-  LoadSpiceKernel();
+  if (!spice_loaded) {
+    LoadSpiceKernel();
+  }
+
   real et_tdb = ConvertTime(tai, TimeSystems::TAI, TimeSystems::TDB);
   std::string str = TDBtoStringUTC(et_tdb, prec);
   return str;
@@ -358,7 +378,10 @@ std::string TAItoStringUTC(real tai, int prec = 3) {
  * @return real     out time in seconds
  */
 real ConvertTime(real t, std::string from_time_type, std::string to_time_type) {
-  LoadSpiceKernel();
+  if (!spice_loaded) {
+    LoadSpiceKernel();
+  }
+
   SpiceDouble t_in = t.val();
 
   SpiceDouble t_out_spice =
@@ -373,7 +396,10 @@ real ConvertTime(real t, std::string from_time_type, std::string to_time_type) {
 
 Matrix<-1, 6> GetBodyPosVel(const VectorX &tai, NaifId center, NaifId target,
                             Frame frame) {
-  LoadSpiceKernel();
+  if (!spice_loaded) {
+    LoadSpiceKernel();
+  }
+
   Matrix<-1, 6> retState(tai.size(), 6);
 
   for (int i = 0; i < tai.size(); i++) {
@@ -394,7 +420,9 @@ Matrix<-1, 6> GetBodyPosVel(const VectorX &tai, NaifId center, NaifId target,
  */
 Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target,
                       Frame frame) {
-  LoadSpiceKernel();
+  if (!spice_loaded) {
+    LoadSpiceKernel();
+  }
 
   bool found_center = center == NaifId::SSB;
   bool found_target = target == NaifId::SSB;

@@ -11,10 +11,7 @@
 
 #include "lupnt/numerics/integrator.h"
 
-
-
-
-
+#include "unistd.h"
 
 namespace lupnt {
 /**
@@ -25,8 +22,10 @@ namespace lupnt {
  * @param x  The state to propagate
  * @param dt  Timestep
  */
-VectorX RK4::Step(const ODE &f, const real t,
-                          const VectorX &x, const real dt) {
+VectorX RK4::Step(const ODE f, const real t, const VectorX x, const real dt) {
+  // usleep(1000);
+  // return x + x;
+
   /* Evaluate `f` (i.e., `dx`) at the 4 locations defined bx the RK4 method */
   VectorX k_1 = f(t, x) * dt;
 
@@ -59,8 +58,7 @@ VectorX RK4::Step(const ODE &f, const real t,
  * @ref
  * https://www.mathworks.com/matlabcentral/fileexchange/55431-runge-kutta-8th-order-integration
  */
-VectorX RK8::Step(const ODE &f, const real t,
-                          const VectorX &x, const real dt) {
+VectorX RK8::Step(const ODE f, const real t, const VectorX x, const real dt) {
   // 1
   VectorX k_1 = f(t, x) * dt;
 
@@ -86,27 +84,25 @@ VectorX RK8::Step(const ODE &f, const real t,
 
   // 6
   real t5 = t + dt * (2.0 / 3);
-  VectorX x5 =
-      x + (1.0 / 54) * (13 * k_1 - 27 * k_3 + 42 * k_4 + 8 * k_5);
+  VectorX x5 = x + (1.0 / 54) * (13 * k_1 - 27 * k_3 + 42 * k_4 + 8 * k_5);
   VectorX k_6 = f(t5, x5) * dt;
 
   // 7
   real t6 = t + dt * (1.0 / 6);
   VectorX x6 = x + (1.0 / 4320) * (389 * k_1 - 54 * k_3 + 966 * k_4 -
-                                           824 * k_5 + 243 * k_6);
+                                   824 * k_5 + 243 * k_6);
   VectorX k_7 = f(t6, x6) * dt;
 
   // 8
   real t7 = t + dt;
   VectorX x7 = x + (1.0 / 20) * (-234 * k_1 + 81 * k_3 - 1164 * k_4 +
-                                         656 * k_5 - 122 * k_6 + 800 * k_7);
+                                 656 * k_5 - 122 * k_6 + 800 * k_7);
   VectorX k_8 = f(t7, x7) * dt;
 
   // 9
   real t8 = t + (5.0 / 6) * dt;
-  VectorX x8 =
-      x + (1.0 / 288) * (-127 * k_1 + 18 * k_3 - 678 * k_4 + 456 * k_5 -
-                         9 * k_6 + 576 * k_7 + 4 * k_8);
+  VectorX x8 = x + (1.0 / 288) * (-127 * k_1 + 18 * k_3 - 678 * k_4 +
+                                  456 * k_5 - 9 * k_6 + 576 * k_7 + 4 * k_8);
   VectorX k_9 = f(t8, x8) * dt;
 
   // 10
@@ -118,8 +114,8 @@ VectorX RK8::Step(const ODE &f, const real t,
 
   /* Approtimate `dx` */
   VectorX dx = (41 * k_1 + 27 * k_4 + 272 * k_5 + 27 * k_6 + 216 * k_7 +
-                        216 * k_9 + 41 * k_10) /
-                       840;
+                216 * k_9 + 41 * k_10) /
+               840;
 
   return x + dx;
 }
