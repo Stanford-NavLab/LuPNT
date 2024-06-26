@@ -28,6 +28,9 @@
   using Vector##size##d = Eigen::Matrix<double, size, 1>;    \
   using Matrix##size##d = Eigen::Matrix<double, size, size>; \
   using RowVector##size##d = Eigen::Matrix<double, 1, size>; \
+  using Vector##size##i = Eigen::Matrix<int, size, 1>;       \
+  using Matrix##size##i = Eigen::Matrix<int, size, size>;    \
+  using RowVector##size##i = Eigen::Matrix<int, 1, size>;    \
   using Vector##size = Eigen::Matrix<real, size, 1>;         \
   using Matrix##size = Eigen::Matrix<real, size, size>;      \
   using RowVector##size = Eigen::Matrix<real, 1, size>;
@@ -36,6 +39,9 @@
   using VectorXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;              \
   using MatrixXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; \
   using RowVectorXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;           \
+  using VectorXi = Eigen::Matrix<int, Eigen::Dynamic, 1>;                 \
+  using MatrixXi = Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;    \
+  using RowVectorXi = Eigen::Matrix<int, 1, Eigen::Dynamic>;              \
   using VectorX = Eigen::Matrix<real, Eigen::Dynamic, 1>;                 \
   using MatrixX = Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>;    \
   using RowVectorX = Eigen::Matrix<real, 1, Eigen::Dynamic>;
@@ -67,6 +73,10 @@ using Vectord = Eigen::Matrix<double, size, 1>;
 template <int size>
 using RowVectord = Eigen::Matrix<double, 1, size>;
 using RowVectorXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;
+using Quaternion = Eigen::Quaternion<real>;
+using Quaterniond = Eigen::Quaternion<double>;
+using AngleAxis = Eigen::AngleAxis<real>;
+using AngleAxisd = Eigen::AngleAxis<double>;
 
 DEFINE_VECTORS_MATRICES()
 
@@ -142,13 +152,15 @@ static constexpr int JULIAN_DATE_OF_010541 = 2430000;
 
 // Coordinate system constants -------------------------------------------------
 static constexpr double d_E_M = 384400.0;        // km
-static constexpr double MU_EARTH = 398600.4418;  // km^3/s^2
-static constexpr double MU_MOON = 4902.800066;   // km^3/s^2
+static constexpr double GM_EARTH = 398600.4415;  // km^3/s^2
+static constexpr double GM_MOON = 4902.800066;   // km^3/s^2
 static constexpr double d_E_EMB = 4671.0;        // km
 static constexpr double R_EARTH = 6378.137;      // km
 static constexpr double R_MOON = 1737.4;         // km
 static constexpr double OMEGA_E_M = 2.6617e-6;   // rad/s
 static constexpr double d_M_EMB = d_E_M - d_E_EMB;
+static constexpr double WGS84_A = 6378.137;  // km
+static constexpr double WGS84_F = 1.0 / 298.257223563;
 
 static constexpr double J2_EARTH = 1.08262668e-3;
 // static constexpr double J2_MOON = 9.08901807506000e-5;

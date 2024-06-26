@@ -287,28 +287,28 @@ VectorX MoonMeanDynamics::ComputeRates(real t, const VectorX &x) const {
 
   VectorX coeDot(6);
   coeDot(0) = 0;
-  coeDot(1) = (15 * k * pow(n3, 2) * pow(a, 3.0 / 2.0)) / (8 * sqrt(MU_MOON)) *
+  coeDot(1) = (15 * k * pow(n3, 2) * pow(a, 3.0 / 2.0)) / (8 * sqrt(GM_MOON)) *
               e * sqrt(1 - pow(e, 2)) * pow(sin(i), 2) * sin(2 * w);
   coeDot(2) = -(15 * k * pow(n3, 2) * pow(a, 3.0 / 2.0)) /
-              (16 * sqrt(MU_MOON)) * pow(e, 2) / sqrt(1 - pow(e, 2)) *
+              (16 * sqrt(GM_MOON)) * pow(e, 2) / sqrt(1 - pow(e, 2)) *
               sin(2 * i) * sin(2 * w);
-  coeDot(3) = -(3 * J2 * sqrt(MU_MOON) * pow(R_MOON, 2)) /
+  coeDot(3) = -(3 * J2 * sqrt(GM_MOON) * pow(R_MOON, 2)) /
                   (2 * pow(a, 7.0 / 2.0) * pow(1 - pow(e, 2), 2)) * cos(i) +
               (3 * k * pow(n3, 2) * pow(a, 3.0 / 2.0)) /
-                  (8 * sqrt(MU_MOON) * sqrt(1 - pow(e, 2))) *
+                  (8 * sqrt(GM_MOON) * sqrt(1 - pow(e, 2))) *
                   (5 * pow(e, 2) * cos(2 * w) - 3 * pow(e, 2) - 2) * cos(i);
-  coeDot(4) = (3 * J2 * sqrt(MU_MOON) * pow(R_MOON, 2)) /
+  coeDot(4) = (3 * J2 * sqrt(GM_MOON) * pow(R_MOON, 2)) /
                   (4 * pow(a, 7.0 / 2.0) * pow(1 - pow(e, 2), 2)) *
                   (5 * pow(cos(i), 2) - 1) +
               (3 * k * pow(n3, 2) * pow(a, 3.0 / 2.0)) /
-                  (8 * sqrt(MU_MOON) * sqrt(1 - pow(e, 2))) *
+                  (8 * sqrt(GM_MOON) * sqrt(1 - pow(e, 2))) *
                   ((5 * pow(cos(i), 2) - 1 + pow(e, 2)) +
                    5 * (1 - pow(e, 2) - pow(cos(i), 2)) * cos(2 * w));
-  coeDot(5) = sqrt(MU_MOON) / pow(a, 3.0 / 2.0) +
-              (3 * J2 * sqrt(MU_MOON) * pow(R_MOON, 2)) /
+  coeDot(5) = sqrt(GM_MOON) / pow(a, 3.0 / 2.0) +
+              (3 * J2 * sqrt(GM_MOON) * pow(R_MOON, 2)) /
                   (4 * pow(a, 7.0 / 2.0) * pow(1 - pow(e, 2), 3.0 / 2.0)) *
                   (3 * pow(cos(i), 2) - 1) -
-              (k * pow(n3, 2) * pow(a, 3.0 / 2.0)) / (8 * sqrt(MU_MOON)) *
+              (k * pow(n3, 2) * pow(a, 3.0 / 2.0)) / (8 * sqrt(GM_MOON)) *
                   ((3 * pow(e, 2) + 7) * (3 * pow(cos(i), 2) - 1) +
                    15 * (1 + pow(e, 2)) * pow(sin(i), 2) * cos(2 * w));
   return coeDot;

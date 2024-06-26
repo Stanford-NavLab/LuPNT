@@ -34,7 +34,6 @@
 
 using namespace lupnt;
 using namespace std::chrono;
-namespace sp = SpiceInterface;
 
 int main() {
   // Bodies

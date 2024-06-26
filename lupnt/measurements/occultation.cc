@@ -90,10 +90,9 @@ VectorX Occultation::ComputeOccultation(real epoch, const Vector3& r1,
   VectorX distances(bodies.size());
   for (size_t i = 0; i < bodies.size(); i++) {
     // Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target);
-    Vector3 rb =
-        SpiceInterface::GetBodyPosVel(epoch, NaifId::SOLAR_SYSTEM_BARYCENTER,
-                                      bodies[i], Frame::GCRF)
-            .head(3);
+    Vector3 rb = GetBodyPosVel(epoch, NaifId::SOLAR_SYSTEM_BARYCENTER,
+                               bodies[i], Frame::GCRF)
+                     .head(3);
     Vector3 r12 = r2_icrf - r1_icrf;  // 1->2
     Vector3 r1b = rb - r1_icrf;       // 1->body
     Vector3 r2b = rb - r2_icrf;       // 2->body

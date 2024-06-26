@@ -20,8 +20,6 @@
 #include "lupnt/physics/orbit_state_utils.h"
 #include "spice_interface.h"
 
-using namespace lupnt::SpiceInterface;
-
 namespace lupnt {
 CartesianOrbitState FrameConverter::Convert(real t_tai,
                                             const CartesianOrbitState &state_in,

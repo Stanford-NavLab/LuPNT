@@ -117,6 +117,7 @@ class KeplerianDynamics {
   // ClassicalOE
   void Propagate(ClassicalOE &state, real dt);
   void PropagateWithStm(ClassicalOE &state, real dt, Matrix6d &stm);
+  static Vector6 PropagateClassicalOE(Vector6 coe, real dt, double GM);
   // QuasiNonsingularOE
   void Propagate(QuasiNonsingularOE &state, real dt);
   void PropagateWithStm(QuasiNonsingularOE &state, real dt, Matrix6d &stm);

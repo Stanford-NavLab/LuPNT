@@ -38,7 +38,6 @@
 #include <string>
 
 using namespace lupnt;
-namespace sp = SpiceInterface;
 
 int main() {
   // Time
@@ -50,8 +49,8 @@ int main() {
   double save_every = Dt;
 
   // Dynamics
-  auto dyn_earth_tb = std::make_shared<CartesianTwoBodyDynamics>(MU_EARTH);
-  auto dyn_moon_tb = std::make_shared<CartesianTwoBodyDynamics>(MU_MOON);
+  auto dyn_earth_tb = std::make_shared<CartesianTwoBodyDynamics>(GM_EARTH);
+  auto dyn_moon_tb = std::make_shared<CartesianTwoBodyDynamics>(GM_MOON);
   auto dyn_moon_nb = std::make_shared<NBodyDynamics>();
 
   auto earth = Body::Earth();
@@ -71,7 +70,7 @@ int main() {
 
   // Epoch
   double epoch0 = gps_const.GetEpoch();
-  std::string epoch_string = sp::TAItoStringUTC(epoch0, 3);
+  std::string epoch_string = TAItoStringUTC(epoch0, 3);
   std::cout << "Initial Epoch: " << epoch_string << std::endl;
 
   // Moon spacecraft
@@ -85,7 +84,7 @@ int main() {
   coe_moon.SetCoordSystem(Frame::MOON_CI);
 
   auto cart_state_moon = std::make_shared<CartesianOrbitState>(
-      ClassicalToCartesian(coe_moon, MU_MOON));
+      ClassicalToCartesian(coe_moon, GM_MOON));
   auto moon_sat = std::make_shared<Spacecraft>();
   auto receiver = std::make_shared<GnssReceiver>("moongpsr");
 

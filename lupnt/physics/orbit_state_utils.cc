@@ -16,34 +16,29 @@
 #include <queue>
 #include <tuple>
 
+#include "lupnt/core/constants.h"
 #include "lupnt/numerics/math_utils.h"
 
-#define ABSOLUTE_CONVERSION(from, to, func)                              \
-  {                                                                      \
-    {OrbitStateRepres::from, OrbitStateRepres::to},                      \
-        [](const Vector6 &x, real mu) -> Vector6 { return func(x, mu); } \
-  }
+#define ABSOLUTE_CONVERSION(from, to, func)        \
+  {{OrbitStateRepres::from, OrbitStateRepres::to}, \
+   [](const Vector6 &x, real mu) -> Vector6 { return func(x, mu); }}
 
-#define RELATIVE_CONVERSION(from, to, func)                 \
-  {                                                         \
-    {OrbitStateRepres::from, OrbitStateRepres::to},         \
-        [](const Vector6 &x, const Vector6 &y) -> Vector6 { \
-          return func(x, y);                                \
-        }                                                   \
-  }
+#define RELATIVE_CONVERSION(from, to, func)        \
+  {{OrbitStateRepres::from, OrbitStateRepres::to}, \
+   [](const Vector6 &x, const Vector6 &y) -> Vector6 { return func(x, y); }}
 
 // Function:
 // Vector = func(Vector)
 // New definitions:
 // Matrix<-1,size> = (Matrix<-1,size>)
-#define VECTORIZED_IMPLEMENTATION_FROM_VECTOR(func, size) \
-  Matrix<-1, size> func(const Matrix<-1, size> &x) {      \
-    Matrix<-1, size> out(x.rows(), size);                 \
-    for (int i = 0; i < x.rows(); i++) {                  \
-      Vector<size> x_ = x.row(i);                         \
-      out.row(i) = func(x_);                              \
-    }                                                     \
-    return out;                                           \
+#define VEC_IMP_VECTOR(func, size)                   \
+  Matrix<-1, size> func(const Matrix<-1, size> &x) { \
+    Matrix<-1, size> out(x.rows(), size);            \
+    for (int i = 0; i < x.rows(); i++) {             \
+      Vector<size> x_ = x.row(i);                    \
+      out.row(i) = func(x_);                         \
+    }                                                \
+    return out;                                      \
   }
 
 // Function:
@@ -52,7 +47,7 @@
 // Matrix<-1,size> = func(Matrix<-1,size>, real)
 // Matrix<-1,size> = func(Vector, VectorX)
 // Matrix<-1,size> = func(Matrix<-1,size>, VectorX)
-#define VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(func, size)               \
+#define VEC_IMP_VECTOR_REAL(func, size)                                      \
   Matrix<-1, size> func(const Vector<size> &x, const VectorX &y) {           \
     Matrix<-1, size> out(y.rows(), size);                                    \
     for (int i = 0; i < y.rows(); i++) {                                     \
@@ -82,12 +77,66 @@
   }
 
 // Function:
+// Vector<size> = func(Vector<size>, real, real)
+// New definitions:
+// Matrix<-1,size> = func(Matrix<-1,size>, real, real)
+#define VEC_IMP_VECTOR_REAL_REAL(func, size)                         \
+  Matrix<-1, size> func(const Matrix<-1, size> &x, real y, real z) { \
+    Matrix<-1, size> out(x.rows(), size);                            \
+    for (int i = 0; i < x.rows(); i++) {                             \
+      Vector<size> x_ = x.row(i);                                    \
+      out.row(i) = func(x_, y, z);                                   \
+    }                                                                \
+    return out;                                                      \
+  }
+
+// Function:
+// Vector<size> = func(Vector<size>, Vector<size>, real)
+// New definitions:
+// Matrix<-1,size> = func(Matrix<-1,size>, Vector<size>, real)
+// Matrix<-1,size> = func(Vector<size>, Matrix<-1,size>, real)
+// Matrix<-1,size> = func(Matrix<-1,size>, Matrix<-1,size>, real)
+#define VEC_IMP_VECTOR_VECTOR_REAL(func, size)                                \
+  Matrix<-1, size> func(const Matrix<-1, size> &x, const Vector<size> &y,     \
+                        real z) {                                             \
+    Matrix<-1, size> out(x.rows(), size);                                     \
+    for (int i = 0; i < x.rows(); i++) {                                      \
+      Vector<size> x_ = x.row(i);                                             \
+      out.row(i) = func(x_, y, z);                                            \
+    }                                                                         \
+    return out;                                                               \
+  }                                                                           \
+  Matrix<-1, size> func(const Vector<size> &x, const Matrix<-1, size> &y,     \
+                        real z) {                                             \
+    Matrix<-1, size> out(y.rows(), size);                                     \
+    for (int i = 0; i < y.rows(); i++) {                                      \
+      Vector<size> y_ = y.row(i);                                             \
+      out.row(i) = func(x, y_, z);                                            \
+    }                                                                         \
+    return out;                                                               \
+  }                                                                           \
+  Matrix<-1, size> func(const Matrix<-1, size> &x, const Matrix<-1, size> &y, \
+                        real z) {                                             \
+    ASSERT_WITH_MESSAGE(x.rows() == y.rows(),                                 \
+                        __PRETTY_FUNCTION__ << "\nSize mismatch:"             \
+                                            << " x.rows() = " << x.rows()     \
+                                            << ", y.rows() = " << y.rows());  \
+    Matrix<-1, size> out(x.rows(), size);                                     \
+    for (int i = 0; i < x.rows(); i++) {                                      \
+      Vector<size> x_ = x.row(i);                                             \
+      Vector<size> y_ = y.row(i);                                             \
+      out.row(i) = func(x_, y_, z);                                           \
+    }                                                                         \
+    return out;                                                               \
+  }
+
+// Function:
 // Vector = func(Vector, Vector
 // New definitions:
 // Matrix<-1,size> = func(Matrix<-1,size>, Matrix<-1,size>)
 // Matrix<-1,size> = func(Matrix<-1,size>, Vector)
 // Matrix<-1,size> = func(Vector, Matrix<-1,size>)
-#define VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(func, size)             \
+#define VEC_IMP_VECTOR_VECTOR(func, size)                                    \
   Matrix<-1, size> func(const Matrix<-1, size> &x,                           \
                         const Matrix<-1, size> &y) {                         \
     ASSERT_WITH_MESSAGE(x.rows() == y.rows(),                                \
@@ -125,28 +174,28 @@
 // vector = func(vector, real)
 // vector = func(real, vector)
 // vector = func(vector, vector)
-#define VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(func) \
-  VectorX func(const VectorX &x, real y) {             \
-    VectorX out(x.size());                             \
-    for (int i = 0; i < x.size(); i++) {               \
-      out(i) = func(x(i), y);                          \
-    }                                                  \
-    return out;                                        \
-  }                                                    \
-  VectorX func(real x, const VectorX &y) {             \
-    VectorX out(y.size());                             \
-    for (int i = 0; i < y.size(); i++) {               \
-      out(i) = func(x, y(i));                          \
-    }                                                  \
-    return out;                                        \
-  }                                                    \
-  VectorX func(const VectorX &x, const VectorX &y) {   \
-    assert(x.size() == y.size() && "Size mismatch");   \
-    VectorX out(x.size());                             \
-    for (int i = 0; i < x.size(); i++) {               \
-      out(i) = func(x(i), y(i));                       \
-    }                                                  \
-    return out;                                        \
+#define VEC_IMP_REAL_REAL(func)                      \
+  VectorX func(const VectorX &x, real y) {           \
+    VectorX out(x.size());                           \
+    for (int i = 0; i < x.size(); i++) {             \
+      out(i) = func(x(i), y);                        \
+    }                                                \
+    return out;                                      \
+  }                                                  \
+  VectorX func(real x, const VectorX &y) {           \
+    VectorX out(y.size());                           \
+    for (int i = 0; i < y.size(); i++) {             \
+      out(i) = func(x, y(i));                        \
+    }                                                \
+    return out;                                      \
+  }                                                  \
+  VectorX func(const VectorX &x, const VectorX &y) { \
+    assert(x.size() == y.size() && "Size mismatch"); \
+    VectorX out(x.size());                           \
+    for (int i = 0; i < x.size(); i++) {             \
+      out(i) = func(x(i), y(i));                     \
+    }                                                \
+    return out;                                      \
   }
 
 namespace lupnt {
@@ -155,7 +204,7 @@ namespace {
 
 std::vector<OrbitStateRepres> FindShortestPath(
     OrbitStateRepres start, OrbitStateRepres end,
-    const std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
+    const std::map<std::pair<OrbitStateRepres, OrbitStateRepres>,
                    std::function<Vector6(const Vector6 &, real)>>
         &absolute_conversions) {
   std::queue<OrbitStateRepres> queue;
@@ -183,8 +232,9 @@ std::vector<OrbitStateRepres> FindShortestPath(
 
     // Explore neighbors
     for (const auto &entry : absolute_conversions) {
-      OrbitStateRepres neighbor = std::get<1>(entry.first);
-      if (std::get<0>(entry.first) == current && !visited[neighbor]) {
+      const auto &[from_repres, to_repres] = entry.first;
+      OrbitStateRepres neighbor = to_repres;
+      if (from_repres == current && !visited[neighbor]) {
         queue.push(neighbor);
         visited[neighbor] = true;
         predecessors[neighbor] = current;
@@ -192,12 +242,12 @@ std::vector<OrbitStateRepres> FindShortestPath(
     }
   }
 
-  throw std::runtime_error("Path not found from start to end representation.");
+  assert(false && "Path not found from start to end representation.");
 }
 
 }  // namespace
 
-std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
+std::map<std::pair<OrbitStateRepres, OrbitStateRepres>,
          std::function<Vector6(const Vector6 &, real)>>
     absolute_conversions = {
         ABSOLUTE_CONVERSION(CARTESIAN, CLASSICAL_OE, CartesianToClassical),
@@ -214,7 +264,7 @@ std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
         ABSOLUTE_CONVERSION(DELAUNAY_OE, CLASSICAL_OE, DelaunayToClassical),
 };
 
-std::map<std::tuple<OrbitStateRepres, OrbitStateRepres>,
+std::map<std::pair<OrbitStateRepres, OrbitStateRepres>,
          std::function<Vector6(const Vector6 &, const Vector6 &)>>
     relative_conversions = {
         RELATIVE_CONVERSION(CARTESIAN, RTN, InertialToRtn),
@@ -297,8 +347,7 @@ Vector6 CartesianToClassical(const Vector6 &rv, real mu) {
   Vector3 r = rv.head(3);
   Vector3 v = rv.tail(3);
 
-  Vector3 k{0, 0, 1};
-
+  Vector3 k(0, 0, 1);
   Vector3 h = r.cross(v);
   Vector3 n = k.cross(h);
 
@@ -395,8 +444,8 @@ Vector6 ClassicalToCartesian(const Vector6 &coe, real mu) {
   real pev = p / (1.0 + e * cos(nu));
   real mu_p = sqrt(mu / p);
 
-  Vector3 r_PQW = {pev * cos(nu), pev * sin(nu), 0.0};
-  Vector3 v_PQW = {-mu_p * sin(nu), mu_p * (e + cos(nu)), 0.0};
+  Vector3 r_PQW{pev * cos(nu), pev * sin(nu), 0.0};
+  Vector3 v_PQW{-mu_p * sin(nu), mu_p * (e + cos(nu)), 0.0};
 
   // rot = Rot3(-Omega) * Rot1(-i) * Rot3(-w)
   Matrix3 rot{
@@ -701,22 +750,62 @@ real TrueToMeanAnomaly(real nu, real e) {
   return M;
 }
 
-Vector3 GeographicalToCartesian(const Vector3 &r_geo, real radius) {
+Vector3 LatLonAltToEcef(const Vector3 &r_geo, real radius) {
   auto [lat, lon, alt] = unpack(r_geo);
   real r = radius + alt;
   real x = r * cos(lat) * cos(lon);
   real y = r * cos(lat) * sin(lon);
   real z = r * sin(lat);
-  return Vector3{x, y, z};
+  return Vector3(x, y, z);
 }
 
-Vector3 CartesianToGeographical(const Vector3 &r_cart, real radius) {
+Vector3 EcefToLatLonAlt(const Vector3 &r_cart, real radius) {
   auto [x, y, z] = unpack(r_cart);
   real r = r_cart.norm();
   real lat = safe_asin(z / r);
   real lon = atan2(y, x);
   real alt = r - radius;
-  return Vector3{lat, lon, alt};
+  return Vector3(lat, lon, alt);
+}
+
+Vector3 GeodeticToCartesian(const Vector3 &r_geo, real R_body,
+                            real flattening) {
+  auto [lat, lon, alt] = unpack(r_geo);
+  real e2 = flattening * (2 - flattening);
+  real cos_lat = cos(lat);
+  real sin_lat = sin(lat);
+  real N = R_body / sqrt(1 - e2 * sin_lat * sin_lat);
+  real x = (N + alt) * cos_lat * cos(lon);
+  real y = (N + alt) * cos_lat * sin(lon);
+  real z = ((1 - e2) * N + alt) * sin_lat;
+  return Vector3(x, y, z);
+}
+
+Vector3 CartesianToGeodetic(const Vector3 &r_cartesian, real R_body,
+                            real flattening) {
+  auto [x, y, z] = unpack(r_cartesian);
+  real e2 = flattening * (2 - flattening);
+  int max_iterations = 1000;
+
+  real delta_z = e2 * z;  // Initial guess for Δz
+  real delta_z_ant = delta_z + 1e3 * EPS;
+  real sin_phi, N;
+  int it = 0;
+  while (it < max_iterations && abs(delta_z_ant - delta_z) >= EPS) {
+    delta_z_ant = delta_z;
+    sin_phi =
+        (z + delta_z) / sqrt(x * x + y * y + (z + delta_z) * (z + delta_z));
+    N = R_body / sqrt(1 - e2 * sin_phi * sin_phi);
+    delta_z = N * e2 * sin_phi;
+    it++;
+  }
+  assert(it < max_iterations && "CartesianToGeodetic did not converge");
+
+  real lon = atan2(y, x);
+  real lat = atan2(z + delta_z, sqrt(x * x + y * y));
+  real h = sqrt(x * x + y * y + (z + delta_z) * (z + delta_z)) - N;
+
+  return Vector3(lat, lon, h);
 }
 
 Vector3 SphericalToCartesian(const Vector3 &r_sph) {
@@ -724,7 +813,7 @@ Vector3 SphericalToCartesian(const Vector3 &r_sph) {
   real x = r * sin(theta) * cos(phi);
   real y = r * sin(theta) * sin(phi);
   real z = r * cos(theta);
-  return Vector3{x, y, z};
+  return Vector3(x, y, z);
 }
 
 Vector3 CartesianToSpherical(const Vector3 &r_cart) {
@@ -732,83 +821,94 @@ Vector3 CartesianToSpherical(const Vector3 &r_cart) {
   real r = r_cart.norm();
   real theta = acos(z / r);
   real phi = atan2(y, x);
-  return Vector3{r, theta, phi};
+  return Vector3(r, theta, phi);
 }
 
-Vector3 EastNorthUpToCartesian(const Vector3 &r_cart_ref,
-                               const Vector3 &r_enu) {
-  auto r_geo = CartesianToGeographical(r_cart_ref, r_cart_ref.norm());
+Vector3 EastNorthUpToCartesian(const Vector3 &r_cart, const Vector3 &r_geo) {
   auto [lat, lon, alt] = unpack(r_geo);
-  Matrix3 rot{
-      {-sin(lon), -sin(lat) * cos(lon), cos(lat) * cos(lon)},
-      {cos(lon), -sin(lat) * sin(lon), cos(lat) * sin(lon)},
-      {0, cos(lat), sin(lat)},
-  };
-
+  Matrix3 rot = Rot2(-lat) * Rot3(lon);
+  for (int j = 0; j < 3; ++j) {
+    real tmp = rot(0, j);
+    rot(0, j) = rot(1, j);
+    rot(1, j) = rot(2, j);
+    rot(2, j) = tmp;
+  }
   return rot * r_enu + r_cart_ref;
 }
 
-Vector3 CartesianToEastNorthUp(const Vector3 &r_cart_ref,
-                               const Vector3 &r_cart) {
-  auto r_geo = CartesianToGeographical(r_cart_ref, r_cart_ref.norm());
+Vector3 CartesianToEastNorthUp(const Vector3 &r_cart_ref, const Vector3 &r_cart,
+                               real flattening) {
+  Vector3 r_geo;
+  if (flattening > 0) {
+    r_geo = CartesianToGeodetic(r_cart, r_cart_ref.norm(), flattening);
+  } else {
+    r_geo = EcefToLatLonAlt(r_cart, r_cart_ref.norm());
+  }
   auto [lat, lon, alt] = unpack(r_geo);
-  Matrix3 rot{
-      {-sin(lon), cos(lon), 0},
-      {-sin(lat) * cos(lon), -sin(lat) * sin(lon), cos(lat)},
-      {cos(lat) * cos(lon), cos(lat) * sin(lon), sin(lat)},
-  };
-
+  Matrix3 rot = Rot2(-lat) * Rot3(lon);
+  for (int j = 0; j < 3; ++j) {
+    real tmp = rot(0, j);
+    rot(0, j) = rot(1, j);
+    rot(1, j) = rot(2, j);
+    rot(2, j) = tmp;
+  }
   return rot * (r_cart - r_cart_ref);
 }
 
 Vector3 CartesianToAzimuthElevationRange(const Vector3 &r_cart_ref,
-                                         const Vector3 &r_cart) {
-  Vector3 r_enu = CartesianToEastNorthUp(r_cart_ref, r_cart);
+                                         const Vector3 &r_cart,
+                                         real flattening) {
+  Vector3 r_enu = CartesianToEastNorthUp(r_cart_ref, r_cart, flattening);
   auto [e, n, u] = unpack(r_enu);
-  real azimuth = atan2(e, n);
-  real elevation = atan2(u, sqrt(e * e + n * n));
-  real range = r_enu.norm();
-  return Vector3{azimuth, elevation, range};
+  real az = wrapTo2Pi(atan2(e, n));
+  real el = atan2(u, sqrt(e * e + n * n));
+  real rho = r_enu.norm();
+  return Vector3(az, el, rho);
 }
 
 Vector3 AzimuthElevationRangeToCartesian(const Vector3 &r_cart_ref,
-                                         const Vector3 &r_aer) {
+                                         const Vector3 &r_aer,
+                                         real flattening) {
   auto [azimuth, elevation, range] = unpack(r_aer);
   real e = range * cos(elevation) * sin(azimuth);
   real n = range * cos(elevation) * cos(azimuth);
   real u = range * sin(elevation);
-  return EastNorthUpToCartesian(r_cart_ref, Vector3{e, n, u});
+  return EastNorthUpToCartesian(r_cart_ref, Vector3(e, n, u), flattening);
 }
 
-VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(EccentricToTrueAnomaly);
-VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(EccentricToMeanAnomaly);
-VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(MeanToEccentricAnomaly);
-VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(TrueToEccentricAnomaly);
-VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(MeanToTrueAnomaly);
-VECTORIZED_IMPLEMENTATION_FROM_REAL_REAL(TrueToMeanAnomaly);
+VEC_IMP_REAL_REAL(EccentricToTrueAnomaly);
+VEC_IMP_REAL_REAL(EccentricToMeanAnomaly);
+VEC_IMP_REAL_REAL(MeanToEccentricAnomaly);
+VEC_IMP_REAL_REAL(TrueToEccentricAnomaly);
+VEC_IMP_REAL_REAL(MeanToTrueAnomaly);
+VEC_IMP_REAL_REAL(TrueToMeanAnomaly);
 
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR(SphericalToCartesian, 3);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR(CartesianToSpherical, 3);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(GeographicalToCartesian, 3);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(CartesianToGeographical, 3);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(EastNorthUpToCartesian, 3);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(CartesianToEastNorthUp, 3);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(CartesianToAzimuthElevationRange,
-                                             3);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(AzimuthElevationRangeToCartesian,
-                                             3);
+VEC_IMP_VECTOR(SphericalToCartesian, 3);
+VEC_IMP_VECTOR(CartesianToSpherical, 3);
+VEC_IMP_VECTOR_REAL(LatLonAltToEcef, 3);
+VEC_IMP_VECTOR_REAL(EcefToLatLonAlt, 3);
+VEC_IMP_VECTOR_REAL_REAL(GeodeticToCartesian, 3);
+VEC_IMP_VECTOR_REAL_REAL(CartesianToGeodetic, 3);
 
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(ClassicalToCartesian, 6);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(InertialToRtn, 6);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(RtnToInertial, 6);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(CartesianToClassical, 6);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(ClassicalToQuasiNonsingular, 6);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(ClassicalToEquinoctial, 6);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(ClassicalToDelaunay, 6);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(QuasiNonsingularToClassical, 6);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(EquinoctialToClassical, 6);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_REAL(DelaunayToClassical, 6);
-VECTORIZED_IMPLEMENTATION_FROM_VECTOR_VECTOR(
-    RelativeQuasiNonsingularToClassical, 6);
+VEC_IMP_VECTOR_VECTOR(EastNorthUpToCartesian, 3);
+VEC_IMP_VECTOR_VECTOR(CartesianToEastNorthUp, 3);
+VEC_IMP_VECTOR_VECTOR(CartesianToAzimuthElevationRange, 3);
+VEC_IMP_VECTOR_VECTOR(AzimuthElevationRangeToCartesian, 3);
+VEC_IMP_VECTOR_VECTOR_REAL(EastNorthUpToCartesian, 3);
+VEC_IMP_VECTOR_VECTOR_REAL(CartesianToEastNorthUp, 3);
+VEC_IMP_VECTOR_VECTOR_REAL(CartesianToAzimuthElevationRange, 3);
+VEC_IMP_VECTOR_VECTOR_REAL(AzimuthElevationRangeToCartesian, 3);
+
+VEC_IMP_VECTOR_REAL(ClassicalToCartesian, 6);
+VEC_IMP_VECTOR_VECTOR(InertialToRtn, 6);
+VEC_IMP_VECTOR_VECTOR(RtnToInertial, 6);
+VEC_IMP_VECTOR_REAL(CartesianToClassical, 6);
+VEC_IMP_VECTOR_REAL(ClassicalToQuasiNonsingular, 6);
+VEC_IMP_VECTOR_REAL(ClassicalToEquinoctial, 6);
+VEC_IMP_VECTOR_REAL(ClassicalToDelaunay, 6);
+VEC_IMP_VECTOR_REAL(QuasiNonsingularToClassical, 6);
+VEC_IMP_VECTOR_REAL(EquinoctialToClassical, 6);
+VEC_IMP_VECTOR_REAL(DelaunayToClassical, 6);
+VEC_IMP_VECTOR_VECTOR(RelativeQuasiNonsingularToClassical, 6);
 
 }  // namespace lupnt

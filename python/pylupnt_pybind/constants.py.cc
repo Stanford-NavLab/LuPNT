@@ -32,7 +32,7 @@ void init_constants(py::module &m) {
   // Coordinate System Constants
   m.attr("d_E_M") = py::float_(d_E_M);
   m.attr("MU_EARTH") = py::float_(MU_EARTH);
-  m.attr("MU_MOON") = py::float_(MU_MOON);
+  m.attr("MU_MOON") = py::float_(GM_MOON);
   m.attr("d_E_EMB") = py::float_(d_E_EMB);
   m.attr("R_EARTH") = py::float_(R_EARTH);
   m.attr("R_MOON") = py::float_(R_MOON);

@@ -15,7 +15,6 @@
 #include "utils.cc"
 
 using namespace lupnt;
-namespace sp = SpiceInterface;
 
 // Util Functions
 
@@ -50,7 +49,7 @@ int main() {
 
   // Set simulation to 1 orbit
   int n_orbit = 1;  // number of orbits to simulate
-  real period = 2.0 * M_PI * sqrt(pow(a, 3) / MU_MOON);
+  real period = 2.0 * M_PI * sqrt(pow(a, 3) / GM_MOON);
   double tf = t0 + n_orbit * period.val();
   int time_step_num = int((tf - t0) / Dt) + 1;
   tf = t0 + (time_step_num - 1) * Dt;
@@ -98,7 +97,7 @@ int main() {
 
   // Orbit Dynamics
   auto dyn_earth_tb = std::make_shared<CartesianTwoBodyDynamics>(
-      MU_EARTH);  // use 2d earth dynamics to propagate GPS constellation
+      GM_EARTH);  // use 2d earth dynamics to propagate GPS constellation
   auto dyn_est = std::make_shared<NBodyDynamics>();   // Filter Dynamics
   auto dyn_true = std::make_shared<NBodyDynamics>();  // true dynamics
 
@@ -127,7 +126,7 @@ int main() {
   gps_const.LoadTleFile("gps");  // example gps file
 
   // Print Time
-  std::string epoch_string = sp::TAItoStringUTC(epoch0, 3);
+  std::string epoch_string = TAItoStringUTC(epoch0, 3);
   std::cout << "Initial Epoch: " << epoch_string << std::endl;
 
   // Set dynamics integration time
@@ -138,7 +137,7 @@ int main() {
   // Moon spacecraft
   ClassicalOE coe_moon({a, e, i, Omega, w, M}, Frame::MOON_CI);
   auto cart_state_moon = std::make_shared<CartesianOrbitState>(
-      ClassicalToCartesian(coe_moon, MU_MOON));
+      ClassicalToCartesian(coe_moon, GM_MOON));
 
   Vector2 clock_vec{clk_bias, clk_drift};  // [s, s/s]
   ClockState clock_state(clock_vec);

@@ -47,8 +47,11 @@
 #include "physics/body.h"
 #include "physics/cheby.h"
 #include "physics/clock.h"
+#include "physics/eop.h"
 #include "physics/frame_converter.h"
+#include "physics/gravity.h"
 #include "physics/orbit_state.h"
 #include "physics/orbit_state_utils.h"
 #include "physics/spice_interface.h"
 #include "physics/state.h"
+

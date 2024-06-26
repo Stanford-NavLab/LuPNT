@@ -17,8 +17,8 @@ int main() {
 
   Vector6 coe_d{a, e, i, Omega, w, M};
 
-  auto cart = ClassicalToCartesian(coe, MU_EARTH);
-  auto cart_d = ClassicalToCartesian(coe_d, MU_EARTH);
+  auto cart = ClassicalToCartesian(coe, GM_EARTH);
+  auto cart_d = ClassicalToCartesian(coe_d, GM_EARTH);
 
   // Print type
   std::cout << "coe type = " << typeid(coe).name() << std::endl;

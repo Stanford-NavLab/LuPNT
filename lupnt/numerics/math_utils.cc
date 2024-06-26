@@ -40,7 +40,7 @@ VectorX wrapToPi(VectorX angle) {
  * @param angle   angle in radians
  * @return real  wrapped angle in radians
  */
-real wrapTo2Pi(real angle) { return atan2(sin(angle), cos(angle)) + M_PI; }
+real wrapTo2Pi(real angle) { return angle - TWO_PI * floor(angle / TWO_PI); }
 
 /**
  * @brief  Wrap the angles between 0 and 2pi

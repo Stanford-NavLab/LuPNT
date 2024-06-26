@@ -41,8 +41,8 @@ using namespace lupnt;
 
 int main() {
   // Dynamics
-  auto earthDynamics = std::make_shared<CartesianTwoBodyDynamics>(MU_EARTH);
-  auto moonDynamics = std::make_shared<CartesianTwoBodyDynamics>(MU_MOON);
+  auto earthDynamics = std::make_shared<CartesianTwoBodyDynamics>(GM_EARTH);
+  auto moonDynamics = std::make_shared<CartesianTwoBodyDynamics>(GM_MOON);
 
   double epoch = 0.0;
   auto channel = std::make_shared<GnssChannel>();
@@ -65,7 +65,7 @@ int main() {
   coeMoon.SetCoordSystem(Frame::MOON_CI);
 
   auto cartOrbitStateMoon = std::make_shared<CartesianOrbitState>(
-      ClassicalToCartesian(coeMoon, MU_MOON));
+      ClassicalToCartesian(coeMoon, GM_MOON));
   std::shared_ptr<Spacecraft> moonSat1 = std::make_shared<Spacecraft>();
   std::shared_ptr<GnssReceiver> receiver =
       std::make_shared<GnssReceiver>("moongpsr");

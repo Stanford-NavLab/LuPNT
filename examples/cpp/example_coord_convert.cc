@@ -19,8 +19,6 @@
 
 using namespace lupnt;
 
-namespace sp = SpiceInterface;
-
 int main() {
   double t_eph = 0.0;  // seconds since J2000
 
@@ -35,7 +33,7 @@ int main() {
   pos << 5102.5096, 6123.01152, 6378.1368;
   vel << -4.7432196, 0.7905366, 5.553375619;
   posvel_GCRF << pos, vel;
-  real tai = sp::StringToTAI("2001/04/06 07:51:28.788 UTC");
+  real tai = StringToTAI("2001/04/06 07:51:28.788 UTC");
 
   VectorX posvel_ITRF = FrameConverter::Convert(tai, posvel_GCRF, from, to);
 

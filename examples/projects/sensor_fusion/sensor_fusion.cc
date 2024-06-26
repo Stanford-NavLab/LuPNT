@@ -10,7 +10,7 @@ int main() {
   // Parameters
   int N_sat = 3;
   int N_planes = 3;
-  real tai0 = SpiceInterface::StringToTAI("2030/01/01 12:00:00.00 UTC");
+  real tai0 = StringToTAI("2030/01/01 12:00:00.00 UTC");
 
   // Orbital Elements
   Vector3 sma{6142.4, 6142.4, 6142.4};
@@ -19,7 +19,7 @@ int main() {
   Vector3 raan{0, -90, 0};
   Vector3 aop{-45, -90, 90};
 
-  real orbit_period = 2 * M_PI * pow(sma[0], 1.5) / sqrt(MU_MOON);
+  real orbit_period = 2 * M_PI * pow(sma[0], 1.5) / sqrt(GM_MOON);
   int N_sat_plane = N_sat / N_planes;
 
   // Constellation
@@ -30,7 +30,7 @@ int main() {
       real ma = 360.0 / N_sat_plane * j;
       Vector6 coe0{sma[i], ecc[i], imc[i], raan[i], aop[i], ma};
       coe0.segment(2, 4) *= DEG_PER_RAD;
-      Vector6 rv0_mop = ClassicalToCartesian(coe0, MU_MOON);
+      Vector6 rv0_mop = ClassicalToCartesian(coe0, GM_MOON);
       rv0_mci[idx] = FrameConverter::Convert(tai0, rv0_mop, Frame::MOON_OP,
                                              Frame::MOON_CI);
     }

@@ -20,12 +20,94 @@
 #include <iostream>
 
 #include "lupnt/core/user_file_path.h"
+#include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/cheby.h"
+#include "lupnt/physics/eop.h"
+#include "lupnt/physics/spice_interface.h"
 
 namespace lupnt {
-namespace SpiceInterface {
 
 bool spice_loaded = false;
+
+real EarthRotationAngle(real t_jd_ut1) {
+  double theta_0 = 0.7790572732640;
+  double dtheta_dt = 1.00273781191135448;
+  real theta_era = TWO_PI * (theta_0 + dtheta_dt * (t_jd_ut1 - JD_OF_J2000));
+  return wrapToPi(theta_era);
+}
+
+real UTCtoUT1(real mjd_utc) {
+  std::shared_ptr<EOPData> eop_data =
+      LoadEOPData(GetFilePath("eopc04_08.62-now"));
+  EOPResult eop_result = InterpolateEOPData(eop_data, mjd_utc, true);
+  real mjd_ut1 = mjd_utc + eop_result.UT1_UTC / SECS_PER_DAY;
+  return mjd_ut1;
+}
+
+real GreenwichMeanSiderealTime(real mjd_ut1) {
+  real mjd_0 = floor(mjd_ut1);
+  real UT1 = SECS_PER_DAY * (mjd_ut1 - mjd_0);  // [s]
+  real T_0 = (mjd_0 + JD_MJD_OFFSET - JD_OF_J2000) / DAYS_PER_JULIAN_CENTURY;
+  real T = (mjd_ut1 + JD_MJD_OFFSET - JD_OF_J2000) / DAYS_PER_JULIAN_CENTURY;
+  real gmst_sec = 24110.54841 + 8640184.812866 * T_0 + 1.002737909350795 * UT1 +
+                  (0.093104 - 6.2e-6 * T) * T * T;  // [s]
+  real frac = gmst_sec / SECS_PER_DAY - floor(gmst_sec / SECS_PER_DAY);
+  real gmst_rad = TWO_PI * frac;  // [rad]
+  return wrapTo2Pi(gmst_rad);
+}
+
+real DateToModifiedJulianDate(int year, int month, int day, int hour,
+                              int minute, real second) {
+  if (month <= 2) {
+    month += 12;
+    year -= 1;
+  }
+
+  int b;
+  if (10000 * year + 100 * month + day <= 15821004) {
+    // Julian calendar
+    b = static_cast<int>(-2 + std::floor((year + 4716) / 4.) - 1179);
+  } else {
+    // Gregorian calendar
+    b = static_cast<int>(std::floor(year / 400.) - std::floor(year / 100.) +
+                         std::floor(year / 4.));
+  }
+
+  int mjd_midnight = 365 * year - 679004 + b +
+                     static_cast<int>(std::floor(30.6001 * (month + 1))) + day;
+  real frac_of_day = (hour + minute / 60. + second / SECS_PER_HOUR) / 24.;
+  return mjd_midnight + frac_of_day;
+}
+
+std::tuple<int, int, int, int, int, real> ModifiedJulianDateToDate(real mjd) {
+  int a = static_cast<int>(mjd + 2400001.0);
+  int c;
+  if (a < 2299161) {
+    // Julian calendar
+    c = a + 1524;
+  } else {
+    // Gregorian calendar
+    int b = static_cast<int>((a - 1867216.25) / 36524.25);
+    c = a + b - static_cast<int>(b / 4.) + 1525;
+  }
+
+  int d = static_cast<int>((c - 122.1) / 365.25);
+  int e = 365 * d + static_cast<int>(d / 4.);
+  int f = static_cast<int>((c - e) / 30.6001);
+
+  int day = c - e - static_cast<int>(30.6001 * f);
+  int month = f - 1 - 12 * static_cast<int>(f / 14.);
+  int year = d - 4715 - static_cast<int>((7. + month) / 10.);
+
+  // Calculate the time of the day
+  real hours = 24. * (mjd - floor(mjd));
+  int hour = static_cast<int>(hours);
+  real minutes = (hours - hour) * 60.;
+  int minute = static_cast<int>(minutes);
+  real second = (minutes - minute) * 60.;
+
+  return std::make_tuple(year, month, day, hour, minute, second);
+}
 
 real TAItoTT(real tai) { return tai + TT_TAI_OFFSET; }
 
@@ -479,5 +561,4 @@ Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target,
   return retState;
 }
 
-}  // namespace SpiceInterface
 }  // namespace lupnt

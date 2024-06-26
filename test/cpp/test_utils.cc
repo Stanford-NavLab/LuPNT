@@ -7,16 +7,16 @@
 using namespace Catch::Matchers;
 using namespace lupnt;
 
-static void EXPECT_NEAR_ADVEC(const VectorX& a, const VectorX& b,
-                              double abs_error) {
+static void RequireNearRealVec(const VectorX& a, const VectorX& b,
+                               double abs_error) {
   REQUIRE(a.size() == b.size());
   for (int i = 0; i < a.size(); ++i) {
     REQUIRE_THAT(a[i].val(), WithinAbs(b[i].val(), abs_error));
   }
 }
 
-static void EXPECT_NEAR_ADMAT(const MatrixX& a, const MatrixX& b,
-                              double abs_error) {
+static void RequireNearRealMat(const MatrixX& a, const MatrixX& b,
+                               double abs_error) {
   REQUIRE(a.rows() == b.rows());
   REQUIRE(a.cols() == b.cols());
   for (int i = 0; i < a.rows(); ++i) {
@@ -26,7 +26,7 @@ static void EXPECT_NEAR_ADMAT(const MatrixX& a, const MatrixX& b,
   }
 }
 
-static void EXPECT_NEAR_EIGENVEC(const VectorXd& a, const VectorXd& b,
+static void RequireNearDoubleVec(const VectorXd& a, const VectorXd& b,
                                  double abs_error) {
   REQUIRE(a.size() == b.size());
   for (int i = 0; i < a.size(); ++i) {
@@ -34,7 +34,7 @@ static void EXPECT_NEAR_EIGENVEC(const VectorXd& a, const VectorXd& b,
   }
 }
 
-static void EXPECT_NEAR_EIGENMAT(const MatrixXd& a, const MatrixXd& b,
+static void RequireNearDoubleMat(const MatrixXd& a, const MatrixXd& b,
                                  double abs_error) {
   REQUIRE(a.rows() == b.rows());
   REQUIRE(a.cols() == b.cols());
@@ -45,10 +45,18 @@ static void EXPECT_NEAR_EIGENMAT(const MatrixXd& a, const MatrixXd& b,
   }
 }
 
+static void RequireNearReal(real a, real b, double abs_error) {
+  REQUIRE_THAT(a.val(), WithinAbs(b.val(), abs_error));
+}
+
+static void RequireNearDouble(double a, double b, double abs_error) {
+  REQUIRE_THAT(a, WithinAbs(b, abs_error));
+}
+
 // inputs: vector, function(vector), jacobian
 static void NumericalJacobian(
-    std::function<void(VectorX&, real)> propagate_function,
-    const VectorX& vec, real dt, Matrix6d& jacobian, double eps = 1e-6) {
+    std::function<void(VectorX&, real)> propagate_function, const VectorX& vec,
+    real dt, Matrix6d& jacobian, double eps = 1e-6) {
   int n = vec.size();
   VectorX vec_p;
   VectorX vec_m;

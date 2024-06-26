@@ -12,7 +12,7 @@ int main() {
 
   omp_set_num_threads(num_threads);
 
-  real t0_tai = SpiceInterface::StringToTAI("2030/01/01 12:00:00.00 UTC");
+  real t0_tai = StringToTAI("2030/01/01 12:00:00.00 UTC");
   real Dt = 5.;
   real tf = 1 * 12. * SECS_PER_HOUR;
   int N_steps = (tf / Dt).val();

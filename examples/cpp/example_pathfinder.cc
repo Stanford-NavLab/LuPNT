@@ -12,8 +12,7 @@ int main() {
   bool show_elevation_plot = true;
 
   // Epoch
-  double epoch0 =
-      (double)SpiceInterface::StringToTAI("2025/10/02 00:00:00.000 UTC");
+  double epoch0 = (double)StringToTAI("2025/10/02 00:00:00.000 UTC");
 
   // Orbital elements
   double sma = 5740;             // [km]  a, Semi-major axis
@@ -25,12 +24,12 @@ int main() {
   Vector6 coe_sat_OP(sma, ecc, inc, raan, aop, ma);
 
   // Initial state
-  auto rv_sat_OP = ClassicalToCartesian(coe_sat_OP, MU_MOON);
+  auto rv_sat_OP = ClassicalToCartesian(coe_sat_OP, GM_MOON);
   auto rv_sat_mi = FrameConverter::Convert(epoch0, rv_sat_OP, Frame::MOON_OP,
                                            Frame::MOON_CI);
 
   // Time
-  double T = 2 * M_PI * sqrt(pow(sma, 3) / MU_MOON);  // [s] Orbital period
+  double T = 2 * M_PI * sqrt(pow(sma, 3) / GM_MOON);  // [s] Orbital period
   double dT = 0.5 * SECS_PER_HOUR;  // [s] Data time step (2 hours)
   double dt = 5 * SECS_PER_MINUTE;  // [s] Propagation time step (5 minutes)
   double tf = 2 * SECS_PER_DAY;     // [s] Orbital period (14 days)
@@ -53,7 +52,7 @@ int main() {
     for (int j = 0; j < N_lons; j++) {
       int k = i * N_lons + j;
       Vector3 geo(lats(i), lons(j), 0);
-      r_usr_pa.row(k) = GeographicalToCartesian(geo, R_MOON).transpose();
+      r_usr_pa.row(k) = LatLonAltToEcef(geo, R_MOON).transpose();
     }
   }
   std::cout << "Latitudes (deg)" << std::endl;

@@ -54,12 +54,11 @@ void GnssReceiver::InitializeReceiverParams() {
 std::vector<Vector3d> GnssReceiver::GetReceiverOrientation(double t,
                                                            Vector3d& r_rx_gcrf,
                                                            std::string mode) {
-  Vector3d r_sat2sun =
-      SpiceInterface::GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN,
-                                    Frame::GCRF)
-          .cast<double>()
-          .head(3) -
-      r_rx_gcrf;  // (SUN-Earth) - (Sat-Earth) = (Sun-Sat)
+  Vector3d r_sat2sun = GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN,
+                                     Frame::GCRF)
+                           .cast<double>()
+                           .head(3) -
+                       r_rx_gcrf;  // (SUN-Earth) - (Sat-Earth) = (Sun-Sat)
 
   Vector3d e_zero = Vector3d::Zero();
 

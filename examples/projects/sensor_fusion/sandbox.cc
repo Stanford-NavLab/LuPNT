@@ -82,10 +82,10 @@ int main() {
   real w = 90.0 * RAD_PER_DEG;
   real M = 0.0 * RAD_PER_DEG;
   ClassicalOE coe({a, e, i, Omega, w, M});
-  auto cart = ClassicalToCartesian(coe, MU_MOON);
+  auto cart = ClassicalToCartesian(coe, GM_MOON);
 
   // dynamics model
-  auto dyn_moon_tb = CartesianTwoBodyDynamics(MU_MOON);
+  auto dyn_moon_tb = CartesianTwoBodyDynamics(GM_MOON);
   dyn_moon_tb.SetTimeStep(0.5);
   auto dyn_clk = ClockDynamics(ClockModel::kMicrosemiCsac);
 

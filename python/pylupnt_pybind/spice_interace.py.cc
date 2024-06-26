@@ -10,48 +10,45 @@ class SpiceInterface {};  // dummy class
 
 void init_spice_interface(py::module &m) {
   py::class_<SpiceInterface>(m, "SpiceInterface")
-      .def_static("load_spice_kernel", &lupnt::SpiceInterface::LoadSpiceKernel)
-      .def_static("extract_pck_coeffs",
-                  &lupnt::SpiceInterface::ExtractPckCoeffs)
+      .def_static("load_spice_kernel", &lupnt::LoadSpiceKernel)
+      .def_static("extract_pck_coeffs", &lupnt::ExtractPckCoeffs)
       .def_static(
           "get_frame_conversion_matrix",
           [](double t_tai, lupnt::Frame from,
              lupnt::Frame to) -> lupnt::Matrix6d {
-            return lupnt::SpiceInterface::GetFrameConversionMatrix(t_tai, from,
-                                                                   to)
+            return lupnt::GetFrameConversionMatrix(t_tai, from, to)
                 .cast<double>();
           },
           py::arg("t_tai"), py::arg("from"), py::arg("to"))
       .def_static(
           "string_to_tdb",
           [](std::string utc) -> double {
-            return lupnt::SpiceInterface::StringToTDB(utc).val();
+            return lupnt::StringToTDB(utc).val();
           },
           py::arg("gregorian_date"))
       .def_static(
           "string_to_tai",
           [](std::string utc) -> double {
-            return lupnt::SpiceInterface::StringToTAI(utc).val();
+            return lupnt::StringToTAI(utc).val();
           },
           py::arg("gregorian_date"))
       .def_static(
           "tdb_to_string_utc",
           [](double t_tdb, int prec) {
-            return lupnt::SpiceInterface::TDBtoStringUTC(t_tdb, prec);
+            return lupnt::TDBtoStringUTC(t_tdb, prec);
           },
           py::arg("t_tdb"), py::arg("precision"))
       .def_static(
           "convert_time",
           [](double t_tai, std::string from, std::string to) {
-            return lupnt::SpiceInterface::ConvertTime(t_tai, from, to).val();
+            return lupnt::ConvertTime(t_tai, from, to).val();
           },
           py::arg("t_tai"), py::arg("from"), py::arg("to"))
       .def_static(
           "get_body_pos_vel",
           [](double t_tai, lupnt::NaifId center, lupnt::NaifId target,
              lupnt::Frame frame) -> lupnt::Vector6d {
-            return lupnt::SpiceInterface::GetBodyPosVel(t_tai, center, target,
-                                                        frame)
+            return lupnt::GetBodyPosVel(t_tai, center, target, frame)
                 .cast<double>();
           },
           py::arg("t_tai"), py::arg("center"), py::arg("target"))
@@ -59,8 +56,7 @@ void init_spice_interface(py::module &m) {
           "get_body_pos_vel",
           [](lupnt::VectorXd t_tai, lupnt::NaifId center, lupnt::NaifId target,
              lupnt::Frame frame) -> lupnt::Matrixd<-1, 6> {
-            return lupnt::SpiceInterface::GetBodyPosVel(t_tai, center, target,
-                                                        frame)
+            return lupnt::GetBodyPosVel(t_tai, center, target, frame)
                 .cast<double>();
           },
           py::arg("t_tai"), py::arg("center"), py::arg("target"))
@@ -69,8 +65,8 @@ void init_spice_interface(py::module &m) {
           [](lupnt::NaifId targetName, double t_tai, lupnt::Frame refFrame,
              lupnt::NaifId obsName,
              std::string abCorrection) -> lupnt::Vector3d {
-            return lupnt::SpiceInterface::GetBodyPos(
-                       targetName, t_tai, refFrame, obsName, abCorrection)
+            return lupnt::GetBodyPos(targetName, t_tai, refFrame, obsName,
+                                     abCorrection)
                 .cast<double>();
           },
           py::arg("target_name"), py::arg("t_tai"), py::arg("ref_frame"),

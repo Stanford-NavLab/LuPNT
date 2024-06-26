@@ -121,11 +121,9 @@ void init_orbit_state_utils(py::module &m) {
 
   // Coordinate System Conversions
   VECTORIZED_BINDING_FROM_VECTOR_REAL("geographical_to_cartesian",
-                                      GeographicalToCartesian, 3, "r_geo",
-                                      "radius");
+                                      LatLonAltToEcef, 3, "r_geo", "radius");
   VECTORIZED_BINDING_FROM_VECTOR_REAL("cartesian_to_geographical",
-                                      CartesianToGeographical, 3, "r_cart",
-                                      "radius");
+                                      EcefToLatLonAlt, 3, "r_cart", "radius");
   VECTORIZED_BINDING_FROM_VECTOR("spherical_to_cartesian", SphericalToCartesian,
                                  3, "r_sph");
   VECTORIZED_BINDING_FROM_VECTOR("cartesian_to_spherical", CartesianToSpherical,

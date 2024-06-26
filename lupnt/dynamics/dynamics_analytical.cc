@@ -20,13 +20,21 @@ namespace lupnt {
 // KeplerianDynamics
 // ****************************************************************************
 
-KeplerianDynamics::KeplerianDynamics(double mu) : mu_(mu){};
+KeplerianDynamics::KeplerianDynamics(double mu) : mu_(mu) {};
 
 // ClassicalOE
 void KeplerianDynamics::Propagate(ClassicalOE &state, real dt) {
   real a = state.a();
   real n = sqrt(mu_ / pow(a, 3));
   state.Set_M(wrapToPi(state.M() + n * dt));
+}
+
+Vector6 KeplerianDynamics::PropagateClassicalOE(Vector6 coe, real dt,
+                                                double GM) {
+  real a = coe[0];
+  real n = sqrt(GM / pow(a, 3));
+  coe[5] = wrapToPi(coe[5] + n * dt);
+  return coe;
 }
 
 void KeplerianDynamics::PropagateWithStm(ClassicalOE &state, real dt,
@@ -61,7 +69,7 @@ void KeplerianDynamics::PropagateWithStm(EquinoctialOE &state, real dt,
   ************************************************************************** */
 
 ClohessyWiltshireDynamics::ClohessyWiltshireDynamics(real a_in, real n_in)
-    : a(a_in), n(n_in){};
+    : a(a_in), n(n_in) {};
 
 void ClohessyWiltshireDynamics::Propagate(OrbitState &state, real tEnd) {
   if (state.GetOrbitStateRepres() != OrbitStateRepres::CARTESIAN)
@@ -118,7 +126,7 @@ MatrixX ClohessyWiltshireDynamics::ComputeMatrix(real t) {
 // ****************************************************************************
 
 YamanakaAnkersenDynamics::YamanakaAnkersenDynamics()
-    : a(0.0), n(0.0), e(0.0), M0(0.0){};
+    : a(0.0), n(0.0), e(0.0), M0(0.0) {};
 void YamanakaAnkersenDynamics::Propagate(CartesianOrbitState &state,
                                          real tEnd) {
   if (state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN) {
@@ -241,7 +249,7 @@ MatrixX YamanakaAnkersenDynamics::ComputeInverseMatrix(real t) {
 // ****************************************************************************
 
 RoeGeometricMappingDynamics::RoeGeometricMappingDynamics()
-    : a(0.0), n(0.0), e(0.0), M0(0.0), ex(0.0), ey(0.0), tInit(0.0){};
+    : a(0.0), n(0.0), e(0.0), M0(0.0), ex(0.0), ey(0.0), tInit(0.0) {};
 void RoeGeometricMappingDynamics::Propagate(CartesianOrbitState &state,
                                             real tEnd) {
   if (state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN) {

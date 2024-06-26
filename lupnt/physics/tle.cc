@@ -19,7 +19,6 @@
 #include "orbit_state.h"
 #include "orbit_state_utils.h"
 
-namespace sp = lupnt::SpiceInterface;
 
 namespace lupnt {
 TLE TLE::FromLines(const std::string &line1, const std::string &line2,
@@ -58,8 +57,7 @@ TLE TLE::FromLines(const std::string &line1, const std::string &line2,
 
   // compute TAI from epoch
   std::string fullyear_string = "20" + line2.substr(18, 2);
-  real epochYearStartTAI =
-      sp::StringToTAI(fullyear_string + "/01/01 00:00:00 UTC");
+  real epochYearStartTAI = StringToTAI(fullyear_string + "/01/01 00:00:00 UTC");
   double epochTAI = epochYearStartTAI.val() + tle.epochDay * SECS_PER_DAY;
   tle.epochTAI = epochTAI;
 

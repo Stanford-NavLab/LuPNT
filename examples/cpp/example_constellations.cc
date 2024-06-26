@@ -38,11 +38,10 @@
 #include <string>
 
 using namespace lupnt;
-namespace sp = SpiceInterface;
 
 int main() {
   auto cartesian_two_body =
-      std::make_shared<CartesianTwoBodyDynamics>(MU_EARTH);
+      std::make_shared<CartesianTwoBodyDynamics>(GM_EARTH);
 
   auto channel = std::make_shared<GnssChannel>();
 

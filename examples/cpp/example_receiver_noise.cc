@@ -13,7 +13,6 @@
 #include "utils.cc"
 
 using namespace lupnt;
-namespace sp = SpiceInterface;
 
 // Util Functions
 

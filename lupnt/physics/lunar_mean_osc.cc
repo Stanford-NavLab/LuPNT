@@ -21,7 +21,7 @@ namespace lupnt {
 Vector6 MeanToOsculatingulating(Vector6 meanCoeVec) {
   double t = 0.0;  // Time [s]
   double nM = 2.66e-6;
-  Vector6 meanDoeVec = ClassicalToDelaunay(meanCoeVec, MU_MOON);
+  Vector6 meanDoeVec = ClassicalToDelaunay(meanCoeVec, GM_MOON);
 
   double lpp = (double)meanDoeVec(0);
   double gpp = (double)meanDoeVec(1);
@@ -53,14 +53,14 @@ Vector6 MeanToOsculatingulating(Vector6 meanCoeVec) {
   Vector6 oscDoeVec;
   oscDoeVec << l, g, h, L, G, H;
 
-  Vector6 oscCoeVec = DelaunayToClassical(oscDoeVec, MU_MOON);
+  Vector6 oscCoeVec = DelaunayToClassical(oscDoeVec, GM_MOON);
   return oscCoeVec;
 }
 
 Vector6 OsculatingToMean(Vector6 oscCoeVec) {
   double t = 0.0;
   double nM = 2.66e-6;
-  Vector6 oscDoeVec = ClassicalToDelaunay(oscCoeVec, MU_MOON);
+  Vector6 oscDoeVec = ClassicalToDelaunay(oscCoeVec, GM_MOON);
 
   double l = (double)oscDoeVec(0);
   double g = (double)oscDoeVec(1);
@@ -94,7 +94,7 @@ Vector6 OsculatingToMean(Vector6 oscCoeVec) {
   Vector6 meanDoeVec;
   meanDoeVec << lpp, gpp, hpp, Lpp, Gpp, Hpp;
 
-  Vector6 meanCoeVec = DelaunayToClassical(meanDoeVec, MU_MOON);
+  Vector6 meanCoeVec = DelaunayToClassical(meanDoeVec, GM_MOON);
   return meanCoeVec;
 }
 
@@ -296,17 +296,17 @@ std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6 &coe,
                        cos(2 * g + 2 * h);
 
   double L_sp2 =
-      (J2_MOON * pow(R_MOON, 2) * sqrt(MU_MOON)) /
+      (J2_MOON * pow(R_MOON, 2) * sqrt(GM_MOON)) /
           (4 * pow(a, 3 / 2.0) * pow(1 - pow(e, 2), 3 / 2.0)) *
           (1 - 3 * pow(cos(i), 2) +
            (2 * pow(1 + e * cos(f), 3) / pow(1 - pow(e, 2), 3 / 2.0)) *
                (1 - 3 * pow(sin(i), 2) * pow(sin(f + g), 2))) +
-      (3 * C22_MOON * pow(R_MOON, 2) * sqrt(MU_MOON)) /
+      (3 * C22_MOON * pow(R_MOON, 2) * sqrt(GM_MOON)) /
           (2 * pow(a, 3 / 2.0) * pow(1 - pow(e, 2), 3 / 2.0)) *
           (2 * pow(1 + e * cos(f), 3) / pow(1 - pow(e, 2), 3 / 2.0)) *
           (2 * pow(sin(h) * cos(i) * sin(f + g) - cos(h) * cos(f + g), 2) +
            pow(sin(i), 2) * pow(sin(f + g), 2) - cos(2 * h) * pow(sin(i), 2)) -
-      (k * pow(n3, 2) * pow(a, 7 / 2.0)) / (16 * sqrt(MU_MOON)) *
+      (k * pow(n3, 2) * pow(a, 7 / 2.0)) / (16 * sqrt(GM_MOON)) *
           (8 * pow(1 - pow(e, 2), 2) / pow(1 + e * cos(f), 2)) *
           (3 * pow(sin(h) * cos(i) * sin(f + g) - cos(h) * cos(f + g), 2) - 1 -
            15 * pow(e, 2) *
@@ -317,12 +317,12 @@ std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6 &coe,
                (3 * cos(2 * h) * pow(sin(i), 2) + 3 * pow(cos(i), 2) - 1));
 
   double Gsp2 =
-      ((J2_MOON * sqrt(MU_MOON) * pow(R_MOON, 2)) /
+      ((J2_MOON * sqrt(GM_MOON) * pow(R_MOON, 2)) /
        (4 * pow(a, 3 / 2.0) * pow(1 - pow(e, 2), 3 / 2.0))) *
           (pow(sin(i), 2) * (3 * e * cos(f + 2 * g) + 3 * cos(2 * f + 2 * g) +
                              e * cos(3 * f + 2 * g))) +
 
-      ((C22_MOON * sqrt(MU_MOON) * pow(R_MOON, 2)) /
+      ((C22_MOON * sqrt(GM_MOON) * pow(R_MOON, 2)) /
        (4 * pow(a, 3 / 2.0) * pow(1 - pow(e, 2), 3 / 2.0))) *
           ((1 - cos(i)) * (1 - cos(i)) *
                (3 * e * cos(f + 2 * g - 2 * h) +
@@ -334,19 +334,19 @@ std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6 &coe,
                 e * cos(3 * f + 2 * g + 2 * h))) +
 
       ((-15 * k * pow(n3, 2) * pow(a, 7 / 2.0) * pow(e, 2)) /
-       (16 * sqrt(MU_MOON))) *
+       (16 * sqrt(GM_MOON))) *
           ((2 * pow(sin(i), 2) * sin(2 * g)) +
            ((1 - cos(i)) * (1 - cos(i)) * sin(2 * g - 2 * h)) +
            ((1 + cos(i)) * (1 + cos(i)) * sin(2 * g + 2 * h))) *
           (E - l) +
 
-      ((k * pow(n3, 2) * pow(a, 7 / 2.0)) / (384 * sqrt(MU_MOON))) *
+      ((k * pow(n3, 2) * pow(a, 7 / 2.0)) / (384 * sqrt(GM_MOON))) *
           (4 * (1 - 3 * pow(cos(i), 2)) * B_M_g_0 +
            6 * pow(sin(i), 2) * B_M_g_1 + 3 * pow(1 - cos(i), 2) * B_M_g_2 +
            3 * pow(1 + cos(i), 2) * B_M_g_3);
 
   double Hsp2 =
-      ((C22_MOON * sqrt(MU_MOON) * pow(R_MOON, 2)) /
+      ((C22_MOON * sqrt(GM_MOON) * pow(R_MOON, 2)) /
        (4 * pow(a, 3 / 2.0) * pow(1 - pow(e, 2), 3 / 2.0))) *
           (6 * pow(sin(i), 2) *
                (-2 * (f - l) * sin(2 * h) - e * cos(f - 2 * h) +
@@ -357,12 +357,12 @@ std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6 &coe,
            pow(1 + cos(i), 2) * (3 * e * cos(f + 2 * g + 2 * h) +
                                  3 * cos(2 * f + 2 * g + 2 * h) +
                                  e * cos(3 * f + 2 * g + 2 * h))) +
-      ((3 * k * pow(n3, 2) * pow(a, 7 / 2.0)) / (16 * sqrt(MU_MOON))) *
+      ((3 * k * pow(n3, 2) * pow(a, 7 / 2.0)) / (16 * sqrt(GM_MOON))) *
           (-2 * pow(sin(i), 2) * (2 + 3 * pow(e, 2)) * sin(2 * h) +
            5 * pow(e, 2) * pow(1 - cos(i), 2) * sin(2 * g - 2 * h) -
            5 * pow(e, 2) * pow(1 + cos(i), 2) * sin(2 * g + 2 * h)) *
           (E - l) +
-      ((k * pow(n3, 2) * pow(a, 7 / 2.0)) / (384 * sqrt(MU_MOON))) *
+      ((k * pow(n3, 2) * pow(a, 7 / 2.0)) / (384 * sqrt(GM_MOON))) *
           (4 * (1 - 3 * pow(cos(i), 2)) * B_M_h_0 +
            6 * pow(sin(i), 2) * B_M_h_1 + 3 * pow(1 - cos(i), 2) * B_M_h_2 +
            3 * pow(1 + cos(i), 2) * B_M_h_3);
@@ -470,7 +470,7 @@ std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6 &coe,
              (28 + 11 * pow(e, 2)) * sin(3 * f + 2 * g + 2 * h) +
              18 * e * sin(4 * f + 2 * g + 2 * h) +
              3 * pow(e, 2) * sin(5 * f + 2 * g + 2 * h)))) +
-      ((k * pow(n3, 2) * pow(a, 3)) / (64 * MU_MOON * sqrt(1 - pow(e, 2)))) *
+      ((k * pow(n3, 2) * pow(a, 3)) / (64 * GM_MOON * sqrt(1 - pow(e, 2)))) *
           (((E - l) *
                 ((24 * pow(cos(i), 2) *
                   (10 * pow(e, 2) * cos(2 * g) * pow(sin(h), 2) +
@@ -503,7 +503,7 @@ std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6 &coe,
        (4 * pow(a, 2) * pow(1 - pow(e, 2), 2)) * (-6 * B_2_1 + B_2_2)) +
       ((C22_MOON * pow(R_MOON, 2)) / (4 * pow(a, 2) * pow(1 - pow(e, 2), 2)) *
        (6 * cos(i) * B_22_1 + (1 - cos(i)) * B_22_2 - (1 + cos(i)) * B_22_3)) +
-      ((k * pow(n3, 2) * pow(a, 3)) / (64 * MU_MOON * sqrt(1 - pow(e, 2)))) *
+      ((k * pow(n3, 2) * pow(a, 3)) / (64 * GM_MOON * sqrt(1 - pow(e, 2)))) *
           ((-2 * cos(i) * (2 + 3 * pow(e, 2)) +
             2 * cos(i) * (2 + 3 * pow(e, 2)) * cos(2 * h) +
             10 * pow(e, 2) * cos(i) * cos(2 * g) +
@@ -550,34 +550,34 @@ std::array<double, 6> ComputeFirstOrderMediumPeriod(Vector6 &coe,
                        2 * (3 * pow(e, 2) + 2) * pow(sin(i), 2)) *
                           cos(2 * h) -
                       20 * pow(e, 2) * cos(i) * sin(2 * g) * sin(2 * h)) -
-                 3 * C22_MOON * MU_MOON * pow(R_MOON, 2) /
+                 3 * C22_MOON * GM_MOON * pow(R_MOON, 2) /
                      (2 * n3 * pow(a, 3) * pow(1 - pow(e, 2), 3 / 2.0)) *
                      pow(sin(i), 2) * cos(2 * h);
 
   double l_mp1 =
-      -9 * C22_MOON * sqrt(MU_MOON) * pow(R_MOON, 2) * pow(sin(i), 2) *
+      -9 * C22_MOON * sqrt(GM_MOON) * pow(R_MOON, 2) * pow(sin(i), 2) *
           sin(2 * h) /
           (4 * n3 * pow(a, 7 / 2.0) * pow(1 - pow(e, 2), 3 / 2.0)) +
-      3 * k * n3 * pow(a, 3 / 2.0) / (32 * sqrt(MU_MOON)) *
+      3 * k * n3 * pow(a, 3 / 2.0) / (32 * sqrt(GM_MOON)) *
           (sin(2 * h) * (5 * (pow(e, 2) + 1) * cos(2 * g) * (cos(2 * i) + 3) +
                          2 * (3 * pow(e, 2) + 7) * pow(sin(i), 2)) +
            20 * (pow(e, 2) + 1) * sin(2 * g) * cos(2 * h) * cos(i));
 
-  double g_mp1 = 3 * C22_MOON * sqrt(MU_MOON) * pow(R_MOON, 2) *
+  double g_mp1 = 3 * C22_MOON * sqrt(GM_MOON) * pow(R_MOON, 2) *
                      (5 * cos(2 * i) - 1) * sin(2 * h) /
                      (8 * n3 * pow(a, 7 / 2.0) * pow(1 - pow(e, 2), 2)) +
                  3 * k * n3 * pow(a, 3 / 2.0) /
-                     (64 * sqrt(MU_MOON) * sqrt(1 - pow(e, 2))) *
+                     (64 * sqrt(GM_MOON) * sqrt(1 - pow(e, 2))) *
                      (20 * (pow(e, 2) - 2) * sin(2 * g) * cos(2 * h) * cos(i) +
                       (10 * (2 * pow(e, 2) - 3) * cos(2 * g) + 12 * pow(e, 2) +
                        20 * pow(sin(g), 2) * cos(2 * i) - 2) *
                           sin(2 * h));
 
-  double h_mp1 = -3 * C22_MOON * sqrt(MU_MOON) * pow(R_MOON, 2) * cos(i) *
+  double h_mp1 = -3 * C22_MOON * sqrt(GM_MOON) * pow(R_MOON, 2) * cos(i) *
                      sin(2 * h) /
                      (2 * n3 * pow(a, 7 / 2.0) * pow(1 - pow(e, 2), 2)) +
                  3 * k * n3 * pow(a, 3 / 2.0) /
-                     (16 * sqrt(MU_MOON) * sqrt(1 - pow(e, 2))) *
+                     (16 * sqrt(GM_MOON) * sqrt(1 - pow(e, 2))) *
                      (5 * pow(e, 2) * sin(2 * g) * cos(2 * h) +
                       sin(2 * h) * cos(i) *
                           (5 * pow(e, 2) * cos(2 * g) - 3 * pow(e, 2) - 2));
@@ -611,18 +611,18 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
   double L_mp2 = 0;
 
   double G_mp2 =
-      -45 * k * J2_MOON * sqrt(MU_MOON) * pow(R_MOON, 2) * pow(e, 2) /
+      -45 * k * J2_MOON * sqrt(GM_MOON) * pow(R_MOON, 2) * pow(e, 2) /
           (512 * pow(a, 3 / 2.0) * pow(1 - pow(e, 2), 2)) *
           (cos(2 * g) * cos(2 * h) * (20 * cos(2 * i) + 5 * cos(4 * i) + 7) -
            16 * sin(2 * g) * sin(2 * h) * (cos(i) + cos(3 * i))) +
-      45 * k * C22_MOON * sqrt(MU_MOON) * pow(R_MOON, 2) * pow(e, 2) * sin(i) /
+      45 * k * C22_MOON * sqrt(GM_MOON) * pow(R_MOON, 2) * pow(e, 2) * sin(i) /
           (256 * pow(a, 3 / 2.0) * pow(1 - pow(e, 2), 2)) *
           (2 * sin(2 * g) * (4 * sin(2 * h) - 5 * sin(4 * h)) * sin(2 * i) +
            cos(2 * g) * sin(i) *
                (5 * (-4 * cos(2 * h) + cos(4 * h) - 2) * cos(2 * i) +
                 4 * cos(2 * h) + 15 * cos(4 * h) - 22)) +
       45 * pow(k, 2) * pow(n3, 2) * pow(a, 7 / 2.0) * pow(e, 2) /
-          (4096 * sqrt(MU_MOON) * sqrt(1 - pow(e, 2))) *
+          (4096 * sqrt(GM_MOON) * sqrt(1 - pow(e, 2))) *
           (-5 * (-40 * pow(e, 2) + 3 * cos(4 * g) - 3 * cos(4 * h) +
                  28 * cos(2 * i) + 35) +
            4 * cos(2 * i) *
@@ -635,36 +635,36 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
                 25 * cos(4 * h) - 34) +
            10 * (pow(sin(g), 2) * cos(4 * h) * cos(4 * i) -
                  8 * sin(2 * g) * sin(4 * h) * pow(sin(i), 2) * cos(i))) -
-      pow(e, 2) / (1024 * sqrt(MU_MOON) * pow(a, 3 / 2.0)) *
-          (C22_MOON * MU_MOON * pow(R_MOON, 2) *
+      pow(e, 2) / (1024 * sqrt(GM_MOON) * pow(a, 3 / 2.0)) *
+          (C22_MOON * GM_MOON * pow(R_MOON, 2) *
                (105 * pow(e, 4) + 80 * pow(e, 2) + 48) -
            480 * k * pow(n3, 2) * pow(a, 5) * sqrt(1 - pow(e, 2))) *
           ((cos(2 * g) * cos(2 * h) * (cos(2 * i) + 3)) -
            (4 * sin(2 * g) * sin(2 * h) * cos(i)));
 
   double H_mp2 =
-      (9 * J2_MOON * C22_MOON * pow(MU_MOON, 1.5) * pow(R_MOON, 4) *
+      (9 * J2_MOON * C22_MOON * pow(GM_MOON, 1.5) * pow(R_MOON, 4) *
        pow(sin(i), 2) * cos(i)) /
           (4 * pow(n3, 2) * pow(a, 6.5) * pow(1 - pow(e, 2), 3.5)) *
           cos(2 * h) -
-      (9 * J2_MOON * k * pow(R_MOON, 2) * sqrt(MU_MOON)) /
+      (9 * J2_MOON * k * pow(R_MOON, 2) * sqrt(GM_MOON)) /
           (512 * sqrt(a) * pow(1 - pow(e, 2), 2)) *
           (80 * pow(e, 2) * cos(2 * g) * cos(2 * h) *
                (cos(i) + cos(3 * 2 * sin(i))) -
            5 * pow(e, 2) * sin(2 * g) * sin(2 * h) *
                (20 * cos(2 * i) + 5 * cos(4 * 2 * cos(i)) + 7) -
            16 * (3 * pow(e, 2) + 2) * cos(2 * h) * pow(sin(i), 2) * cos(i)) -
-      (9 * pow(C22_MOON, 2) * pow(MU_MOON, 1.5) * pow(R_MOON, 4) *
+      (9 * pow(C22_MOON, 2) * pow(GM_MOON, 1.5) * pow(R_MOON, 4) *
        pow(sin(i), 2) * cos(i)) /
           (4 * pow(n3, 2) * pow(a, 6.5) * pow(1 - pow(e, 2), 3.5)) -
-      (9 * k * C22_MOON * sqrt(MU_MOON) * pow(R_MOON, 2) * pow(sin(i), 2)) /
+      (9 * k * C22_MOON * sqrt(GM_MOON) * pow(R_MOON, 2) * pow(sin(i), 2)) /
           (128 * sqrt(a) * pow(1 - pow(e, 2), 2)) *
           (20 * pow(e, 2) * cos(2 * g) * (2 * cos(2 * h) + 3) * cos(i) -
            50 * pow(e, 2) * sin(2 * g) * sin(2 * h) * pow(cos(i), 2) +
            5 * pow(e, 2) * sin(2 * g) * sin(2 * h) * (7 - 5 * cos(2 * i)) +
            16 * (3 * pow(e, 2) + 2) * pow(sin(2 * h), 2) * cos(i)) +
       (9 * pow(k, 2) * pow(n3, 2) * pow(a, 3.5) * sqrt(1 - pow(e, 2))) /
-          (1024 * sqrt(MU_MOON)) *
+          (1024 * sqrt(GM_MOON)) *
           (-160 * pow(e, 2) * cos(2 * i) * cos(2 * (cos(2 * g) + cos(2 * h))) -
            2 * cos(i) *
                (15 * pow(e, 2) * cos(2 * g) +
@@ -672,8 +672,8 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
            2 * cos(3 * 2 * sin(i)) *
                (15 * pow(e, 2) * cos(2 * g) +
                 (17 * pow(e, 2) - 2) * (2 * cos(2 * h) - 1))) -
-      (pow(e, 2)) / (1024 * sqrt(MU_MOON) * sqrt(a)) *
-          (C22_MOON * MU_MOON * pow(R_MOON, 2) *
+      (pow(e, 2)) / (1024 * sqrt(GM_MOON) * sqrt(a)) *
+          (C22_MOON * GM_MOON * pow(R_MOON, 2) *
                (105 * pow(e, 4) + 80 * pow(e, 2) + 48) -
            480 * k * pow(n3, 2) * pow(a, 5) * sqrt(1 - pow(e, 2))) *
           (4 * cos(2 * g) * cos(2 * h) * cos(i) -
@@ -681,7 +681,7 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
 
   // TODO check parenthesis
   double l_mp2 =
-      (27 * J2_MOON * C22_MOON * MU_MOON * pow(R_MOON, 4) * pow(sin(i), 2) *
+      (27 * J2_MOON * C22_MOON * GM_MOON * pow(R_MOON, 4) * pow(sin(i), 2) *
        cos(i)) /
           (4 * pow(n3, 2) * pow(a, 7) * pow(1 - pow(e, 2), 7 / 2)) *
           sin(2 * h) -
@@ -706,7 +706,7 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
                  20 * (pow(e, 2) - 2) * cos(2 * g) - 12 * pow(e, 2) +
                  50 * cos(2 * g + 2 * h) + 32))) +  // Added parenthesis here
       (9 * pow(k, 2) * pow(n3, 2) * pow(a, 3)) /
-          (8192 * MU_MOON * pow(1 - pow(e, 2), 3 / 2)) *
+          (8192 * GM_MOON * pow(1 - pow(e, 2), 3 / 2)) *
           ((pow(e, 2) - 1) * (pow(e, 2) - 1) *
                (8 * (160 * (2 * pow(e, 2) + 1) * cos(2 * i) *
                          sin(2 * g + 2 * h) +
@@ -727,16 +727,16 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
                 16 * pow(e, 2) +
                 4 * (7 * pow(e, 4) - 4 * pow(e, 2) - 3) * cos(2 * i)) +
            10 * (34 * sin(2 * g) + 15 * sin(4 * g))) -
-      (1 / (2048 * pow(a, 2) * MU_MOON)) *
+      (1 / (2048 * pow(a, 2) * GM_MOON)) *
           (960 * k * pow(n3, 2) * pow(a, 5) * (2 * pow(e, 2) + 1) *
                sqrt(1 - pow(e, 2)) +
-           C22_MOON * MU_MOON * pow(R_MOON, 2) *
+           C22_MOON * GM_MOON * pow(R_MOON, 2) *
                (945 * pow(e, 6) - 70 * pow(e, 4) - 80 * pow(e, 2) - 96)) *
           (sin(2 * g) * cos(2 * h) * (cos(2 * i) + 3) +
            4 * cos(2 * g) * sin(2 * h) * cos(i));
 
   double g_mp2 =
-      -(9 * J2_MOON * C22_MOON * MU_MOON * pow(R_MOON, 4) * cos(i) *
+      -(9 * J2_MOON * C22_MOON * GM_MOON * pow(R_MOON, 4) * cos(i) *
         (5 * cos(2 * i) - 3)) /
           (8 * pow(n3, 2) * pow(a, 7) * pow(1 - pow(e, 2), 4)) * sin(2 * h) -
       (9 * k * J2_MOON * pow(R_MOON, 2)) /
@@ -749,7 +749,7 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
                     *
                     (4 * (5 * pow(e, 2) + 2) * cos(2 * g) + 3 * pow(e, 2) + 4) +
                 40 * pow(e, 2) * cos(2 * g) - 3 * pow(e, 2) - 12)) -
-      (9 * pow(C22_MOON, 2) * MU_MOON * pow(R_MOON, 4) * sin(4 * h) * cos(i)) /
+      (9 * pow(C22_MOON, 2) * GM_MOON * pow(R_MOON, 4) * sin(4 * h) * cos(i)) /
           (8 * pow(n3, 2) * pow(a, 7) * pow(1 - pow(e, 2), 4)) +
       (9 * k * C22_MOON * pow(R_MOON, 2)) /
           (1024 * pow(a, 2) * pow(1 - pow(e, 2), 5 / 2)) *
@@ -776,7 +776,7 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
                (-4 * (pow(e, 2) + 3) * cos(2 * i) + 5 * pow(e, 2) +
                 5 * (3 * pow(e, 2) + 1) * cos(4 * i) + 7)) +
       (9 * pow(k, 2) * pow(n3, 2) * pow(a, 3)) /
-          (16384 * MU_MOON * (1 - pow(e, 2))) *
+          (16384 * GM_MOON * (1 - pow(e, 2))) *
           (10 * sin(2 * g) * cos(4 * h) *
                (-120 * pow(e, 4) + 5 * (3 * pow(e, 2) + 2) * cos(4 * i) +
                 133 * pow(e, 2) +
@@ -816,7 +816,7 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
                      cos(2 * i) -
                      2 * (3 * pow(e, 2) + 2) *
                          (3 * pow(e, 2) + 5 * cos(2 * i) - 3))) -
-           (15 * k * pow(n3, 2) * pow(a, 3)) / (64 * MU_MOON) *
+           (15 * k * pow(n3, 2) * pow(a, 3)) / (64 * GM_MOON) *
                (sin(2 * g) * cos(2 * h) *
                     ((pow(e, 2) - 2) * cos(2 * i) + 7 * pow(e, 2) - 6) +
                 8 * (pow(e, 2) - 1) * cos(2 * g) * sin(2 * h) * cos(i)) -
@@ -831,7 +831,7 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
                      sin(2 * g) * cos(2 * h) * sin(2 * i))));
 
   double h_mp2 =
-      (9 * J2_MOON * C22_MOON * MU_MOON * pow(R_MOON, 4) *
+      (9 * J2_MOON * C22_MOON * GM_MOON * pow(R_MOON, 4) *
        (3 * cos(2 * i) + 1)) /
           (16 * pow(n3, 2) * pow(a, 7) * pow(1 - pow(e, 2), 4)) * sin(2 * h) +
       (9 * k * J2_MOON * pow(R_MOON, 2)) /
@@ -839,7 +839,7 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
           (100 * pow(e, 2) * sin(2 * g) * cos(2 * h) * pow(cos(i), 3) +
            sin(2 * h) * (20 * pow(e, 2) * cos(2 * g) * (3 * cos(2 * i) + 2) +
                          (3 * pow(e, 2) + 2) * (3 * cos(2 * i) + 1))) +
-      (9 * pow(C22_MOON, 2) * MU_MOON * pow(R_MOON, 4) * sin(4 * h) *
+      (9 * pow(C22_MOON, 2) * GM_MOON * pow(R_MOON, 4) * sin(4 * h) *
        (cos(2 * i) + 3)) /
           (32 * pow(n3, 2) * pow(a, 7) * pow(1 - pow(e, 2), 4)) +
       (9 * k * C22_MOON * pow(R_MOON, 2)) /
@@ -858,7 +858,7 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
            20 * pow(e, 2) * sin(2 * g) * cos(2 * h) *
                (cos(i) - 5 * cos(3 * i))) -
       (9 * pow(k, 2) * pow(n3, 2) * pow(a, 3)) /
-          (2048 * MU_MOON * (1 - pow(e, 2))) *
+          (2048 * GM_MOON * (1 - pow(e, 2))) *
           (10 * pow(e, 2) * cos(i) *
                (2 * sin(2 * g) *
                     (32 * (pow(e, 2) - 1) * cos(2 * h) + 6 * pow(e, 2) +
@@ -874,8 +874,8 @@ std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
                 (9 * pow(e, 4) + 62 * pow(e, 2) + 4) * cos(2 * i) - 12) -
            8 * (17 * pow(e, 4) - 19 * pow(e, 2) + 2) * sin(2 * h) *
                (3 * cos(2 * i) + 1)) +
-      (pow(e, 2) / (512 * MU_MOON * pow(a, 2) * sqrt(1 - pow(e, 2)))) *
-          (C22_MOON * MU_MOON * pow(R_MOON, 2) *
+      (pow(e, 2) / (512 * GM_MOON * pow(a, 2) * sqrt(1 - pow(e, 2)))) *
+          (C22_MOON * GM_MOON * pow(R_MOON, 2) *
                (105 * pow(e, 4) + 80 * pow(e, 2) + 48) -
            480 * k * pow(n3, 2) * pow(a, 5) * sqrt(1 - pow(e, 2))) *
           (sin(2 * g) * cos(2 * h) * cos(i) + cos(2 * g) * sin(2 * h));
@@ -908,14 +908,14 @@ std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6 &coe,
   double L_mp1c = 0;
 
   double G_mp1c =
-      (45 * k * C22_MOON * sqrt(MU_MOON) * pow(R_MOON, 2) * pow(e, 2) *
+      (45 * k * C22_MOON * sqrt(GM_MOON) * pow(R_MOON, 2) * pow(e, 2) *
        pow(sin(i), 2)) /
           (256 * pow(a, 1.5) * pow(1 - pow(e, 2), 2)) *
           (cos(2 * g) *
                (20 * pow(sin(2 * h), 2) * cos(2 * i) - 30 * cos(4 * h) + 14) +
            40 * sin(2 * g) * sin(4 * h) * cos(i)) +
       (45 * pow(k, 2) * pow(n3, 2) * pow(a, 3.5) * pow(e, 2)) /
-          (2048 * sqrt(MU_MOON) * sqrt(1 - pow(e, 2))) *
+          (2048 * sqrt(GM_MOON) * sqrt(1 - pow(e, 2))) *
           (4 * cos(2 * g) * pow(sin(i), 2) *
                (10 * pow(sin(2 * h), 2) * cos(2 * i) - 12 * pow(e, 2) -
                 15 * cos(4 * h) + 7) +
@@ -924,16 +924,16 @@ std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6 &coe,
                 3 * cos(4 * h) + 35) +
            80 * sin(2 * g) * sin(4 * h) * pow(sin(i), 2) * cos(i));
   double H_mp1c =
-      (9 * pow(C22_MOON, 2) * pow(MU_MOON, 1.5) * pow(R_MOON, 4) *
+      (9 * pow(C22_MOON, 2) * pow(GM_MOON, 1.5) * pow(R_MOON, 4) *
        pow(sin(i), 2) * cos(i)) /
           (2 * pow(n3, 2) * pow(a, 13.5) * pow(1 - pow(e, 2), 3.5)) +
-      (9 * k * C22_MOON * pow(MU_MOON, 0.5) * pow(R_MOON, 2) * pow(sin(i), 2) *
+      (9 * k * C22_MOON * pow(GM_MOON, 0.5) * pow(R_MOON, 2) * pow(sin(i), 2) *
        cos(i)) /
           (16 * pow(a, 1.5) * pow(1 - pow(e, 2), 2)) *
           (15 * pow(e, 2) * cos(2 * g) + 6 * pow(e, 2) + 4) +
       (9 * pow(k, 2) * pow(n3, 2) * pow(a, 3.5) * sqrt(1 - pow(e, 2)) *
        cos(i)) /
-          (128 * pow(MU_MOON, 0.5)) *
+          (128 * pow(GM_MOON, 0.5)) *
           (30 * pow(e, 2) * cos(2 * g) * pow(sin(i), 2) +
            (17 * pow(e, 2) - 2) * cos(2 * i) + 83 * pow(e, 2) + 2);
 
@@ -945,7 +945,7 @@ std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6 &coe,
                (-10 * pow(sin(2 * h), 2) * cos(2 * i) + 15 * cos(4 * h) - 7) +
            20 * cos(2 * g) * sin(4 * h) * cos(i)) -
       (45 * pow(k, 2) * pow(n3, 2) * pow(a, 3) * sqrt(1 - pow(e, 2))) /
-          (4096 * pow(MU_MOON, 0.5)) *
+          (4096 * pow(GM_MOON, 0.5)) *
           (5 * (-8 * sin(4 * h) *
                     ((cos(2 * g) + 7 * cos(4 * g)) * cos(i) -
                      2 * pow(sin(g), 2) * (2 * cos(2 * g) + 1) * cos(3 * i)) -
@@ -956,7 +956,7 @@ std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6 &coe,
                (5 * cos(4 * h) * (4 * cos(2 * i) - 5) - 4 * cos(2 * i) + 9));
 
   double g_mp1c =
-      (9 * pow(C22_MOON, 2) * MU_MOON * pow(R_MOON, 4) /
+      (9 * pow(C22_MOON, 2) * GM_MOON * pow(R_MOON, 4) /
        (4 * pow(n3, 2) * pow(a, 7) * pow(e * e - 1, 4)) * cos(i) * sin(4 * h)) -
       (9 * k * C22_MOON * pow(R_MOON, 2) /
        (256 * pow(a, 2) * pow(1 - e * e, 5 / 2)) *
@@ -970,7 +970,7 @@ std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6 &coe,
              25 * (2 - 3 * pow(e, 2)) * cos(2 * g) -
              8 * (3 * pow(e, 2) + 2)))) -
       (9 * pow(k, 2) * pow(n3, 2) * pow(a, 3) /
-       (8192 * MU_MOON * (1 - pow(e, 2))) *
+       (8192 * GM_MOON * (1 - pow(e, 2))) *
        (-400 * (3 * pow(e, 2) - 2) * pow(sin(g), 3) * cos(g) *
             pow(sin(2 * h), 2) * cos(4 * i) -
         8 * sin(4 * h) *
@@ -982,7 +982,7 @@ std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6 &coe,
                  ((3 * pow(e, 2) - 2) * cos(2 * g)))));
 
   double h_mp1c =
-      (-9 * pow(C22_MOON, 2) * MU_MOON * pow(R_MOON, 4) * sin(4 * h) *
+      (-9 * pow(C22_MOON, 2) * GM_MOON * pow(R_MOON, 4) * sin(4 * h) *
        (cos(2 * i) + 3) /
        (16 * pow(n3, 2) * pow(a, 7) * pow(1 - pow(e, 2), 4))) +
       (9 * k * C22_MOON * pow(R_MOON, 2) /
@@ -991,7 +991,7 @@ std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6 &coe,
            sin(4 * h) * (5 * pow(e, 2) * cos(2 * g) * (7 * cos(2 * i) + 13) -
                          2 * (3 * pow(e, 2) + 2) * (cos(2 * i) + 3))) -
       (9 * pow(k, 2) * pow(n3, 2) * pow(a, 3) /
-       (1024 * MU_MOON * (1 - pow(e, 2)))) *
+       (1024 * GM_MOON * (1 - pow(e, 2)))) *
           (40 * pow(e, 2) * sin(2 * g) * cos(i) *
                (5 * cos(4 * h) * (pow(e, 2) * cos(2 * g) - 1) - 3 * pow(e, 2) +
                 3) +
