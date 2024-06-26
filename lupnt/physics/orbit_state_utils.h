@@ -22,54 +22,50 @@
 #include "lupnt/physics/orbit_state.h"
 
 // Function:
-// Vector<size> = func(Vector<size>)
+// Vec<size> = func(Vec<size>)
 // New definitions:
-// Matrix<-1,size> = (Matrix<-1,size>)
-#define VEC_DEF_VECTOR(func, size) \
-  Matrix<-1, size> func(const Matrix<-1, size> &x);
+// Mat<-1,size> = (Mat<-1,size>)
+#define VEC_DEF_VECTOR(func, size) Mat<-1, size> func(const Mat<-1, size> &x);
 
 // Function:
-// Vector<size> = func(Vector<size>, real)
+// Vec<size> = func(Vec<size>, real)
 // New definitions:
-// Matrix<-1,size> = func(Vector<size>, VectorX)
-// Matrix<-1,size> = func(Matrix<-1,size>, real)
-// Matrix<-1,size> = func(Matrix<-1,size>, VectorX)
-#define VEC_DEF_VECTOR_REAL(func, size)                           \
-  Matrix<-1, size> func(const Vector<size> &x, const VectorX &y); \
-  Matrix<-1, size> func(const Matrix<-1, size> &x, real y);       \
-  Matrix<-1, size> func(const Matrix<-1, size> &x, const VectorX &y);
+// Mat<-1,size> = func(Vec<size>, VecX)
+// Mat<-1,size> = func(Mat<-1,size>, real)
+// Mat<-1,size> = func(Mat<-1,size>, VecX)
+#define VEC_DEF_VECTOR_REAL(func, size)                  \
+  Mat<-1, size> func(const Vec<size> &x, const VecX &y); \
+  Mat<-1, size> func(const Mat<-1, size> &x, real y);    \
+  Mat<-1, size> func(const Mat<-1, size> &x, const VecX &y);
 
 // Function:
-// Vector<size> = func(Vector<size>, real, real)
+// Vec<size> = func(Vec<size>, real, real)
 // New definitions:
-// Matrix<-1,size> = func(Matrix<-1,size>, real, real)
+// Mat<-1,size> = func(Mat<-1,size>, real, real)
 #define VEC_DEF_VECTOR_REAL_REAL(func, size) \
-  Matrix<-1, size> func(const Matrix<-1, size> &x, real y, real z);
+  Mat<-1, size> func(const Mat<-1, size> &x, real y, real z);
 
 // Function:
-// Vector<size> = func(Vector<size>, Vector<size>, real)
+// Vec<size> = func(Vec<size>, Vec<size>, real)
 // New definitions:
-// Matrix<-1,size> = func(Matrix<-1,size>, Vector<size>, real)
-// Matrix<-1,size> = func(Vector<size>, Matrix<-1,size>, real)
-// Matrix<-1,size> = func(Matrix<-1,size>, Matrix<-1,size>, real)
-#define VEC_DEF_VECTOR_VECTOR_REAL(func, size)                                \
-  Matrix<-1, size> func(const Matrix<-1, size> &x, const Vector<size> &y,     \
-                        real z);                                              \
-  Matrix<-1, size> func(const Vector<size> &x, const Matrix<-1, size> &y,     \
-                        real z);                                              \
-  Matrix<-1, size> func(const Matrix<-1, size> &x, const Matrix<-1, size> &y, \
-                        real z);
+// Mat<-1,size> = func(Mat<-1,size>, Vec<size>, real)
+// Mat<-1,size> = func(Vec<size>, Mat<-1,size>, real)
+// Mat<-1,size> = func(Mat<-1,size>, Mat<-1,size>, real)
+#define VEC_DEF_VECTOR_VECTOR_REAL(func, size)                            \
+  Mat<-1, size> func(const Mat<-1, size> &x, const Vec<size> &y, real z); \
+  Mat<-1, size> func(const Vec<size> &x, const Mat<-1, size> &y, real z); \
+  Mat<-1, size> func(const Mat<-1, size> &x, const Mat<-1, size> &y, real z);
 
 // Function:
-// Vector<size> = func(Vector<size>, Vector<size>
+// Vec<size> = func(Vec<size>, Vec<size>
 // New definitions:
-// Matrix<-1,size> = func(Matrix<-1,size>, Matrix<-1,size>)
-// Matrix<-1,size> = func(Matrix<-1,size>, Vector<size>)
-// Matrix<-1,size> = func(Vector<size>, Matrix<-1,size>)
-#define VEC_DEF_VECTOR_VECTOR(func, size)                                      \
-  Matrix<-1, size> func(const Matrix<-1, size> &x, const Matrix<-1, size> &y); \
-  Matrix<-1, size> func(const Matrix<-1, size> &x, const Vector<size> &y);     \
-  Matrix<-1, size> func(const Vector<size> &x, const Matrix<-1, size> &y);
+// Mat<-1,size> = func(Mat<-1,size>, Mat<-1,size>)
+// Mat<-1,size> = func(Mat<-1,size>, Vec<size>)
+// Mat<-1,size> = func(Vec<size>, Mat<-1,size>)
+#define VEC_DEF_VECTOR_VECTOR(func, size)                             \
+  Mat<-1, size> func(const Mat<-1, size> &x, const Mat<-1, size> &y); \
+  Mat<-1, size> func(const Mat<-1, size> &x, const Vec<size> &y);     \
+  Mat<-1, size> func(const Vec<size> &x, const Mat<-1, size> &y);
 
 // Function:
 // real = func(real, real)
@@ -77,28 +73,28 @@
 // vector = func(vector, real)
 // vector = func(real, vector)
 // vector = func(vector, vector)
-#define VEC_DEF_REAL_REAL(func)           \
-  VectorX func(const VectorX &x, real y); \
-  VectorX func(real x, const VectorX &y); \
-  VectorX func(const VectorX &x, const VectorX &y);
+#define VEC_DEF_REAL_REAL(func)     \
+  VecX func(const VecX &x, real y); \
+  VecX func(real x, const VecX &y); \
+  VecX func(const VecX &x, const VecX &y);
 
 namespace lupnt {
 
 extern std::map<std::pair<OrbitStateRepres, OrbitStateRepres>,
-                std::function<Vector6(const Vector6 &, real)>>
+                std::function<Vec6(const Vec6 &, real)>>
     absolute_conversions;
 
 extern std::map<std::pair<OrbitStateRepres, OrbitStateRepres>,
-                std::function<Vector6(const Vector6 &, const Vector6 &)>>
+                std::function<Vec6(const Vec6 &, const Vec6 &)>>
     relative_conversions;
 
-Vector6 ConvertOrbitState(const Vector6 &state_in, OrbitStateRepres repres_in,
-                          OrbitStateRepres repres_out, real mu);
+Vec6 ConvertOrbitState(const Vec6 &state_in, OrbitStateRepres repres_in,
+                       OrbitStateRepres repres_out, real mu);
 
-Vector6 ConvertOrbitState(const Vector6 &state_in_c, const Vector6 &state_in_d,
-                          OrbitStateRepres repres_in_c,
-                          OrbitStateRepres repres_in_d,
-                          OrbitStateRepres repres_out, real mu);
+Vec6 ConvertOrbitState(const Vec6 &state_in_c, const Vec6 &state_in_d,
+                       OrbitStateRepres repres_in_c,
+                       OrbitStateRepres repres_in_d,
+                       OrbitStateRepres repres_out, real mu);
 
 std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
     const std::shared_ptr<OrbitState> &state_in, OrbitStateRepres repres_out,
@@ -107,69 +103,68 @@ std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
 // From CartesianOrbitState
 // - To ClassicalOE
 ClassicalOE CartesianToClassical(const CartesianOrbitState &rv, real mu);
-Vector6 CartesianToClassical(const Vector6 &rv, real mu);
+Vec6 CartesianToClassical(const Vec6 &rv, real mu);
 
 // - To CartesianOrbitState (relative)
 CartesianOrbitState InertialToRtn(const CartesianOrbitState &rv_c,
                                   const CartesianOrbitState &rv_d);
-Vector6 InertialToRtn(const Vector6 &rv_c, const Vector6 &rv_d);
+Vec6 InertialToRtn(const Vec6 &rv_c, const Vec6 &rv_d);
 
 CartesianOrbitState RtnToInertial(const CartesianOrbitState &rv_c,
                                   const CartesianOrbitState &rv_rtn_d);
-Vector6 RtnToInertial(const Vector6 &rv_c, const Vector6 &rv_rtn_d);
+Vec6 RtnToInertial(const Vec6 &rv_c, const Vec6 &rv_rtn_d);
 
 // From ClassicalOE
 // - To CartesianOrbitState
 CartesianOrbitState ClassicalToCartesian(const ClassicalOE &coe, real mu);
-Vector6 ClassicalToCartesian(const Vector6 &coe, real mu);
+Vec6 ClassicalToCartesian(const Vec6 &coe, real mu);
 
 // - To QuasiNonsingularOE
 QuasiNonsingularOE ClassicalToQuasiNonsingular(const ClassicalOE &coe, real mu);
-Vector6 ClassicalToQuasiNonsingular(const Vector6 &coe, real mu);
+Vec6 ClassicalToQuasiNonsingular(const Vec6 &coe, real mu);
 
 // - To EquinoctialOE
 EquinoctialOE ClassicalToEquinoctial(const ClassicalOE &coe, real mu);
-Vector6 ClassicalToEquinoctial(const Vector6 &coe, real mu);
+Vec6 ClassicalToEquinoctial(const Vec6 &coe, real mu);
 
 // - To DelaunayOE
 DelaunayOE ClassicalToDelaunay(const ClassicalOE &coe, real mu);
-Vector6 ClassicalToDelaunay(const Vector6 &coe, real mu);
+Vec6 ClassicalToDelaunay(const Vec6 &coe, real mu);
 
 // From QuasiNonsingularOE
 // - To ClassicalOE
 ClassicalOE QuasiNonsingularToClassical(const QuasiNonsingularOE &qnsoe,
                                         real mu);
-Vector6 QuasiNonsingularToClassical(const Vector6 &qnsoeVec, real mu);
+Vec6 QuasiNonsingularToClassical(const Vec6 &qnsoeVec, real mu);
 
 // From EquinoctialOE
 // - To ClassicalOE
 ClassicalOE EquinoctialToClassical(const EquinoctialOE &eqoe, real mu);
-Vector6 EquinoctialToClassical(const Vector6 &eqoe, real mu);
+Vec6 EquinoctialToClassical(const Vec6 &eqoe, real mu);
 
 // From DelaunayOE
 // - To ClassicalOE
 ClassicalOE DelaunayToClassical(const DelaunayOE &deloe, real mu);
-Vector6 DelaunayToClassical(const Vector6 &deloe, real mu);
+Vec6 DelaunayToClassical(const Vec6 &deloe, real mu);
 
 // From ClassicalOE and QuasiNonsingularROE (relative)
 // - To ClassicalOE
 ClassicalOE RelativeQuasiNonsingularToClassical(
     const ClassicalOE &coe,
     const QuasiNonsingularROE &RelativeQuasiNonsingular);
-Vector6 RelativeQuasiNonsingularToClassical(
-    const Vector6 &coe, const Vector6 &RelativeQuasiNonsingular);
+Vec6 RelativeQuasiNonsingularToClassical(const Vec6 &coe,
+                                         const Vec6 &RelativeQuasiNonsingular);
 
 // Mean and Osculating
 ClassicalOE OsculatingToMean(const ClassicalOE &coe_o, real J2);
 ClassicalOE MeanToOsculating(const ClassicalOE &coe_m, real J2);
-Vector6 OsculatingToMean(const Vector6 &coe_o, real mu, real J2);
-Vector6 MeanToOsculating(const Vector6 &coe_m, real mu, real J2);
+Vec6 OsculatingToMean(const Vec6 &coe_o, real mu, real J2);
+Vec6 MeanToOsculating(const Vec6 &coe_m, real mu, real J2);
 
-std::array<double, 6> ComputeSecondOrderShortPeriod(Vector6 &coe, Vector6 &doe);
-std::array<double, 6> ComputeFirstOrderMediumPeriod(Vector6 &coe, Vector6 &doe);
-std::array<double, 6> ComputeSecondOrderMediumPeriod(Vector6 &coe,
-                                                     Vector6 &doe);
-std::array<double, 6> ComputeCorrectionMediumPeriod(Vector6 &coe, Vector6 &doe);
+std::array<double, 6> ComputeSecondOrderShortPeriod(Vec6 &coe, Vec6 &doe);
+std::array<double, 6> ComputeFirstOrderMediumPeriod(Vec6 &coe, Vec6 &doe);
+std::array<double, 6> ComputeSecondOrderMediumPeriod(Vec6 &coe, Vec6 &doe);
+std::array<double, 6> ComputeCorrectionMediumPeriod(Vec6 &coe, Vec6 &doe);
 
 // Anomaly
 real EccentricToTrueAnomaly(real E, real e);
@@ -180,21 +175,19 @@ real MeanToTrueAnomaly(real M, real e);
 real TrueToMeanAnomaly(real f, real e);
 
 // Other coordinates
-Vector3 LatLonAltToEcef(const Vector3 &r_geo, real radius, real flattening = 0);
-Vector3 EcefToLatLonAlt(const Vector3 &r_cart, real radius,
-                        real flattening = 0);
-Vector3 SphericalToCartesian(const Vector3 &r_sph);
-Vector3 CartesianToSpherical(const Vector3 &r_cart);
-Vector3 EastNorthUpToCartesian(const Vector3 &r_ref, const Vector3 &r_enu,
-                               real flattening = -1.0);
-Vector3 CartesianToEastNorthUp(const Vector3 &r_ref, const Vector3 &r_cart,
-                               real flattening = -1.0);
-Vector3 CartesianToAzimuthElevationRange(const Vector3 &r_cart_ref,
-                                         const Vector3 &r_cart,
-                                         real flattening = -1.0);
-Vector3 AzimuthElevationRangeToCartesian(const Vector3 &r_aer_ref,
-                                         const Vector3 &r_aer,
-                                         real flattening = -1.0);
+Vec3 LatLonAltToEcef(const Vec3 &r_geo, real radius, real flattening = 0);
+Vec3 EcefToLatLonAlt(const Vec3 &r_cart, real radius, real flattening = 0);
+Vec3 SphericalToCartesian(const Vec3 &r_sph);
+Vec3 CartesianToSpherical(const Vec3 &r_cart);
+Vec3 EastNorthUpToCartesian(const Vec3 &r_ref, const Vec3 &r_enu,
+                            real flattening = -1.0);
+Vec3 CartesianToEastNorthUp(const Vec3 &r_ref, const Vec3 &r_cart,
+                            real flattening = -1.0);
+Vec3 CartesianToAzimuthElevationRange(const Vec3 &r_cart_ref,
+                                      const Vec3 &r_cart,
+                                      real flattening = -1.0);
+Vec3 AzimuthElevationRangeToCartesian(const Vec3 &r_aer_ref, const Vec3 &r_aer,
+                                      real flattening = -1.0);
 
 VEC_DEF_REAL_REAL(EccentricToTrueAnomaly);
 VEC_DEF_REAL_REAL(EccentricToMeanAnomaly);
@@ -254,7 +247,7 @@ class TLE {
 static std::shared_ptr<CartesianOrbitState> ConvertOrbitStateFrame(
     const std::shared_ptr<CartesianOrbitState> state_in, const real epoch,
     const Frame frame_out) {
-  auto rv_in = state_in->GetVector();
+  auto rv_in = state_in->GetVec();
   auto frame_in = state_in->GetCoordSystem();
   auto rv_out = FrameConverter::Convert(epoch, rv_in, frame_in, frame_out);
   auto state_out = std::make_shared<CartesianOrbitState>(rv_out, frame_out);

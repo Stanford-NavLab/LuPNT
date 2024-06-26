@@ -32,19 +32,19 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand(
         'type summary add --summary-string "${var.m_data.__elems_[0]}" lupnt::real'
     )
-    # lupnt Vector and Matrix
+    # lupnt Vec and Mat
     debugger.HandleCommand(
-        "type synthetic add -x lupnt::(Vector|Matrix)* --python-class eigenlldb.MatrixChildProvider"
+        "type synthetic add -x lupnt::(Vec|Mat)* --python-class eigenlldb.MatChildProvider"
     )
     debugger.HandleCommand(
-        "type summary add -x lupnt::(Vector|Matrix)* --python-function eigenlldb.summary"
+        "type summary add -x lupnt::(Vec|Mat)* --python-function eigenlldb.summary"
     )
 
 
 def summary(valobj, internalr_dict, options):
     names = [str(x.GetName()) for x in valobj.get_value_child_list()]
     values = [float(x.GetValue()) for x in valobj.get_value_child_list()]
-    matrix = MatrixChildProvider(valobj, internalr_dict)
+    matrix = MatChildProvider(valobj, internalr_dict)
     filetered_names = [x for x in names if x not in ("m_rows", "m_cols")]
     filtered_values = [
         v for n, v in zip(names, values) if n not in ("m_rows", "m_cols")
@@ -64,13 +64,13 @@ def summary(valobj, internalr_dict, options):
     rows_desc = "dynamic" if matrix._rows_compile_time == -1 else "static"
 
     if len(names[-1]) == 3:
-        # Vector "[i]"
+        # Vec "[i]"
         row_idxs = [int(x[1:-1]) for x in filetered_names]
         n_rows = max(row_idxs) + 1
         col_idxs = [0] * n_rows
         n_cols = 1
     else:
-        # Matrix "[i,j]"
+        # Mat "[i,j]"
         tmp = [x[1:-1].split(",") for x in filetered_names]
         row_idxs = [int(x[0]) for x in tmp]
         n_rows = max(row_idxs) + 1
@@ -166,7 +166,7 @@ def extract_args(s):
     return split_template_args(s)
 
 
-class MatrixChildProvider:
+class MatChildProvider:
     _valobj: lldb.SBValue
     _scalar_type: lldb.SBType
     _scalar_size: int

@@ -244,14 +244,14 @@ void ExtractPckCoeffs() {
   //    pckr02_c(handle, target)
 }
 
-Vector3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
-                    std::string abCorrection) {
+Vec3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
+                 std::string abCorrection) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
 
   SpiceDouble ptarg[3];
-  Vector3d targetPos;
+  Vec3d targetPos;
 
   std::string targetName = std::to_string((int)target);
   std::string obsName = std::to_string((int)obs);
@@ -282,15 +282,14 @@ Vector3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
 }
 
 /**
- * @brief Get the Frame Conversion Matrix object
+ * @brief Get the Frame Conversion Mat object
  *
  * @param t_tdb
  * @param from_frame
  * @param to_frame
- * @return MatrixXd
+ * @return VecXd
  */
-Matrix6d GetFrameConversionMatrix(real t_tai, Frame from_frame,
-                                  Frame to_frame) {
+Mat6d GetFrameConversionMat(real t_tai, Frame from_frame, Frame to_frame) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
@@ -300,7 +299,7 @@ Matrix6d GetFrameConversionMatrix(real t_tai, Frame from_frame,
   SpiceInt bodyname;
   SpiceDouble et_spice = (SpiceDouble)t_tdb.val();
   double xform[6][6];
-  Matrix6d M_rot;
+  Mat6d M_rot;
 
   std::string from_frame_str = frametem_string.at(from_frame);
   std::string to_frame_str = frametem_string.at(to_frame);
@@ -476,13 +475,13 @@ real ConvertTime(real t, std::string from_time_type, std::string to_time_type) {
   return t_out;
 }
 
-Matrix<-1, 6> GetBodyPosVel(const VectorX &tai, NaifId center, NaifId target,
-                            Frame frame) {
+Mat<-1, 6> GetBodyPosVel(const VecX &tai, NaifId center, NaifId target,
+                         Frame frame) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
 
-  Matrix<-1, 6> retState(tai.size(), 6);
+  Mat<-1, 6> retState(tai.size(), 6);
 
   for (int i = 0; i < tai.size(); i++) {
     retState.row(i) = GetBodyPosVel(tai(i), center, target, frame).transpose();
@@ -497,21 +496,20 @@ Matrix<-1, 6> GetBodyPosVel(const VectorX &tai, NaifId center, NaifId target,
  * @param tai_MJD TAI in MJD (with the origin as JD_NOV_17_1858)
  * @param center  center body id
  * @param target  target body id
- * @return VectorX  6x1 vector of position and velocity of target body
+ * @return VecX  6x1 vector of position and velocity of target body
  * in center body J2000 frame
  */
-Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target,
-                      Frame frame) {
+Vec6 GetBodyPosVel(const real tai, NaifId center, NaifId target, Frame frame) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
 
   bool found_center = center == NaifId::SSB;
   bool found_target = target == NaifId::SSB;
-  Vector6 rv_center = Vector6::Zero();
-  Vector6 rv_target = Vector6::Zero();
+  Vec6 rv_center = Vec6::Zero();
+  Vec6 rv_target = Vec6::Zero();
 
-  auto fetchPosVel = [&](NaifId body, Vector6 &rv) {
+  auto fetchPosVel = [&](NaifId body, Vec6 &rv) {
     switch (body) {
       case NaifId::MOON:
       case NaifId::EARTH:
@@ -553,7 +551,7 @@ Vector6 GetBodyPosVel(const real tai, NaifId center, NaifId target,
   }
   assert(found_center && found_target && "Chebyshev coefficients not found");
 
-  Vector6 retState = rv_target - rv_center;
+  Vec6 retState = rv_target - rv_center;
 
   if (frame != Frame::GCRF) {
     retState = FrameConverter::Convert(tai, retState, Frame::GCRF, frame);

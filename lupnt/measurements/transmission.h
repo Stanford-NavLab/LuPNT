@@ -51,6 +51,6 @@ struct Transmission {
   double chip_rate;  // receiver chip rate [Hz]
 
   int ID_tx;
-  Vector3d r_tx, v_tx, r_rx, v_rx;
+  Vec3d r_tx, v_tx, r_rx, v_rx;
 };
 }  // namespace lupnt

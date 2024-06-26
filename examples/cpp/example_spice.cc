@@ -34,16 +34,15 @@ int main() {
   std::cout << "TAI: " << t_tai << std::endl;
   std::cout << "TDB: " << t_tdb << std::endl;
 
-  MatrixX xform(6, 6);
-  xform = GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::ITRF);
+  MatX xform(6, 6);
+  xform = GetFrameConversionMat(t_tai, Frame::GCRF, Frame::ITRF);
   std::cout << "XFORM_ITRF:\n" << xform << std::endl;
 
-  xform = GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::MOON_PA);
+  xform = GetFrameConversionMat(t_tai, Frame::GCRF, Frame::MOON_PA);
   std::cout << "XFORM_MOONPA:\n" << xform << std::endl;
-  xform = GetFrameConversionMatrix(t_tai, Frame::MOON_CI, Frame::MOON_PA);
+  xform = GetFrameConversionMat(t_tai, Frame::MOON_CI, Frame::MOON_PA);
 
-  Vector3 x =
-      GetBodyPos(NaifId::EARTH, t_tai, Frame::GCRF, NaifId::MOON, "NONE");
+  Vec3 x = GetBodyPos(NaifId::EARTH, t_tai, Frame::GCRF, NaifId::MOON, "NONE");
   std::cout << "r_moon2earth:\n" << x.transpose() << std::endl;
 
   x = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH, Frame::GCRF).head(3);
@@ -56,11 +55,11 @@ int main() {
   std::cout << "r_moon2sun:\n" << x.transpose() << std::endl;
 
   // Get derivative of r_moon2earth using autodiff
-  Vector6 rv_moon2earth;
+  Vec6 rv_moon2earth;
   auto func = [](const auto &t_tai) {
     return GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH);
   };
-  Vector6 rv_moon2earth_dot =
+  Vec6 rv_moon2earth_dot =
       ad::jacobian(func, wrt(t_tai), at(t_tai), rv_moon2earth);
 
   std::cout << "v_moon2earth:\n"

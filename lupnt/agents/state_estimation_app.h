@@ -32,12 +32,12 @@ class JointState {
   std::vector<IDynamics*> dynamics_vec_;
   std::vector<std::vector<int>> dynamics_to_state_map_;
 
-  VectorX state_vec_value_;
+  VecX state_vec_value_;
   int state_vec_size_ = 0;
   int state_types_ = 0;
 
  public:
-  JointState(){};
+  JointState() {};
   JointState(std::vector<IState*> state_vec) {
     int state_vec_size = 0;
     for (int i = 0; state_vec.size(); i++) {
@@ -49,7 +49,7 @@ class JointState {
 
   int GetSize() const { return state_vec_size_; };
   std::vector<IState*> GetJointState() { return state_vec_; };
-  VectorX GetJointStateValue() { return state_vec_value_; };
+  VecX GetJointStateValue() { return state_vec_value_; };
 
   void PushBackStateAndDynamics(IState* state, IDynamics* dynamics) {
     state_vec_.push_back(state);
@@ -70,7 +70,7 @@ class JointState {
   };
 
   FilterDynamicsFunction GetFilterDynamicsFunction() {
-    auto dynfunc = [&](VectorX x, real t_curr, real t_end, MatrixXd& Phi) {
+    auto dynfunc = [&](VecX x, real t_curr, real t_end, VecXd& Phi) {
       std::vector<IState*> state_vec = GetJointState();
       Phi.resize(state_vec_size_, state_vec_size_);
       Phi.setZero();
@@ -80,8 +80,8 @@ class JointState {
       int start_idx = 0;
       for (int i = 0; i < dynamics_vec_.size(); i++) {
         int state_size = state_vec[i]->GetSize();
-        MatrixXd Phi_tmp(state_size, state_size);
-        VectorX x_seg(state_size);
+        VecXd Phi_tmp(state_size, state_size);
+        VecX x_seg(state_size);
         for (int j = 0; j < state_size; j++) {
           x_seg(j) = x(start_idx + j);
         }

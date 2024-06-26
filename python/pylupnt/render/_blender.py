@@ -121,7 +121,7 @@ class Blender:
 
         self.SUN.rotation_mode = "QUATERNION"
         self.SUN.location = r_s_pa * SUN_DISTANCE * self.SCALE_BU
-        self.SUN.rotation_quaternion = mathutils.Vector(r_s_pa).to_track_quat("Z", "Y")
+        self.SUN.rotation_quaternion = mathutils.Vec(r_s_pa).to_track_quat("Z", "Y")
 
         bpy.context.view_layer.update()
         os.makedirs(os.path.dirname(filepath), exist_ok=True)

@@ -19,7 +19,7 @@ namespace lupnt {
 
 void EKF::Predict(real t_end) {
   int n = x_.size();
-  MatrixXd Phi(n, n);
+  VecXd Phi(n, n);
   P_.resize(n, n);
   Q_.resize(n, n);
 
@@ -34,7 +34,7 @@ void EKF::Predict(real t_end) {
 
 int EKF::RemoveOutliers(int m_orig, bool debug) {
   std::vector<int> is_outlier(m_orig);
-  VectorXd ratio(m_orig);
+  VecXd ratio(m_orig);
   int n_valid = 0;
   int n = x_.size();
 
@@ -60,10 +60,10 @@ int EKF::RemoveOutliers(int m_orig, bool debug) {
     }
   }
 
-  MatrixXd H_new(m, n);
-  MatrixXd R_new(m, m);
-  MatrixXd S_new(m, m);
-  VectorX dy_new(m);
+  VecXd H_new(m, n);
+  VecXd R_new(m, m);
+  VecXd S_new(m, m);
+  VecX dy_new(m);
   int j = 0;
   int l = 0;
 
@@ -99,7 +99,7 @@ int EKF::RemoveOutliers(int m_orig, bool debug) {
  *
  * @param z_true observed measurement
  */
-void EKF::Update(VectorX z_true_in, bool debug) {
+void EKF::Update(VecX z_true_in, bool debug) {
   z_true_ = z_true_in;
 
   int n = x_.size();
@@ -109,7 +109,7 @@ void EKF::Update(VectorX z_true_in, bool debug) {
     return;  // no measurement, nothing to update
   }
 
-  // allocate memory (without this, MatrixXd will cause segfault)
+  // allocate memory (without this, VecXd will cause segfault)
   H_.resize(m, n);
   S_.resize(m, m);
   dy_.resize(m);
@@ -131,13 +131,13 @@ void EKF::Update(VectorX z_true_in, bool debug) {
   K_ = P_ * H_.transpose() * S_.inverse();  // Kalman gain
   dx_ = K_ * dy_;
   x_ = x_ + dx_;
-  MatrixXd I = MatrixXd::Identity(n, n);
-  MatrixXd G = MatrixXd(n, n);
+  VecXd I = VecXd::Identity(n, n);
+  VecXd G = VecXd(n, n);
   G = I - K_ * H_;
   P_ = G * P_ * G.transpose() + K_ * R_ * K_.transpose();  // Joseph form
 }
 
-void EKF::Step(real t_end, VectorX z_obs, bool debug) {
+void EKF::Step(real t_end, VecX z_obs, bool debug) {
   Predict(t_end);
   Update(z_obs, debug);
 }

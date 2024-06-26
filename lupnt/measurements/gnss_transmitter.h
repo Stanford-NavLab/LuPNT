@@ -59,10 +59,8 @@ class GnssTransmitter : public Transmitter {
   void InitializeBEIDOUTransmitter();
 
   // Get transmitter orientatiion
-  std::vector<Vector3d> GetTransmitterOrientation(double t,
-                                                  Vector3d& rv_tx_gcrf);
-  double GetTransmittionAntennaGain(double t, Vector3d r_tx_gcrf,
-                                    Vector3d r_rx_gcrf);
+  std::vector<Vec3d> GetTransmitterOrientation(double t, Vec3d& rv_tx_gcrf);
+  double GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf);
 
   // Get the Transmittion Information
   Transmission GenerateTransmission(double t);
@@ -76,7 +74,7 @@ class GnssTransmitter : public Transmitter {
   inline void SetAgent(const std::shared_ptr<Agent>& agent) override {
     this->agent = agent;
   };
-  double GetAntennaGain(Vector3d direction) {
+  double GetAntennaGain(Vec3d direction) {
     return antenna_.GetAntennaGain(direction);
   };
   double GetAntennaGain(double theta, double phi) {

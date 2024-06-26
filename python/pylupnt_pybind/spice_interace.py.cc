@@ -16,8 +16,7 @@ void init_spice_interface(py::module &m) {
           "get_frame_conversion_matrix",
           [](double t_tai, lupnt::Frame from,
              lupnt::Frame to) -> lupnt::Matrix6d {
-            return lupnt::GetFrameConversionMatrix(t_tai, from, to)
-                .cast<double>();
+            return lupnt::GetFrameConversionMat(t_tai, from, to).cast<double>();
           },
           py::arg("t_tai"), py::arg("from"), py::arg("to"))
       .def_static(

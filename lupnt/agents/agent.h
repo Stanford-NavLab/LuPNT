@@ -46,7 +46,7 @@ class Agent {
   std::unique_ptr<ClockDynamics> clock_dynamics_;
 
  public:
-  Agent() : id_(id_counter_++), clock_(ClockState(Vector2d::Zero())) {};
+  Agent() : id_(id_counter_++), clock_(ClockState(Vec2d::Zero())) {};
 
   // Getters
   real GetEpoch() { return epoch_; }
@@ -54,10 +54,10 @@ class Agent {
   std::shared_ptr<OrbitState> GetOrbitState() { return state_; }
   std::shared_ptr<NumericalOrbitDynamics> GetDynamics() { return dynamics_; }
   ClockState GetClockState() { return clock_; }
-  VectorX GetStateVector() {
-    Vector6 rv = GetOrbitState()->GetVector();
-    Vector2 clk = GetClockState().GetVector();
-    VectorX state(8);
+  VecX GetStateVec() {
+    Vec6 rv = GetOrbitState()->GetVec();
+    Vec2 clk = GetClockState().GetVec();
+    VecX state(8);
     state << rv, clk;
     return state;
   }
@@ -117,11 +117,11 @@ class GroundStation : public Agent {
  public:
   GroundStation() : Agent() {}
 
-  void SetPosition(Vector3d pos) { pos_ = pos; }
-  Vector3d GetPosition() { return pos_; }
+  void SetPosition(Vec3d pos) { pos_ = pos; }
+  Vec3d GetPosition() { return pos_; }
 
  private:
-  Vector3d pos_;
+  Vec3d pos_;
 };
 
 };  // namespace lupnt

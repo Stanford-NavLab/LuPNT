@@ -42,32 +42,30 @@ enum Frame {
 
 class FrameConverter {
  public:
-  // Vector = func(real, Vector)
-  static Vector6 Convert(real epoch, Vector6 rv_in, Frame frame_in,
-                         Frame frame_out);
-  static Vector3 Convert(real epoch, Vector3 r_in, Frame frame_in,
-                         Frame frame_out);
-  // Matrix = func(real, Matrix)
-  static Matrix<-1, 6> Convert(real epoch, const Matrix<-1, 6> &rv_in,
-                               Frame frame_in, Frame frame_out);
-  static Matrix<-1, 3> Convert(real epoch, const Matrix<-1, 3> &r_in,
-                               Frame frame_in, Frame frame_out);
-  // Matrix = func(Vector, Vector)
-  static Matrix<-1, 6> Convert(VectorX epoch, const Vector6 &rv_in,
-                               Frame frame_in, Frame frame_out);
-  static Matrix<-1, 3> Convert(VectorX epoch, const Vector3 &r_in,
-                               Frame frame_in, Frame frame_out);
-  // Matrix = func(Vector, Matrix)
-  static Matrix<-1, 6> Convert(VectorX epoch, const Matrix<-1, 6> &rv_in,
-                               Frame frame_in, Frame frame_out);
-  static Matrix<-1, 3> Convert(VectorX epoch, const Matrix<-1, 3> &r_in,
-                               Frame frame_in, Frame frame_out);
+  // Vec = func(real, Vec)
+  static Vec6 Convert(real epoch, Vec6 rv_in, Frame frame_in, Frame frame_out);
+  static Vec3 Convert(real epoch, Vec3 r_in, Frame frame_in, Frame frame_out);
+  // Mat = func(real, Mat)
+  static Mat<-1, 6> Convert(real epoch, const Mat<-1, 6> &rv_in, Frame frame_in,
+                            Frame frame_out);
+  static Mat<-1, 3> Convert(real epoch, const Mat<-1, 3> &r_in, Frame frame_in,
+                            Frame frame_out);
+  // Mat = func(Vec, Vec)
+  static Mat<-1, 6> Convert(VecX epoch, const Vec6 &rv_in, Frame frame_in,
+                            Frame frame_out);
+  static Mat<-1, 3> Convert(VecX epoch, const Vec3 &r_in, Frame frame_in,
+                            Frame frame_out);
+  // Mat = func(Vec, Mat)
+  static Mat<-1, 6> Convert(VecX epoch, const Mat<-1, 6> &rv_in, Frame frame_in,
+                            Frame frame_out);
+  static Mat<-1, 3> Convert(VecX epoch, const Mat<-1, 3> &r_in, Frame frame_in,
+                            Frame frame_out);
 
   static CartesianOrbitState Convert(real epoch,
                                      const CartesianOrbitState &state_in,
                                      Frame frame_out);
 
  private:
-  static Matrix6 ComputeOpToMi(real epoch);
+  static Mat6 ComputeOpToMi(real epoch);
 };
 }  // namespace lupnt

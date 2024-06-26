@@ -26,7 +26,7 @@ using namespace lupnt;
   [](const class &s) -> std::string {                              \
     std::stringstream ss;                                          \
     ss << "<pylupnt." << #class << " ["                            \
-       << s.GetVector().transpose().format(Eigen::IOFormat(        \
+       << s.GetVec().transpose().format(Eigen::IOFormat(           \
               Eigen::StreamPrecision, Eigen::DontAlignCols, ", ")) \
        << "]>";                                                    \
     return ss.str();                                               \
@@ -46,19 +46,17 @@ void init_orbit_state(py::module &m) {
 
   // OrbitState
   py::class_<OrbitState>(m, "OrbitState")
-      .def(py::init<const Vector6d &, const Frame, const OrbitStateRepres,
+      .def(py::init<const Vec6d &, const Frame, const OrbitStateRepres,
                     const std::vector<std::string> &,
                     const std::vector<std::string> &>(),
            py::arg("vector"), py::arg("frame"), py::arg("state_repres"),
            py::arg("names"), py::arg("units"))
       .def_property(
           "vector",
-          [](const OrbitState &s) -> Vector6d {
-            return s.GetVector().cast<double>();
+          [](const OrbitState &s) -> Vec6d {
+            return s.GetVec().cast<double>();
           },
-          [](OrbitState &s, const Vector6d &vec) {
-            s.SetVector(vec.cast<real>());
-          })
+          [](OrbitState &s, const Vec6d &vec) { s.SetVec(vec.cast<real>()); })
       .def_property("frame", &OrbitState::GetCoordSystem,
                     &OrbitState::SetCoordSystem)
       .def_property("state_repres", &OrbitState::GetOrbitStateRepres,
@@ -68,13 +66,13 @@ void init_orbit_state(py::module &m) {
       .def_property_readonly("units", &OrbitState::GetUnits)
       .def("__repr__", [](const OrbitState &s) {
         std::stringstream ss;
-        ss << "<pylupnt.OrbitState [" << s.GetVector().transpose() << "]>";
+        ss << "<pylupnt.OrbitState [" << s.GetVec().transpose() << "]>";
         return ss.str();
       });
 
   // ClassicalOE
   py::class_<ClassicalOE, OrbitState>(m, "ClassicalOE")
-      .def(py::init<const Vector6d &, const Frame>(),
+      .def(py::init<const Vec6d &, const Frame>(),
            py::arg("[a, e, i, Omega, w, M]"), py::arg("frame") = Frame::MOON_CI)
       .def_property("a", DEFINE_GETSET_REAL(ClassicalOE, a))
       .def_property("e", DEFINE_GETSET_REAL(ClassicalOE, e))
@@ -86,29 +84,29 @@ void init_orbit_state(py::module &m) {
 
   // CartesianOrbitState
   py::class_<CartesianOrbitState, OrbitState>(m, "CartesianOrbitState")
-      .def(py::init<const Vector6d &, const Frame>(), py::arg("rv"),
+      .def(py::init<const Vec6d &, const Frame>(), py::arg("rv"),
            py::arg("frame") = Frame::GCRF)
       .def_property(
           "r",
-          [](const CartesianOrbitState &s) -> Vector3d {
+          [](const CartesianOrbitState &s) -> Vec3d {
             return s.r().cast<double>();
           },
-          [](CartesianOrbitState &s, const Vector3d &vec) {
+          [](CartesianOrbitState &s, const Vec3d &vec) {
             s.Set_r(vec.cast<real>());
           })
       .def_property(
           "v",
-          [](const CartesianOrbitState &s) -> Vector3d {
+          [](const CartesianOrbitState &s) -> Vec3d {
             return s.v().cast<double>();
           },
-          [](CartesianOrbitState &s, const Vector3d &vec) {
+          [](CartesianOrbitState &s, const Vec3d &vec) {
             s.Set_v(vec.cast<real>());
           })
       .def("__repr__", DEFINE_REPR(CartesianOrbitState));
 
   // QuasiNonsingularOE
   py::class_<QuasiNonsingularOE, OrbitState>(m, "QuasiNonsingularOE")
-      .def(py::init<const Vector6d &, const Frame>(), py::arg("rv"),
+      .def(py::init<const Vec6d &, const Frame>(), py::arg("rv"),
            py::arg("frame") = Frame::GCRF)
       .def_property("a", DEFINE_GETSET_REAL(QuasiNonsingularOE, a))
       .def_property("u", DEFINE_GETSET_REAL(QuasiNonsingularOE, u))
@@ -120,7 +118,7 @@ void init_orbit_state(py::module &m) {
 
   // EquinoctialOE
   py::class_<EquinoctialOE, OrbitState>(m, "EquinoctialOE")
-      .def(py::init<const Vector6d &, const Frame>(), py::arg("rv"),
+      .def(py::init<const Vec6d &, const Frame>(), py::arg("rv"),
            py::arg("frame") = Frame::GCRF)
       .def_property("a", DEFINE_GETSET_REAL(EquinoctialOE, a))
       .def_property("h", DEFINE_GETSET_REAL(EquinoctialOE, h))
@@ -132,7 +130,7 @@ void init_orbit_state(py::module &m) {
 
   // SingularROE
   py::class_<SingularROE, OrbitState>(m, "SingularROE")
-      .def(py::init<const Vector6d &, const Frame>())
+      .def(py::init<const Vec6d &, const Frame>())
       .def_property("ada", DEFINE_GETSET_REAL(SingularROE, ada))
       .def_property("adM", DEFINE_GETSET_REAL(SingularROE, adM))
       .def_property("ade", DEFINE_GETSET_REAL(SingularROE, ade))
@@ -143,7 +141,7 @@ void init_orbit_state(py::module &m) {
 
   // QuasiNonsingularROE
   py::class_<QuasiNonsingularROE, OrbitState>(m, "QuasiNonsingularROE")
-      .def(py::init<const Vector6d &, const Frame>())
+      .def(py::init<const Vec6d &, const Frame>())
       .def_property("ada", DEFINE_GETSET_REAL(QuasiNonsingularROE, ada))
       .def_property("adl", DEFINE_GETSET_REAL(QuasiNonsingularROE, adl))
       .def_property("adex", DEFINE_GETSET_REAL(QuasiNonsingularROE, adex))

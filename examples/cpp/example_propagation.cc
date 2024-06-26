@@ -113,8 +113,8 @@ int main() {
     auto state = moonSat1->GetCartesianGCRFStateAtEpoch(t);
     auto stateMi = ConvertOrbitStateFrame(state, t, Frame::MOON_CI);
     auto stateGcrf = ConvertOrbitStateFrame(state, t, Frame::GCRF);
-    dataHistory.AddData("moonSatMi", t, stateMi->GetVector());
-    dataHistory.AddData("moonSatGcrf", t, stateGcrf->GetVector());
+    dataHistory.AddData("moonSatMi", t, stateMi->GetVec());
+    dataHistory.AddData("moonSatGcrf", t, stateGcrf->GetVec());
 
     // GPS constellation
     for (int i = 0; i < gpsConstellation.GetNumSatellites(); i++) {
@@ -124,12 +124,12 @@ int main() {
       auto stateGcrf = ConvertOrbitStateFrame(sate, t, Frame::GCRF);
 
       std::string name = "sat" + std::to_string(i);
-      dataHistory.AddData(name + "Mi", t, sate->GetVector());
-      dataHistory.AddData(name + "Gcrf", t, stateGcrf->GetVector());
+      dataHistory.AddData(name + "Mi", t, sate->GetVec());
+      dataHistory.AddData(name + "Gcrf", t, stateGcrf->GetVec());
     }
 
     // Bodies
-    Vector6 v6;
+    Vec6 v6;
     v6.setZero();
     dataHistory.AddData(
         "earthMi", t,

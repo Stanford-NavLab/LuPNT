@@ -27,8 +27,8 @@ struct Body {
   bool normalized;
   int n_max;
   int m_max;
-  MatrixXd Cnm;
-  MatrixXd Snm;
+  VecXd Cnm;
+  VecXd Snm;
   Frame fixed_frame;
 
   static Body Moon(int n_max = 0, int m_max = 0);
@@ -58,6 +58,6 @@ void ReadData(const std::string &filepath, int N, int headerlines,
 
 BodyData GetBodyData(const NaifId bodyID);
 
-std::tuple<MatrixXd, MatrixXd> LoadGravityCoefficients(BodyData bd, int nmax);
+std::tuple<VecXd, VecXd> LoadGravityCoefficients(BodyData bd, int nmax);
 
 }  // namespace lupnt

@@ -41,23 +41,23 @@ class GnssStateEstimationApp : public Application {
   double sigma_range = 5e-3;       // Range measurement noise [km]
   double sigma_range_rate = 1e-6;  // Range rate measurement noise [km/s]
 
-  Vector6 rv_est;
-  Vector2 clk_est;
-  Vector6 rv_pred_only;
-  Vector2 clk_pred_only;
+  Vec6 rv_est;
+  Vec2 clk_est;
+  Vec6 rv_pred_only;
+  Vec2 clk_pred_only;
 
-  MatrixXd P;
-  MatrixXd P_pred_only;
+  VecXd P;
+  VecXd P_pred_only;
 
-  Matrix6d Q_rv;
-  Matrix2d Q_clk;
-  MatrixXd Q;
+  Mat6d Q_rv;
+  Mat2d Q_clk;
+  VecXd Q;
 
   // State transition matrices
-  Matrix6d Phi_rv;
-  Matrix6d Phi_rv_pred_only;
-  Matrix2d Phi_clk;
-  Matrix2d Phi_clk_pred_only;
+  Mat6d Phi_rv;
+  Mat6d Phi_rv_pred_only;
+  Mat2d Phi_clk;
+  Mat2d Phi_clk_pred_only;
 
   std::shared_ptr<Agent> agent;
   std::shared_ptr<NumericalOrbitDynamics> dyn;
@@ -65,8 +65,8 @@ class GnssStateEstimationApp : public Application {
   std::shared_ptr<IFilter> filter;
   FilterMeasurementFunction meas_func;
 
-  VectorX x_est;
-  VectorX P_est;
+  VecX x_est;
+  VecX P_est;
 
   std::shared_ptr<DataHistory> data_history;
 

@@ -34,7 +34,7 @@ static segment_t *cheby_s;
 static long cheby_n;
 void LoadSpiceKernel(void);
 void ExtractPckCoeffs(void);
-Matrix6d GetFrameConversionMatrix(real t_tai, Frame from_frame, Frame to_frame);
+Mat6d GetFrameConversionMat(real t_tai, Frame from_frame, Frame to_frame);
 
 real DateToModifiedJulianDate(int year, int month, int day, int hour,
                               int minute, real second);
@@ -52,11 +52,10 @@ real GreenwichMeanSiderealTime(real mjd_ut1);
 real UTCtoUT1(real mjd_utc);
 real ConvertTime(real t, std::string from_time, std::string to_time);
 
-Vector6 GetBodyPosVel(const real t_tai, NaifId center, NaifId target,
-                      Frame frame);
-Matrix<-1, 6> GetBodyPosVel(const VectorX &t_tai, NaifId center, NaifId target,
-                            Frame frame);
-Vector3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
-                    std::string abCorrection);
+Vec6 GetBodyPosVel(const real t_tai, NaifId center, NaifId target, Frame frame);
+Mat<-1, 6> GetBodyPosVel(const VecX &t_tai, NaifId center, NaifId target,
+                         Frame frame);
+Vec3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
+                 std::string abCorrection);
 
 }  // namespace lupnt

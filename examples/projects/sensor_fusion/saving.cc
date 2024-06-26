@@ -7,8 +7,8 @@
 using Eigen::MatrixXd;
 
 // Function to save the entire matrix to a binary file at once
-void saveMatrixBuffered(const std::string& filename,
-                        const std::vector<MatrixXd>& matrices) {
+void saveMatBuffered(const std::string& filename,
+                     const std::vector<VecXd>& matrices) {
   std::ofstream out(filename, std::ios::binary);
   if (out.is_open()) {
     for (const auto& matrix : matrices) {
@@ -26,7 +26,7 @@ void saveMatrixBuffered(const std::string& filename,
 }
 
 // Function to save a matrix incrementally with the file kept open
-void saveMatrixIncremental(std::ofstream& out, const MatrixXd& matrix) {
+void saveMatIncremental(std::ofstream& out, const VecXd& matrix) {
   if (out.is_open()) {
     int rows = matrix.rows();
     int cols = matrix.cols();
@@ -49,8 +49,8 @@ int main() {
 
   auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < it; ++i) {
-    MatrixXd mat = MatrixXd::Random(n, m);
-    saveMatrixIncremental(out, mat);
+    VecXd mat = VecXd::Random(n, m);
+    saveMatIncremental(out, mat);
   }
   out.close();
   auto end = std::chrono::high_resolution_clock::now();
@@ -59,12 +59,12 @@ int main() {
             << " s" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
-  std::vector<MatrixXd> matrices;
+  std::vector<VecXd> matrices;
   for (int i = 0; i < it; ++i) {
-    MatrixXd mat = MatrixXd::Random(n, m);
+    VecXd mat = VecXd::Random(n, m);
     matrices.push_back(mat);
   }
-  saveMatrixBuffered("buffered_matrices.bin", matrices);
+  saveMatBuffered("buffered_matrices.bin", matrices);
   end = std::chrono::high_resolution_clock::now();
   elapsed = end - start;
   std::cout << "Elapsed time for buffered saving: " << elapsed.count() << " s"

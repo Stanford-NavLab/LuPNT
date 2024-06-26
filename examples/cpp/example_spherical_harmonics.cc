@@ -7,10 +7,9 @@
 
 using namespace lupnt;
 
-Vector3 SphericalHarmonicsGravity(const Vector3 &r, const MatrixX &C,
-                                  const MatrixX &S, int n_max, int m_max,
-                                  real R_body, real GM,
-                                  bool normalized = true) {
+Vec3 SphericalHarmonicsGravity(const Vec3 &r, const MatX &C, const MatX &S,
+                               int n_max, int m_max, real R_body, real GM,
+                               bool normalized = true) {
   // Intermediate computations
   real r_sqr = r.squaredNorm();
   real r_sqr_inv = (r_sqr > EPS) ? 1.0 / r_sqr : 0.0;  // Safe division
@@ -20,8 +19,8 @@ Vector3 SphericalHarmonicsGravity(const Vector3 &r, const MatrixX &C,
   real z0 = R_body * r[2] * r_sqr_inv;
 
   // Initialize Intermediary Matrices
-  MatrixX V = MatrixX::Zero(n_max + 2, n_max + 2);
-  MatrixX W = MatrixX::Zero(n_max + 2, n_max + 2);
+  MatX V = MatX::Zero(n_max + 2, n_max + 2);
+  MatX W = MatX::Zero(n_max + 2, n_max + 2);
 
   // Calculate zonal terms V(n, 0). Set W(n,0)=0.0
   V(0, 0) = R_body / sqrt(r_sqr);
@@ -100,7 +99,7 @@ Vector3 SphericalHarmonicsGravity(const Vector3 &r, const MatrixX &C,
     }
   }
 
-  Vector3 a = (GM / (R_body * R_body)) * Vector3(ax, ay, az);
+  Vec3 a = (GM / (R_body * R_body)) * Vec3(ax, ay, az);
 
   return a;
 }
@@ -112,10 +111,10 @@ int main() {
   Body moon = Body::Moon(n, m);
 
   // Example positions
-  std::vector<Vector3> positions = {{36e3, 0, 0}, {0, 2e3, 0}, {0, 0, -400}};
+  std::vector<Vec3> positions = {{36e3, 0, 0}, {0, 2e3, 0}, {0, 0, -400}};
 
   // Compute accelerations for multiple positions
-  std::vector<Vector3> accelerations(positions.size());
+  std::vector<Vec3> accelerations(positions.size());
 
   omp_set_num_threads(1);
 #pragma omp parallel for
@@ -130,7 +129,7 @@ int main() {
               << " Acceleration: " << accelerations[i].transpose() << std::endl;
   }
 
-  std::vector<Vector3> accelerations_2(positions.size());
+  std::vector<Vec3> accelerations_2(positions.size());
   NBodyDynamics dyn_true;
   dyn_true.SetPrimaryBody(moon);
   for (size_t i = 0; i < positions.size(); ++i) {

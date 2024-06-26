@@ -24,8 +24,8 @@ NBodyDynamics::NBodyDynamics(std::string integratorType)
                     std::placeholders::_2),
           OrbitStateRepres::CARTESIAN, integratorType) {};
 
-VectorX NBodyDynamics::ComputeRates(real t_tai, const VectorX &rv) const {
-  VectorX rv_dot = VectorX::Zero(6);
+VecX NBodyDynamics::ComputeRates(real t_tai, const VecX &rv) const {
+  VecX rv_dot = VecX::Zero(6);
 
   // N-body gravity
   rv_dot.head(3) = rv.segment(3, 3);  // extract velocity
@@ -33,13 +33,13 @@ VectorX NBodyDynamics::ComputeRates(real t_tai, const VectorX &rv) const {
 
   // Solar radiation pressure
   if (use_srp_) {
-    Vector3 r_body2sc = rv.head(3);
-    Vector3 r_body2sun =
+    Vec3 r_body2sc = rv.head(3);
+    Vec3 r_body2sun =
         GetBodyPosVel(t_tai, NaifId::MOON, NaifId::SUN, Frame::MOON_CI).head(3);
-    Vector3 r_sun2sc = r_body2sc - r_body2sun;
+    Vec3 r_sun2sc = r_body2sc - r_body2sun;
     double R_body = central_body_.R;
     real B_srp = CR_ * (area_ / mass_);  // ballistic coefficient [m^2/kg]
-    Vector3 a_srp =
+    Vec3 a_srp =
         ComputeSolarRadiationPressure(r_body2sc, r_sun2sc, B_srp, R_body);
     rv_dot.tail(3) += a_srp;
   }
@@ -47,14 +47,14 @@ VectorX NBodyDynamics::ComputeRates(real t_tai, const VectorX &rv) const {
   return rv_dot;
 }
 
-Vector3 NBodyDynamics::ComputeNBodyGravity(real t_tai, const Vector3 &r) const {
+Vec3 NBodyDynamics::ComputeNBodyGravity(real t_tai, const Vec3 &r) const {
   assert(r.size() == 3);
-  Vector3 a = Vector3::Zero();  // s/c acceleration w.r.t. the
-                                // center body [km/s^2]
+  Vec3 a = Vec3::Zero();  // s/c acceleration w.r.t. the
+                          // center body [km/s^2]
 
   for (Body body : bodies_) {
-    VectorX rv_i, r_body;
-    Vector3 a_i, a_i_C, r_i;
+    VecX rv_i, r_body;
+    Vec3 a_i, a_i_C, r_i;
 
     // Correction for non-central body
     if (body.id != central_body_.id) {
@@ -67,18 +67,18 @@ Vector3 NBodyDynamics::ComputeNBodyGravity(real t_tai, const Vector3 &r) const {
       a_i_C = -body.mu * r_body / pow((r_body).norm(), 3);  //
     } else {
       r_i = r;
-      a_i_C = Vector3::Zero();
+      a_i_C = Vec3::Zero();
     }
 
     // Check spherical harmonics
     if (body.sphericalHarmonics) {
-      // Matrix3d Ur2j = GetFrameConversionMatrix(
+      // Mat3d Ur2j = GetFrameConversionMat(
       //                     t_tai, body.fixed_frame, Frame::GCRF)
       //                     .block(0, 0, 3, 3);
-      Matrix3d Ur2j = Matrix3d::Identity();
-      Vector3 r_i_rot = Ur2j.transpose() * r_i;
-      Vector3 a_i_rot = spharm_acc_ecr(body.n_max, body.m_max, r_i_rot, body.R,
-                                       body.mu, body.Cnm, body.Snm);
+      Mat3d Ur2j = Mat3d::Identity();
+      Vec3 r_i_rot = Ur2j.transpose() * r_i;
+      Vec3 a_i_rot = spharm_acc_ecr(body.n_max, body.m_max, r_i_rot, body.R,
+                                    body.mu, body.Cnm, body.Snm);
       a_i = Ur2j * a_i_rot;
     } else {
       // no spherical harmonics
@@ -97,12 +97,12 @@ Vector3 NBodyDynamics::ComputeNBodyGravity(real t_tai, const Vector3 &r) const {
  * @ref 1. O. Montenbruck, and E. Gill, _Satellite Orbits: Models, Methods and
  * Applications_, 2012, p.77-83.
  */
-Vector3 NBodyDynamics::ComputeSolarRadiationPressure(const Vector3 &r_body2sc,
-                                                     const Vector3 &r_sun2sc,
-                                                     const real B_srp,
-                                                     double R_body) const {
+Vec3 NBodyDynamics::ComputeSolarRadiationPressure(const Vec3 &r_body2sc,
+                                                  const Vec3 &r_sun2sc,
+                                                  const real B_srp,
+                                                  double R_body) const {
   // Acceleration of a satellite due to the solar radiation pressure
-  Vector3 a_srp;
+  Vec3 a_srp;
 
   double R_SUN = 696000.0;  // [km]
 

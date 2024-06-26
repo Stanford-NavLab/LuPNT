@@ -31,7 +31,7 @@ void init_dynamics(py::module &m) {
       .def(
           "propagate_with_stm",
           [](KeplerianDynamics &dyn, ClassicalOE &state, double dt) {
-            Matrix6d stm;
+            Mat6d stm;
             dyn.PropagateWithStm(state, dt, stm);
             return stm;
           },
@@ -39,7 +39,7 @@ void init_dynamics(py::module &m) {
       .def(
           "propagate_with_stm",
           [](KeplerianDynamics &dyn, QuasiNonsingularOE &state, double dt) {
-            Matrix6d stm;
+            Mat6d stm;
             dyn.PropagateWithStm(state, dt, stm);
             return stm;
           },
@@ -47,7 +47,7 @@ void init_dynamics(py::module &m) {
       .def(
           "propagate_with_stm",
           [](KeplerianDynamics &dyn, EquinoctialOE &state, double dt) {
-            Matrix6d stm;
+            Mat6d stm;
             dyn.PropagateWithStm(state, dt, stm);
             return stm;
           },
@@ -66,19 +66,19 @@ void init_dynamics(py::module &m) {
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt") = 0.0)
       .def(
           "propagate",
-          [](NumericalOrbitDynamics &dyn, Vector6d &x, double t0, double tf,
-             double dt) -> Vector6d {
-            Vector6 x_real = x.cast<real>();
+          [](NumericalOrbitDynamics &dyn, Vec6d &x, double t0, double tf,
+             double dt) -> Vec6d {
+            Vec6 x_real = x.cast<real>();
             dyn.Propagate(x_real, t0, tf, dt);
             return x_real.cast<double>();
           },
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt") = 0.0)
       .def(
           "propagate",
-          [](NumericalOrbitDynamics &dyn, Vector6d &x, double t0, VectorXd &tfs,
-             double dt, bool progress) -> MatrixXd {
-            Vector6 x_real = x.cast<real>();
-            VectorX tfs_real = tfs.cast<real>();
+          [](NumericalOrbitDynamics &dyn, Vec6d &x, double t0, VecXd &tfs,
+             double dt, bool progress) -> VecXd {
+            Vec6 x_real = x.cast<real>();
+            VecX tfs_real = tfs.cast<real>();
             return dyn.Propagate(x_real, t0, tfs_real, progress).cast<double>();
           },
           py::arg("state"), py::arg("t0"), py::arg("tfs"), py::arg("dt") = 0.0,
@@ -87,7 +87,7 @@ void init_dynamics(py::module &m) {
           "propagate_with_stm",
           [](NumericalOrbitDynamics &dyn, CartesianOrbitState &state, double t0,
              double tf, double dt) {
-            Matrix6d stm;
+            Mat6d stm;
             dyn.PropagateWithStm(state, t0, tf, dt, stm);
             return stm;
           },
@@ -95,10 +95,10 @@ void init_dynamics(py::module &m) {
           py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](NumericalOrbitDynamics &dyn, Vector6d &state, double t0, double tf,
-             double dt) -> std::tuple<Vector6d, Matrix6d> {
-            Matrix6d stm;
-            Vector6 state_real = state.cast<real>();
+          [](NumericalOrbitDynamics &dyn, Vec6d &state, double t0, double tf,
+             double dt) -> std::tuple<Vec6d, Mat6d> {
+            Mat6d stm;
+            Vec6 state_real = state.cast<real>();
             dyn.PropagateWithStm(state_real, t0, tf, dt, stm);
             return std::make_tuple(state_real.cast<double>(), stm);
           },
@@ -107,10 +107,10 @@ void init_dynamics(py::module &m) {
            [](NumericalOrbitDynamics &dyn, double dt) { dyn.SetTimeStep(dt); });
   // .def(
   //     "propagate_with_stm",
-  //     [](NumericalOrbitDynamics &dyn, RowVector6d &state, double t0,
-  //        double tf, double dt) -> std::tuple<Vector6d, Matrix6d> {
-  //       Matrix6d stm;
-  //       Vector6 state_real = state.cast<real>();
+  //     [](NumericalOrbitDynamics &dyn, RowVec6d &state, double t0,
+  //        double tf, double dt) -> std::tuple<Vec6d, Mat6d> {
+  //       Mat6d stm;
+  //       Vec6 state_real = state.cast<real>();
   //       dyn.PropagateWithStm(state_real, t0, tf, dt, stm);
   //       return std::make_tuple(state_real.cast<double>(), stm);
   //     },

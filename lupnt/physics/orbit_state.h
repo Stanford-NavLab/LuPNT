@@ -18,8 +18,8 @@
 
 #define kOrbitStateSize 6
 
-#define GETSET_ELEM(name, idx)                          \
-  inline real name() const { return GetVector()(idx); } \
+#define GETSET_ELEM(name, idx)                       \
+  inline real name() const { return GetVec()(idx); } \
   inline void Set_##name(real val) { SetValue(val, idx); }
 
 namespace lupnt {
@@ -43,22 +43,22 @@ enum class OrbitStateRepres {
  */
 class OrbitState : public IState {
  private:
-  Vector6 x_;
+  Vec6 x_;
   OrbitStateRepres repres_;
   Frame frame_;
   std::vector<std::string> names_;
   std::vector<std::string> units_;
 
  public:
-  OrbitState(const Vector6 &x, Frame coord, OrbitStateRepres repres,
+  OrbitState(const Vec6 &x, Frame coord, OrbitStateRepres repres,
              const std::vector<std::string> &names,
              const std::vector<std::string> &units)
       : x_(x), frame_(coord), repres_(repres), names_(names), units_(units) {}
 
-  Vector6 GetVector() const { return x_; }
+  Vec6 GetVec() const { return x_; }
 
-  VectorX GetVectorX() const {
-    VectorX x(kOrbitStateSize);
+  VecX GetVecX() const {
+    VecX x(kOrbitStateSize);
     for (int i = 0; i < kOrbitStateSize; i++) {
       x(i) = x_(i);
     }
@@ -73,11 +73,11 @@ class OrbitState : public IState {
   inline Frame GetCoordSystem() const { return frame_; }
 
   inline void SetValue(real val, int idx) { x_(idx) = val; }
-  inline void SetVector(const Vector6 &x) { x_ = x; }
+  inline void SetVec(const Vec6 &x) { x_ = x; }
 
-  inline void SetVectorX(const VectorX &x) {
+  inline void SetVecX(const VecX &x) {
     if (x.size() != kOrbitStateSize) {
-      throw std::invalid_argument("Vector size does not match");
+      throw std::invalid_argument("Vec size does not match");
     }
     for (int i = 0; i < kOrbitStateSize; i++) {
       x_(i) = x(i);
@@ -110,15 +110,15 @@ class CartesianOrbitState : public OrbitState {
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CARTESIAN;
 
  public:
-  CartesianOrbitState(const Vector6 &x, Frame sys = Frame::MOON_CI)
+  CartesianOrbitState(const Vec6 &x, Frame sys = Frame::MOON_CI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
-  inline Vector3 r() const { return GetVector().head(3); }
-  inline Vector3 v() const { return GetVector().tail(3); }
-  inline void Set_r(const Vector3 &r) {
+  inline Vec3 r() const { return GetVec().head(3); }
+  inline Vec3 v() const { return GetVec().tail(3); }
+  inline void Set_r(const Vec3 &r) {
     for (int i = 0; i < 3; i++) SetValue(r(i), i);
   }
-  inline void Set_v(const Vector3 &v) {
+  inline void Set_v(const Vec3 &v) {
     for (int i = 0; i < 3; i++) SetValue(v(i), i + 3);
   }
 };
@@ -142,16 +142,15 @@ class ClassicalOE : public OrbitState {
   inline static const std::vector<std::string> units_ = {"km",  "-",   "rad",
                                                          "rad", "rad", "rad"};
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CLASSICAL_OE;
-  static Vector6 to_deg(const Vector6 &x, bool deg) {
+  static Vec6 to_deg(const Vec6 &x, bool deg) {
     if (!deg) return x;
-    Vector6 x_deg = x;
+    Vec6 x_deg = x;
     x_deg.segment(2, 4) *= RAD_PER_DEG;
     return x_deg;
   }
 
  public:
-  ClassicalOE(const Vector6 &x, const Frame sys = Frame::MOON_CI,
-              bool deg = false)
+  ClassicalOE(const Vec6 &x, const Frame sys = Frame::MOON_CI, bool deg = false)
       : OrbitState(to_deg(x, deg), sys, repres_, names_, units_) {}
 
   GETSET_ELEM(a, 0);
@@ -184,7 +183,7 @@ class QuasiNonsingularOE : public OrbitState {
       OrbitStateRepres::QUASI_NONSINGULAR_OE;
 
  public:
-  QuasiNonsingularOE(const Vector6 &x, const Frame sys = Frame::MOON_CI)
+  QuasiNonsingularOE(const Vec6 &x, const Frame sys = Frame::MOON_CI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(a, 0);
@@ -216,7 +215,7 @@ class DelaunayOE : public OrbitState {
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::DELAUNAY_OE;
 
  public:
-  DelaunayOE(const Vector6 &x, const Frame sys = Frame::MOON_CI)
+  DelaunayOE(const Vec6 &x, const Frame sys = Frame::MOON_CI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(l, 0);
@@ -248,7 +247,7 @@ class EquinoctialOE : public OrbitState {
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::EQUINOCTIAL_OE;
 
  public:
-  EquinoctialOE(const Vector6 &x, const Frame sys = Frame::MOON_CI)
+  EquinoctialOE(const Vec6 &x, const Frame sys = Frame::MOON_CI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(a, 0);
@@ -280,7 +279,7 @@ class SingularROE : public OrbitState {
   static constexpr OrbitStateRepres repres_ = OrbitStateRepres::SINGULAR_ROE;
 
  public:
-  SingularROE(const Vector6 &x, const Frame sys = Frame::MOON_CI)
+  SingularROE(const Vec6 &x, const Frame sys = Frame::MOON_CI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(ada, 0);
@@ -314,7 +313,7 @@ class QuasiNonsingularROE : public OrbitState {
 
  public:
   // ada, adl, adex, adey, adix, adiy
-  QuasiNonsingularROE(const Vector6 &x, const Frame sys = Frame::MOON_CI)
+  QuasiNonsingularROE(const Vec6 &x, const Frame sys = Frame::MOON_CI)
       : OrbitState(x, sys, repres_, names_, units_) {}
 
   GETSET_ELEM(ada, 0);

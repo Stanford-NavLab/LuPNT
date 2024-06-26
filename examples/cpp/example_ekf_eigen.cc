@@ -104,40 +104,40 @@ int main() {
   double sigma_range = 5e-3;       // Range measurement noise [km]
   double sigma_range_rate = 1e-6;  // Range rate measurement noise [km/s]
 
-  Vector6 rv = moon_sat->GetOrbitState()->GetVector();
-  Vector2 clk = Vector2::Zero();
+  Vec6 rv = moon_sat->GetOrbitState()->GetVec();
+  Vec2 clk = Vec2::Zero();
 
   // OrbitState transition matrices
-  Matrix6d Phi_rv;
-  Matrix2d Phi_clk;
+  Mat6d Phi_rv;
+  Mat2d Phi_clk;
 
   // Initial covariance
-  Matrix6d P_rv = Matrix6d::Zero();
+  Mat6d P_rv = Mat6d::Zero();
   for (int i = 0; i < 3; i++) {
     P_rv(i, i) = pow(pos_err, 2);
     P_rv(i + 3, i + 3) = pow(vel_err, 2);
   }
 
-  Matrix2d P_clk = Matrix2d::Zero();
+  Mat2d P_clk = Mat2d::Zero();
   P_clk(0, 0) = pow(clk_bias_err, 2);
   P_clk(1, 1) = pow(clk_drift_err, 2);
 
   // Initial estimates
-  auto zero6 = Vector6d::Zero();
-  Vector6 rv_est = rv + SampleMVN(zero6, P_rv, 1);
+  auto zero6 = Vec6d::Zero();
+  Vec6 rv_est = rv + SampleMVN(zero6, P_rv, 1);
 
-  auto zero2 = Vector2d::Zero();
-  Vector2 clk_est = clk + SampleMVN(zero2, P_clk, 1);
+  auto zero2 = Vec2d::Zero();
+  Vec2 clk_est = clk + SampleMVN(zero2, P_clk, 1);
 
   // Process noise
-  Matrix6d Q_rv = Matrix6d::Zero();
+  Mat6d Q_rv = Mat6d::Zero();
   for (int i = 0; i < 3; i++) {
     Q_rv(i, i) = pow(Dt, 3) / 3.0 * pow(sigma_acc, 2);
     Q_rv(i + 3, i + 3) = Dt * pow(sigma_acc, 2);
     Q_rv(i, i + 3) = pow(Dt, 2) / 2.0 * pow(sigma_acc, 2);
     Q_rv(i + 3, i) = pow(Dt, 2) / 2.0 * pow(sigma_acc, 2);
   }
-  Matrix2d Q_clk = GetClockProcessNoise(ClockModel::kMicrosemiCsac, Dt);
+  Mat2d Q_clk = GetClockProcessNoise(ClockModel::kMicrosemiCsac, Dt);
 
   // Output
   auto data_history = std::make_shared<DataHistory>();
@@ -148,12 +148,12 @@ int main() {
   double t = t0;
   double epoch = epoch0;
 
-  MatrixXd P(n_state, n_state);
+  VecXd P(n_state, n_state);
   P.setZero();
   P.block(0, 0, 6, 6) = P_rv;
   P.block(6, 6, 2, 2) = P_clk;
 
-  MatrixXd Q(n_state, n_state);
+  VecXd Q(n_state, n_state);
   Q.setZero();
   Q.block(0, 0, 6, 6) = Q_rv;
   Q.block(6, 6, 2, 2) = Q_clk;
@@ -166,8 +166,8 @@ int main() {
     moon_sat->Propagate(epoch);
     gps_const.Propagate(epoch);
 
-    rv = moon_sat->GetOrbitState()->GetVector();
-    clk = moon_sat->GetClockState().GetVector();
+    rv = moon_sat->GetOrbitState()->GetVec();
+    clk = moon_sat->GetClockState().GetVec();
 
     // Predict
     auto rv_pred = rv_est;
@@ -178,10 +178,10 @@ int main() {
     clk_pred = Phi_clk * clk_pred;
 
     // OrbitState and covariance
-    VectorX x(n_state);
+    VecX x(n_state);
     x << rv_pred, clk_pred;
 
-    MatrixXd Phi(n_state, n_state);
+    VecXd Phi(n_state, n_state);
     Phi.setZero();
     Phi.block(0, 0, 6, 6) = Phi_rv;
     Phi.block(6, 6, 2, 2) = Phi_clk;
@@ -197,32 +197,32 @@ int main() {
     auto z_pr = meas.GetPseudorange();
 
     // Predict measurements
-    MatrixXd H_pr(n_meas, n_state);
-    VectorX z_pr_pred =
+    VecXd H_pr(n_meas, n_state);
+    VecX z_pr_pred =
         meas.GetPredictedPseudorange(epoch, rv_pred, clk_pred, H_pr);
 
-    MatrixXd R_pr = MatrixXd::Zero(n_meas, n_meas);
+    VecXd R_pr = VecXd::Zero(n_meas, n_meas);
     R_pr.diagonal().array() = pow(sigma_range, 2);
 
     // Update
     if (n_meas > 0) {
       // R and H matrices
-      MatrixXd H(n_meas, n_state);
+      VecXd H(n_meas, n_state);
       H = H_pr;
 
-      MatrixXd R(n_meas, n_meas);
+      VecXd R(n_meas, n_meas);
       R = R_pr;
 
-      MatrixXd I = MatrixXd::Identity(n_state, n_state);
-      VectorX y = z_pr - z_pr_pred;
-      MatrixXd S = H * P * H.transpose() + R;
-      MatrixXd K = P * H.transpose() * S.inverse();
+      VecXd I = VecXd::Identity(n_state, n_state);
+      VecX y = z_pr - z_pr_pred;
+      VecXd S = H * P * H.transpose() + R;
+      VecXd K = P * H.transpose() * S.inverse();
       // A = C*inv(B)
       // auto decompC(C);  // decompose C with a suiting
-      // decomposition MatrixXd A =
+      // decomposition VecXd A =
       // decompC.transpose().solve(B.transpose()).transpose();
 
-      VectorX dx = K * y;
+      VecX dx = K * y;
       x = x + dx;
       P = (I - K * H) * P * (I - K * H).transpose() +
           K * R * K.transpose();  // Joseph form
@@ -230,7 +230,7 @@ int main() {
       // Unpack state and covariance
       rv_est = x.segment(0, 6);
       clk_est = x.segment(6, 2);
-      // Vector6 error = rv - rv_est;
+      // Vec6 error = rv - rv_est;
       // std::cout << "error: " << error.transpose() << std::endl;
 
     } else {
@@ -253,8 +253,8 @@ int main() {
     auto state = moon_sat->GetCartesianGCRFStateAtEpoch(epoch);
     auto sate_mi = ConvertOrbitStateFrame(state, epoch, Frame::MOON_CI);
     auto state_gcrf = ConvertOrbitStateFrame(state, epoch, Frame::GCRF);
-    data_history->AddData("rv_moon_mi", t, sate_mi->GetVector());
-    data_history->AddData("rv_moon_gcrf", t, state_gcrf->GetVector());
+    data_history->AddData("rv_moon_mi", t, sate_mi->GetVec());
+    data_history->AddData("rv_moon_gcrf", t, state_gcrf->GetVec());
 
     // Estimation
     data_history->AddData("rv", t, rv);
@@ -276,12 +276,12 @@ int main() {
       auto state_gcrf = ConvertOrbitStateFrame(sate, epoch, Frame::GCRF);
 
       std::string name = "sat" + std::to_string(i);
-      data_history->AddData(name + "_mi", t, sate->GetVector());
-      data_history->AddData(name + "_gcrf", t, state_gcrf->GetVector());
+      data_history->AddData(name + "_mi", t, sate->GetVec());
+      data_history->AddData(name + "_gcrf", t, state_gcrf->GetVec());
     }
 
     // Bodies
-    Vector6 v6;
+    Vec6 v6;
     v6.setZero();
     data_history->AddData(
         "earth_mi", t,

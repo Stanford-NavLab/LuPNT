@@ -139,7 +139,7 @@ int main() {
   auto cart_state_moon = std::make_shared<CartesianOrbitState>(
       ClassicalToCartesian(coe_moon, GM_MOON));
 
-  Vector2 clock_vec{clk_bias, clk_drift};  // [s, s/s]
+  Vec2 clock_vec{clk_bias, clk_drift};  // [s, s/s]
   ClockState clock_state(clock_vec);
 
   auto moon_sat = std::make_shared<Spacecraft>();
@@ -158,7 +158,7 @@ int main() {
   channel->AddReceiver(receiver);
 
   // Initial covariance
-  MatrixXd P0 =
+  VecXd P0 =
       ConstructInitCovariance(pos_err, vel_err, clk_bias_err, clk_drift_err);
 
   // Joint state and dynamics
@@ -174,9 +174,9 @@ int main() {
    * *******************************************/
   FilterMeasurementFunction meas_func_pos_clk =
       [moon_sat, receiver, state_size, no_meas, meas_types](
-          const VectorX x, MatrixXd& H, MatrixXd& R) -> VectorX {
+          const VecX x, VecXd& H, VecXd& R) -> VecX {
     if (no_meas) {
-      return VectorXd::Zero(0);
+      return VecXd::Zero(0);
     }
 
     // Measurements
@@ -190,17 +190,17 @@ int main() {
     int mtot = sat_num * meas_types.size();  // total number of measurements
 
     // Predict measurements
-    H = MatrixXd::Zero(mtot, x.size());
-    R = MatrixXd::Zero(mtot, mtot);
-    VectorX x_N = VectorX::Zero(mtot);  // a dummy variable for carrier phase
+    H = VecXd::Zero(mtot, x.size());
+    R = VecXd::Zero(mtot, mtot);
+    VecX x_N = VecX::Zero(mtot);  // a dummy variable for carrier phase
     Frame frame_in = Frame::MOON_CI;
 
-    VectorX z = meas.GetPredictedGnssMeasurement(
+    VecX z = meas.GetPredictedGnssMeasurement(
         epoch, x.head(6), x.tail(2), x_N, H, meas_types,
         frame_in);  // Jacobian with autodiff
 
     // Get the Measurement Noise
-    VectorXd noise_std_vec = meas.GetGnssNoiseStdVector(meas_types);
+    VecXd noise_std_vec = meas.GetGnssNoiseStdVec(meas_types);
     R.diagonal().array() = noise_std_vec.array().square();
 
     return z;
@@ -209,28 +209,27 @@ int main() {
   /*********************************************
    * Define Process Noise function
    * *******************************************/
-  FilterProcessNoiseFunction proc_noise_func = [cmodel, state_size, sigma_acc](
-                                                   const VectorX& x,
-                                                   real t_curr, real t_end) {
-    int clock_index = 6;
-    double dt = (t_end - t_curr).val();
+  FilterProcessNoiseFunction proc_noise_func =
+      [cmodel, state_size, sigma_acc](const VecX& x, real t_curr, real t_end) {
+        int clock_index = 6;
+        double dt = (t_end - t_curr).val();
 
-    MatrixXd Q = MatrixXd::Zero(state_size, state_size);
+        VecXd Q = VecXd::Zero(state_size, state_size);
 
-    Matrix6d Q_rv = Matrix6d::Zero();
-    for (int i = 0; i < 3; i++) {
-      Q_rv(i, i) = pow(dt, 3) / 3.0 * pow(sigma_acc, 2);
-      Q_rv(i + 3, i + 3) = dt * pow(sigma_acc, 2);
-      Q_rv(i, i + 3) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
-      Q_rv(i + 3, i) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
-    }
-    Matrix2d Q_clk = GetClockProcessNoise(cmodel, dt);
+        Mat6d Q_rv = Mat6d::Zero();
+        for (int i = 0; i < 3; i++) {
+          Q_rv(i, i) = pow(dt, 3) / 3.0 * pow(sigma_acc, 2);
+          Q_rv(i + 3, i + 3) = dt * pow(sigma_acc, 2);
+          Q_rv(i, i + 3) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
+          Q_rv(i + 3, i) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
+        }
+        Mat2d Q_clk = GetClockProcessNoise(cmodel, dt);
 
-    Q.block(0, 0, 6, 6) = Q_rv;
-    Q.block(6, 6, 2, 2) = Q_clk;
+        Q.block(0, 0, 6, 6) = Q_rv;
+        Q.block(6, 6, 2, 2) = Q_clk;
 
-    return Q;
-  };
+        return Q;
+      };
 
   /*************************************
    * EKF Setup
@@ -242,19 +241,19 @@ int main() {
   std::cout << "Initialized EKF" << std::endl;
 
   // Storage
-  MatrixXd error_mat(4, time_step_num);
-  VectorXd num_meas(time_step_num);
+  VecXd error_mat(4, time_step_num);
+  VecXd num_meas(time_step_num);
 
   // Initilization
-  VectorX x_est = SampleMVN(joint_state.GetJointStateValue(), P0, 1, seed);
+  VecX x_est = SampleMVN(joint_state.GetJointStateValue(), P0, 1, seed);
   ekf.Initialize(x_est, P0);
-  VectorXd est_err = ComputeEstimationErrors(moon_sat, &ekf);
+  VecXd est_err = ComputeEstimationErrors(moon_sat, &ekf);
   error_mat.col(0) = est_err;
 
   // Print State
   if (print_debug) {
-    std::cout << "Initial true state: "
-              << moon_sat->GetStateVector().transpose() << std::endl;
+    std::cout << "Initial true state: " << moon_sat->GetStateVec().transpose()
+              << std::endl;
     std::cout << "Initial estimated state: " << x_est.transpose() << std::endl;
   }
 
@@ -281,7 +280,7 @@ int main() {
     gps_const.Propagate(epoch);
 
     // Get True Measurement
-    VectorX z_true;
+    VecX z_true;
     auto measall = receiver->GetMeasurement(epoch);
     auto meas = measall.ExtractSignal("L1");
     int num_sat = meas.GetTrackedSatelliteNum();
@@ -291,7 +290,7 @@ int main() {
       bool with_noise = true;
       z_true = meas.GetGnssMeasurement(meas_types, with_noise, seed);
     } else {
-      z_true = VectorXd::Zero(0);
+      z_true = VecXd::Zero(0);
     }
 
     // Update EKF

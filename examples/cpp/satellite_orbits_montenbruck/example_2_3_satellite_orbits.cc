@@ -10,14 +10,14 @@ using std::cout, std::endl, std::setw, std::fixed, std::setprecision,
 
 int main() {
   // Position and velocity
-  Vector3 r(10e3, 40e3, -5e3);  // [km]
-  Vector3 v(-1.5, 1, -0.1);     // [km/s]
+  Vec3 r(10e3, 40e3, -5e3);  // [km]
+  Vec3 v(-1.5, 1, -0.1);     // [km/s]
 
-  Vector6 rv(6);
+  Vec6 rv(6);
   rv << r, v;
 
   // Compute orbital elements
-  Vector6 coe = CartesianToClassical(rv, GM_EARTH);
+  Vec6 coe = CartesianToClassical(rv, GM_EARTH);
 
   // Output
   cout << "Exercise 2-3 (Osculating elements)\n\n";

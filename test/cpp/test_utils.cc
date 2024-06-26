@@ -7,16 +7,14 @@
 using namespace Catch::Matchers;
 using namespace lupnt;
 
-static void RequireNearRealVec(const VectorX& a, const VectorX& b,
-                               double abs_error) {
+static void RequireNearRealVec(const VecX& a, const VecX& b, double abs_error) {
   REQUIRE(a.size() == b.size());
   for (int i = 0; i < a.size(); ++i) {
     REQUIRE_THAT(a[i].val(), WithinAbs(b[i].val(), abs_error));
   }
 }
 
-static void RequireNearRealMat(const MatrixX& a, const MatrixX& b,
-                               double abs_error) {
+static void RequireNearRealMat(const MatX& a, const MatX& b, double abs_error) {
   REQUIRE(a.rows() == b.rows());
   REQUIRE(a.cols() == b.cols());
   for (int i = 0; i < a.rows(); ++i) {
@@ -26,7 +24,7 @@ static void RequireNearRealMat(const MatrixX& a, const MatrixX& b,
   }
 }
 
-static void RequireNearDoubleVec(const VectorXd& a, const VectorXd& b,
+static void RequireNearDoubleVec(const VecXd& a, const VecXd& b,
                                  double abs_error) {
   REQUIRE(a.size() == b.size());
   for (int i = 0; i < a.size(); ++i) {
@@ -34,7 +32,7 @@ static void RequireNearDoubleVec(const VectorXd& a, const VectorXd& b,
   }
 }
 
-static void RequireNearDoubleMat(const MatrixXd& a, const MatrixXd& b,
+static void RequireNearDoubleMat(const VecXd& a, const VecXd& b,
                                  double abs_error) {
   REQUIRE(a.rows() == b.rows());
   REQUIRE(a.cols() == b.cols());
@@ -55,11 +53,11 @@ static void RequireNearDouble(double a, double b, double abs_error) {
 
 // inputs: vector, function(vector), jacobian
 static void NumericalJacobian(
-    std::function<void(VectorX&, real)> propagate_function, const VectorX& vec,
-    real dt, Matrix6d& jacobian, double eps = 1e-6) {
+    std::function<void(VecX&, real)> propagate_function, const VecX& vec,
+    real dt, Mat6d& jacobian, double eps = 1e-6) {
   int n = vec.size();
-  VectorX vec_p;
-  VectorX vec_m;
+  VecX vec_p;
+  VecX vec_m;
 
   for (int i = 0; i < n; i++) {
     vec_p = vec;

@@ -19,8 +19,8 @@
 
 namespace lupnt {
 
-template <typename Vector, std::size_t... Indices>
-auto unpackImpl(const Vector &vec, std::index_sequence<Indices...>) {
+template <typename Vec, std::size_t... Indices>
+auto unpackImpl(const Vec &vec, std::index_sequence<Indices...>) {
   return std::make_tuple(vec(Indices)...);
 }
 
@@ -36,7 +36,7 @@ auto unpack(const Eigen::Matrix<T, Size, 1> &vec) {
  * @param b  vector b
  * @return real   angle between a and b
  */
-real angleBetweenVectors(const VectorX &a, const VectorX &b);
+real angleBetweenVecs(const VecX &a, const VecX &b);
 
 /**
  * @brief Wrap the angle between -pi and pi
@@ -45,13 +45,13 @@ real angleBetweenVectors(const VectorX &a, const VectorX &b);
  * @return real
  */
 real wrapToPi(real angle);
-VectorX wrapToPi(VectorX angle);
+VecX wrapToPi(VecX angle);
 
 real decimal2dB(real x);
 real dB2decimal(real x);
 
-MatrixX decimal2dB(MatrixX x);
-MatrixX dB2decimal(MatrixX x);
+MatX decimal2dB(MatX x);
+MatX dB2decimal(MatX x);
 
 /**
  * @brief Wrap the angles between 0 and 2pi
@@ -60,7 +60,7 @@ MatrixX dB2decimal(MatrixX x);
  * @return real
  */
 real wrapTo2Pi(real angle);
-VectorX wrapTo2Pi(VectorX angle);
+VecX wrapTo2Pi(VecX angle);
 
 /**
  * @brief Convert degree to radian
@@ -72,8 +72,8 @@ real deg2rad(real deg);
 double rad2deg(double rad);
 
 real floor(real x);
-Vector3 degrees2dms(real deg);
-real dms2degrees(Vector3 hms);
+Vec3 degrees2dms(real deg);
+real dms2degrees(Vec3 hms);
 
 /**
  * @brief Arccosine function with input bounds
@@ -106,7 +106,7 @@ double deg2rad(double deg);
  * @param vec  input vector
  * @return double   rms value
  */
-double Rms(VectorXd vec);
+double Rms(VecXd vec);
 
 /**
  * @brief  Compute the pth percentile of a vector
@@ -115,7 +115,7 @@ double Rms(VectorXd vec);
  * @param p  percentile (0-1)
  * @return double  percentile value
  */
-double Percentile(VectorXd vec, double p);
+double Percentile(VecXd vec, double p);
 
 /**
  * @brief Standard deviation of a vector
@@ -123,7 +123,7 @@ double Percentile(VectorXd vec, double p);
  * @param vec   input vector
  * @return double   standard deviation
  */
-double Std(VectorXd vec);
+double Std(VecXd vec);
 
 /**
  * @brief Linear interpolation of a 2D data set
@@ -133,7 +133,7 @@ double Std(VectorXd vec);
  * @param ix  interpolation point x
  * @return double  data at the interpolation point
  */
-double LinearInterp1d(VectorXd x, VectorXd data, double ix);
+double LinearInterp1d(VecXd x, VecXd data, double ix);
 
 /**
  * @brief Linear interpolation of a 2D data set
@@ -145,8 +145,7 @@ double LinearInterp1d(VectorXd x, VectorXd data, double ix);
  * @param iy  interpolation point y
  * @return double  data at the interpolation point
  */
-double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
-                      double iy);
+double LinearInterp2d(VecXd x, VecXd y, VecXd data, double ix, double iy);
 
 // /**
 //  * @brief Sample from a multivariate normal distribution
@@ -154,9 +153,9 @@ double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
 //  * @param mean  mean vector
 //  * @param covar  covariance matrix
 //  * @param nn   number of samples to generate
-//  * @return MatrixXd
+//  * @return VecXd
 //  */
-// MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn);
+// VecXd SampleMVN(const VecXd mean, const VecXd covar, int nn);
 
 /**
  * @brief  Sample from a multivariate normal distribution
@@ -164,50 +163,50 @@ double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
  * @param mean  mean vector
  * @param covar  covariance matrix
  * @param nn  number of samples to generate
- * @return MatrixX
+ * @return MatX
  */
-MatrixX SampleMVN(const VectorX mean, const MatrixX cov, int nn, int seed = 0);
+MatX SampleMVN(const VecX mean, const MatX cov, int nn, int seed = 0);
 
 /**
  * @brief block diagonal matrix
  *
- * @param A  Matrix A
- * @param B  Matrix B
- * @return MatrixXd  block diagonal matrix of A and B
+ * @param A  Mat A
+ * @param B  Mat B
+ * @return VecXd  block diagonal matrix of A and B
  */
-MatrixXd blkdiag(const MatrixXd &A, const MatrixXd &B);
+VecXd blkdiag(const VecXd &A, const VecXd &B);
 
 /**
  * @brief Rotate a vector by a given angle about the x-axis
  *
  * @param phi  angle in radians
- * @return Matrix3   rotation matrix
+ * @return Mat3   rotation matrix
  */
-Matrix3 Rot1(real phi);
+Mat3 Rot1(real phi);
 
 /**
  * @brief  Rotate a vector by a given angle about the y-axis
  *
  * @param phi  angle in radians
- * @return Matrix3  rotation matrix
+ * @return Mat3  rotation matrix
  */
-Matrix3 Rot2(real phi);
+Mat3 Rot2(real phi);
 
 /**
  * @brief  Rotate a vector by a given angle about the z-axis
  *
  * @param phi   angle in radians
- * @return Matrix3  rotation matrix
+ * @return Mat3  rotation matrix
  */
-Matrix3 Rot3(real phi);
+Mat3 Rot3(real phi);
 
 /**
  * @brief Compute the rotation matrix specified by the input skew vector.
  * @param v
- * @return Matrix3
+ * @return Mat3
  */
-Matrix3 Skew(Vector3 x);
+Mat3 Skew(Vec3 x);
 
-std::vector<double> EigenToStdVector(const VectorX &vec);
+std::vector<double> EigenToStdVec(const VecX &vec);
 
 }  // namespace lupnt

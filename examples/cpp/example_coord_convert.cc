@@ -28,14 +28,14 @@ int main() {
   auto to = Frame::ITRF;    // Earth fixed frame
 
   // Vallado, p87
-  Vector6 posvel_GCRF;
-  Vector3 pos, vel;
+  Vec6 posvel_GCRF;
+  Vec3 pos, vel;
   pos << 5102.5096, 6123.01152, 6378.1368;
   vel << -4.7432196, 0.7905366, 5.553375619;
   posvel_GCRF << pos, vel;
   real tai = StringToTAI("2001/04/06 07:51:28.788 UTC");
 
-  VectorX posvel_ITRF = FrameConverter::Convert(tai, posvel_GCRF, from, to);
+  VecX posvel_ITRF = FrameConverter::Convert(tai, posvel_GCRF, from, to);
 
   std::cout << "Posvel at J2000 = " << posvel_GCRF << std::endl;
   std::cout << "Posvel at ITRF = " << posvel_ITRF << std::endl;

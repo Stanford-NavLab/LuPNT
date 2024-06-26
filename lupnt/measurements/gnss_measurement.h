@@ -34,11 +34,11 @@ class GnssMeasurement {
   std::vector<int> ID_tx;                 // ID of the transmitter (n_meas)
 
   // Visbility
-  VectorXd vis_earth;
-  VectorXd vis_moon;
-  VectorXd vis_antenna;
-  VectorXd vis_atmos;
-  VectorXd vis_ionos;
+  VecXd vis_earth;
+  VecXd vis_moon;
+  VecXd vis_antenna;
+  VecXd vis_atmos;
+  VecXd vis_ionos;
 
   double c = 299792.458;  // Speed of light [km/s]
 
@@ -47,82 +47,82 @@ class GnssMeasurement {
   double
       t_tx;  // Signal transmission time measured by the transmitter clock [s]
 
-  VectorX P_rx;     // Pseudorange measurement [km] (n_meas * n_bands)
-  VectorXd rho_rx;  // True range from the transmitter to the receiver’s
-                    // antenna [km] (n_meas)
+  VecX P_rx;     // Pseudorange measurement [km] (n_meas * n_bands)
+  VecXd rho_rx;  // True range from the transmitter to the receiver’s
+                 // antenna [km] (n_meas)
 
-  double dt_rx;    // Receiver clock offset from Gnss time [s]
-  VectorXd dt_tx;  // Transmitter clock offset from Gnss time [s] (n_meas)
+  double dt_rx;  // Receiver clock offset from Gnss time [s]
+  VecXd dt_tx;   // Transmitter clock offset from Gnss time [s] (n_meas)
 
-  VectorXd I_rx;   // Ionospheric delay [km] (n_meas * n_bands)
-  VectorXd T_rx;   // Tropospheric delay [km] (n_meas)
-  VectorXd eps_P;  // Pseudorange measurement noise [km] (n_meas)
+  VecXd I_rx;   // Ionospheric delay [km] (n_meas * n_bands)
+  VecXd T_rx;   // Tropospheric delay [km] (n_meas)
+  VecXd eps_P;  // Pseudorange measurement noise [km] (n_meas)
 
   // Carrier phase measurement
-  VectorX phi_rx;      // Carrier phase measurement [cycles] (n_meas * n_bands)
-  VectorXd phi_rx_tx;  // Phase of the receiver's local oscillator at
-                       // time t [cycles] (n_meas * n_bands)
-  VectorXd phi_tx;     // Phase of the transmitted signal at time t [cycles]
-                       // (n_meas * n_bands)
+  VecX phi_rx;      // Carrier phase measurement [cycles] (n_meas * n_bands)
+  VecXd phi_rx_tx;  // Phase of the receiver's local oscillator at
+                    // time t [cycles] (n_meas * n_bands)
+  VecXd phi_tx;     // Phase of the transmitted signal at time t [cycles]
+                    // (n_meas * n_bands)
   double t;
-  VectorXd N_rx;     // Carrier phase int ambiguity [cycles] (n_meas * n_bands)
-  VectorXd eps_phi;  // Carrier phase measurement noise [cycles]
-                     // (n_meas * n_bands)
-  VectorXd f;  // Carrier frequency [Hz] (n_bands) // TODO: Convert to vector
-  double t_0;  // Initial time [s]
-  VectorXd phi_0;  // Initial phase of the transmitted signal at time t_0
-                   // [cycles] (n_meas * n_bands)
-  VectorXd
+  VecXd N_rx;     // Carrier phase int ambiguity [cycles] (n_meas * n_bands)
+  VecXd eps_phi;  // Carrier phase measurement noise [cycles]
+                  // (n_meas * n_bands)
+  VecXd f;        // Carrier frequency [Hz] (n_bands) // TODO: Convert to vector
+  double t_0;     // Initial time [s]
+  VecXd phi_0;    // Initial phase of the transmitted signal at time t_0
+                  // [cycles] (n_meas * n_bands)
+  VecXd
       lambda_;  // Carrier wavelength [km] (n_bands) // TODO: Convert to vector
-  VectorXd L_rx_txr;  // Integer component of the receiver’s numerically
-                      // controlled oscillator (NCO) phase
-  VectorXd K_rx_txr;  // Integer component of the propagation term
+  VecXd L_rx_txr;  // Integer component of the receiver’s numerically
+                   // controlled oscillator (NCO) phase
+  VecXd K_rx_txr;  // Integer component of the propagation term
 
   // Phase-range masurement
-  VectorXd Phi_rx;     // Phase-range measurement [km] (n_meas * n_bands)
-                       // (n_meas * n_bands)
-  VectorXd B_rx;       // Carrier phase bias [cycles] (n_meas * n_bands)
-  VectorXd dPhi_rx;    // Receiver’s antenna phase center variation [km]
-                       // (n_meas * n_bands)
-  VectorXd d_rx_pco;   // Receiver’s antenna phase center offset in local
-                       // coordinates [km] (n_meas) (n_bands x 3)
-  VectorXd d_rx_pcv;   // Receiver’s antenna phase center variation [km]
-                       // (n_meas * n_bands)
-  VectorXd d_tx_pco;   // Transmitter’s antenna phase center offset in
-                       // local coordinates [km] (n_meas * n_bands x 3)
-  VectorXd d_tx_pcv;   // Transmitter’s antenna phase center variation
-                       // [km] (n_meas * n_bands)
-  MatrixXd e_rx_enu;   // LOS vector from receiver antenna to satellite in
-                       // local coordinates [km] (n_meas x 3)
-  MatrixXd e_rx;       // LOS vector from receiver antenna to satellite in
-                       // ECEF coordinates [km] (n_meas x 3)
-  VectorXd E;          // Coordinates transformation matrix from the satellite
-                       // body‐fixed coordinates to ECEF coordinates
-  Vector3d d_rx_disp;  // Displacement by Earth tides at the receiver
-                       // position in local coordinates [km] (3)
-  VectorXd eps_Phi;    // Phase-range measurement noise [km] (n_bands)
+  VecXd Phi_rx;     // Phase-range measurement [km] (n_meas * n_bands)
+                    // (n_meas * n_bands)
+  VecXd B_rx;       // Carrier phase bias [cycles] (n_meas * n_bands)
+  VecXd dPhi_rx;    // Receiver’s antenna phase center variation [km]
+                    // (n_meas * n_bands)
+  VecXd d_rx_pco;   // Receiver’s antenna phase center offset in local
+                    // coordinates [km] (n_meas) (n_bands x 3)
+  VecXd d_rx_pcv;   // Receiver’s antenna phase center variation [km]
+                    // (n_meas * n_bands)
+  VecXd d_tx_pco;   // Transmitter’s antenna phase center offset in
+                    // local coordinates [km] (n_meas * n_bands x 3)
+  VecXd d_tx_pcv;   // Transmitter’s antenna phase center variation
+                    // [km] (n_meas * n_bands)
+  VecXd e_rx_enu;   // LOS vector from receiver antenna to satellite in
+                    // local coordinates [km] (n_meas x 3)
+  VecXd e_rx;       // LOS vector from receiver antenna to satellite in
+                    // ECEF coordinates [km] (n_meas x 3)
+  VecXd E;          // Coordinates transformation matrix from the satellite
+                    // body‐fixed coordinates to ECEF coordinates
+  Vec3d d_rx_disp;  // Displacement by Earth tides at the receiver
+                    // position in local coordinates [km] (3)
+  VecXd eps_Phi;    // Phase-range measurement noise [km] (n_bands)
 
   // Doppler shift measurement
-  VectorXd D_rx;  // Doppler shift measurement [Hz] (n_meas * n_bands)
-  VectorX r_rx;   // Position of the receiver at time t_rx [km] (3)
-  MatrixXd r_tx;  // Position of the transmitter at time t_rx [km] (n_meas x 3)
-  VectorXd v_rx;  // Velocity of the receiver at time t_rx [m/s] (3)
-  MatrixXd v_tx;  // Velocity of the transmitter at time t_tx [m/s] (n_meas x 3)
-  VectorXd eps_D;  // Doppler shift measurement noise [Hz] (n_meas * n_bands)
+  VecXd D_rx;   // Doppler shift measurement [Hz] (n_meas * n_bands)
+  VecX r_rx;    // Position of the receiver at time t_rx [km] (3)
+  VecXd r_tx;   // Position of the transmitter at time t_rx [km] (n_meas x 3)
+  VecXd v_rx;   // Velocity of the receiver at time t_rx [m/s] (3)
+  VecXd v_tx;   // Velocity of the transmitter at time t_tx [m/s] (n_meas x 3)
+  VecXd eps_D;  // Doppler shift measurement noise [Hz] (n_meas * n_bands)
 
   // Pseudorange rate measurement
-  VectorXd PR_rx;      // Pseudorange rate measurement [m/s] (n_meas * n_bands)
-  double dt_rx_dot;    // Receiver clock drift [s/s]
-  VectorXd dt_tx_dot;  // Transmitter clock drift [s/s] (n_meas)
-  VectorXd eps_PR;     // Pseudorange rate measurement noise [m/s]
-                       // (n_meas * n_bands)
+  VecXd PR_rx;       // Pseudorange rate measurement [m/s] (n_meas * n_bands)
+  double dt_rx_dot;  // Receiver clock drift [s/s]
+  VecXd dt_tx_dot;   // Transmitter clock drift [s/s] (n_meas)
+  VecXd eps_PR;      // Pseudorange rate measurement noise [m/s]
+                     // (n_meas * n_bands)
 
   // Receiver param
   GnssReceiverParam gnssr_param;
   double chip_rate;  // Chip rate [Hz]
 
   // Link budget
-  VectorXd CN0;  // Carrier‐to‐noise density [dB‐Hz] (n_meas * n_bands)
+  VecXd CN0;  // Carrier‐to‐noise density [dB‐Hz] (n_meas * n_bands)
 
  public:
   GnssMeasurement(const std::vector<Transmission> transmissions);
@@ -133,12 +133,12 @@ class GnssMeasurement {
   int GetTrackedSatelliteNum() const { return n_meas; }
 
   std::vector<int> GetTxIds() const { return ID_tx; }
-  VectorX GetCN0() const { return CN0; }
-  VectorXd GetEarthOccultation() const { return vis_earth; }
-  VectorXd GetMoonOccultation() const { return vis_moon; }
-  VectorXd GetAntennaOccultation() const { return vis_antenna; }
-  VectorXd GetIonosOccultation() const { return vis_ionos; }
-  VectorXd GetAtmosOccultation() const { return vis_atmos; }
+  VecX GetCN0() const { return CN0; }
+  VecXd GetEarthOccultation() const { return vis_earth; }
+  VecXd GetMoonOccultation() const { return vis_moon; }
+  VecXd GetAntennaOccultation() const { return vis_antenna; }
+  VecXd GetIonosOccultation() const { return vis_ionos; }
+  VecXd GetAtmosOccultation() const { return vis_atmos; }
 
   /***********************************************************
    * General Methods for computing Measurements
@@ -151,14 +151,14 @@ class GnssMeasurement {
    * @param dt_rx  Receiver clock offset from Gnss time [s]
    * @param with_noise   use noise
    * @param seed   random seed
-   * @return VectorX
+   * @return VecX
    */
-  VectorX ComputePseudorange(VectorX r_rx, real dt_rx, bool with_noise = false,
-                             int seed = 0);
-  VectorX ComputePseudorangerate(VectorX r_rx, VectorX v_rx, real dt_rx_dot,
-                                 bool with_noise = false, int seed = 0);
-  VectorX ComputeCarrierPhase(VectorX r_rx, real dt_rx, VectorX N_rx,
+  VecX ComputePseudorange(VecX r_rx, real dt_rx, bool with_noise = false,
+                          int seed = 0);
+  VecX ComputePseudorangerate(VecX r_rx, VecX v_rx, real dt_rx_dot,
                               bool with_noise = false, int seed = 0);
+  VecX ComputeCarrierPhase(VecX r_rx, real dt_rx, VecX N_rx,
+                           bool with_noise = false, int seed = 0);
 
   /***********************************************************
    *  Methods for true measurement generation
@@ -170,36 +170,36 @@ class GnssMeasurement {
    * @param meas_type  vector of measurement types
    * @param with_noise  use noise
    * @param seed   random seed
-   * @return VectorX
+   * @return VecX
    */
-  VectorX GetGnssMeasurement(std::vector<GnssMeasurementType> meas_type,
-                             bool with_noise = false, int seed = 0);
+  VecX GetGnssMeasurement(std::vector<GnssMeasurementType> meas_type,
+                          bool with_noise = false, int seed = 0);
   /**
    * @brief Get the Pseudorange for the observed signal
    *
    * @param with_noise  use noise
    * @param seed  random seed
-   * @return VectorX
+   * @return VecX
    */
-  VectorX GetPseudorange(bool with_noise = false, int seed = 0);
+  VecX GetPseudorange(bool with_noise = false, int seed = 0);
 
   /**
    * @brief Get the Pseudorange rate for the observed signal
    *
    * @param with_noise  use noise
    * @param seed  random seed
-   * @return VectorX
+   * @return VecX
    */
-  VectorX GetPseudorangerate(bool with_noise = false, int seed = 0);
+  VecX GetPseudorangerate(bool with_noise = false, int seed = 0);
 
   /**
    * @brief Get the Carrier Phase for the observed signal
    *
    * @param with_noise  use noise
    * @param seed  random seed
-   * @return VectorX
+   * @return VecX
    */
-  VectorX GetCarrierPhase(bool with_noise = false, int seed = 0);
+  VecX GetCarrierPhase(bool with_noise = false, int seed = 0);
 
   /***********************************************************
    *  Methods for predicted measurement generation
@@ -213,10 +213,10 @@ class GnssMeasurement {
    * @param clk_pred  predicted clock offset and drift
    * @param frame_in  coordinate system of the input state
    */
-  VectorX GetPredictedGnssMeasurement(
-      double epoch, Vector6 rv_pred, Vector2 clk_pred, VectorX N_pred,
-      MatrixXd &H_gnss, std::vector<GnssMeasurementType> meas_type,
-      Frame frame_in = Frame::MOON_CI);
+  VecX GetPredictedGnssMeasurement(double epoch, Vec6 rv_pred, Vec2 clk_pred,
+                                   VecX N_pred, VecXd &H_gnss,
+                                   std::vector<GnssMeasurementType> meas_type,
+                                   Frame frame_in = Frame::MOON_CI);
 
   /**
    * @brief Get the Pseudorange for the predicted state
@@ -226,11 +226,10 @@ class GnssMeasurement {
    * @param clk_pred  predicted clock offset and drift
    * @param H_pr       Jacobian of the measurement function
    * @param frame_in  coordinate system of the input state
-   * @return VectorX
+   * @return VecX
    */
-  VectorX GetPredictedPseudorange(double epoch, Vector6 rv_pred,
-                                  Vector2 clk_pred, MatrixXd &H_pr,
-                                  Frame frame_in = Frame::MOON_CI);
+  VecX GetPredictedPseudorange(double epoch, Vec6 rv_pred, Vec2 clk_pred,
+                               VecXd &H_pr, Frame frame_in = Frame::MOON_CI);
 
   /**
    * @brief Get the Pseudorange Analytical Jacobian object
@@ -240,10 +239,10 @@ class GnssMeasurement {
    * @param clk_pred  predicted clock offset and drift
    * @param H_pr      Jacobian of the measurement function
    * @param frame_in  coordinate system of the input state
-   * @return * VectorX
+   * @return * VecX
    */
-  VectorX GetPredictedPseudorangeAnalyticalJacobian(
-      double epoch, Vector6 rv_pred, Vector2 clk_pred, MatrixXd &H_pr,
+  VecX GetPredictedPseudorangeAnalyticalJacobian(
+      double epoch, Vec6 rv_pred, Vec2 clk_pred, VecXd &H_pr,
       Frame frame_in = Frame::MOON_CI);
 
   /**
@@ -254,11 +253,11 @@ class GnssMeasurement {
    * @param clk_pred  predicted clock offset and drift
    * @param H_prr     Jacobian of the measurement function
    * @param frame_in  coordinate system of the input state
-   * @return VectorX
+   * @return VecX
    */
-  VectorX GetPredictedPseudorangerate(double epoch, Vector6 rv_pred,
-                                      Vector2 clk_pred, MatrixXd &H_prr,
-                                      Frame frame_in = Frame::MOON_CI);
+  VecX GetPredictedPseudorangerate(double epoch, Vec6 rv_pred, Vec2 clk_pred,
+                                   VecXd &H_prr,
+                                   Frame frame_in = Frame::MOON_CI);
 
   /**
    * @brief Get the Carrier Phase object
@@ -268,20 +267,19 @@ class GnssMeasurement {
    * @param clk_pred  predicted clock offset and drift
    * @param H_cp      Jacobian of the measurement function
    * @param frame_in  coordinate system of the input state
-   * @return VectorX
+   * @return VecX
    */
-  VectorX GetPredictedCarrierPhase(double epoch, Vector6 rv_pred,
-                                   Vector2 clk_pred, VectorX N_pred,
-                                   MatrixXd &H_cp,
-                                   Frame frame_in = Frame::MOON_CI);
+  VecX GetPredictedCarrierPhase(double epoch, Vec6 rv_pred, Vec2 clk_pred,
+                                VecX N_pred, VecXd &H_cp,
+                                Frame frame_in = Frame::MOON_CI);
 
   /*********************************************************************
    * Noise Models
    ********************************************************************/
-  VectorXd GetGnssNoiseStdVector(std::vector<GnssMeasurementType> meas_type);
-  VectorXd GetPseudorangeNoiseStdVector();
-  VectorXd GetPseudorangeRateNoiseStdVector();
-  VectorXd GetCarrierPhaseNoiseStdVector();
+  VecXd GetGnssNoiseStdVec(std::vector<GnssMeasurementType> meas_type);
+  VecXd GetPseudorangeNoiseStdVec();
+  VecXd GetPseudorangeRateNoiseStdVec();
+  VecXd GetCarrierPhaseNoiseStdVec();
 
   void SetGnssReceiverParam(GnssReceiverParam gnssr_param_input) {
     gnssr_param = gnssr_param_input;

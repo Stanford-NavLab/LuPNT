@@ -192,7 +192,7 @@ void ReadData(const std::string &filepath, int N, int headerlines,
   file.close();
 }
 
-std::tuple<MatrixXd, MatrixXd> LoadGravityCoefficients(BodyData bd, int nmax) {
+std::tuple<VecXd, VecXd> LoadGravityCoefficients(BodyData bd, int nmax) {
   // read text file
   int N = nmax * nmax + 10;
 
@@ -203,8 +203,8 @@ std::tuple<MatrixXd, MatrixXd> LoadGravityCoefficients(BodyData bd, int nmax) {
   ReadData(harmonicsPath / bd.filepath, N, bd.headerlines, bd.delimiter, idN,
            idM, C, S, sigC, sigS);
 
-  MatrixXd Cnm = MatrixXd::Zero(nmax + 2, nmax + 2);
-  MatrixXd Snm = MatrixXd::Zero(nmax + 2, nmax + 2);
+  VecXd Cnm = VecXd::Zero(nmax + 2, nmax + 2);
+  VecXd Snm = VecXd::Zero(nmax + 2, nmax + 2);
 
   Cnm(0, 0) = 1.0;
   Cnm(1, 0) = 0.0;

@@ -4,8 +4,8 @@
 using namespace lupnt;
 
 int main() {
-  Vector6 coe{9750.5,        0.7,          deg2rad(63.5),
-              deg2rad(90.0), deg2rad(0.0), deg2rad(30.0)};
+  Vec6 coe{9750.5,        0.7,          deg2rad(63.5),
+           deg2rad(90.0), deg2rad(0.0), deg2rad(30.0)};
   auto cart = ClassicalToCartesian(coe, GM_MOON);
   auto coe2 = CartesianToClassical(cart, GM_MOON);
   auto cart2 = ClassicalToCartesian(coe2, GM_MOON);

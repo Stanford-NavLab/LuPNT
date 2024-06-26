@@ -28,8 +28,8 @@ void init_frame_converter(py::module &m) {
   py::class_<FrameConverter>(m, "FrameConverter")
       .def_static(
           "convert",
-          [](double epoch, const Vector6d &rv_in, Frame frame_in,
-             Frame frame_out) -> Vector6d {
+          [](double epoch, const Vec6d &rv_in, Frame frame_in,
+             Frame frame_out) -> Vec6d {
             return FrameConverter::Convert(epoch, rv_in, frame_in, frame_out)
                 .cast<double>();
           },

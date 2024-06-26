@@ -40,25 +40,22 @@ class Occultation {
    * @return std::map<std::string, bool>
    */
   static std::map<std::string, bool> ComputeOccultation(
-      const Vector3d tx_eci, const Vector3d tx_mci, const Vector3d rx_eci,
-      const Vector3d rx_mci, const std::string tx_planet);
+      const Vec3d tx_eci, const Vec3d tx_mci, const Vec3d rx_eci,
+      const Vec3d rx_mci, const std::string tx_planet);
 
-  // VectorX = func(real, Vector3, Vector3, ...)
-  static VectorX ComputeOccultation(real epoch, const Vector3& r1,
-                                    const Vector3& r2, Frame cs1, Frame cs2,
-                                    const std::vector<NaifId>& bodies);
+  // VecX = func(real, Vec3, Vec3, ...)
+  static VecX ComputeOccultation(real epoch, const Vec3& r1, const Vec3& r2,
+                                 Frame cs1, Frame cs2,
+                                 const std::vector<NaifId>& bodies);
 
-  // MatrixX = func(real, Matrix<-1, 3>, Matrix<-1, 3>, ...)
-  static MatrixX ComputeOccultation(real epoch, const Matrix<-1, 3>& r1,
-                                    const Matrix<-1, 3>& r2, Frame cs1,
-                                    Frame cs2,
-                                    const std::vector<NaifId>& bodies);
+  // MatX = func(real, Mat<-1, 3>, Mat<-1, 3>, ...)
+  static MatX ComputeOccultation(real epoch, const Mat<-1, 3>& r1,
+                                 const Mat<-1, 3>& r2, Frame cs1, Frame cs2,
+                                 const std::vector<NaifId>& bodies);
 
-  // MatrixX = func(VectorX, Matrix<-1, 3>, Matrix<-1, 3>, ...)
-  static MatrixX ComputeOccultation(const VectorX& epoch,
-                                    const Matrix<-1, 3>& r1,
-                                    const Matrix<-1, 3>& r2, Frame cs1,
-                                    Frame cs2,
-                                    const std::vector<NaifId>& bodies);
+  // MatX = func(VecX, Mat<-1, 3>, Mat<-1, 3>, ...)
+  static MatX ComputeOccultation(const VecX& epoch, const Mat<-1, 3>& r1,
+                                 const Mat<-1, 3>& r2, Frame cs1, Frame cs2,
+                                 const std::vector<NaifId>& bodies);
 };
 }  // namespace lupnt

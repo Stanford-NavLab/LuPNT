@@ -44,7 +44,7 @@ def scale_det(matrix):
     Parameters
     ----------
     matrix: np.ndarray, torch.Tensor
-        Matrix input
+        Mat input
     Returns
     -------
     np.ndarray

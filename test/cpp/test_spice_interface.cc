@@ -36,7 +36,7 @@ TEST_CASE("SpiceInterface.GetBodyPos") {
   auto refframe = Frame::GCRF;
   std::string abcorr = "NONE";
 
-  Vector3d pos = GetBodyPos(target, t_tai, refframe, observer, abcorr);
+  Vec3d pos = GetBodyPos(target, t_tai, refframe, observer, abcorr);
   // std::cout <<  std::setprecision (15) << "Moon Position from Earth at
   // 2023-04-15 00:00:00 TDB (J2000): " << pos[0] << " " << pos[1] << " " <<
   // pos[2] << std::endl;
@@ -47,12 +47,12 @@ TEST_CASE("SpiceInterface.GetBodyPos") {
   REQUIRE_THAT(pos[2], WithinAbs(-1.318831107682142e+05, abs_error));
 }
 
-TEST_CASE("SpiceInterface.GetFrameConversionMatrix") {
+TEST_CASE("SpiceInterface.GetFrameConversionMat") {
   real t_tai = StringToTAI("2023-04-15 00:00:00 TDB");
 
-  // 3: GetFrameConversionMatrix
-  Matrix6 xform(6, 6);
-  Matrix6 xform_expected{
+  // 3: GetFrameConversionMat
+  Mat6 xform(6, 6);
+  Mat6 xform_expected{
       {-0.925133587090201, -0.379635996326334, 0.00208718253372858, 0, 0, 0},
       {0.379635104286875, -0.925135941018640, -0.000823546386013230, 0, 0, 0},
       {0.00224357543019373, 3.04773366301969e-05, 0.999997482717042, 0, 0, 0},
@@ -63,7 +63,7 @@ TEST_CASE("SpiceInterface.GetFrameConversionMatrix") {
       {1.47075571708085e-10, 5.94642717972108e-11, -3.31788286899988e-13,
        0.00224357543019373, 3.04773366301969e-05, 0.999997482717042}};
 
-  xform = GetFrameConversionMatrix(t_tai, Frame::GCRF, Frame::ITRF);
+  xform = GetFrameConversionMat(t_tai, Frame::GCRF, Frame::ITRF);
   RequireNearRealMat(xform, xform_expected, 1e-6);
 }
 
@@ -77,12 +77,11 @@ TEST_CASE("SpiceInterface.GetBodyPosVel") {
   // NaifId center_id = 399;
   // NaifId target_id = 301;
 
-  Vector6 posvel(6);
+  Vec6 posvel(6);
   posvel = GetBodyPosVel(tai, NaifId::EARTH, NaifId::MOON, Frame::GCRF);
 
-  Vector6 posvel_expected{263638.289944174,  -221028.422146322,
-                          -131883.110768214, 0.734154922271287,
-                          0.697461344892098, 0.325673181901724};
+  Vec6 posvel_expected{263638.289944174,  -221028.422146322, -131883.110768214,
+                       0.734154922271287, 0.697461344892098, 0.325673181901724};
 
   double abs_error = 1e-6;
   RequireNearRealVec(posvel, posvel_expected, abs_error);

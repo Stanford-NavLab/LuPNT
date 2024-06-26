@@ -21,7 +21,7 @@ int main() {
   double raan = deg2rad(0);  // [rad] W, Right ascension of the ascending node
   double aop = deg2rad(86.322);  // [rad] w, Argument of periapsis
   double ma = deg2rad(180);      // [rad] M, Mean anomaly
-  Vector6 coe_sat_OP(sma, ecc, inc, raan, aop, ma);
+  Vec6 coe_sat_OP(sma, ecc, inc, raan, aop, ma);
 
   // Initial state
   auto rv_sat_OP = ClassicalToCartesian(coe_sat_OP, GM_MOON);
@@ -44,14 +44,14 @@ int main() {
   int N_lats = (int)((lat_max - lat_min) / delta_lat + 1);
   int N_lons = (int)((lon_max - lon_min) / delta_lon + 1);
   auto lats =
-      VectorX::LinSpaced(N_lats, lat_min * RAD_PER_DEG, lat_max * RAD_PER_DEG);
+      VecX::LinSpaced(N_lats, lat_min * RAD_PER_DEG, lat_max * RAD_PER_DEG);
   auto lons =
-      VectorX::LinSpaced(N_lons, lon_min * RAD_PER_DEG, lon_max * RAD_PER_DEG);
-  MatrixX r_usr_pa(N_lats * N_lons, 3);  // [km] [x, y, z]
+      VecX::LinSpaced(N_lons, lon_min * RAD_PER_DEG, lon_max * RAD_PER_DEG);
+  MatX r_usr_pa(N_lats * N_lons, 3);  // [km] [x, y, z]
   for (int i = 0; i < N_lats; i++) {
     for (int j = 0; j < N_lons; j++) {
       int k = i * N_lons + j;
-      Vector3 geo(lats(i), lons(j), 0);
+      Vec3 geo(lats(i), lons(j), 0);
       r_usr_pa.row(k) = LatLonAltToEcef(geo, R_MOON).transpose();
     }
   }
@@ -67,8 +67,8 @@ int main() {
   dynamics.SetTimeStep(dt);
 
   // Main loop
-  MatrixX rv_sat_mi_hist(N_steps, 6);  // [km,km/s] [x, y, z, vx, vy, vz]
-  MatrixX rv_sat_pa_hist(N_steps, 6);  // [km,km/s] [x, y, z, vx, vy, vz]
+  MatX rv_sat_mi_hist(N_steps, 6);  // [km,km/s] [x, y, z, vx, vy, vz]
+  MatX rv_sat_pa_hist(N_steps, 6);  // [km,km/s] [x, y, z, vx, vy, vz]
   double epoch = epoch0;
   for (int i = 0; i < N_steps; i++) {
     // Propagate
@@ -82,14 +82,14 @@ int main() {
   }
 
   // Elevation and range
-  MatrixX elevation(N_steps, N_lats * N_lons);  // [deg]
-  MatrixX range(N_steps, N_lats * N_lons);      // [km]
+  MatX elevation(N_steps, N_lats * N_lons);  // [deg]
+  MatX range(N_steps, N_lats * N_lons);      // [km]
   for (int i = 0; i < N_lats; i++) {
     for (int j = 0; j < N_lons; j++) {
       int k = i * N_lons + j;
       for (int t = 0; t < N_steps; t++) {
-        Vector3 r_usr_pa_t = r_usr_pa.row(k).transpose();
-        Vector3 r_sat_pa_t = rv_sat_pa_hist.row(t).head(3).transpose();
+        Vec3 r_usr_pa_t = r_usr_pa.row(k).transpose();
+        Vec3 r_sat_pa_t = rv_sat_pa_hist.row(t).head(3).transpose();
         auto [az, el, rng] =
             unpack(CartesianToAzimuthElevationRange(r_usr_pa_t, r_sat_pa_t));
         elevation(t, k) = rad2deg(el);
@@ -100,7 +100,7 @@ int main() {
 
   // Orbit plot
   double limit = 5 * R_MOON;
-  VectorX sizes = VectorXd::Ones(N_lats * N_lons) * 1;
+  VecX sizes = VecXd::Ones(N_lats * N_lons) * 1;
 
   if (show_orbit_plot) {
     matplot::figure();
@@ -118,10 +118,10 @@ int main() {
   }
 
   // Elevation and range plot
-  double min_elev = 5;                                            // [deg]
-  VectorX mask = VectorX::Ones(N_steps) * NAN;                    // [-]
-  VectorX t = VectorX::LinSpaced(N_steps, 0, tf);                 // [s]
-  MatrixXd positions{{90, 0}, {60, -75}, {15, -90}, {-85, -30}};  // [deg]
+  double min_elev = 5;                                         // [deg]
+  VecX mask = VecX::Ones(N_steps) * NAN;                       // [-]
+  VecX t = VecX::LinSpaced(N_steps, 0, tf);                    // [s]
+  VecXd positions{{90, 0}, {60, -75}, {15, -90}, {-85, -30}};  // [deg]
 
   if (show_elevation_plot) {
     auto fig = matplot::figure();
@@ -133,10 +133,10 @@ int main() {
       int idx_lon = (int)((positions(idx_pos, 1) + 180) / delta_lon);
       int idx_usr = (int)(idx_lat * N_lons + idx_lon);
 
-      VectorX elev = elevation.col(idx_usr);
-      VectorX rng = range.col(idx_usr);
-      VectorX elev_masked = (elev.array() >= min_elev).select(elev, mask);
-      VectorX rng_masked = (elev.array() >= min_elev).select(rng, mask);
+      VecX elev = elevation.col(idx_usr);
+      VecX rng = range.col(idx_usr);
+      VecX elev_masked = (elev.array() >= min_elev).select(elev, mask);
+      VecX rng_masked = (elev.array() >= min_elev).select(rng, mask);
 
       // Elevation
       matplot::subplot(positions.rows(), 2, 2 * idx_pos);

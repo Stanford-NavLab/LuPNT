@@ -125,8 +125,8 @@ int main() {
     auto state = moon_sat->GetCartesianGCRFStateAtEpoch(epoch);
     auto sate_mi = ConvertOrbitStateFrame(state, epoch, Frame::MOON_CI);
     auto state_gcrf = ConvertOrbitStateFrame(state, epoch, Frame::GCRF);
-    data_history->AddData("rv_moon_mi", t, sate_mi->GetVector());
-    data_history->AddData("rv_moon_gcrf", t, state_gcrf->GetVector());
+    data_history->AddData("rv_moon_mi", t, sate_mi->GetVec());
+    data_history->AddData("rv_moon_gcrf", t, state_gcrf->GetVec());
 
     // GPS constellation
     for (int i = 0; i < gps_const.GetNumSatellites(); i++) {
@@ -136,17 +136,17 @@ int main() {
       auto state_gcrf = ConvertOrbitStateFrame(sate, epoch, Frame::GCRF);
 
       std::string name = "sat" + std::to_string(i);
-      data_history->AddData(name + "_mi", t, sate->GetVector());
-      data_history->AddData(name + "_gcrf", t, state_gcrf->GetVector());
+      data_history->AddData(name + "_mi", t, sate->GetVec());
+      data_history->AddData(name + "_gcrf", t, state_gcrf->GetVec());
     }
 
     // Bodies
-    Vector6 v6;
+    Vec6 v6;
     v6.setZero();
 
-    // Vector6 vec6_mi = FrameConverter::Convert(epoch, VectorX::Zero(6),
+    // Vec6 vec6_mi = FrameConverter::Convert(epoch, VecX::Zero(6),
     //                                           Frame::GCRF, Frame::MOON_CI);
-    // Vector6 vec6_gcrf = FrameConverter::Convert(epoch, VectorX::Zero(6),
+    // Vec6 vec6_gcrf = FrameConverter::Convert(epoch, VecX::Zero(6),
     //                                             Frame::MOON_CI, Frame::GCRF);
 
     // data_history->AddData("earth_mi", t, vec6_mi);

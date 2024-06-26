@@ -74,7 +74,7 @@ int main() {
         auto sat_name = "sat" + std::to_string(i);
         auto sat_state = gnss_const.GetSatellite(i)
                              ->GetOrbitState()
-                             ->GetVector()
+                             ->GetVec()
                              .head(3)
                              .cast<double>();
         data_history.AddData(sat_name, t, sat_state);

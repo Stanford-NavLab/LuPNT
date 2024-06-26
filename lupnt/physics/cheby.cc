@@ -81,7 +81,7 @@ void cheby_eval(double x, double *scale, double *coeff, long num, double *f,
   *df = (w0 + x * dw0 - dw1) / scale[1];
 }
 
-Vector2 cheby_eval_ad(real x, double *scale, double *coeff, long num) {
+Vec2 cheby_eval_ad(real x, double *scale, double *coeff, long num) {
   real x2, w0 = 0., w1 = 0., dw0 = 0., dw1 = 0., tmp;
   x = (x - scale[0]) / scale[1];
   x2 = x * 2.;
@@ -94,7 +94,7 @@ Vector2 cheby_eval_ad(real x, double *scale, double *coeff, long num) {
     w0 = coeff[num] + (x2 * w0 - tmp);
   }
 
-  Vector2 ret_state{coeff[0] + (x * w0 - w1), (w0 + x * dw0 - dw1) / scale[1]};
+  Vec2 ret_state{coeff[0] + (x * w0 - w1), (w0 + x * dw0 - dw1) / scale[1]};
   return ret_state;
 }
 
@@ -119,23 +119,23 @@ int cheby_posvel(double t, double *seg, long len, double pos[3],
   return 0;
 }
 
-Vector6 cheby_posvel_ad(real t, double *seg, long len) {
+Vec6 cheby_posvel_ad(real t, double *seg, long len) {
   long k, num;
 
   k = (long)floor((t.val() - seg[len - 4]) /  // seg[len-4] is initial epoch
                   seg[len - 3]);              // seg[len-3] is record span
   if (k < 0 || k >= (long)seg[len - 1])       // seg[len-1] is number of records
-    return Vector6::Zero();
+    return Vec6::Zero();
 
   num = (long)seg[len - 2];  // seg[len-2] is size of record
   seg += k * num;            // point seg to the record for t
   num = (num - 2) / 3;       // number of coefficients
 
-  Vector2 xdx = cheby_eval_ad(t, seg, seg + 2, num);
-  Vector2 ydy = cheby_eval_ad(t, seg, seg + 2 + num, num);
-  Vector2 zdz = cheby_eval_ad(t, seg, seg + 2 + 2 * num, num);
+  Vec2 xdx = cheby_eval_ad(t, seg, seg + 2, num);
+  Vec2 ydy = cheby_eval_ad(t, seg, seg + 2 + num, num);
+  Vec2 zdz = cheby_eval_ad(t, seg, seg + 2 + 2 * num, num);
 
-  Vector6 posvel{xdx[0], ydy[0], zdz[0], xdx[1], ydy[1], zdz[1]};
+  Vec6 posvel{xdx[0], ydy[0], zdz[0], xdx[1], ydy[1], zdz[1]};
   return posvel;
 }
 

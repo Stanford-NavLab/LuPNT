@@ -12,10 +12,10 @@ int main() {
   double w = 90.0 * RAD_PER_DEG;
   double M = 0.0 * RAD_PER_DEG;
 
-  Vector6 coe;
+  Vec6 coe;
   coe << a, e, i, Omega, w, M;
 
-  Vector6 coe_d{a, e, i, Omega, w, M};
+  Vec6 coe_d{a, e, i, Omega, w, M};
 
   auto cart = ClassicalToCartesian(coe, GM_EARTH);
   auto cart_d = ClassicalToCartesian(coe_d, GM_EARTH);
@@ -30,8 +30,8 @@ int main() {
   auto rv = CartesianOrbitState(cart);
   std::cout << "type = " << typeid(rv.r()).name() << std::endl;
 
-  Vector3 r_cart_ref{0, 0, 0};
-  Vector3 r_aer{1e-3, 1e-3, 5e3};
-  Vector3 r = AzimuthElevationRangeToCartesian(r_cart_ref, r_aer);
+  Vec3 r_cart_ref{0, 0, 0};
+  Vec3 r_aer{1e-3, 1e-3, 5e3};
+  Vec3 r = AzimuthElevationRangeToCartesian(r_cart_ref, r_aer);
   std::cout << "r = " << r.transpose() << std::endl;
 }

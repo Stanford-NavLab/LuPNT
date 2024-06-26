@@ -16,13 +16,13 @@ int main() {
   real Dt = 5.;
   real tf = 1 * 12. * SECS_PER_HOUR;
   int N_steps = (tf / Dt).val();
-  VectorX tspan = VectorX::LinSpaced(N_steps, 0, tf);
-  VectorX t_tai = t0_tai + tspan.array();
+  VecX tspan = VecX::LinSpaced(N_steps, 0, tf);
+  VecX t_tai = t0_tai + tspan.array();
 
-  VectorX x0(6);
+  VecX x0(6);
   x0 << -4556, 4003, 933, -0.584, -0.586, -0.340;
 
-  // std::vector<MatrixX> x(num_iterations);
+  // std::vector<MatX> x(num_iterations);
   auto start = std::chrono::high_resolution_clock::now();
 
   // #pragma omp parallel for

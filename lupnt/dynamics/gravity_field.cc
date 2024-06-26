@@ -13,10 +13,10 @@
 namespace lupnt {
 
 std::tuple<real, real> spharm_vwmm(int m_in, real Vm_1m_1, real Wm_1m_1,
-                                   const Vector3 &x_R, double Re) {
+                                   const Vec3 &x_R, double Re) {
   double m = m_in;
 
-  Vector3 a = x_R;
+  Vec3 a = x_R;
   int kdel0, kdel1;
   if (m_in > 1) {
     kdel0 = 2;
@@ -38,7 +38,7 @@ std::tuple<real, real> spharm_vwmm(int m_in, real Vm_1m_1, real Wm_1m_1,
 }
 
 std::tuple<real, real> spharm_vwm1m(int m_in, real Vmm, real Wmm,
-                                    const Vector3 &x_R, double Re) {
+                                    const Vec3 &x_R, double Re) {
   double m = m_in;
 
   real r2 = x_R.dot(x_R);
@@ -48,12 +48,12 @@ std::tuple<real, real> spharm_vwm1m(int m_in, real Vmm, real Wmm,
 }
 
 std::tuple<real, real> spharm_vwnm(int n_in, int m_in, real Vn_1m, real Vn_2m,
-                                   real Wn_1m, real Wn_2m, const Vector3 &x_R,
+                                   real Wn_1m, real Wn_2m, const Vec3 &x_R,
                                    double Re) {
   double n = n_in;
   double m = m_in;
 
-  Vector3 a = x_R;
+  Vec3 a = x_R;
   real r2 = a.dot(a);
   real anm = sqrt(((2 * n + 1) * (2 * n - 1)) / ((n + m) * (n - m)));
   real bnm = -sqrt(((2 * n + 1) * (n + m - 1) * (n - m - 1)) /
@@ -64,16 +64,16 @@ std::tuple<real, real> spharm_vwnm(int n_in, int m_in, real Vn_1m, real Vn_2m,
   return {Vnm, Wnm};
 }
 
-Vector3 Facc_j(const Vector3 &facc_R, const Matrix3 &Ur2j) {
-  Vector3 acc_j = Ur2j * facc_R;
+Vec3 Facc_j(const Vec3 &facc_R, const Mat3 &Ur2j) {
+  Vec3 acc_j = Ur2j * facc_R;
   return acc_j;
 }
 
-std::tuple<Vector3, Vector3> spharm_dvwdx(int n_in, int m_in, real Vn1m,
-                                          real Vn1m1, real Vn1m_1, real Wn1m,
-                                          real Wn1m1, real Wn1m_1, double Re) {
-  Vector3 dVdX = Vector3::Zero();
-  Vector3 dWdX = Vector3::Zero();
+std::tuple<Vec3, Vec3> spharm_dvwdx(int n_in, int m_in, real Vn1m, real Vn1m1,
+                                    real Vn1m_1, real Wn1m, real Wn1m1,
+                                    real Wn1m_1, double Re) {
+  Vec3 dVdX = Vec3::Zero();
+  Vec3 dWdX = Vec3::Zero();
 
   double Ca;
   int kdel;
@@ -111,19 +111,19 @@ std::tuple<Vector3, Vector3> spharm_dvwdx(int n_in, int m_in, real Vn1m,
   return {dVdX, dWdX};
 }
 
-std::tuple<Matrix3d, Matrix3d> spharm_d2vwdx2(int n_in, int m_in, double Vn2m,
-                                              double Vn2m1, double Vn2m2,
-                                              double Vn2m_1, double Vn2m_2,
-                                              double Wn2m, double Wn2m1,
-                                              double Wn2m2, double Wn2m_1,
-                                              double Wn2m_2, double Re) {
+std::tuple<Mat3d, Mat3d> spharm_d2vwdx2(int n_in, int m_in, double Vn2m,
+                                        double Vn2m1, double Vn2m2,
+                                        double Vn2m_1, double Vn2m_2,
+                                        double Wn2m, double Wn2m1, double Wn2m2,
+                                        double Wn2m_1, double Wn2m_2,
+                                        double Re) {
   double n = n_in;
   double m = m_in;
 
-  Matrix3d d2VdX2 = Matrix3d::Zero();
-  Matrix3d d2WdX2 = Matrix3d::Zero();
-  VectorXd cf(11);
-  Vector2d kdel;
+  Mat3d d2VdX2 = Mat3d::Zero();
+  Mat3d d2WdX2 = Mat3d::Zero();
+  VecXd cf(11);
+  Vec2d kdel;
 
   cf(0) = 1 / (Re * Re) * sqrt((2 * n + 1) / (2 * n + 5));
   cf(1) = sqrt((n + m + 2) * (n + m + 1) * (n - m + 2) * (n - m + 1));
@@ -205,19 +205,19 @@ std::tuple<Matrix3d, Matrix3d> spharm_d2vwdx2(int n_in, int m_in, double Vn2m,
   d2WdX2(2, 0) = d2WdX2(0, 2);
   d2WdX2(2, 1) = d2WdX2(1, 2);
 
-  return std::tuple<Matrix3d, Matrix3d>(d2VdX2, d2WdX2);
+  return std::tuple<Mat3d, Mat3d>(d2VdX2, d2WdX2);
 }
 
-Vector3 spharm_acc_ecr(int nmax, int mmax, const Vector3 &x_R_in, double Re,
-                       double GMe, const MatrixXd &Cnm, const MatrixXd &Snm) {
-  // Vector3 x_R = x_R_in.cast<double>();
-  Vector3 x_R = x_R_in;
-  Vector3 accECR(0, 0, 0);
-  MatrixX V = MatrixX::Zero(nmax + 3, mmax + 3);
-  MatrixX W = MatrixX::Zero(nmax + 3, mmax + 3);
+Vec3 spharm_acc_ecr(int nmax, int mmax, const Vec3 &x_R_in, double Re,
+                    double GMe, const VecXd &Cnm, const VecXd &Snm) {
+  // Vec3 x_R = x_R_in.cast<double>();
+  Vec3 x_R = x_R_in;
+  Vec3 accECR(0, 0, 0);
+  MatX V = MatX::Zero(nmax + 3, mmax + 3);
+  MatX W = MatX::Zero(nmax + 3, mmax + 3);
   V(0, 0) = Re / x_R_in.norm();
 
-  Vector3 a, b;
+  Vec3 a, b;
 
   for (int n = 1; n < nmax + 3; ++n) {
     for (int m = 0; m < std::min(n + 1, mmax + 3); ++m) {

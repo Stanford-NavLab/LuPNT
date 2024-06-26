@@ -49,29 +49,29 @@ void GnssReceiver::InitializeReceiverParams() {
  *
  * @param t  epoch (TAI)
  * @param r_rx_gcrf  position of the receiver in GCRF [km]
- * @return Vector3d   unit vector of the receiver orientation
+ * @return Vec3d   unit vector of the receiver orientation
  */
-std::vector<Vector3d> GnssReceiver::GetReceiverOrientation(double t,
-                                                           Vector3d& r_rx_gcrf,
-                                                           std::string mode) {
-  Vector3d r_sat2sun = GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN,
-                                     Frame::GCRF)
-                           .cast<double>()
-                           .head(3) -
-                       r_rx_gcrf;  // (SUN-Earth) - (Sat-Earth) = (Sun-Sat)
+std::vector<Vec3d> GnssReceiver::GetReceiverOrientation(double t,
+                                                        Vec3d& r_rx_gcrf,
+                                                        std::string mode) {
+  Vec3d r_sat2sun = GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN,
+                                  Frame::GCRF)
+                        .cast<double>()
+                        .head(3) -
+                    r_rx_gcrf;  // (SUN-Earth) - (Sat-Earth) = (Sun-Sat)
 
-  Vector3d e_zero = Vector3d::Zero();
+  Vec3d e_zero = Vec3d::Zero();
 
   if (mode == "PZ_EarthPoint") {
     auto e_z = -r_rx_gcrf.normalized();  // Face towards Earth center
     auto e_y = r_sat2sun.cross(r_rx_gcrf).normalized();
     auto e_x = e_y.cross(e_z).normalized();
 
-    std::vector<Vector3d> e_sat = {e_x, e_y, e_z};
+    std::vector<Vec3d> e_sat = {e_x, e_y, e_z};
     return e_sat;
   } else {
     std::runtime_error("Receiver mode not implemented yet");
-    std::vector<Vector3d> e_sat = {e_zero, e_zero, e_zero};
+    std::vector<Vec3d> e_sat = {e_zero, e_zero, e_zero};
     return e_sat;
   }
 }
@@ -85,9 +85,8 @@ std::vector<Vector3d> GnssReceiver::GetReceiverOrientation(double t,
  * @param mode  receiver orientation mode  (PZ_EarthPoint, )
  * @return double
  */
-double GnssReceiver::GetReceiverAntennaGain(double t, Vector3d r_tx_gcrf,
-                                            Vector3d r_rx_gcrf,
-                                            std::string mode) {
+double GnssReceiver::GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf,
+                                            Vec3d r_rx_gcrf, std::string mode) {
   auto e_sat = GnssReceiver::GetReceiverOrientation(t, r_rx_gcrf, mode);
   auto e_x = e_sat[0];
   auto e_y = e_sat[1];

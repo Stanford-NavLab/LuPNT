@@ -27,8 +27,7 @@ namespace lupnt {
  * @param t_end End time
  * @param Phi STM of the dynamics
  */
-typedef std::function<VectorX(const VectorX, real t_curr, real t_end,
-                              MatrixXd &)>
+typedef std::function<VecX(const VecX, real t_curr, real t_end, VecXd &)>
     FilterDynamicsFunction;
 
 /**
@@ -37,10 +36,10 @@ typedef std::function<VectorX(const VectorX, real t_curr, real t_end,
  * @param x State
  * @param t_curr Current time
  * @param t_end End time
- * @return MatrixXd Process noise covariance
+ * @return VecXd Process noise covariance
  *
  */
-typedef std::function<MatrixXd(const VectorX, real t_curr, real t_end)>
+typedef std::function<VecXd(const VecX, real t_curr, real t_end)>
     FilterProcessNoiseFunction;
 
 /**
@@ -51,7 +50,7 @@ typedef std::function<MatrixXd(const VectorX, real t_curr, real t_end)>
  * @param R Measurement noise covariance
  *
  */
-typedef std::function<VectorX(const VectorX, MatrixXd &, MatrixXd &)>
+typedef std::function<VecX(const VecX, VecXd &, VecXd &)>
     FilterMeasurementFunction;
 
 class IFilter {
@@ -78,22 +77,22 @@ class IFilter {
  */
 class EKF : public IFilter {
  public:
-  real t_curr_;     // Current time
-  VectorX x_;       // Updated state
-  VectorX xbar_;    // Predicted state
-  VectorX dy_;      // Measurement residual
-  VectorX dx_;      // State update
-  VectorX z_true_;  // Observed measurement
-  VectorX z_pred_;  // Predicted measurement
+  real t_curr_;  // Current time
+  VecX x_;       // Updated state
+  VecX xbar_;    // Predicted state
+  VecX dy_;      // Measurement residual
+  VecX dx_;      // State update
+  VecX z_true_;  // Observed measurement
+  VecX z_pred_;  // Predicted measurement
 
-  MatrixXd P_;     // Updated state cov
-  MatrixXd Pbar_;  // Predicted state cov
-  MatrixXd Q_;     // Process noise cov
+  VecXd P_;     // Updated state cov
+  VecXd Pbar_;  // Predicted state cov
+  VecXd Q_;     // Process noise cov
 
-  MatrixXd H_;  // Measurement matrix
-  MatrixXd S_;  // Innovation cov
-  MatrixXd K_;  // Kalman gain
-  MatrixXd R_;  // Measurement noise cov
+  VecXd H_;  // Measurement matrix
+  VecXd S_;  // Innovation cov
+  VecXd K_;  // Kalman gain
+  VecXd R_;  // Measurement noise cov
 
   double outlier_threshold_ = 3.0;
 
@@ -106,25 +105,25 @@ class EKF : public IFilter {
     measurement_ = measurement;
   }
 
-  void Initialize(const VectorX &x0, const MatrixXd &P0) {
+  void Initialize(const VecX &x0, const VecXd &P0) {
     x_ = x0;
     P_ = P0;
   }
 
-  VectorX GetPredictedStateEstimate(MatrixXd &Pbar) {
+  VecX GetPredictedStateEstimate(VecXd &Pbar) {
     Pbar = Pbar_;
     return xbar_;
   }
-  VectorX GetPredictedStateEstimate() { return xbar_; }
-  VectorX GetUpdatedStateEstimate(MatrixXd &Phat) {
+  VecX GetPredictedStateEstimate() { return xbar_; }
+  VecX GetUpdatedStateEstimate(VecXd &Phat) {
     Phat = P_;
     return x_;
   }
-  VectorX GetUpdatedStateEstimate() { return x_; }
-  VectorX GetMeasurementResidual() { return dy_; }
-  MatrixX GetKalmanGain() { return K_; }
-  MatrixX GetMeasurementNoiseCov() { return R_; }
-  MatrixX GetMeasurementJacobian() { return H_; }
+  VecX GetUpdatedStateEstimate() { return x_; }
+  VecX GetMeasurementResidual() { return dy_; }
+  MatX GetKalmanGain() { return K_; }
+  MatX GetMeasurementNoiseCov() { return R_; }
+  MatX GetMeasurementJacobian() { return H_; }
   int GetMeasurementSize() { return H_.rows(); }
 
   void SetOutlierThreshold(double outlier_threshold) {
@@ -154,7 +153,7 @@ class EKF : public IFilter {
    * @param z_obs   measurement
    * @param debug   debug flag
    */
-  void Update(VectorX z_obs, bool debug = false);
+  void Update(VecX z_obs, bool debug = false);
 
   /**
    * @brief Update the state with a measurement
@@ -163,7 +162,7 @@ class EKF : public IFilter {
    * @param z_obs   measurement obtained at end time
    * @param debug   debug flag
    */
-  void Step(real t_end, VectorX z_obs, bool debug = false);
+  void Step(real t_end, VecX z_obs, bool debug = false);
 };
 
 }  // namespace lupnt

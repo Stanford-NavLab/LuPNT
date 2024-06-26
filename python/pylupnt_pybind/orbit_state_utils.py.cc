@@ -18,15 +18,15 @@ using namespace lupnt;
 void init_orbit_state_utils(py::module &m) {
   // Orbit State Conversions
   m.def("convert_orbit_state",
-        [](const Vector6d &state_in, OrbitStateRepres repres_in,
-           OrbitStateRepres repres_out, double mu) -> Vector6d {
+        [](const Vec6d &state_in, OrbitStateRepres repres_in,
+           OrbitStateRepres repres_out, double mu) -> Vec6d {
           return ConvertOrbitState(state_in, repres_in, repres_out, mu)
               .cast<double>();
         });
   m.def("convert_orbit_state",
-        [](const Vector6d &state_in_c, const Vector6 &state_in_d,
+        [](const Vec6d &state_in_c, const Vec6 &state_in_d,
            OrbitStateRepres repres_in_c, OrbitStateRepres repres_in_d,
-           OrbitStateRepres repres_out, double mu) -> Vector6d {
+           OrbitStateRepres repres_out, double mu) -> Vec6d {
           return ConvertOrbitState(state_in_c, state_in_d, repres_in_c,
                                    repres_in_d, repres_out, mu)
               .cast<double>();

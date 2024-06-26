@@ -13,24 +13,24 @@ int main() {
   real tai0 = StringToTAI("2030/01/01 12:00:00.00 UTC");
 
   // Orbital Elements
-  Vector3 sma{6142.4, 6142.4, 6142.4};
-  Vector3 ecc{0.001, 0.6, 0.6};
-  Vector3 imc{0.001, 57.7, 57.7};
-  Vector3 raan{0, -90, 0};
-  Vector3 aop{-45, -90, 90};
+  Vec3 sma{6142.4, 6142.4, 6142.4};
+  Vec3 ecc{0.001, 0.6, 0.6};
+  Vec3 imc{0.001, 57.7, 57.7};
+  Vec3 raan{0, -90, 0};
+  Vec3 aop{-45, -90, 90};
 
   real orbit_period = 2 * M_PI * pow(sma[0], 1.5) / sqrt(GM_MOON);
   int N_sat_plane = N_sat / N_planes;
 
   // Constellation
-  std::vector<Vector6> rv0_mci(N_sat);
+  std::vector<Vec6> rv0_mci(N_sat);
   for (int i = 0; i < N_planes; i++) {
     for (int j = 0; j < N_sat_plane; j++) {
       int idx = i * N_sat_plane + j;
       real ma = 360.0 / N_sat_plane * j;
-      Vector6 coe0{sma[i], ecc[i], imc[i], raan[i], aop[i], ma};
+      Vec6 coe0{sma[i], ecc[i], imc[i], raan[i], aop[i], ma};
       coe0.segment(2, 4) *= DEG_PER_RAD;
-      Vector6 rv0_mop = ClassicalToCartesian(coe0, GM_MOON);
+      Vec6 rv0_mop = ClassicalToCartesian(coe0, GM_MOON);
       rv0_mci[idx] = FrameConverter::Convert(tai0, rv0_mop, Frame::MOON_OP,
                                              Frame::MOON_CI);
     }
@@ -54,10 +54,10 @@ int main() {
   real tf = 1.0 * orbit_period;
   std::cout << "tf = " << tf / SECS_PER_HOUR << " h" << std::endl;
   int N_steps = (tf / Dt).val();
-  VectorX tspan = VectorX::LinSpaced(N_steps, 0, tf);
-  VectorX tai = tai0 + tspan.array();
+  VecX tspan = VecX::LinSpaced(N_steps, 0, tf);
+  VecX tai = tai0 + tspan.array();
 
-  std::vector<MatrixX> rv_hist(N_sat);
+  std::vector<MatX> rv_hist(N_sat);
   // compute time
   auto start = omp_get_wtime();
   // Print number of threads
@@ -86,9 +86,9 @@ int main() {
 
   hold(on);
   for (int i = 0; i < N_sat; i++) {
-    VectorX x = rv_hist[i].col(0);
-    VectorX y = rv_hist[i].col(1);
-    VectorX z = rv_hist[i].col(2);
+    VecX x = rv_hist[i].col(0);
+    VecX y = rv_hist[i].col(1);
+    VecX z = rv_hist[i].col(2);
     lupnt::plot3(x, y, z);
   }
 

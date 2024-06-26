@@ -10,7 +10,7 @@ using std::cout, std::endl, std::setw, std::fixed, std::setprecision,
 
 int main() {
   real e = 0.72;
-  Vector2 mean_anomalies(4, 50);  // [deg]
+  Vec2 mean_anomalies(4, 50);  // [deg]
 
   cout << "Exercise 2-2 (Kepler’s equation)";
 

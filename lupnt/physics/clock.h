@@ -63,10 +63,10 @@ static std::tuple<double, double, double> GetClockSigma(ClockModel clk_model) {
   return std::make_tuple(sigma1, sigma2, sigma3);
 }
 
-static Matrix2d GetClockProcessNoise(ClockModel clk_model, double dt) {
+static Mat2d GetClockProcessNoise(ClockModel clk_model, double dt) {
   double sig1, sig2, sig3;
   std::tie(sig1, sig2, sig3) = GetClockSigma(clk_model);
-  Matrix2d Q;
+  Mat2d Q;
   Q(0, 0) = std::pow(sig1, 2) * dt + std::pow(sig2, 2) * std::pow(dt, 3) / 3;
   Q(0, 1) = std::pow(sig2, 2) * std::pow(dt, 2) / 2;
   Q(1, 0) = std::pow(sig2, 2) * std::pow(dt, 2) / 2;
@@ -74,7 +74,7 @@ static Matrix2d GetClockProcessNoise(ClockModel clk_model, double dt) {
   return Q;
 };
 
-static Matrix3d GetClockProcessNoise3(ClockModel clk_model, double dt) {
+static Mat3d GetClockProcessNoise3(ClockModel clk_model, double dt) {
   double sig1, sig2, sig3, t2, t3, t4, t5;
   std::tie(sig1, sig2, sig3) = GetClockSigma(clk_model);
 
@@ -87,7 +87,7 @@ static Matrix3d GetClockProcessNoise3(ClockModel clk_model, double dt) {
   sig2 = std::pow(sig2, 2);
   sig3 = std::pow(sig3, 2);
 
-  Matrix3d Q;
+  Mat3d Q;
   Q(0, 0) = sig1 * dt + std::pow(sig2, 2) * t3 / 3 + sig3 * t5 / 20;
   Q(0, 1) = sig2 * t2 / 2 + sig3 * t4 / 8;
   Q(0, 2) = sig3 * t3 / 6;
@@ -106,23 +106,23 @@ static Matrix3d GetClockProcessNoise3(ClockModel clk_model, double dt) {
  */
 class ClockState : public IState {
  private:
-  VectorX x_;
+  VecX x_;
   int state_size_;  // it can be 2 or 3
 
  public:
   ClockState(int state_size) {
     state_size_ = state_size;
-    x_ = VectorX::Zero(state_size_);
+    x_ = VecX::Zero(state_size_);
   }
-  ClockState(VectorX clock_vec) {
+  ClockState(VecX clock_vec) {
     x_ = clock_vec;
     state_size_ = clock_vec.size();
   }
-  VectorX GetVector() const { return x_; }
+  VecX GetVec() const { return x_; }
   real GetValue(int i) const { return x_(i); }
   inline int GetSize() const { return state_size_; };
   inline void SetValue(const real val, const int idx) { x_(idx) = val; }
-  void SetVector(const VectorX& x) { x_ = x; }
+  void SetVec(const VecX& x) { x_ = x; }
 };
 
 class ClockDynamics : public IDynamics {
@@ -135,90 +135,90 @@ class ClockDynamics : public IDynamics {
 
   ClockDynamics(const ClockDynamics& other) { clk_model_ = other.clk_model_; }
 
-  Matrix2 TwoStatePhi(real dt) {
-    Matrix2 Phi_clk;
+  Mat2 TwoStatePhi(real dt) {
+    Mat2 Phi_clk;
     Phi_clk << 1, dt, 0, 1;
     return Phi_clk;
   }
 
-  Matrix2d TwoStatePhi(double dt) {
-    Matrix2d Phi_clk;
+  Mat2d TwoStatePhi(double dt) {
+    Mat2d Phi_clk;
     Phi_clk << 1, dt, 0, 1;
     return Phi_clk;
   }
 
-  Matrix3 ThreeStatePhi(real dt) {
-    Matrix3 Phi_clk{{1, dt, dt * dt / 2}, {0, 1, dt}, {0, 0, 1}};
+  Mat3 ThreeStatePhi(real dt) {
+    Mat3 Phi_clk{{1, dt, dt * dt / 2}, {0, 1, dt}, {0, 0, 1}};
     return Phi_clk;
   }
 
-  Matrix3d ThreeStatePhi(double dt) {
-    Matrix3d Phi_clk{{1, dt, dt * dt / 2}, {0, 1, dt}, {0, 0, 1}};
+  Mat3d ThreeStatePhi(double dt) {
+    Mat3d Phi_clk{{1, dt, dt * dt / 2}, {0, 1, dt}, {0, 0, 1}};
     return Phi_clk;
   }
 
   // two state clock
-  void Propagate(Vector2& clk, real t0, real tf) {
+  void Propagate(Vec2& clk, real t0, real tf) {
     real dt = tf - t0;
-    Matrix2 Phi_clk = TwoStatePhi(dt);
+    Mat2 Phi_clk = TwoStatePhi(dt);
     clk = Phi_clk * clk;
   }
 
-  void Propagate(Vector2& clk, real dt) {
-    Matrix2 Phi_clk = TwoStatePhi(dt);
+  void Propagate(Vec2& clk, real dt) {
+    Mat2 Phi_clk = TwoStatePhi(dt);
     clk = Phi_clk * clk;
   }
 
-  void PropagateWithNoise(Vector2& clk, real t0, real tf) {
+  void PropagateWithNoise(Vec2& clk, real t0, real tf) {
     real dt = tf - t0;
     auto Q_clk = GetClockProcessNoise(clk_model_, dt.val());
-    Matrix2 Phi_clk_ = TwoStatePhi(dt);
+    Mat2 Phi_clk_ = TwoStatePhi(dt);
     clk = SampleMVN(Phi_clk_ * clk, Q_clk, 1);
   }
 
-  void PropagateWithStm(Vector2& clk, real t0, real tf, MatrixXd& stm) {
+  void PropagateWithStm(Vec2& clk, real t0, real tf, MatXd& stm) {
     real dt = tf - t0;
-    Matrix2 Phi_clk = TwoStatePhi(dt);
-    Matrix2d Phi_clk_d = Phi_clk.cast<double>();
+    Mat2 Phi_clk = TwoStatePhi(dt);
+    Mat2d Phi_clk_d = Phi_clk.cast<double>();
     clk = Phi_clk * clk;
     stm.block(0, 0, 2, 2) = Phi_clk_d;
   }
 
   // three state clock
-  void Propagate(Vector3& clk, real t0, real tf) {
+  void Propagate(Vec3& clk, real t0, real tf) {
     real dt = tf - t0;
-    Matrix3 Phi_clk = ThreeStatePhi(dt);
+    Mat3 Phi_clk = ThreeStatePhi(dt);
     clk = Phi_clk * clk;
   }
 
-  void Propagate(Vector3& clk, real dt) {
-    Matrix3 Phi_clk = ThreeStatePhi(dt);
+  void Propagate(Vec3& clk, real dt) {
+    Mat3 Phi_clk = ThreeStatePhi(dt);
     clk = Phi_clk * clk;
   }
 
-  void PropagateWithNoise(Vector3& clk, real t0, real tf) {
+  void PropagateWithNoise(Vec3& clk, real t0, real tf) {
     real dt = tf - t0;
     auto Q_clk = GetClockProcessNoise3(clk_model_, dt.val());
-    Matrix3 Phi_clk_ = ThreeStatePhi(dt);
-    clk = Phi_clk_ * clk + SampleMVN(Vector3d::Zero(), Q_clk, 1);
+    Mat3 Phi_clk_ = ThreeStatePhi(dt);
+    clk = Phi_clk_ * clk + SampleMVN(Vec3d::Zero(), Q_clk, 1);
   }
 
-  void PropagateWithStm(Vector3& clk, real t0, real tf, MatrixXd& stm) {
+  void PropagateWithStm(Vec3& clk, real t0, real tf, MatXd& stm) {
     real dt = tf - t0;
-    Matrix3 Phi_clk = ThreeStatePhi(dt);
-    Matrix3d Phi_clk_d = Phi_clk.cast<double>();
+    Mat3 Phi_clk = ThreeStatePhi(dt);
+    Mat3d Phi_clk_d = Phi_clk.cast<double>();
     clk = Phi_clk * clk;
     stm.block(0, 0, 3, 3) = Phi_clk_d;
   }
 
   // arbitrary state clock
-  void PropagateX(VectorX& clk, real t0, real tf) {
+  void PropagateX(VecX& clk, real t0, real tf) {
     if (clk.size() == 2) {
-      Vector2 clk2 = clk;
+      Vec2 clk2 = clk;
       Propagate(clk2, t0, tf);
       clk = clk2;
     } else if (clk.size() == 3) {
-      Vector3 clk3 = clk;
+      Vec3 clk3 = clk;
       Propagate(clk3, t0, tf);
       clk = clk3;
     } else {
@@ -226,13 +226,13 @@ class ClockDynamics : public IDynamics {
     }
   }
 
-  void PropagateWithNoiseX(VectorX& clk, real t0, real tf) {
+  void PropagateWithNoiseX(VecX& clk, real t0, real tf) {
     if (clk.size() == 2) {
-      Vector2 clk2 = clk;
+      Vec2 clk2 = clk;
       PropagateWithNoise(clk2, t0, tf);
       clk = clk2;
     } else if (clk.size() == 3) {
-      Vector3 clk3 = clk;
+      Vec3 clk3 = clk;
       PropagateWithNoise(clk3, t0, tf);
       clk = clk3;
     } else {
@@ -240,14 +240,14 @@ class ClockDynamics : public IDynamics {
     }
   }
 
-  void PropagateWithStmX(VectorX& clk, real t0, real tf, MatrixXd& stm) {
+  void PropagateWithStmX(VecX& clk, real t0, real tf, MatXd& stm) {
     if (clk.size() == 2) {
-      Vector2 clk2 = clk;
+      Vec2 clk2 = clk;
       stm.resize(2, 2);
       PropagateWithStm(clk2, t0, tf, stm);
       clk = clk2;
     } else if (clk.size() == 3) {
-      Vector3 clk3 = clk;
+      Vec3 clk3 = clk;
       stm.resize(3, 3);
       PropagateWithStm(clk3, t0, tf, stm);
       clk = clk3;
@@ -258,15 +258,15 @@ class ClockDynamics : public IDynamics {
 
   // Propagate using clockState
   void Propagate(ClockState& clk, real t0, real tf) {
-    VectorX clk_vec = clk.GetVector();
+    VecX clk_vec = clk.GetVec();
     PropagateX(clk_vec, t0, tf);
-    clk.SetVector(clk_vec);
+    clk.SetVec(clk_vec);
   }
 
   void PropagateWithNoise(ClockState& clk, real t0, real tf) {
-    VectorX clk_vec = clk.GetVector();
+    VecX clk_vec = clk.GetVec();
     PropagateWithNoiseX(clk_vec, t0, tf);
-    clk.SetVector(clk_vec);
+    clk.SetVec(clk_vec);
   }
 };
 }  // namespace lupnt

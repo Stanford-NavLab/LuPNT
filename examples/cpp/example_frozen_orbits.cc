@@ -24,8 +24,8 @@ using namespace std;
 int main() {
   MoonMeanDynamics moonMeanDynamics;
 
-  Vector6 coe_m_1{3738, 0.1, 48.0689 * RAD_PER_DEG, 0, 90 * RAD_PER_DEG, 0};
-  Vector6 coe_m_2{13738, 0.1, 39.6024 * RAD_PER_DEG, 0, 90 * RAD_PER_DEG, 0};
+  Vec6 coe_m_1{3738, 0.1, 48.0689 * RAD_PER_DEG, 0, 90 * RAD_PER_DEG, 0};
+  Vec6 coe_m_2{13738, 0.1, 39.6024 * RAD_PER_DEG, 0, 90 * RAD_PER_DEG, 0};
 
   auto deloe_m_1 = ClassicalToDelaunay(coe_m_1, GM_MOON);
   auto deloe_m_2 = ClassicalToDelaunay(coe_m_2, GM_MOON);

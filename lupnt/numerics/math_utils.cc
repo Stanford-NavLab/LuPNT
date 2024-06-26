@@ -18,7 +18,7 @@
 
 namespace lupnt {
 
-real angleBetweenVectors(const VectorX &a, const VectorX &b) {
+real angleBetweenVecs(const VecX &a, const VecX &b) {
   assert(a.size() == b.size());
   return 2.0 * atan2((a.normalized() - b.normalized()).norm(),
                      (a.normalized() + b.normalized()).norm());
@@ -26,8 +26,8 @@ real angleBetweenVectors(const VectorX &a, const VectorX &b) {
 
 real wrapToPi(real angle) { return atan2(sin(angle), cos(angle)); }
 
-VectorX wrapToPi(VectorX angle) {
-  VectorX result = angle;
+VecX wrapToPi(VecX angle) {
+  VecX result = angle;
   for (int i = 0; i < angle.size(); i++) {
     result(i) = wrapToPi(angle(i));
   }
@@ -46,10 +46,10 @@ real wrapTo2Pi(real angle) { return angle - TWO_PI * floor(angle / TWO_PI); }
  * @brief  Wrap the angles between 0 and 2pi
  *
  * @param angle  angle vector in radians
- * @return VectorX  wrapped angle vector in radians
+ * @return VecX  wrapped angle vector in radians
  */
-VectorX wrapTo2Pi(VectorX angle) {
-  VectorX result = angle;
+VecX wrapTo2Pi(VecX angle) {
+  VecX result = angle;
   for (int i = 0; i < angle.size(); i++) {
     result(i) = wrapTo2Pi(angle(i));
   }
@@ -68,12 +68,12 @@ real decimal2dB(real x) { return 10 * log10(x); }
 
 real dB2decimal(real x) { return pow(10, x / 10); }
 
-MatrixX decimal2dB(MatrixX x) {
+MatX decimal2dB(MatX x) {
   x.array() = x.unaryExpr([](real x) { return decimal2dB(x); });
   return x;
 }
 
-MatrixX dB2decimal(MatrixX x) {
+MatX dB2decimal(MatX x) {
   x.array() = x.unaryExpr([](real x) { return dB2decimal(x); });
   return x;
 }
@@ -84,14 +84,14 @@ real floor(real x) {
   return y;
 }
 
-Vector3 degrees2dms(real deg) {
+Vec3 degrees2dms(real deg) {
   real d = floor(deg);
   real m = floor((deg - d) * 60);
   real s = (deg - d - m / 60) * 3600;
-  return Vector3{d, m, s};
+  return Vec3{d, m, s};
 }
 
-real dms2degrees(Vector3 hms) {
+real dms2degrees(Vec3 hms) {
   real decdeg = hms(0) + hms(1) / 60.0 + hms(2) / 3600.0;
   return decdeg;
 }
@@ -116,11 +116,11 @@ real safe_asin(real x) {
   }
 }
 
-double Rms(VectorXd vec) {
+double Rms(VecXd vec) {
   return std::sqrt(vec.array().pow(2).sum() / vec.size());
 }
 
-double Percentile(VectorXd vec, double p) {
+double Percentile(VecXd vec, double p) {
   std::sort(vec.data(), vec.data() + vec.size());
   int index = std::ceil(p * vec.size());
   if (index > (vec.size() - 1)) {
@@ -129,7 +129,7 @@ double Percentile(VectorXd vec, double p) {
   return vec(index);
 }
 
-double Std(VectorXd vec) {
+double Std(VecXd vec) {
   double mean = vec.sum() / vec.size();
   double sq_sum = 0.0;
   for (int i = 0; i < vec.size(); i++) {
@@ -138,7 +138,7 @@ double Std(VectorXd vec) {
   return std::sqrt(sq_sum / vec.size());
 }
 
-double LinearInterp1d(VectorXd x, VectorXd data, double ix) {
+double LinearInterp1d(VecXd x, VecXd data, double ix) {
   int ix0 = 0;
   int ix1 = 0;
   for (int i = 0; i < x.size() - 1; i++) {
@@ -162,8 +162,7 @@ double LinearInterp1d(VectorXd x, VectorXd data, double ix) {
   return result;
 }
 
-double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
-                      double iy) {
+double LinearInterp2d(VecXd x, VecXd y, VecXd data, double ix, double iy) {
   int ix0 = 0;
   int ix1 = 0;
   for (int i = 0; i < x.size() - 1; i++) {
@@ -201,16 +200,15 @@ double LinearInterp2d(VectorXd x, VectorXd y, MatrixXd data, double ix,
   return result;
 }
 
-MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn,
-                   int seed) {
+VecXd SampleMVN(const VecXd mean, const VecXd covar, int nn, int seed) {
   // Define random generator with Gaussian distribution
   int xsize = mean.size();
   auto generator = std::mt19937(seed);
   auto dist = std::bind(std::normal_distribution<double>{0.0, 1.0}, generator);
 
-  // Transform Matrix
-  MatrixXd normTransform(xsize, xsize);
-  Eigen::LLT<MatrixXd> cholSolver(covar);
+  // Transform Mat
+  VecXd normTransform(xsize, xsize);
+  Eigen::LLT<VecXd> cholSolver(covar);
 
   if (cholSolver.info() == Eigen::Success) {
     // Use cholesky solver
@@ -220,8 +218,8 @@ MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn,
         "The covariance matrix must be symmetric and pos-definite.");
   }
 
-  MatrixXd randN(xsize, nn);
-  MatrixXd mean_samples(xsize, nn);
+  VecXd randN(xsize, nn);
+  VecXd mean_samples(xsize, nn);
   for (int i = 0; i < xsize; i++) {
     for (int j = 0; j < nn; j++) {
       randN(i, j) = dist();
@@ -229,19 +227,19 @@ MatrixXd SampleMVN(const VectorXd mean, const MatrixXd covar, int nn,
     }
   }
 
-  MatrixXd samples = normTransform * randN + mean_samples;
+  VecXd samples = normTransform * randN + mean_samples;
   return samples;
 };
 
-MatrixX SampleMVN(const VectorX mean, const MatrixX covar, int nn, int seed) {
+MatX SampleMVN(const VecX mean, const MatX covar, int nn, int seed) {
   // Define random generator with Gaussian distribution
   int xsize = mean.size();
   auto generator = std::mt19937(seed);
   auto dist = std::bind(std::normal_distribution<double>{0.0, 1.0}, generator);
 
-  // Transform Matrix
-  MatrixX normTransform(xsize, xsize);
-  Eigen::LLT<MatrixX> cholSolver(covar);
+  // Transform Mat
+  MatX normTransform(xsize, xsize);
+  Eigen::LLT<MatX> cholSolver(covar);
 
   if (cholSolver.info() == Eigen::Success) {
     // Use cholesky solver
@@ -251,8 +249,8 @@ MatrixX SampleMVN(const VectorX mean, const MatrixX covar, int nn, int seed) {
         "The covariance matrix must be symmetric and pos-definite.");
   }
 
-  MatrixX randN(xsize, nn);
-  MatrixX mean_samples(xsize, nn);
+  MatX randN(xsize, nn);
+  MatX mean_samples(xsize, nn);
   for (int i = 0; i < xsize; i++) {
     for (int j = 0; j < nn; j++) {
       randN(i, j) = dist();
@@ -260,21 +258,21 @@ MatrixX SampleMVN(const VectorX mean, const MatrixX covar, int nn, int seed) {
     }
   }
 
-  MatrixX samples = normTransform * randN + mean_samples;
+  MatX samples = normTransform * randN + mean_samples;
   return samples;
 };
 
-MatrixXd blkdiag(const MatrixXd &A, const MatrixXd &B) {
-  MatrixXd C = MatrixXd::Zero(A.rows() + B.rows(), A.cols() + B.cols());
+VecXd blkdiag(const VecXd &A, const VecXd &B) {
+  VecXd C = VecXd::Zero(A.rows() + B.rows(), A.cols() + B.cols());
   C.topLeftCorner(A.rows(), A.cols()) = A;
   C.bottomRightCorner(B.rows(), B.cols()) = B;
   return C;
 }
 
-Matrix3 Rot1(real phi) {
+Mat3 Rot1(real phi) {
   real c = cos(phi);
   real s = sin(phi);
-  Matrix3 R1{
+  Mat3 R1{
       {1.0, 0.0, 0.0},
       {0.0, c, s},
       {0.0, -s, c},
@@ -282,10 +280,10 @@ Matrix3 Rot1(real phi) {
   return R1;
 }
 
-Matrix3 Rot2(real phi) {
+Mat3 Rot2(real phi) {
   real c = cos(phi);
   real s = sin(phi);
-  Matrix3 R2{
+  Mat3 R2{
       {c, 0.0, -s},
       {0.0, 1.0, 0.0},
       {s, 0.0, c},
@@ -293,10 +291,10 @@ Matrix3 Rot2(real phi) {
   return R2;
 }
 
-Matrix3 Rot3(real phi) {
+Mat3 Rot3(real phi) {
   real c = cos(phi);
   real s = sin(phi);
-  Matrix3 R3{
+  Mat3 R3{
       {c, s, 0.0},
       {-s, c, 0.0},
       {0.0, 0.0, 1.0},
@@ -304,8 +302,8 @@ Matrix3 Rot3(real phi) {
   return R3;
 }
 
-Matrix3 Skew(Vector3 x) {
-  Matrix3 skew{
+Mat3 Skew(Vec3 x) {
+  Mat3 skew{
       {0.0, -x(2), x(1)},
       {x(2), 0.0, -x(0)},
       {-x(1), x(0), 0.0},
@@ -313,7 +311,7 @@ Matrix3 Skew(Vector3 x) {
   return skew;
 }
 
-std::vector<double> EigenToStdVector(const VectorX &vec) {
+std::vector<double> EigenToStdVec(const VecX &vec) {
   std::vector<double> result(vec.size());
   for (int i = 0; i < vec.size(); i++) {
     result[i] = vec(i).val();

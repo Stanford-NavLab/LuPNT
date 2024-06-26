@@ -50,7 +50,7 @@ int main() {
     dynamics.SetPrimaryBody(moon);
 
     // State
-    VectorX rv0(6);
+    VecX rv0(6);
     rv0 << -1.540113643726188e3, -0.179443941906269e3, 1.128341549807345e3,
         -0.000291469032495e3, -0.001449961303523e3, -0.000628428693161e3;
     CartesianOrbitState cart_state(rv0);
@@ -64,12 +64,12 @@ int main() {
     // NBodyRates
     int n = 100;
     int m = 24 * 60;
-    VectorXd times(n);
-    VectorX a;
-    MatrixXd J;
-    // std::function<VectorX(real, VectorX &, NBodyDynamics
+    VecXd times(n);
+    VecX a;
+    VecXd J;
+    // std::function<VecX(real, VecX &, NBodyDynamics
     // &)>
-    //     func = [=](real t, VectorX &xs, NBodyDynamics &dyn) {
+    //     func = [=](real t, VecX &xs, NBodyDynamics &dyn) {
     //       return dyn.ComputeRates(t, xs);
     //     };
 

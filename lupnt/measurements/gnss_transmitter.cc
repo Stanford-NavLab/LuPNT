@@ -112,29 +112,29 @@ void GnssTransmitter::InitializeBEIDOUTransmitter() {
  *
  * @param t
  * @param r_tx_gcrf
- * @return Vector3d
+ * @return Vec3d
  */
-std::vector<Vector3d> GnssTransmitter::GetTransmitterOrientation(
-    double t, Vector3d& r_tx_gcrf) {
+std::vector<Vec3d> GnssTransmitter::GetTransmitterOrientation(
+    double t, Vec3d& r_tx_gcrf) {
   // (Sun-Earth) - (Sat-Earth)
-  Vector3d r_sat2sun = GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN, Frame::GCRF)
-                           .cast<double>()
-                           .head(3) -
-                       r_tx_gcrf;
+  Vec3d r_sat2sun = GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN, Frame::GCRF)
+                        .cast<double>()
+                        .head(3) -
+                    r_tx_gcrf;
   auto e_z_gnss = -r_tx_gcrf.normalized();  // Face towards earth center
   auto e_y_gnss = r_sat2sun.cross(r_tx_gcrf).normalized();
   auto e_x_gnss = e_y_gnss.cross(e_z_gnss).normalized();
 
-  std::vector<Vector3d> e_gnss = {e_x_gnss, e_y_gnss, e_z_gnss};
+  std::vector<Vec3d> e_gnss = {e_x_gnss, e_y_gnss, e_z_gnss};
   return e_gnss;
 }
 
-double GnssTransmitter::GetTransmittionAntennaGain(double t, Vector3d r_tx_gcrf,
-                                                   Vector3d r_rx_gcrf) {
+double GnssTransmitter::GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf,
+                                                   Vec3d r_rx_gcrf) {
   auto e_gnss = GnssTransmitter::GetTransmitterOrientation(t, r_tx_gcrf);
-  Vector3d e_x_gnss = e_gnss[0];
-  Vector3d e_y_gnss = e_gnss[1];
-  Vector3d e_z_gnss = e_gnss[2];
+  Vec3d e_x_gnss = e_gnss[0];
+  Vec3d e_y_gnss = e_gnss[1];
+  Vec3d e_z_gnss = e_gnss[2];
   auto u_tx_rx = (r_rx_gcrf - r_tx_gcrf).normalized();
   double theta_tx = acos(u_tx_rx.dot(e_z_gnss));
   double phi_tx = atan2(u_tx_rx.dot(e_y_gnss), u_tx_rx.dot(e_x_gnss));

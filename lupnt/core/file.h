@@ -63,18 +63,16 @@ class Timestamped {
 
 class DataHistory {
  public:
-  template <typename VectorType>
-  void AddData(const std::string& key, double timestamp,
-               const VectorType& data) {
+  template <typename VecType>
+  void AddData(const std::string& key, double timestamp, const VecType& data) {
     if (historyData.find(key) == historyData.end()) {
       historyData[key] = {};
     }
     historyData[key].push_back(
-        Timestamped<VectorXd>(timestamp, data.template cast<double>()));
+        Timestamped<VecXd>(timestamp, data.template cast<double>()));
   }
 
-  const std::vector<Timestamped<VectorXd>>& GetData(
-      const std::string& key) const {
+  const std::vector<Timestamped<VecXd>>& GetData(const std::string& key) const {
     auto it = historyData.find(key);
     if (it != historyData.end()) {
       return it->second;
@@ -86,7 +84,7 @@ class DataHistory {
     headers[key].push_back(header);
   }
 
-  const std::map<std::string, std::vector<Timestamped<VectorXd>>>& GetData()
+  const std::map<std::string, std::vector<Timestamped<VecXd>>>& GetData()
       const {
     return historyData;
   }
@@ -96,7 +94,7 @@ class DataHistory {
   }
 
  private:
-  std::map<std::string, std::vector<Timestamped<VectorXd>>> historyData;
+  std::map<std::string, std::vector<Timestamped<VecXd>>> historyData;
   std::map<std::string, std::vector<std::string>> headers;
 };
 

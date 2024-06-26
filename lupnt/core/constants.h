@@ -24,27 +24,27 @@
     throw std::runtime_error(oss.str());        \
   }
 
-#define DEFINE_STATIC_VECTORS_MATRICES(size)                 \
-  using Vector##size##d = Eigen::Matrix<double, size, 1>;    \
-  using Matrix##size##d = Eigen::Matrix<double, size, size>; \
-  using RowVector##size##d = Eigen::Matrix<double, 1, size>; \
-  using Vector##size##i = Eigen::Matrix<int, size, 1>;       \
-  using Matrix##size##i = Eigen::Matrix<int, size, size>;    \
-  using RowVector##size##i = Eigen::Matrix<int, 1, size>;    \
-  using Vector##size = Eigen::Matrix<real, size, 1>;         \
-  using Matrix##size = Eigen::Matrix<real, size, size>;      \
-  using RowVector##size = Eigen::Matrix<real, 1, size>;
+#define DEFINE_STATIC_VECTORS_MATRICES(size)              \
+  using Vec##size = Eigen::Matrix<real, size, 1>;         \
+  using Vec##size##d = Eigen::Matrix<double, size, 1>;    \
+  using Vec##size##i = Eigen::Matrix<int, size, 1>;       \
+  using Mat##size = Eigen::Matrix<real, size, size>;      \
+  using Mat##size##d = Eigen::Matrix<double, size, size>; \
+  using Mat##size##i = Eigen::Matrix<int, size, size>;    \
+  using RowVec##size##d = Eigen::Matrix<double, 1, size>; \
+  using RowVec##size##i = Eigen::Matrix<int, 1, size>;    \
+  using RowVec##size = Eigen::Matrix<real, 1, size>;
 
-#define DEFINE_DYNAMIC_VECTORS_MATRICES()                                 \
-  using VectorXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;              \
-  using MatrixXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; \
-  using RowVectorXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;           \
-  using VectorXi = Eigen::Matrix<int, Eigen::Dynamic, 1>;                 \
-  using MatrixXi = Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;    \
-  using RowVectorXi = Eigen::Matrix<int, 1, Eigen::Dynamic>;              \
-  using VectorX = Eigen::Matrix<real, Eigen::Dynamic, 1>;                 \
-  using MatrixX = Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>;    \
-  using RowVectorX = Eigen::Matrix<real, 1, Eigen::Dynamic>;
+#define DEFINE_DYNAMIC_VECTORS_MATRICES()                              \
+  using VecX = Eigen::Matrix<real, Eigen::Dynamic, 1>;                 \
+  using VecXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;              \
+  using VecXi = Eigen::Matrix<int, Eigen::Dynamic, 1>;                 \
+  using MatX = Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>;    \
+  using MatXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; \
+  using MatXi = Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;    \
+  using RowVecX = Eigen::Matrix<real, 1, Eigen::Dynamic>;              \
+  using RowVecXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;           \
+  using RowVecXi = Eigen::Matrix<int, 1, Eigen::Dynamic>;
 
 #define DEFINE_VECTORS_MATRICES()    \
   DEFINE_STATIC_VECTORS_MATRICES(1)  \
@@ -63,18 +63,18 @@ namespace lupnt {
 
 using real = autodiff::real;
 template <int rows, int cols>
-using Matrix = Eigen::Matrix<real, rows, cols>;
+using Mat = Eigen::Matrix<real, rows, cols>;
 template <int rows, int cols>
-using Matrixd = Eigen::Matrix<double, rows, cols>;
+using Matd = Eigen::Matrix<double, rows, cols>;
 template <int size>
-using Vector = Eigen::Matrix<real, size, 1>;
+using Vec = Eigen::Matrix<real, size, 1>;
 template <int size>
-using Vectord = Eigen::Matrix<double, size, 1>;
+using Vecd = Eigen::Matrix<double, size, 1>;
 template <int size>
-using RowVectord = Eigen::Matrix<double, 1, size>;
-using RowVectorXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;
-using Quaternion = Eigen::Quaternion<real>;
-using Quaterniond = Eigen::Quaternion<double>;
+using RowVecd = Eigen::Matrix<double, 1, size>;
+using RowVecXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;
+using Quat = Eigen::Quaternion<real>;
+using Quatd = Eigen::Quaternion<double>;
 using AngleAxis = Eigen::AngleAxis<real>;
 using AngleAxisd = Eigen::AngleAxis<double>;
 

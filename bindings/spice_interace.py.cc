@@ -12,7 +12,7 @@ void init_spice_interface(py::module &m) {
       .def_static("extract_pck_coeffs", &lupnt::ExtractPckCoeffs)
       .def_static("get_frame_conversion_matrix",
                   [](double et, std::string from, std::string to) {
-                    return lupnt::GetFrameConversionMatrix(et, from, to);
+                    return lupnt::GetFrameConversionMat(et, from, to);
                   })
 
       .def_static(

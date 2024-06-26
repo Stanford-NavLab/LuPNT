@@ -12,33 +12,32 @@ using namespace lupnt;
 int state_size = 8;
 int meas_size = 4;
 
-MatrixXd SetInitialCovariance(double pos_sigma, double vel_sigma,
-                              double clock_bias_sigma,
-                              double clock_drift_sigma) {
-  MatrixXd P0 = MatrixXd::Identity(state_size, state_size);
-  P0.block(0, 0, 3, 3) = Matrix3d::Identity() * pos_sigma;
-  P0.block(3, 3, 3, 3) = Matrix3d::Identity() * vel_sigma;
+VecXd SetInitialCovariance(double pos_sigma, double vel_sigma,
+                           double clock_bias_sigma, double clock_drift_sigma) {
+  VecXd P0 = VecXd::Identity(state_size, state_size);
+  P0.block(0, 0, 3, 3) = Mat3d::Identity() * pos_sigma;
+  P0.block(3, 3, 3, 3) = Mat3d::Identity() * vel_sigma;
   P0(6, 6) = clock_bias_sigma;
   P0(7, 7) = clock_drift_sigma;
   return P0;
 }
 
-FilterProcessNoiseFunction proc_noise_func = [](const VectorX& x, real t_curr,
+FilterProcessNoiseFunction proc_noise_func = [](const VecX& x, real t_curr,
                                                 real t_end) {
   int clock_index = 6;
   double dt = (t_end - t_curr).val();
   double sigma_acc = 1e-13;
 
-  MatrixXd Q = MatrixXd::Zero(state_size, state_size);
+  VecXd Q = VecXd::Zero(state_size, state_size);
 
-  Matrix6d Q_rv = Matrix6d::Zero();
+  Mat6d Q_rv = Mat6d::Zero();
   for (int i = 0; i < 3; i++) {
     Q_rv(i, i) = pow(dt, 3) / 3.0 * pow(sigma_acc, 2);
     Q_rv(i + 3, i + 3) = dt * pow(sigma_acc, 2);
     Q_rv(i, i + 3) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
     Q_rv(i + 3, i) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
   }
-  Matrix2d Q_clk = GetClockProcessNoise(ClockModel::kMicrosemiCsac, dt);
+  Mat2d Q_clk = GetClockProcessNoise(ClockModel::kMicrosemiCsac, dt);
 
   Q.block(0, 0, 6, 6) = Q_rv;
   Q.block(6, 6, 2, 2) = Q_clk;
@@ -46,20 +45,20 @@ FilterProcessNoiseFunction proc_noise_func = [](const VectorX& x, real t_curr,
   return Q;
 };
 
-FilterMeasurementFunction meas_func_pos_clk = [](const VectorX& x, MatrixXd& H,
-                                                 MatrixXd& R) {
+FilterMeasurementFunction meas_func_pos_clk = [](const VecX& x, VecXd& H,
+                                                 VecXd& R) {
   int clock_index = 6;
 
-  VectorX y = VectorX::Zero(meas_size);
+  VecX y = VecX::Zero(meas_size);
   H.resize(meas_size, state_size);
   R.resize(meas_size, meas_size);
 
-  Vector3 pos = x.segment(0, 3);
-  Vector3 vel = x.segment(3, 3);
-  H = MatrixXd::Zero(meas_size, state_size);
-  H.block(0, 0, 3, 3) = Matrix3d::Identity();
+  Vec3 pos = x.segment(0, 3);
+  Vec3 vel = x.segment(3, 3);
+  H = VecXd::Zero(meas_size, state_size);
+  H.block(0, 0, 3, 3) = Mat3d::Identity();
   H(3, clock_index) = 1.0;
-  R = Matrix4d::Identity() * 1e-3;
+  R = Mat4d::Identity() * 1e-3;
 
   y.segment(0, 3) = pos;
   y(3) = x(clock_index);
@@ -94,22 +93,22 @@ int main() {
   joint_state.PushBackStateAndDynamics(&cart, &dyn_moon_tb);
   joint_state.PushBackStateAndDynamics(&clock, &dyn_clk);
 
-  VectorX state_vec = joint_state.GetJointStateValue();
+  VecX state_vec = joint_state.GetJointStateValue();
   std::cout << "Initial State: " << std::endl << state_vec << std::endl;
 
   // Test propagation
   FilterDynamicsFunction joint_dynamics =
       joint_state.GetFilterDynamicsFunction();
-  MatrixXd Phi;
+  VecXd Phi;
   real t_start = 0.0;
   real t_end = 60.0;
-  VectorX prop_state = joint_dynamics(state_vec, t_start, t_end, Phi);
+  VecX prop_state = joint_dynamics(state_vec, t_start, t_end, Phi);
 
   std::cout << " " << std::endl;
   std::cout << "Propagated State (60 sec): " << std::endl
             << prop_state << std::endl;
   std::cout << " " << std::endl;
-  std::cout << "State Transition Matrix: " << std::endl << Phi << std::endl;
+  std::cout << "State Transition Mat: " << std::endl << Phi << std::endl;
 
   // Initialize EKF
   EKF ekf;
@@ -123,19 +122,19 @@ int main() {
   real dt = 2.0;
 
   // Dummy Variables for Storage
-  MatrixXd Phat(state_size, state_size);
-  MatrixXd Phi_t(state_size, state_size);
-  MatrixXd H(meas_size, state_size);
-  MatrixXd R(meas_size, meas_size);
+  VecXd Phat(state_size, state_size);
+  VecXd Phi_t(state_size, state_size);
+  VecXd H(meas_size, state_size);
+  VecXd R(meas_size, meas_size);
 
   // Initialize
-  MatrixXd P0 = SetInitialCovariance(1e-3, 1e-6, 1e-9, 1e-12);  // Initial error
-  VectorX x_true(state_size), x_est(state_size);
+  VecXd P0 = SetInitialCovariance(1e-3, 1e-6, 1e-9, 1e-12);  // Initial error
+  VecX x_true(state_size), x_est(state_size);
   x_true = state_vec;
-  x_est = x_true + SampleMVN(Vector8d::Zero(), P0, 1).col(0);
+  x_est = x_true + SampleMVN(Vec8d::Zero(), P0, 1).col(0);
   ekf.Initialize(x_est, P0);
 
-  MatrixXd Q = ekf.process_noise_(x_true, 0, dt);
+  VecXd Q = ekf.process_noise_(x_true, 0, dt);
   std::cout << " " << std::endl;
   std::cout << "Process Noise: " << std::endl << Q << std::endl;
 
@@ -148,11 +147,11 @@ int main() {
   for (real t = t_start; t < t_end; t += dt) {
     // Propagate True State
     x_true = joint_dynamics(x_true, t, t + dt, Phi_t);
-    x_true += SampleMVN(Vector8d::Zero(), Q, 1).col(0);
+    x_true += SampleMVN(Vec8d::Zero(), Q, 1).col(0);
 
     // Get True Measurement
-    VectorX meas = ekf.measurement_(x_true, H, R);
-    meas += SampleMVN(Vector4d::Zero(), R, 1).col(0);
+    VecX meas = ekf.measurement_(x_true, H, R);
+    meas += SampleMVN(Vec4d::Zero(), R, 1).col(0);
 
     // Update EKF
     ekf.Step(t + dt, meas);

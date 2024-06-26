@@ -15,23 +15,22 @@
 
 namespace lupnt {
 
-using ODE = std::function<VectorX(const real, const VectorX &)>;
+using ODE = std::function<VecX(const real, const VecX &)>;
 
 class IIntegrator {
  public:
-  virtual VectorX Step(const ODE f, const real t, const VectorX x,
-                       const real dt) = 0;
+  virtual VecX Step(const ODE f, const real t, const VecX x, const real dt) = 0;
   virtual ~IIntegrator() {};
 };
 
 class RK4 : public IIntegrator {
  public:
-  VectorX Step(const ODE f, const real t, const VectorX x, const real dt);
+  VecX Step(const ODE f, const real t, const VecX x, const real dt);
 };
 
 class RK8 : public IIntegrator {
  public:
-  VectorX Step(const ODE f, const real t, const VectorX x, const real dt);
+  VecX Step(const ODE f, const real t, const VecX x, const real dt);
 };
 
 }  // namespace lupnt

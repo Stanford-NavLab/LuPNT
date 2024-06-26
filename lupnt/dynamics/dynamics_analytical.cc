@@ -29,8 +29,7 @@ void KeplerianDynamics::Propagate(ClassicalOE &state, real dt) {
   state.Set_M(wrapToPi(state.M() + n * dt));
 }
 
-Vector6 KeplerianDynamics::PropagateClassicalOE(Vector6 coe, real dt,
-                                                double GM) {
+Vec6 KeplerianDynamics::PropagateClassicalOE(Vec6 coe, real dt, double GM) {
   real a = coe[0];
   real n = sqrt(GM / pow(a, 3));
   coe[5] = wrapToPi(coe[5] + n * dt);
@@ -38,11 +37,11 @@ Vector6 KeplerianDynamics::PropagateClassicalOE(Vector6 coe, real dt,
 }
 
 void KeplerianDynamics::PropagateWithStm(ClassicalOE &state, real dt,
-                                         Matrix6d &stm) {
+                                         Mat6d &stm) {
   real a = state.a();
   real n = sqrt(mu_ / pow(a, 3));
   state.Set_M(wrapToPi(state.M() + n * dt));
-  stm = Matrix6d::Identity(6, 6);
+  stm = Mat6d::Identity(6, 6);
   stm(5, 0) = -3.0 / 2.0 * (n / a * dt).val();
 }
 
@@ -51,7 +50,7 @@ void KeplerianDynamics::Propagate(QuasiNonsingularOE &state, real dt) {
   state.Set_u(state.u() + sqrt(mu_ / pow(state.a(), 3)) * dt);
 }
 void KeplerianDynamics::PropagateWithStm(QuasiNonsingularOE &state, real dt,
-                                         Matrix6d &stm) {
+                                         Mat6d &stm) {
   throw std::runtime_error("Not implemented");
 }
 
@@ -60,7 +59,7 @@ void KeplerianDynamics::Propagate(EquinoctialOE &state, real dt) {
   state.Set_lon(state.lon() + sqrt(mu_ / pow(state.a(), 3)) * dt);
 }
 void KeplerianDynamics::PropagateWithStm(EquinoctialOE &state, real dt,
-                                         Matrix6d &stm) {
+                                         Mat6d &stm) {
   throw std::runtime_error("Not implemented");
 }
 
@@ -75,26 +74,26 @@ void ClohessyWiltshireDynamics::Propagate(OrbitState &state, real tEnd) {
   if (state.GetOrbitStateRepres() != OrbitStateRepres::CARTESIAN)
     throw std::runtime_error("OrbitState type not supported");
 
-  VectorX xEnd = ComputeMatrix(tEnd) * K;
-  state.SetVector(xEnd);
+  VecX xEnd = ComputeMat(tEnd) * K;
+  state.SetVec(xEnd);
 }
 
 void ClohessyWiltshireDynamics::Initialize(CartesianOrbitState &state,
                                            real tStart) {
   tInit = tStart;
-  MatrixX Phi = ComputeMatrix(tStart);
-  K = Phi.colPivHouseholderQr().solve(state.GetVector());
+  MatX Phi = ComputeMat(tStart);
+  K = Phi.colPivHouseholderQr().solve(state.GetVec());
 }
 
-MatrixX ClohessyWiltshireDynamics::ComputeMatrix(real t) {
+MatX ClohessyWiltshireDynamics::ComputeMat(real t) {
   real sin_nt = sin(n * t);
   real cos_nt = cos(n * t);
 
-  MatrixX A = MatrixX::Zero(6, 6);
-  A.block(0, 0, 3, 3) = a * MatrixXd::Identity(3, 3);
-  A.block(3, 3, 3, 3) = a * n * MatrixXd::Identity(3, 3);
+  MatX A = MatX::Zero(6, 6);
+  A.block(0, 0, 3, 3) = a * VecXd::Identity(3, 3);
+  A.block(3, 3, 3, 3) = a * n * VecXd::Identity(3, 3);
 
-  MatrixX B = MatrixX::Zero(6, 6);
+  MatX B = MatX::Zero(6, 6);
   B(0, 0) = 1.0;
   B(0, 1) = sin_nt;
   B(0, 2) = cos_nt;
@@ -117,7 +116,7 @@ MatrixX ClohessyWiltshireDynamics::ComputeMatrix(real t) {
   B(5, 4) = cos_nt;
   B(5, 5) = -sin_nt;
 
-  MatrixX Phi = A * B;
+  MatX Phi = A * B;
   return Phi;
 }
 
@@ -130,8 +129,8 @@ YamanakaAnkersenDynamics::YamanakaAnkersenDynamics()
 void YamanakaAnkersenDynamics::Propagate(CartesianOrbitState &state,
                                          real tEnd) {
   if (state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN) {
-    VectorX xEnd = ComputeMatrix(tEnd) * K;
-    state.SetVector(xEnd);
+    VecX xEnd = ComputeMat(tEnd) * K;
+    state.SetVec(xEnd);
   } else {
     throw std::runtime_error("OrbitState type not supported");
   }
@@ -145,11 +144,11 @@ void YamanakaAnkersenDynamics::Initialize(ClassicalOE &coe_c,
   M0 = coe_c.M().val();
   tInit = tStart;
 
-  MatrixX Phi = ComputeMatrix(tStart);
-  K = ComputeInverseMatrix(tStart) * rv_rtn.GetVector();
-  // K = Phi.colPivHouseholderQr().solve(state.GetVector());
+  MatX Phi = ComputeMat(tStart);
+  K = ComputeInverseMat(tStart) * rv_rtn.GetVec();
+  // K = Phi.colPivHouseholderQr().solve(state.GetVec());
 }
-MatrixX YamanakaAnkersenDynamics::ComputeMatrix(real t) {
+MatX YamanakaAnkersenDynamics::ComputeMat(real t) {
   real M = n * (t - tInit) + M0;
   real f = MeanToTrueAnomaly(M, e);
   real sin_f = sin(f);
@@ -159,11 +158,11 @@ MatrixX YamanakaAnkersenDynamics::ComputeMatrix(real t) {
   real eta = sqrt(1.0 - e * e);
   real tau = n * t / pow(eta, 3.0);
 
-  MatrixX A = MatrixX::Zero(6, 6);
-  A.block(0, 0, 3, 3) = a * eta * eta * MatrixXd::Identity(3, 3);
-  A.block(3, 3, 3, 3) = a * n / eta * MatrixXd::Identity(3, 3);
+  MatX A = MatX::Zero(6, 6);
+  A.block(0, 0, 3, 3) = a * eta * eta * VecXd::Identity(3, 3);
+  A.block(3, 3, 3, 3) = a * n / eta * VecXd::Identity(3, 3);
 
-  MatrixX B = MatrixX::Zero(6, 6);
+  MatX B = MatX::Zero(6, 6);
   B(0, 0) = 1.0 / k + 3.0 / 2.0 * kp * tau;
   B(0, 1) = sin_f;
   B(0, 2) = cos_f;
@@ -188,10 +187,10 @@ MatrixX YamanakaAnkersenDynamics::ComputeMatrix(real t) {
   B(5, 4) = e + cos_f;
   B(5, 5) = -sin_f;
 
-  MatrixX Phi = A * B;
+  MatX Phi = A * B;
   return Phi;
 }
-MatrixX YamanakaAnkersenDynamics::ComputeInverseMatrix(real t) {
+MatX YamanakaAnkersenDynamics::ComputeInverseMat(real t) {
   real M = n * (t - tInit) + M0;
   real f = MeanToTrueAnomaly(M, e);
   real sin_f = sin(f);
@@ -201,11 +200,11 @@ MatrixX YamanakaAnkersenDynamics::ComputeInverseMatrix(real t) {
   real eta = sqrt(1.0 - e * e);
   real tau = n * t / pow(eta, 3.0);
 
-  MatrixX A = MatrixX::Zero(6, 6);
-  A.block(0, 0, 3, 3) = 1.0 / a / (eta * eta) * MatrixXd::Identity(3, 3);
-  A.block(3, 3, 3, 3) = eta / a / n * MatrixXd::Identity(3, 3);
+  MatX A = MatX::Zero(6, 6);
+  A.block(0, 0, 3, 3) = 1.0 / a / (eta * eta) * VecXd::Identity(3, 3);
+  A.block(3, 3, 3, 3) = eta / a / n * VecXd::Identity(3, 3);
 
-  MatrixX B = MatrixX::Zero(6, 6);
+  MatX B = MatX::Zero(6, 6);
   B(0, 0) = 2.0 * (k * k) * (k + 1) / (eta * eta);
   B(0, 1) = 2.0 * (k * k) * kp / (eta * eta);
   B(0, 3) = -2.0 * kp / (eta * eta);
@@ -240,7 +239,7 @@ MatrixX YamanakaAnkersenDynamics::ComputeInverseMatrix(real t) {
   B(5, 2) = e + cos_f;
   B(5, 5) = -(1.0 / k) * sin_f;
 
-  MatrixX Phi = B * A;
+  MatX Phi = B * A;
   return Phi;
 }
 
@@ -253,9 +252,9 @@ RoeGeometricMappingDynamics::RoeGeometricMappingDynamics()
 void RoeGeometricMappingDynamics::Propagate(CartesianOrbitState &state,
                                             real tEnd) {
   if (state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN) {
-    std::cout << "xStart: " << state.GetVector().transpose() << std::endl;
-    VectorX xEnd = ComputeMatrix(tEnd) * K;
-    state.SetVector(xEnd);
+    std::cout << "xStart: " << state.GetVec().transpose() << std::endl;
+    VecX xEnd = ComputeMat(tEnd) * K;
+    state.SetVec(xEnd);
     std::cout << "K: " << K.transpose() << std::endl;
     std::cout << "xEnd: " << xEnd.transpose() << std::endl;
   } else {
@@ -275,10 +274,10 @@ void RoeGeometricMappingDynamics::Initialize(ClassicalOE coe_c,
   ey = (double)(coe_c.e() * sin(coe_c.w()));
 
   n = (double)sqrt(mu / pow(coe_c.a(), 3));
-  K = roe.GetVector();
+  K = roe.GetVec();
   tInit = tStart;
 }
-MatrixX RoeGeometricMappingDynamics::ComputeMatrix(real t) {
+MatX RoeGeometricMappingDynamics::ComputeMat(real t) {
   real M = n * (t - tInit) + M0;
   real f = MeanToTrueAnomaly(M, e);
   real u = f + w;
@@ -289,11 +288,11 @@ MatrixX RoeGeometricMappingDynamics::ComputeMatrix(real t) {
   real kp = -ex * sin(u) + ey * cos(u);
   real eta = sqrt(1.0 - e * e);
 
-  MatrixX A = MatrixX::Zero(6, 6);
-  A.block(0, 0, 3, 3) = a * eta * eta * MatrixXd::Identity(3, 3);
-  A.block(3, 3, 3, 3) = a * n / eta * MatrixXd::Identity(3, 3);
+  MatX A = MatX::Zero(6, 6);
+  A.block(0, 0, 3, 3) = a * eta * eta * VecXd::Identity(3, 3);
+  A.block(3, 3, 3, 3) = a * n / eta * VecXd::Identity(3, 3);
 
-  MatrixX B = MatrixX::Zero(6, 6);
+  MatX B = MatX::Zero(6, 6);
   B(0, 0) = 1 / k + 3 / 2 * kp * n / pow(eta, 3) * t;
   B(0, 1) = -kp / pow(eta, 3);
   B(0, 2) = 1 / pow(eta, 3) * (ex * (k - 1) / (1 + eta) - cos_u);
@@ -328,7 +327,7 @@ MatrixX RoeGeometricMappingDynamics::ComputeMatrix(real t) {
   B(5, 4) = cos_u + ex;
   B(5, 5) = sin_u + ey;
 
-  MatrixX Phi = A * B;
+  MatX Phi = A * B;
   std::cout << A << std::endl << std::endl;
   std::cout << B << std::endl << std::endl;
   std::cout << Phi << std::endl;

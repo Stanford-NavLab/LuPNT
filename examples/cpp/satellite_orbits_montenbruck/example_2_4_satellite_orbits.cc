@@ -19,17 +19,17 @@ int main() {
   real lon_gs = 11 * RAD_PER_DEG;  // [rad]
   real lat_gs = 48 * RAD_PER_DEG;  // [rad]
   real alt_gs = 0;                 // [m]
-  Vector3 r_gs = GeodeticToCartesian(Vector3(lat_gs, lon_gs, alt_gs), R_EARTH,
-                                     FLATTENING_EARTH_WGS84);
+  Vec3 r_gs = GeodeticToCartesian(Vec3(lat_gs, lon_gs, alt_gs), R_EARTH,
+                                  FLATTENING_EARTH_WGS84);
 
   // Spacecraft
-  real a = 960 + R_EARTH;                   // Semimajor axis [Km]
-  real e = 0;                               // Eccentricity
-  real i = 97 * RAD_PER_DEG;                // Inclination [rad]
-  real Omega = 130.7 * RAD_PER_DEG;         // RA ascend. node [rad]
-  real omega = 0 * RAD_PER_DEG;             // Argument of latitude [rad]
-  real M0 = 0 * RAD_PER_DEG;                // Mean anomaly at epoch [rad]
-  Vector6 coe0(a, e, i, Omega, omega, M0);  // Classical orbital elements
+  real a = 960 + R_EARTH;                // Semimajor axis [Km]
+  real e = 0;                            // Eccentricity
+  real i = 97 * RAD_PER_DEG;             // Inclination [rad]
+  real Omega = 130.7 * RAD_PER_DEG;      // RA ascend. node [rad]
+  real omega = 0 * RAD_PER_DEG;          // Argument of latitude [rad]
+  real M0 = 0 * RAD_PER_DEG;             // Mean anomaly at epoch [rad]
+  Vec6 coe0(a, e, i, Omega, omega, M0);  // Classical orbital elements
 
   // Header
   int w = 10;
@@ -45,11 +45,11 @@ int main() {
     real mjd_ut1 = UTCtoUT1(mjd_utc);
     real t = (mjd_utc - mjd0_utc) * SECS_PER_DAY;
 
-    Vector6 coe = KeplerianDynamics::PropagateClassicalOE(coe0, t, GM_EARTH);
-    Vector6 rv_eci = ClassicalToCartesian(coe, GM_EARTH);
+    Vec6 coe = KeplerianDynamics::PropagateClassicalOE(coe0, t, GM_EARTH);
+    Vec6 rv_eci = ClassicalToCartesian(coe, GM_EARTH);
     real theta_era = GreenwichMeanSiderealTime(mjd_ut1);
-    Matrix3 eci_to_ecef = Rot3(theta_era);
-    Vector3 r_ecef = eci_to_ecef * rv_eci.head(3);
+    Mat3 eci_to_ecef = Rot3(theta_era);
+    Vec3 r_ecef = eci_to_ecef * rv_eci.head(3);
     auto [az, el, rho] = unpack(
         CartesianToAzimuthElevationRange(r_gs, r_ecef, FLATTENING_EARTH_WGS84));
 

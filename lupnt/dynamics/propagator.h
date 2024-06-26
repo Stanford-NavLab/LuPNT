@@ -24,9 +24,9 @@ class NumericalPropagator {
   NumericalPropagator();
   NumericalPropagator(std::string integratorType);
 
-  VectorX Propagate(ODE odefunc, real t0, real tf, VectorX x0, real dt);
-  VectorX PropagateWithStm(ODE odefunc, real t0, real tf, VectorX x0, real dt,
-                           MatrixXd &J);
+  VecX Propagate(ODE odefunc, real t0, real tf, VecX x0, real dt);
+  VecX PropagateWithStm(ODE odefunc, real t0, real tf, VecX x0, real dt,
+                        MatXd &J);
 };
 
 }  // namespace lupnt

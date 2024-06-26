@@ -12,22 +12,22 @@ namespace lupnt {
 
 // Struct to hold EOP data
 struct EOPData {
-  VectorXi years;
-  VectorXi months;
-  VectorXi days;
-  VectorXi mjds;
-  VectorXd x;
-  VectorXd y;
-  VectorXd ut1_utc;
-  VectorXd lod;
-  VectorXd dPsi;
-  VectorXd dEps;
-  VectorXd xErr;
-  VectorXd yErr;
-  VectorXd ut1_utcErr;
-  VectorXd lodErr;
-  VectorXd dPsiErr;
-  VectorXd dEpsErr;
+  VecXi years;
+  VecXi months;
+  VecXi days;
+  VecXi mjds;
+  VecXd x;
+  VecXd y;
+  VecXd ut1_utc;
+  VecXd lod;
+  VecXd dPsi;
+  VecXd dEps;
+  VecXd xErr;
+  VecXd yErr;
+  VecXd ut1_utcErr;
+  VecXd lodErr;
+  VecXd dPsiErr;
+  VecXd dEpsErr;
 };
 
 struct EOPResult {

@@ -46,17 +46,17 @@ namespace lupnt {
 
 static const int state_size = 8;
 
-MatrixXd ConstructInitCovariance(double pos_err, double vel_err,
-                                 double clk_bias_err, double clk_drift_err) {
-  Matrix6d P_rv = Matrix6d::Zero();
-  P_rv.block(0, 0, 3, 3) = Matrix3d::Identity() * pow(pos_err, 2);
-  P_rv.block(3, 3, 3, 3) = Matrix3d::Identity() * pow(vel_err, 2);
+VecXd ConstructInitCovariance(double pos_err, double vel_err,
+                              double clk_bias_err, double clk_drift_err) {
+  Mat6d P_rv = Mat6d::Zero();
+  P_rv.block(0, 0, 3, 3) = Mat3d::Identity() * pow(pos_err, 2);
+  P_rv.block(3, 3, 3, 3) = Mat3d::Identity() * pow(vel_err, 2);
 
-  Matrix2d P_clk = Matrix2d::Zero();
+  Mat2d P_clk = Mat2d::Zero();
   P_clk(0, 0) = pow(clk_bias_err, 2);
   P_clk(1, 1) = pow(clk_drift_err, 2);
 
-  MatrixXd P0 = blkdiag(P_rv, P_clk);
+  VecXd P0 = blkdiag(P_rv, P_clk);
 
   return P0;
 };
@@ -79,15 +79,15 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
   auto state = sat->GetCartesianGCRFStateAtEpoch(epoch);
   auto sate_mi = ConvertOrbitStateFrame(state, epoch, Frame::MOON_CI);
   auto state_gcrf = ConvertOrbitStateFrame(state, epoch, Frame::GCRF);
-  data_history->AddData("rv_moon_mi", t, sate_mi->GetVector());
-  data_history->AddData("rv_moon_gcrf", t, state_gcrf->GetVector());
+  data_history->AddData("rv_moon_mi", t, sate_mi->GetVec());
+  data_history->AddData("rv_moon_gcrf", t, state_gcrf->GetVec());
 
   // Estimation
-  data_history->AddData("rv", t, sat->GetOrbitState()->GetVector());
+  data_history->AddData("rv", t, sat->GetOrbitState()->GetVec());
   data_history->AddData("rv_pred", t, ekf->xbar_.head(6));
   data_history->AddData("rv_est", t, ekf->x_.head(6));
 
-  data_history->AddData("clk", t, sat->GetClockState().GetVector());
+  data_history->AddData("clk", t, sat->GetClockState().GetVec());
   data_history->AddData("clk_pred", t, ekf->xbar_.tail(2));
   data_history->AddData("clk_est", t, ekf->x_.tail(2));
 
@@ -101,12 +101,12 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
     auto state_gcrf = ConvertOrbitStateFrame(sate, epoch, Frame::GCRF);
 
     std::string name = "sat" + std::to_string(i);
-    data_history->AddData(name + "_mi", t, sate->GetVector());
-    data_history->AddData(name + "_gcrf", t, state_gcrf->GetVector());
+    data_history->AddData(name + "_mi", t, sate->GetVec());
+    data_history->AddData(name + "_gcrf", t, state_gcrf->GetVec());
   }
 
   // Bodies
-  Vector6 vz6;
+  Vec6 vz6;
   vz6.setZero();
   data_history->AddData(
       "earth_mi", t,
@@ -126,10 +126,9 @@ void PrintProgressHeader() {
             << std::endl;
 }
 
-VectorXd ComputeEstimationErrors(const std::shared_ptr<Spacecraft> sat,
-                                 EKF* ekf) {
+VecXd ComputeEstimationErrors(const std::shared_ptr<Spacecraft> sat, EKF* ekf) {
   auto x_est = ekf->x_;
-  auto x_true = sat->GetStateVector();
+  auto x_true = sat->GetStateVec();
 
   double x_pos_err =
       1000 * (x_true.segment(0, 3) - x_est.segment(0, 3)).norm().val();
@@ -138,7 +137,7 @@ VectorXd ComputeEstimationErrors(const std::shared_ptr<Spacecraft> sat,
   double x_clk_bias_err = 1e9 * abs((x_true(6) - x_est(6)).val());
   double x_clk_drift_err = 1e9 * abs((x_true(7) - x_est(7)).val());
 
-  VectorXd est_err(4);
+  VecXd est_err(4);
   est_err << x_pos_err, x_vel_err, x_clk_bias_err, x_clk_drift_err;
 
   return est_err;
@@ -172,16 +171,16 @@ void PrintEKFDebugInfo(EKF* ekf) {
  * @brief Print Estimation Errors
  *
  * @param num_meas (n_time,)   Number of GPS measurements
- * @param error_mat (4, n_time)  Error Matrix (Position, Velocity, Clock Bias,
+ * @param error_mat (4, n_time)  Error Mat (Position, Velocity, Clock Bias,
  * Clock Drift)
  */
-void PrintEstimationStatistics(VectorXd num_meas, MatrixXd error_mat,
+void PrintEstimationStatistics(VecXd num_meas, VecXd error_mat,
                                double data_ratio = 1.0) {
   int n_time = num_meas.size();
-  Vector4d rms, means, stds, p68, p95, p99;
+  Vec4d rms, means, stds, p68, p95, p99;
 
   if (error_mat.rows() != 4) {
-    std::cout << "Wrong Matrix Size, Error matrix size must be (4 x timestep)"
+    std::cout << "Wrong Mat Size, Error matrix size must be (4 x timestep)"
               << std::endl;
     return;
   }
@@ -191,8 +190,8 @@ void PrintEstimationStatistics(VectorXd num_meas, MatrixXd error_mat,
   int end_idx = n_time - 1;
   int n_range = end_idx - start_idx;
 
-  VectorXd num_meas_range(n_range);
-  MatrixXd error_mat_range(4, n_range);
+  VecXd num_meas_range(n_range);
+  VecXd error_mat_range(4, n_range);
 
   num_meas_range = num_meas.segment(start_idx, n_range);
   error_mat_range = error_mat.block(0, start_idx, 4, n_range);
@@ -259,7 +258,7 @@ void Plot3DTrajectory(const std::shared_ptr<DataHistory> data_history,
   ax->ylabel("y [km]");
   ax->zlabel("z [km]");
 
-  std::vector<Timestamped<VectorXd>> data;
+  std::vector<Timestamped<VecXd>> data;
   if (state_type == "true") {
     ax->title("True Trajectory");
     data = data_history->GetData("rv");
@@ -293,8 +292,8 @@ void PlotState(const std::shared_ptr<DataHistory> data_history,
     return;
   }
 
-  std::vector<Timestamped<VectorXd>> data_rv;
-  std::vector<Timestamped<VectorXd>> data_clk;
+  std::vector<Timestamped<VecXd>> data_rv;
+  std::vector<Timestamped<VecXd>> data_clk;
 
   if (state_type == "true") {
     data_rv = data_history->GetData("rv");

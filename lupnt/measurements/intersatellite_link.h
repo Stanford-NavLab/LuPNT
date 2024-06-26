@@ -34,8 +34,8 @@ class ISLMeasurement {
 
   // visibility
   std::vector<NaifId> occult_planets;
-  VectorXd vis_body;  // visibility body
-  VectorXd vis_anttena;
+  VecXd vis_body;  // visibility body
+  VecXd vis_anttena;
 
   // Link Budget
   double CN0;
@@ -48,16 +48,15 @@ class ISLMeasurement {
   double GetCN0() const { return CN0; }
 
   // True Measurement Generation
-  VectorXd GetTrueISLMeasurement(double epoch);
+  VecXd GetTrueISLMeasurement(double epoch);
 
   // Predicted Measurement
-  VectorXd GetPredictedISLMeasurement(double epoch, Vector6 rv_trans_pred,
-                                      Vector6 rv_rec_pred,
-                                      Vector2 clk_trans_pred,
-                                      Vector2 clk_rec_pred,
-                                      std::vector<ISLMeasurementType> meas_type,
-                                      Frame frame_in = Frame::MOON_CI);
-  VectorXd GetPredictedISLPR(double epoch, Vector6);
+  VecXd GetPredictedISLMeasurement(double epoch, Vec6 rv_trans_pred,
+                                   Vec6 rv_rec_pred, Vec2 clk_trans_pred,
+                                   Vec2 clk_rec_pred,
+                                   std::vector<ISLMeasurementType> meas_type,
+                                   Frame frame_in = Frame::MOON_CI);
+  VecXd GetPredictedISLPR(double epoch, Vec6);
 };
 
 }  // namespace lupnt
