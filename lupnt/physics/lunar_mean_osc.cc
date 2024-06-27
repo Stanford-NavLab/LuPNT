@@ -14,14 +14,13 @@
 #include "lupnt/core/constants.h"
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/orbit_state.h"
-#include "lupnt/physics/orbit_state_utils.h"
 
 namespace lupnt {
 
-Vec6 MeanToOsculatingulating(Vec6 meanCoeVec) {
+Vec6 Mean2Osculatingulating(Vec6 meanCoeVec) {
   double t = 0.0;  // Time [s]
   double nM = 2.66e-6;
-  Vec6 meanDoeVec = ClassicalToDelaunay(meanCoeVec, GM_MOON);
+  Vec6 meanDoeVec = Classical2Delaunay(meanCoeVec, GM_MOON);
 
   double lpp = (double)meanDoeVec(0);
   double gpp = (double)meanDoeVec(1);
@@ -53,14 +52,14 @@ Vec6 MeanToOsculatingulating(Vec6 meanCoeVec) {
   Vec6 oscDoeVec;
   oscDoeVec << l, g, h, L, G, H;
 
-  Vec6 oscCoeVec = DelaunayToClassical(oscDoeVec, GM_MOON);
+  Vec6 oscCoeVec = Delaunay2Classical(oscDoeVec, GM_MOON);
   return oscCoeVec;
 }
 
-Vec6 OsculatingToMean(Vec6 oscCoeVec) {
+Vec6 Osculating2Mean(Vec6 oscCoeVec) {
   double t = 0.0;
   double nM = 2.66e-6;
-  Vec6 oscDoeVec = ClassicalToDelaunay(oscCoeVec, GM_MOON);
+  Vec6 oscDoeVec = Classical2Delaunay(oscCoeVec, GM_MOON);
 
   double l = (double)oscDoeVec(0);
   double g = (double)oscDoeVec(1);
@@ -94,7 +93,7 @@ Vec6 OsculatingToMean(Vec6 oscCoeVec) {
   Vec6 meanDoeVec;
   meanDoeVec << lpp, gpp, hpp, Lpp, Gpp, Hpp;
 
-  Vec6 meanCoeVec = DelaunayToClassical(meanDoeVec, GM_MOON);
+  Vec6 meanCoeVec = Delaunay2Classical(meanDoeVec, GM_MOON);
   return meanCoeVec;
 }
 
@@ -110,7 +109,7 @@ std::array<double, 6> ComputeSecondOrderShortPeriod(Vec6 &coe, Vec6 &doe) {
   double O = (double)coe(3);
   double w = (double)coe(4);
   double M = (double)coe(5);
-  double f = (double)MeanToTrueAnomaly(coe(5), coe(1));
+  double f = (double)Mean2TrueAnomaly(coe(5), coe(1));
 
   double l = (double)doe(0);
   double g = (double)doe(1);

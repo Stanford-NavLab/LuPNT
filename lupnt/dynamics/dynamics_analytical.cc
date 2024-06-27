@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2023
  *
  */
-#include <lupnt/physics/orbit_state_utils.h>
+#include <lupnt/physics/orbit_state.h>
 
 #include <Eigen/QR>
 
@@ -23,42 +23,42 @@ namespace lupnt {
 KeplerianDynamics::KeplerianDynamics(double mu) : mu_(mu) {};
 
 // ClassicalOE
-void KeplerianDynamics::Propagate(ClassicalOE &state, real dt) {
-  real a = state.a();
-  real n = sqrt(mu_ / pow(a, 3));
-  state.Set_M(wrapToPi(state.M() + n * dt));
+void KeplerianDynamics::Propagate(ClassicalOE &state, Real dt) {
+  Real a = state.a();
+  Real n = sqrt(mu_ / pow(a, 3));
+  state.Set_M(Wrap2Pi(state.M() + n * dt));
 }
 
-Vec6 KeplerianDynamics::PropagateClassicalOE(Vec6 coe, real dt, double GM) {
-  real a = coe[0];
-  real n = sqrt(GM / pow(a, 3));
-  coe[5] = wrapToPi(coe[5] + n * dt);
+Vec6 KeplerianDynamics::PropagateClassicalOE(Vec6 coe, Real dt, double GM) {
+  Real a = coe[0];
+  Real n = sqrt(GM / pow(a, 3));
+  coe[5] = Wrap2Pi(coe[5] + n * dt);
   return coe;
 }
 
-void KeplerianDynamics::PropagateWithStm(ClassicalOE &state, real dt,
+void KeplerianDynamics::PropagateWithStm(ClassicalOE &state, Real dt,
                                          Mat6d &stm) {
-  real a = state.a();
-  real n = sqrt(mu_ / pow(a, 3));
-  state.Set_M(wrapToPi(state.M() + n * dt));
+  Real a = state.a();
+  Real n = sqrt(mu_ / pow(a, 3));
+  state.Set_M(Wrap2Pi(state.M() + n * dt));
   stm = Mat6d::Identity(6, 6);
   stm(5, 0) = -3.0 / 2.0 * (n / a * dt).val();
 }
 
-// QuasiNonsingularOE
-void KeplerianDynamics::Propagate(QuasiNonsingularOE &state, real dt) {
+// QuasiNonsingOE
+void KeplerianDynamics::Propagate(QuasiNonsingOE &state, Real dt) {
   state.Set_u(state.u() + sqrt(mu_ / pow(state.a(), 3)) * dt);
 }
-void KeplerianDynamics::PropagateWithStm(QuasiNonsingularOE &state, real dt,
+void KeplerianDynamics::PropagateWithStm(QuasiNonsingOE &state, Real dt,
                                          Mat6d &stm) {
   throw std::runtime_error("Not implemented");
 }
 
 // EquinoctialOE
-void KeplerianDynamics::Propagate(EquinoctialOE &state, real dt) {
+void KeplerianDynamics::Propagate(EquinoctialOE &state, Real dt) {
   state.Set_lon(state.lon() + sqrt(mu_ / pow(state.a(), 3)) * dt);
 }
-void KeplerianDynamics::PropagateWithStm(EquinoctialOE &state, real dt,
+void KeplerianDynamics::PropagateWithStm(EquinoctialOE &state, Real dt,
                                          Mat6d &stm) {
   throw std::runtime_error("Not implemented");
 }
@@ -67,10 +67,10 @@ void KeplerianDynamics::PropagateWithStm(EquinoctialOE &state, real dt,
   ClohessyWiltshireDynamics
   ************************************************************************** */
 
-ClohessyWiltshireDynamics::ClohessyWiltshireDynamics(real a_in, real n_in)
+ClohessyWiltshireDynamics::ClohessyWiltshireDynamics(Real a_in, Real n_in)
     : a(a_in), n(n_in) {};
 
-void ClohessyWiltshireDynamics::Propagate(OrbitState &state, real tEnd) {
+void ClohessyWiltshireDynamics::Propagate(OrbitState &state, Real tEnd) {
   if (state.GetOrbitStateRepres() != OrbitStateRepres::CARTESIAN)
     throw std::runtime_error("OrbitState type not supported");
 
@@ -79,15 +79,15 @@ void ClohessyWiltshireDynamics::Propagate(OrbitState &state, real tEnd) {
 }
 
 void ClohessyWiltshireDynamics::Initialize(CartesianOrbitState &state,
-                                           real tStart) {
+                                           Real tStart) {
   tInit = tStart;
   MatX Phi = ComputeMat(tStart);
   K = Phi.colPivHouseholderQr().solve(state.GetVec());
 }
 
-MatX ClohessyWiltshireDynamics::ComputeMat(real t) {
-  real sin_nt = sin(n * t);
-  real cos_nt = cos(n * t);
+MatX ClohessyWiltshireDynamics::ComputeMat(Real t) {
+  Real sin_nt = sin(n * t);
+  Real cos_nt = cos(n * t);
 
   MatX A = MatX::Zero(6, 6);
   A.block(0, 0, 3, 3) = a * VecXd::Identity(3, 3);
@@ -127,7 +127,7 @@ MatX ClohessyWiltshireDynamics::ComputeMat(real t) {
 YamanakaAnkersenDynamics::YamanakaAnkersenDynamics()
     : a(0.0), n(0.0), e(0.0), M0(0.0) {};
 void YamanakaAnkersenDynamics::Propagate(CartesianOrbitState &state,
-                                         real tEnd) {
+                                         Real tEnd) {
   if (state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN) {
     VecX xEnd = ComputeMat(tEnd) * K;
     state.SetVec(xEnd);
@@ -137,7 +137,7 @@ void YamanakaAnkersenDynamics::Propagate(CartesianOrbitState &state,
 }
 void YamanakaAnkersenDynamics::Initialize(ClassicalOE &coe_c,
                                           CartesianOrbitState &rv_rtn,
-                                          real tStart, double mu) {
+                                          Real tStart, double mu) {
   a = coe_c.a().val();
   n = sqrt(mu / pow(a, 3.0));
   e = coe_c.e().val();
@@ -148,15 +148,15 @@ void YamanakaAnkersenDynamics::Initialize(ClassicalOE &coe_c,
   K = ComputeInverseMat(tStart) * rv_rtn.GetVec();
   // K = Phi.colPivHouseholderQr().solve(state.GetVec());
 }
-MatX YamanakaAnkersenDynamics::ComputeMat(real t) {
-  real M = n * (t - tInit) + M0;
-  real f = MeanToTrueAnomaly(M, e);
-  real sin_f = sin(f);
-  real cos_f = cos(f);
-  real k = 1.0 + e * cos(f);
-  real kp = -e * sin(f);
-  real eta = sqrt(1.0 - e * e);
-  real tau = n * t / pow(eta, 3.0);
+MatX YamanakaAnkersenDynamics::ComputeMat(Real t) {
+  Real M = n * (t - tInit) + M0;
+  Real f = Mean2TrueAnomaly(M, e);
+  Real sin_f = sin(f);
+  Real cos_f = cos(f);
+  Real k = 1.0 + e * cos(f);
+  Real kp = -e * sin(f);
+  Real eta = sqrt(1.0 - e * e);
+  Real tau = n * t / pow(eta, 3.0);
 
   MatX A = MatX::Zero(6, 6);
   A.block(0, 0, 3, 3) = a * eta * eta * VecXd::Identity(3, 3);
@@ -190,15 +190,15 @@ MatX YamanakaAnkersenDynamics::ComputeMat(real t) {
   MatX Phi = A * B;
   return Phi;
 }
-MatX YamanakaAnkersenDynamics::ComputeInverseMat(real t) {
-  real M = n * (t - tInit) + M0;
-  real f = MeanToTrueAnomaly(M, e);
-  real sin_f = sin(f);
-  real cos_f = cos(f);
-  real k = 1.0 + e * cos(f);
-  real kp = -e * sin(f);
-  real eta = sqrt(1.0 - e * e);
-  real tau = n * t / pow(eta, 3.0);
+MatX YamanakaAnkersenDynamics::ComputeInverseMat(Real t) {
+  Real M = n * (t - tInit) + M0;
+  Real f = Mean2TrueAnomaly(M, e);
+  Real sin_f = sin(f);
+  Real cos_f = cos(f);
+  Real k = 1.0 + e * cos(f);
+  Real kp = -e * sin(f);
+  Real eta = sqrt(1.0 - e * e);
+  Real tau = n * t / pow(eta, 3.0);
 
   MatX A = MatX::Zero(6, 6);
   A.block(0, 0, 3, 3) = 1.0 / a / (eta * eta) * VecXd::Identity(3, 3);
@@ -250,7 +250,7 @@ MatX YamanakaAnkersenDynamics::ComputeInverseMat(real t) {
 RoeGeometricMappingDynamics::RoeGeometricMappingDynamics()
     : a(0.0), n(0.0), e(0.0), M0(0.0), ex(0.0), ey(0.0), tInit(0.0) {};
 void RoeGeometricMappingDynamics::Propagate(CartesianOrbitState &state,
-                                            real tEnd) {
+                                            Real tEnd) {
   if (state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN) {
     std::cout << "xStart: " << state.GetVec().transpose() << std::endl;
     VecX xEnd = ComputeMat(tEnd) * K;
@@ -262,8 +262,8 @@ void RoeGeometricMappingDynamics::Propagate(CartesianOrbitState &state,
   }
 }
 void RoeGeometricMappingDynamics::Initialize(ClassicalOE coe_c,
-                                             QuasiNonsingularROE &roe,
-                                             real tStart, double mu) {
+                                             QuasiNonsingROE &roe, Real tStart,
+                                             double mu) {
   a = coe_c.a().val();
   e = coe_c.e().val();
   i = coe_c.i().val();
@@ -277,16 +277,16 @@ void RoeGeometricMappingDynamics::Initialize(ClassicalOE coe_c,
   K = roe.GetVec();
   tInit = tStart;
 }
-MatX RoeGeometricMappingDynamics::ComputeMat(real t) {
-  real M = n * (t - tInit) + M0;
-  real f = MeanToTrueAnomaly(M, e);
-  real u = f + w;
-  real sin_u = sin(u);
-  real cos_u = cos(u);
-  real cot_i = 1 / tan(i);
-  real k = 1.0 + ex * cos(u) + ey * sin(u);
-  real kp = -ex * sin(u) + ey * cos(u);
-  real eta = sqrt(1.0 - e * e);
+MatX RoeGeometricMappingDynamics::ComputeMat(Real t) {
+  Real M = n * (t - tInit) + M0;
+  Real f = Mean2TrueAnomaly(M, e);
+  Real u = f + w;
+  Real sin_u = sin(u);
+  Real cos_u = cos(u);
+  Real cot_i = 1 / tan(i);
+  Real k = 1.0 + ex * cos(u) + ey * sin(u);
+  Real kp = -ex * sin(u) + ey * cos(u);
+  Real eta = sqrt(1.0 - e * e);
 
   MatX A = MatX::Zero(6, 6);
   A.block(0, 0, 3, 3) = a * eta * eta * VecXd::Identity(3, 3);

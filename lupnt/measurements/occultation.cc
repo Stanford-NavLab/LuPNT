@@ -79,12 +79,12 @@ std::map<std::string, bool> Occultation::ComputeOccultation(
 
 // Return distance from the line of sight to the center of each body
 // VecX = func(real, Vec3, Vec3)
-VecX Occultation::ComputeOccultation(real epoch, const Vec3& r1, const Vec3& r2,
+VecX Occultation::ComputeOccultation(Real epoch, const Vec3& r1, const Vec3& r2,
                                      Frame cs1, Frame cs2,
                                      const std::vector<NaifId>& bodies) {
   // Convert to ICRF
-  Vec3 r1_icrf = FrameConverter::Convert(epoch, r1, cs1, Frame::ICRF);
-  Vec3 r2_icrf = FrameConverter::Convert(epoch, r2, cs2, Frame::ICRF);
+  Vec3 r1_icrf = ConvertFrame(epoch, r1, cs1, Frame::ICRF);
+  Vec3 r2_icrf = ConvertFrame(epoch, r2, cs2, Frame::ICRF);
 
   // Compute distance between line of sight and center of each body
   VecX distances(bodies.size());
@@ -122,7 +122,7 @@ VecX Occultation::ComputeOccultation(real epoch, const Vec3& r1, const Vec3& r2,
 }
 
 // MatX = func(real, Mat<-1, 3>, Mat<-1, 3>)
-MatX Occultation::ComputeOccultation(real epoch, const Mat<-1, 3>& r1,
+MatX Occultation::ComputeOccultation(Real epoch, const Mat<-1, 3>& r1,
                                      const Mat<-1, 3>& r2, Frame cs1, Frame cs2,
                                      const std::vector<NaifId>& bodies) {
   assert((r1.rows() == r2.rows() || r1.rows() == 1 || r2.rows() == 1) &&

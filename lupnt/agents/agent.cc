@@ -15,10 +15,10 @@ namespace lupnt {
 int Agent::id_counter_ = 0;
 
 std::shared_ptr<CartesianOrbitState> Agent::GetCartesianGCRFStateAtEpoch(
-    real epoch, Frame frame) {
+    Real epoch, Frame frame) {
   auto state = std::make_shared<OrbitState>(*state_);
   if (epoch != epoch_)
-    dynamics_->Propagate(*state, epoch_, epoch, 1.0 * SECS_PER_MINUTE);
+    dynamics_->Propagate(*state, epoch_, epoch, 1.0 * SECS_MINUTE);
   double mu = GetBodyData(bodyId_).GM;
   auto cartOrbitState = std::static_pointer_cast<CartesianOrbitState>(
       ConvertOrbitStateRepresentation(state, OrbitStateRepres::CARTESIAN, mu));

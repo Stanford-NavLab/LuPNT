@@ -20,7 +20,7 @@ class Antenna {
   std::string comms_name_;  // Name of the antenna
   VecXd antenna_pattern_;   // Antenna gain pattern [deg & dB]
   double antenna_mask_ =
-      80.0 * RAD_PER_DEG;  // Cut off angle for the transmit antenna [rad]
+      80.0 * RAD;  // Cut off angle for the transmit antenna [rad]
 
   Antenna() = default;
   Antenna(std::string comms_name) : comms_name_(comms_name) {

@@ -87,10 +87,10 @@ class TestOrbitState:
             + ">"
         )
 
-    def test_QuasiNonsingularOE(self):
+    def test_QuasiNonsingOE(self):
         # Constructor
         qns_oe = pnt.classical_to_quasi_nonsingular(data.coe_array_elfo)
-        qns_oe_state = pnt.QuasiNonsingularOE(qns_oe, pnt.Frame.MOON_CI)
+        qns_oe_state = pnt.QuasiNonsingOE(qns_oe, pnt.Frame.MOON_CI)
         attributes = ["a", "u", "ex", "ey", "i", "Omega"]
 
         # Getters
@@ -114,7 +114,7 @@ class TestOrbitState:
         # Other
         assert (
             str(qns_oe_state)
-            == "<pylupnt.QuasiNonsingularOE "
+            == "<pylupnt.QuasiNonsingOE "
             + np.array2string(qns_oe, **data.array2string_kwargs)
             + ">"
         )
@@ -181,10 +181,10 @@ class TestOrbitState:
             + ">"
         )
 
-    def test_QuasiNonsingularROE(self):
+    def test_QuasiNonsingROE(self):
         # Constructor
         roe = data.roe_array_1
-        roe_state = pnt.QuasiNonsingularROE(roe, pnt.Frame.MOON_CI)
+        roe_state = pnt.QuasiNonsingROE(roe, pnt.Frame.MOON_CI)
         attributes = ["ada", "adl", "adex", "adey", "adix", "adiy"]
 
         # Getters
@@ -207,7 +207,7 @@ class TestOrbitState:
         # Other
         assert (
             str(roe_state)
-            == "<pylupnt.QuasiNonsingularROE "
+            == "<pylupnt.QuasiNonsingROE "
             + np.array2string(roe, **data.array2string_kwargs)
             + ">"
         )

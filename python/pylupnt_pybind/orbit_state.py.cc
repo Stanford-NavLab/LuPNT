@@ -2,7 +2,6 @@
 #include <lupnt/core/constants.h>
 #include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/orbit_state.h>
-#include <lupnt/physics/orbit_state_utils.h>
 
 // pybind11
 #include <pybind11/eigen.h>
@@ -56,7 +55,7 @@ void init_orbit_state(py::module &m) {
           [](const OrbitState &s) -> Vec6d {
             return s.GetVec().cast<double>();
           },
-          [](OrbitState &s, const Vec6d &vec) { s.SetVec(vec.cast<real>()); })
+          [](OrbitState &s, const Vec6d &vec) { s.SetVec(vec.cast<Real>()); })
       .def_property("frame", &OrbitState::GetCoordSystem,
                     &OrbitState::SetCoordSystem)
       .def_property("state_repres", &OrbitState::GetOrbitStateRepres,
@@ -92,7 +91,7 @@ void init_orbit_state(py::module &m) {
             return s.r().cast<double>();
           },
           [](CartesianOrbitState &s, const Vec3d &vec) {
-            s.Set_r(vec.cast<real>());
+            s.Set_r(vec.cast<Real>());
           })
       .def_property(
           "v",
@@ -100,21 +99,21 @@ void init_orbit_state(py::module &m) {
             return s.v().cast<double>();
           },
           [](CartesianOrbitState &s, const Vec3d &vec) {
-            s.Set_v(vec.cast<real>());
+            s.Set_v(vec.cast<Real>());
           })
       .def("__repr__", DEFINE_REPR(CartesianOrbitState));
 
-  // QuasiNonsingularOE
-  py::class_<QuasiNonsingularOE, OrbitState>(m, "QuasiNonsingularOE")
+  // QuasiNonsingOE
+  py::class_<QuasiNonsingOE, OrbitState>(m, "QuasiNonsingOE")
       .def(py::init<const Vec6d &, const Frame>(), py::arg("rv"),
            py::arg("frame") = Frame::GCRF)
-      .def_property("a", DEFINE_GETSET_REAL(QuasiNonsingularOE, a))
-      .def_property("u", DEFINE_GETSET_REAL(QuasiNonsingularOE, u))
-      .def_property("ex", DEFINE_GETSET_REAL(QuasiNonsingularOE, ex))
-      .def_property("ey", DEFINE_GETSET_REAL(QuasiNonsingularOE, ey))
-      .def_property("i", DEFINE_GETSET_REAL(QuasiNonsingularOE, i))
-      .def_property("Omega", DEFINE_GETSET_REAL(QuasiNonsingularOE, Omega))
-      .def("__repr__", DEFINE_REPR(QuasiNonsingularOE));
+      .def_property("a", DEFINE_GETSET_REAL(QuasiNonsingOE, a))
+      .def_property("u", DEFINE_GETSET_REAL(QuasiNonsingOE, u))
+      .def_property("ex", DEFINE_GETSET_REAL(QuasiNonsingOE, ex))
+      .def_property("ey", DEFINE_GETSET_REAL(QuasiNonsingOE, ey))
+      .def_property("i", DEFINE_GETSET_REAL(QuasiNonsingOE, i))
+      .def_property("Omega", DEFINE_GETSET_REAL(QuasiNonsingOE, Omega))
+      .def("__repr__", DEFINE_REPR(QuasiNonsingOE));
 
   // EquinoctialOE
   py::class_<EquinoctialOE, OrbitState>(m, "EquinoctialOE")
@@ -139,14 +138,14 @@ void init_orbit_state(py::module &m) {
       .def_property("adOmega", DEFINE_GETSET_REAL(SingularROE, adOmega))
       .def("__repr__", DEFINE_REPR(SingularROE));
 
-  // QuasiNonsingularROE
-  py::class_<QuasiNonsingularROE, OrbitState>(m, "QuasiNonsingularROE")
+  // QuasiNonsingROE
+  py::class_<QuasiNonsingROE, OrbitState>(m, "QuasiNonsingROE")
       .def(py::init<const Vec6d &, const Frame>())
-      .def_property("ada", DEFINE_GETSET_REAL(QuasiNonsingularROE, ada))
-      .def_property("adl", DEFINE_GETSET_REAL(QuasiNonsingularROE, adl))
-      .def_property("adex", DEFINE_GETSET_REAL(QuasiNonsingularROE, adex))
-      .def_property("adey", DEFINE_GETSET_REAL(QuasiNonsingularROE, adey))
-      .def_property("adix", DEFINE_GETSET_REAL(QuasiNonsingularROE, adix))
-      .def_property("adiy", DEFINE_GETSET_REAL(QuasiNonsingularROE, adiy))
-      .def("__repr__", DEFINE_REPR(QuasiNonsingularROE));
+      .def_property("ada", DEFINE_GETSET_REAL(QuasiNonsingROE, ada))
+      .def_property("adl", DEFINE_GETSET_REAL(QuasiNonsingROE, adl))
+      .def_property("adex", DEFINE_GETSET_REAL(QuasiNonsingROE, adex))
+      .def_property("adey", DEFINE_GETSET_REAL(QuasiNonsingROE, adey))
+      .def_property("adix", DEFINE_GETSET_REAL(QuasiNonsingROE, adix))
+      .def_property("adiy", DEFINE_GETSET_REAL(QuasiNonsingROE, adiy))
+      .def("__repr__", DEFINE_REPR(QuasiNonsingROE));
 }

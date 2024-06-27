@@ -31,15 +31,15 @@ struct EOPData {
 };
 
 struct EOPResult {
-  real x_pole;
-  real y_pole;
-  real UT1_UTC;
-  real LOD;
-  real dPsi;
-  real dEps;
-  real dx_pole;
-  real dy_pole;
-  real TAI_UTC;
+  Real x_pole;
+  Real y_pole;
+  Real UT1_UTC;
+  Real LOD;
+  Real dPsi;
+  Real dEps;
+  Real dx_pole;
+  Real dy_pole;
+  Real TAI_UTC;
 };
 
 // Function to count lines in the file
@@ -50,6 +50,6 @@ std::shared_ptr<EOPData> LoadEOPData(const std::string& filename);
 
 // Function to manage IERS time and polar motion data
 EOPResult InterpolateEOPData(const std::shared_ptr<EOPData>& eop_data,
-                             real mjdUTC, bool interpolate);
+                             Real mjdUTC, bool interpolate);
 
 }  // namespace lupnt

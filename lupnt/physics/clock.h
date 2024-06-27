@@ -119,9 +119,9 @@ class ClockState : public IState {
     state_size_ = clock_vec.size();
   }
   VecX GetVec() const { return x_; }
-  real GetValue(int i) const { return x_(i); }
+  Real GetValue(int i) const { return x_(i); }
   inline int GetSize() const { return state_size_; };
-  inline void SetValue(const real val, const int idx) { x_(idx) = val; }
+  inline void SetValue(const Real val, const int idx) { x_(idx) = val; }
   void SetVec(const VecX& x) { x_ = x; }
 };
 
@@ -135,7 +135,7 @@ class ClockDynamics : public IDynamics {
 
   ClockDynamics(const ClockDynamics& other) { clk_model_ = other.clk_model_; }
 
-  Mat2 TwoStatePhi(real dt) {
+  Mat2 TwoStatePhi(Real dt) {
     Mat2 Phi_clk;
     Phi_clk << 1, dt, 0, 1;
     return Phi_clk;
@@ -147,7 +147,7 @@ class ClockDynamics : public IDynamics {
     return Phi_clk;
   }
 
-  Mat3 ThreeStatePhi(real dt) {
+  Mat3 ThreeStatePhi(Real dt) {
     Mat3 Phi_clk{{1, dt, dt * dt / 2}, {0, 1, dt}, {0, 0, 1}};
     return Phi_clk;
   }
@@ -158,26 +158,26 @@ class ClockDynamics : public IDynamics {
   }
 
   // two state clock
-  void Propagate(Vec2& clk, real t0, real tf) {
-    real dt = tf - t0;
+  void Propagate(Vec2& clk, Real t0, Real tf) {
+    Real dt = tf - t0;
     Mat2 Phi_clk = TwoStatePhi(dt);
     clk = Phi_clk * clk;
   }
 
-  void Propagate(Vec2& clk, real dt) {
+  void Propagate(Vec2& clk, Real dt) {
     Mat2 Phi_clk = TwoStatePhi(dt);
     clk = Phi_clk * clk;
   }
 
-  void PropagateWithNoise(Vec2& clk, real t0, real tf) {
-    real dt = tf - t0;
+  void PropagateWithNoise(Vec2& clk, Real t0, Real tf) {
+    Real dt = tf - t0;
     auto Q_clk = GetClockProcessNoise(clk_model_, dt.val());
     Mat2 Phi_clk_ = TwoStatePhi(dt);
     clk = SampleMVN(Phi_clk_ * clk, Q_clk, 1);
   }
 
-  void PropagateWithStm(Vec2& clk, real t0, real tf, MatXd& stm) {
-    real dt = tf - t0;
+  void PropagateWithStm(Vec2& clk, Real t0, Real tf, MatXd& stm) {
+    Real dt = tf - t0;
     Mat2 Phi_clk = TwoStatePhi(dt);
     Mat2d Phi_clk_d = Phi_clk.cast<double>();
     clk = Phi_clk * clk;
@@ -185,26 +185,26 @@ class ClockDynamics : public IDynamics {
   }
 
   // three state clock
-  void Propagate(Vec3& clk, real t0, real tf) {
-    real dt = tf - t0;
+  void Propagate(Vec3& clk, Real t0, Real tf) {
+    Real dt = tf - t0;
     Mat3 Phi_clk = ThreeStatePhi(dt);
     clk = Phi_clk * clk;
   }
 
-  void Propagate(Vec3& clk, real dt) {
+  void Propagate(Vec3& clk, Real dt) {
     Mat3 Phi_clk = ThreeStatePhi(dt);
     clk = Phi_clk * clk;
   }
 
-  void PropagateWithNoise(Vec3& clk, real t0, real tf) {
-    real dt = tf - t0;
+  void PropagateWithNoise(Vec3& clk, Real t0, Real tf) {
+    Real dt = tf - t0;
     auto Q_clk = GetClockProcessNoise3(clk_model_, dt.val());
     Mat3 Phi_clk_ = ThreeStatePhi(dt);
     clk = Phi_clk_ * clk + SampleMVN(Vec3d::Zero(), Q_clk, 1);
   }
 
-  void PropagateWithStm(Vec3& clk, real t0, real tf, MatXd& stm) {
-    real dt = tf - t0;
+  void PropagateWithStm(Vec3& clk, Real t0, Real tf, MatXd& stm) {
+    Real dt = tf - t0;
     Mat3 Phi_clk = ThreeStatePhi(dt);
     Mat3d Phi_clk_d = Phi_clk.cast<double>();
     clk = Phi_clk * clk;
@@ -212,7 +212,7 @@ class ClockDynamics : public IDynamics {
   }
 
   // arbitrary state clock
-  void PropagateX(VecX& clk, real t0, real tf) {
+  void PropagateX(VecX& clk, Real t0, Real tf) {
     if (clk.size() == 2) {
       Vec2 clk2 = clk;
       Propagate(clk2, t0, tf);
@@ -226,7 +226,7 @@ class ClockDynamics : public IDynamics {
     }
   }
 
-  void PropagateWithNoiseX(VecX& clk, real t0, real tf) {
+  void PropagateWithNoiseX(VecX& clk, Real t0, Real tf) {
     if (clk.size() == 2) {
       Vec2 clk2 = clk;
       PropagateWithNoise(clk2, t0, tf);
@@ -240,7 +240,7 @@ class ClockDynamics : public IDynamics {
     }
   }
 
-  void PropagateWithStmX(VecX& clk, real t0, real tf, MatXd& stm) {
+  void PropagateWithStmX(VecX& clk, Real t0, Real tf, MatXd& stm) {
     if (clk.size() == 2) {
       Vec2 clk2 = clk;
       stm.resize(2, 2);
@@ -257,13 +257,13 @@ class ClockDynamics : public IDynamics {
   }
 
   // Propagate using clockState
-  void Propagate(ClockState& clk, real t0, real tf) {
+  void Propagate(ClockState& clk, Real t0, Real tf) {
     VecX clk_vec = clk.GetVec();
     PropagateX(clk_vec, t0, tf);
     clk.SetVec(clk_vec);
   }
 
-  void PropagateWithNoise(ClockState& clk, real t0, real tf) {
+  void PropagateWithNoise(ClockState& clk, Real t0, Real tf) {
     VecX clk_vec = clk.GetVec();
     PropagateWithNoiseX(clk_vec, t0, tf);
     clk.SetVec(clk_vec);

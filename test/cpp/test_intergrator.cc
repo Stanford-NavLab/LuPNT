@@ -11,7 +11,7 @@ namespace {
 double OMEGA = 2.0 * M_PI;  // angular frequency
 double EPS = 1e-5;          // tolerance
 
-ODE HarmonicOscillator = [](const real t, const VecX& x) {
+ODE HarmonicOscillator = [](const Real t, const VecX& x) {
   VecX dxdt(2);
   dxdt[0] = x[1];
   dxdt[1] = -OMEGA * OMEGA * x[0];
@@ -21,11 +21,11 @@ ODE HarmonicOscillator = [](const real t, const VecX& x) {
 TEST_CASE("Integrator-RK4") {
   RK4 integrator;
 
-  real t = 0;
+  Real t = 0;
   VecX x(2);
   x[0] = 1;        // initial position
   x[1] = 0;        // initial velocity
-  real dt = 0.01;  // time step
+  Real dt = 0.01;  // time step
 
   // Simulate for one period
   for (int i = 0; i < (1.0 / dt); i++) {
@@ -41,11 +41,11 @@ TEST_CASE("Integrator-RK4") {
 TEST_CASE("Integrator-RK8") {
   RK8 integrator;
 
-  real t = 0;
+  Real t = 0;
   VecX x(2);
   x[0] = 1;        // initial position
   x[1] = 0;        // initial velocity
-  real dt = 0.01;  // time step
+  Real dt = 0.01;  // time step
 
   // Simulate for one period
   for (int i = 0; i < (1.0 / dt); i++) {

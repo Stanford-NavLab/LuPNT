@@ -20,8 +20,8 @@ namespace lupnt {
  * **************************************************************************/
 
 // arbitrary state size
-void NumericalDynamics::PropagateX(VecX &x, real t0, real tf) {
-  real dt_prop = tf - t0;
+void NumericalDynamics::PropagateX(VecX &x, Real t0, Real tf) {
+  Real dt_prop = tf - t0;
   if (dt_ == 0.0) {
     dt_prop = (tf - t0) / 10;
   } else {
@@ -33,9 +33,9 @@ void NumericalDynamics::PropagateX(VecX &x, real t0, real tf) {
   x = xf;
 }
 
-void NumericalDynamics::PropagateWithStmX(VecX &x, real t0, real tf,
+void NumericalDynamics::PropagateWithStmX(VecX &x, Real t0, Real tf,
                                           MatXd &stm) {
-  real dt_prop = tf - t0;
+  Real dt_prop = tf - t0;
   if (dt_ == 0.0) {
     dt_prop = (tf - t0) / 10;
   } else {
@@ -52,24 +52,24 @@ void NumericalDynamics::PropagateWithStmX(VecX &x, real t0, real tf,
 // NumericalOrbitDynamics
 // ****************************************************************************
 
-void NumericalOrbitDynamics::Propagate(OrbitState &state, real t0, real tf,
-                                       real dt) {
+void NumericalOrbitDynamics::Propagate(OrbitState &state, Real t0, Real tf,
+                                       Real dt) {
   assert(state.GetOrbitStateRepres() == state_representation_);
-  real dt_prop = (dt > 0.0) ? dt : dt_;
+  Real dt_prop = (dt > 0.0) ? dt : dt_;
   Vec6 x0 = state.GetVec();
   Vec6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt);
   state.SetVec(xf);
 }
 
-void NumericalOrbitDynamics::Propagate(Vec6 &x, real t0, real tf, real dt) {
-  real dt_prop = (dt > 0.0) ? dt : dt_;
+void NumericalOrbitDynamics::Propagate(Vec6 &x, Real t0, Real tf, Real dt) {
+  Real dt_prop = (dt > 0.0) ? dt : dt_;
   Vec6 x0 = x;
   Vec6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt);
   x = xf;
 }
 
-void NumericalOrbitDynamics::PropagateWithStm(OrbitState &state, real t0,
-                                              real tf, real dt, Mat6d &stm) {
+void NumericalOrbitDynamics::PropagateWithStm(OrbitState &state, Real t0,
+                                              Real tf, Real dt, Mat6d &stm) {
   assert(state.GetOrbitStateRepres() == state_representation_);
   Vec6 x0 = state.GetVec();
   MatXd J(6, 6);
@@ -78,9 +78,9 @@ void NumericalOrbitDynamics::PropagateWithStm(OrbitState &state, real t0,
   stm = J;
 }
 
-void NumericalOrbitDynamics::PropagateWithStm(Vec6 &x, real t0, real tf,
-                                              real dt, Mat6d &stm) {
-  real dt_prop = (dt > 0.0) ? dt : dt_;
+void NumericalOrbitDynamics::PropagateWithStm(Vec6 &x, Real t0, Real tf,
+                                              Real dt, Mat6d &stm) {
+  Real dt_prop = (dt > 0.0) ? dt : dt_;
   Vec6 x0 = x;
   MatXd J(6, 6);
   VecX xf = propagator_.PropagateWithStm(odefunc_, t0, tf, x0, dt, J);
@@ -88,9 +88,9 @@ void NumericalOrbitDynamics::PropagateWithStm(Vec6 &x, real t0, real tf,
   stm = J;
 }
 
-MatX NumericalOrbitDynamics::Propagate(Vec6 x, real t0, VecX tf, real dt,
+MatX NumericalOrbitDynamics::Propagate(Vec6 x, Real t0, VecX tf, Real dt,
                                        bool progress) {
-  real dt_prop = (dt > 0.0) ? dt : dt_;
+  Real dt_prop = (dt > 0.0) ? dt : dt_;
   Vec6 x0 = x;
   MatX xf(tf.size(), 6);
 
@@ -106,32 +106,32 @@ MatX NumericalOrbitDynamics::Propagate(Vec6 x, real t0, VecX tf, real dt,
   return xf;
 }
 
-MatX NumericalOrbitDynamics::Propagate(OrbitState &state, real t0, VecX &tf,
-                                       real dt, bool progress) {
+MatX NumericalOrbitDynamics::Propagate(OrbitState &state, Real t0, VecX &tf,
+                                       Real dt, bool progress) {
   Vec6 x0 = state.GetVec();
   return Propagate(x0, t0, tf, progress);
 }
 
-void NumericalOrbitDynamics::PropagateWithStm(OrbitState &state, real t0,
-                                              real tf, Mat6d &stm) {
-  real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
+void NumericalOrbitDynamics::PropagateWithStm(OrbitState &state, Real t0,
+                                              Real tf, Mat6d &stm) {
+  Real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
   PropagateWithStm(state, t0, tf, dt_prop, stm);
 }
 
-void NumericalOrbitDynamics::PropagateWithStm(Vec6 &x, real t0, real tf,
+void NumericalOrbitDynamics::PropagateWithStm(Vec6 &x, Real t0, Real tf,
                                               Mat6d &stm) {
-  real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
+  Real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
   PropagateWithStm(x, t0, tf, dt_prop, stm);
 }
 // With returns --------------------------------------------------------
-Vec6 NumericalOrbitDynamics::PropagateR(Vec6 &x, real t0, real tf, real dt) {
+Vec6 NumericalOrbitDynamics::PropagateR(Vec6 &x, Real t0, Real tf, Real dt) {
   Vec6 x0 = x;
   Vec6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt);
   return xf;
 }
 
-Vec6 NumericalOrbitDynamics::PropagateWithStmR(Vec6 &x, real t0, real tf,
-                                               real dt, Mat6d &stm) {
+Vec6 NumericalOrbitDynamics::PropagateWithStmR(Vec6 &x, Real t0, Real tf,
+                                               Real dt, Mat6d &stm) {
   Vec6 x0 = x;
   MatXd J(6, 6);
   VecX xf = propagator_.PropagateWithStm(odefunc_, t0, tf, x0, dt, J);
@@ -139,14 +139,14 @@ Vec6 NumericalOrbitDynamics::PropagateWithStmR(Vec6 &x, real t0, real tf,
   return xf;
 }
 
-Vec6 NumericalOrbitDynamics::PropagateR(Vec6 &x, real t0, real tf) {
-  real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
+Vec6 NumericalOrbitDynamics::PropagateR(Vec6 &x, Real t0, Real tf) {
+  Real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
   return PropagateR(x, t0, tf, dt_prop);
 }
 
-Vec6 NumericalOrbitDynamics::PropagateWithStmR(Vec6 &x, real t0, real tf,
+Vec6 NumericalOrbitDynamics::PropagateWithStmR(Vec6 &x, Real t0, Real tf,
                                                Mat6d &stm) {
-  real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
+  Real dt_prop = (dt_ > 0.0) ? dt_ : (tf - t0) / 10;
   return PropagateWithStmR(x, t0, tf, dt_prop, stm);
 }
 
@@ -162,11 +162,11 @@ CartesianTwoBodyDynamics::CartesianTwoBodyDynamics(double mu,
                     std::placeholders::_1, std::placeholders::_2),
           OrbitStateRepres::CARTESIAN, integratorType) {};
 
-VecX CartesianTwoBodyDynamics::ComputeRates(real t, const VecX &x) const {
+VecX CartesianTwoBodyDynamics::ComputeRates(Real t, const VecX &x) const {
   Vec6 dxdt;
   Vec3 r = x.head(3);
   Vec3 v = x.tail(3);
-  real r_norm = r.norm();
+  Real r_norm = r.norm();
 
   dxdt.head(3) = v;
   dxdt.tail(3) = -mu_ * r / pow(r_norm, 3);
@@ -185,11 +185,11 @@ MoonFixedDynamics::MoonFixedDynamics(double mu, std::string integratorType)
                     std::placeholders::_1, std::placeholders::_2),
           OrbitStateRepres::CARTESIAN, integratorType) {};
 
-VecX MoonFixedDynamics::ComputeRates(real t, const VecX &x) const {
+VecX MoonFixedDynamics::ComputeRates(Real t, const VecX &x) const {
   Vec6 dxdt;
   Vec3 r = x.head(3);
   Vec3 v = x.tail(3);
-  real r_norm = r.norm();
+  Real r_norm = r.norm();
 
   dxdt.head(3) = Vec3::Zero();
   dxdt.tail(3) = Vec3::Zero();
@@ -198,32 +198,32 @@ VecX MoonFixedDynamics::ComputeRates(real t, const VecX &x) const {
 }
 
 // ****************************************************************************
-// J2CartesianTwoBodyDynamics
+// J2CartTwoBodyDynamics
 // ****************************************************************************
 
-J2CartesianTwoBodyDynamics::J2CartesianTwoBodyDynamics(
-    double mu, double J2, double Rbody, std::string integratorType)
+J2CartTwoBodyDynamics::J2CartTwoBodyDynamics(double mu, double J2, double Rbody,
+                                             std::string integratorType)
     : mu_(mu),
       J2_(J2),
       Rbody_(Rbody),
       NumericalOrbitDynamics(
-          std::bind(&J2CartesianTwoBodyDynamics::ComputeRates, this,
+          std::bind(&J2CartTwoBodyDynamics::ComputeRates, this,
                     std::placeholders::_1, std::placeholders::_2),
           OrbitStateRepres::CARTESIAN, integratorType) {};
 
-VecX J2CartesianTwoBodyDynamics::ComputeRates(real t, const VecX &x) const {
+VecX J2CartTwoBodyDynamics::ComputeRates(Real t, const VecX &x) const {
   VecX acc(6);
 
   Vec3 r = x.head(3);
   Vec3 v = x.tail(3);
-  real r_norm = r.norm();
+  Real r_norm = r.norm();
 
   acc.head(3) = v;
   acc.tail(3) = -mu_ * r / pow(r_norm, 3);
 
   Vec3 aJ2;
-  real aux1 = -3.0 / 2.0 * mu_ * J2_ * pow(Rbody_, 2.0) / pow(r_norm, 4.0);
-  real aux2 = 5.0 * pow(r(2) / Rbody_, 2.0);
+  Real aux1 = -3.0 / 2.0 * mu_ * J2_ * pow(Rbody_, 2.0) / pow(r_norm, 4.0);
+  Real aux2 = 5.0 * pow(r(2) / Rbody_, 2.0);
   aJ2(0) = aux1 * (1.0 - aux2) * r(0);
   aJ2(1) = aux1 * (1.0 - aux2) * r(1);
   aJ2(2) = aux1 * (3.0 - aux2) * r(2);
@@ -248,10 +248,10 @@ J2KeplerianDynamics::J2KeplerianDynamics(double mu_in, double J2_in,
                     std::placeholders::_1, std::placeholders::_2),
           OrbitStateRepres::CARTESIAN, integratorType) {};
 
-VecX J2KeplerianDynamics::ComputeRates(real t, const VecX &x) const {
-  real p = x(0) * (1.0 - x(1) * x(1));
-  real n = sqrt(mu / pow(x(0), 3.0));
-  real eta = sqrt(1.0 - x(1) * x(1));
+VecX J2KeplerianDynamics::ComputeRates(Real t, const VecX &x) const {
+  Real p = x(0) * (1.0 - x(1) * x(1));
+  Real n = sqrt(mu / pow(x(0), 3.0));
+  Real eta = sqrt(1.0 - x(1) * x(1));
 
   VecX coeDot(6);
   coeDot(0) = 0.0;
@@ -275,13 +275,13 @@ MoonMeanDynamics::MoonMeanDynamics(std::string integratorType)
                     std::placeholders::_1, std::placeholders::_2),
           OrbitStateRepres::CARTESIAN, integratorType) {};
 
-VecX MoonMeanDynamics::ComputeRates(real t, const VecX &x) const {
-  real a = x(0);
-  real e = x(1);
-  real i = x(2);
-  real O = x(3);
-  real w = x(4);
-  real M = x(5);
+VecX MoonMeanDynamics::ComputeRates(Real t, const VecX &x) const {
+  Real a = x(0);
+  Real e = x(1);
+  Real i = x(2);
+  Real O = x(3);
+  Real w = x(4);
+  Real M = x(5);
 
   VecX coeDot(6);
   coeDot(0) = 0;

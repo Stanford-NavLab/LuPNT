@@ -18,16 +18,16 @@ namespace lupnt {
 
 class RadioMeasurement {
  public:
-  static real ComputePseudorange(VecX r_tx, VecX r_rx, real dt_tx, real dt_rx,
-                                 real offset);
+  static Real ComputePseudorange(VecX r_tx, VecX r_rx, Real dt_tx, Real dt_rx,
+                                 Real offset);
 
-  static real ComputePseudorangerate(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx,
-                                     real dt_tx_dot, real dt_rx_dot,
-                                     real offset);
+  static Real ComputePseudorangerate(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx,
+                                     Real dt_tx_dot, Real dt_rx_dot,
+                                     Real offset);
 
-  static real ComputeDopplerShift(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx,
-                                  real dt_tx_dot, real dt_rx_dot, real f,
-                                  real offset);
+  static Real ComputeDopplerShift(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx,
+                                  Real dt_tx_dot, Real dt_rx_dot, Real f,
+                                  Real offset);
 };
 
 }  // namespace lupnt

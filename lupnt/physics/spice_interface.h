@@ -34,28 +34,25 @@ static segment_t *cheby_s;
 static long cheby_n;
 void LoadSpiceKernel(void);
 void ExtractPckCoeffs(void);
-Mat6d GetFrameConversionMat(real t_tai, Frame from_frame, Frame to_frame);
+Mat6d GetFrameConversionMat(Real t_tai, Frame from_frame, Frame to_frame);
 
-real DateToModifiedJulianDate(int year, int month, int day, int hour,
-                              int minute, real second);
-std::tuple<int, int, int, int, int, real> ModifiedJulianDateToDate(real mjd);
+std::tuple<int, int, int, int, int, Real> ModifiedJulianDate2Date(Real mjd);
 
-real StringToTDB(std::string str);
-real StringToTAI(std::string str);
+Real String2TDB(std::string str);
+Real String2TAI(std::string str);
 
-std::string TAItoStringUTC(real t_tai, int prec);
-std::string TDBtoStringUTC(real t_tdb, int prec);
+std::string TAItoStringUTC(Real t_tai, int prec);
+std::string TDBtoStringUTC(Real t_tdb, int prec);
 
-real EarthRotationAngle(real mjd_ut1);
+Real EarthRotationAngle(Real mjd_ut1);
 
-real GreenwichMeanSiderealTime(real mjd_ut1);
-real UTCtoUT1(real mjd_utc);
-real ConvertTime(real t, std::string from_time, std::string to_time);
+Real UTCtoUT1(Real mjd_utc);
+Real ConvertTime(Real t, std::string from_time, std::string to_time);
 
-Vec6 GetBodyPosVel(const real t_tai, NaifId center, NaifId target, Frame frame);
+Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target, Frame frame);
 Mat<-1, 6> GetBodyPosVel(const VecX &t_tai, NaifId center, NaifId target,
                          Frame frame);
-Vec3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
+Vec3d GetBodyPos(NaifId target, Real t_tai, Frame refFrame, NaifId obs,
                  std::string abCorrection);
 
 }  // namespace lupnt

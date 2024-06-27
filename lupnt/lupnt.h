@@ -42,16 +42,26 @@
 #include "numerics/integrator.h"
 #include "numerics/math_utils.h"
 #include "numerics/string_utils.h"
+#include "numerics/vector_macros.h"
 
 // physics
 #include "physics/body.h"
 #include "physics/cheby.h"
 #include "physics/clock.h"
+#include "physics/coordinates.h"
 #include "physics/eop.h"
 #include "physics/frame_converter.h"
 #include "physics/gravity.h"
 #include "physics/orbit_state.h"
-#include "physics/orbit_state_utils.h"
 #include "physics/spice_interface.h"
 #include "physics/state.h"
+#include "physics/time.h"
+
+// physics/orbit_state
+#include "physics/orbit_state/anomaly.h"
+#include "physics/orbit_state/conversions.h"
+#include "physics/orbit_state/converter.h"
+#include "physics/orbit_state/mean_osculating.h"
+#include "physics/orbit_state/orbit_states.h"
+#include "physics/orbit_state/tle.h"
 

@@ -11,8 +11,8 @@ void init_measurements(py::module &m) {
       "compute_occultation",
       [](double epoch, const Vec3d &r1, const Vec3d &r2, Frame cs1, Frame cs2,
          const std::vector<NaifId> &bodies) -> VecXd {
-        return Occultation::ComputeOccultation(epoch, r1.cast<real>().eval(),
-                                               r2.cast<real>().eval(), cs1, cs2,
+        return Occultation::ComputeOccultation(epoch, r1.cast<Real>().eval(),
+                                               r2.cast<Real>().eval(), cs1, cs2,
                                                bodies)
             .cast<double>();
       },
@@ -22,8 +22,8 @@ void init_measurements(py::module &m) {
       "compute_occultation",
       [](double epoch, Matd<-1, 3> &r1, Matd<-1, 3> &r2, Frame cs1, Frame cs2,
          const std::vector<NaifId> &bodies) -> VecXd {
-        return Occultation::ComputeOccultation(epoch, r1.cast<real>().eval(),
-                                               r2.cast<real>().eval(), cs1, cs2,
+        return Occultation::ComputeOccultation(epoch, r1.cast<Real>().eval(),
+                                               r2.cast<Real>().eval(), cs1, cs2,
                                                bodies)
             .cast<double>();
       },
@@ -34,8 +34,8 @@ void init_measurements(py::module &m) {
       [](const VecXd &epoch, const Matd<-1, 3> &r1, const Matd<-1, 3> &r2,
          Frame cs1, Frame cs2, const std::vector<NaifId> &bodies) -> VecXd {
         return Occultation::ComputeOccultation(
-                   epoch.cast<real>().eval(), r1.cast<real>().eval(),
-                   r2.cast<real>().eval(), cs1, cs2, bodies)
+                   epoch.cast<Real>().eval(), r1.cast<Real>().eval(),
+                   r2.cast<Real>().eval(), cs1, cs2, bodies)
             .cast<double>();
       },
       "Compute occultation between two points", py::arg("epoch"), py::arg("r1"),

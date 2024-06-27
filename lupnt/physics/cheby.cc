@@ -81,8 +81,8 @@ void cheby_eval(double x, double *scale, double *coeff, long num, double *f,
   *df = (w0 + x * dw0 - dw1) / scale[1];
 }
 
-Vec2 cheby_eval_ad(real x, double *scale, double *coeff, long num) {
-  real x2, w0 = 0., w1 = 0., dw0 = 0., dw1 = 0., tmp;
+Vec2 cheby_eval_ad(Real x, double *scale, double *coeff, long num) {
+  Real x2, w0 = 0., w1 = 0., dw0 = 0., dw1 = 0., tmp;
   x = (x - scale[0]) / scale[1];
   x2 = x * 2.;
   while (--num) {
@@ -119,7 +119,7 @@ int cheby_posvel(double t, double *seg, long len, double pos[3],
   return 0;
 }
 
-Vec6 cheby_posvel_ad(real t, double *seg, long len) {
+Vec6 cheby_posvel_ad(Real t, double *seg, long len) {
   long k, num;
 
   k = (long)floor((t.val() - seg[len - 4]) /  // seg[len-4] is initial epoch

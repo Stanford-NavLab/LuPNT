@@ -19,8 +19,9 @@ void init_dynamics(py::module &m) {
           py::arg("state"), py::arg("dt"))
       .def(
           "propagate",
-          [](KeplerianDynamics &dyn, QuasiNonsingularOE &state,
-             double dt) -> void { dyn.Propagate(state, dt); },
+          [](KeplerianDynamics &dyn, QuasiNonsingOE &state, double dt) -> void {
+            dyn.Propagate(state, dt);
+          },
           py::arg("state"), py::arg("dt"))
       .def(
           "propagate",
@@ -38,7 +39,7 @@ void init_dynamics(py::module &m) {
           py::arg("state"), py::arg("dt"), py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](KeplerianDynamics &dyn, QuasiNonsingularOE &state, double dt) {
+          [](KeplerianDynamics &dyn, QuasiNonsingOE &state, double dt) {
             Mat6d stm;
             dyn.PropagateWithStm(state, dt, stm);
             return stm;
@@ -68,7 +69,7 @@ void init_dynamics(py::module &m) {
           "propagate",
           [](NumericalOrbitDynamics &dyn, Vec6d &x, double t0, double tf,
              double dt) -> Vec6d {
-            Vec6 x_real = x.cast<real>();
+            Vec6 x_real = x.cast<Real>();
             dyn.Propagate(x_real, t0, tf, dt);
             return x_real.cast<double>();
           },
@@ -77,8 +78,8 @@ void init_dynamics(py::module &m) {
           "propagate",
           [](NumericalOrbitDynamics &dyn, Vec6d &x, double t0, VecXd &tfs,
              double dt, bool progress) -> VecXd {
-            Vec6 x_real = x.cast<real>();
-            VecX tfs_real = tfs.cast<real>();
+            Vec6 x_real = x.cast<Real>();
+            VecX tfs_real = tfs.cast<Real>();
             return dyn.Propagate(x_real, t0, tfs_real, progress).cast<double>();
           },
           py::arg("state"), py::arg("t0"), py::arg("tfs"), py::arg("dt") = 0.0,
@@ -98,7 +99,7 @@ void init_dynamics(py::module &m) {
           [](NumericalOrbitDynamics &dyn, Vec6d &state, double t0, double tf,
              double dt) -> std::tuple<Vec6d, Mat6d> {
             Mat6d stm;
-            Vec6 state_real = state.cast<real>();
+            Vec6 state_real = state.cast<Real>();
             dyn.PropagateWithStm(state_real, t0, tf, dt, stm);
             return std::make_tuple(state_real.cast<double>(), stm);
           },

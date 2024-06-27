@@ -2,17 +2,17 @@ import pylupnt as pnt
 import numpy as np
 
 
-def degToRad(deg):
+def deg2Rad(deg):
     return deg * np.pi / 180
 
 
 p = 11067.790
 e = 0.83285
 a = p / (1 - pow(e, 2))
-i = degToRad(87.87)
-Omega = degToRad(227.89)
-w = degToRad(53.38)
-nu = degToRad(92.335)
+i = deg2Rad(87.87)
+Omega = deg2Rad(227.89)
+w = deg2Rad(53.38)
+nu = deg2Rad(92.335)
 M = pnt.true_to_mean_anomaly(nu, e)
 
 oe = np.array([a, e, i, Omega, w, M])

@@ -42,10 +42,10 @@ using namespace lupnt;
 int main() {
   // Time
   double t0 = 0;
-  double tf = t0 + 36.0 * SECS_PER_HOUR;  // 36 hours
-  double dt = 1.0;                        // Integration time step [s]
-  double Dt = 10.0;                       // Propagation time step [s]
-  double print_every = 1.0 * SECS_PER_HOUR;
+  double tf = t0 + 36.0 * SECS_HOUR;  // 36 hours
+  double dt = 1.0;                    // Integration time step [s]
+  double Dt = 10.0;                   // Propagation time step [s]
+  double print_every = 1.0 * SECS_HOUR;
   double save_every = Dt;
 
   // Dynamics
@@ -74,17 +74,17 @@ int main() {
   std::cout << "Initial Epoch: " << epoch_string << std::endl;
 
   // Moon spacecraft
-  real a = 6541.4;
-  real e = 0.6;
-  real i = 65.5 * RAD_PER_DEG;
-  real Omega = 0.0 * RAD_PER_DEG;
-  real w = 90.0 * RAD_PER_DEG;
-  real M = 0.0 * RAD_PER_DEG;
+  Real a = 6541.4;
+  Real e = 0.6;
+  Real i = 65.5 * RAD;
+  Real Omega = 0.0 * RAD;
+  Real w = 90.0 * RAD;
+  Real M = 0.0 * RAD;
   ClassicalOE coe_moon({a, e, i, Omega, w, M});
   coe_moon.SetCoordSystem(Frame::MOON_CI);
 
-  auto cart_state_moon = std::make_shared<CartesianOrbitState>(
-      ClassicalToCartesian(coe_moon, GM_MOON));
+  auto cart_state_moon =
+      std::make_shared<CartesianOrbitState>(Classical2Cart(coe_moon, GM_MOON));
   auto moon_sat = std::make_shared<Spacecraft>();
   auto receiver = std::make_shared<GnssReceiver>("moongpsr");
 
@@ -144,9 +144,9 @@ int main() {
     Vec6 v6;
     v6.setZero();
 
-    // Vec6 vec6_mi = FrameConverter::Convert(epoch, VecX::Zero(6),
+    // Vec6 vec6_mi = ConvertFrame(epoch, VecX::Zero(6),
     //                                           Frame::GCRF, Frame::MOON_CI);
-    // Vec6 vec6_gcrf = FrameConverter::Convert(epoch, VecX::Zero(6),
+    // Vec6 vec6_gcrf = ConvertFrame(epoch, VecX::Zero(6),
     //                                             Frame::MOON_CI, Frame::GCRF);
 
     // data_history->AddData("earth_mi", t, vec6_mi);

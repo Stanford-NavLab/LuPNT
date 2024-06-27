@@ -27,8 +27,8 @@ class IDynamics {
  public:
   // without dt
   virtual ~IDynamics() = default;
-  virtual void PropagateX(VecX &x, real t0, real tf) = 0;
-  virtual void PropagateWithStmX(VecX &x, real t0, real tf, MatXd &stm) = 0;
+  virtual void PropagateX(VecX &x, Real t0, Real tf) = 0;
+  virtual void PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm) = 0;
 };
 
 /**
@@ -45,12 +45,12 @@ class NumericalDynamics : public IDynamics {
   NumericalDynamics(ODE odefunc, std::string integrator = "RK4")
       : odefunc_(odefunc), propagator_(integrator) {};
 
-  void SetTimeStep(real dt) { dt_ = dt.val(); };
-  void PropagateX(VecX &x, real t0, real tf);
-  void PropagateWithStmX(VecX &x, real t0, real tf, MatXd &stm);
+  void SetTimeStep(Real dt) { dt_ = dt.val(); };
+  void PropagateX(VecX &x, Real t0, Real tf);
+  void PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm);
 
  protected:
-  virtual VecX ComputeRates(real t, const VecX &x) const = 0;
+  virtual VecX ComputeRates(Real t, const VecX &x) const = 0;
 };
 
 /********************************************
@@ -65,34 +65,34 @@ class AnalyticalDynamics : public IDynamics {
  public:
   virtual ~AnalyticalDynamics() {};
   virtual OrbitState CreateOrbitState(Vec6 &x) = 0;
-  virtual void Propagate(OrbitState &state, real t0, real dt) = 0;
-  virtual void PropagateWithSTM(OrbitState &state, real t0, real dt,
+  virtual void Propagate(OrbitState &state, Real t0, Real dt) = 0;
+  virtual void PropagateWithSTM(OrbitState &state, Real t0, Real dt,
                                 Mat6d &stm) = 0;
 
   // Using fixed size vectors
-  void Propagate(Vec6 &x, real t0, real dt) {
+  void Propagate(Vec6 &x, Real t0, Real dt) {
     OrbitState state = CreateOrbitState(x);
     Propagate(state, t0, dt);
     x = state.GetVec();
   }
 
-  void PropagateWithSTM(Vec6 &x, real t0, real dt, Mat6d &stm) {
+  void PropagateWithSTM(Vec6 &x, Real t0, Real dt, Mat6d &stm) {
     OrbitState state = CreateOrbitState(x);
     PropagateWithSTM(state, t0, dt, stm);
     x = state.GetVec();
   }
 
   // arbitrary state size
-  void PropagateX(VecX &x, real t0, real tf) {
+  void PropagateX(VecX &x, Real t0, Real tf) {
     Vec6 x6 = x.head(6);
-    real dt = tf - t0;
+    Real dt = tf - t0;
     Propagate(x6, t0, dt);
     x.head(6) = x6;
   }
 
-  void PropagateWithStmX(VecX &x, real t0, real tf, MatXd &stm) {
+  void PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm) {
     Vec6 x6 = x.head(6);
-    real dt = tf - t0;
+    Real dt = tf - t0;
     Mat6d stm6;
     stm6 = stm.block(0, 0, 6, 6);
     PropagateWithSTM(x6, t0, dt, stm6);
@@ -114,57 +114,56 @@ class KeplerianDynamics {
   KeplerianDynamics(double mu);
 
   // ClassicalOE
-  void Propagate(ClassicalOE &state, real dt);
-  void PropagateWithStm(ClassicalOE &state, real dt, Mat6d &stm);
-  static Vec6 PropagateClassicalOE(Vec6 coe, real dt, double GM);
-  // QuasiNonsingularOE
-  void Propagate(QuasiNonsingularOE &state, real dt);
-  void PropagateWithStm(QuasiNonsingularOE &state, real dt, Mat6d &stm);
+  void Propagate(ClassicalOE &state, Real dt);
+  void PropagateWithStm(ClassicalOE &state, Real dt, Mat6d &stm);
+  static Vec6 PropagateClassicalOE(Vec6 coe, Real dt, double GM);
+  // QuasiNonsingOE
+  void Propagate(QuasiNonsingOE &state, Real dt);
+  void PropagateWithStm(QuasiNonsingOE &state, Real dt, Mat6d &stm);
   // EquinoctialOE
-  void Propagate(EquinoctialOE &state, real dt);
-  void PropagateWithStm(EquinoctialOE &state, real dt, Mat6d &stm);
+  void Propagate(EquinoctialOE &state, Real dt);
+  void PropagateWithStm(EquinoctialOE &state, Real dt, Mat6d &stm);
 };
 
 class ClohessyWiltshireDynamics : public AnalyticalDynamics {
  private:
-  real a, n;
+  Real a, n;
   VecX K;
-  real tInit;
+  Real tInit;
 
  public:
-  ClohessyWiltshireDynamics(real a_in, real n_in);
-  void Propagate(OrbitState &state, real tf);
-  void Initialize(CartesianOrbitState &state, real t0);
-  MatX ComputeMat(real t);
+  ClohessyWiltshireDynamics(Real a_in, Real n_in);
+  void Propagate(OrbitState &state, Real tf);
+  void Initialize(CartesianOrbitState &state, Real t0);
+  MatX ComputeMat(Real t);
 };
 
 class YamanakaAnkersenDynamics : public AnalyticalDynamics {
  private:
-  real a, n, e, M0;
+  Real a, n, e, M0;
   VecX K;
-  real tInit;
+  Real tInit;
 
  public:
   YamanakaAnkersenDynamics();
-  void Propagate(CartesianOrbitState &state, real tf);
-  void Initialize(ClassicalOE &coe_c, CartesianOrbitState &rv_rtn, real t0,
+  void Propagate(CartesianOrbitState &state, Real tf);
+  void Initialize(ClassicalOE &coe_c, CartesianOrbitState &rv_rtn, Real t0,
                   double mu);
-  MatX ComputeMat(real t);
-  MatX ComputeInverseMat(real t);
+  MatX ComputeMat(Real t);
+  MatX ComputeInverseMat(Real t);
 };
 
 class RoeGeometricMappingDynamics : public AnalyticalDynamics {
  private:
-  real a, e, i, w, M0, ex, ey, n;
+  Real a, e, i, w, M0, ex, ey, n;
   VecX K;
-  real tInit;
+  Real tInit;
 
  public:
   RoeGeometricMappingDynamics();
-  void Propagate(CartesianOrbitState &state, real tf);
-  void Initialize(ClassicalOE coe_c, QuasiNonsingularROE &roe, real t0,
-                  double mu);
-  MatX ComputeMat(real t);
+  void Propagate(CartesianOrbitState &state, Real tf);
+  void Initialize(ClassicalOE coe_c, QuasiNonsingROE &roe, Real t0, double mu);
+  MatX ComputeMat(Real t);
 };
 
 /********************************************
@@ -185,26 +184,26 @@ class NumericalOrbitDynamics : public NumericalDynamics {
       : NumericalDynamics(odefunc, integrator),
         state_representation_(state_representation) {}
 
-  void Propagate(OrbitState &state, real t0, real tf, real dt = 0.0);
-  void Propagate(Vec6 &x, real t0, real tf, real dt = 0.0);
-  void PropagateWithStm(OrbitState &state, real t0, real tf, real dt,
+  void Propagate(OrbitState &state, Real t0, Real tf, Real dt = 0.0);
+  void Propagate(Vec6 &x, Real t0, Real tf, Real dt = 0.0);
+  void PropagateWithStm(OrbitState &state, Real t0, Real tf, Real dt,
                         Mat6d &stm);
-  MatX Propagate(OrbitState &state, real t0, VecX &tf, real dt = 0.0,
+  MatX Propagate(OrbitState &state, Real t0, VecX &tf, Real dt = 0.0,
                  bool progress = false);
-  MatX Propagate(Vec6 x, real t0, VecX tf, real dt = 0.0,
+  MatX Propagate(Vec6 x, Real t0, VecX tf, Real dt = 0.0,
                  bool progress = false);
-  void PropagateWithStm(Vec6 &x, real t0, real tf, real dt, Mat6d &stm);
-  void PropagateWithStm(OrbitState &state, real t0, real tf, Mat6d &stm);
-  void PropagateWithStm(Vec6 &x, real t0, real tf, Mat6d &stm);
+  void PropagateWithStm(Vec6 &x, Real t0, Real tf, Real dt, Mat6d &stm);
+  void PropagateWithStm(OrbitState &state, Real t0, Real tf, Mat6d &stm);
+  void PropagateWithStm(Vec6 &x, Real t0, Real tf, Mat6d &stm);
 
   // with returns
-  Vec6 PropagateR(Vec6 &x, real t0, real tf, real dt);
-  Vec6 PropagateWithStmR(Vec6 &x, real t0, real tf, real dt, Mat6d &stm);
-  Vec6 PropagateR(Vec6 &x, real t0, real tf);
-  Vec6 PropagateWithStmR(Vec6 &x, real t0, real tf, Mat6d &stm);
+  Vec6 PropagateR(Vec6 &x, Real t0, Real tf, Real dt);
+  Vec6 PropagateWithStmR(Vec6 &x, Real t0, Real tf, Real dt, Mat6d &stm);
+  Vec6 PropagateR(Vec6 &x, Real t0, Real tf);
+  Vec6 PropagateWithStmR(Vec6 &x, Real t0, Real tf, Mat6d &stm);
 
  protected:
-  virtual VecX ComputeRates(real t, const VecX &x) const = 0;
+  virtual VecX ComputeRates(Real t, const VecX &x) const = 0;
 };
 
 class MoonFixedDynamics : public NumericalOrbitDynamics {
@@ -213,7 +212,7 @@ class MoonFixedDynamics : public NumericalOrbitDynamics {
 
  public:
   MoonFixedDynamics(double mu, std::string integrator = "RK4");
-  VecX ComputeRates(real t, const VecX &x) const;
+  VecX ComputeRates(Real t, const VecX &x) const;
 };
 
 class CartesianTwoBodyDynamics : public NumericalOrbitDynamics {
@@ -222,17 +221,17 @@ class CartesianTwoBodyDynamics : public NumericalOrbitDynamics {
 
  public:
   CartesianTwoBodyDynamics(double mu, std::string integrator = "RK4");
-  VecX ComputeRates(real t, const VecX &x) const;
+  VecX ComputeRates(Real t, const VecX &x) const;
 };
 
-class J2CartesianTwoBodyDynamics : public NumericalOrbitDynamics {
+class J2CartTwoBodyDynamics : public NumericalOrbitDynamics {
  private:
   double mu_, J2_, Rbody_;
 
  public:
-  J2CartesianTwoBodyDynamics(double mu, double J2_in, double Rbody_in,
-                             std::string integrator = "RK4");
-  VecX ComputeRates(real t, const VecX &x) const;
+  J2CartTwoBodyDynamics(double mu, double J2_in, double Rbody_in,
+                        std::string integrator = "RK4");
+  VecX ComputeRates(Real t, const VecX &x) const;
 };
 
 class J2KeplerianDynamics : public NumericalOrbitDynamics {
@@ -242,7 +241,7 @@ class J2KeplerianDynamics : public NumericalOrbitDynamics {
  public:
   J2KeplerianDynamics(double mu, double J2_in, double Rbody_in,
                       std::string integrator = "RK4");
-  VecX ComputeRates(real t, const VecX &x) const;
+  VecX ComputeRates(Real t, const VecX &x) const;
 };
 
 class MoonMeanDynamics : public NumericalOrbitDynamics {
@@ -254,7 +253,7 @@ class MoonMeanDynamics : public NumericalOrbitDynamics {
 
  public:
   MoonMeanDynamics(std::string integrator = "RK4");
-  VecX ComputeRates(real t, const VecX &x) const;
+  VecX ComputeRates(Real t, const VecX &x) const;
 };
 
 class NBodyDynamics : public NumericalOrbitDynamics {
@@ -271,7 +270,7 @@ class NBodyDynamics : public NumericalOrbitDynamics {
 
  public:
   NBodyDynamics(std::string integrator = "RK4");
-  VecX ComputeRates(real epoch, const VecX &x) const;
+  VecX ComputeRates(Real epoch, const VecX &x) const;
 
   void AddBody(const Body &body) {
     for (auto &b : bodies_) {
@@ -288,9 +287,9 @@ class NBodyDynamics : public NumericalOrbitDynamics {
   void SetSrpCoeff(double CR) { CR_ = CR; }
   void SetSolarRadiationPressure(bool use_srp) { use_srp_ = use_srp; }
 
-  Vec3 ComputeNBodyGravity(const real epoch, const Vec3 &r) const;
+  Vec3 ComputeNBodyGravity(const Real epoch, const Vec3 &r) const;
   Vec3 ComputeSolarRadiationPressure(const Vec3 &r_body2sc,
-                                     const Vec3 &r_sun2sc, const real B_srp,
+                                     const Vec3 &r_sun2sc, const Real B_srp,
                                      double R_body) const;
 };
 

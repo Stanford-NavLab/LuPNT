@@ -12,9 +12,9 @@ int main() {
 
   omp_set_num_threads(num_threads);
 
-  real t0_tai = StringToTAI("2030/01/01 12:00:00.00 UTC");
-  real Dt = 5.;
-  real tf = 1 * 12. * SECS_PER_HOUR;
+  Real t0_tai = String2TAI("2030/01/01 12:00:00.00 UTC");
+  Real Dt = 5.;
+  Real tf = 1 * 12. * SECS_HOUR;
   int N_steps = (tf / Dt).val();
   VecX tspan = VecX::LinSpaced(N_steps, 0, tf);
   VecX t_tai = t0_tai + tspan.array();

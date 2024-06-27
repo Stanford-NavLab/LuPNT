@@ -24,8 +24,8 @@ class NumericalPropagator {
   NumericalPropagator();
   NumericalPropagator(std::string integratorType);
 
-  VecX Propagate(ODE odefunc, real t0, real tf, VecX x0, real dt);
-  VecX PropagateWithStm(ODE odefunc, real t0, real tf, VecX x0, real dt,
+  VecX Propagate(ODE odefunc, Real t0, Real tf, VecX x0, Real dt);
+  VecX PropagateWithStm(ODE odefunc, Real t0, Real tf, VecX x0, Real dt,
                         MatXd &J);
 };
 

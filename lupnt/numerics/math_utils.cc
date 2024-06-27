@@ -18,18 +18,18 @@
 
 namespace lupnt {
 
-real angleBetweenVecs(const VecX &a, const VecX &b) {
+Real angleBetweenVecs(const VecX &a, const VecX &b) {
   assert(a.size() == b.size());
   return 2.0 * atan2((a.normalized() - b.normalized()).norm(),
                      (a.normalized() + b.normalized()).norm());
 }
 
-real wrapToPi(real angle) { return atan2(sin(angle), cos(angle)); }
+Real Wrap2Pi(Real angle) { return atan2(sin(angle), cos(angle)); }
 
-VecX wrapToPi(VecX angle) {
+VecX Wrap2Pi(VecX angle) {
   VecX result = angle;
   for (int i = 0; i < angle.size(); i++) {
-    result(i) = wrapToPi(angle(i));
+    result(i) = Wrap2Pi(angle(i));
   }
   return result;
 }
@@ -40,7 +40,7 @@ VecX wrapToPi(VecX angle) {
  * @param angle   angle in radians
  * @return real  wrapped angle in radians
  */
-real wrapTo2Pi(real angle) { return angle - TWO_PI * floor(angle / TWO_PI); }
+Real Wrap2TwoPi(Real angle) { return angle - TWO_PI * floor(angle / TWO_PI); }
 
 /**
  * @brief  Wrap the angles between 0 and 2pi
@@ -48,55 +48,67 @@ real wrapTo2Pi(real angle) { return angle - TWO_PI * floor(angle / TWO_PI); }
  * @param angle  angle vector in radians
  * @return VecX  wrapped angle vector in radians
  */
-VecX wrapTo2Pi(VecX angle) {
+VecX WrapToTwoPi(VecX angle) {
   VecX result = angle;
   for (int i = 0; i < angle.size(); i++) {
-    result(i) = wrapTo2Pi(angle(i));
+    result(i) = Wrap2TwoPi(angle(i));
   }
   return result;
 }
 
-real deg2rad(real deg) { return (M_PI / 180) * deg; }
+Real round(Real x, int n) {
+  Real y = x;
+  y[0] = std::round(x.val() * std::pow(10, n)) / std::pow(10, n);
+  return y;
+}
 
-real rad2deg(real rad) { return (180 / M_PI) * rad; }
+Real deg2rad(Real deg) { return (M_PI / 180) * deg; }
+
+Real rad2deg(Real rad) { return (180 / M_PI) * rad; }
 
 double deg2rad(double deg) { return (M_PI / 180) * deg; }
 
 double rad2deg(double rad) { return (180 / M_PI) * rad; }
 
-real decimal2dB(real x) { return 10 * log10(x); }
+Real decimal2dB(Real x) { return 10 * log10(x); }
 
-real dB2decimal(real x) { return pow(10, x / 10); }
+Real dB2decimal(Real x) { return pow(10, x / 10); }
 
 MatX decimal2dB(MatX x) {
-  x.array() = x.unaryExpr([](real x) { return decimal2dB(x); });
+  x.array() = x.unaryExpr([](Real x) { return decimal2dB(x); });
   return x;
 }
 
 MatX dB2decimal(MatX x) {
-  x.array() = x.unaryExpr([](real x) { return dB2decimal(x); });
+  x.array() = x.unaryExpr([](Real x) { return dB2decimal(x); });
   return x;
 }
 
-real floor(real x) {
-  real y = x;
+Real floor(Real x) {
+  Real y = x;
   y[0] = std::floor(x.val());
   return y;
 }
 
-Vec3 degrees2dms(real deg) {
-  real d = floor(deg);
-  real m = floor((deg - d) * 60);
-  real s = (deg - d - m / 60) * 3600;
+Real frac(Real x) {
+  Real y = x;
+  y[0] = x.val() - std::floor(x.val());
+  return y;
+}
+
+Vec3 degrees2dms(Real deg) {
+  Real d = floor(deg);
+  Real m = floor((deg - d) * 60);
+  Real s = (deg - d - m / 60) * 3600;
   return Vec3{d, m, s};
 }
 
-real dms2degrees(Vec3 hms) {
-  real decdeg = hms(0) + hms(1) / 60.0 + hms(2) / 3600.0;
+Real dms2degrees(Vec3 hms) {
+  Real decdeg = hms(0) + hms(1) / 60.0 + hms(2) / 3600.0;
   return decdeg;
 }
 
-real safe_acos(real x) {
+Real safe_acos(Real x) {
   if (x >= 1.0) {
     return acos(x - 1e-15);
   } else if (x <= -1.0) {
@@ -106,7 +118,7 @@ real safe_acos(real x) {
   }
 }
 
-real safe_asin(real x) {
+Real safe_asin(Real x) {
   if (x >= 1.0) {
     return asin(x - 1e-16);
   } else if (x <= -1.0) {
@@ -269,37 +281,37 @@ VecXd blkdiag(const VecXd &A, const VecXd &B) {
   return C;
 }
 
-Mat3 Rot1(real phi) {
-  real c = cos(phi);
-  real s = sin(phi);
-  Mat3 R1{
+Mat3 RotX(Real angle) {
+  Real c = cos(angle);
+  Real s = sin(angle);
+  Mat3 R{
       {1.0, 0.0, 0.0},
       {0.0, c, s},
       {0.0, -s, c},
   };
-  return R1;
+  return R;
 }
 
-Mat3 Rot2(real phi) {
-  real c = cos(phi);
-  real s = sin(phi);
-  Mat3 R2{
+Mat3 RotY(Real angle) {
+  Real c = cos(angle);
+  Real s = sin(angle);
+  Mat3 R{
       {c, 0.0, -s},
       {0.0, 1.0, 0.0},
       {s, 0.0, c},
   };
-  return R2;
+  return R;
 }
 
-Mat3 Rot3(real phi) {
-  real c = cos(phi);
-  real s = sin(phi);
-  Mat3 R3{
+Mat3 RotZ(Real angle) {
+  Real c = cos(angle);
+  Real s = sin(angle);
+  Mat3 R{
       {c, s, 0.0},
       {-s, c, 0.0},
       {0.0, 0.0, 1.0},
   };
-  return R3;
+  return R;
 }
 
 Mat3 Skew(Vec3 x) {
@@ -311,7 +323,7 @@ Mat3 Skew(Vec3 x) {
   return skew;
 }
 
-std::vector<double> EigenToStdVec(const VecX &vec) {
+std::vector<double> Eigen2StdVec(const VecX &vec) {
   std::vector<double> result(vec.size());
   for (int i = 0; i < vec.size(); i++) {
     result[i] = vec(i).val();

@@ -4,24 +4,24 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <iostream>
 
-#include "test_utils.cc"
+#include "utils.cc"
 
 using namespace lupnt;
 using namespace Catch::Matchers;
 
 // Demonstrate some basic assertions.
-TEST_CASE("SpiceInterface.StringToTDB") {
-  real et = StringToTDB("2023-04-15 00:00:00 TDB");
+TEST_CASE("SpiceInterface.String2TDB") {
+  Real et = String2TDB("2023-04-15 00:00:00 TDB");
   REQUIRE(et.val() == 734788800);
 }
 
-TEST_CASE("SpiceInterface.StringToTAI") {
-  real tai = StringToTAI("2023-04-15 00:00:00 TDB");
+TEST_CASE("SpiceInterface.String2TAI") {
+  Real tai = String2TAI("2023-04-15 00:00:00 TDB");
   REQUIRE(tai.val() == 7.347887678143708e+08);
 }
 
 TEST_CASE("SpiceInterface.TDBtoStringUTC") {
-  real et = StringToTDB("2023-04-15 00:00:00 UTC");
+  Real et = String2TDB("2023-04-15 00:00:00 UTC");
   int prec = 3;
   std::string str = TDBtoStringUTC(et, prec);
   //   std::cout << str << std::endl;
@@ -29,7 +29,7 @@ TEST_CASE("SpiceInterface.TDBtoStringUTC") {
 }
 
 TEST_CASE("SpiceInterface.GetBodyPos") {
-  real t_tai = StringToTAI("2023-04-15 00:00:00 TDB");
+  Real t_tai = String2TAI("2023-04-15 00:00:00 TDB");
   // 2. GetBodyPos: Get Body Position via SPICE
   auto target = NaifId::MOON;
   auto observer = NaifId::EARTH;
@@ -48,7 +48,7 @@ TEST_CASE("SpiceInterface.GetBodyPos") {
 }
 
 TEST_CASE("SpiceInterface.GetFrameConversionMat") {
-  real t_tai = StringToTAI("2023-04-15 00:00:00 TDB");
+  Real t_tai = String2TAI("2023-04-15 00:00:00 TDB");
 
   // 3: GetFrameConversionMat
   Mat6 xform(6, 6);
@@ -68,7 +68,7 @@ TEST_CASE("SpiceInterface.GetFrameConversionMat") {
 }
 
 TEST_CASE("SpiceInterface.GetBodyPosVel") {
-  real tai = StringToTAI("2023-04-15 00:00:00 TDB");
+  Real tai = String2TAI("2023-04-15 00:00:00 TDB");
 
   // 4. GetBodyPosVel
   std::string target = "MOON";

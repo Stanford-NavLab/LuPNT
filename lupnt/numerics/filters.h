@@ -27,7 +27,7 @@ namespace lupnt {
  * @param t_end End time
  * @param Phi STM of the dynamics
  */
-typedef std::function<VecX(const VecX, real t_curr, real t_end, VecXd &)>
+typedef std::function<VecX(const VecX, Real t_curr, Real t_end, MatXd &)>
     FilterDynamicsFunction;
 
 /**
@@ -39,7 +39,7 @@ typedef std::function<VecX(const VecX, real t_curr, real t_end, VecXd &)>
  * @return VecXd Process noise covariance
  *
  */
-typedef std::function<VecXd(const VecX, real t_curr, real t_end)>
+typedef std::function<VecXd(const VecX, Real t_curr, Real t_end)>
     FilterProcessNoiseFunction;
 
 /**
@@ -50,7 +50,7 @@ typedef std::function<VecXd(const VecX, real t_curr, real t_end)>
  * @param R Measurement noise covariance
  *
  */
-typedef std::function<VecX(const VecX, VecXd &, VecXd &)>
+typedef std::function<VecX(const VecX, MatXd &, MatXd &)>
     FilterMeasurementFunction;
 
 class IFilter {
@@ -77,7 +77,7 @@ class IFilter {
  */
 class EKF : public IFilter {
  public:
-  real t_curr_;  // Current time
+  Real t_curr_;  // Current time
   VecX x_;       // Updated state
   VecX xbar_;    // Predicted state
   VecX dy_;      // Measurement residual
@@ -85,14 +85,14 @@ class EKF : public IFilter {
   VecX z_true_;  // Observed measurement
   VecX z_pred_;  // Predicted measurement
 
-  VecXd P_;     // Updated state cov
-  VecXd Pbar_;  // Predicted state cov
-  VecXd Q_;     // Process noise cov
+  MatXd P_;     // Updated state cov
+  MatXd Pbar_;  // Predicted state cov
+  MatXd Q_;     // Process noise cov
 
-  VecXd H_;  // Measurement matrix
-  VecXd S_;  // Innovation cov
-  VecXd K_;  // Kalman gain
-  VecXd R_;  // Measurement noise cov
+  MatXd H_;  // Measurement matrix
+  MatXd S_;  // Innovation cov
+  MatXd K_;  // Kalman gain
+  MatXd R_;  // Measurement noise cov
 
   double outlier_threshold_ = 3.0;
 
@@ -145,7 +145,7 @@ class EKF : public IFilter {
    *
    * @param t_end   end time
    */
-  void Predict(real t_end);
+  void Predict(Real t_end);
 
   /**
    * @brief Update the state with a measurement
@@ -162,7 +162,7 @@ class EKF : public IFilter {
    * @param z_obs   measurement obtained at end time
    * @param debug   debug flag
    */
-  void Step(real t_end, VecX z_obs, bool debug = false);
+  void Step(Real t_end, VecX z_obs, bool debug = false);
 };
 
 }  // namespace lupnt

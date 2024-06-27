@@ -9,19 +9,19 @@ void init_constants(py::module &m) {
   m.attr("TWO_PI") = py::float_(TWO_PI);
   m.attr("PI_OVER_TWO") = py::float_(PI_OVER_TWO);
   m.attr("E") = py::float_(E);
-  m.attr("RAD_PER_DEG") = py::float_(RAD_PER_DEG);
-  m.attr("DEG_PER_RAD") = py::float_(DEG_PER_RAD);
+  m.attr("RAD_PER_DEG") = py::float_(RAD);
+  m.attr("DEG_PER_RAD") = py::float_(DEG);
 
   // Time System Constants
   m.attr("SECS_PER_DAY") = py::float_(SECS_PER_DAY);
-  m.attr("SECS_PER_HOUR") = py::float_(SECS_PER_HOUR);
-  m.attr("SECS_PER_MINUTE") = py::float_(SECS_PER_MINUTE);
-  m.attr("DAYS_PER_YEAR") = py::float_(DAYS_PER_YEAR);
-  m.attr("DAYS_PER_JULIAN_CENTURY") = py::float_(DAYS_PER_JULIAN_CENTURY);
+  m.attr("SECS_PER_HOUR") = py::float_(SECS_HOUR);
+  m.attr("SECS_PER_MINUTE") = py::float_(SECS_MINUTE);
+  m.attr("DAYS_PER_YEAR") = py::float_(DAYS_YEAR);
+  m.attr("DAYS_PER_JULIAN_CENTURY") = py::float_(DAYS_JULIAN_CENTURY);
   m.attr("DAYS_PER_SEC") = py::float_(DAYS_PER_SEC);
   m.attr("TIME_OF_J2000") = py::float_(TIME_OF_J2000);
   m.attr("JD_OF_J2000") = py::float_(JD_OF_J2000);
-  m.attr("MJD_OF_J2000") = py::float_(MJD_OF_J2000);
+  m.attr("MJD_OF_J2000") = py::float_(MJD_J2000);
   m.attr("A1MJD_OF_J2000") = py::float_(A1MJD_OF_J2000);
   m.attr("JD_MJD_OFFSET") = py::float_(JD_MJD_OFFSET);
   m.attr("TT_TAI_OFFSET") = py::float_(TT_TAI_OFFSET);

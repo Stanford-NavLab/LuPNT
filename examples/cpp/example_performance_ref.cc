@@ -7,7 +7,7 @@ using Vec3 = Eigen::Vector3d;
 
 // Function to convert geocentric coordinates to cartesian coordinates
 // (pass-by-value)
-Vec3 GeocentricToCartesianValue(Vec3 r_geo, real radius) {
+Vec3 Geocentric2CartValue(Vec3 r_geo, real radius) {
   real r = radius;
   real theta = r_geo(1);  // Latitude
   real phi = r_geo(2);    // Longitude
@@ -21,7 +21,7 @@ Vec3 GeocentricToCartesianValue(Vec3 r_geo, real radius) {
 
 // Function to convert geocentric coordinates to cartesian coordinates
 // (pass-by-const-reference)
-Vec3 GeocentricToCartesianRef(const Vec3 &r_geo, real radius) {
+Vec3 Geocentric2CartRef(const Vec3 &r_geo, real radius) {
   real r = radius;
   real theta = r_geo(1);  // Latitude
   real phi = r_geo(2);    // Longitude
@@ -42,22 +42,22 @@ int main() {
   // Timing the function with pass-by-value
   auto start_value = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < iterations; ++i) {
-    Vec3 r_cartesian = GeocentricToCartesianValue(r_geo, radius);
+    Vec3 r_cartesian = Geocentric2CartValue(r_geo, radius);
   }
   auto end_value = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> duration_value = end_value - start_value;
-  std::cout << "Time taken by GeocentricToCartesianValue: "
-            << duration_value.count() << " seconds" << std::endl;
+  std::cout << "Time taken by Geocentric2CartValue: " << duration_value.count()
+            << " seconds" << std::endl;
 
   // Timing the function with pass-by-const-reference
   auto start_ref = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < iterations; ++i) {
-    Vec3 r_cartesian = GeocentricToCartesianRef(r_geo, radius);
+    Vec3 r_cartesian = Geocentric2CartRef(r_geo, radius);
   }
   auto end_ref = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> duration_ref = end_ref - start_ref;
-  std::cout << "Time taken by GeocentricToCartesianRef: "
-            << duration_ref.count() << " seconds" << std::endl;
+  std::cout << "Time taken by Geocentric2CartRef: " << duration_ref.count()
+            << " seconds" << std::endl;
 
   return 0;
 }

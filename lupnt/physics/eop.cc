@@ -103,7 +103,7 @@ std::shared_ptr<EOPData> LoadEOPData(const std::string& filename) {
 }
 
 EOPResult InterpolateEOPData(const std::shared_ptr<EOPData>& eop_data,
-                             real mjdUTC, bool interpolate) {
+                             Real mjdUTC, bool interpolate) {
   if (!eop_data) {
     std::shared_ptr<EOPData> eop_data =
         LoadEOPData(GetFilePath("eopc04_08.62-now"));
@@ -125,10 +125,10 @@ EOPResult InterpolateEOPData(const std::shared_ptr<EOPData>& eop_data,
 
   if (interpolate) {
     // Linear interpolation
-    real s = (mjdUTC - eop_data->mjds(i_prev)) /
+    Real s = (mjdUTC - eop_data->mjds(i_prev)) /
              (eop_data->mjds(i_next) - eop_data->mjds(i_prev));
 
-    auto interp = [](real x0, real x1, real s) { return x0 + (x1 - x0) * s; };
+    auto interp = [](Real x0, Real x1, Real s) { return x0 + (x1 - x0) * s; };
     result.x_pole =
         interp(eop_data->x(i_prev), eop_data->x(i_next), s) * RAD_PER_ARCSEC;
     result.y_pole =

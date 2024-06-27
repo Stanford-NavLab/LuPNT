@@ -28,7 +28,7 @@ enum Frame {
   ICRF,         // International Celestial Reference System
   SER,          // Sun-Earth Rotating Frame
   GSE,          // Geocentric Solar Ecliptic
-  EME,          // Earth-Centered mean equator and equinox at J2000 epoch
+  EME,          // Earth-Centered mean equator and equinox at J2000 tai
   MOD,          // Mean of date equatorial system
   TOD,          // True of date equatorial system
   EMR,          // Earth-Moon Rotating Frame
@@ -40,32 +40,27 @@ enum Frame {
   VENUS_FIXED,  // Venus fixed frame
 };
 
-class FrameConverter {
- public:
-  // Vec = func(real, Vec)
-  static Vec6 Convert(real epoch, Vec6 rv_in, Frame frame_in, Frame frame_out);
-  static Vec3 Convert(real epoch, Vec3 r_in, Frame frame_in, Frame frame_out);
-  // Mat = func(real, Mat)
-  static Mat<-1, 6> Convert(real epoch, const Mat<-1, 6> &rv_in, Frame frame_in,
-                            Frame frame_out);
-  static Mat<-1, 3> Convert(real epoch, const Mat<-1, 3> &r_in, Frame frame_in,
-                            Frame frame_out);
-  // Mat = func(Vec, Vec)
-  static Mat<-1, 6> Convert(VecX epoch, const Vec6 &rv_in, Frame frame_in,
-                            Frame frame_out);
-  static Mat<-1, 3> Convert(VecX epoch, const Vec3 &r_in, Frame frame_in,
-                            Frame frame_out);
-  // Mat = func(Vec, Mat)
-  static Mat<-1, 6> Convert(VecX epoch, const Mat<-1, 6> &rv_in, Frame frame_in,
-                            Frame frame_out);
-  static Mat<-1, 3> Convert(VecX epoch, const Mat<-1, 3> &r_in, Frame frame_in,
-                            Frame frame_out);
+// Vec = func(real, Vec)
+Vec6 ConvertFrame(Real tai, const Vec6 &rv_in, Frame frame_in, Frame frame_out);
+Vec3 ConvertFrame(Real tai, const Vec3 &r_in, Frame frame_in, Frame frame_out);
+// Mat = func(real, Mat)
+Mat<-1, 6> ConvertFrame(Real tai, const Mat<-1, 6> &rv_in, Frame frame_in,
+                        Frame frame_out);
+Mat<-1, 3> ConvertFrame(Real tai, const Mat<-1, 3> &r_in, Frame frame_in,
+                        Frame frame_out);
+// Mat = func(Vec, Vec)
+Mat<-1, 6> ConvertFrame(VecX tai, const Vec6 &rv_in, Frame frame_in,
+                        Frame frame_out);
+Mat<-1, 3> ConvertFrame(VecX tai, const Vec3 &r_in, Frame frame_in,
+                        Frame frame_out);
+// Mat = func(Vec, Mat)
+Mat<-1, 6> ConvertFrame(VecX tai, const Mat<-1, 6> &rv_in, Frame frame_in,
+                        Frame frame_out);
+Mat<-1, 3> ConvertFrame(VecX tai, const Mat<-1, 3> &r_in, Frame frame_in,
+                        Frame frame_out);
 
-  static CartesianOrbitState Convert(real epoch,
-                                     const CartesianOrbitState &state_in,
-                                     Frame frame_out);
+CartesianOrbitState ConvertFrame(Real tai, const CartesianOrbitState &state_in,
+                                 Frame frame_out);
 
- private:
-  static Mat6 ComputeOpToMi(real epoch);
-};
+Mat6 Op2Mi(Real tai);
 }  // namespace lupnt

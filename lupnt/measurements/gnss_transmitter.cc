@@ -138,8 +138,7 @@ double GnssTransmitter::GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf,
   auto u_tx_rx = (r_rx_gcrf - r_tx_gcrf).normalized();
   double theta_tx = acos(u_tx_rx.dot(e_z_gnss));
   double phi_tx = atan2(u_tx_rx.dot(e_y_gnss), u_tx_rx.dot(e_x_gnss));
-  double At = GnssTransmitter::GetAntennaGain(theta_tx * DEG_PER_RAD,
-                                              phi_tx * DEG_PER_RAD);
+  double At = GnssTransmitter::GetAntennaGain(theta_tx * DEG, phi_tx * DEG);
   return At;
 }
 

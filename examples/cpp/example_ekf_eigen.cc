@@ -56,30 +56,30 @@ int main() {
   gps_const.LoadTleFile("gps");
 
   // Time
-  // double epoch0 = StringToTAI("2001/04/06 07:51:28.788 UTC").val();
+  // double epoch0 = String2TAI("2001/04/06 07:51:28.788 UTC").val();
   double epoch0 = gps_const.GetEpoch();
   std::string epoch_string = TAItoStringUTC(epoch0, 3);
   std::cout << "Initial Epoch: " << epoch_string << std::endl;
 
   double t0 = 0;
-  double tf = t0 + 24.0 * SECS_PER_HOUR;  // 6 hours
-  double dt = 1.0;                        // Integration time step [s]
-  double Dt = 10.0;                       // Propagation time step [s]
-  double print_every = 1.0 * SECS_PER_HOUR;
+  double tf = t0 + 24.0 * SECS_HOUR;  // 6 hours
+  double dt = 1.0;                    // Integration time step [s]
+  double Dt = 10.0;                   // Propagation time step [s]
+  double print_every = 1.0 * SECS_HOUR;
   double save_every = Dt;
 
   // Moon spacecraft
-  real a = 6541.4;
-  real e = 0.6;
-  real i = 65.5 * RAD_PER_DEG;
-  real Omega = 0.0 * RAD_PER_DEG;
-  real w = 90.0 * RAD_PER_DEG;
-  real M = 0.0 * RAD_PER_DEG;
+  Real a = 6541.4;
+  Real e = 0.6;
+  Real i = 65.5 * RAD;
+  Real Omega = 0.0 * RAD;
+  Real w = 90.0 * RAD;
+  Real M = 0.0 * RAD;
   ClassicalOE coe_moon({a, e, i, Omega, w, M});
   coe_moon.SetCoordSystem(Frame::MOON_CI);
 
-  auto cart_state_moon = std::make_shared<CartesianOrbitState>(
-      ClassicalToCartesian(coe_moon, GM_MOON));
+  auto cart_state_moon =
+      std::make_shared<CartesianOrbitState>(Classical2Cart(coe_moon, GM_MOON));
   auto moon_sat = std::make_shared<Spacecraft>();
   auto receiver = std::make_shared<GnssReceiver>("moongpsr");
 
@@ -283,12 +283,10 @@ int main() {
     // Bodies
     Vec6 v6;
     v6.setZero();
-    data_history->AddData(
-        "earth_mi", t,
-        FrameConverter::Convert(epoch, v6, Frame::GCRF, Frame::MOON_CI));
-    data_history->AddData(
-        "moon_gcrf", t,
-        FrameConverter::Convert(epoch, v6, Frame::MOON_CI, Frame::GCRF));
+    data_history->AddData("earth_mi", t,
+                          ConvertFrame(epoch, v6, Frame::GCRF, Frame::MOON_CI));
+    data_history->AddData("moon_gcrf", t,
+                          ConvertFrame(epoch, v6, Frame::MOON_CI, Frame::GCRF));
 
     // Print progress
     if (fmod(t, print_every) < 1e-3) {

@@ -27,12 +27,12 @@ NumericalPropagator::NumericalPropagator(std::string integratorType) {
     throw std::invalid_argument("Invalid Integrator Type");
 };
 
-VecX NumericalPropagator::Propagate(ODE odefunc, real t0, real tf, VecX x0,
-                                    real dt) {
+VecX NumericalPropagator::Propagate(ODE odefunc, Real t0, Real tf, VecX x0,
+                                    Real dt) {
   assert(dt > 0 && "dt must be greater than 0");
   VecX x = x0;
-  real t = t0;
-  real step;
+  Real t = t0;
+  Real step;
   while (t <= tf) {
     step = std::min(dt, tf - t);
     x = integrator->Step(odefunc, t, x, step);
@@ -41,8 +41,8 @@ VecX NumericalPropagator::Propagate(ODE odefunc, real t0, real tf, VecX x0,
   return x;
 };
 
-VecX NumericalPropagator::PropagateWithStm(ODE odefunc, real t0, real tf,
-                                           VecX x0, real dt, MatXd &J) {
+VecX NumericalPropagator::PropagateWithStm(ODE odefunc, Real t0, Real tf,
+                                           VecX x0, Real dt, MatXd &J) {
   auto func = [=, this](VecX &x) { return Propagate(odefunc, t0, tf, x, dt); };
 
   // decouple x0 from previous relations by reinitializing it

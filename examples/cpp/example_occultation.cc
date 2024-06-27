@@ -23,16 +23,13 @@ void printOccultation(Vec6 state_tx_vec, Vec6 state_rx_vec,
   Vec3d segment_eci, segment_mi, user_eci, user_mi;
   double t = 0.0;
 
-  tmp_ad =
-      FrameConverter::Convert(t, state_tx_vec, Frame::GCRF, Frame::MOON_CI);
+  tmp_ad = ConvertFrame(t, state_tx_vec, Frame::GCRF, Frame::MOON_CI);
   segment_mi = tmp_ad.segment(0, 3).cast<double>();
-  tmp_ad = FrameConverter::Convert(t, state_tx_vec, Frame::GCRF, Frame::GCRF);
+  tmp_ad = ConvertFrame(t, state_tx_vec, Frame::GCRF, Frame::GCRF);
   segment_eci = tmp_ad.segment(0, 3).cast<double>();
-  tmp_ad =
-      FrameConverter::Convert(t, state_rx_vec, Frame::MOON_CI, Frame::GCRF);
+  tmp_ad = ConvertFrame(t, state_rx_vec, Frame::MOON_CI, Frame::GCRF);
   user_mi = tmp_ad.segment(0, 3).cast<double>();
-  tmp_ad =
-      FrameConverter::Convert(t, state_rx_vec, Frame::MOON_CI, Frame::GCRF);
+  tmp_ad = ConvertFrame(t, state_rx_vec, Frame::MOON_CI, Frame::GCRF);
   user_eci = tmp_ad.segment(0, 3).cast<double>();
 
   std::map<std::string, bool> occ = Occultation::ComputeOccultation(

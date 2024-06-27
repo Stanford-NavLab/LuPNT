@@ -24,7 +24,7 @@ NBodyDynamics::NBodyDynamics(std::string integratorType)
                     std::placeholders::_2),
           OrbitStateRepres::CARTESIAN, integratorType) {};
 
-VecX NBodyDynamics::ComputeRates(real t_tai, const VecX &rv) const {
+VecX NBodyDynamics::ComputeRates(Real t_tai, const VecX &rv) const {
   VecX rv_dot = VecX::Zero(6);
 
   // N-body gravity
@@ -38,7 +38,7 @@ VecX NBodyDynamics::ComputeRates(real t_tai, const VecX &rv) const {
         GetBodyPosVel(t_tai, NaifId::MOON, NaifId::SUN, Frame::MOON_CI).head(3);
     Vec3 r_sun2sc = r_body2sc - r_body2sun;
     double R_body = central_body_.R;
-    real B_srp = CR_ * (area_ / mass_);  // ballistic coefficient [m^2/kg]
+    Real B_srp = CR_ * (area_ / mass_);  // ballistic coefficient [m^2/kg]
     Vec3 a_srp =
         ComputeSolarRadiationPressure(r_body2sc, r_sun2sc, B_srp, R_body);
     rv_dot.tail(3) += a_srp;
@@ -47,7 +47,7 @@ VecX NBodyDynamics::ComputeRates(real t_tai, const VecX &rv) const {
   return rv_dot;
 }
 
-Vec3 NBodyDynamics::ComputeNBodyGravity(real t_tai, const Vec3 &r) const {
+Vec3 NBodyDynamics::ComputeNBodyGravity(Real t_tai, const Vec3 &r) const {
   assert(r.size() == 3);
   Vec3 a = Vec3::Zero();  // s/c acceleration w.r.t. the
                           // center body [km/s^2]
@@ -99,7 +99,7 @@ Vec3 NBodyDynamics::ComputeNBodyGravity(real t_tai, const Vec3 &r) const {
  */
 Vec3 NBodyDynamics::ComputeSolarRadiationPressure(const Vec3 &r_body2sc,
                                                   const Vec3 &r_sun2sc,
-                                                  const real B_srp,
+                                                  const Real B_srp,
                                                   double R_body) const {
   // Acceleration of a satellite due to the solar radiation pressure
   Vec3 a_srp;
@@ -107,20 +107,20 @@ Vec3 NBodyDynamics::ComputeSolarRadiationPressure(const Vec3 &r_body2sc,
   double R_SUN = 696000.0;  // [km]
 
   // Apparent radius of the occulted body (i.e. the Sun)
-  real a = asin(R_SUN / r_sun2sc.norm());
+  Real a = asin(R_SUN / r_sun2sc.norm());
   // Apparent radius of the occulting body
-  real b = asin(R_body / r_body2sc.norm());
+  Real b = asin(R_body / r_body2sc.norm());
   // Apparent separation of the centers of both bodies_
-  real c =
+  Real c =
       safe_acos(r_body2sc.dot(r_sun2sc) / (r_body2sc.norm() * r_sun2sc.norm()));
 
-  real nu;
+  Real nu;
 
   if (abs(a - b) < c && c < (a + b)) {
     // Occultated area
-    real x = (c * c + a * a - b * b) / (2 * c);
-    real y = sqrt(a * a - x * x);
-    real A = a * a * safe_acos(x / a) + b * b * safe_acos((c - x) / b) - c * y;
+    Real x = (c * c + a * a - b * b) / (2 * c);
+    Real y = sqrt(a * a - x * x);
+    Real A = a * a * safe_acos(x / a) + b * b * safe_acos((c - x) / b) - c * y;
 
     // Remaining fraction of Sun light
     nu = 1 - A / (PI * a * a);

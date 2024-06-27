@@ -12,7 +12,7 @@ int main() {
   bool show_elevation_plot = true;
 
   // Epoch
-  double epoch0 = (double)StringToTAI("2025/10/02 00:00:00.000 UTC");
+  double epoch0 = (double)String2TAI("2025/10/02 00:00:00.000 UTC");
 
   // Orbital elements
   double sma = 5740;             // [km]  a, Semi-major axis
@@ -24,15 +24,15 @@ int main() {
   Vec6 coe_sat_OP(sma, ecc, inc, raan, aop, ma);
 
   // Initial state
-  auto rv_sat_OP = ClassicalToCartesian(coe_sat_OP, GM_MOON);
-  auto rv_sat_mi = FrameConverter::Convert(epoch0, rv_sat_OP, Frame::MOON_OP,
-                                           Frame::MOON_CI);
+  auto rv_sat_OP = Classical2Cart(coe_sat_OP, GM_MOON);
+  auto rv_sat_mi =
+      ConvertFrame(epoch0, rv_sat_OP, Frame::MOON_OP, Frame::MOON_CI);
 
   // Time
   double T = 2 * M_PI * sqrt(pow(sma, 3) / GM_MOON);  // [s] Orbital period
-  double dT = 0.5 * SECS_PER_HOUR;  // [s] Data time step (2 hours)
-  double dt = 5 * SECS_PER_MINUTE;  // [s] Propagation time step (5 minutes)
-  double tf = 2 * SECS_PER_DAY;     // [s] Orbital period (14 days)
+  double dT = 0.5 * SECS_HOUR;  // [s] Data time step (2 hours)
+  double dt = 5 * SECS_MINUTE;  // [s] Propagation time step (5 minutes)
+  double tf = 2 * SECS_DAY;     // [s] Orbital period (14 days)
   int N_steps = (int)(tf / dT);
 
   // User positions
@@ -43,22 +43,20 @@ int main() {
 
   int N_lats = (int)((lat_max - lat_min) / delta_lat + 1);
   int N_lons = (int)((lon_max - lon_min) / delta_lon + 1);
-  auto lats =
-      VecX::LinSpaced(N_lats, lat_min * RAD_PER_DEG, lat_max * RAD_PER_DEG);
-  auto lons =
-      VecX::LinSpaced(N_lons, lon_min * RAD_PER_DEG, lon_max * RAD_PER_DEG);
+  auto lats = VecX::LinSpaced(N_lats, lat_min * RAD, lat_max * RAD);
+  auto lons = VecX::LinSpaced(N_lons, lon_min * RAD, lon_max * RAD);
   MatX r_usr_pa(N_lats * N_lons, 3);  // [km] [x, y, z]
   for (int i = 0; i < N_lats; i++) {
     for (int j = 0; j < N_lons; j++) {
       int k = i * N_lons + j;
       Vec3 geo(lats(i), lons(j), 0);
-      r_usr_pa.row(k) = LatLonAltToEcef(geo, R_MOON).transpose();
+      r_usr_pa.row(k) = LatLonAlt2Ecef(geo, R_MOON).transpose();
     }
   }
   std::cout << "Latitudes (deg)" << std::endl;
-  std::cout << lats.transpose() * DEG_PER_RAD << std::endl;
+  std::cout << lats.transpose() * DEG << std::endl;
   std::cout << "Longitudes (deg)" << std::endl;
-  std::cout << lons.transpose() * DEG_PER_RAD << std::endl;
+  std::cout << lons.transpose() * DEG << std::endl;
 
   // Dynamics
   NBodyDynamics dynamics;
@@ -75,8 +73,8 @@ int main() {
     epoch += dT;
     dynamics.Propagate(rv_sat_mi, epoch - dT, epoch);
 
-    auto rv_sat_pa = FrameConverter::Convert(epoch, rv_sat_mi, Frame::MOON_CI,
-                                             Frame::MOON_PA);
+    auto rv_sat_pa =
+        ConvertFrame(epoch, rv_sat_mi, Frame::MOON_CI, Frame::MOON_PA);
     rv_sat_mi_hist.row(i) = rv_sat_mi.transpose();
     rv_sat_pa_hist.row(i) = rv_sat_pa.transpose();
   }
@@ -90,8 +88,7 @@ int main() {
       for (int t = 0; t < N_steps; t++) {
         Vec3 r_usr_pa_t = r_usr_pa.row(k).transpose();
         Vec3 r_sat_pa_t = rv_sat_pa_hist.row(t).head(3).transpose();
-        auto [az, el, rng] =
-            unpack(CartesianToAzimuthElevationRange(r_usr_pa_t, r_sat_pa_t));
+        auto [az, el, rng] = unpack(Cart2AzElRange(r_usr_pa_t, r_sat_pa_t));
         elevation(t, k) = rad2deg(el);
         range(t, k) = rng;
       }

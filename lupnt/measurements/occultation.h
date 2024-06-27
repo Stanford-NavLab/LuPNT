@@ -24,7 +24,7 @@ namespace lupnt {
 
 class Occultation {
  private:
-  static constexpr double min_elevation_ = 10.0 * RAD_PER_DEG;
+  static constexpr double min_elevation_ = 10.0 * RAD;
   static constexpr double r_atmos_ = R_EARTH + 100.0;  // atmospheric mask
   static constexpr double r_ionos_ = R_EARTH + 965.0;  // ionospheric mask
 
@@ -44,12 +44,12 @@ class Occultation {
       const Vec3d rx_mci, const std::string tx_planet);
 
   // VecX = func(real, Vec3, Vec3, ...)
-  static VecX ComputeOccultation(real epoch, const Vec3& r1, const Vec3& r2,
+  static VecX ComputeOccultation(Real epoch, const Vec3& r1, const Vec3& r2,
                                  Frame cs1, Frame cs2,
                                  const std::vector<NaifId>& bodies);
 
   // MatX = func(real, Mat<-1, 3>, Mat<-1, 3>, ...)
-  static MatX ComputeOccultation(real epoch, const Mat<-1, 3>& r1,
+  static MatX ComputeOccultation(Real epoch, const Mat<-1, 3>& r1,
                                  const Mat<-1, 3>& r2, Frame cs1, Frame cs2,
                                  const std::vector<NaifId>& bodies);
 

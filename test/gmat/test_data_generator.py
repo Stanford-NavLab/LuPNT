@@ -28,7 +28,7 @@ def generate_frame_conversions():
     # genererate gmat epoch
     time_sys_converter = gmat.TimeSystemConverter.Instance()
     epoch_gmat = time_sys_converter.Convert(
-        time_sys_converter.ConvertGregorianToMjd(epoch_str),
+        time_sys_converter.ConvertGregorian2Mjd(epoch_str),
         gmat.TimeSystemConverter.UTC,
         gmat.TimeSystemConverter.TAI,
     )

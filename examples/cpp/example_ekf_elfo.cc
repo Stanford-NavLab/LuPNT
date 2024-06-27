@@ -38,18 +38,18 @@ int main() {
   std::srand(seed);
 
   // Initial State
-  real a = 6541.4;
-  real e = 0.6;
-  real i = 65.5 * RAD_PER_DEG;
-  real Omega = 0.0 * RAD_PER_DEG;
-  real w = 90.0 * RAD_PER_DEG;
-  real M = 0.0 * RAD_PER_DEG;
-  real clk_bias = 0.0;
-  real clk_drift = 0.1;
+  Real a = 6541.4;
+  Real e = 0.6;
+  Real i = 65.5 * RAD;
+  Real Omega = 0.0 * RAD;
+  Real w = 90.0 * RAD;
+  Real M = 0.0 * RAD;
+  Real clk_bias = 0.0;
+  Real clk_drift = 0.1;
 
   // Set simulation to 1 orbit
   int n_orbit = 1;  // number of orbits to simulate
-  real period = 2.0 * M_PI * sqrt(pow(a, 3) / GM_MOON);
+  Real period = 2.0 * M_PI * sqrt(pow(a, 3) / GM_MOON);
   double tf = t0 + n_orbit * period.val();
   int time_step_num = int((tf - t0) / Dt) + 1;
   tf = t0 + (time_step_num - 1) * Dt;
@@ -136,8 +136,8 @@ int main() {
 
   // Moon spacecraft
   ClassicalOE coe_moon({a, e, i, Omega, w, M}, Frame::MOON_CI);
-  auto cart_state_moon = std::make_shared<CartesianOrbitState>(
-      ClassicalToCartesian(coe_moon, GM_MOON));
+  auto cart_state_moon =
+      std::make_shared<CartesianOrbitState>(Classical2Cart(coe_moon, GM_MOON));
 
   Vec2 clock_vec{clk_bias, clk_drift};  // [s, s/s]
   ClockState clock_state(clock_vec);
@@ -210,7 +210,7 @@ int main() {
    * Define Process Noise function
    * *******************************************/
   FilterProcessNoiseFunction proc_noise_func =
-      [cmodel, state_size, sigma_acc](const VecX& x, real t_curr, real t_end) {
+      [cmodel, state_size, sigma_acc](const VecX& x, Real t_curr, Real t_end) {
         int clock_index = 6;
         double dt = (t_end - t_curr).val();
 
@@ -265,7 +265,7 @@ int main() {
   /***********************************************
    * Main loop
    **********************************************/
-  real t = t0;
+  Real t = t0;
   double epoch = epoch0;
   PrintProgressHeader();
 

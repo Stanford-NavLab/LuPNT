@@ -148,7 +148,7 @@ def get_problem(
     for i_sat in range(N_sat):
         coe_OP[i_sat, :] = orbital_elements
         coe_OP[i_sat, 2:] = np.deg2rad(coe_OP[i_sat, 2:])
-    coe_OP[i_sat, 5] += pnt.wrapToPi(coe_OP[i_sat, 5] + np.pi)
+    coe_OP[i_sat, 5] += pnt.wrap2Pi(coe_OP[i_sat, 5] + np.pi)
     rv0_moon_sat_OP = pnt.classical_to_cartesian(coe_OP, pnt.MU_MOON)
     rv0_moon_sat_mi = pnt.FrameConverter.convert(
         epoch_0, rv0_moon_sat_OP, pnt.MOON_OP, pnt.MOON_CI

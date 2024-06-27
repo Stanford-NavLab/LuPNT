@@ -22,13 +22,13 @@ void init_spice_interface(py::module &m) {
       .def_static(
           "string_to_tdb",
           [](std::string utc) -> double {
-            return lupnt::StringToTDB(utc).val();
+            return lupnt::String2TDB(utc).val();
           },
           py::arg("gregorian_date"))
       .def_static(
           "string_to_tai",
           [](std::string utc) -> double {
-            return lupnt::StringToTAI(utc).val();
+            return lupnt::String2TAI(utc).val();
           },
           py::arg("gregorian_date"))
       .def_static(

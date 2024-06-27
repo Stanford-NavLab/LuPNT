@@ -39,7 +39,7 @@ def setup_renderer(
     # Initializing SurRender
     s = surrender_client()
     s.setVerbosityLevel(2)
-    s.connectToServer(hostname, port=port)
+    s.connect2Server(hostname, port=port)
     s.setCompressionLevel(0)
     s.closeViewer()
     s.setTimeOut(86400)

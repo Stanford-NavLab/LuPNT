@@ -153,11 +153,11 @@ class GnssMeasurement {
    * @param seed   random seed
    * @return VecX
    */
-  VecX ComputePseudorange(VecX r_rx, real dt_rx, bool with_noise = false,
+  VecX ComputePseudorange(VecX r_rx, Real dt_rx, bool with_noise = false,
                           int seed = 0);
-  VecX ComputePseudorangerate(VecX r_rx, VecX v_rx, real dt_rx_dot,
+  VecX ComputePseudorangerate(VecX r_rx, VecX v_rx, Real dt_rx_dot,
                               bool with_noise = false, int seed = 0);
-  VecX ComputeCarrierPhase(VecX r_rx, real dt_rx, VecX N_rx,
+  VecX ComputeCarrierPhase(VecX r_rx, Real dt_rx, VecX N_rx,
                            bool with_noise = false, int seed = 0);
 
   /***********************************************************

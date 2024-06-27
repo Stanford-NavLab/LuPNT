@@ -200,8 +200,8 @@ double Antenna::GetAntennaGain(Vec3d direction) {
   direction.normalize();
 
   // Compute elevation and azimuth angles
-  double theta = acos(direction.dot(Vec3d::UnitZ())) * DEG_PER_RAD;
-  double phi = atan2(direction.y(), direction.x()) * DEG_PER_RAD;
+  double theta = acos(direction.dot(Vec3d::UnitZ())) * DEG;
+  double phi = atan2(direction.y(), direction.x()) * DEG;
 
   return GetAntennaGain(theta, phi);
 }

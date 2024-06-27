@@ -10,7 +10,7 @@ int main() {
   // Parameters
   int N_sat = 3;
   int N_planes = 3;
-  real tai0 = StringToTAI("2030/01/01 12:00:00.00 UTC");
+  Real tai0 = String2TAI("2030/01/01 12:00:00.00 UTC");
 
   // Orbital Elements
   Vec3 sma{6142.4, 6142.4, 6142.4};
@@ -19,7 +19,7 @@ int main() {
   Vec3 raan{0, -90, 0};
   Vec3 aop{-45, -90, 90};
 
-  real orbit_period = 2 * M_PI * pow(sma[0], 1.5) / sqrt(GM_MOON);
+  Real orbit_period = 2 * M_PI * pow(sma[0], 1.5) / sqrt(GM_MOON);
   int N_sat_plane = N_sat / N_planes;
 
   // Constellation
@@ -27,12 +27,12 @@ int main() {
   for (int i = 0; i < N_planes; i++) {
     for (int j = 0; j < N_sat_plane; j++) {
       int idx = i * N_sat_plane + j;
-      real ma = 360.0 / N_sat_plane * j;
+      Real ma = 360.0 / N_sat_plane * j;
       Vec6 coe0{sma[i], ecc[i], imc[i], raan[i], aop[i], ma};
-      coe0.segment(2, 4) *= DEG_PER_RAD;
-      Vec6 rv0_mop = ClassicalToCartesian(coe0, GM_MOON);
-      rv0_mci[idx] = FrameConverter::Convert(tai0, rv0_mop, Frame::MOON_OP,
-                                             Frame::MOON_CI);
+      coe0.segment(2, 4) *= DEG;
+      Vec6 rv0_mop = Classical2Cart(coe0, GM_MOON);
+      rv0_mci[idx] =
+          ConvertFrame(tai0, rv0_mop, Frame::MOON_OP, Frame::MOON_CI);
     }
   }
 
@@ -50,9 +50,9 @@ int main() {
   }
 
   // Propagate
-  real Dt = 15.0;
-  real tf = 1.0 * orbit_period;
-  std::cout << "tf = " << tf / SECS_PER_HOUR << " h" << std::endl;
+  Real Dt = 15.0;
+  Real tf = 1.0 * orbit_period;
+  std::cout << "tf = " << tf / SECS_HOUR << " h" << std::endl;
   int N_steps = (tf / Dt).val();
   VecX tspan = VecX::LinSpaced(N_steps, 0, tf);
   VecX tai = tai0 + tspan.array();
@@ -123,7 +123,7 @@ int main() {
     subplot(3, 1, j);
     hold(on);
     for (int i = 0; i < N_sat; i++) {
-      lupnt::plot(tspan / SECS_PER_HOUR, rv_hist[i].col(j));
+      lupnt::plot(tspan / SECS_HOUR, rv_hist[i].col(j));
     }
     grid(on);
     xlabel("Time [h]");

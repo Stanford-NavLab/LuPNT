@@ -6,24 +6,22 @@ namespace py = pybind11;
 using namespace lupnt;
 
 void init_math_utils(py::module &m) {
-  // m.def("wrapToPi", &wrapToPi, "Wrap angle to [-pi, pi]");
+  // m.def("Wrap2Pi", &Wrap2Pi, "Wrap angle to [-pi, pi]");
   m.def(
-      "wrapToPi", [](double angle) -> double { return wrapToPi(angle).val(); },
+      "Wrap2Pi", [](double angle) -> double { return Wrap2Pi(angle).val(); },
       "Wrap angle to [-pi, pi]");
   m.def(
-      "wrapTo2Pi",
-      [](double angle) -> double { return wrapTo2Pi(angle).val(); },
+      "wrap22Pi",
+      [](double angle) -> double { return Wrap2TwoPi(angle).val(); },
       "Wrap angle to [0, 2pi]");
   m.def(
-      "wrapToPi",
-      [](const VecXd &angle) -> VecXd {
-        return wrapToPi(angle).cast<double>();
-      },
+      "Wrap2Pi",
+      [](const VecXd &angle) -> VecXd { return Wrap2Pi(angle).cast<double>(); },
       "Wrap angle to [-pi, pi]");
   m.def(
-      "wrapTo2Pi",
+      "wrap22Pi",
       [](const VecXd &angle) -> VecXd {
-        return wrapTo2Pi(angle).cast<double>();
+        return WrapToTwoPi(angle).cast<double>();
       },
       "Wrap angle to [0, 2pi]");
   m.def(

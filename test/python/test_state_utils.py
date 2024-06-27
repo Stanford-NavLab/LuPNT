@@ -24,11 +24,11 @@ class TestStateUtils:
 
         cart_gmat = cart_array
         coe_gmat = gmat_helpers.unpack_rvector(
-            gmat.StateConversionUtil.CartesianToKeplerian(
+            gmat.StateConversionUtil.Cart2Keplerian(
                 pnt.MU_MOON, gmat.Rvector6(*cart_gmat), "MA"
             )
         )
-        coe_gmat[2:6] = pnt.wrapToPi(np.deg2rad(coe_gmat[2:6]))
+        coe_gmat[2:6] = pnt.wrap2Pi(np.deg2rad(coe_gmat[2:6]))
 
         assert np.allclose(coe_array, coe_gmat)
         assert np.allclose(coe_state.vector, coe_gmat)
@@ -44,7 +44,7 @@ class TestStateUtils:
         coe_gmat = coe_array
         coe_gmat[2:6] = np.rad2deg(coe_gmat[2:6])
         cart_gmat = gmat_helpers.unpack_rvector(
-            gmat.StateConversionUtil.KeplerianToCartesian(
+            gmat.StateConversionUtil.Keplerian2Cart(
                 pnt.MU_MOON, gmat.Rvector6(*coe_gmat), "MA"
             )
         )

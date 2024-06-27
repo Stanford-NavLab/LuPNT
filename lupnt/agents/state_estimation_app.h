@@ -70,7 +70,7 @@ class JointState {
   };
 
   FilterDynamicsFunction GetFilterDynamicsFunction() {
-    auto dynfunc = [&](VecX x, real t_curr, real t_end, VecXd& Phi) {
+    auto dynfunc = [&](VecX x, Real t_curr, Real t_end, MatXd& Phi) {
       std::vector<IState*> state_vec = GetJointState();
       Phi.resize(state_vec_size_, state_vec_size_);
       Phi.setZero();
@@ -80,7 +80,7 @@ class JointState {
       int start_idx = 0;
       for (int i = 0; i < dynamics_vec_.size(); i++) {
         int state_size = state_vec[i]->GetSize();
-        VecXd Phi_tmp(state_size, state_size);
+        MatXd Phi_tmp(state_size, state_size);
         VecX x_seg(state_size);
         for (int j = 0; j < state_size; j++) {
           x_seg(j) = x(start_idx + j);

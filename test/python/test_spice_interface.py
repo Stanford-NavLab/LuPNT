@@ -30,7 +30,7 @@ class TestSpiceInterface:
         # String UTC to TAI
         epoch = pnt.SpiceInterface.string_to_tai(string)
         epoch_gmat = gmat_helpers.convert_time(
-            time_converter.ConvertGregorianToMjd(string_gmat),
+            time_converter.ConvertGregorian2Mjd(string_gmat),
             gmat.TimeSystemConverter.UTC,
             gmat.TimeSystemConverter.TAI,
         )
@@ -40,7 +40,7 @@ class TestSpiceInterface:
         # String UTC to TDB
         epoch = pnt.SpiceInterface.string_to_tdb(string)
         epoch_gmat = gmat_helpers.convert_time(
-            time_converter.ConvertGregorianToMjd(string_gmat),
+            time_converter.ConvertGregorian2Mjd(string_gmat),
             gmat.TimeSystemConverter.UTC,
             gmat.TimeSystemConverter.TDB,
         )

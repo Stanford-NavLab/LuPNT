@@ -12,7 +12,7 @@
 
 namespace lupnt {
 
-std::tuple<real, real> spharm_vwmm(int m_in, real Vm_1m_1, real Wm_1m_1,
+std::tuple<Real, Real> spharm_vwmm(int m_in, Real Vm_1m_1, Real Wm_1m_1,
                                    const Vec3 &x_R, double Re) {
   double m = m_in;
 
@@ -29,38 +29,38 @@ std::tuple<real, real> spharm_vwmm(int m_in, real Vm_1m_1, real Wm_1m_1,
     kdel1 = 2;
   }
 
-  real r2 = a.dot(a);
-  real Vmm = sqrt(kdel0 / kdel1 * (2 * m + 1) / (2 * m)) *
+  Real r2 = a.dot(a);
+  Real Vmm = sqrt(kdel0 / kdel1 * (2 * m + 1) / (2 * m)) *
              (a(0) * Re / r2 * Vm_1m_1 - a(1) * Re / r2 * Wm_1m_1);
-  real Wmm = sqrt(kdel0 / kdel1 * (2 * m + 1) / (2 * m)) *
+  Real Wmm = sqrt(kdel0 / kdel1 * (2 * m + 1) / (2 * m)) *
              (a(0) * Re / r2 * Wm_1m_1 + a(1) * Re / r2 * Vm_1m_1);
   return {Vmm, Wmm};
 }
 
-std::tuple<real, real> spharm_vwm1m(int m_in, real Vmm, real Wmm,
+std::tuple<Real, Real> spharm_vwm1m(int m_in, Real Vmm, Real Wmm,
                                     const Vec3 &x_R, double Re) {
   double m = m_in;
 
-  real r2 = x_R.dot(x_R);
-  real Vm1m = sqrt(2 * m + 3) * x_R(2) * Re / r2 * Vmm;
-  real Wm1m = sqrt(2 * m + 3) * x_R(2) * Re / r2 * Wmm;
+  Real r2 = x_R.dot(x_R);
+  Real Vm1m = sqrt(2 * m + 3) * x_R(2) * Re / r2 * Vmm;
+  Real Wm1m = sqrt(2 * m + 3) * x_R(2) * Re / r2 * Wmm;
   return {Vm1m, Wm1m};
 }
 
-std::tuple<real, real> spharm_vwnm(int n_in, int m_in, real Vn_1m, real Vn_2m,
-                                   real Wn_1m, real Wn_2m, const Vec3 &x_R,
+std::tuple<Real, Real> spharm_vwnm(int n_in, int m_in, Real Vn_1m, Real Vn_2m,
+                                   Real Wn_1m, Real Wn_2m, const Vec3 &x_R,
                                    double Re) {
   double n = n_in;
   double m = m_in;
 
   Vec3 a = x_R;
-  real r2 = a.dot(a);
-  real anm = sqrt(((2 * n + 1) * (2 * n - 1)) / ((n + m) * (n - m)));
-  real bnm = -sqrt(((2 * n + 1) * (n + m - 1) * (n - m - 1)) /
+  Real r2 = a.dot(a);
+  Real anm = sqrt(((2 * n + 1) * (2 * n - 1)) / ((n + m) * (n - m)));
+  Real bnm = -sqrt(((2 * n + 1) * (n + m - 1) * (n - m - 1)) /
                    ((2 * n - 3) * (n + m) * (n - m)));
 
-  real Vnm = anm * a(2) * Re / r2 * Vn_1m + bnm * (Re * Re) / r2 * Vn_2m;
-  real Wnm = anm * a(2) * Re / r2 * Wn_1m + bnm * (Re * Re) / r2 * Wn_2m;
+  Real Vnm = anm * a(2) * Re / r2 * Vn_1m + bnm * (Re * Re) / r2 * Vn_2m;
+  Real Wnm = anm * a(2) * Re / r2 * Wn_1m + bnm * (Re * Re) / r2 * Wn_2m;
   return {Vnm, Wnm};
 }
 
@@ -69,9 +69,9 @@ Vec3 Facc_j(const Vec3 &facc_R, const Mat3 &Ur2j) {
   return acc_j;
 }
 
-std::tuple<Vec3, Vec3> spharm_dvwdx(int n_in, int m_in, real Vn1m, real Vn1m1,
-                                    real Vn1m_1, real Wn1m, real Wn1m1,
-                                    real Wn1m_1, double Re) {
+std::tuple<Vec3, Vec3> spharm_dvwdx(int n_in, int m_in, Real Vn1m, Real Vn1m1,
+                                    Real Vn1m_1, Real Wn1m, Real Wn1m1,
+                                    Real Wn1m_1, double Re) {
   Vec3 dVdX = Vec3::Zero();
   Vec3 dWdX = Vec3::Zero();
 

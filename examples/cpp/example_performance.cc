@@ -57,8 +57,8 @@ int main() {
 
     // Time
     double tStart = 662731269.183929;
-    double dt = 10.0 * SECS_PER_HOUR;
-    double tEnd = tStart + 5.0 * SECS_PER_DAY;
+    double dt = 10.0 * SECS_HOUR;
+    double tEnd = tStart + 5.0 * SECS_DAY;
     double t = tStart;
 
     // NBodyRates

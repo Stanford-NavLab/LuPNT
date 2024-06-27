@@ -26,8 +26,8 @@ int main() {
   std::cout << "Current working directory: " << std::filesystem::current_path()
             << std::endl;
 
-  real t_tai = StringToTAI("2030-01-01 00:00:00 UTC");
-  real t_tdb = ConvertTime(t_tai, TimeSystems::TAI, TimeSystems::TDB);
+  Real t_tai = String2TAI("2030-01-01 00:00:00 UTC");
+  Real t_tdb = ConvertTime(t_tai, TimeSystems::TAI, TimeSystems::TDB);
 
   int prec = 3;
   std::string str = TAItoStringUTC(t_tai, prec);

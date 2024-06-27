@@ -12,27 +12,27 @@
 #include "radio_measurement.h"
 
 namespace lupnt {
-real RadioMeasurement::ComputePseudorange(VecX r_tx, VecX r_rx, real dt_tx,
-                                          real dt_rx, real offset) {
+Real RadioMeasurement::ComputePseudorange(VecX r_tx, VecX r_rx, Real dt_tx,
+                                          Real dt_rx, Real offset) {
   // P_rx = rho_rx + c*(dt_rx(t_rx) - dt_tx(t_tx)) + I_rx + T_rx + eps_P
-  real rho_rx = (r_tx - r_rx).norm();
-  real P_rx = rho_rx + C * (dt_rx - dt_tx) + offset;
+  Real rho_rx = (r_tx - r_rx).norm();
+  Real P_rx = rho_rx + C * (dt_rx - dt_tx) + offset;
   return P_rx;
 };
 
-real RadioMeasurement::ComputePseudorangerate(VecX r_tx, VecX r_rx, VecX v_tx,
-                                              VecX v_rx, real dt_tx_dot,
-                                              real dt_rx_dot, real offset) {
+Real RadioMeasurement::ComputePseudorangerate(VecX r_tx, VecX r_rx, VecX v_tx,
+                                              VecX v_rx, Real dt_tx_dot,
+                                              Real dt_rx_dot, Real offset) {
   VecX e_rx = (r_tx - r_rx).normalized();
-  real prr = e_rx.dot(v_tx - v_rx) + C * (dt_rx_dot - dt_tx_dot) + offset;
+  Real prr = e_rx.dot(v_tx - v_rx) + C * (dt_rx_dot - dt_tx_dot) + offset;
   return prr;
 };
 
-real RadioMeasurement::ComputeDopplerShift(VecX r_tx, VecX r_rx, VecX v_tx,
-                                           VecX v_rx, real dt_tx_dot,
-                                           real dt_rx_dot, real f,
-                                           real offset) {
-  real f_D = -f / C *
+Real RadioMeasurement::ComputeDopplerShift(VecX r_tx, VecX r_rx, VecX v_tx,
+                                           VecX v_rx, Real dt_tx_dot,
+                                           Real dt_rx_dot, Real f,
+                                           Real offset) {
+  Real f_D = -f / C *
              ComputePseudorangerate(r_tx, r_rx, v_tx, v_rx, dt_tx_dot,
                                     dt_rx_dot, offset);
   return f_D;

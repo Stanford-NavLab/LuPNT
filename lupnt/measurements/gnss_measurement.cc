@@ -110,7 +110,7 @@ GnssMeasurement GnssMeasurement::ExtractSignal(std::string freq_label) {
  * General Methods for computing Measurements
  ***********************************************************/
 
-VecX GnssMeasurement::ComputePseudorange(VecX r_rx, real dt_rx, bool with_noise,
+VecX GnssMeasurement::ComputePseudorange(VecX r_rx, Real dt_rx, bool with_noise,
                                          int seed) {
   // P_rx = rho_rx + c*(dt_rx(t_rx) - dt_tx(t_tx)) + I_rx + T_rx + eps_P
   VecX P_rx(r_tx.cols());
@@ -131,7 +131,7 @@ VecX GnssMeasurement::ComputePseudorange(VecX r_rx, real dt_rx, bool with_noise,
 }
 
 VecX GnssMeasurement::ComputePseudorangerate(VecX r_rx, VecX v_rx,
-                                             real dt_rx_dot, bool with_noise,
+                                             Real dt_rx_dot, bool with_noise,
                                              int seed) {
   VecX P_rrx(r_tx.cols());
 
@@ -139,7 +139,7 @@ VecX GnssMeasurement::ComputePseudorangerate(VecX r_rx, VecX v_rx,
   generator.seed(seed);
   std::normal_distribution<double> distribution(0.0, 1.0);
 
-  real offset = 0;  // set pseudorange rate offset to zero
+  Real offset = 0;  // set pseudorange rate offset to zero
 
   for (int i = 0; i < r_tx.cols(); i++) {
     P_rrx(i) = RadioMeasurement::ComputePseudorangerate(
@@ -153,7 +153,7 @@ VecX GnssMeasurement::ComputePseudorangerate(VecX r_rx, VecX v_rx,
   return P_rrx;
 }
 
-VecX GnssMeasurement::ComputeCarrierPhase(VecX r_rx, real dt_rx, VecX N_rx,
+VecX GnssMeasurement::ComputeCarrierPhase(VecX r_rx, Real dt_rx, VecX N_rx,
                                           bool with_noise, int seed) {
   // phi_rx = c / lambda_ * (t_rx - t_tx) + c / lambda_ * (dt_rx(t_rx) -
   // dt_tx(t_tx)) + phi_rx_0 - phi_0 + N_rx + eps_phi
@@ -170,7 +170,7 @@ VecX GnssMeasurement::ComputeCarrierPhase(VecX r_rx, real dt_rx, VecX N_rx,
   generator.seed(seed);
   std::normal_distribution<double> distribution(0.0, 1.0);
 
-  real pr, phase;
+  Real pr, phase;
 
   for (int i = 0; i < r_tx.cols(); i++) {
     pr = RadioMeasurement::ComputePseudorange(
@@ -286,9 +286,9 @@ VecX GnssMeasurement::GetPredictedPseudorange(double epoch, Vec6 rv_pred,
                                               Vec2 clk_pred, VecXd &H_pr,
                                               Frame frame_in) {
   auto func = [epoch, frame_in, this](const Vec6 rv_in, const Vec2 clk) {
-    Vec6 rv_gcrf = FrameConverter::Convert(epoch, rv_in, frame_in, Frame::GCRF);
+    Vec6 rv_gcrf = ConvertFrame(epoch, rv_in, frame_in, Frame::GCRF);
     Vec3 r_rx = rv_gcrf.head(3);
-    real dt_rx = clk(0);
+    Real dt_rx = clk(0);
     return ComputePseudorange(r_rx, dt_rx);
   };
 
@@ -305,19 +305,19 @@ VecX GnssMeasurement::GetPredictedPseudorange(double epoch, Vec6 rv_pred,
 
 VecX GnssMeasurement::GetPredictedPseudorangeAnalyticalJacobian(
     double epoch, Vec6 rv_pred, Vec2 clk_pred, VecXd &H_pr, Frame frame_in) {
-  auto rv_gcrf = FrameConverter::Convert(epoch, rv_pred, frame_in, Frame::GCRF);
+  auto rv_gcrf = ConvertFrame(epoch, rv_pred, frame_in, Frame::GCRF);
   Vec3 r_rx = rv_gcrf.head(3);
-  real dt_rx = clk_pred(0);
+  Real dt_rx = clk_pred(0);
 
   // compute range
   VecX P_rx(r_tx.cols());
   H_pr = VecXd::Zero(r_tx.cols(), 8);
 
   for (int i = 0; i < r_tx.cols(); i++) {
-    real offset = I_rx(i) + T_rx(i);
+    Real offset = I_rx(i) + T_rx(i);
     VecX r_tx_col = r_tx.col(i);
-    real dt_tx_col = dt_tx[i];
-    real rho_rx = (r_tx_col - r_rx).norm();
+    Real dt_tx_col = dt_tx[i];
+    Real rho_rx = (r_tx_col - r_rx).norm();
 
     // directly compute jacobian
     P_rx(i) = rho_rx + C * (dt_rx - dt_tx_col) + offset;
@@ -334,10 +334,10 @@ VecX GnssMeasurement::GetPredictedPseudorangerate(double epoch, Vec6 rv_pred,
                                                   Vec2 clk_pred, VecXd &H_prr,
                                                   Frame frame_in) {
   auto func = [epoch, frame_in, this](const Vec6 rv_in, const Vec2 clk) {
-    Vec6 rv_gcrf = FrameConverter::Convert(epoch, rv_in, frame_in, Frame::GCRF);
+    Vec6 rv_gcrf = ConvertFrame(epoch, rv_in, frame_in, Frame::GCRF);
     Vec3 r_rx = rv_gcrf.head(3);
     Vec3 v_rx = rv_gcrf.tail(3);
-    real dt_rx_dot = clk(1);
+    Real dt_rx_dot = clk(1);
     return ComputePseudorangerate(r_rx, v_rx, dt_rx_dot);
   };
 
@@ -357,9 +357,9 @@ VecX GnssMeasurement::GetPredictedCarrierPhase(double epoch, Vec6 rv_pred,
                                                VecXd &H_cp, Frame frame_in) {
   auto func = [epoch, frame_in, this](const Vec6 rv_in, const Vec2 clk,
                                       const VecX N_pred) {
-    Vec6 rv_gcrf = FrameConverter::Convert(epoch, rv_in, frame_in, Frame::GCRF);
+    Vec6 rv_gcrf = ConvertFrame(epoch, rv_in, frame_in, Frame::GCRF);
     Vec3 r_rx = rv_gcrf.head(3);
-    real dt_rx = clk(0);
+    Real dt_rx = clk(0);
     return ComputeCarrierPhase(r_rx, dt_rx, N_pred);
   };
 

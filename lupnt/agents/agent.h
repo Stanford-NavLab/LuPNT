@@ -20,7 +20,6 @@
 #include "lupnt/physics/clock.h"
 #include "lupnt/physics/frame_converter.h"
 #include "lupnt/physics/orbit_state.h"
-#include "lupnt/physics/orbit_state_utils.h"
 
 namespace lupnt {
 
@@ -37,7 +36,7 @@ class Agent {
   std::string name_;
 
   NaifId bodyId_;
-  real epoch_;
+  Real epoch_;
   std::shared_ptr<OrbitState> state_;
   std::shared_ptr<NumericalOrbitDynamics> dynamics_;
   std::vector<std::shared_ptr<ICommDevice>> devices_;
@@ -49,7 +48,7 @@ class Agent {
   Agent() : id_(id_counter_++), clock_(ClockState(Vec2d::Zero())) {};
 
   // Getters
-  real GetEpoch() { return epoch_; }
+  Real GetEpoch() { return epoch_; }
   NaifId GetBodyId() { return bodyId_; }
   std::shared_ptr<OrbitState> GetOrbitState() { return state_; }
   std::shared_ptr<NumericalOrbitDynamics> GetDynamics() { return dynamics_; }
@@ -67,7 +66,7 @@ class Agent {
   void SetDynamics(std::shared_ptr<NumericalOrbitDynamics> dyn) {
     dynamics_ = dyn;
   }
-  void SetEpoch(real epoch) { epoch_ = epoch; }
+  void SetEpoch(Real epoch) { epoch_ = epoch; }
   void SetBodyId(NaifId bodyId) { bodyId_ = bodyId; }
   void SetClock(ClockState clk) { clock_ = clk; }
   void SetClockDynamics(ClockDynamics& clock_dyn) {
@@ -80,12 +79,12 @@ class Agent {
 
   // Cartesian OrbitState at epoch in GCRF frame
   std::shared_ptr<CartesianOrbitState> GetCartesianGCRFStateAtEpoch(
-      real epoch, Frame frame = Frame::GCRF);
+      Real epoch, Frame frame = Frame::GCRF);
 
-  void Propagate(const real epoch) {
+  void Propagate(const Real epoch) {
     if (epoch == epoch_) return;
 
-    dynamics_->Propagate(*state_, epoch_, epoch, 1.0 * SECS_PER_MINUTE);
+    dynamics_->Propagate(*state_, epoch_, epoch, 1.0 * SECS_MINUTE);
 
     if (clock_dynamics_ != nullptr) {
       clock_dynamics_->PropagateWithNoise(clock_, epoch_, epoch);

@@ -17,9 +17,9 @@ namespace lupnt {
  *   Extended Kalman Filter
  *****************************************************/
 
-void EKF::Predict(real t_end) {
+void EKF::Predict(Real t_end) {
   int n = x_.size();
-  VecXd Phi(n, n);
+  MatXd Phi(n, n);
   P_.resize(n, n);
   Q_.resize(n, n);
 
@@ -60,9 +60,9 @@ int EKF::RemoveOutliers(int m_orig, bool debug) {
     }
   }
 
-  VecXd H_new(m, n);
-  VecXd R_new(m, m);
-  VecXd S_new(m, m);
+  MatXd H_new(m, n);
+  MatXd R_new(m, m);
+  MatXd S_new(m, m);
   VecX dy_new(m);
   int j = 0;
   int l = 0;
@@ -116,7 +116,7 @@ void EKF::Update(VecX z_true_in, bool debug) {
   dx_.resize(n);
   R_.resize(m, m);
 
-  z_pred_ = this->measurement_(x_, H_, R_);
+  z_pred_ = measurement_(x_, H_, R_);
 
   S_ = R_ + H_ * P_ * H_.transpose();  // Measurement information
   dy_ = z_true_ - z_pred_;
@@ -131,13 +131,13 @@ void EKF::Update(VecX z_true_in, bool debug) {
   K_ = P_ * H_.transpose() * S_.inverse();  // Kalman gain
   dx_ = K_ * dy_;
   x_ = x_ + dx_;
-  VecXd I = VecXd::Identity(n, n);
-  VecXd G = VecXd(n, n);
+  MatXd I = MatXd::Identity(n, n);
+  MatXd G(n, n);
   G = I - K_ * H_;
   P_ = G * P_ * G.transpose() + K_ * R_ * K_.transpose();  // Joseph form
 }
 
-void EKF::Step(real t_end, VecX z_obs, bool debug) {
+void EKF::Step(Real t_end, VecX z_obs, bool debug) {
   Predict(t_end);
   Update(z_obs, debug);
 }

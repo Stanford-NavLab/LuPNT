@@ -55,17 +55,17 @@ int main() {
   gpsConstellation.LoadTleFile("gps");
 
   // Moon spacecraft
-  real a = 6541.4;
-  real e = 0.6;
-  real i = 65.5 * RAD_PER_DEG;
-  real Omega = 90 * RAD_PER_DEG;
-  real w = 0.0 * RAD_PER_DEG;
-  real M = 0.0 * RAD_PER_DEG;
+  Real a = 6541.4;
+  Real e = 0.6;
+  Real i = 65.5 * RAD;
+  Real Omega = 90 * RAD;
+  Real w = 0.0 * RAD;
+  Real M = 0.0 * RAD;
   ClassicalOE coeMoon({a, e, i, Omega, w, M});
   coeMoon.SetCoordSystem(Frame::MOON_CI);
 
-  auto cartOrbitStateMoon = std::make_shared<CartesianOrbitState>(
-      ClassicalToCartesian(coeMoon, GM_MOON));
+  auto cartOrbitStateMoon =
+      std::make_shared<CartesianOrbitState>(Classical2Cart(coeMoon, GM_MOON));
   std::shared_ptr<Spacecraft> moonSat1 = std::make_shared<Spacecraft>();
   std::shared_ptr<GnssReceiver> receiver =
       std::make_shared<GnssReceiver>("moongpsr");
@@ -82,9 +82,9 @@ int main() {
 
   // Time
   double t = epoch;
-  double dt = 1.0 * SECS_PER_MINUTE;
-  double tf = t + 36.0 * SECS_PER_HOUR;
-  double printEvery = 1.0 * SECS_PER_HOUR;
+  double dt = 1.0 * SECS_MINUTE;
+  double tf = t + 36.0 * SECS_HOUR;
+  double printEvery = 1.0 * SECS_HOUR;
 
   // Output
   DataHistory dataHistory;
@@ -131,12 +131,10 @@ int main() {
     // Bodies
     Vec6 v6;
     v6.setZero();
-    dataHistory.AddData(
-        "earthMi", t,
-        FrameConverter::Convert(t, v6, Frame::GCRF, Frame::MOON_CI));
-    dataHistory.AddData(
-        "moonGcrf", t,
-        FrameConverter::Convert(t, v6, Frame::MOON_CI, Frame::GCRF));
+    dataHistory.AddData("earthMi", t,
+                        ConvertFrame(t, v6, Frame::GCRF, Frame::MOON_CI));
+    dataHistory.AddData("moonGcrf", t,
+                        ConvertFrame(t, v6, Frame::MOON_CI, Frame::GCRF));
 
     // Print progress
     if (fmod(t, printEvery) < 1e-3) {

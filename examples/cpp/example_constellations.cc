@@ -55,9 +55,9 @@ int main() {
     // Time
     double epoch_tai = gnss_const.GetEpoch();
     double t = epoch_tai;
-    double dt = 1.0 * SECS_PER_MINUTE;
-    double tf = t + 24.0 * SECS_PER_HOUR;
-    double printEvery = 1.0 * SECS_PER_HOUR;
+    double dt = 1.0 * SECS_MINUTE;
+    double tf = t + 24.0 * SECS_HOUR;
+    double printEvery = 1.0 * SECS_HOUR;
 
     // Output
     DataHistory data_history;

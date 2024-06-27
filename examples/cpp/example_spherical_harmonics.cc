@@ -8,15 +8,15 @@
 using namespace lupnt;
 
 Vec3 SphericalHarmonicsGravity(const Vec3 &r, const MatX &C, const MatX &S,
-                               int n_max, int m_max, real R_body, real GM,
+                               int n_max, int m_max, Real R_body, Real GM,
                                bool normalized = true) {
   // Intermediate computations
-  real r_sqr = r.squaredNorm();
-  real r_sqr_inv = (r_sqr > EPS) ? 1.0 / r_sqr : 0.0;  // Safe division
-  real rho = R_body * R_body * r_sqr_inv;
-  real x0 = R_body * r[0] * r_sqr_inv;
-  real y0 = R_body * r[1] * r_sqr_inv;
-  real z0 = R_body * r[2] * r_sqr_inv;
+  Real r_sqr = r.squaredNorm();
+  Real r_sqr_inv = (r_sqr > EPS) ? 1.0 / r_sqr : 0.0;  // Safe division
+  Real rho = R_body * R_body * r_sqr_inv;
+  Real x0 = R_body * r[0] * r_sqr_inv;
+  Real y0 = R_body * r[1] * r_sqr_inv;
+  Real z0 = R_body * r[2] * r_sqr_inv;
 
   // Initialize Intermediary Matrices
   MatX V = MatX::Zero(n_max + 2, n_max + 2);
@@ -57,18 +57,18 @@ Vec3 SphericalHarmonicsGravity(const Vec3 &r, const MatX &C, const MatX &S,
   }
 
   // Calculate accelerations
-  real ax = 0.0;
-  real ay = 0.0;
-  real az = 0.0;
+  Real ax = 0.0;
+  Real ay = 0.0;
+  Real az = 0.0;
 
   for (int m = 0; m <= m_max; ++m) {
     for (int n = m; n <= n_max; ++n) {
-      real Cnm = 0.0;
-      real Snm = 0.0;
+      Real Cnm = 0.0;
+      Real Snm = 0.0;
       if (m == 0) {
         // Denormalize Coefficients
         if (normalized) {
-          real N = sqrt(2 * n + 1);
+          Real N = sqrt(2 * n + 1);
           Cnm = N * C(n, 0);
         } else {
           Cnm = C(n, 0);
@@ -80,7 +80,7 @@ Vec3 SphericalHarmonicsGravity(const Vec3 &r, const MatX &C, const MatX &S,
 
       } else {
         if (normalized) {
-          real N = sqrt((2 - ((m == 0) ? 1 : 0)) * (2 * n + 1) *
+          Real N = sqrt((2 - ((m == 0) ? 1 : 0)) * (2 * n + 1) *
                         tgamma(n - m + 1) / tgamma(n + m + 1));
           Cnm = N * C(n, m);
           Snm = N * S(n, m);
@@ -89,7 +89,7 @@ Vec3 SphericalHarmonicsGravity(const Vec3 &r, const MatX &C, const MatX &S,
           Snm = S(n, m);
         }
 
-        real fac = 0.5 * (n - m + 1) * (n - m + 2);
+        Real fac = 0.5 * (n - m + 1) * (n - m + 2);
         ax += 0.5 * (-Cnm * V(n + 1, m + 1) - Snm * W(n + 1, m + 1)) +
               fac * (Cnm * V(n + 1, m - 1) + Snm * W(n + 1, m - 1));
         ay += 0.5 * (-Cnm * W(n + 1, m + 1) + Snm * V(n + 1, m + 1)) +

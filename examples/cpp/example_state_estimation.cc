@@ -32,8 +32,8 @@ VecXd SetInitialCovariance(double pos_sigma, double vel_sigma,
   return P0;
 }
 
-FilterProcessNoiseFunction proc_noise_func = [](const VecX& x, real t_curr,
-                                                real t_end) {
+FilterProcessNoiseFunction proc_noise_func = [](const VecX& x, Real t_curr,
+                                                Real t_end) {
   int clock_index = 6;
   double dt = (t_end - t_curr).val();
   double sigma_acc = 1e-13;
@@ -84,14 +84,14 @@ int main() {
   clock.SetValue(0.1, 1);
 
   // Set the state
-  real a = 6541.4;
-  real e = 0.6;
-  real i = 65.5 * RAD_PER_DEG;
-  real Omega = 0.0 * RAD_PER_DEG;
-  real w = 90.0 * RAD_PER_DEG;
-  real M = 0.0 * RAD_PER_DEG;
+  Real a = 6541.4;
+  Real e = 0.6;
+  Real i = 65.5 * RAD;
+  Real Omega = 0.0 * RAD;
+  Real w = 90.0 * RAD;
+  Real M = 0.0 * RAD;
   ClassicalOE coe({a, e, i, Omega, w, M});
-  auto cart = ClassicalToCartesian(coe, GM_MOON);
+  auto cart = Classical2Cart(coe, GM_MOON);
 
   // dynamics model
   auto dyn_moon_tb = CartesianTwoBodyDynamics(GM_MOON);
@@ -110,8 +110,8 @@ int main() {
   FilterDynamicsFunction joint_dynamics =
       joint_state.GetFilterDynamicsFunction();
   VecXd Phi;
-  real t_start = 0.0;
-  real t_end = 60.0;
+  Real t_start = 0.0;
+  Real t_end = 60.0;
   VecX prop_state = joint_dynamics(state_vec, t_start, t_end, Phi);
 
   std::cout << " " << std::endl;
@@ -129,7 +129,7 @@ int main() {
   // Simulation Time
   t_start = 0.0;
   t_end = 100.0;
-  real dt = 2.0;
+  Real dt = 2.0;
 
   // Dummy Variables for Storage
   VecXd Phat(state_size, state_size);
@@ -154,7 +154,7 @@ int main() {
   std::cout << "Time  | Pos Err | Vel Err | Clk Bias Err" << std::endl;
   std::cout << "-----------------------------------------" << std::endl;
 
-  for (real t = t_start; t < t_end; t += dt) {
+  for (Real t = t_start; t < t_end; t += dt) {
     // Propagate True State
     x_true = joint_dynamics(x_true, t, t + dt, Phi_t);
     x_true += SampleMVN(Vec8d::Zero(), Q, 1).col(0);

@@ -25,24 +25,24 @@
   }
 
 #define DEFINE_STATIC_VECTORS_MATRICES(size)              \
-  using Vec##size = Eigen::Matrix<real, size, 1>;         \
+  using Vec##size = Eigen::Matrix<Real, size, 1>;         \
   using Vec##size##d = Eigen::Matrix<double, size, 1>;    \
   using Vec##size##i = Eigen::Matrix<int, size, 1>;       \
-  using Mat##size = Eigen::Matrix<real, size, size>;      \
+  using Mat##size = Eigen::Matrix<Real, size, size>;      \
   using Mat##size##d = Eigen::Matrix<double, size, size>; \
   using Mat##size##i = Eigen::Matrix<int, size, size>;    \
   using RowVec##size##d = Eigen::Matrix<double, 1, size>; \
   using RowVec##size##i = Eigen::Matrix<int, 1, size>;    \
-  using RowVec##size = Eigen::Matrix<real, 1, size>;
+  using RowVec##size = Eigen::Matrix<Real, 1, size>;
 
 #define DEFINE_DYNAMIC_VECTORS_MATRICES()                              \
-  using VecX = Eigen::Matrix<real, Eigen::Dynamic, 1>;                 \
+  using VecX = Eigen::Matrix<Real, Eigen::Dynamic, 1>;                 \
   using VecXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;              \
   using VecXi = Eigen::Matrix<int, Eigen::Dynamic, 1>;                 \
-  using MatX = Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>;    \
+  using MatX = Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic>;    \
   using MatXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; \
   using MatXi = Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;    \
-  using RowVecX = Eigen::Matrix<real, 1, Eigen::Dynamic>;              \
+  using RowVecX = Eigen::Matrix<Real, 1, Eigen::Dynamic>;              \
   using RowVecXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;           \
   using RowVecXi = Eigen::Matrix<int, 1, Eigen::Dynamic>;
 
@@ -61,21 +61,21 @@
 
 namespace lupnt {
 
-using real = autodiff::real;
+using Real = autodiff::real;
 template <int rows, int cols>
-using Mat = Eigen::Matrix<real, rows, cols>;
+using Mat = Eigen::Matrix<Real, rows, cols>;
 template <int rows, int cols>
 using Matd = Eigen::Matrix<double, rows, cols>;
 template <int size>
-using Vec = Eigen::Matrix<real, size, 1>;
+using Vec = Eigen::Matrix<Real, size, 1>;
 template <int size>
 using Vecd = Eigen::Matrix<double, size, 1>;
 template <int size>
 using RowVecd = Eigen::Matrix<double, 1, size>;
 using RowVecXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;
-using Quat = Eigen::Quaternion<real>;
+using Quat = Eigen::Quaternion<Real>;
 using Quatd = Eigen::Quaternion<double>;
-using AngleAxis = Eigen::AngleAxis<real>;
+using AngleAxis = Eigen::AngleAxis<Real>;
 using AngleAxisd = Eigen::AngleAxis<double>;
 
 DEFINE_VECTORS_MATRICES()
@@ -95,14 +95,14 @@ static constexpr double E =
 static constexpr double EPS = 1.0e-10;
 
 // Angle conversion
-static constexpr double RAD_PER_DEG =
+static constexpr double RAD =
     3.14159265358979323846264338327950288419716939937511 / 180.0;
-static constexpr double DEG_PER_RAD =
+static constexpr double DEG =
     180.0 / 3.14159265358979323846264338327950288419716939937511;
 
 static constexpr double ARCSEC_PER_DEGREE = 3600.0;
 static constexpr double DEG_PER_ARCSEC = 1.0 / 3600.0;
-static constexpr double RAD_PER_ARCSEC = DEG_PER_ARCSEC * RAD_PER_DEG;
+static constexpr double RAD_PER_ARCSEC = DEG_PER_ARCSEC * RAD;
 
 // Mass conversion
 static constexpr double LBM_TO_KG = 0.45359237;
@@ -116,37 +116,45 @@ static constexpr double M_TO_KM = 0.001;
 static constexpr double KM_TO_M = 1000.0;
 
 // Time system constants -------------------------------------------------------
-static constexpr double SECS_PER_DAY = 86400.0;
-static constexpr double SECS_PER_HOUR = 3600.0;
-static constexpr double SECS_PER_MINUTE = 60.0;
+static constexpr double SECS_DAY = 86400.0;
+static constexpr double SECS_HOUR = 3600.0;
+static constexpr double SECS_MINUTE = 60.0;
 
-static constexpr double DAYS_PER_YEAR = 365.25;
-static constexpr double DAYS_PER_JULIAN_CENTURY = 36525.00;
+static constexpr double MINUTES_HOUR = 60.0;
+static constexpr double MINUTES_DAY = 1440.0;
+static constexpr double HOURS_DAY = 24.0;
+static constexpr double DAYS_WEEK = 7.0;
+
+static constexpr double DAYS_YEAR = 365.25;
+static constexpr double DAYS_JULIAN_CENTURY = 36525.00;
 static constexpr double DAYS_PER_SEC = 1.1574074074074074074074074074074e-5;
 
 static constexpr double TIME_OF_J2000 =
-    883655990.850000;                                   // 2000/01/01 43167.85
-static constexpr double JD_OF_J2000 = 2451545.0;        // JD of J2000 epoch
-static constexpr double MJD_OF_J2000 = 21545.00000000;  // MJD of J2000 epoch
-static constexpr double A1MJD_OF_J2000 =
-    21545.00000000;  // 2000/01/01 11:59:27.965622
-static constexpr double JD_MJD_OFFSET =
-    2400000.5;  // Vallado page 187 (= JD_NOV_17_1858)
-static constexpr double TT_TAI_OFFSET = 32.184;  // GMAT Math Spec section 2.3
-static constexpr double A1_TAI_OFFSET =
-    0.0343817;  // GMAT Math Spec section 2.1
-static constexpr double JD_JAN_5_1941 =
-    2430000.0;  // old name JULIAN_DATE_OF_010541
-static constexpr double JD_NOV_17_1858 = 2400000.5;  // old name JD_MJD_OFFSET
+    883655990.850000;                             // 2000/01/01 43167.85
+static constexpr double JD_OF_J2000 = 2451545.0;  // JD of J2000 epoch
+static constexpr double MJD_J2000 = 51544.5;      // MJD of J2000 epoch
+
+// 2000/01/01 11:59:27.965622
+static constexpr double A1MJD_OF_J2000 = 21545.00000000;
+// Vallado page 187 (= JD_NOV_17_1858)
+static constexpr double JD_MJD_OFFSET = 2400000.5;
+// GMAT Math Spec section 2.3
+static constexpr double TT_TAI_OFFSET = 32.184;
+// GMAT Math Spec section 2.1
+static constexpr double A1_TAI_OFFSET = 0.0343817;
+// old name JULIAN_DATE_OF_010541
+static constexpr double JD_JAN_5_1941 = 2430000.0;
+// old name JD_MJD_OFFSET
+static constexpr double JD_NOV_17_1858 = 2400000.5;
 
 static constexpr double TDB_COEFF1 = 0.001658;
 static constexpr double TDB_COEFF2 = 0.00001385;
 static constexpr double M_E_OFFSET = 357.5277233;
 static constexpr double M_E_COEFF1 = 35999.05034;
 static constexpr double T_TT_OFFSET = JD_OF_J2000;
-static constexpr double T_TT_COEFF1 = DAYS_PER_JULIAN_CENTURY;
+static constexpr double T_TT_COEFF1 = DAYS_JULIAN_CENTURY;
 static constexpr double L_B = 1.550505e-8;
-static constexpr double NUM_SECS = SECS_PER_DAY;
+static constexpr double NUM_SECS = SECS_DAY;
 
 static constexpr int JULIAN_DATE_OF_010541 = 2430000;
 

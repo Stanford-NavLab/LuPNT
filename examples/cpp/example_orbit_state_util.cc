@@ -1,24 +1,24 @@
 #include <lupnt/core/constants.h>
 #include <lupnt/numerics/math_utils.h>
-#include <lupnt/physics/orbit_state_utils.h>
+#include <lupnt/physics/orbit_state.h>
 
 using namespace lupnt;
 
 int main() {
   double a = 6541.4;
   double e = 0.6;
-  double i = 65.5 * RAD_PER_DEG;
-  double Omega = 0.0 * RAD_PER_DEG;
-  double w = 90.0 * RAD_PER_DEG;
-  double M = 0.0 * RAD_PER_DEG;
+  double i = 65.5 * RAD;
+  double Omega = 0.0 * RAD;
+  double w = 90.0 * RAD;
+  double M = 0.0 * RAD;
 
   Vec6 coe;
   coe << a, e, i, Omega, w, M;
 
   Vec6 coe_d{a, e, i, Omega, w, M};
 
-  auto cart = ClassicalToCartesian(coe, GM_EARTH);
-  auto cart_d = ClassicalToCartesian(coe_d, GM_EARTH);
+  auto cart = Classical2Cart(coe, GM_EARTH);
+  auto cart_d = Classical2Cart(coe_d, GM_EARTH);
 
   // Print type
   std::cout << "coe type = " << typeid(coe).name() << std::endl;
@@ -32,6 +32,6 @@ int main() {
 
   Vec3 r_cart_ref{0, 0, 0};
   Vec3 r_aer{1e-3, 1e-3, 5e3};
-  Vec3 r = AzimuthElevationRangeToCartesian(r_cart_ref, r_aer);
+  Vec3 r = AzimuthElevationRange2Cart(r_cart_ref, r_aer);
   std::cout << "r = " << r.transpose() << std::endl;
 }

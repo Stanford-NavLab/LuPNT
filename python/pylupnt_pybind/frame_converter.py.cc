@@ -33,9 +33,8 @@ void init_frame_converter(py::module &m) {
           "convert",
           [](double epoch, const Vec6d &rv_in, Frame frame_in,
              Frame frame_out) -> Vec6d {
-            Vec6 rv_in_real = rv_in.cast<real>();
-            return FrameConverter::Convert(epoch, rv_in_real, frame_in,
-                                           frame_out)
+            Vec6 rv_in_real = rv_in.cast<Real>();
+            return ConvertFrame(epoch, rv_in_real, frame_in, frame_out)
                 .cast<double>();
           },
           "Convert frame", py::arg("epoch"), py::arg("rv_in"),
@@ -45,9 +44,8 @@ void init_frame_converter(py::module &m) {
           "convert",
           [](double epoch, const Vec3d &r_in, Frame frame_in,
              Frame frame_out) -> Vec3d {
-            Vec3 r_in_real = r_in.cast<real>();
-            return FrameConverter::Convert(epoch, r_in_real, frame_in,
-                                           frame_out)
+            Vec3 r_in_real = r_in.cast<Real>();
+            return ConvertFrame(epoch, r_in_real, frame_in, frame_out)
                 .cast<double>();
           },
           "Convert frame", py::arg("epoch"), py::arg("r_in"),
@@ -57,7 +55,7 @@ void init_frame_converter(py::module &m) {
           "convert",
           [](double epoch, const CartesianOrbitState &state_in,
              Frame frame_out) -> CartesianOrbitState {
-            return FrameConverter::Convert(epoch, state_in, frame_out);
+            return ConvertFrame(epoch, state_in, frame_out);
           },
           "Convert frame", py::arg("epoch"), py::arg("state_in"),
           py::arg("frame_out"))
@@ -66,9 +64,8 @@ void init_frame_converter(py::module &m) {
           "convert",
           [](const VecXd &epoch, const Vec6d &rv_in, Frame frame_in,
              Frame frame_out) -> VecXd {
-            Vec6 rv_in_real = rv_in.cast<real>();
-            return FrameConverter::Convert(epoch, rv_in_real, frame_in,
-                                           frame_out)
+            Vec6 rv_in_real = rv_in.cast<Real>();
+            return ConvertFrame(epoch, rv_in_real, frame_in, frame_out)
                 .cast<double>();
           },
           "Convert frame", py::arg("epoch"), py::arg("rv_in"),
@@ -78,9 +75,8 @@ void init_frame_converter(py::module &m) {
           "convert",
           [](const VecXd &epoch, const Vec3d &r_in, Frame frame_in,
              Frame frame_out) -> VecXd {
-            Vec3 r_in_real = r_in.cast<real>();
-            return FrameConverter::Convert(epoch, r_in_real, frame_in,
-                                           frame_out)
+            Vec3 r_in_real = r_in.cast<Real>();
+            return ConvertFrame(epoch, r_in_real, frame_in, frame_out)
                 .cast<double>();
           },
           "Convert frame", py::arg("epoch"), py::arg("r_in"),
@@ -90,8 +86,8 @@ void init_frame_converter(py::module &m) {
           "convert",
           [](double epoch, const Matd<-1, 6> &rv_in, Frame frame_in,
              Frame frame_out) -> Matd<-1, 6> {
-            return FrameConverter::Convert(epoch, rv_in.cast<real>().eval(),
-                                           frame_in, frame_out)
+            return ConvertFrame(epoch, rv_in.cast<Real>().eval(), frame_in,
+                                frame_out)
                 .cast<double>();
           },
           "Convert frame", py::arg("epoch"), py::arg("rv_in"),
@@ -101,8 +97,8 @@ void init_frame_converter(py::module &m) {
           "convert",
           [](double epoch, const Matd<-1, 3> &r_in, Frame frame_in,
              Frame frame_out) -> Matd<-1, 3> {
-            return FrameConverter::Convert(epoch, r_in.cast<real>().eval(),
-                                           frame_in, frame_out)
+            return ConvertFrame(epoch, r_in.cast<Real>().eval(), frame_in,
+                                frame_out)
                 .cast<double>();
           },
           "Convert frame", py::arg("epoch"), py::arg("r_in"),
@@ -112,8 +108,8 @@ void init_frame_converter(py::module &m) {
           "convert",
           [](const VecXd &epoch, const Matd<-1, 6> &rv_in, Frame frame_in,
              Frame frame_out) -> Matd<-1, 6> {
-            return FrameConverter::Convert(epoch, rv_in.cast<real>().eval(),
-                                           frame_in, frame_out)
+            return ConvertFrame(epoch, rv_in.cast<Real>().eval(), frame_in,
+                                frame_out)
                 .cast<double>();
           },
           "Convert frame", py::arg("epoch"), py::arg("rv_in"),
@@ -123,8 +119,8 @@ void init_frame_converter(py::module &m) {
           "convert",
           [](const VecXd &epoch, const Matd<-1, 3> &r_in, Frame frame_in,
              Frame frame_out) -> Matd<-1, 3> {
-            return FrameConverter::Convert(epoch, r_in.cast<real>().eval(),
-                                           frame_in, frame_out)
+            return ConvertFrame(epoch, r_in.cast<Real>().eval(), frame_in,
+                                frame_out)
                 .cast<double>();
           },
           "Convert frame", py::arg("epoch"), py::arg("r_in"),

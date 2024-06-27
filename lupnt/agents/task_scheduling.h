@@ -17,21 +17,21 @@ enum TaskType {
 struct Opportunity {
   int task_id;
 
-  real start_time;
-  real end_time;
-  real duration;
+  Real start_time;
+  Real end_time;
+  Real duration;
 
-  real power_consumption;
-  real data_generation;
+  Real power_consumption;
+  Real data_generation;
 
-  real reward;
+  Real reward;
   TaskType type;
 };
 
 struct State {
-  real time;
-  real power;
-  real data;
+  Real time;
+  Real power;
+  Real data;
   std::set<int> completed_tasks;
 };
 

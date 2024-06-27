@@ -11,7 +11,7 @@ coe_array_llo = np.array(
     [100.0, 1e-3, np.deg2rad(28.5), np.deg2rad(0.0), np.deg2rad(0.0), np.deg2rad(20.0)]
 )
 
-# Quasi-Nonsingular Relative Orbital Elements
+# Quasi-Nonsing Relative Orbital Elements
 # (ada, adl, adex, adey, adix, adiy) [m]
 roe_array_1 = np.array([10.0, 20.0, 30.0, 40.0, 50.0, 60.0])
 roe_array_2 = np.array([100.0, 200.0, 300.0, 400.0, 500.0, 600.0])

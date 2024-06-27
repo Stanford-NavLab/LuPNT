@@ -29,57 +29,34 @@ namespace lupnt {
 
 bool spice_loaded = false;
 
-real EarthRotationAngle(real t_jd_ut1) {
+Real EarthRotationAngle(Real t_jd_ut1) {
   double theta_0 = 0.7790572732640;
   double dtheta_dt = 1.00273781191135448;
-  real theta_era = TWO_PI * (theta_0 + dtheta_dt * (t_jd_ut1 - JD_OF_J2000));
-  return wrapToPi(theta_era);
+  Real theta_era = TWO_PI * (theta_0 + dtheta_dt * (t_jd_ut1 - JD_OF_J2000));
+  return Wrap2Pi(theta_era);
 }
 
-real UTCtoUT1(real mjd_utc) {
+Real UTCtoUT1(Real mjd_utc) {
   std::shared_ptr<EOPData> eop_data =
       LoadEOPData(GetFilePath("eopc04_08.62-now"));
   EOPResult eop_result = InterpolateEOPData(eop_data, mjd_utc, true);
-  real mjd_ut1 = mjd_utc + eop_result.UT1_UTC / SECS_PER_DAY;
+  Real mjd_ut1 = mjd_utc + eop_result.UT1_UTC / SECS_DAY;
   return mjd_ut1;
 }
 
-real GreenwichMeanSiderealTime(real mjd_ut1) {
-  real mjd_0 = floor(mjd_ut1);
-  real UT1 = SECS_PER_DAY * (mjd_ut1 - mjd_0);  // [s]
-  real T_0 = (mjd_0 + JD_MJD_OFFSET - JD_OF_J2000) / DAYS_PER_JULIAN_CENTURY;
-  real T = (mjd_ut1 + JD_MJD_OFFSET - JD_OF_J2000) / DAYS_PER_JULIAN_CENTURY;
-  real gmst_sec = 24110.54841 + 8640184.812866 * T_0 + 1.002737909350795 * UT1 +
+Real GreenwichMeanSiderealTime(Real mjd_ut1) {
+  Real mjd_0 = floor(mjd_ut1);
+  Real UT1 = SECS_DAY * (mjd_ut1 - mjd_0);  // [s]
+  Real T_0 = (mjd_0 + JD_MJD_OFFSET - JD_OF_J2000) / DAYS_JULIAN_CENTURY;
+  Real T = (mjd_ut1 + JD_MJD_OFFSET - JD_OF_J2000) / DAYS_JULIAN_CENTURY;
+  Real gmst_sec = 24110.54841 + 8640184.812866 * T_0 + 1.002737909350795 * UT1 +
                   (0.093104 - 6.2e-6 * T) * T * T;  // [s]
-  real frac = gmst_sec / SECS_PER_DAY - floor(gmst_sec / SECS_PER_DAY);
-  real gmst_rad = TWO_PI * frac;  // [rad]
-  return wrapTo2Pi(gmst_rad);
+  Real frac = gmst_sec / SECS_DAY - floor(gmst_sec / SECS_DAY);
+  Real gmst_rad = TWO_PI * frac;  // [rad]
+  return Wrap2TwoPi(gmst_rad);
 }
 
-real DateToModifiedJulianDate(int year, int month, int day, int hour,
-                              int minute, real second) {
-  if (month <= 2) {
-    month += 12;
-    year -= 1;
-  }
-
-  int b;
-  if (10000 * year + 100 * month + day <= 15821004) {
-    // Julian calendar
-    b = static_cast<int>(-2 + std::floor((year + 4716) / 4.) - 1179);
-  } else {
-    // Gregorian calendar
-    b = static_cast<int>(std::floor(year / 400.) - std::floor(year / 100.) +
-                         std::floor(year / 4.));
-  }
-
-  int mjd_midnight = 365 * year - 679004 + b +
-                     static_cast<int>(std::floor(30.6001 * (month + 1))) + day;
-  real frac_of_day = (hour + minute / 60. + second / SECS_PER_HOUR) / 24.;
-  return mjd_midnight + frac_of_day;
-}
-
-std::tuple<int, int, int, int, int, real> ModifiedJulianDateToDate(real mjd) {
+std::tuple<int, int, int, int, int, Real> ModifiedJulianDate2Date(Real mjd) {
   int a = static_cast<int>(mjd + 2400001.0);
   int c;
   if (a < 2299161) {
@@ -100,31 +77,31 @@ std::tuple<int, int, int, int, int, real> ModifiedJulianDateToDate(real mjd) {
   int year = d - 4715 - static_cast<int>((7. + month) / 10.);
 
   // Calculate the time of the day
-  real hours = 24. * (mjd - floor(mjd));
+  Real hours = 24. * (mjd - floor(mjd));
   int hour = static_cast<int>(hours);
-  real minutes = (hours - hour) * 60.;
+  Real minutes = (hours - hour) * 60.;
   int minute = static_cast<int>(minutes);
-  real second = (minutes - minute) * 60.;
+  Real second = (minutes - minute) * 60.;
 
   return std::make_tuple(year, month, day, hour, minute, second);
 }
 
-real TAItoTT(real tai) { return tai + TT_TAI_OFFSET; }
+Real TAItoTT(Real tai) { return tai + TT_TAI_OFFSET; }
 
-real TAItoJulianDateTT(real tai) {
-  real tt = TAItoTT(tai);
-  return JD_OF_J2000 + tt / SECS_PER_DAY;
+Real TAItoJulianDateTT(Real tai) {
+  Real tt = TAItoTT(tai);
+  return JD_OF_J2000 + tt / SECS_DAY;
 }
 
-real TTtoTDB(real tt, real jdtt) {
-  real ME = M_E_OFFSET + 0.9856003 * (jdtt - JD_OF_J2000);
-  real ME_rad = ME * (M_PI / 180.0);
+Real TTtoTDB(Real tt, Real jdtt) {
+  Real ME = M_E_OFFSET + 0.9856003 * (jdtt - JD_OF_J2000);
+  Real ME_rad = ME * (M_PI / 180.0);
   return tt + TDB_COEFF1 * sin(ME_rad) + TDB_COEFF2 * sin(2 * ME_rad);
 }
 
-real TAItoTDB(real tai) {
-  real tt = TAItoTT(tai);
-  real jd_tt = TAItoJulianDateTT(tai);
+Real TAItoTDB(Real tai) {
+  Real tt = TAItoTT(tai);
+  Real jd_tt = TAItoJulianDateTT(tai);
   return TTtoTDB(tt, jd_tt);
 }
 
@@ -244,7 +221,7 @@ void ExtractPckCoeffs() {
   //    pckr02_c(handle, target)
 }
 
-Vec3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
+Vec3d GetBodyPos(NaifId target, Real t_tai, Frame refFrame, NaifId obs,
                  std::string abCorrection) {
   if (!spice_loaded) {
     LoadSpiceKernel();
@@ -258,7 +235,7 @@ Vec3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
   std::string frame_str = frametem_string.at(refFrame);
 
   // TODO: this cuts the relatonship between t_tdb and matrix
-  real t_tdb = ConvertTime(t_tai, TimeSystems::TAI, TimeSystems::TDB);
+  Real t_tdb = ConvertTime(t_tai, TimeSystems::TAI, TimeSystems::TDB);
   SpiceDouble t_tdb_spice = (SpiceDouble)t_tdb.val();
   const char *target_spice =
       strcpy(new char[targetName.length() + 1], targetName.c_str());
@@ -289,12 +266,12 @@ Vec3d GetBodyPos(NaifId target, real t_tai, Frame refFrame, NaifId obs,
  * @param to_frame
  * @return VecXd
  */
-Mat6d GetFrameConversionMat(real t_tai, Frame from_frame, Frame to_frame) {
+Mat6d GetFrameConversionMat(Real t_tai, Frame from_frame, Frame to_frame) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
 
-  real t_tdb = TAItoTDB(t_tai);
+  Real t_tdb = TAItoTDB(t_tai);
 
   SpiceInt bodyname;
   SpiceDouble et_spice = (SpiceDouble)t_tdb.val();
@@ -376,7 +353,7 @@ Julian Date Strings.
 
  * @return real     ephemeris time (TDB) (seconds past the J2000 epoch)
  */
-real StringToTDB(std::string str) {
+Real String2TDB(std::string str) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
@@ -392,13 +369,13 @@ real StringToTDB(std::string str) {
  * @param str time string
  * @return real
  */
-real StringToTAI(std::string str) {
+Real String2TAI(std::string str) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
 
-  real t_tdb = StringToTDB(str);
-  real tai = ConvertTime(t_tdb, TimeSystems::TDB, TimeSystems::TAI);
+  Real t_tdb = String2TDB(str);
+  Real tai = ConvertTime(t_tdb, TimeSystems::TDB, TimeSystems::TAI);
   return tai;
 }
 
@@ -409,7 +386,7 @@ real StringToTAI(std::string str) {
  * @param prec precision of the output string (default 3)
  * @return std::string
  */
-std::string TDBtoStringUTC(real tdb, int prec = 3) {
+std::string TDBtoStringUTC(Real tdb, int prec = 3) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
@@ -428,12 +405,12 @@ std::string TDBtoStringUTC(real tdb, int prec = 3) {
  * @param prec precision of the output string (default 3)
  * @return std::string
  */
-std::string TAItoStringUTC(real tai, int prec = 3) {
+std::string TAItoStringUTC(Real tai, int prec = 3) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
 
-  real et_tdb = ConvertTime(tai, TimeSystems::TAI, TimeSystems::TDB);
+  Real et_tdb = ConvertTime(tai, TimeSystems::TAI, TimeSystems::TDB);
   std::string str = TDBtoStringUTC(et_tdb, prec);
   return str;
 }
@@ -458,7 +435,7 @@ std::string TAItoStringUTC(real tai, int prec = 3) {
  * @param to_time_type  to time system
  * @return real     out time in seconds
  */
-real ConvertTime(real t, std::string from_time_type, std::string to_time_type) {
+Real ConvertTime(Real t, std::string from_time_type, std::string to_time_type) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
@@ -470,7 +447,7 @@ real ConvertTime(real t, std::string from_time_type, std::string to_time_type) {
 
   double offset = t_out_spice - t_in;  // offset in seconds
 
-  real t_out = t + offset;  // this is to convert to real
+  Real t_out = t + offset;  // this is to convert to real
 
   return t_out;
 }
@@ -499,7 +476,7 @@ Mat<-1, 6> GetBodyPosVel(const VecX &tai, NaifId center, NaifId target,
  * @return VecX  6x1 vector of position and velocity of target body
  * in center body J2000 frame
  */
-Vec6 GetBodyPosVel(const real tai, NaifId center, NaifId target, Frame frame) {
+Vec6 GetBodyPosVel(const Real tai, NaifId center, NaifId target, Frame frame) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
@@ -534,7 +511,7 @@ Vec6 GetBodyPosVel(const real tai, NaifId center, NaifId target, Frame frame) {
   fetchPosVel(target, rv_target);
 
   // convert TAI to TDB past J2000
-  real t_tdb = TAItoTDB(tai);
+  Real t_tdb = TAItoTDB(tai);
 
   for (int i = 0; i < cheby_n; i++) {
     if (cheby_s[i].target == (int)target) {
@@ -554,7 +531,7 @@ Vec6 GetBodyPosVel(const real tai, NaifId center, NaifId target, Frame frame) {
   Vec6 retState = rv_target - rv_center;
 
   if (frame != Frame::GCRF) {
-    retState = FrameConverter::Convert(tai, retState, Frame::GCRF, frame);
+    retState = ConvertFrame(tai, retState, Frame::GCRF, frame);
   }
   return retState;
 }

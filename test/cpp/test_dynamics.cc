@@ -1,24 +1,23 @@
 #include <lupnt/core/constants.h>
 #include <lupnt/dynamics/dynamics.h>
 #include <lupnt/physics/orbit_state.h>
-#include <lupnt/physics/orbit_state_utils.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
 
-#include "test_utils.cc"
+#include "utils.cc"
 
 using namespace lupnt;
 
 // Keplerian Dynamics with Classical Orbital Elements
 TEST_CASE("Test_KeplerianDynamics_ClassicalOE") {
   // Classical orbital elements
-  real a = 6541.4;                  // [km]
-  real e = 0.6;                     // [-]
-  real i = 65.5 * RAD_PER_DEG;      // [rad]
-  real Omega = 90.0 * RAD_PER_DEG;  // [rad]
-  real w = 0.0 * RAD_PER_DEG;       // [rad]
-  real M = 0.0 * RAD_PER_DEG;       // [rad]
+  Real a = 6541.4;          // [km]
+  Real e = 0.6;             // [-]
+  Real i = 65.5 * RAD;      // [rad]
+  Real Omega = 90.0 * RAD;  // [rad]
+  Real w = 0.0 * RAD;       // [rad]
+  Real M = 0.0 * RAD;       // [rad]
 
   double mu = GM_MOON;
   ClassicalOE coe_state({a, e, i, Omega, w, M}, Frame::MOON_CI);
@@ -28,18 +27,18 @@ TEST_CASE("Test_KeplerianDynamics_ClassicalOE") {
   auto kep_dyn = KeplerianDynamics(mu);
 
   // Propagation
-  real dt = 10.0;                   // [s]
-  real n = sqrt(mu / pow(a, 3.0));  // [rad/s]
+  Real dt = 10.0;                   // [s]
+  Real n = sqrt(mu / pow(a, 3.0));  // [rad/s]
   for (int i = 0; i < 100; i++) {
     kep_dyn.Propagate(coe_state, dt);
-    coe_analytical(5) = wrapToPi(coe_analytical(5) + n * dt);
+    coe_analytical(5) = Wrap2Pi(coe_analytical(5) + n * dt);
 
     RequireNearRealVec(coe_state.GetVec(), coe_analytical, 1e-6);
     dt += 2.0;
   }
 
   // Propagation with STM
-  auto propagate_function = [&](VecX &vec, real dt) {
+  auto propagate_function = [&](VecX &vec, Real dt) {
     ClassicalOE state(vec, Frame::MOON_CI);
     kep_dyn.Propagate(state, dt);
     vec = state.GetVec();
@@ -61,16 +60,16 @@ TEST_CASE("Test_KeplerianDynamics_ClassicalOE") {
 // CartesianTwoBodyDynamics
 TEST_CASE("Test_CartesianTwoBodyDynamics") {
   // Classical orbital elements
-  real a = 6541.4;                  // [km]
-  real e = 0.6;                     // [-]
-  real i = 65.5 * RAD_PER_DEG;      // [rad]
-  real Omega = 90.0 * RAD_PER_DEG;  // [rad]
-  real w = 0.0 * RAD_PER_DEG;       // [rad]
-  real M = 0.0 * RAD_PER_DEG;       // [rad]
+  Real a = 6541.4;          // [km]
+  Real e = 0.6;             // [-]
+  Real i = 65.5 * RAD;      // [rad]
+  Real Omega = 90.0 * RAD;  // [rad]
+  Real w = 0.0 * RAD;       // [rad]
+  Real M = 0.0 * RAD;       // [rad]
 
   double mu = GM_MOON;
   ClassicalOE coe_state({a, e, i, Omega, w, M}, Frame::MOON_CI);
-  CartesianOrbitState cart_state = ClassicalToCartesian(coe_state, mu);
+  CartesianOrbitState cart_state = Classical2Cart(coe_state, mu);
   Vec6 cart_vector = cart_state.GetVec();
   VecX cart_vector_kep;
 
@@ -79,19 +78,19 @@ TEST_CASE("Test_CartesianTwoBodyDynamics") {
   auto tb_dyn = CartesianTwoBodyDynamics(mu);
 
   // Propagation
-  real dt = 10.0;  // [s]
+  Real dt = 10.0;  // [s]
   for (int i = 0; i < 5; i++) {
     kep_dyn.Propagate(coe_state, dt);
     tb_dyn.Propagate(cart_state, 0.0, dt, 1.0);
     tb_dyn.Propagate(cart_vector, 0.0, dt, 1.0);
 
-    cart_vector_kep = ClassicalToCartesian(coe_state.GetVec(), mu);
+    cart_vector_kep = Classical2Cart(coe_state.GetVec(), mu);
     RequireNearRealVec(cart_vector_kep, cart_state.GetVec(), 1e-6);
     RequireNearRealVec(cart_vector_kep, cart_vector, 1e-6);
   }
 
   // Propagation with STM
-  auto propagate_function = [&](VecX &vec, real dt) {
+  auto propagate_function = [&](VecX &vec, Real dt) {
     CartesianOrbitState state(vec, Frame::MOON_CI);
     tb_dyn.Propagate(state, 0.0, dt, 0.1);
     vec = state.GetVec();
@@ -133,12 +132,12 @@ TEST_CASE("Test_CartesianJ2Dynamics") {
   real dt = 10.0;
 
   ClassicalOE coe_state({a, e, i, Omega, w, M}, Frame::MOON_CI);
-  CartesianOrbitState cart_state = ClassicalToCartesian(coe_state, mu);
+  CartesianOrbitState cart_state = Classical2Cart(coe_state, mu);
   Vec6 cart_vector = cart_state.GetVec();
   VecX cart_vector_kep;
 
   // Two body dynamics
-  auto j2_dyn = J2CartesianTwoBodyDynamics(mu, J2, Rbody, "RK4");
+  auto j2_dyn = J2CartTwoBodyDynamics(mu, J2, Rbody, "RK4");
   auto j2_kep_dyn = J2KeplerianDynamics(mu, J2, Rbody, "RK4");
 
   // comparison
@@ -147,7 +146,7 @@ TEST_CASE("Test_CartesianJ2Dynamics") {
     j2_dyn.Propagate(cart_state, 0.0, dt, 1.0);
     j2_dyn.Propagate(cart_vector, 0.0, dt, 1.0);
 
-    cart_vector_kep = ClassicalToCartesian(coe_state.GetVec(), mu);
+    cart_vector_kep = Classical2Cart(coe_state.GetVec(), mu);
     EXPECT_NEAR_ADVEC(cart_vector_kep, cart_state.GetVec(), 1e-6);
     EXPECT_NEAR_ADVEC(cart_vector_kep, cart_vector, 1e-6);
   }

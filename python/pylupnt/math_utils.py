@@ -2,7 +2,7 @@ import numpy as np
 from typing import Union
 
 
-def wrapToPi(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def wrap2Pi(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Wrap angle in radians to [-pi pi]
 
