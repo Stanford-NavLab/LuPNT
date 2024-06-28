@@ -12,7 +12,7 @@ Body Body::Moon(int n_max, int m_max) {
   Body moon;
   moon.name = "MOON";
   moon.id = NaifId::MOON;
-  moon.sphericalHarmonics = n_max > 0 || m_max > 0;
+  moon.spherical_harmonics = n_max > 0 || m_max > 0;
   moon.normalized = true;
   moon.n_max = n_max;
   moon.m_max = m_max;
@@ -22,7 +22,7 @@ Body Body::Moon(int n_max, int m_max) {
   moon.mu = bd.GM;
   moon.R = bd.R;
 
-  if (moon.sphericalHarmonics)
+  if (moon.spherical_harmonics)
     std::tie(moon.Cnm, moon.Snm) = LoadGravityCoefficients(bd, n_max);
   return moon;
 }
@@ -31,7 +31,7 @@ Body Body::Earth(int n_max, int m_max) {
   Body earth;
   earth.name = "EARTH";
   earth.id = NaifId::EARTH;
-  earth.sphericalHarmonics = n_max > 0 || m_max > 0;
+  earth.spherical_harmonics = n_max > 0 || m_max > 0;
   earth.normalized = true;
   earth.n_max = n_max;
   earth.m_max = m_max;
@@ -41,7 +41,7 @@ Body Body::Earth(int n_max, int m_max) {
   earth.mu = bd.GM;
   earth.R = bd.R;
 
-  if (earth.sphericalHarmonics)
+  if (earth.spherical_harmonics)
     std::tie(earth.Cnm, earth.Snm) = LoadGravityCoefficients(bd, n_max);
   return earth;
 }
@@ -50,7 +50,7 @@ Body Body::Sun() {
   Body sun;
   sun.name = "SUN";
   sun.id = NaifId::SUN;
-  sun.sphericalHarmonics = false;
+  sun.spherical_harmonics = false;
   sun.normalized = false;
   sun.fixed_frame = Frame::ICRF;
 
@@ -64,7 +64,7 @@ Body Body::Mars(int n_max, int m_max) {
   Body mars;
   mars.name = "MARS";
   mars.id = NaifId::MARS;
-  mars.sphericalHarmonics = n_max > 0 || m_max > 0;
+  mars.spherical_harmonics = n_max > 0 || m_max > 0;
   mars.normalized = true;
   mars.n_max = n_max;
   mars.m_max = m_max;
@@ -74,7 +74,7 @@ Body Body::Mars(int n_max, int m_max) {
   mars.mu = bd.GM;
   mars.R = bd.R;
 
-  if (mars.sphericalHarmonics)
+  if (mars.spherical_harmonics)
     std::tie(mars.Cnm, mars.Snm) = LoadGravityCoefficients(bd, n_max);
   return mars;
 }
@@ -83,7 +83,7 @@ Body Body::Venus(int n_max, int m_max) {
   Body venus;
   venus.name = "VENUS";
   venus.id = NaifId::VENUS;
-  venus.sphericalHarmonics = n_max > 0 || m_max > 0;
+  venus.spherical_harmonics = n_max > 0 || m_max > 0;
   venus.normalized = true;
   venus.n_max = n_max;
   venus.m_max = m_max;
@@ -93,7 +93,7 @@ Body Body::Venus(int n_max, int m_max) {
   venus.mu = bd.GM;
   venus.R = bd.R;
 
-  if (venus.sphericalHarmonics)
+  if (venus.spherical_harmonics)
     std::tie(venus.Cnm, venus.Snm) = LoadGravityCoefficients(bd, n_max);
   return venus;
 }

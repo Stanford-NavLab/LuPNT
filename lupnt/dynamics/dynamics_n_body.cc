@@ -71,7 +71,7 @@ Vec3 NBodyDynamics::ComputeNBodyGravity(Real t_tai, const Vec3 &r) const {
     }
 
     // Check spherical harmonics
-    if (body.sphericalHarmonics) {
+    if (body.spherical_harmonics) {
       // Mat3d Ur2j = GetFrameConversionMat(
       //                     t_tai, body.fixed_frame, Frame::GCRF)
       //                     .block(0, 0, 3, 3);

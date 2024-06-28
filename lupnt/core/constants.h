@@ -102,7 +102,8 @@ static constexpr double DEG =
 
 static constexpr double ARCSEC_PER_DEGREE = 3600.0;
 static constexpr double DEG_PER_ARCSEC = 1.0 / 3600.0;
-static constexpr double RAD_PER_ARCSEC = DEG_PER_ARCSEC * RAD;
+static constexpr double RAD_ARCSEC = DEG_PER_ARCSEC * RAD;
+static constexpr double ARCSEC_RAD = 1.0 / RAD_ARCSEC;
 
 // Mass conversion
 static constexpr double LBM_TO_KG = 0.45359237;
@@ -112,8 +113,8 @@ static constexpr double SLUG_TO_KG = 14.59390294;
 static constexpr double INCH_TO_M = 0.0254;
 static constexpr double FOOT_TO_M = 0.3048;
 static constexpr double STATUTE_MILE_TO_M = 1609.344;
-static constexpr double M_TO_KM = 0.001;
-static constexpr double KM_TO_M = 1000.0;
+static constexpr double KM_M = 0.001;
+static constexpr double M_KM = 1000.0;
 
 // Time system constants -------------------------------------------------------
 static constexpr double SECS_DAY = 86400.0;
@@ -159,16 +160,17 @@ static constexpr double NUM_SECS = SECS_DAY;
 static constexpr int JULIAN_DATE_OF_010541 = 2430000;
 
 // Coordinate system constants -------------------------------------------------
-static constexpr double d_E_M = 384400.0;        // km
-static constexpr double GM_EARTH = 398600.4415;  // km^3/s^2
-static constexpr double GM_MOON = 4902.800066;   // km^3/s^2
-static constexpr double d_E_EMB = 4671.0;        // km
-static constexpr double R_EARTH = 6378.137;      // km
-static constexpr double R_MOON = 1737.4;         // km
-static constexpr double OMEGA_E_M = 2.6617e-6;   // rad/s
-static constexpr double d_M_EMB = d_E_M - d_E_EMB;
-static constexpr double WGS84_A = 6378.137;  // km
-static constexpr double WGS84_F = 1.0 / 298.257223563;
+static constexpr double d_E_M = 384400.0;               // [km]
+static constexpr double GM_SUN = 1.32712438e11;         // [km^3/s^2]
+static constexpr double GM_EARTH = 398600.4415;         // [km^3/s^2]
+static constexpr double GM_MOON = 4902.800066;          // [km^3/s^2]
+static constexpr double d_E_EMB = 4671.0;               // [km]
+static constexpr double R_EARTH = 6378.137;             // [km]
+static constexpr double R_MOON = 1737.4;                // [km]
+static constexpr double OMEGA_E_M = 2.6617e-6;          // [rad/s]
+static constexpr double d_M_EMB = d_E_M - d_E_EMB;      // [km]
+static constexpr double WGS84_A = 6378.137;             // [km]
+static constexpr double WGS84_F = 1.0 / 298.257223563;  // [-]
 
 static constexpr double J2_EARTH = 1.08262668e-3;
 // static constexpr double J2_MOON = 9.08901807506000e-5;

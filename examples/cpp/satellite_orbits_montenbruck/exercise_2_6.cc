@@ -29,8 +29,8 @@ int main() {
     // Earth rotation
     Mat3 R = RotZ(GreenwichMeanSiderealTime(meas[i].mjd_utc));
     Vec3 aer{meas[i].az, meas[i].el, meas[i].range};
-    Vec3 rho = AzElRange2Cart(aer, r_gs, R_EARTH, WGS84_F);
-    r_sat[i] = R.transpose() * (rho + r_gs);
+    Vec3 r_ecef = AzElRange2Cart(aer, r_gs, R_EARTH, WGS84_F);
+    r_sat[i] = R.transpose() * r_ecef;
   }
 
   // Orbital elements

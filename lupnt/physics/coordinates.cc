@@ -89,7 +89,8 @@ Vec3 EastNorthUp2Cart(const Vec3 &enu, const Vec3 &xyz_ref, Real R_body,
   auto [lat, lon, alt] = unpack(lla);
   Mat3 R = RotY(-lat) * RotZ(lon);
   Vec3 uen(enu(2), enu(0), enu(1));
-  return xyz_ref + R.transpose() * uen;
+  Vec3 xyz = R.transpose() * uen + xyz_ref;
+  return xyz;
 }
 
 /// @brief

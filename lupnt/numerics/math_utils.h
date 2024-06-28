@@ -41,6 +41,7 @@ Real round(Real x, int n = 0);
 Real frac(Real x);
 Real ceil(Real x);
 Real floor(Real x);
+Real mod(Real x, Real y);
 
 Vec3 Degrees2DegMinSec(Real deg);
 Real DegMinSec2Degrees(Vec3 hms);

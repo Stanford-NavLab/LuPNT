@@ -1,6 +1,7 @@
 #include "time.h"
 
 #include "lupnt/numerics/math_utils.h"
+#include "lupnt/physics/solar_system.h"
 
 namespace lupnt {
 
@@ -64,6 +65,9 @@ std::tuple<int, int, int, int, int, Real> ModJulianDate2Calendar(Real mjd) {
   return std::make_tuple(year, month, day, hour, min, sec);
 }
 
+/// @brief Greenwich Mean Sidereal Time
+/// @param mjd_ut1 UT1 (Modified Julian Date)
+/// @return GMST [rad]
 /// @ref
 // O. Montenbruck and G. Eberhard, “Satellite Orbits: Models, Methods, and
 // Applications,” Berlin : New York: Springer, 2000.
@@ -102,4 +106,13 @@ std::string FormatDate(Real mjd, int precision) {
      << round((sec - floor(sec)) * pow(10, precision));
   return ss.str();
 }
+
+/// @brief Greenwich Apparent Sidereal Time
+/// @param mjd_ut1 UT1 (Modified Julian Date)
+/// @return GAST [rad]
+Real GreenwichApparentSiderealTime(Real mjd_ut1) {
+  return mod(GreenwichMeanSiderealTime(mjd_ut1) + EquinoxEquation(mjd_ut1),
+             TWO_PI);
+}
+
 }  // namespace lupnt

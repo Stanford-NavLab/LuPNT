@@ -130,20 +130,20 @@ EOPResult InterpolateEOPData(const std::shared_ptr<EOPData>& eop_data,
 
     auto interp = [](Real x0, Real x1, Real s) { return x0 + (x1 - x0) * s; };
     result.x_pole =
-        interp(eop_data->x(i_prev), eop_data->x(i_next), s) * RAD_PER_ARCSEC;
+        interp(eop_data->x(i_prev), eop_data->x(i_next), s) * RAD_ARCSEC;
     result.y_pole =
-        interp(eop_data->y(i_prev), eop_data->y(i_next), s) * RAD_PER_ARCSEC;
+        interp(eop_data->y(i_prev), eop_data->y(i_next), s) * RAD_ARCSEC;
     result.UT1_UTC =
         interp(eop_data->ut1_utc(i_prev), eop_data->ut1_utc(i_next), s);
     result.LOD = interp(eop_data->lod(i_prev), eop_data->lod(i_next), s);
-    result.dPsi = interp(eop_data->dPsi(i_prev), eop_data->dPsi(i_next), s) *
-                  RAD_PER_ARCSEC;
-    result.dEps = interp(eop_data->dEps(i_prev), eop_data->dEps(i_next), s) *
-                  RAD_PER_ARCSEC;
-    result.dx_pole = interp(eop_data->xErr(i_prev), eop_data->xErr(i_next), s) *
-                     RAD_PER_ARCSEC;
-    result.dy_pole = interp(eop_data->yErr(i_prev), eop_data->yErr(i_next), s) *
-                     RAD_PER_ARCSEC;
+    result.dPsi =
+        interp(eop_data->dPsi(i_prev), eop_data->dPsi(i_next), s) * RAD_ARCSEC;
+    result.dEps =
+        interp(eop_data->dEps(i_prev), eop_data->dEps(i_next), s) * RAD_ARCSEC;
+    result.dx_pole =
+        interp(eop_data->xErr(i_prev), eop_data->xErr(i_next), s) * RAD_ARCSEC;
+    result.dy_pole =
+        interp(eop_data->yErr(i_prev), eop_data->yErr(i_next), s) * RAD_ARCSEC;
     result.TAI_UTC = eop_data->ut1_utcErr(i_prev);
 
   } else {
@@ -152,14 +152,14 @@ EOPResult InterpolateEOPData(const std::shared_ptr<EOPData>& eop_data,
                         abs(mjdUTC - eop_data->mjds(i_next))
                     ? i_prev
                     : i_next;
-    result.x_pole = eop_data->x(index) * RAD_PER_ARCSEC;
-    result.y_pole = eop_data->y(index) * RAD_PER_ARCSEC;
+    result.x_pole = eop_data->x(index) * RAD_ARCSEC;
+    result.y_pole = eop_data->y(index) * RAD_ARCSEC;
     result.UT1_UTC = eop_data->ut1_utc(index);
     result.LOD = eop_data->lod(index);
-    result.dPsi = eop_data->dPsi(index) * RAD_PER_ARCSEC;
-    result.dEps = eop_data->dEps(index) * RAD_PER_ARCSEC;
-    result.dx_pole = eop_data->xErr(index) * RAD_PER_ARCSEC;
-    result.dy_pole = eop_data->yErr(index) * RAD_PER_ARCSEC;
+    result.dPsi = eop_data->dPsi(index) * RAD_ARCSEC;
+    result.dEps = eop_data->dEps(index) * RAD_ARCSEC;
+    result.dx_pole = eop_data->xErr(index) * RAD_ARCSEC;
+    result.dy_pole = eop_data->yErr(index) * RAD_ARCSEC;
     result.TAI_UTC = eop_data->ut1_utcErr(index);
   }
 

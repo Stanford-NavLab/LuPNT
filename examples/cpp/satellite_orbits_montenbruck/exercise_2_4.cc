@@ -45,9 +45,9 @@ int main() {
 
     // Note: it should be UT1
     Mat3 R = RotZ(GreenwichMeanSiderealTime(mjd_utc));
-    Vec3 rho = R * rv_eci.segment(0, 3);
+    Vec3 r_ecef = R * rv_eci.segment(0, 3);
 
-    Vec3 aer = Cart2AzElRange(rho, r_gs, R_EARTH, WGS84_F);
+    Vec3 aer = Cart2AzElRange(r_ecef, r_gs, R_EARTH, WGS84_F);
     auto [az, el, range] = unpack(aer);
 
     cout << FormatDate(mjd_utc, 3);

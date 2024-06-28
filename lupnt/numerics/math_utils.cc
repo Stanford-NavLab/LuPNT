@@ -76,6 +76,16 @@ Real floor(Real x) {
   return y;
 }
 
+/// @brief Get the modulus of two numbers
+/// @param x First number
+/// @param y Second number
+/// @return Modulus of the two numbers
+Real mod(Real x, Real y) {
+  Real z = x;
+  z[0] = std::fmod(x.val(), y.val());
+  return z;
+}
+
 /// @brief Convert decimal value to decibels
 /// @param x Decimal value
 /// @return Decibel value
@@ -351,12 +361,8 @@ MatXd ToDouble(const MatX &x) {
   return y;
 }
 
-//
-// F : local function for use by FindEta()
-// F = 1 - eta +(m/eta**2)*W(m/eta**2-l)
-//
-
 /// @brief Local function for use by RatioOfSectorToTriangleArea
+///        F = 1 - eta +(m/eta^2)*W(m/eta^2-l)
 /// @param eta
 /// @param m
 /// @param l

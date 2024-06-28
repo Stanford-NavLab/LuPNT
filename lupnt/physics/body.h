@@ -23,7 +23,7 @@ struct Body {
   double mu;
   double R;
   NaifId id;
-  bool sphericalHarmonics;
+  bool spherical_harmonics;
   bool normalized;
   int n_max;
   int m_max;
