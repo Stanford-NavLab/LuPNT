@@ -20,7 +20,7 @@ namespace lupnt {
 // KeplerianDynamics
 // ****************************************************************************
 
-KeplerianDynamics::KeplerianDynamics(double mu) : mu_(mu) {};
+KeplerianDynamics::KeplerianDynamics(double GM) : mu_(GM) {};
 
 // ClassicalOE
 void KeplerianDynamics::Propagate(ClassicalOE &state, Real dt) {
@@ -137,9 +137,9 @@ void YamanakaAnkersenDynamics::Propagate(CartesianOrbitState &state,
 }
 void YamanakaAnkersenDynamics::Initialize(ClassicalOE &coe_c,
                                           CartesianOrbitState &rv_rtn,
-                                          Real tStart, double mu) {
+                                          Real tStart, double GM) {
   a = coe_c.a().val();
-  n = sqrt(mu / pow(a, 3.0));
+  n = sqrt(GM / pow(a, 3.0));
   e = coe_c.e().val();
   M0 = coe_c.M().val();
   tInit = tStart;
@@ -263,7 +263,7 @@ void RoeGeometricMappingDynamics::Propagate(CartesianOrbitState &state,
 }
 void RoeGeometricMappingDynamics::Initialize(ClassicalOE coe_c,
                                              QuasiNonsingROE &roe, Real tStart,
-                                             double mu) {
+                                             double GM) {
   a = coe_c.a().val();
   e = coe_c.e().val();
   i = coe_c.i().val();
@@ -273,7 +273,7 @@ void RoeGeometricMappingDynamics::Initialize(ClassicalOE coe_c,
   ex = (double)(coe_c.e() * cos(coe_c.w()));
   ey = (double)(coe_c.e() * sin(coe_c.w()));
 
-  n = (double)sqrt(mu / pow(coe_c.a(), 3));
+  n = (double)sqrt(GM / pow(coe_c.a(), 3));
   K = roe.GetVec();
   tInit = tStart;
 }

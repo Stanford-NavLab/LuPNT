@@ -154,9 +154,9 @@ Vec6 NumericalOrbitDynamics::PropagateWithStmR(Vec6 &x, Real t0, Real tf,
 // CartesianTwoBodyDynamics
 // ****************************************************************************
 
-CartesianTwoBodyDynamics::CartesianTwoBodyDynamics(double mu,
+CartesianTwoBodyDynamics::CartesianTwoBodyDynamics(double GM,
                                                    std::string integratorType)
-    : mu_(mu),
+    : mu_(GM),
       NumericalOrbitDynamics(
           std::bind(&CartesianTwoBodyDynamics::ComputeRates, this,
                     std::placeholders::_1, std::placeholders::_2),
@@ -178,8 +178,8 @@ VecX CartesianTwoBodyDynamics::ComputeRates(Real t, const VecX &x) const {
 // MoonFixedDynamics
 // ****************************************************************************
 
-MoonFixedDynamics::MoonFixedDynamics(double mu, std::string integratorType)
-    : mu_(mu),
+MoonFixedDynamics::MoonFixedDynamics(double GM, std::string integratorType)
+    : mu_(GM),
       NumericalOrbitDynamics(
           std::bind(&MoonFixedDynamics::ComputeRates, this,
                     std::placeholders::_1, std::placeholders::_2),
@@ -201,9 +201,9 @@ VecX MoonFixedDynamics::ComputeRates(Real t, const VecX &x) const {
 // J2CartTwoBodyDynamics
 // ****************************************************************************
 
-J2CartTwoBodyDynamics::J2CartTwoBodyDynamics(double mu, double J2, double Rbody,
+J2CartTwoBodyDynamics::J2CartTwoBodyDynamics(double GM, double J2, double Rbody,
                                              std::string integratorType)
-    : mu_(mu),
+    : mu_(GM),
       J2_(J2),
       Rbody_(Rbody),
       NumericalOrbitDynamics(
@@ -240,7 +240,7 @@ VecX J2CartTwoBodyDynamics::ComputeRates(Real t, const VecX &x) const {
 J2KeplerianDynamics::J2KeplerianDynamics(double mu_in, double J2_in,
                                          double Rbody_in,
                                          std::string integratorType)
-    : mu(mu_in),
+    : GM(mu_in),
       J2(J2_in),
       Rbody(Rbody_in),
       NumericalOrbitDynamics(
@@ -250,7 +250,7 @@ J2KeplerianDynamics::J2KeplerianDynamics(double mu_in, double J2_in,
 
 VecX J2KeplerianDynamics::ComputeRates(Real t, const VecX &x) const {
   Real p = x(0) * (1.0 - x(1) * x(1));
-  Real n = sqrt(mu / pow(x(0), 3.0));
+  Real n = sqrt(GM / pow(x(0), 3.0));
   Real eta = sqrt(1.0 - x(1) * x(1));
 
   VecX coeDot(6);

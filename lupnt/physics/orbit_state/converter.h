@@ -19,16 +19,16 @@ extern std::map<std::pair<OrbitStateRepres, OrbitStateRepres>,
     relative_conversions;
 
 Vec6 ConvertOrbitState(const Vec6 &state_in, OrbitStateRepres repres_in,
-                       OrbitStateRepres repres_out, Real mu);
+                       OrbitStateRepres repres_out, Real GM);
 
 Vec6 ConvertOrbitState(const Vec6 &state_in_c, const Vec6 &state_in_d,
                        OrbitStateRepres repres_in_c,
                        OrbitStateRepres repres_in_d,
-                       OrbitStateRepres repres_out, Real mu);
+                       OrbitStateRepres repres_out, Real GM);
 
 std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
     const std::shared_ptr<OrbitState> &state_in, OrbitStateRepres repres_out,
-    Real mu);
+    Real GM);
 
 static std::shared_ptr<CartesianOrbitState> ConvertOrbitStateFrame(
     const std::shared_ptr<CartesianOrbitState> state_in, const Real epoch,

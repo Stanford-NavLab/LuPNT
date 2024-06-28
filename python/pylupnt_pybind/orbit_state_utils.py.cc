@@ -18,61 +18,61 @@ void init_orbit_state_utils(py::module &m) {
   // Orbit State Conversions
   m.def("convert_orbit_state",
         [](const Vec6d &state_in, OrbitStateRepres repres_in,
-           OrbitStateRepres repres_out, double mu) -> Vec6d {
-          return ConvertOrbitState(state_in, repres_in, repres_out, mu)
+           OrbitStateRepres repres_out, double GM) -> Vec6d {
+          return ConvertOrbitState(state_in, repres_in, repres_out, GM)
               .cast<double>();
         });
   m.def("convert_orbit_state",
         [](const Vec6d &state_in_c, const Vec6 &state_in_d,
            OrbitStateRepres repres_in_c, OrbitStateRepres repres_in_d,
-           OrbitStateRepres repres_out, double mu) -> Vec6d {
+           OrbitStateRepres repres_out, double GM) -> Vec6d {
           return ConvertOrbitState(state_in_c, state_in_d, repres_in_c,
-                                   repres_in_d, repres_out, mu)
+                                   repres_in_d, repres_out, GM)
               .cast<double>();
         });
 
   m.def(
       "cartesian_to_classical",
-      [](const CartesianOrbitState &cart, double mu) -> ClassicalOE {
-        return Cart2Classical(cart, mu);
+      [](const CartesianOrbitState &cart, double GM) -> ClassicalOE {
+        return Cart2Classical(cart, GM);
       },
-      py::arg("cart"), py::arg("mu"));
+      py::arg("cart"), py::arg("GM"));
   m.def(
       "classical_to_cartesian",
-      [](const ClassicalOE &coe, double mu) -> CartesianOrbitState {
-        return Classical2Cart(coe, mu);
+      [](const ClassicalOE &coe, double GM) -> CartesianOrbitState {
+        return Classical2Cart(coe, GM);
       },
-      py::arg("coe"), py::arg("mu"));
+      py::arg("coe"), py::arg("GM"));
   m.def(
       "classical_to_quasi_nonsingular",
-      [](const ClassicalOE &coe, double mu) -> QuasiNonsingOE {
-        return Classical2QuasiNonsing(coe, mu);
+      [](const ClassicalOE &coe, double GM) -> QuasiNonsingOE {
+        return Classical2QuasiNonsing(coe, GM);
       },
-      py::arg("coe"), py::arg("mu"));
+      py::arg("coe"), py::arg("GM"));
   m.def("classical_to_equinoctial",
-        [](const ClassicalOE &coe, double mu) -> EquinoctialOE {
-          return Classical2Equinoctial(coe, mu);
+        [](const ClassicalOE &coe, double GM) -> EquinoctialOE {
+          return Classical2Equinoctial(coe, GM);
         });
   m.def("classical_to_delaunay",
-        [](const ClassicalOE &coe, double mu) -> DelaunayOE {
-          return Classical2Delaunay(coe, mu);
+        [](const ClassicalOE &coe, double GM) -> DelaunayOE {
+          return Classical2Delaunay(coe, GM);
         });
   m.def("quasi_nonsingular_to_classical",
-        [](const QuasiNonsingOE &qnsoe, double mu) -> ClassicalOE {
-          return QuasiNonsing2Classical(qnsoe, mu);
+        [](const QuasiNonsingOE &qnsoe, double GM) -> ClassicalOE {
+          return QuasiNonsing2Classical(qnsoe, GM);
         });
   m.def(
       "equinoctial_to_classical",
-      [](const EquinoctialOE &eqoe, double mu) -> ClassicalOE {
-        return Equinoctial2Classical(eqoe, mu);
+      [](const EquinoctialOE &eqoe, double GM) -> ClassicalOE {
+        return Equinoctial2Classical(eqoe, GM);
       },
-      py::arg("eqoe"), py::arg("mu"));
+      py::arg("eqoe"), py::arg("GM"));
   m.def(
       "delaunay_to_classical",
-      [](const DelaunayOE &deloe, double mu) -> ClassicalOE {
-        return Delaunay2Classical(deloe, mu);
+      [](const DelaunayOE &deloe, double GM) -> ClassicalOE {
+        return Delaunay2Classical(deloe, GM);
       },
-      py::arg("deloe"), py::arg("mu"));
+      py::arg("deloe"), py::arg("GM"));
   m.def(
       "relative_quasi_nonsingular_to_classical",
       [](const ClassicalOE &coe, const QuasiNonsingROE &rel_qnsoe)
@@ -81,21 +81,21 @@ void init_orbit_state_utils(py::module &m) {
 
   // State Conversions
   VECTORIZED_BINDING_FROM_VECTOR_REAL("cartesian_to_classical", Cart2Classical,
-                                      6, "cart", "mu");
+                                      6, "cart", "GM");
   VECTORIZED_BINDING_FROM_VECTOR_REAL("classical_to_cartesian", Classical2Cart,
-                                      6, "coe", "mu");
+                                      6, "coe", "GM");
   VECTORIZED_BINDING_FROM_VECTOR_REAL("classical_to_quasi_nonsingular",
-                                      Classical2QuasiNonsing, 6, "coe", "mu");
+                                      Classical2QuasiNonsing, 6, "coe", "GM");
   VECTORIZED_BINDING_FROM_VECTOR_REAL("classical_to_equinoctial",
-                                      Classical2Equinoctial, 6, "coe", "mu");
+                                      Classical2Equinoctial, 6, "coe", "GM");
   VECTORIZED_BINDING_FROM_VECTOR_REAL("classical_to_delaunay",
-                                      Classical2Delaunay, 6, "coe", "mu");
+                                      Classical2Delaunay, 6, "coe", "GM");
   VECTORIZED_BINDING_FROM_VECTOR_REAL("quasi_nonsingular_to_classical",
-                                      QuasiNonsing2Classical, 6, "qnsoe", "mu");
+                                      QuasiNonsing2Classical, 6, "qnsoe", "GM");
   VECTORIZED_BINDING_FROM_VECTOR_REAL("equinoctial_to_classical",
-                                      Equinoctial2Classical, 6, "eqoe", "mu");
+                                      Equinoctial2Classical, 6, "eqoe", "GM");
   VECTORIZED_BINDING_FROM_VECTOR_REAL("delaunay_to_classical",
-                                      Delaunay2Classical, 6, "deloe", "mu");
+                                      Delaunay2Classical, 6, "deloe", "GM");
   VECTORIZED_BINDING_FROM_VECTOR_VECTOR(
       "relative_quasi_nonsingular_to_classical", RelQuasiNonsing2Classical, 6,
       "coe", "rel_qnsoe");

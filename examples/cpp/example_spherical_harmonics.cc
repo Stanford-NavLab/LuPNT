@@ -121,7 +121,7 @@ int main() {
   for (size_t i = 0; i < positions.size(); ++i) {
     accelerations[i] =
         SphericalHarmonicsGravity(positions[i], moon.Cnm, moon.Snm, moon.n_max,
-                                  moon.m_max, moon.R, moon.mu, false);
+                                  moon.m_max, moon.R, moon.GM, false);
   }
 
   for (size_t i = 0; i < positions.size(); ++i) {

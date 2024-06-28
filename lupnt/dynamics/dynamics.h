@@ -111,7 +111,7 @@ class KeplerianDynamics {
   double mu_;
 
  public:
-  KeplerianDynamics(double mu);
+  KeplerianDynamics(double GM);
 
   // ClassicalOE
   void Propagate(ClassicalOE &state, Real dt);
@@ -148,7 +148,7 @@ class YamanakaAnkersenDynamics : public AnalyticalDynamics {
   YamanakaAnkersenDynamics();
   void Propagate(CartesianOrbitState &state, Real tf);
   void Initialize(ClassicalOE &coe_c, CartesianOrbitState &rv_rtn, Real t0,
-                  double mu);
+                  double GM);
   MatX ComputeMat(Real t);
   MatX ComputeInverseMat(Real t);
 };
@@ -162,7 +162,7 @@ class RoeGeometricMappingDynamics : public AnalyticalDynamics {
  public:
   RoeGeometricMappingDynamics();
   void Propagate(CartesianOrbitState &state, Real tf);
-  void Initialize(ClassicalOE coe_c, QuasiNonsingROE &roe, Real t0, double mu);
+  void Initialize(ClassicalOE coe_c, QuasiNonsingROE &roe, Real t0, double GM);
   MatX ComputeMat(Real t);
 };
 
@@ -211,7 +211,7 @@ class MoonFixedDynamics : public NumericalOrbitDynamics {
   double mu_;
 
  public:
-  MoonFixedDynamics(double mu, std::string integrator = "RK4");
+  MoonFixedDynamics(double GM, std::string integrator = "RK4");
   VecX ComputeRates(Real t, const VecX &x) const;
 };
 
@@ -220,7 +220,7 @@ class CartesianTwoBodyDynamics : public NumericalOrbitDynamics {
   double mu_;
 
  public:
-  CartesianTwoBodyDynamics(double mu, std::string integrator = "RK4");
+  CartesianTwoBodyDynamics(double GM, std::string integrator = "RK4");
   VecX ComputeRates(Real t, const VecX &x) const;
 };
 
@@ -229,17 +229,17 @@ class J2CartTwoBodyDynamics : public NumericalOrbitDynamics {
   double mu_, J2_, Rbody_;
 
  public:
-  J2CartTwoBodyDynamics(double mu, double J2_in, double Rbody_in,
+  J2CartTwoBodyDynamics(double GM, double J2_in, double Rbody_in,
                         std::string integrator = "RK4");
   VecX ComputeRates(Real t, const VecX &x) const;
 };
 
 class J2KeplerianDynamics : public NumericalOrbitDynamics {
  private:
-  double mu, J2, Rbody;
+  double GM, J2, Rbody;
 
  public:
-  J2KeplerianDynamics(double mu, double J2_in, double Rbody_in,
+  J2KeplerianDynamics(double GM, double J2_in, double Rbody_in,
                       std::string integrator = "RK4");
   VecX ComputeRates(Real t, const VecX &x) const;
 };

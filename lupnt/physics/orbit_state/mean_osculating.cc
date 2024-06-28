@@ -5,13 +5,13 @@
 namespace lupnt {
 
 // Mean and Osculating
-Vec6 Mean2Osculating(const Vec6 &coe_m, Real mu, Real J2) {
+Vec6 Mean2Osculating(const Vec6 &coe_m, Real GM, Real J2) {
   Vec6 coe_o;
 
   if (J2 > 0) {
-    Vec6 meanEquioe = Classical2Equinoctial(coe_m, mu);
+    Vec6 meanEquioe = Classical2Equinoctial(coe_m, GM);
     Vec6 oscEquioe;  // = MeanOscClosedEqui(meanEquioe, J2);
-    coe_o = Equinoctial2Classical(oscEquioe, mu);
+    coe_o = Equinoctial2Classical(oscEquioe, GM);
   } else {
     coe_o = coe_m;
   }
@@ -19,8 +19,8 @@ Vec6 Mean2Osculating(const Vec6 &coe_m, Real mu, Real J2) {
   return coe_o;
 }
 
-ClassicalOE Mean2Osculating(const ClassicalOE &coe_m, Real mu, Real J2) {
-  return ClassicalOE(Mean2Osculating(coe_m.GetVec(), mu, J2),
+ClassicalOE Mean2Osculating(const ClassicalOE &coe_m, Real GM, Real J2) {
+  return ClassicalOE(Mean2Osculating(coe_m.GetVec(), GM, J2),
                      coe_m.GetCoordSystem());
 }
 
@@ -48,14 +48,14 @@ Vec6 osc2mean_NRiterator(const Vec6 &osc_equi_elem, double tol) {
   return mean_equi_elem;
 }
 
-Vec6 Osculating2Mean(const Vec6 &coe_o, Real mu, Real J2) {
+Vec6 Osculating2Mean(const Vec6 &coe_o, Real GM, Real J2) {
   Vec6 coe_m;
   double tol = 1e-8;
 
   if (J2 > 0) {
-    Vec6 eqoe_o = Classical2Equinoctial(coe_o, mu);
+    Vec6 eqoe_o = Classical2Equinoctial(coe_o, GM);
     Vec6 eqoe_m = osc2mean_NRiterator(eqoe_o, tol);
-    coe_m = Equinoctial2Classical(eqoe_m, mu);
+    coe_m = Equinoctial2Classical(eqoe_m, GM);
   } else {
     coe_m = coe_o;
   }
@@ -63,8 +63,8 @@ Vec6 Osculating2Mean(const Vec6 &coe_o, Real mu, Real J2) {
   return coe_m;
 }
 
-ClassicalOE Osculating2Mean(const ClassicalOE &coe_o, Real mu, Real J2) {
-  return ClassicalOE(Osculating2Mean(coe_o.GetVec(), mu, J2),
+ClassicalOE Osculating2Mean(const ClassicalOE &coe_o, Real GM, Real J2) {
+  return ClassicalOE(Osculating2Mean(coe_o.GetVec(), GM, J2),
                      coe_o.GetCoordSystem());
 }
 

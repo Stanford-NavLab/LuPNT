@@ -12,7 +12,7 @@
 
 #define ABSOLUTE_CONVERSION(from, to, func)        \
   {{OrbitStateRepres::from, OrbitStateRepres::to}, \
-   [](const Vec6 &x, Real mu) -> Vec6 { return func(x, mu); }}
+   [](const Vec6 &x, Real GM) -> Vec6 { return func(x, GM); }}
 
 #define RELATIVE_CONVERSION(from, to, func)        \
   {{OrbitStateRepres::from, OrbitStateRepres::to}, \
@@ -89,7 +89,7 @@ std::map<std::pair<OrbitStateRepres, OrbitStateRepres>,
 };
 
 Vec6 ConvertOrbitState(const Vec6 &state_in, OrbitStateRepres repres_in,
-                       OrbitStateRepres repres_out, Real mu) {
+                       OrbitStateRepres repres_out, Real GM) {
   if (repres_in == repres_out) {
     return state_in;
   }
@@ -99,7 +99,7 @@ Vec6 ConvertOrbitState(const Vec6 &state_in, OrbitStateRepres repres_in,
 
   Vec6 state = state_in;
   for (size_t i = 0; i < path.size() - 1; i++) {
-    state = absolute_conversions[{path[i], path[i + 1]}](state, mu);
+    state = absolute_conversions[{path[i], path[i + 1]}](state, GM);
   }
 
   return state;
@@ -108,7 +108,7 @@ Vec6 ConvertOrbitState(const Vec6 &state_in, OrbitStateRepres repres_in,
 Vec6 ConvertOrbitState(const Vec6 &state_in_c, const Vec6 &state_in_d,
                        OrbitStateRepres repres_in_c,
                        OrbitStateRepres repres_in_d,
-                       OrbitStateRepres repres_out, Real mu) {
+                       OrbitStateRepres repres_out, Real GM) {
   // Check case
   // - (absolute_c, absolute_d) to relative_d
   // - (absolute_c, relative_d) to absolute_d
@@ -124,17 +124,17 @@ Vec6 ConvertOrbitState(const Vec6 &state_in_c, const Vec6 &state_in_d,
       // state_in_c is absolute
       // state_in_d is absolute
       auto state_abs_c =
-          ConvertOrbitState(state_in_c, repres_in_c, repres_from, mu);
+          ConvertOrbitState(state_in_c, repres_in_c, repres_from, GM);
       auto state_abs_d =
-          ConvertOrbitState(state_in_d, repres_in_d, repres_from, mu);
+          ConvertOrbitState(state_in_d, repres_in_d, repres_from, GM);
       return func(state_abs_c, state_abs_d);
     } else if (!to_relative && repres_from == repres_in_d) {
       // state_in_c is absolute
       // state_in_d is relative
       auto state_abs_c =
-          ConvertOrbitState(state_in_c, repres_in_c, repres_to, mu);
+          ConvertOrbitState(state_in_c, repres_in_c, repres_to, GM);
       auto state_abs_d = func(state_abs_c, state_in_d);
-      return ConvertOrbitState(state_abs_d, repres_to, repres_out, mu);
+      return ConvertOrbitState(state_abs_d, repres_to, repres_out, GM);
     }
   }
 
@@ -143,9 +143,9 @@ Vec6 ConvertOrbitState(const Vec6 &state_in_c, const Vec6 &state_in_d,
 
 std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
     const std::shared_ptr<OrbitState> &state_in, OrbitStateRepres repres_out,
-    Real mu) {
+    Real GM) {
   Vec6 state_out = ConvertOrbitState(
-      state_in->GetVec(), state_in->GetOrbitStateRepres(), repres_out, mu);
+      state_in->GetVec(), state_in->GetOrbitStateRepres(), repres_out, GM);
   return std::make_shared<OrbitState>(state_out, state_in->GetCoordSystem(),
                                       repres_out, state_in->GetNames(),
                                       state_in->GetUnits());

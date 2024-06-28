@@ -20,7 +20,7 @@ namespace lupnt {
 
 struct Body {
   std::string name;
-  double mu;
+  double GM;
   double R;
   NaifId id;
   bool spherical_harmonics;

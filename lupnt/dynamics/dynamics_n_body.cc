@@ -64,7 +64,7 @@ Vec3 NBodyDynamics::ComputeNBodyGravity(Real t_tai, const Vec3 &r) const {
 
       // s/c pos and vel w.r.t. the i-th body [km, km/s]
       r_i = r - r_body.head(3);
-      a_i_C = -body.mu * r_body / pow((r_body).norm(), 3);  //
+      a_i_C = -body.GM * r_body / pow((r_body).norm(), 3);  //
     } else {
       r_i = r;
       a_i_C = Vec3::Zero();
@@ -78,11 +78,11 @@ Vec3 NBodyDynamics::ComputeNBodyGravity(Real t_tai, const Vec3 &r) const {
       Mat3d Ur2j = Mat3d::Identity();
       Vec3 r_i_rot = Ur2j.transpose() * r_i;
       Vec3 a_i_rot = spharm_acc_ecr(body.n_max, body.m_max, r_i_rot, body.R,
-                                    body.mu, body.Cnm, body.Snm);
+                                    body.GM, body.Cnm, body.Snm);
       a_i = Ur2j * a_i_rot;
     } else {
       // no spherical harmonics
-      a_i = -body.mu * r_i / pow((r_i).norm(), 3);
+      a_i = -body.GM * r_i / pow((r_i).norm(), 3);
     }
 
     a += a_i + a_i_C;

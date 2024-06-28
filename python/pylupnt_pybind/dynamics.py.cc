@@ -120,7 +120,7 @@ void init_dynamics(py::module &m) {
   // CartesianTwoBodyDynamics
   py::class_<CartesianTwoBodyDynamics, NumericalOrbitDynamics>(
       m, "CartesianTwoBodyDynamics")
-      .def(py::init<double, std::string>(), py::arg("mu"),
+      .def(py::init<double, std::string>(), py::arg("GM"),
            py::arg("integrator") = "RK4")
       .def("__repr__", [](const CartesianTwoBodyDynamics &dyn) {
         return "<pylupnt.CartesianTwoBodyDynamics>";

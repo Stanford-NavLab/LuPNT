@@ -19,7 +19,7 @@ Body Body::Moon(int n_max, int m_max) {
   moon.fixed_frame = Frame::MOON_PA;
 
   BodyData bd = GetBodyData(moon.id);
-  moon.mu = bd.GM;
+  moon.GM = bd.GM;
   moon.R = bd.R;
 
   if (moon.spherical_harmonics)
@@ -38,7 +38,7 @@ Body Body::Earth(int n_max, int m_max) {
   earth.fixed_frame = Frame::ITRF;
 
   BodyData bd = GetBodyData(earth.id);
-  earth.mu = bd.GM;
+  earth.GM = bd.GM;
   earth.R = bd.R;
 
   if (earth.spherical_harmonics)
@@ -55,7 +55,7 @@ Body Body::Sun() {
   sun.fixed_frame = Frame::ICRF;
 
   BodyData bd = GetBodyData(sun.id);
-  sun.mu = bd.GM;
+  sun.GM = bd.GM;
   sun.R = bd.R;
   return sun;
 }
@@ -71,7 +71,7 @@ Body Body::Mars(int n_max, int m_max) {
   mars.fixed_frame = Frame::MARS_FIXED;
 
   BodyData bd = GetBodyData(mars.id);
-  mars.mu = bd.GM;
+  mars.GM = bd.GM;
   mars.R = bd.R;
 
   if (mars.spherical_harmonics)
@@ -90,7 +90,7 @@ Body Body::Venus(int n_max, int m_max) {
   venus.fixed_frame = Frame::VENUS_FIXED;
 
   BodyData bd = GetBodyData(venus.id);
-  venus.mu = bd.GM;
+  venus.GM = bd.GM;
   venus.R = bd.R;
 
   if (venus.spherical_harmonics)
