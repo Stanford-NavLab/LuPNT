@@ -5,8 +5,9 @@
 namespace lupnt {
 // From CartesianOrbitState
 // - 2 ClassicalOE
-ClassicalOE Cart2Classical(const CartesianOrbitState &rv, Real mu);
-Vec6 Cart2Classical(const Vec6 &rv, Real mu);
+ClassicalOE Cart2Classical(const CartesianOrbitState &rv, Real GM);
+Vec6 Cart2Classical(const Vec6 &rv, Real GM);
+Vec6 Cart2Classical(Real dt, const Vec3 &r1, const Vec3 &r2, Real GM);
 
 // - 2 CartesianOrbitState (relative)
 CartesianOrbitState Inertial2Rtn(const CartesianOrbitState &rv_c,
@@ -19,35 +20,35 @@ Vec6 Rtn2Inertial(const Vec6 &rv_c, const Vec6 &rv_rtn_d);
 
 // From ClassicalOE
 // - 2 CartesianOrbitState
-CartesianOrbitState Classical2Cart(const ClassicalOE &coe, Real mu);
-Vec6 Classical2Cart(const Vec6 &coe, Real mu);
+CartesianOrbitState Classical2Cart(const ClassicalOE &coe, Real GM);
+Vec6 Classical2Cart(const Vec6 &coe, Real GM);
 
 // - 2 QuasiNonsingOE
-QuasiNonsingOE Classical2QuasiNonsing(const ClassicalOE &coe, Real mu);
-Vec6 Classical2QuasiNonsing(const Vec6 &coe, Real mu);
+QuasiNonsingOE Classical2QuasiNonsing(const ClassicalOE &coe, Real GM);
+Vec6 Classical2QuasiNonsing(const Vec6 &coe, Real GM);
 
 // - 2 EquinoctialOE
-EquinoctialOE Classical2Equinoctial(const ClassicalOE &coe, Real mu);
-Vec6 Classical2Equinoctial(const Vec6 &coe, Real mu);
+EquinoctialOE Classical2Equinoctial(const ClassicalOE &coe, Real GM);
+Vec6 Classical2Equinoctial(const Vec6 &coe, Real GM);
 
 // - 2 DelaunayOE
-DelaunayOE Classical2Delaunay(const ClassicalOE &coe, Real mu);
-Vec6 Classical2Delaunay(const Vec6 &coe, Real mu);
+DelaunayOE Classical2Delaunay(const ClassicalOE &coe, Real GM);
+Vec6 Classical2Delaunay(const Vec6 &coe, Real GM);
 
 // From QuasiNonsingOE
 // - 2 ClassicalOE
-ClassicalOE QuasiNonsing2Classical(const QuasiNonsingOE &qnsoe, Real mu);
-Vec6 QuasiNonsing2Classical(const Vec6 &qnsoeVec, Real mu);
+ClassicalOE QuasiNonsing2Classical(const QuasiNonsingOE &qnsoe, Real GM);
+Vec6 QuasiNonsing2Classical(const Vec6 &qnsoeVec, Real GM);
 
 // From EquinoctialOE
 // - 2 ClassicalOE
-ClassicalOE Equinoctial2Classical(const EquinoctialOE &eqoe, Real mu);
-Vec6 Equinoctial2Classical(const Vec6 &eqoe, Real mu);
+ClassicalOE Equinoctial2Classical(const EquinoctialOE &eqoe, Real GM);
+Vec6 Equinoctial2Classical(const Vec6 &eqoe, Real GM);
 
 // From DelaunayOE
 // - 2 ClassicalOE
-ClassicalOE Delaunay2Classical(const DelaunayOE &deloe, Real mu);
-Vec6 Delaunay2Classical(const Vec6 &deloe, Real mu);
+ClassicalOE Delaunay2Classical(const DelaunayOE &deloe, Real GM);
+Vec6 Delaunay2Classical(const Vec6 &deloe, Real GM);
 
 // From ClassicalOE and QuasiNonsingROE (relative)
 // - 2 ClassicalOE

@@ -3,22 +3,35 @@
 #include "lupnt/core/constants.h"
 #include "lupnt/numerics/math_utils.h"
 namespace lupnt {
-Vec3 Spherical2Cart(const Vec3 &r_sph) {
-  auto [r, theta, phi] = unpack(r_sph);
-  Real x = r * sin(theta) * cos(phi);
-  Real y = r * sin(theta) * sin(phi);
-  Real z = r * cos(theta);
-  return Vec3(x, y, z);
+
+/// @brief Convert spherical coordinates to Cartesian coordinates
+/// @param enu East-North-Up coordinates
+/// @return Cartesian coordinates
+Vec3 EastNorthUp2AzElRange(const Vec3 &enu) {
+  auto [e, n, u] = unpack(enu);
+  Real range = enu.norm();
+  Real azim = Wrap2TwoPi(atan2(e, n));
+  Real elev = asin(u / range);
+  return Vec3(azim, elev, range);
 }
 
-Vec3 Cart2Spherical(const Vec3 &r_cart) {
-  auto [x, y, z] = unpack(r_cart);
-  Real r = r_cart.norm();
-  Real theta = acos(z / r);
-  Real phi = atan2(y, x);
-  return Vec3(r, theta, phi);
+/// @brief Convert Cartesian coordinates to spherical coordinates
+/// @param aer Azimuth-Elevation-Range coordinates
+/// @return Cartesian coordinates
+Vec3 AzElRange2EastNorthUp(const Vec3 &aer) {
+  auto [az, el, range] = unpack(aer);
+  Real x = range * cos(el) * sin(az);
+  Real y = range * cos(el) * cos(az);
+  Real z = range * sin(el);
+  Vec3 enu(x, y, z);
+  return enu;
 }
 
+/// @brief Convert latitude, longitude, and altitude to Cartesian coordinates
+/// @param lla Latitude, longitude, and altitude
+/// @param R_body Body radius
+/// @param flattening Body flattening
+/// @return Cartesian coordinates
 Vec3 LatLonAlt2Cart(const Vec3 &lla, Real R_body, Real flattening) {
   auto [lat, lon, alt] = unpack(lla);
   if (R_body == 0) R_body = alt;
@@ -33,6 +46,11 @@ Vec3 LatLonAlt2Cart(const Vec3 &lla, Real R_body, Real flattening) {
   return Vec3(x, y, z);
 }
 
+/// @brief Convert Cartesian coordinates to latitude, longitude, and altitude
+/// @param cart Cartesian coordinates
+/// @param R_body Body radius
+/// @param flattening Body flattening
+/// @return Latitude, longitude, and altitude
 Vec3 Cart2LatLonAlt(const Vec3 &cart, Real R_body, Real flattening) {
   if (R_body == 0) R_body = cart.norm();
 
@@ -60,57 +78,58 @@ Vec3 Cart2LatLonAlt(const Vec3 &cart, Real R_body, Real flattening) {
   return Vec3(lat, lon, h);
 }
 
-/// @brief
-/// @param enu
-/// @param r_ref
-/// @param R_body
-/// @param flattening
-/// @return
-Vec3 EastNorthUp2Cart(const Vec3 &enu, const Vec3 &r_ref, Real R_body,
+/// @brief Convert East-North-Up coordinates to Cartesian coordinates
+/// @param enu East-North-Up coordinates
+/// @param xyz_ref Reference position vector
+/// @param R_body Body radius
+/// @param flattening Body flattening
+Vec3 EastNorthUp2Cart(const Vec3 &enu, const Vec3 &xyz_ref, Real R_body,
                       Real flattening) {
-  Vec3 lla = Cart2LatLonAlt(r_ref, R_body, flattening);
+  Vec3 lla = Cart2LatLonAlt(xyz_ref, R_body, flattening);
   auto [lat, lon, alt] = unpack(lla);
   Mat3 R = RotY(-lat) * RotZ(lon);
   Vec3 uen(enu(2), enu(0), enu(1));
-  return r_ref + R.transpose() * uen;
+  return xyz_ref + R.transpose() * uen;
 }
 
 /// @brief
-/// @param r Cartesian position vector
-/// @param r_ref Reference position vector
+/// @param xyz Cartesian position vector
+/// @param xyz_ref Reference position vector
 /// @param R_body Body radius
 /// @param flattening Body flattening
 /// @return
-Vec3 Cart2EastNorthUp(const Vec3 &r, const Vec3 &r_ref, Real R_body,
+Vec3 Cart2EastNorthUp(const Vec3 &xyz, const Vec3 &xyz_ref, Real R_body,
                       Real flattening) {
-  Vec3 lla = Cart2LatLonAlt(r_ref, R_body, flattening);
-  Real lat = lla(0), lon = lla(1);
+  Vec3 lla = Cart2LatLonAlt(xyz_ref, R_body, flattening);
+  auto [lat, lon, alt] = unpack(lla);
   Mat3 R = RotY(-lat) * RotZ(lon);
-  Vec3 uen = R * (r - r_ref);
+  Vec3 uen = R * (xyz - xyz_ref);
   Vec3 enu(uen(1), uen(2), uen(0));
   return enu;
 }
 
-Vec3 Cart2AzElRange(const Vec3 &r, const Vec3 &r_ref, Real R_body,
+/// @brief Convert Cartesian coordinates to Azimuth-Elevation-Range coordinates
+/// @param xyz Cartesian position vector
+/// @param xyz_ref Reference position vector
+/// @param R_body Body radius
+/// @param flattening Body flattening
+Vec3 Cart2AzElRange(const Vec3 &xyz, const Vec3 &xyz_ref, Real R_body,
                     Real flattening) {
-  Vec3 enu = Cart2EastNorthUp(r, r_ref, R_body, flattening);
-  Real range = enu.norm();
-  Real az = Wrap2TwoPi(atan2(enu(0), enu(1)));
-  Real el = asin(enu(2) / range);
-  return Vec3(az, el, range);
+  Vec3 enu = Cart2EastNorthUp(xyz, xyz_ref, R_body, flattening);
+  Vec3 aer = EastNorthUp2AzElRange(enu);
+  return aer;
 }
 
-Vec3 AzElRange2Cart(const Vec3 &aer, const Vec3 &r_ref, Real R_body,
+/// @brief Convert Azimuth-Elevation-Range coordinates to Cartesian coordinates
+/// @param aer Azimuth-Elevation-Range coordinates
+/// @param xyz_ref Reference position vector
+/// @param R_body Body radius
+/// @param flattening Body flattening
+Vec3 AzElRange2Cart(const Vec3 &aer, const Vec3 &xyz_ref, Real R_body,
                     Real flattening) {
-  auto [az, el, range] = unpack(aer);
-  Real x = range * cos(el) * sin(az);
-  Real y = range * cos(el) * cos(az);
-  Real z = range * sin(el);
-  Vec3 enu(x, y, z);
-  return EastNorthUp2Cart(enu, r_ref, R_body, flattening);
+  Vec3 enu = AzElRange2EastNorthUp(aer);
+  Vec3 xyz = EastNorthUp2Cart(enu, xyz_ref, R_body, flattening);
+  return xyz;
 }
-
-VEC_IMP_VECTOR(Spherical2Cart, 3);
-VEC_IMP_VECTOR(Cart2Spherical, 3);
 
 }  // namespace lupnt

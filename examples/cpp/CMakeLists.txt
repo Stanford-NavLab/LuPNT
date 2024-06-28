@@ -4,7 +4,7 @@ set(groupName "examples")
 find_package(OpenMP REQUIRED)
 set(linkLibraries "lupnt" OpenMP::OpenMP_CXX)
 # Get all script files
-file(GLOB_RECURSE script_files "example_*.cc" "**/example_*.cc")
+file(GLOB_RECURSE script_files "*.cc" "**/*.cc")
 
 # Separate into source files and headers (allows for adding headers to show up in
 # MSVC and Xcode projects).

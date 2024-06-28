@@ -80,8 +80,16 @@ Real GreenwichMeanSiderealTime(Real mjd_ut1) {
   return TWO_PI * frac(gmst / SECS_DAY);  // [rad]
 }
 
-std::string FormatDate(int year, int month, int day, int hour, int min,
-                       Real sec, int precision) {
+/// @brief Convert Modified Julian Date to date string
+/// @param mjd Modified Julian Date
+/// @param precision Number of seconds precision
+/// @return Date string
+std::string FormatDate(Real mjd, int precision) {
+  double pow10 = pow(10, precision);
+  Real mjd_round =
+      (round(mjd * SECS_DAY * pow10, precision) + 0.1) / (SECS_DAY * pow10);
+  auto [year, month, day, hour, min, sec] = ModJulianDate2Calendar(mjd_round);
+
   std::stringstream ss;
   sec = round(sec, precision);
   ss << year << "/";

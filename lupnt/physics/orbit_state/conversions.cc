@@ -8,41 +8,118 @@
 #include "orbit_states.h"
 
 namespace lupnt {
-// From CartesianOrbitState
-// - To ClassicalOE
-ClassicalOE Cart2Classical(const CartesianOrbitState &rv, Real mu) {
-  return ClassicalOE(Cart2Classical(rv.GetVec(), mu), rv.GetCoordSystem());
+
+/// @brief Convert Cartesian state to classical orbital elements
+/// @param rv Cartesian state [km, km/s]
+/// @param GM Gravitational parameter [km^3/s^2]
+/// @return Classical orbital elements [km, –, rad, rad, rad, rad]
+ClassicalOE Cart2Classical(const CartesianOrbitState &rv, Real GM) {
+  return ClassicalOE(Cart2Classical(rv.GetVec(), GM), rv.GetCoordSystem());
 }
 
-Vec6 Cart2Classical(const Vec6 &rv, Real mu) {
-  Vec3 r = rv.head(3);
-  Vec3 v = rv.tail(3);
+/// @brief Convert Cartesian state to classical orbital elements
+/// @param rv Cartesian state [km, km/s]
+/// @param GM Gravitational parameter [km^3/s^2]
+/// @return Classical orbital elements [km, –, rad, rad, rad, rad]
+/// @ref
+/// O. Montenbruck and G. Eberhard, Satellite orbits: models, methods, and
+/// applications. Berlin : New York: Springer, 2000.
+/// doi: 10.1007/978-3-642-58351-3.
+Vec6 Cart2Classical(const Vec6 &rv, Real GM) {
+  Vec3 r = rv.head(3);  // Position
+  Vec3 v = rv.tail(3);  // Velocity
+  Vec3 h = r.cross(v);  // Areal velocity
+  Real H = h.norm();    // Angular momentum
 
-  Vec3 k(0, 0, 1);
-  Vec3 h = r.cross(v);
-  Vec3 n = k.cross(h);
+  Real Omega = Wrap2TwoPi(atan2(h(0), -h(1)));            // Long. ascend. node
+  Real i = atan2(sqrt(h(0) * h(0) + h(1) * h(1)), h(2));  // Inclination
+  Real u = atan2(r(2) * H, -r(0) * h(1) + r(1) * h(0));   // Arg. of latitude
+  Real R = r.norm();                                      // Distance
+  Real a = 1.0 / (2.0 / R - v.squaredNorm() / GM);        // Semi-major axis
 
-  Vec3 evec = v.cross(h) / mu - r / r.norm();
+  Real eCosE = 1.0 - R / a;              // e*cos(E)
+  Real eSinE = r.dot(v) / sqrt(GM * a);  // e*sin(E)
+  Real e2 = eCosE * eCosE + eSinE * eSinE;
+  Real e = sqrt(e2);             // Eccentricity
+  Real E = atan2(eSinE, eCosE);  // Eccentric anomaly
 
-  Real e = evec.norm();
-  Real i = safe_acos(h(2) / h.norm());
-  Real a = 1.0 / (2.0 / r.norm() - pow(v.norm(), 2.0) / mu);
+  Real M = Wrap2TwoPi(E - eSinE);                       // Mean anomaly
+  Real nu = atan2(sqrt(1.0 - e2) * eSinE, eCosE - e2);  // True anomaly
+  Real omega = Wrap2TwoPi(u - nu);                      // Arg. of perihelion
 
-  Real nu =
-      (r.dot(v) >= 0) ? angleBetweenVecs(evec, r) : -angleBetweenVecs(evec, r);
-
-  Real Omega =
-      (n(1) >= 0) ? safe_acos(n(0) / n.norm()) : -safe_acos(n(0) / n.norm());
-
-  Real w =
-      (evec(2) >= 0) ? angleBetweenVecs(n, evec) : -angleBetweenVecs(n, evec);
-
-  Real M = True2MeanAnomaly(nu, e);
-
-  return Vec6{a, e, i, Omega, w, M};
+  return Vec6(a, e, i, Omega, omega, M);
 }
 
-// - To CartesianOrbitState (relative)
+/// @brief Compute the classical orbital elements from two position vectors and
+/// the time difference between them
+/// @param dt Time difference between the two position vectors [s]
+/// @param r1 Initial position vector [km]
+/// @param r2 Final position vector [km]
+/// @param GM Gravitational parameter [km^3/s^2]
+/// @return Classical orbital elements [km, –, rad, rad, rad, rad]
+/// @ref
+/// O. Montenbruck and G. Eberhard, Satellite orbits: models, methods, and
+/// applications. Berlin : New York: Springer, 2000.
+/// doi: 10.1007/978-3-642-58351-3.
+Vec6 Cart2Classical(Real dt, const Vec3 &r1, const Vec3 &r2, Real GM) {
+  // Calculate vector r0 (fraction of r2 perpendicular to r1)
+  // and the magnitudes of r1, r2 and r0
+  Real s_a = r1.norm();
+  Vec3 e1 = r1 / s_a;
+  Real s_b = r2.norm();
+  Real fac = r2.dot(e1);
+  Vec3 r0 = r2 - fac * e1;
+  Real s0 = r0.norm();
+  Vec3 e0 = r0 / s0;
+
+  // Inclination and ascending node
+  Vec3 W = e1.cross(e0);
+  Real Omega = (atan2(W(0), -W(1)));                      // Long. ascend. node
+  Real i = atan2(sqrt(W(0) * W(0) + W(1) * W(1)), W(2));  // Inclination
+  Real u;
+  if (i == 0.0)
+    u = atan2(r1(1), r1(0));
+  else
+    u = atan2(+e1(2), -e1(0) * W(1) + e1(1) * W(0));
+
+  // Semilatus rectum
+  Real tau = sqrt(GM) * dt;
+  Real eta = RatioOfSectorToTriangleArea(r1, r2, tau);
+  Real p = pow(s_a * s0 * eta / tau, 2);
+
+  // Eccentricity, true anomaly and argument of perihelion
+  Real cos_dnu = fac / s_b;
+  Real sin_dnu = s0 / s_b;
+
+  Real ecos_nu = p / s_a - 1.0;
+  Real esin_nu = (ecos_nu * cos_dnu - (p / s_b - 1.0)) / sin_dnu;
+
+  Real e = sqrt(ecos_nu * ecos_nu + esin_nu * esin_nu);
+  Real nu = atan2(esin_nu, ecos_nu);
+  Real omega = Wrap2TwoPi(u - nu);
+
+  // Perihelion distance, semimajor axis and mean motion
+  Real a = p / (1.0 - e * e);
+  Real n = sqrt(GM / abs(a * a * a));
+
+  // Mean anomaly and time of perihelion passage
+  Real M;
+  if (e < 1.0) {
+    Real E = atan2(sqrt((1.0 - e) * (1.0 + e)) * esin_nu, ecos_nu + e * e);
+    M = Wrap2TwoPi(E - e * sin(E));
+  } else {
+    Real sinhH = sqrt((e - 1.0) * (e + 1.0)) * esin_nu / (e + e * ecos_nu);
+    M = e * sinhH - log(sinhH + sqrt(1.0 + sinhH * sinhH));
+  }
+
+  // Keplerian elements vector
+  return Vec6(a, e, i, Omega, omega, M);
+}
+
+/// @brief Convert two cartesian states to a relative RTN state
+/// @param rv_c Chief spacecraft state [km, km/s]
+/// @param rv_d Deputy spacecraft state [km, km/s]
+/// @return Relative RTN state [km, km/s]
 CartesianOrbitState Inertial2Rtn(const CartesianOrbitState &rv_c,
                                  const CartesianOrbitState &rv_d) {
   return CartesianOrbitState(Inertial2Rtn(rv_c.GetVec(), rv_d.GetVec()),
@@ -101,35 +178,35 @@ Vec6 Rtn2Inertial(const Vec6 &rv_c, const Vec6 &rv_rtn_d) {
 
 // From ClassicalOE
 // - To CartesianOrbitState
-CartesianOrbitState Classical2Cart(const ClassicalOE &coe, Real mu) {
-  return CartesianOrbitState(Classical2Cart(coe.GetVec(), mu),
+CartesianOrbitState Classical2Cart(const ClassicalOE &coe, Real GM) {
+  return CartesianOrbitState(Classical2Cart(coe.GetVec(), GM),
                              coe.GetCoordSystem());
 }
 
-Vec6 Classical2Cart(const Vec6 &coe, Real mu) {
-  auto [a, e, i, Omega, w, M] = unpack(coe);
+/// @brief Convert classical orbital elements to Cartesian state
+/// @param coe Classical orbital elements [km, –, rad, rad, rad, rad]
+/// @param GM Gravitational parameter [km^3/s^2]
+/// @return Cartesian state [km, km/s]
+/// @ref
+/// O. Montenbruck and G. Eberhard, Satellite orbits: models, methods, and
+/// applications. Berlin : New York: Springer, 2000.
+/// doi: 10.1007/978-3-642-58351-3.
+Vec6 Classical2Cart(const Vec6 &coe, Real GM) {
+  auto [a, e, i, Omega, omega, M] = unpack(coe);
 
-  Real p = a * (1.0 - pow(e, 2.0));
-  Real nu = Mean2TrueAnomaly(M, e);
-  Real pev = p / (1.0 + e * cos(nu));
-  Real mu_p = sqrt(mu / p);
+  Real E = Mean2EccAnomaly(M, e);  // Eccentric anomaly
+  Real cosE = cos(E);
+  Real sinE = sin(E);
 
-  Vec3 r_PQW{pev * cos(nu), pev * sin(nu), 0.0};
-  Vec3 v_PQW{-mu_p * sin(nu), mu_p * (e + cos(nu)), 0.0};
+  Real fac = sqrt((1.0 - e) * (1.0 + e));
+  Real R = a * (1.0 - e * cosE);  // Distance
+  Real V = sqrt(GM * a) / R;      // Velocity
+  Vec3 r(a * (cosE - e), a * fac * sinE, 0.0);
+  Vec3 v(-V * sinE, +V * fac * cosE, 0.0);
 
-  // rot = RotZ(-Omega) * RotX(-i) * RotZ(-w)
-  Mat3 rot{
-      {cos(Omega) * cos(w) - sin(Omega) * sin(w) * cos(i),
-       -cos(Omega) * sin(w) - sin(Omega) * cos(w) * cos(i),
-       sin(Omega) * sin(i)},
-      {sin(Omega) * cos(w) + cos(Omega) * sin(w) * cos(i),
-       -sin(Omega) * sin(w) + cos(Omega) * cos(w) * cos(i),
-       -cos(Omega) * sin(i)},
-      {sin(w) * sin(i), cos(w) * sin(i), cos(i)},
-  };
-
-  Vec3 r = rot * r_PQW;
-  Vec3 v = rot * v_PQW;
+  Mat3 PQW = RotZ(-Omega) * RotX(-i) * RotZ(-omega);
+  r = PQW * r;
+  v = PQW * v;
 
   Vec6 rv;
   rv << r, v;
@@ -137,12 +214,12 @@ Vec6 Classical2Cart(const Vec6 &coe, Real mu) {
 }
 
 // - To QuasiNonsingOE
-QuasiNonsingOE Classical2QuasiNonsing(const ClassicalOE &coe, Real mu) {
-  return QuasiNonsingOE(Classical2QuasiNonsing(coe.GetVec(), mu),
+QuasiNonsingOE Classical2QuasiNonsing(const ClassicalOE &coe, Real GM) {
+  return QuasiNonsingOE(Classical2QuasiNonsing(coe.GetVec(), GM),
                         coe.GetCoordSystem());
 }
 
-Vec6 Classical2QuasiNonsing(const Vec6 &coe, Real mu) {
+Vec6 Classical2QuasiNonsing(const Vec6 &coe, Real GM) {
   auto [a, e, i, Omega, w, M] = unpack(coe);
 
   Real u = w + M;
@@ -153,12 +230,12 @@ Vec6 Classical2QuasiNonsing(const Vec6 &coe, Real mu) {
 }
 
 // - To EquinoctialOE
-EquinoctialOE Classical2Equinoctial(const ClassicalOE &coe, Real mu) {
-  return EquinoctialOE(Classical2Equinoctial(coe.GetVec(), mu),
+EquinoctialOE Classical2Equinoctial(const ClassicalOE &coe, Real GM) {
+  return EquinoctialOE(Classical2Equinoctial(coe.GetVec(), GM),
                        coe.GetCoordSystem());
 }
 
-Vec6 Classical2Equinoctial(const Vec6 &coe, Real mu) {
+Vec6 Classical2Equinoctial(const Vec6 &coe, Real GM) {
   auto [a, e, i, Omega, w, M] = unpack(coe);
 
   Real f = Mean2TrueAnomaly(M, e);
@@ -178,20 +255,20 @@ Vec6 Classical2Equinoctial(const Vec6 &coe, Real mu) {
 }
 
 // - To DelaunayOE
-DelaunayOE Classical2Delaunay(const ClassicalOE &coe, Real mu) {
-  return DelaunayOE(Classical2Delaunay(coe.GetVec(), mu), coe.GetCoordSystem());
+DelaunayOE Classical2Delaunay(const ClassicalOE &coe, Real GM) {
+  return DelaunayOE(Classical2Delaunay(coe.GetVec(), GM), coe.GetCoordSystem());
 }
 
-Vec6 Classical2Delaunay(const Vec6 &coe, Real mu) {
+Vec6 Classical2Delaunay(const Vec6 &coe, Real GM) {
   auto [a, e, i, O, w, M] = unpack(coe);
 
-  Real n = sqrt(mu / pow(a, 3));
+  Real n = sqrt(GM / pow(a, 3));
   Real t = M / n;
 
   Real l = M;
   Real g = w;
   Real h = O - n * t;
-  Real L = sqrt(mu * a);
+  Real L = sqrt(GM * a);
   Real G = L * sqrt(1 - e * e);
   Real H = G * cos(i);
 
@@ -200,30 +277,30 @@ Vec6 Classical2Delaunay(const Vec6 &coe, Real mu) {
 
 // From QuasiNonsingOE
 // - To ClassicalOE
-ClassicalOE QuasiNonsing2Classical(const QuasiNonsingOE &qnsoe, Real mu) {
-  return ClassicalOE(QuasiNonsing2Classical(qnsoe.GetVec(), mu),
+ClassicalOE QuasiNonsing2Classical(const QuasiNonsingOE &qnsoe, Real GM) {
+  return ClassicalOE(QuasiNonsing2Classical(qnsoe.GetVec(), GM),
                      qnsoe.GetCoordSystem());
 }
 
-Vec6 QuasiNonsing2Classical(const Vec6 &qnsoeVec, Real mu) {
+Vec6 QuasiNonsing2Classical(const Vec6 &qnsoeVec, Real GM) {
   auto [a, u, ex, ey, i, Omega] = unpack(qnsoeVec);
 
   Real e = sqrt(ex * ex + ey * ey);
   Real w = atan2(ey, ex);
   Real M = u - w;
 
-  Vec6 coe{a, e, i, Omega, w, M};
+  Vec6 coe(a, e, i, Omega, w, M);
   return coe;
 }
 
 // From EquinoctialOE
 // - To ClassicalOE
-ClassicalOE Equinoctial2Classical(const EquinoctialOE &eqoe, Real mu) {
-  return ClassicalOE(Equinoctial2Classical(eqoe.GetVec(), mu),
+ClassicalOE Equinoctial2Classical(const EquinoctialOE &eqoe, Real GM) {
+  return ClassicalOE(Equinoctial2Classical(eqoe.GetVec(), GM),
                      eqoe.GetCoordSystem());
 }
 
-Vec6 Equinoctial2Classical(const Vec6 &equioe, Real mu) {
+Vec6 Equinoctial2Classical(const Vec6 &equioe, Real GM) {
   auto [a, Psi, tq1, tq2, p1, p2] = unpack(equioe);
 
   Real Omega = atan2(p2, p1);
@@ -249,18 +326,18 @@ Vec6 Equinoctial2Classical(const Vec6 &equioe, Real mu) {
 
 // From DelaunayOE
 // - To ClassicalOE
-ClassicalOE Delaunay2Classical(const DelaunayOE &deloe, Real mu) {
-  return ClassicalOE(Delaunay2Classical(deloe.GetVec(), mu),
+ClassicalOE Delaunay2Classical(const DelaunayOE &deloe, Real GM) {
+  return ClassicalOE(Delaunay2Classical(deloe.GetVec(), GM),
                      deloe.GetCoordSystem());
 }
 
-Vec6 Delaunay2Classical(const Vec6 &delaunay, Real mu) {
+Vec6 Delaunay2Classical(const Vec6 &delaunay, Real GM) {
   auto [l, g, h, L, G, H] = unpack(delaunay);
 
-  Real a = L * L / mu;
+  Real a = L * L / GM;
   Real M = l;
 
-  Real n = sqrt(mu / pow(a, 3));
+  Real n = sqrt(GM / pow(a, 3));
   Real t = M / n;
 
   Real e = sqrt(1 - pow(G / L, 2));

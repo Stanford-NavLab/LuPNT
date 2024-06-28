@@ -17,11 +17,9 @@ Real Mean2EccAnomaly(Real M, Real e) {
   Real E = MM;
   Real Eest = E - (E - e * sin(E) - MM) / (1.0 - e * cos(E));
 
-  double tol = 1e-9;
   int max_itr = 100;
   int itr = 0;
-
-  while ((abs(Eest - E) >= tol) && (itr <= max_itr)) {
+  while ((abs(Eest - E) >= EPS) && (itr <= max_itr)) {
     E = Eest;
     Eest = E - (E - e * sin(E) - M) / (1.0 - e * cos(E));
     itr++;

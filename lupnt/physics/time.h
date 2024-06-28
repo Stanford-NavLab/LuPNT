@@ -11,7 +11,6 @@ Real GreenwichMeanSiderealTime(Real mjd_ut1);
 
 std::tuple<int, int, int, int, int, Real> ModJulianDate2Calendar(Real mjd);
 
-std::string FormatDate(int year, int month, int day, int hour, int min,
-                       Real sec, int precision);
+std::string FormatDate(Real mjd, int precision);
 
 }  // namespace lupnt

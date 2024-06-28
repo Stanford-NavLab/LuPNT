@@ -197,7 +197,7 @@ void PrintEstimationStatistics(VecXd num_meas, VecXd error_mat,
   // compute statistics ----------------------------------------------------
   // rms
   for (int i = 0; i < 4; i++) {
-    rms(i) = Rms(error_mat_range.row(i));
+    rms(i) = RootMeanSquare(error_mat_range.row(i));
     means(i) = error_mat_range.row(i).mean();
     stds(i) = Std(error_mat_range.row(i));
     p68(i) = Percentile(error_mat_range.row(i), 0.68);

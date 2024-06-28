@@ -16,7 +16,7 @@ const Real e_ref = 0.72000000000;
 const Real E_ref = 0.24318719637;
 const Real nu_ref = Mean2TrueAnomaly(M_ref, e_ref);
 
-TEST_CASE("OrbitState", "Anomaly") {
+TEST_CASE("Anomaly", "[OrbitState]") {
   const double eps = 1e-9;
 
   // Example 2-2 (Kepler’s equation)
@@ -33,21 +33,45 @@ TEST_CASE("OrbitState", "Anomaly") {
   RequireNearReal(True2MeanAnomaly(nu_ref, e_ref), M_ref, eps);
 }
 
-TEST_CASE("OrbitState", "Conversions") {
-  const double eps = 1e-3;
-  const double eps_ecc = 1e-3;
+TEST_CASE("Conversions", "[OrbitState]") {
+  const double eps = 1e-8;
 
   // Example 2-3 (Osculating Elements)
   Vec6 rv_ref(10e3, 40e3, -5e3, -1.5, 1, -0.1);  // [km, km/s]
-  Vec6 coe_ref(25015.181, 0.7079772, 6.971, 173.290, 91.553, 144.225);
+  Vec6 coe_ref(25015.181022316396, 0.707977170662, 6.970729208731,
+               173.290163192243, 91.552887356747, 144.224991174457);
   coe_ref.segment(2, 4) *= RAD;
+  // [km, -, rad, rad, rad, rad]
 
   Vec6 rv = Classical2Cart(coe_ref, GM_EARTH);
-  Vec6 coe = Cart2Classical(rv, GM_EARTH);
-
-  RequireNearReal(coe(1), coe_ref(1), eps_ecc);
-  RequireNearRealVec(coe, coe_ref, eps);
   RequireNearRealVec(rv, rv_ref, eps);
+
+  Vec6 coe = Cart2Classical(rv, GM_EARTH);
+  RequireNearReal(coe(1), coe_ref(1), eps);
+  RequireNearRealVec(coe, coe_ref, eps);
+}
+
+TEST_CASE("OrbitState", "Coordinates") {
+  double eps = 1e-8;
+
+  std::ifstream file = OpenTestDataFile("coordinates.txt");
+  Vec3 lla = ReadVec3(file, true);
+  Vec3 aer = ReadVec3(file, true);
+  Vec3 enu = ReadVec3(file, true);
+  Vec3 r_gs = ReadVec3(file, true);
+  Vec3 r_sat = ReadVec3(file, true);
+
+  RequireNearRealVec(aer, EastNorthUp2AzElRange(enu), eps);
+  RequireNearRealVec(enu, AzElRange2EastNorthUp(aer), eps);
+
+  RequireNearRealVec(r_gs, LatLonAlt2Cart(lla, R_EARTH, WGS84_F), eps);
+  RequireNearRealVec(lla, Cart2LatLonAlt(r_gs, R_EARTH, WGS84_F), eps);
+
+  RequireNearRealVec(r_sat, EastNorthUp2Cart(enu, r_gs, R_EARTH, WGS84_F), eps);
+  RequireNearRealVec(enu, Cart2EastNorthUp(r_sat, r_gs, R_EARTH, WGS84_F), eps);
+
+  RequireNearRealVec(aer, Cart2AzElRange(r_sat, r_gs, R_EARTH, WGS84_F), eps);
+  RequireNearRealVec(r_sat, AzElRange2Cart(aer, r_gs, R_EARTH, WGS84_F), eps);
 }
 
 // TEST_CASE("OrbitState", "Utils") {

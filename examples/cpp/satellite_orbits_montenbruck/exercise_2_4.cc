@@ -6,6 +6,9 @@
 using namespace lupnt;
 using namespace std;
 
+// O. Montenbruck and G. Eberhard, Satellite orbits: models, methods, and
+// applications. Berlin : New York: Springer, 2000.
+// doi: 10.1007/978-3-642-58351-3.
 int main() {
   // Time
   const Real mjd0_utc = Calendar2ModJulianDate(1997, 01, 01);
@@ -30,8 +33,8 @@ int main() {
 
   cout << "Exercise 2-4: Topocentric satellite motion" << endl
        << endl
-       << "   Date         UTC           Az         El      Dist" << endl
-       << "yyyy/mm/dd  hh:mm:ss.sss     [deg]     [deg]     [km]" << endl;
+       << "   Date        UTC           Az        El       Dist" << endl
+       << "yyyy/mm/dd hh:mm:ss.sss     [deg]     [deg]     [km]" << endl;
 
   for (int minute = 6; minute <= 24; minute++) {
     Real mjd_utc = mjd0_utc + minute / MINUTES_DAY;  // [days]
@@ -40,19 +43,14 @@ int main() {
     Vec6 coe = KeplerianDynamics::PropagateClassicalOE(coe0, dt, GM_EARTH);
     Vec6 rv_eci = Classical2Cart(coe, GM_EARTH);
 
-    Real theta = GreenwichMeanSiderealTime(mjd_utc);  // Note: it should be UT1
-    Mat3 R_eci2ecef = RotZ(theta);
-    Vec3 r_sat = R_eci2ecef * rv_eci.segment(0, 3);
+    // Note: it should be UT1
+    Mat3 R = RotZ(GreenwichMeanSiderealTime(mjd_utc));
+    Vec3 rho = R * rv_eci.segment(0, 3);
 
-    auto [az, el, range] =
-        unpack(Cart2AzElRange(r_sat, r_gs, R_EARTH, WGS84_F));
+    Vec3 aer = Cart2AzElRange(rho, r_gs, R_EARTH, WGS84_F);
+    auto [az, el, range] = unpack(aer);
 
-    Real mjd_utc_ms =
-        round(mjd_utc * SECS_DAY * 1e3, 3) / (SECS_DAY * 1e3) + EPS;
-    auto [year, month, day, hour, min, sec] =
-        ModJulianDate2Calendar(mjd_utc_ms);
-
-    cout << FormatDate(year, month, day, hour, min, sec, 3);
+    cout << FormatDate(mjd_utc, 3);
     cout << setw(10) << fixed << setprecision(1);
     cout << setw(10) << az * DEG;
     cout << setw(10) << el * DEG;

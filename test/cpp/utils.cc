@@ -1,8 +1,13 @@
+
 #include <lupnt/core/constants.h>
 #include <lupnt/numerics/math_utils.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <string>
 
 using namespace Catch::Matchers;
 using namespace lupnt;
@@ -32,7 +37,7 @@ static void RequireNearDoubleVec(const VecXd& a, const VecXd& b,
   }
 }
 
-static void RequireNearDoubleMat(const VecXd& a, const VecXd& b,
+static void RequireNearDoubleMat(const MatXd& a, const MatXd& b,
                                  double abs_error) {
   REQUIRE(a.rows() == b.rows());
   REQUIRE(a.cols() == b.cols());
@@ -70,4 +75,36 @@ static void NumericalJacobian(
 
     jacobian.col(i) = (vec_p - vec_m).cast<double>() / (2.0 * eps);
   }
+}
+
+static std::ifstream OpenTestDataFile(const std::string& filename) {
+  std::filesystem::path lupnt_data_path = GetDataPath();
+  std::filesystem::path test_data_path =
+      lupnt_data_path.parent_path() / "test" / "data";
+  std::filesystem::path file_path = test_data_path / filename;
+  // Open text file
+  std::ifstream file(file_path, std::ios::in);
+  assert(file.is_open() && "Could not open file");
+  return file;
+}
+
+static std::vector<double> ReadVector(std::ifstream& file,
+                                      bool skip_line = false) {
+  std::string line;
+  if (skip_line) {
+    assert(std::getline(file, line));
+  }
+  assert(std::getline(file, line));
+  std::istringstream iss(line);
+  std::vector<double> vec;
+  double val;
+  while (iss >> val) {
+    vec.push_back(val);
+  }
+  return vec;
+}
+
+static Vec3 ReadVec3(std::ifstream& file, bool skip_line = false) {
+  std::vector<double> vec = ReadVector(file, skip_line);
+  return Vec3(vec[0], vec[1], vec[2]);
 }
