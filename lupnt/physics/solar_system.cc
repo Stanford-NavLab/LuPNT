@@ -251,9 +251,6 @@ Mat3 NutationMatrix(Real mjd_tt) {
 Mat3 NutationMatrixLowPrecision(Real mjd_tt) {
   Real T = (mjd_tt - MJD_J2000) / 36525.0;
 
-  Real ls, D, F, N;
-  Real eps, dpsi, deps;
-
   // Mean arguments of luni-solar motion
   //   ls  mean anomaly of the Sun
   //   D   diff. longitude Moon-Sun
@@ -274,7 +271,7 @@ Mat3 NutationMatrixLowPrecision(Real mjd_tt) {
               RAD_ARCSEC;
 
   // Mean obliquity of the ecliptic
-  eps = 0.4090928 - 2.2696E-4 * T;
+  Real eps = 0.4090928 - 2.2696E-4 * T;
   Mat3 R = RotX(-eps - deps) * RotZ(-dpsi) * RotX(+eps);
   return R;
 }

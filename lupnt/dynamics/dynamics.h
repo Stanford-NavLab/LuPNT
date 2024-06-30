@@ -10,7 +10,6 @@
  */
 #pragma once
 
-#include "lupnt/dynamics/gravity_field.h"
 #include "lupnt/dynamics/propagator.h"
 #include "lupnt/numerics/integrator.h"
 #include "lupnt/physics/body.h"

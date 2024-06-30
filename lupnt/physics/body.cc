@@ -1,225 +1,154 @@
 #include "lupnt/physics/body.h"
 
 #include <algorithm>
+#include <cassert>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <string>
 
+#include "lupnt/core/user_file_path.h"
 #include "lupnt/physics/frame_converter.h"
 
 namespace lupnt {
-Body Body::Moon(int n_max, int m_max) {
+
+/// @brief Create a Body object for the Moon
+/// @return Body object for the Moon
+Body Body::Moon() {
   Body moon;
   moon.name = "MOON";
   moon.id = NaifId::MOON;
-  moon.spherical_harmonics = n_max > 0 || m_max > 0;
-  moon.normalized = true;
-  moon.n_max = n_max;
-  moon.m_max = m_max;
   moon.fixed_frame = Frame::MOON_PA;
-
-  BodyData bd = GetBodyData(moon.id);
-  moon.GM = bd.GM;
-  moon.R = bd.R;
-
-  if (moon.spherical_harmonics)
-    std::tie(moon.Cnm, moon.Snm) = LoadGravityCoefficients(bd, n_max);
+  moon.inertial_frame = Frame::MOON_CI;
+  moon.GM = GM_MOON;
+  moon.R = R_MOON;
   return moon;
 }
 
-Body Body::Earth(int n_max, int m_max) {
+/// @brief Create a Body object for the Earth
+/// @return Body object for the Earth
+Body Body::Earth() {
   Body earth;
   earth.name = "EARTH";
   earth.id = NaifId::EARTH;
-  earth.spherical_harmonics = n_max > 0 || m_max > 0;
-  earth.normalized = true;
-  earth.n_max = n_max;
-  earth.m_max = m_max;
   earth.fixed_frame = Frame::ITRF;
-
-  BodyData bd = GetBodyData(earth.id);
-  earth.GM = bd.GM;
-  earth.R = bd.R;
-
-  if (earth.spherical_harmonics)
-    std::tie(earth.Cnm, earth.Snm) = LoadGravityCoefficients(bd, n_max);
+  earth.inertial_frame = Frame::GCRF;
+  earth.GM = GM_EARTH;
+  earth.R = R_EARTH;
   return earth;
 }
 
+/// @brief Create a Body object for the Sun
+/// @return Body object for the Sun
 Body Body::Sun() {
   Body sun;
   sun.name = "SUN";
   sun.id = NaifId::SUN;
-  sun.spherical_harmonics = false;
-  sun.normalized = false;
-  sun.fixed_frame = Frame::ICRF;
-
-  BodyData bd = GetBodyData(sun.id);
-  sun.GM = bd.GM;
-  sun.R = bd.R;
+  sun.inertial_frame = Frame::ICRF;
+  sun.GM = GM_SUN;
+  sun.R = 696342.0;
+  sun.has_gravity_field = false;
   return sun;
 }
 
-Body Body::Mars(int n_max, int m_max) {
+/// @brief Create a Body object for Mars
+/// @return Body object for Mars
+Body Body::Mars() {
   Body mars;
   mars.name = "MARS";
   mars.id = NaifId::MARS;
-  mars.spherical_harmonics = n_max > 0 || m_max > 0;
-  mars.normalized = true;
-  mars.n_max = n_max;
-  mars.m_max = m_max;
   mars.fixed_frame = Frame::MARS_FIXED;
-
-  BodyData bd = GetBodyData(mars.id);
-  mars.GM = bd.GM;
-  mars.R = bd.R;
-
-  if (mars.spherical_harmonics)
-    std::tie(mars.Cnm, mars.Snm) = LoadGravityCoefficients(bd, n_max);
+  mars.GM = 0.4282837566395650E+05;
+  mars.R = 0.3396000000000000E+04;
   return mars;
 }
 
-Body Body::Venus(int n_max, int m_max) {
+/// @brief Create a Body object for Venus
+/// @return Body object for Venus
+Body Body::Venus() {
   Body venus;
   venus.name = "VENUS";
   venus.id = NaifId::VENUS;
-  venus.spherical_harmonics = n_max > 0 || m_max > 0;
-  venus.normalized = true;
-  venus.n_max = n_max;
-  venus.m_max = m_max;
   venus.fixed_frame = Frame::VENUS_FIXED;
-
-  BodyData bd = GetBodyData(venus.id);
-  venus.GM = bd.GM;
-  venus.R = bd.R;
-
-  if (venus.spherical_harmonics)
-    std::tie(venus.Cnm, venus.Snm) = LoadGravityCoefficients(bd, n_max);
+  venus.GM = 0.3248585920790000E+06;
+  venus.R = 0.6051000000000000E+04;
   return venus;
 }
 
-BodyData GetBodyData(const NaifId bodyID) {
-  BodyData bd;
+double kron(int i, int j) { return (i == j) ? 1 : 0; }
 
-  switch (bodyID) {
-    case NaifId::VENUS:  // VENUS (180x180)
-      bd.filepath = "shgj180u.a01";
-      bd.headerlines = 3;
-      bd.delimiter = ",";
-      bd.GM = 0.3248585920790000E+06;
-      bd.R = 0.6051000000000000E+04;
-      break;
-
-    case NaifId::EARTH:  // EARTH (50x50)
-      bd.filepath = "GGM02C.GEO";
-      bd.headerlines = 3;
-      bd.delimiter = "";
-      bd.GM = 398600.44150;
-      bd.R = 6378136.30 * 1e-3;
-      break;
-
-    case NaifId::MOON:  // MOON (660x660)
-      bd.filepath = "gggrx_0660pm_sha.tab";
-      bd.headerlines = 3;
-      bd.delimiter = ",";
-      bd.GM = 4.9028001224453001e+03;
-      bd.R = 1.7380000000000000e+03;
-      break;
-
-    case NaifId::MARS:  // MARS (120x120)
-      bd.filepath = "jgmro_120f_sha.tab";
-      bd.headerlines = 3;
-      bd.delimiter = ",";
-      bd.GM = 0.4282837566395650E+05;
-      bd.R = 0.3396000000000000E+04;
-      break;
-
-    case NaifId::SUN:  // SUN (10x10)
-      bd.filepath = "shgm405c.bsp";
-      bd.headerlines = 3;
-      bd.delimiter = ",";
-      bd.GM = 132712440041.9394;
-      bd.R = 696342.0;
-      break;
-
-    default:
-      throw std::runtime_error(
-          "Spherical Harmonics coefficients not available!");
+double factprod(int n, int m) {
+  double f = 1.0;
+  for (int i = n - m + 1; i <= n + m; i++) {
+    f /= i;
   }
-
-  return bd;
+  return f;
 }
 
-std::vector<std::string> split(const std::string &s, char delimiter) {
-  std::vector<std::string> tokens;
-  std::string token;
-  std::istringstream tokenStream(s);
-  while (std::getline(tokenStream, token, delimiter)) {
-    tokens.push_back(token);
-  }
-  return tokens;
-}
-
-void ReadData(const std::string &filepath, int N, int headerlines,
-              const std::string &delimiter, std::vector<int> &idN,
-              std::vector<int> &idM, std::vector<double> &C,
-              std::vector<double> &S, std::vector<double> &sigC,
-              std::vector<double> &sigS) {
+/// @brief Read a harmonic gravity field from a file
+/// @param filename Harmonic gravity field filename
+/// @param n Degree of the spherical harmonics expansion
+/// @param m Order of the spherical harmonics expansion
+/// @param normalized Whether the coefficients are normalized
+/// @return Gravity field object
+GravityField ReadHarmonicGravityField(const std::string& filename, int n_max,
+                                      int m_max, bool normalized) {
+  GravityField gravity_field;
+  std::filesystem::path filepath = GetFilePath(filename);
   std::ifstream file(filepath);
+  assert(file.is_open() && "Unable to open file");
 
-  if (!file.is_open()) {
-    throw std::runtime_error("Unable to open file: " + filepath);
-  }
-
-  // Skip header lines
+  // Read header lines
   std::string line;
-  for (int i = 0; i < headerlines; ++i) {
-    std::getline(file, line);
+  while (std::getline(file, line)) {
+    if (line.find("POTFIELD") != std::string::npos) {
+      std::istringstream iss(line);
+      std::string potfield;
+      int n_max, m_max, dummy;
+      double GM, r, dummyFactor;
+      iss >> potfield >> n_max >> m_max >> dummy >> GM >> r >> dummyFactor;
+      gravity_field.n_max = n_max;
+      gravity_field.m_max = m_max;
+      gravity_field.GM = GM * pow(KM_M, 3);
+      gravity_field.R = r * KM_M;
+      break;
+    }
   }
 
-  // Read and parse data lines
-  for (int i = 0; i < N && std::getline(file, line); ++i) {
-    std::vector<std::string> tokens = split(line, ',');
+  // Initialize Eigen matrices with the specified maxN and maxM
+  assert(n_max <= gravity_field.n_max && m_max <= gravity_field.m_max);
+  gravity_field.CS = Eigen::MatrixXd::Zero(n_max + 1, m_max + 1);
+  gravity_field.CS(0, 0) = 1.0;  // C00 = 1.0
+  // Read coefficient lines
+  while (std::getline(file, line)) {
+    if (line.find("RECOEF") != std::string::npos) {
+      std::istringstream iss(line);
+      std::string recoef;
+      int n, m;
+      double cnm, snm = 0.0;
+      iss >> recoef >> n >> m >> cnm;
+      if (n >= n_max + 1) break;
+      if (m >= m_max + 1) continue;
 
-    idN[i] = std::stoi(tokens[0]);
-    idM[i] = std::stoi(tokens[1]);
-    C[i] = std::stod(tokens[2]);
-    S[i] = std::stod(tokens[3]);
-    sigC[i] = std::stod(tokens[4]);
-    sigS[i] = std::stod(tokens[5]);
+      if (m == 0) {
+        double N = (normalized) ? sqrt(2 * n + 1) : 1.0;
+        gravity_field.CS(n, m) = N * cnm;
+      } else {
+        double N = (normalized)
+                       ? sqrt((2 - kron(0, m)) * (2 * n + 1) * factprod(n, m))
+                       : 1.0;
+        iss >> snm;
+        gravity_field.CS(n, m) = N * cnm;
+        gravity_field.CS(m - 1, n) = N * snm;
+      }
+    } else if (line.find("END") != std::string::npos) {
+      break;
+    }
   }
 
   file.close();
-}
-
-std::tuple<VecXd, VecXd> LoadGravityCoefficients(BodyData bd, int nmax) {
-  // read text file
-  int N = nmax * nmax + 10;
-
-  std::vector<int> idN(N), idM(N);
-  std::vector<double> C(N), S(N), sigC(N), sigS(N);
-
-  std::filesystem::path harmonicsPath = GetDataPath() / "spherical_harmonics";
-  ReadData(harmonicsPath / bd.filepath, N, bd.headerlines, bd.delimiter, idN,
-           idM, C, S, sigC, sigS);
-
-  VecXd Cnm = VecXd::Zero(nmax + 2, nmax + 2);
-  VecXd Snm = VecXd::Zero(nmax + 2, nmax + 2);
-
-  Cnm(0, 0) = 1.0;
-  Cnm(1, 0) = 0.0;
-  Cnm(1, 1) = 0.0;
-
-  Snm(0, 0) = 0.0;
-  Snm(1, 0) = 0.0;
-  Snm(1, 1) = 0.0;
-
-  for (int k = 0; k < (((nmax + 1) * (nmax + 2) / 2) - 3); ++k) {
-    Cnm(idN[k], idM[k]) = C[k];
-    Snm(idN[k], idM[k]) = S[k];
-  }
-
-  return {Cnm, Snm};
+  return gravity_field;
 }
 
 }  // namespace lupnt

@@ -20,19 +20,19 @@ namespace lupnt {
 /// O. Montenbruck and G. Eberhard, Satellite orbits: models, methods, and
 /// applications. Berlin : New York: Springer, 2000.
 /// doi: 10.1007/978-3-642-58351-3.
-Vec3 AccelarationHarmonic(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
-                          const Mat3& CS, int n_max, int m_max) {
+Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
+                              const Mat3& CS, int n_max, int m_max) {
   MatX V(n_max + 2, n_max + 2);  // Harmonic functions
   MatX W(n_max + 2, n_max + 2);  // work array (0..n_max+1,0..n_max+1)
 
-  Vec3 r_b = E * r;  // Position in body-fixed system
-  Real r_sqr = r_b.squaredNorm();
+  Vec3 r_bf = E * r;  // Position in body-fixed system
+  Real r_sqr = r_bf.squaredNorm();
   Real rho = R_ref * R_ref / r_sqr;
 
   // Normalized coordinates
-  Real x0 = R_ref * r_b(0) / r_sqr;
-  Real y0 = R_ref * r_b(1) / r_sqr;
-  Real z0 = R_ref * r_b(2) / r_sqr;
+  Real x0 = R_ref * r_bf(0) / r_sqr;
+  Real y0 = R_ref * r_bf(1) / r_sqr;
+  Real z0 = R_ref * r_bf(2) / r_sqr;
 
   // Harmonic functions up to degree and order n_max+1
   //   V_nm = (R_ref/r)^(n+1) * P_nm(sin(phi)) * cos(m*lambda)
@@ -71,17 +71,18 @@ Vec3 AccelarationHarmonic(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
     };
   };
 
+  Real C, S;
   Real ax = 0, ay = 0, az = 0;
   for (int m = 0; m <= m_max; m++)
     for (int n = m; n <= n_max; n++)
       if (m == 0) {
-        Real C = CS(n, 0);  // C_n,0
+        C = CS(n, 0);  // C_n,0
         ax -= C * V(n + 1, 1);
         ay -= C * W(n + 1, 1);
         az -= (n + 1) * C * V(n + 1, 0);
       } else {
-        Real C = CS(n, m);      // C_n,m
-        Real S = CS(m - 1, n);  // S_n,m
+        C = CS(n, m);      // C_n,m
+        S = CS(m - 1, n);  // S_n,m
         Real Fac = 0.5 * (n - m + 1) * (n - m + 2);
         ax += +0.5 * (-C * V(n + 1, m + 1) - S * W(n + 1, m + 1)) +
               Fac * (+C * V(n + 1, m - 1) + S * W(n + 1, m - 1));
@@ -90,8 +91,8 @@ Vec3 AccelarationHarmonic(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
         az += (n - m + 1) * (-C * V(n + 1, m) - S * W(n + 1, m));
       };
 
-  Vec3 a_b = (GM / (R_ref * R_ref)) * Vec3(ax, ay, az);
-  Vec3 a = E.transpose() * a_b;
+  Vec3 a_bf = (GM / (R_ref * R_ref)) * Vec3(ax, ay, az);
+  Vec3 a = E.transpose() * a_bf;
   return a;
 }
 
@@ -184,13 +185,13 @@ Real DensityHarrisPriester(Real mjd_tt, const Vec3& r_tod) {
   // Harris-Priester atmospheric density model parameters
   // Height [km], minimum density, maximum density [gm/km^3]
   const int N_Coef = 50;
-  const double data_h[N_Coef] = {
+  const Vecd<N_Coef> h = {
       100.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0,
       210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0,
       320.0, 340.0, 360.0, 380.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0,
       520.0, 540.0, 560.0, 580.0, 600.0, 620.0, 640.0, 660.0, 680.0, 700.0,
       720.0, 740.0, 760.0, 780.0, 800.0, 840.0, 880.0, 920.0, 960.0, 1000.0};
-  const double data_c_min[N_Coef] = {
+  const Vecd<N_Coef> c_min = {
       4.974e+05, 2.490e+04, 8.377e+03, 3.899e+03, 2.122e+03, 1.263e+03,
       8.008e+02, 5.283e+02, 3.617e+02, 2.557e+02, 1.839e+02, 1.341e+02,
       9.949e+01, 7.488e+01, 5.709e+01, 4.403e+01, 3.430e+01, 2.697e+01,
@@ -200,7 +201,7 @@ Real DensityHarrisPriester(Real mjd_tt, const Vec3& r_tod) {
       4.519e-02, 3.430e-02, 2.632e-02, 2.043e-02, 1.607e-02, 1.281e-02,
       1.036e-02, 8.496e-03, 7.069e-03, 4.680e-03, 3.200e-03, 2.210e-03,
       1.560e-03, 1.150e-03};
-  const double data_c_max[N_Coef] = {
+  const Vecd<N_Coef> c_max = {
       4.974e+05, 2.490e+04, 8.710e+03, 4.059e+03, 2.215e+03, 1.344e+03,
       8.758e+02, 6.010e+02, 4.297e+02, 3.162e+02, 2.396e+02, 1.853e+02,
       1.455e+02, 1.157e+02, 9.308e+01, 7.555e+01, 6.182e+01, 5.095e+01,
@@ -210,10 +211,6 @@ Real DensityHarrisPriester(Real mjd_tt, const Vec3& r_tod) {
       4.121e-01, 3.325e-01, 2.691e-01, 2.185e-01, 1.779e-01, 1.452e-01,
       1.190e-01, 9.776e-02, 8.059e-02, 5.741e-02, 4.210e-02, 3.130e-02,
       2.360e-02, 1.810e-02};
-
-  const Vec3d h(&data_h[0], N_Coef);
-  const VecXd c_min(&data_c_min[0], N_Coef);
-  const VecXd c_max(&data_c_max[0], N_Coef);
 
   // Satellite height (Earth flattening correction)
   Vec3 lla = Cart2LatLonAlt(r_tod, R_EARTH, WGS84_F);
@@ -290,7 +287,8 @@ Real Illumination(const Vec3& r, const Vec3& r_sun, Real R_body) {
 /// applications. Berlin : New York: Springer, 2000.
 /// doi: 10.1007/978-3-642-58351-3.
 Vec3 AccelerationEarthSpacecraft(Real mjd_tt, const Vec6& rv, Real area,
-                                 Real mass, Real CR, Real CD) {
+                                 Real mass, Real CR, Real CD,
+                                 GravityField grav) {
   Vec3 r = rv.head(3);
   Vec3 v = rv.tail(3);
 
@@ -298,8 +296,8 @@ Vec3 AccelerationEarthSpacecraft(Real mjd_tt, const Vec6& rv, Real area,
   Real mjd_ut1 = mjd_tt;
   Mat3 T = NutationMatrix(mjd_tt) * PrecessionMatrix(MJD_J2000, mjd_tt);
   Mat3 E = GreenwichHourAngleMatrix(mjd_ut1) * T;
-  Vec3 a = AccelarationHarmonic(r, E, Grav.GM, Grav.R_ref, Grav.CS, Grav.n_max,
-                                Grav.m_max);
+  Vec3 a =
+      AccelarationGravityField(r, E, grav.GM, grav.R, grav.CS, grav.n, grav.m);
 
   // Luni-solar perturbations
   Vec3 r_sun = SunPositionLowPrecision(mjd_tt);

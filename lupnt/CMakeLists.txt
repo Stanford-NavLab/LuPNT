@@ -116,3 +116,45 @@ install(
 
 list(APPEND LuPNT_EXPORTED_TARGETS lupnt)
 set(LuPNT_EXPORTED_TARGETS "${LuPNT_EXPORTED_TARGETS}" PARENT_SCOPE)
+
+
+# *****************************************************************************
+# Create a single header file lupnt.h with all includes
+
+# Navigate to the lupnt directory
+set(LUPNT_DIR "${CMAKE_SOURCE_DIR}/lupnt")
+
+# Initialize or clear the lupnt.h file content before appending
+file(WRITE "${LUPNT_DIR}/lupnt.h" "")
+
+# Function to process directories and create lupnt.h
+function(process_directory dir)
+    # Find all subdirectories
+    file(GLOB SUBDIRS LIST_DIRECTORIES true RELATIVE ${dir} ${dir}/*)
+    list(FILTER SUBDIRS EXCLUDE REGEX "^\\.|\\.\\./")
+
+    foreach(subdir ${SUBDIRS})
+        if(IS_DIRECTORY "${dir}/${subdir}")
+            # Format the directory name for a comment
+            string(REGEX REPLACE "^${dir}/" "" subdir_name ${subdir})
+            file(APPEND "${LUPNT_DIR}/lupnt.h" "// ${subdir_name}\n")
+
+            # Find all .h files in the current subdirectory
+            file(GLOB HEADER_FILES RELATIVE ${dir}/${subdir} ${dir}/${subdir}/*.h)
+            list(SORT HEADER_FILES)
+
+            foreach(file ${HEADER_FILES})
+                # Create relative include path
+                file(APPEND "${LUPNT_DIR}/lupnt.h" "#include \"${subdir}/${file}\"\n")
+            endforeach()
+
+            # Add an empty line for readability between subdirectory sections
+            file(APPEND "${LUPNT_DIR}/lupnt.h" "\n")
+        endif()
+    endforeach()
+endfunction()
+
+# Process the lupnt directory
+process_directory(${LUPNT_DIR})
+
+message(STATUS "A single header file lupnt.h has been created with all includes.")

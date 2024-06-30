@@ -18,46 +18,31 @@
 
 namespace lupnt {
 
+struct GravityField {
+  int n_max, m_max;  // Maximum degree and order
+  int n, m;          // Degree and order
+  Real GM;           // Gravitational constant [km^3/s^2]
+  Real R;            // Reference radius [km]
+  MatX CS;           // Coefficients
+};
+
 struct Body {
-  std::string name;
-  double GM;
-  double R;
   NaifId id;
-  bool spherical_harmonics;
-  bool normalized;
-  int n_max;
-  int m_max;
-  VecXd Cnm;
-  VecXd Snm;
-  Frame fixed_frame;
-
-  static Body Moon(int n_max = 0, int m_max = 0);
-  static Body Earth(int n_max = 0, int m_max = 0);
-  static Body Sun();
-  static Body Venus(int n_max = 0, int m_max = 0);
-  static Body Mars(int n_max = 0, int m_max = 0);
-};
-
-struct BodyData {
   std::string name;
   double GM;
   double R;
+  Frame fixed_frame;
+  Frame inertial_frame;
+  bool has_gravity_field;
+  GravityField gravity_field;
 
-  std::string filepath;
-  int headerlines;
-  std::string delimiter;
+  static Body Sun();
+  static Body Moon();
+  static Body Earth();
+  static Body Venus();
+  static Body Mars();
 };
 
-std::vector<std::string> split(const std::string &s, char delimiter);
-
-void ReadData(const std::string &filepath, int N, int headerlines,
-              const std::string &delimiter, std::vector<int> &idN,
-              std::vector<int> &idM, std::vector<double> &C,
-              std::vector<double> &S, std::vector<double> &sigC,
-              std::vector<double> &sigS);
-
-BodyData GetBodyData(const NaifId bodyID);
-
-std::tuple<VecXd, VecXd> LoadGravityCoefficients(BodyData bd, int nmax);
-
+GravityField ReadHarmonicGravityField(const std::string& filename, int n, int m,
+                                      bool normalized);
 }  // namespace lupnt

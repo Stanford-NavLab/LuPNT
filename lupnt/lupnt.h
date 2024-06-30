@@ -21,7 +21,7 @@
 
 // dynamics
 #include "dynamics/dynamics.h"
-#include "dynamics/gravity_field.h"
+#include "dynamics/forces.h"
 #include "dynamics/propagator.h"
 
 // measurements
@@ -53,15 +53,8 @@
 #include "physics/frame_converter.h"
 #include "physics/gravity.h"
 #include "physics/orbit_state.h"
+#include "physics/solar_system.h"
 #include "physics/spice_interface.h"
 #include "physics/state.h"
 #include "physics/time.h"
-
-// physics/orbit_state
-#include "physics/orbit_state/anomaly.h"
-#include "physics/orbit_state/conversions.h"
-#include "physics/orbit_state/converter.h"
-#include "physics/orbit_state/mean_osculating.h"
-#include "physics/orbit_state/orbit_states.h"
-#include "physics/orbit_state/tle.h"
 

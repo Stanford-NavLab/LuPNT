@@ -11,7 +11,6 @@
 
 #include "dynamics.h"
 #include "lupnt/core/constants.h"
-#include "lupnt/dynamics/gravity_field.h"
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/body.h"
 #include "lupnt/physics/spice_interface.h"
@@ -70,15 +69,14 @@ Vec3 NBodyDynamics::ComputeNBodyGravity(Real t_tai, const Vec3 &r) const {
       a_i_C = Vec3::Zero();
     }
 
-    // Check spherical harmonics
-    if (body.spherical_harmonics) {
+    // Check if body.gravity_field has been set
+    if (body.has_gravity_field) {
       // Mat3d Ur2j = GetFrameConversionMat(
       //                     t_tai, body.fixed_frame, Frame::GCRF)
       //                     .block(0, 0, 3, 3);
       Mat3d Ur2j = Mat3d::Identity();
       Vec3 r_i_rot = Ur2j.transpose() * r_i;
-      Vec3 a_i_rot = spharm_acc_ecr(body.n_max, body.m_max, r_i_rot, body.R,
-                                    body.GM, body.Cnm, body.Snm);
+      Vec3 a_i_rot = Vec3::Zero();
       a_i = Ur2j * a_i_rot;
     } else {
       // no spherical harmonics

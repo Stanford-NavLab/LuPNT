@@ -20,4 +20,17 @@
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/body.h"
 
-namespace lupnt {}  // namespace lupnt
+namespace lupnt {
+Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
+                              const Mat3& CS, int n_max, int m_max);
+Vec3 AccelerationPointMass(const Vec3& r, const Vec3& s, double GM);
+Vec3 AccelerationSolarRadiation(const Vec3& r, const Vec3& r_sun, Real area,
+                                Real mass, Real CR, Real P0, Real AU);
+Vec3 AccelerationDrag(Real mjd_tt, const Vec6& rv, const Mat3& T, Real area,
+                      Real mass, Real CD);
+
+Real DensityHarrisPriester(Real mjd_tt, const Vec3& r_tod);
+Vec3 AccelerationEarthSpacecraft(Real mjd_tt, const Vec6& rv, Real area,
+                                 Real mass, Real CR, Real CD,
+                                 GravityField grav);
+}  // namespace lupnt
