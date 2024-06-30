@@ -76,8 +76,16 @@ Body Body::Venus() {
   return venus;
 }
 
+/// @brief Kronecker delta function
+/// @param i
+/// @param j
+/// @return
 double kron(int i, int j) { return (i == j) ? 1 : 0; }
 
+/// @brief Compute the factorial product (n-m)!/(n+m)!
+/// @param n
+/// @param m
+/// @return
 double factprod(int n, int m) {
   double f = 1.0;
   for (int i = n - m + 1; i <= n + m; i++) {
