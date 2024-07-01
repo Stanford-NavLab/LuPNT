@@ -139,6 +139,7 @@ Vec6 ConvertOrbitState(const Vec6 &state_in_c, const Vec6 &state_in_d,
   }
 
   assert(false && "Relative conversion not found for the given input.");
+  return Vec6::Zero();
 }
 
 std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(

@@ -296,11 +296,9 @@ Vec6 ConvertFrame(Real tai, const Vec6 &rv_in, Frame frame_in,
         }
       }
     }
-
-    default: {
-      assert(false && "Conversion not found");
-    }
   }
+  assert(false && "Conversion not found");
+  return Vec6::Zero();
 }
 
 Mat6 Op2Mi(Real tai) {

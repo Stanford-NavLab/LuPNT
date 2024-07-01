@@ -21,7 +21,7 @@ namespace lupnt {
 /// applications. Berlin : New York: Springer, 2000.
 /// doi: 10.1007/978-3-642-58351-3.
 Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
-                              const Mat3& CS, int n_max, int m_max) {
+                              const MatX& CS, int n_max, int m_max) {
   MatX V(n_max + 2, n_max + 2);  // Harmonic functions
   MatX W(n_max + 2, n_max + 2);  // work array (0..n_max+1,0..n_max+1)
 
@@ -71,7 +71,7 @@ Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
     };
   };
 
-  Real C, S;
+  Real C, S, Fac;
   Real ax = 0, ay = 0, az = 0;
   for (int m = 0; m <= m_max; m++)
     for (int n = m; n <= n_max; n++)
@@ -83,7 +83,7 @@ Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
       } else {
         C = CS(n, m);      // C_n,m
         S = CS(m - 1, n);  // S_n,m
-        Real Fac = 0.5 * (n - m + 1) * (n - m + 2);
+        Fac = 0.5 * (n - m + 1) * (n - m + 2);
         ax += +0.5 * (-C * V(n + 1, m + 1) - S * W(n + 1, m + 1)) +
               Fac * (+C * V(n + 1, m - 1) + S * W(n + 1, m - 1));
         ay += +0.5 * (-C * W(n + 1, m + 1) + S * V(n + 1, m + 1)) +
@@ -93,6 +93,83 @@ Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
 
   Vec3 a_bf = (GM / (R_ref * R_ref)) * Vec3(ax, ay, az);
   Vec3 a = E.transpose() * a_bf;
+  return a;
+}
+
+Vec3d AccelarationGravityFieldEigen(const Vec3d& r, const Mat3d& E, double GM,
+                                    double R_ref, const MatXd& CS, int n_max,
+                                    int m_max) {
+  MatXd V(n_max + 2, n_max + 2);  // Harmonic functions
+  MatXd W(n_max + 2, n_max + 2);  // work array (0..n_max+1,0..n_max+1)
+
+  Vec3d r_bf = E * r;  // Position in body-fixed system
+  double r_sqr = r_bf.squaredNorm();
+  double rho = R_ref * R_ref / r_sqr;
+
+  // Normalized coordinates
+  double x0 = R_ref * r_bf(0) / r_sqr;
+  double y0 = R_ref * r_bf(1) / r_sqr;
+  double z0 = R_ref * r_bf(2) / r_sqr;
+
+  // Harmonic functions up to degree and order n_max+1
+  //   V_nm = (R_ref/r)^(n+1) * P_nm(sin(phi)) * cos(m*lambda)
+  //   W_nm = (R_ref/r)^(n+1) * P_nm(sin(phi)) * sin(m*lambda)
+
+  // Zonal terms V(n,0); set W(n,0)=0.0
+  V(0, 0) = R_ref / sqrt(r_sqr);
+  W(0, 0) = 0.0;
+
+  V(1, 0) = z0 * V(0, 0);
+  W(1, 0) = 0.0;
+
+  for (int n = 2; n <= n_max + 1; n++) {
+    V(n, 0) =
+        ((2 * n - 1) * z0 * V(n - 1, 0) - (n - 1) * rho * V(n - 2, 0)) / n;
+    W(n, 0) = 0.0;
+  };
+
+  // Tesseral and sectorial terms
+  for (int m = 1; m <= m_max + 1; m++) {
+    // V(m,m) .. V(n_max+1,m)
+    V(m, m) = (2 * m - 1) * (x0 * V(m - 1, m - 1) - y0 * W(m - 1, m - 1));
+    W(m, m) = (2 * m - 1) * (x0 * W(m - 1, m - 1) + y0 * V(m - 1, m - 1));
+    if (m <= n_max) {
+      V(m + 1, m) = (2 * m + 1) * z0 * V(m, m);
+      W(m + 1, m) = (2 * m + 1) * z0 * W(m, m);
+    };
+
+    for (int n = m + 2; n <= n_max + 1; n++) {
+      V(n, m) =
+          ((2 * n - 1) * z0 * V(n - 1, m) - (n + m - 1) * rho * V(n - 2, m)) /
+          (n - m);
+      W(n, m) =
+          ((2 * n - 1) * z0 * W(n - 1, m) - (n + m - 1) * rho * W(n - 2, m)) /
+          (n - m);
+    };
+  };
+
+  double C, S, Fac;
+  double ax = 0, ay = 0, az = 0;
+  for (int m = 0; m <= m_max; m++)
+    for (int n = m; n <= n_max; n++)
+      if (m == 0) {
+        C = CS(n, 0);  // C_n,0
+        ax -= C * V(n + 1, 1);
+        ay -= C * W(n + 1, 1);
+        az -= (n + 1) * C * V(n + 1, 0);
+      } else {
+        C = CS(n, m);      // C_n,m
+        S = CS(m - 1, n);  // S_n,m
+        Fac = 0.5 * (n - m + 1) * (n - m + 2);
+        ax += +0.5 * (-C * V(n + 1, m + 1) - S * W(n + 1, m + 1)) +
+              Fac * (+C * V(n + 1, m - 1) + S * W(n + 1, m - 1));
+        ay += +0.5 * (-C * W(n + 1, m + 1) + S * V(n + 1, m + 1)) +
+              Fac * (-C * W(n + 1, m - 1) + S * V(n + 1, m - 1));
+        az += (n - m + 1) * (-C * V(n + 1, m) - S * W(n + 1, m));
+      };
+
+  Vec3d a_bf = (GM / (R_ref * R_ref)) * Vec3d(ax, ay, az);
+  Vec3d a = E.transpose() * a_bf;
   return a;
 }
 

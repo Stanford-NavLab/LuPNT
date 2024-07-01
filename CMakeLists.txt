@@ -8,6 +8,9 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 add_definitions(-D_USE_MATH_DEFINES)
 set(PYPI_PACKAGE_NAME "pylupnt")
 
+# Compiler flags for Release builds
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
+
 project(LuPNT LANGUAGES CXX)
 
 option(BUILD_TESTING "Build the testing tree." ON)
