@@ -56,6 +56,10 @@ add_library(lupnt ${LuPNT_srcs})
 # add cspice
 target_link_libraries(lupnt PUBLIC "${CMAKE_SOURCE_DIR}/third_party/cspice/cspice.a")
 
+# add Eigen
+find_package(Eigen3 REQUIRED)
+target_link_libraries(lupnt PUBLIC Eigen3::Eigen)
+
 # add MatPlot++
 target_link_libraries(lupnt PUBLIC matplot)
 
@@ -81,9 +85,9 @@ target_include_directories(lupnt SYSTEM BEFORE PUBLIC
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/autodiff>
   $<INSTALL_INTERFACE:include/lupnt/third_party/autodiff>
 
-  # Eigen
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/eigen>
-  $<INSTALL_INTERFACE:${include/lupnt/third_party/eigen}>
+  # # Eigen
+  # $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/eigen>
+  # $<INSTALL_INTERFACE:${include/lupnt/third_party/eigen}>
 
   # cspice
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/cspice>

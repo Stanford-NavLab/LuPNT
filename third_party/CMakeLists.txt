@@ -76,7 +76,7 @@ if(BUILD_AI_TOOLBOX)
     set(MAKE_ALL TRUE)
     set(MAKE_PYTHON TRUE)
     set(LPSOLVE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-    set(EIGEN3_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/eigen")
+    # set(EIGEN3_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/eigen")
     add_subdirectory(AI-Toolbox)
     file(
         GLOB_RECURSE autodiff_headers 
@@ -86,7 +86,7 @@ endif()
 # ------------------------------------------------------------
 
 set(third_party_srcs
-  ${eigen_headers} 
+#   ${eigen_headers} 
   ${autodiff_headers}
   ${cspice_headers}
   ${tqdm_headers}

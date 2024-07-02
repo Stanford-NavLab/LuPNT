@@ -1,16 +1,14 @@
-#include <lupnt/lupnt.h>
-#include <omp.h>
-
+#include <Eigen/Core>
+#include <Eigen/Dense>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
 #include <string>
 
-using namespace lupnt;
 using namespace std;
 
-const double GM_Earth = 398600.4415e+9;  // [m^3/s^2]; JGM3
-const double R_JGM3 = 6378.1363e3;       // Radius Earth [m]; JGM3
+const double GM_EARTH_ = 398600.4415e+9;  // [m^3/s^2]; JGM3
+const double R_JGM3 = 6378.1363e3;        // Radius Earth [m]; JGM3
 const int N_JGM3 = 20;
 const double CS_JGM3[N_JGM3 + 1][N_JGM3 + 1] = {
     {1.000000e+00,  0.000000e+00,  1.543100e-09,  2.680119e-07,  -4.494599e-07,
@@ -119,6 +117,10 @@ const double CS_JGM3[N_JGM3 + 1][N_JGM3 + 1] = {
      -2.520877e-26, -8.774566e-28, 2.651434e-29,  8.352807e-30,  -1.878413e-31,
      4.054696e-32}};
 
+using Vec3d = Eigen::Vector3d;
+using Mat3d = Eigen::Matrix3d;
+using MatXd = Eigen::MatrixXd;
+
 Vec3d AccelHarmonic(const Vec3d& r, const Mat3d& E, double GM, double R_ref,
                     const MatXd& CS, int n_max, int m_max) {
   // Local variables
@@ -135,11 +137,9 @@ Vec3d AccelHarmonic(const Vec3d& r, const Mat3d& E, double GM, double R_ref,
   MatXd W(n_max + 2, n_max + 2);  // work array (0..n_max+1,0..n_max+1)
 
   // Body-fixed position
-
   r_bf = E * r;
 
   // Auxiliary quantities
-
   r_sqr = r_bf.squaredNorm();
   rho = R_ref * R_ref / r_sqr;
 
@@ -231,18 +231,15 @@ Vec3d AccelHarmonic(const Vec3d& r, const Mat3d& E, double GM, double R_ref,
 int main() {
   // Constants
 
-  const int N_Step = 500'000;  // Recommended for 0.01 sec timer (Linux)
+  const int N_Step = 1'000'000;  // Recommended for 0.01 sec timer (Linux)
   const int n_max = 20;
-  const Vec3d r(6525.919, 1710.416, 2508.886);  // Position [m]
+  const Vec3d r(6525.919e3, 1710.416e3, 2508.886e3);  // Position [m]
 
   // Variables
   const bool normalized = true;
   const std::string filename = "JGM3.cof";
   auto fmt = Eigen::IOFormat(10, 0, ", ", "\n", "[", "]");
-  GravityField grav =
-      ReadHarmonicGravityField(filename, n_max, n_max, normalized);
 
-  int i, n;            // Loop counters
   clock_t start, end;  // Processor time at start and end
   double duration;
   Vec3d a;
@@ -262,13 +259,13 @@ int main() {
     }
   }
 
-  for (n = n_max; n <= n_max; n += 2) {
+  for (int n = n_max; n <= n_max; n += 2) {
     // Start timing
     start = clock();
 
     // Evaluate gravitational acceleration N_Step times
     for (int i = 0; i < N_Step; i++) {
-      a = AccelHarmonic(r, E, gm, r_ref, CS, n, n) / 1e3;
+      a = AccelHarmonic(r, E, GM_EARTH_, R_JGM3, CS, n, n);
     }
 
     // Stop CPU time measurement

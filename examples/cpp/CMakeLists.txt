@@ -3,6 +3,16 @@ set(groupName "examples")
 # Enable OpenMP
 find_package(OpenMP REQUIRED)
 set(linkLibraries "lupnt" OpenMP::OpenMP_CXX)
+
+# Set global optimization flags based on the build type
+if(CMAKE_BUILD_TYPE MATCHES Release)
+    message(STATUS "Configuring Release build with optimizations")
+    set(GLOBAL_CXX_FLAGS "-O3;-march=native")
+else()
+    message(STATUS "Configuring Debug build")
+    set(GLOBAL_CXX_FLAGS "-O0;-g")
+endif()
+
 # Get all script files
 file(GLOB_RECURSE script_files "*.cc" "**/*.cc")
 
@@ -46,6 +56,9 @@ foreach(script_src IN ITEMS ${script_srcs})
     # Add executable
     add_executable(${script_target} ${script_src} ${script_headers})
     target_link_libraries(${script_target} ${linkLibraries})
+
+    # Apply global compile options to the target
+    target_compile_options(${script_target} PRIVATE ${GLOBAL_CXX_FLAGS})
 
     # Apply user build flags from CMake cache variables:
     # gtsam_apply_build_flags(${script_target})
