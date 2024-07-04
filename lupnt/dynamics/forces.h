@@ -20,9 +20,23 @@
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/body.h"
 
+
+template<typename T>
+using Vector3 = Eigen::Vector3<T>;
+template<typename T>
+using Matrix3 = Eigen::Matrix<T, 3, 3>;
+template<typename T>
+using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+
+
 namespace lupnt {
-Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
-                              const MatX& CS, int n_max, int m_max);
+// Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
+//                               const MatX& CS, int n_max, int m_max);
+
+template<typename T>
+Vector3<T> AccelarationGravityField(const Vector3<T>& r, const Matrix3<T>& E, T GM, T R_ref,
+                              const MatrixX<T>& CS, int n_max, int m_max);
+
 Vec3d AccelarationGravityFieldEigen(const Vec3d& r, const Mat3d& E, double GM,
                                     double R_ref, const MatXd& CS, int n_max,
                                     int m_max);

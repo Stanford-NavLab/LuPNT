@@ -20,19 +20,22 @@ namespace lupnt {
 /// O. Montenbruck and G. Eberhard, Satellite orbits: models, methods, and
 /// applications. Berlin : New York: Springer, 2000.
 /// doi: 10.1007/978-3-642-58351-3.
-Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
-                              const MatX& CS, int n_max, int m_max) {
-  MatX V(n_max + 2, n_max + 2);  // Harmonic functions
-  MatX W(n_max + 2, n_max + 2);  // work array (0..n_max+1,0..n_max+1)
 
-  Vec3 r_bf = E * r;  // Position in body-fixed system
-  Real r_sqr = r_bf.squaredNorm();
-  Real rho = R_ref * R_ref / r_sqr;
+template<typename T>
+Vector3<T> AccelarationGravityField(const Vector3<T>& r, const Matrix3<T>& E, T GM, T R_ref,
+                              const MatrixX<T>& CS, int n_max, int m_max)
+{
+  MatrixX<T> V(n_max + 2, n_max + 2); // Harmonic functions
+  MatrixX<T> W(n_max + 2, n_max + 2); // work array (0..n_max+1,0..n_max+1)
+
+  Vector3<T> r_bf = E * r; // Position in body-fixed system
+  T r_sqr = r_bf.squaredNorm();
+  T rho = R_ref * R_ref / r_sqr;
 
   // Normalized coordinates
-  Real x0 = R_ref * r_bf(0) / r_sqr;
-  Real y0 = R_ref * r_bf(1) / r_sqr;
-  Real z0 = R_ref * r_bf(2) / r_sqr;
+  T x0 = R_ref * r_bf(0) / r_sqr;
+  T y0 = R_ref * r_bf(1) / r_sqr;
+  T z0 = R_ref * r_bf(2) / r_sqr;
 
   // Harmonic functions up to degree and order n_max+1
   //   V_nm = (R_ref/r)^(n+1) * P_nm(sin(phi)) * cos(m*lambda)
@@ -45,23 +48,23 @@ Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
   V(1, 0) = z0 * V(0, 0);
   W(1, 0) = 0.0;
 
-  for (int n = 2; n <= n_max + 1; n++) {
+  for(int n = 2; n <= n_max + 1; n++) {
     V(n, 0) =
         ((2 * n - 1) * z0 * V(n - 1, 0) - (n - 1) * rho * V(n - 2, 0)) / n;
     W(n, 0) = 0.0;
   };
 
   // Tesseral and sectorial terms
-  for (int m = 1; m <= m_max + 1; m++) {
+  for(int m = 1; m <= m_max + 1; m++) {
     // V(m,m) .. V(n_max+1,m)
     V(m, m) = (2 * m - 1) * (x0 * V(m - 1, m - 1) - y0 * W(m - 1, m - 1));
     W(m, m) = (2 * m - 1) * (x0 * W(m - 1, m - 1) + y0 * V(m - 1, m - 1));
-    if (m <= n_max) {
+    if(m <= n_max) {
       V(m + 1, m) = (2 * m + 1) * z0 * V(m, m);
       W(m + 1, m) = (2 * m + 1) * z0 * W(m, m);
     };
 
-    for (int n = m + 2; n <= n_max + 1; n++) {
+    for(int n = m + 2; n <= n_max + 1; n++) {
       V(n, m) =
           ((2 * n - 1) * z0 * V(n - 1, m) - (n + m - 1) * rho * V(n - 2, m)) /
           (n - m);
@@ -71,18 +74,18 @@ Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
     };
   };
 
-  Real C, S, Fac;
-  Real ax = 0, ay = 0, az = 0;
-  for (int m = 0; m <= m_max; m++)
-    for (int n = m; n <= n_max; n++)
-      if (m == 0) {
-        C = CS(n, 0);  // C_n,0
+  T C, S, Fac;
+  T ax = 0, ay = 0, az = 0;
+  for(int m = 0; m <= m_max; m++)
+    for(int n = m; n <= n_max; n++)
+      if(m == 0) {
+        C = CS(n, 0); // C_n,0
         ax -= C * V(n + 1, 1);
         ay -= C * W(n + 1, 1);
         az -= (n + 1) * C * V(n + 1, 0);
       } else {
-        C = CS(n, m);      // C_n,m
-        S = CS(m - 1, n);  // S_n,m
+        C = CS(n, m);     // C_n,m
+        S = CS(m - 1, n); // S_n,m
         Fac = 0.5 * (n - m + 1) * (n - m + 2);
         ax += +0.5 * (-C * V(n + 1, m + 1) - S * W(n + 1, m + 1)) +
               Fac * (+C * V(n + 1, m - 1) + S * W(n + 1, m - 1));
@@ -91,18 +94,24 @@ Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
         az += (n - m + 1) * (-C * V(n + 1, m) - S * W(n + 1, m));
       };
 
-  Vec3 a_bf = (GM / (R_ref * R_ref)) * Vec3(ax, ay, az);
-  Vec3 a = E.transpose() * a_bf;
+  Vector3<T> a_bf = (GM / (R_ref * R_ref)) * Vector3<T>(ax, ay, az);
+  Vector3<T> a = E.transpose() * a_bf;
   return a;
 }
 
+template Vec3d AccelarationGravityField(const Vec3d& r, const Mat3d& E, double GM, double R_ref,
+                              const MatXd& CS, int n_max, int m_max);
+template Vec3 AccelarationGravityField(const Vec3& r, const Mat3& E, Real GM, Real R_ref,
+                              const MatX& CS, int n_max, int m_max);
+
 Vec3d AccelarationGravityFieldEigen(const Vec3d& r, const Mat3d& E, double GM,
                                     double R_ref, const MatXd& CS, int n_max,
-                                    int m_max) {
-  MatXd V(n_max + 2, n_max + 2);  // Harmonic functions
-  MatXd W(n_max + 2, n_max + 2);  // work array (0..n_max+1,0..n_max+1)
+                                    int m_max)
+{
+  MatXd V(n_max + 2, n_max + 2); // Harmonic functions
+  MatXd W(n_max + 2, n_max + 2); // work array (0..n_max+1,0..n_max+1)
 
-  Vec3d r_bf = E * r;  // Position in body-fixed system
+  Vec3d r_bf = E * r; // Position in body-fixed system
   double r_sqr = r_bf.squaredNorm();
   double rho = R_ref * R_ref / r_sqr;
 
@@ -122,23 +131,23 @@ Vec3d AccelarationGravityFieldEigen(const Vec3d& r, const Mat3d& E, double GM,
   V(1, 0) = z0 * V(0, 0);
   W(1, 0) = 0.0;
 
-  for (int n = 2; n <= n_max + 1; n++) {
+  for(int n = 2; n <= n_max + 1; n++) {
     V(n, 0) =
         ((2 * n - 1) * z0 * V(n - 1, 0) - (n - 1) * rho * V(n - 2, 0)) / n;
     W(n, 0) = 0.0;
   };
 
   // Tesseral and sectorial terms
-  for (int m = 1; m <= m_max + 1; m++) {
+  for(int m = 1; m <= m_max + 1; m++) {
     // V(m,m) .. V(n_max+1,m)
     V(m, m) = (2 * m - 1) * (x0 * V(m - 1, m - 1) - y0 * W(m - 1, m - 1));
     W(m, m) = (2 * m - 1) * (x0 * W(m - 1, m - 1) + y0 * V(m - 1, m - 1));
-    if (m <= n_max) {
+    if(m <= n_max) {
       V(m + 1, m) = (2 * m + 1) * z0 * V(m, m);
       W(m + 1, m) = (2 * m + 1) * z0 * W(m, m);
     };
 
-    for (int n = m + 2; n <= n_max + 1; n++) {
+    for(int n = m + 2; n <= n_max + 1; n++) {
       V(n, m) =
           ((2 * n - 1) * z0 * V(n - 1, m) - (n + m - 1) * rho * V(n - 2, m)) /
           (n - m);
@@ -150,16 +159,16 @@ Vec3d AccelarationGravityFieldEigen(const Vec3d& r, const Mat3d& E, double GM,
 
   double C, S, Fac;
   double ax = 0, ay = 0, az = 0;
-  for (int m = 0; m <= m_max; m++)
-    for (int n = m; n <= n_max; n++)
-      if (m == 0) {
-        C = CS(n, 0);  // C_n,0
+  for(int m = 0; m <= m_max; m++)
+    for(int n = m; n <= n_max; n++)
+      if(m == 0) {
+        C = CS(n, 0); // C_n,0
         ax -= C * V(n + 1, 1);
         ay -= C * W(n + 1, 1);
         az -= (n + 1) * C * V(n + 1, 0);
       } else {
-        C = CS(n, m);      // C_n,m
-        S = CS(m - 1, n);  // S_n,m
+        C = CS(n, m);     // C_n,m
+        S = CS(m - 1, n); // S_n,m
         Fac = 0.5 * (n - m + 1) * (n - m + 2);
         ax += +0.5 * (-C * V(n + 1, m + 1) - S * W(n + 1, m + 1)) +
               Fac * (+C * V(n + 1, m - 1) + S * W(n + 1, m - 1));
@@ -182,7 +191,8 @@ Vec3d AccelarationGravityFieldEigen(const Vec3d& r, const Mat3d& E, double GM,
 /// O. Montenbruck and G. Eberhard, Satellite orbits: models, methods, and
 /// applications. Berlin : New York: Springer, 2000.
 /// doi: 10.1007/978-3-642-58351-3.
-Vec3 AccelerationPointMass(const Vec3& r, const Vec3& s, double GM) {
+Vec3 AccelerationPointMass(const Vec3& r, const Vec3& s, double GM)
+{
   Vec3 d = r - s;
   Vec3 a = (-GM) * (d / pow(d.norm(), 3) + s / pow(s.norm(), 3));
   return a;
@@ -202,7 +212,8 @@ Vec3 AccelerationPointMass(const Vec3& r, const Vec3& s, double GM) {
 /// applications. Berlin : New York: Springer, 2000.
 /// doi: 10.1007/978-3-642-58351-3.
 Vec3 AccelerationSolarRadiation(const Vec3& r, const Vec3& r_sun, Real area,
-                                Real mass, Real CR, Real P0, Real AU) {
+                                Real mass, Real CR, Real P0, Real AU)
+{
   Vec3 d = r - r_sun;
   Vec3 a = CR * (area / mass) * P0 * (AU * AU) * d / pow(d.norm(), 3);
   return a;
@@ -221,8 +232,9 @@ Vec3 AccelerationSolarRadiation(const Vec3& r, const Vec3& r_sun, Real area,
 /// applications. Berlin : New York: Springer, 2000.
 /// doi: 10.1007/978-3-642-58351-3.
 Vec3 AccelerationDrag(Real mjd_tt, const Vec6& rv, const Mat3& T, Real area,
-                      Real mass, Real CD) {
-  const Vec3 omega(0, 0, 7.29212e-5);  // Earth angular velocity [rad/s]
+                      Real mass, Real CD)
+{
+  const Vec3 omega(0, 0, 7.29212e-5); // Earth angular velocity [rad/s]
   Vec3 r = rv.head(3);
   Vec3 v = rv.tail(3);
 
@@ -252,12 +264,13 @@ Vec3 AccelerationDrag(Real mjd_tt, const Vec6& rv, const Mat3& T, Real area,
 /// O. Montenbruck and G. Eberhard, Satellite orbits: models, methods, and
 /// applications. Berlin : New York: Springer, 2000.
 /// doi: 10.1007/978-3-642-58351-3.
-Real DensityHarrisPriester(Real mjd_tt, const Vec3& r_tod) {
-  const double upper_limit = 1000.0;  // Upper height limit [km]
-  const double lower_limit = 100.0;   // Lower height limit [km]
-  const double ra_lag = 0.523599;     // Right ascension lag [rad]
-  const int n_prm = 3;                // Harris-Priester parameter
-                                      // 2(6) low(high) inclination
+Real DensityHarrisPriester(Real mjd_tt, const Vec3& r_tod)
+{
+  const double upper_limit = 1000.0; // Upper height limit [km]
+  const double lower_limit = 100.0;  // Lower height limit [km]
+  const double ra_lag = 0.523599;    // Right ascension lag [rad]
+  const int n_prm = 3;               // Harris-Priester parameter
+                                     // 2(6) low(high) inclination
 
   // Harris-Priester atmospheric density model parameters
   // Height [km], minimum density, maximum density [gm/km^3]
@@ -291,10 +304,10 @@ Real DensityHarrisPriester(Real mjd_tt, const Vec3& r_tod) {
 
   // Satellite height (Earth flattening correction)
   Vec3 lla = Cart2LatLonAlt(r_tod, R_EARTH, WGS84_F);
-  Real height = lla(2);  // [km]
+  Real height = lla(2); // [km]
 
   // Exit with zero density outside height model limits
-  if (height >= upper_limit || height <= lower_limit) {
+  if(height >= upper_limit || height <= lower_limit) {
     return 0.0;
   }
 
@@ -306,7 +319,7 @@ Real DensityHarrisPriester(Real mjd_tt, const Vec3& r_tod) {
   // Unit vector u towards the apex of the diurnal bulge
   // in inertial geocentric coordinates
   Real c_dec = cos(dec_sun);
-  Vec3 u;  // Apex of diurnal bulge
+  Vec3 u; // Apex of diurnal bulge
   u(0) = c_dec * cos(ra_sun + ra_lag);
   u(1) = c_dec * sin(ra_sun + ra_lag);
   u(2) = sin(dec_sun);
@@ -316,11 +329,11 @@ Real DensityHarrisPriester(Real mjd_tt, const Vec3& r_tod) {
   Real c_psi2 = 0.5 + 0.5 * r_tod.dot(u) / r_tod.norm();
 
   // Height index search and exponential density interpolation
-  int ih = 0;  // section index reset
+  int ih = 0; // section index reset
   // loop over N_Coef height regimes
-  for (int i = 0; i < N_Coef - 1; i++) {
-    if (height >= h(i) && height < h(i + 1)) {
-      ih = i;  // ih identifies height section
+  for(int i = 0; i < N_Coef - 1; i++) {
+    if(height >= h(i) && height < h(i + 1)) {
+      ih = i; // ih identifies height section
       break;
     }
   }
@@ -333,7 +346,7 @@ Real DensityHarrisPriester(Real mjd_tt, const Vec3& r_tod) {
 
   // Density computation
   Real density = d_min + (d_max - d_min) * pow(c_psi2, n_prm);
-  return density * 1.0e-12;  // [kg/m^3]
+  return density * 1.0e-12; // [kg/m^3]
 }
 
 /// @brief Computes the fractional illumination of a spacecraft
@@ -344,9 +357,10 @@ Real DensityHarrisPriester(Real mjd_tt, const Vec3& r_tod) {
 /// O. Montenbruck and G. Eberhard, Satellite orbits: models, methods, and
 /// applications. Berlin : New York: Springer, 2000.
 /// doi: 10.1007/978-3-642-58351-3.
-Real Illumination(const Vec3& r, const Vec3& r_sun, Real R_body) {
-  Vec3 e_sun = r_sun.normalized();  // Sun direction unit vector
-  Real s = r.dot(e_sun);            // Projection of s/c position
+Real Illumination(const Vec3& r, const Vec3& r_sun, Real R_body)
+{
+  Vec3 e_sun = r_sun.normalized(); // Sun direction unit vector
+  Real s = r.dot(e_sun);           // Projection of s/c position
   return ((s > 0 || (r - s * e_sun).norm() > R_body) ? 1.0 : 0.0);
 }
 
@@ -365,7 +379,8 @@ Real Illumination(const Vec3& r, const Vec3& r_sun, Real R_body) {
 /// doi: 10.1007/978-3-642-58351-3.
 Vec3 AccelerationEarthSpacecraft(Real mjd_tt, const Vec6& rv, Real area,
                                  Real mass, Real CR, Real CD,
-                                 GravityField grav) {
+                                 GravityField grav)
+{
   Vec3 r = rv.head(3);
   Vec3 v = rv.tail(3);
 
@@ -392,4 +407,4 @@ Vec3 AccelerationEarthSpacecraft(Real mjd_tt, const Vec6& rv, Real area,
   return a;
 }
 
-}  // namespace lupnt
+} // namespace lupnt

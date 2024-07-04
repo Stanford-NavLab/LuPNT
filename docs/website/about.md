@@ -1,3 +1,17 @@
+# About
+
+## Philosophy
+
+{{lupnt}} aims to be both *efficient* and *easy to use* C++ library for
+automatic differentiation. If you appreciate how it has been developed so far,
+and want to contribute, you are most welcome to join us in its development. And
+if you dislike it, please let us know how we can improve!
+
+You can contact us using [GitHub Discussion][discussion]. If you would like to
+report a bug, then please create a new [GitHub Issue][issues].
+
+## License
+
 MIT License
 
 Copyright © 2018–2024 Stanford Navigation and Autonomous Vehicles (NAV) Lab
@@ -19,3 +33,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+[discussion]: https://github.com/Stanford-NavLab/LuPNT/discussions/new?category=q-a
+[issues]: https://github.com/Stanford-NavLab/LuPNT/issues/new

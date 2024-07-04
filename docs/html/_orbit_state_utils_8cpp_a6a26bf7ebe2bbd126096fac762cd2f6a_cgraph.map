@@ -1,7 +1,0 @@
-<map id="LPT::MeanAnomToEccentricAnom" name="LPT::MeanAnomToEccentricAnom">
-<area shape="rect" id="Node000001" title="Compute mean anomaly from the Eccentric anomaly." alt="" coords="5,29,226,55"/>
-<area shape="poly" id="edge1_Node000001_Node000001" title=" " alt="" coords="80,31,73,21,78,11,92,5,116,3,142,6,155,13,153,18,141,11,115,8,93,10,81,15,79,20,85,27"/>
-<area shape="rect" id="Node000002" href="$_math_utils_8cpp.html#a7d7ca6984da9a017ed7e3d34657fc87b" title="Wrap the angle between &#45;pi and pi." alt="" coords="274,29,379,55"/>
-<area shape="poly" id="edge2_Node000001_Node000002" title=" " alt="" coords="226,40,259,40,259,45,226,45"/>
-<area shape="poly" id="edge3_Node000002_Node000002" title=" " alt="" coords="291,31,284,21,288,11,303,5,326,3,353,6,366,13,363,18,352,11,326,8,304,10,292,15,290,20,295,27"/>
-</map>
