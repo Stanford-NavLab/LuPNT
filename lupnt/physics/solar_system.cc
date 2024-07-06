@@ -1,7 +1,7 @@
 #include "solar_system.h"
 
 #include "lupnt/numerics/math_utils.h"
-#include "lupnt/physics/time.h"
+#include "lupnt/physics/time_converter.h"
 
 namespace lupnt {
 

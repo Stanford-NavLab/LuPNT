@@ -223,26 +223,14 @@ enum class NaifId {
 };
 
 namespace TimeSys {
-// Time
-const std::string TAI = "TAI";
-const std::string TDB = "TDB";
-const std::string TT = "TT";
-const std::string UTC = "UTC";
-// Modified Julian Date (MJD)
-const std::string MJD_TAI = "MJD_TAI";
-const std::string MJD_TDB = "MJD_TDB";
-const std::string MJD_TT = "MJD_TT";
-const std::string MJD_UTC = "MJD_UTC";
-// Julian Date (JD)
+const std::string UT1 = "UT1"; // Universal Time 1
+const std::string UTC = "UTC"; // Coordinated Universal Time
+const std::string TAI = "TAI"; // International Atomic Time 
+const std::string TDB = "TDB"; // Barycentric Dynamical Time
+const std::string TT = "TT";  // Terrestrial Time 
+const std::string TCG = "TCG"; // Geocentric Coordinate Time
+const std::string TCB = "TCB"; // Barycentric Coordinate Time
+const std::string GPS = "GPS"; // Global Positioning System Time
 }  // namespace TimeSys
 
-// TAI         International Atomic Time
-//    TDB         Barycentric Dynamical Time
-//    TT          Terrestrial Time
-//    TDT         Terrestrial Dynamical Time (TT)
-//    ET          Ephemeris time, alias for TDB
-//    JDTDB       Julian Date relative to TDB
-//    JDTDT       Julian Date relative to TDT (TT)
-//    JED         Julian Ephemeris date (synonym to JDTDB)
-//    GPS         Global Positioning System Time
 }  // namespace lupnt

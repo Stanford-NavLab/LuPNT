@@ -1,14 +1,20 @@
-#include "time.h"
+#include "time_converter.h"
 
 #include <functional>
 #include <iostream>
 #include <map>
+#include <queue>
 #include <string>
+#include <vector>
 
+#include "lupnt/numerics/graphs.h"
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/eop.h"
 #include "lupnt/physics/solar_system.h"
 #include "lupnt/physics/tai_utc.h"
+
+#define TIME_CONVERSION(from, to, func) \
+  {{TimeSys::from, TimeSys::to}, [](Real t) -> Real { return func(t); }}
 
 /// @ref
 /// D. Folta, N. Bosanac, I. Elliott, L. Mann, R. Mesarch, and J. Rosales,
@@ -21,17 +27,39 @@
 
 namespace lupnt {
 
-// std::map<std::pair<std::string, std::string>, std::function<Real(Real)>>
-//     time_conversions = {{{"UT1", "UTC"}, UT1toUTC}, {{"UTC", "UT1"},
-//     UTCtoUT1},
-//                         {{"UTC", "TAI"}, UTCtoTAI}, {{"TAI", "UTC"},
-//                         TAItoUTC},
-//                         {{"TAI", "TT"}, TAItoTT},   {{"TT", "TAI"}, TTtoTAI},
-//                         {{"TT", "TDB"}, TTtoTDB},   {{"TDB", "TT"}, TDBtoTT},
-//                         {{"TAI", "GPS"}, TAItoGPS}, {{"GPS", "TAI"},
-//                         GPStoTAI}};
+std::map<std::pair<std::string, std::string>, std::function<Real(Real)>>
+    time_conversions = {TIME_CONVERSION(UTC, UT1, UTCtoUT1),
+                        TIME_CONVERSION(UT1, UTC, UT1toUTC),
+                        TIME_CONVERSION(TAI, UTC, TAItoUTC),
+                        TIME_CONVERSION(UTC, TAI, UTCtoTAI),
+                        TIME_CONVERSION(TAI, TT, TAItoTT),
+                        TIME_CONVERSION(TT, TAI, TTtoTAI),
+                        TIME_CONVERSION(TCG, TT, TCGtoTT),
+                        TIME_CONVERSION(TT, TCG, TTtoTCG),
+                        TIME_CONVERSION(TT, TDB, TTtoTDB),
+                        TIME_CONVERSION(TDB, TT, TDBtoTT),
+                        TIME_CONVERSION(TAI, GPS, TAItoGPS),
+                        TIME_CONVERSION(GPS, TAI, GPStoTAI),
+                        TIME_CONVERSION(TCB, TDB, TCBtoTDB),
+                        TIME_CONVERSION(TT, TCB, TTtoTCB)};
 
-Real ConvertT(Real t, std::string from, std::string to) { return 0; }
+Real ConvertT(Real t, const std::string& from, const std::string& to) {
+  if (from == to) return t;
+  std::vector<std::string> path = FindShortestPath(from, to, time_conversions);
+  Real t_out = t;
+  for (size_t i = 0; i < path.size() - 1; i++) {
+    t_out = time_conversions[{path[i], path[i + 1]}](t_out);
+  }
+  return t_out;
+}
+
+VecX ConvertT(VecX t, const std::string& from, const std::string& to) {
+  VecX t_out(t.size());
+  for (int i = 0; i < t.size(); i++) {
+    t_out(i) = ConvertT(t(i), from, to);
+  }
+  return t_out;
+}
 
 Real UTCtoUT1(Real t_utc) {
   Real mjd_utc = t_utc / SECS_DAY + MJD_J2000;

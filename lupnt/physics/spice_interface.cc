@@ -23,7 +23,7 @@
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/cheby.h"
 #include "lupnt/physics/spice_interface.h"
-#include "lupnt/physics/time.h"
+#include "lupnt/physics/time_converter.h"
 
 namespace lupnt {
 

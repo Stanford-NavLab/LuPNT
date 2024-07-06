@@ -4,7 +4,8 @@
 
 #include "lupnt/physics/coordinates.h"
 #include "lupnt/physics/solar_system.h"
-#include "lupnt/physics/time.h"
+#include "lupnt/physics/time_converter.h"
+
 namespace lupnt {
 
 /// @brief Computes the acceleration due to the harmonic gravity field of the

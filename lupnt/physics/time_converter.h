@@ -1,10 +1,19 @@
+#pragma once
+
 #include <string>
 #include <tuple>
 
 #include "lupnt/core/constants.h"
+#include "lupnt/numerics/graphs.h"
 #include "lupnt/numerics/vector_macros.h"
 
 namespace lupnt {
+
+extern std::map<std::pair<std::string, std::string>, std::function<Real(Real)>>
+    time_conversions;
+
+Real ConvertT(Real t, const std::string& from, const std::string& to);
+VecX ConvertT(VecX t, const std::string& from, const std::string& to);
 
 Real UTCtoUT1(Real t_utc);
 Real UT1toUTC(Real t_ut1);
@@ -29,7 +38,6 @@ Real TTtoTCB(Real t_tdb);
 
 Real MJDtoTime(Real mjd);
 Real TimeToMJD(Real t);
-
 
 Real TAItoJulianDateTT(Real t_tai);
 Real EarthRotationAngle(Real mjd_ut1);
