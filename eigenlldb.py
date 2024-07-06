@@ -30,7 +30,7 @@ MAX_COLS = 100
 def __lldb_init_module(debugger, internal_dict):
     # real
     debugger.HandleCommand(
-        'type summary add --summary-string "${var.m_data.__elems_[0]}" lupnt::real'
+        'type summary add --summary-string "${var.m_data.__elems_[0]}" lupnt::Real'
     )
     # lupnt Vec and Mat
     debugger.HandleCommand(

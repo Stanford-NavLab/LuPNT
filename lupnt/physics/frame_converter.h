@@ -43,16 +43,19 @@ enum Frame {
 // Vec = func(real, Vec)
 Vec6 ConvertFrame(Real tai, const Vec6 &rv_in, Frame frame_in, Frame frame_out);
 Vec3 ConvertFrame(Real tai, const Vec3 &r_in, Frame frame_in, Frame frame_out);
+
 // Mat = func(real, Mat)
 Mat<-1, 6> ConvertFrame(Real tai, const Mat<-1, 6> &rv_in, Frame frame_in,
                         Frame frame_out);
 Mat<-1, 3> ConvertFrame(Real tai, const Mat<-1, 3> &r_in, Frame frame_in,
                         Frame frame_out);
+
 // Mat = func(Vec, Vec)
 Mat<-1, 6> ConvertFrame(VecX tai, const Vec6 &rv_in, Frame frame_in,
                         Frame frame_out);
 Mat<-1, 3> ConvertFrame(VecX tai, const Vec3 &r_in, Frame frame_in,
                         Frame frame_out);
+
 // Mat = func(Vec, Mat)
 Mat<-1, 6> ConvertFrame(VecX tai, const Mat<-1, 6> &rv_in, Frame frame_in,
                         Frame frame_out);

@@ -36,6 +36,7 @@ Body Body::Earth() {
   earth.inertial_frame = Frame::GCRF;
   earth.GM = GM_EARTH;
   earth.R = R_EARTH;
+
   return earth;
 }
 
@@ -48,7 +49,7 @@ Body Body::Sun() {
   sun.inertial_frame = Frame::ICRF;
   sun.GM = GM_SUN;
   sun.R = 696342.0;
-  sun.has_gravity_field = false;
+  sun.use_gravity_field = false;
   return sun;
 }
 

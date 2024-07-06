@@ -36,17 +36,12 @@ void LoadSpiceKernel(void);
 void ExtractPckCoeffs(void);
 Mat6d GetFrameConversionMat(Real t_tai, Frame from_frame, Frame to_frame);
 
-std::tuple<int, int, int, int, int, Real> ModifiedJulianDate2Date(Real mjd);
-
 Real String2TDB(std::string str);
 Real String2TAI(std::string str);
 
 std::string TAItoStringUTC(Real t_tai, int prec);
 std::string TDBtoStringUTC(Real t_tdb, int prec);
 
-Real EarthRotationAngle(Real mjd_ut1);
-
-Real UTCtoUT1(Real mjd_utc);
 Real ConvertTime(Real t, std::string from_time, std::string to_time);
 
 Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target, Frame frame);

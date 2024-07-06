@@ -10,15 +10,15 @@
  */
 #pragma once
 
-#include "user_file_path.h"
-
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <autodiff/forward/real.hpp>
 #include <autodiff/forward/real/eigen.hpp>
 
+#include "user_file_path.h"
+
 #define ASSERT_WITH_MESSAGE(condition, message) \
-  if(!(condition)) {                            \
+  if (!(condition)) {                           \
     std::ostringstream oss;                     \
     oss << message;                             \
     throw std::runtime_error(oss.str());        \
@@ -62,15 +62,15 @@
 namespace lupnt {
 
 using Real = autodiff::real;
-template<int rows, int cols>
+template <int rows, int cols>
 using Mat = Eigen::Matrix<Real, rows, cols>;
-template<int rows, int cols>
+template <int rows, int cols>
 using Matd = Eigen::Matrix<double, rows, cols>;
-template<int size>
+template <int size>
 using Vec = Eigen::Matrix<Real, size, 1>;
-template<int size>
+template <int size>
 using Vecd = Eigen::Matrix<double, size, 1>;
-template<int size>
+template <int size>
 using RowVecd = Eigen::Matrix<double, 1, size>;
 using RowVecXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;
 using Quat = Eigen::Quaternion<Real>;
@@ -131,9 +131,9 @@ static constexpr double DAYS_JULIAN_CENTURY = 36525.00;
 static constexpr double DAYS_SEC = 1.1574074074074074074074074074074e-5;
 
 static constexpr double TIME_OF_J2000 =
-    883655990.850000;                            // 2000/01/01 43167.85
-static constexpr double JD_OF_J2000 = 2451545.0; // JD of J2000 epoch
-static constexpr double MJD_J2000 = 51544.5;     // MJD of J2000 epoch
+    883655990.850000;                             // 2000/01/01 43167.85
+static constexpr double JD_OF_J2000 = 2451545.0;  // JD of J2000 epoch
+static constexpr double MJD_J2000 = 51544.5;      // MJD of J2000 epoch
 
 // 2000/01/01 11:59:27.965622
 static constexpr double A1MJD_OF_J2000 = 21545.00000000;
@@ -160,32 +160,32 @@ static constexpr double NUM_SECS = SECS_DAY;
 static constexpr int JULIAN_DATE_OF_010541 = 2430000;
 
 // Coordinate system constants -------------------------------------------------
-static constexpr double d_E_M = 384400.0;              // [km]
-static constexpr double GM_SUN = 1.32712438e11;        // [km^3/s^2]
-static constexpr double GM_EARTH = 398600.4415;        // [km^3/s^2]
-static constexpr double GM_MOON = 4902.800066;         // [km^3/s^2]
-static constexpr double d_E_EMB = 4671.0;              // [km]
-static constexpr double R_EARTH = 6378.137;            // [km]
-static constexpr double R_MOON = 1737.4;               // [km]
-static constexpr double OMEGA_E_M = 2.6617e-6;         // [rad/s]
-static constexpr double d_M_EMB = d_E_M - d_E_EMB;     // [km]
-static constexpr double WGS84_A = 6378.137;            // [km]
-static constexpr double WGS84_F = 1.0 / 298.257223563; // [-]
+static constexpr double d_E_M = 384400.0;               // [km]
+static constexpr double GM_SUN = 1.32712438e11;         // [km^3/s^2]
+static constexpr double GM_EARTH = 398600.4415;         // [km^3/s^2]
+static constexpr double GM_MOON = 4902.800066;          // [km^3/s^2]
+static constexpr double d_E_EMB = 4671.0;               // [km]
+static constexpr double R_EARTH = 6378.137;             // [km]
+static constexpr double R_MOON = 1737.4;                // [km]
+static constexpr double OMEGA_E_M = 2.6617e-6;          // [rad/s]
+static constexpr double d_M_EMB = d_E_M - d_E_EMB;      // [km]
+static constexpr double WGS84_A = 6378.137;             // [km]
+static constexpr double WGS84_F = 1.0 / 298.257223563;  // [-]
 
 static constexpr double J2_EARTH = 1.08262668e-3;
 // static constexpr double J2_MOON = 9.08901807506000e-5;
 static constexpr double J2_MOON =
-    9.094278450270e-5; // Zonal value adjusted for permanent tide - Rigid J2
+    9.094278450270e-5;  // Zonal value adjusted for permanent tide - Rigid J2
 static constexpr double C22_MOON =
-    3.470983013194e-5; // Sectorial value adjusted for perm. tide - Rigid C22
+    3.470983013194e-5;  // Sectorial value adjusted for perm. tide - Rigid C22
 
 // Solar Radiation Pressure Constants
 // -------------------------------------------------
-static constexpr double AU = 149597970;     // AU [km]
-static constexpr double S_AU = 1358 * 1e-6; // Mean Solar Flux at 1 AU [W/km^2]
-static constexpr double C = 299792.458;     // Light speed [km/s]
+static constexpr double AU = 149597970;      // AU [km]
+static constexpr double S_AU = 1358 * 1e-6;  // Mean Solar Flux at 1 AU [W/km^2]
+static constexpr double C = 299792.458;      // Light speed [km/s]
 static constexpr double P_SUN =
-    S_AU / C; // Solar radiation pressure at 1 AU [N/km^2] = 4.56e-6 N/m^2
+    S_AU / C;  // Solar radiation pressure at 1 AU [N/km^2] = 4.56e-6 N/m^2
 
 // File Pathes -----------------------------------------------------------------
 static const std::filesystem::path CSPICE_KER_DIR = GetDataPath() / "ephemeris";
@@ -219,10 +219,16 @@ enum class NaifId {
   JUPITER = 599
 };
 
-namespace TimeSystems {
+namespace TimeSys {
 const std::string TAI = "TAI";
 const std::string TDB = "TDB";
-} // namespace TimeSystems
+const std::string TT = "TT";
+const std::string UTC = "UTC";
+const std::string MJD_TAI = "MJD_TAI";
+const std::string MJD_TDB = "MJD_TDB";
+const std::string MJD_TT = "MJD_TT";
+const std::string MJD_UTC = "MJD_UTC";
+}  // namespace TimeSys
 // TAI         International Atomic Time
 //    TDB         Barycentric Dynamical Time
 //    TT          Terrestrial Time
@@ -232,4 +238,4 @@ const std::string TDB = "TDB";
 //    JDTDT       Julian Date relative to TDT (TT)
 //    JED         Julian Ephemeris date (synonym to JDTDB)
 //    GPS         Global Positioning System Time
-} // namespace lupnt
+}  // namespace lupnt

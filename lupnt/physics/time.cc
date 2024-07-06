@@ -1,9 +1,62 @@
 #include "time.h"
 
 #include "lupnt/numerics/math_utils.h"
+#include "lupnt/physics/eop.h"
 #include "lupnt/physics/solar_system.h"
 
 namespace lupnt {
+
+Real EarthRotationAngle(Real t_jd_ut1) {
+  double theta_0 = 0.7790572732640;
+  double dtheta_dt = 1.00273781191135448;
+  Real theta_era = TWO_PI * (theta_0 + dtheta_dt * (t_jd_ut1 - JD_OF_J2000));
+  return Wrap2Pi(theta_era);
+}
+
+/// @brief Convert International Atomic Time (TAI) to Terrestrial Time (TT)
+/// @param tai [s]
+/// @return TT [s]
+/// @ref
+/// D. Folta, N. Bosanac, I. Elliott, L. Mann, R. Mesarch, and J. Rosales,
+/// ‘Astrodynamics Convention and Modeling Reference for Lunar, Cislunar, and
+/// Libration Point Orbits’, Jan. 2022.
+Real TAItoTT(Real tai) { return tai + TT_TAI_OFFSET; }
+
+/// @brief Convert Terrestrial Time (TT) to International Atomic Time (TAI)
+/// @param tt [s]
+/// @return TAI [s]
+/// @ref
+/// D. Folta, N. Bosanac, I. Elliott, L. Mann, R. Mesarch, and J. Rosales,
+/// ‘Astrodynamics Convention and Modeling Reference for Lunar, Cislunar, and
+/// Libration Point Orbits’, Jan. 2022.
+Real TTtoTAI(Real tt) { return tt - TT_TAI_OFFSET; }
+
+Real TTtoTCG(Real tt) { return tt + L_G / (1 - LG); }
+
+Real UTCtoUT1(Real mjd_utc) {
+  std::shared_ptr<EOPData> eop_data =
+      LoadEOPData(GetFilePath("eopc04_08.62-now"));
+  EOPResult eop_result = InterpolateEOPData(eop_data, mjd_utc, true);
+  Real mjd_ut1 = mjd_utc + eop_result.UT1_UTC / SECS_DAY;
+  return mjd_ut1;
+}
+
+Real TAItoJulianDateTT(Real tai) {
+  Real tt = TAItoTT(tai);
+  return JD_OF_J2000 + tt / SECS_DAY;
+}
+
+Real TTtoTDB(Real tt, Real jdtt) {
+  Real ME = M_E_OFFSET + 0.9856003 * (jdtt - JD_OF_J2000);
+  Real ME_rad = ME * (M_PI / 180.0);
+  return tt + TDB_COEFF1 * sin(ME_rad) + TDB_COEFF2 * sin(2 * ME_rad);
+}
+
+Real TAItoTDB(Real tai) {
+  Real tt = TAItoTT(tai);
+  Real jd_tt = TAItoJulianDateTT(tai);
+  return TTtoTDB(tt, jd_tt);
+}
 
 /// @ref
 // O. Montenbruck and G. Eberhard, “Satellite Orbits: Models, Methods, and

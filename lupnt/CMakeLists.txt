@@ -66,10 +66,12 @@ target_include_directories(lupnt
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 find_package(autodiff 1 REQUIRED NO_MODULE)
 find_package(Matplot++ 1.2 REQUIRED NO_MODULE)
+find_package(OpenMP REQUIRED)
 target_link_libraries(lupnt PUBLIC 
     Eigen3::Eigen
     autodiff::autodiff
     Matplot++::matplot
+    OpenMP::OpenMP_CXX
     ${CSPICE_LIBRARY} # Link against CSPICE library
 )
 

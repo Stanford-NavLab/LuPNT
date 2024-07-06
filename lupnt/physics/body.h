@@ -21,22 +21,27 @@ namespace lupnt {
 struct GravityField {
   int n_max, m_max;  // Maximum degree and order
   int n, m;          // Degree and order
-  Real GM;           // Gravitational constant [km^3/s^2]
-  Real R;            // Reference radius [km]
-  MatX CS;           // Coefficients
+
+  Real GM;  // Gravitational constant [km^3/s^2]
+  Real R;   // Reference radius [km]
+  MatX CS;  // Unnormalized coefficients
 };
 
 struct Body {
   NaifId id;
   std::string name;
-  double GM;
-  double R;
+
+  Real GM;
+  Real R;
+  int n, m;
+
   Frame fixed_frame;
   Frame inertial_frame;
-  bool has_gravity_field;
+
+  bool use_gravity_field;
   GravityField gravity_field;
 
-  static Body Sun();
+    static Body Sun();
   static Body Moon();
   static Body Earth();
   static Body Venus();

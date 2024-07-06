@@ -255,6 +255,15 @@ class MoonMeanDynamics : public NumericalOrbitDynamics {
   VecX ComputeRates(Real t, const VecX &x) const;
 };
 
+struct NBodyDynamicsParams {
+  Real mass;  // [kg] Spacecraft mass
+  Real area;  // [m^2] Cross-sectional area
+  Real CR;    // [-] Radiation pressure coefficient
+  Real CD;    // [-] Drag coefficient
+  bool use_srp = false;
+  bool use_drag = false;
+};
+
 class NBodyDynamics : public NumericalOrbitDynamics {
  private:
   Body central_body_;
@@ -262,10 +271,12 @@ class NBodyDynamics : public NumericalOrbitDynamics {
   NumericalPropagator propagator;
   ODE odefunc;
   bool use_srp_ = false;
-  double mass_ = 100.0;      // s/c mass [kg]
-  double CR_ = 1.5;          // solar radiation pressure coefficient
-  double area_ = 1.0 / 1e6;  // solar radiation pressure area [km^2]
-  double B_srp_ = (CR_ * area_) / mass_;  // solar radiation pressure constant
+  bool use_drag_ = false;
+
+  Real mass_;  // [kg] Spacecraft mass
+  Real area_;  // [m^2] Cross-sectional area
+  Real CR_;    // [-] Radiation pressure coefficient
+  Real CD_;    // [-] Drag coefficient
 
  public:
   NBodyDynamics(std::string integrator = "RK4");
@@ -277,19 +288,27 @@ class NBodyDynamics : public NumericalOrbitDynamics {
     }
     bodies_.push_back(body);
   }
+
+  void RemoveBody(const Body &body) {
+    for (auto it = bodies_.begin(); it != bodies_.end(); ++it) {
+      if (it->id == body.id) {
+        bodies_.erase(it);
+        break;
+      }
+    }
+  }
+
   void SetPrimaryBody(const Body &body) {
     central_body_ = body;
     bodies_.push_back(body);
   }
-  void SetMass(double mass) { mass_ = mass; }
-  void SetSrpArea(double area) { area_ = area; }
-  void SetSrpCoeff(double CR) { CR_ = CR; }
-  void SetSolarRadiationPressure(bool use_srp) { use_srp_ = use_srp; }
+  void SetMass(Real mass) { mass_ = mass; }
+  void SetArea(Real area) { area_ = area; }
+  void SetSrpCoeff(Real CR) { CR_ = CR; }
+  void SetDragCoeff(Real CD) { CD_ = CD; }
 
-  Vec3 ComputeNBodyGravity(const Real epoch, const Vec3 &r) const;
-  Vec3 ComputeSolarRadiationPressure(const Vec3 &r_body2sc,
-                                     const Vec3 &r_sun2sc, const Real B_srp,
-                                     double R_body) const;
+  void SetUseSrp(bool use_srp) { use_srp_ = use_srp; }
+  void SetUseDrag(bool use_drag) { use_drag_ = use_drag; }
 };
 
 }  // namespace lupnt

@@ -5,6 +5,20 @@
 
 namespace lupnt {
 
+Real EarthRotationAngle(Real mjd_ut1);
+
+Real TAItoTT(Real tai);
+Real TTtoTAI(Real tt);
+
+Real TTtoTCG(Real tt);
+Real TCGtoTT(Real tcg);
+
+Real UTCtoUT1(Real mjd_utc);
+
+Real TAItoJulianDateTT(Real tai);
+Real TTtoTDB(Real tt, Real jdtt);
+Real TAItoTDB(Real tai);
+
 Real Calendar2ModJulianDate(int year, int month, int day, int hour = 0,
                             int min = 0, Real sec = 0);
 
