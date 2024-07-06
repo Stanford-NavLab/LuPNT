@@ -1,8 +1,9 @@
-#include "utils.cc"
+#include <lupnt/lupnt.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
-#include <lupnt/lupnt.h>
+
+#include "utils.cc"
 using namespace lupnt;
 using namespace Catch::Matchers;
 
@@ -36,7 +37,7 @@ TEST_CASE("Conversions", "[OrbitState]") {
   const double eps = 1e-8;
 
   // Example 2-3 (Osculating Elements)
-  Vec6 rv_ref(10e3, 40e3, -5e3, -1.5, 1, -0.1); // [km, km/s]
+  Vec6 rv_ref(10e3, 40e3, -5e3, -1.5, 1, -0.1);  // [km, km/s]
   Vec6 coe_ref(25015.181022316396, 0.707977170662, 6.970729208731,
                173.290163192243, 91.552887356747, 144.224991174457);
   coe_ref.segment(2, 4) *= RAD;
@@ -99,51 +100,51 @@ TEST_CASE("OrbitState", "Coordinates") {
 //   RequireNearReal(coe[5] * DEG_PER_RAD, 144.225, 1e-3);
 
 //   // Example 2-4 (Topocentric satellite motion)
-//   std::shared_ptr<EOPData> eop_data =
-//       LoadEOPData(GetFilePath("eopc04_08.62-now"));
+//   std::shared_ptr<EopFileData> eop_data =
+//       LoadEopData(GetFilePath("eopc04_08.62-now"));
 //   // 1962 1 1  37665  -0.012700   0.213000   0.0326338   0.0017230 0.064261
 //   // 0.006067 0.030000   0.030000  0.0020000  0.0014000    0.012000 0.002000
 //   RequireNearReal(eop_data->years(0), 1962, eps);
 //   RequireNearReal(eop_data->months(0), 1, eps);
 //   RequireNearReal(eop_data->days(0), 1, eps);
-//   RequireNearReal(eop_data->mjds(0), 37665, eps);
+//   RequireNearReal(eop_data->mjds_utc(0), 37665, eps);
 //   RequireNearReal(eop_data->x(0), -0.012700, eps);
 //   RequireNearReal(eop_data->y(0), 0.213000, eps);
 //   RequireNearReal(eop_data->ut1_utc(0), 0.0326338, eps);
 //   RequireNearReal(eop_data->lod(0), 0.0017230, eps);
-//   RequireNearReal(eop_data->dPsi(0), 0.064261, eps);
-//   RequireNearReal(eop_data->dEps(0), 0.006067, eps);
+//   RequireNearReal(eop_data->dpsi(0), 0.064261, eps);
+//   RequireNearReal(eop_data->deps(0), 0.006067, eps);
 //   RequireNearReal(eop_data->xErr(0), 0.030000, eps);
 //   RequireNearReal(eop_data->yErr(0), 0.030000, eps);
-//   RequireNearReal(eop_data->ut1_utcErr(0), 0.0020000, eps);
-//   RequireNearReal(eop_data->lodErr(0), 0.0014000, eps);
-//   RequireNearReal(eop_data->dPsiErr(0), 0.012000, eps);
-//   RequireNearReal(eop_data->dEpsErr(0), 0.002000, eps);
+//   RequireNearReal(eop_data->ut1_utc_err(0), 0.0020000, eps);
+//   RequireNearReal(eop_data->lod_err(0), 0.0014000, eps);
+//   RequireNearReal(eop_data->dpsi_err(0), 0.012000, eps);
+//   RequireNearReal(eop_data->deps_err(0), 0.002000, eps);
 
 //   real mjd_utc_1 = 37665;
 //   real mjd_utc_2 = 37666;
 
-//   EOPResult res1;
+//   EopData res1;
 //   res1.x_pole = -0.012700 * RAD_PER_ARCSEC;
 //   res1.y_pole = 0.213000 * RAD_PER_ARCSEC;
-//   res1.UT1_UTC = 0.0326338;
-//   res1.LOD = 0.0017230;
-//   res1.dPsi = 0.064261 * RAD_PER_ARCSEC;
-//   res1.dEps = 0.006067 * RAD_PER_ARCSEC;
+//   res1.ut1_utc = 0.0326338;
+//   res1.lod = 0.0017230;
+//   res1.dpsi = 0.064261 * RAD_PER_ARCSEC;
+//   res1.deps = 0.006067 * RAD_PER_ARCSEC;
 //   res1.dx_pole = 0.030000 * RAD_PER_ARCSEC;
 //   res1.dy_pole = 0.030000 * RAD_PER_ARCSEC;
-//   res1.TAI_UTC = 0.0020000;
+//   res1.tai_utc = 0.0020000;
 
-//   EOPResult res2;
+//   EopData res2;
 //   res2.x_pole = -0.015900 * RAD_PER_ARCSEC;
 //   res2.y_pole = 0.214100 * RAD_PER_ARCSEC;
-//   res2.UT1_UTC = 0.0320547;
-//   res2.LOD = 0.0016690;
-//   res2.dPsi = 0.063979 * RAD_PER_ARCSEC;
-//   res2.dEps = 0.006290 * RAD_PER_ARCSEC;
+//   res2.ut1_utc = 0.0320547;
+//   res2.lod = 0.0016690;
+//   res2.dpsi = 0.063979 * RAD_PER_ARCSEC;
+//   res2.deps = 0.006290 * RAD_PER_ARCSEC;
 //   res2.dx_pole = 0.030000 * RAD_PER_ARCSEC;
 //   res2.dy_pole = 0.030000 * RAD_PER_ARCSEC;
-//   res2.TAI_UTC = 0.0020000;
+//   res2.tai_utc = 0.0020000;
 
 //   // Interpolation
 //   real s = 0.4;
@@ -151,47 +152,47 @@ TEST_CASE("OrbitState", "Coordinates") {
 //   eps = 1e-6;
 
 //   auto interp = [](real x0, real x1, real s) { return x0 + (x1 - x0) * s; };
-//   EOPResult result = InterpolateEOPData(eop_data, mjd_utc, true);
+//   EopData result = GetEopData(eop_data, mjd_utc, true);
 //   RequireNearReal(result.x_pole, interp(res1.x_pole, res2.x_pole, s), eps);
 //   RequireNearReal(result.y_pole, interp(res1.y_pole, res2.y_pole, s), eps);
-//   RequireNearReal(result.UT1_UTC, interp(res1.UT1_UTC, res2.UT1_UTC, s),
-//   eps); RequireNearReal(result.LOD, interp(res1.LOD, res2.LOD, s), eps);
-//   RequireNearReal(result.dPsi, interp(res1.dPsi, res2.dPsi, s), eps);
-//   RequireNearReal(result.dEps, interp(res1.dEps, res2.dEps, s), eps);
+//   RequireNearReal(result.ut1_utc, interp(res1.ut1_utc, res2.ut1_utc, s),
+//   eps); RequireNearReal(result.lod, interp(res1.lod, res2.lod, s), eps);
+//   RequireNearReal(result.dpsi, interp(res1.dpsi, res2.dpsi, s), eps);
+//   RequireNearReal(result.deps, interp(res1.deps, res2.deps, s), eps);
 //   RequireNearReal(result.dx_pole, interp(res1.dx_pole, res2.dx_pole, s),
 //   eps); RequireNearReal(result.dy_pole, interp(res1.dy_pole, res2.dy_pole,
-//   s), eps); RequireNearReal(result.TAI_UTC, interp(res1.TAI_UTC,
-//   res2.TAI_UTC, s), eps);
+//   s), eps); RequireNearReal(result.tai_utc, interp(res1.tai_utc,
+//   res2.tai_utc, s), eps);
 
 //   s = 0.2;
 //   mjd_utc = mjd_utc_1 + s * (mjd_utc_2 - mjd_utc_1);
-//   result = InterpolateEOPData(eop_data, mjd_utc, false);
+//   result = GetEopData(eop_data, mjd_utc, false);
 //   RequireNearReal(result.x_pole, res1.x_pole, eps);
 //   RequireNearReal(result.y_pole, res1.y_pole, eps);
-//   RequireNearReal(result.UT1_UTC, res1.UT1_UTC, eps);
-//   RequireNearReal(result.LOD, res1.LOD, eps);
-//   RequireNearReal(result.dPsi, res1.dPsi, eps);
-//   RequireNearReal(result.dEps, res1.dEps, eps);
+//   RequireNearReal(result.ut1_utc, res1.ut1_utc, eps);
+//   RequireNearReal(result.lod, res1.lod, eps);
+//   RequireNearReal(result.dpsi, res1.dpsi, eps);
+//   RequireNearReal(result.deps, res1.deps, eps);
 //   RequireNearReal(result.dx_pole, res1.dx_pole, eps);
 //   RequireNearReal(result.dy_pole, res1.dy_pole, eps);
-//   RequireNearReal(result.TAI_UTC, res1.TAI_UTC, eps);
+//   RequireNearReal(result.tai_utc, res1.tai_utc, eps);
 
 //   s = 0.8;
 //   mjd_utc = mjd_utc_1 + s * (mjd_utc_2 - mjd_utc_1);
-//   result = InterpolateEOPData(eop_data, mjd_utc, false);
+//   result = GetEopData(eop_data, mjd_utc, false);
 //   RequireNearReal(result.x_pole, res2.x_pole, eps);
 //   RequireNearReal(result.y_pole, res2.y_pole, eps);
-//   RequireNearReal(result.UT1_UTC, res2.UT1_UTC, eps);
-//   RequireNearReal(result.LOD, res2.LOD, eps);
-//   RequireNearReal(result.dPsi, res2.dPsi, eps);
-//   RequireNearReal(result.dEps, res2.dEps, eps);
+//   RequireNearReal(result.ut1_utc, res2.ut1_utc, eps);
+//   RequireNearReal(result.lod, res2.lod, eps);
+//   RequireNearReal(result.dpsi, res2.dpsi, eps);
+//   RequireNearReal(result.deps, res2.deps, eps);
 //   RequireNearReal(result.dx_pole, res2.dx_pole, eps);
 //   RequireNearReal(result.dy_pole, res2.dy_pole, eps);
-//   RequireNearReal(result.TAI_UTC, res2.TAI_UTC, eps);
+//   RequireNearReal(result.tai_utc, res2.tai_utc, eps);
 
 //   // Reloading the EOP data points to the same instance
-//   std::shared_ptr<EOPData> eop_data_reloaded =
-//       LoadEOPData(GetFilePath("eopc04_08.62-now"));
+//   std::shared_ptr<EopFileData> eop_data_reloaded =
+//       LoadEopData(GetFilePath("eopc04_08.62-now"));
 //   REQUIRE(eop_data == eop_data_reloaded);
 
 //   // Time

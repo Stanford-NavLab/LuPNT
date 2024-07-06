@@ -29,6 +29,9 @@ auto unpack(const Eigen::Matrix<T, Size, 1> &vec) {
   return unpackImpl(vec, std::make_index_sequence<Size>{});
 }
 
+template <typename T>
+VectorX<T> arange(T start, T stop, T step = 1);
+
 Real AngleBetweenVecs(const VecX &x, const VecX &y);
 
 Real Wrap2Pi(Real angle);
@@ -66,6 +69,9 @@ Mat3 Skew(Vec3 x);
 
 VecXd ToDouble(const VecX &x);
 MatXd ToDouble(const MatX &x);
+std::vector<double> ToDoubleVec(const VecX &x);
+std::vector<double> ToDoubleVec(const VecXd &x);
+std::vector<double> ToDoubleVec(const VecXi &x);
 
 Real RatioOfSectorToTriangleArea(Vec3 r1, Vec3 r2, Real tau);
 

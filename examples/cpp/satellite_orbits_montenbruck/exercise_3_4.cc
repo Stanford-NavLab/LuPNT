@@ -11,15 +11,15 @@ using namespace std;
 // doi: 10.1007/978-3-642-58351-3.
 int main() {
   // Time
-  Real mjd0_utc = Calendar2ModJulianDate(1999, 03, 01, 00, 00, 0.0);  // [days]
-  Real tai0 = ConvertTime(mjd0_utc, TimeSys::MJD_UTC, TimeSys::TAI);  // [s]
+  Real mjd0_utc = GregorianToMJD(1999, 03, 01, 00, 00, 0.0);  // [days]
+  Real t_tai0 = ConvertTime(mjd0_utc, TimeSys::MJD_UTC, TimeSys::TAI);  // [s]
 
   // Propagation
   Real dt = 120.0;                           // [s] Time step
   Real tf = 1.0 * SECS_DAY;                  // [s] Final time
   int N_step = (int)(tf / dt).val();         // [-] Number of steps
   VecX ts = VecX::LinSpaced(0, tf, N_step);  // [s] Time vector
-  VecX tais = ts.array() + tai0;             // [s] TAI time vector
+  VecX t_tais = ts.array() + t_tai0;         // [s] TAI time vector
 
   // Initial state
   Vec6 coe0(7178, 1e-3, 98.57 * RAD, 0, 0, 0);  // [km, -, rad]
@@ -53,6 +53,6 @@ int main() {
   dyn.AddBody(sun);
   dyn.AddBody(moon);
 
-  Vec6 rv_dot = dyn.ComputeRates(tai0, rv0);
+  Vec6 rv_dot = dyn.ComputeRates(t_tai0, rv0);
   return 0;
 }

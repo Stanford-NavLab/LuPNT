@@ -28,7 +28,7 @@ enum Frame {
   ICRF,         // International Celestial Reference System
   SER,          // Sun-Earth Rotating Frame
   GSE,          // Geocentric Solar Ecliptic
-  EME,          // Earth-Centered mean equator and equinox at J2000 tai
+  EME,          // Earth-Centered mean equator and equinox at J2000 t_tai
   MOD,          // Mean of date equatorial system
   TOD,          // True of date equatorial system
   EMR,          // Earth-Moon Rotating Frame
@@ -41,29 +41,32 @@ enum Frame {
 };
 
 // Vec = func(real, Vec)
-Vec6 ConvertFrame(Real tai, const Vec6 &rv_in, Frame frame_in, Frame frame_out);
-Vec3 ConvertFrame(Real tai, const Vec3 &r_in, Frame frame_in, Frame frame_out);
+Vec6 ConvertFrame(Real t_tai, const Vec6 &rv_in, Frame frame_in,
+                  Frame frame_out);
+Vec3 ConvertFrame(Real t_tai, const Vec3 &r_in, Frame frame_in,
+                  Frame frame_out);
 
 // Mat = func(real, Mat)
-Mat<-1, 6> ConvertFrame(Real tai, const Mat<-1, 6> &rv_in, Frame frame_in,
+Mat<-1, 6> ConvertFrame(Real t_tai, const Mat<-1, 6> &rv_in, Frame frame_in,
                         Frame frame_out);
-Mat<-1, 3> ConvertFrame(Real tai, const Mat<-1, 3> &r_in, Frame frame_in,
+Mat<-1, 3> ConvertFrame(Real t_tai, const Mat<-1, 3> &r_in, Frame frame_in,
                         Frame frame_out);
 
 // Mat = func(Vec, Vec)
-Mat<-1, 6> ConvertFrame(VecX tai, const Vec6 &rv_in, Frame frame_in,
+Mat<-1, 6> ConvertFrame(VecX t_tai, const Vec6 &rv_in, Frame frame_in,
                         Frame frame_out);
-Mat<-1, 3> ConvertFrame(VecX tai, const Vec3 &r_in, Frame frame_in,
+Mat<-1, 3> ConvertFrame(VecX t_tai, const Vec3 &r_in, Frame frame_in,
                         Frame frame_out);
 
 // Mat = func(Vec, Mat)
-Mat<-1, 6> ConvertFrame(VecX tai, const Mat<-1, 6> &rv_in, Frame frame_in,
+Mat<-1, 6> ConvertFrame(VecX t_tai, const Mat<-1, 6> &rv_in, Frame frame_in,
                         Frame frame_out);
-Mat<-1, 3> ConvertFrame(VecX tai, const Mat<-1, 3> &r_in, Frame frame_in,
+Mat<-1, 3> ConvertFrame(VecX t_tai, const Mat<-1, 3> &r_in, Frame frame_in,
                         Frame frame_out);
 
-CartesianOrbitState ConvertFrame(Real tai, const CartesianOrbitState &state_in,
+CartesianOrbitState ConvertFrame(Real t_tai,
+                                 const CartesianOrbitState &state_in,
                                  Frame frame_out);
 
-Mat6 Op2Mi(Real tai);
+Mat6 Op2Mi(Real t_tai);
 }  // namespace lupnt

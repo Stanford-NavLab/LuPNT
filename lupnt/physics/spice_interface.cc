@@ -278,10 +278,7 @@ Julian Date Strings.
  * @return real     ephemeris time (TDB) (seconds past the J2000 epoch)
  */
 Real String2TDB(std::string str) {
-  if (!spice_loaded) {
-    LoadSpiceKernel();
-  }
-
+  if (!spice_loaded) LoadSpiceKernel();
   SpiceDouble t_tdb;
   str2et_c(str.c_str(), &t_tdb);
   return t_tdb;
@@ -294,47 +291,37 @@ Real String2TDB(std::string str) {
  * @return real
  */
 Real String2TAI(std::string str) {
-  if (!spice_loaded) {
-    LoadSpiceKernel();
-  }
-
+  if (!spice_loaded) LoadSpiceKernel();
   Real t_tdb = String2TDB(str);
-  Real tai = ConvertTime(t_tdb, TimeSys::TDB, TimeSys::TAI);
-  return tai;
+  Real t_tai = ConvertTime(t_tdb, TimeSys::TDB, TimeSys::TAI);
+  return t_tai;
 }
 
 /**
  * @brief Convert string to UTC
  *
- * @param tdb time in TDB
+ * @param t_tdb time in TDB
  * @param prec precision of the output string (default 3)
  * @return std::string
  */
-std::string TDBtoStringUTC(Real tdb, int prec = 3) {
-  if (!spice_loaded) {
-    LoadSpiceKernel();
-  }
-
-  SpiceDouble t_tdb = tdb.val();
+std::string TDBtoStringUTC(Real t_tdb, int prec = 3) {
+  if (!spice_loaded) LoadSpiceKernel();
+  SpiceDouble t_tdb_spice = t_tdb.val();
   SpiceChar str[100];
-  et2utc_c(t_tdb, "C", prec, 100, str);
-
+  et2utc_c(t_tdb_spice, "C", prec, 100, str);
   return std::string(str);
 }
 
 /**
  * @brief Convert TAI to string UTC
  *
- * @param tdb time in TAI
+ * @param t_tdb time in TAI
  * @param prec precision of the output string (default 3)
  * @return std::string
  */
-std::string TAItoStringUTC(Real tai, int prec = 3) {
-  if (!spice_loaded) {
-    LoadSpiceKernel();
-  }
-
-  Real et_tdb = ConvertTime(tai, TimeSys::TAI, TimeSys::TDB);
+std::string TAItoStringUTC(Real t_tai, int prec = 3) {
+  if (!spice_loaded) LoadSpiceKernel();
+  Real et_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
   std::string str = TDBtoStringUTC(et_tdb, prec);
   return str;
 }
@@ -360,9 +347,7 @@ std::string TAItoStringUTC(Real tai, int prec = 3) {
  * @return real     out time in seconds
  */
 Real ConvertTime(Real t, std::string from, std::string to) {
-  if (!spice_loaded) {
-    LoadSpiceKernel();
-  }
+  if (!spice_loaded) LoadSpiceKernel();
   if (from == to) {
     return t;
   }
@@ -373,7 +358,7 @@ Real ConvertTime(Real t, std::string from, std::string to) {
     return ConvertTime(t_new, from_new, to);
   }
   if (from.find("JD") != std::string::npos) {
-    Real t_new = (t - JD_OF_J2000) * SECS_DAY;
+    Real t_new = (t - JD_J2000) * SECS_DAY;
     std::string from_new = from.substr(3);
     return ConvertTime(t_new, from_new, to);
   }
@@ -385,7 +370,7 @@ Real ConvertTime(Real t, std::string from, std::string to) {
   if (to.find("JD") != std::string::npos) {
     std::string to_new = to.substr(3);
     Real t_new = ConvertTime(t, from, to_new);
-    return t_new / SECS_DAY + JD_OF_J2000;
+    return t_new / SECS_DAY + JD_J2000;
   }
 
   SpiceDouble t_in = t.val();
@@ -395,31 +380,27 @@ Real ConvertTime(Real t, std::string from, std::string to) {
   return t_out;
 }
 
-Mat<-1, 6> GetBodyPosVel(const VecX &tai, NaifId center, NaifId target,
+Mat<-1, 6> GetBodyPosVel(const VecX &t_tai, NaifId center, NaifId target,
                          Frame frame) {
-  if (!spice_loaded) {
-    LoadSpiceKernel();
-  }
-
-  Mat<-1, 6> retState(tai.size(), 6);
-
-  for (int i = 0; i < tai.size(); i++) {
-    retState.row(i) = GetBodyPosVel(tai(i), center, target, frame).transpose();
-  }
-
+  if (!spice_loaded) LoadSpiceKernel();
+  Mat<-1, 6> retState(t_tai.size(), 6);
+  for (int i = 0; i < t_tai.size(); i++)
+    retState.row(i) =
+        GetBodyPosVel(t_tai(i), center, target, frame).transpose();
   return retState;
 }
 
 /**
  * @brief Get the Body Position and Velocity using Chebyshev polynomials
  *
- * @param tai_MJD TAI in MJD (with the origin as JD_NOV_17_1858)
+ * @param t_tai_MJD TAI in MJD (with the origin as JD_NOV_17_1858)
  * @param center  center body id
  * @param target  target body id
  * @return VecX  6x1 vector of position and velocity of target body
  * in center body J2000 frame
  */
-Vec6 GetBodyPosVel(const Real tai, NaifId center, NaifId target, Frame frame) {
+Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target,
+                   Frame frame) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
@@ -436,17 +417,19 @@ Vec6 GetBodyPosVel(const Real tai, NaifId center, NaifId target, Frame frame) {
     switch (body) {
       case NaifId::MOON:
       case NaifId::EARTH:
-        rv += GetBodyPosVel(tai, NaifId::SSB, NaifId::EARTH_BARYCENTER, frame);
+        rv +=
+            GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH_BARYCENTER, frame);
         break;
       case NaifId::MERCURY:
-        rv +=
-            GetBodyPosVel(tai, NaifId::SSB, NaifId::MERCURY_BARYCENTER, frame);
+        rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MERCURY_BARYCENTER,
+                            frame);
         break;
       case NaifId::VENUS:
-        rv += GetBodyPosVel(tai, NaifId::SSB, NaifId::VENUS_BARYCENTER, frame);
+        rv +=
+            GetBodyPosVel(t_tai, NaifId::SSB, NaifId::VENUS_BARYCENTER, frame);
         break;
       case NaifId::MARS:
-        rv += GetBodyPosVel(tai, NaifId::SSB, NaifId::MARS_BARYCENTER, frame);
+        rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MARS_BARYCENTER, frame);
         break;
       default:
         break;
@@ -457,7 +440,7 @@ Vec6 GetBodyPosVel(const Real tai, NaifId center, NaifId target, Frame frame) {
   fetchPosVel(target, rv_target);
 
   // convert TAI to TDB past J2000
-  Real t_tdb = ConvertTime(tai, TimeSys::TAI, TimeSys::TDB);
+  Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
 
   for (int i = 0; i < cheby_n; i++) {
     if (cheby_s[i].target == (int)target) {
@@ -477,7 +460,7 @@ Vec6 GetBodyPosVel(const Real tai, NaifId center, NaifId target, Frame frame) {
   Vec6 retState = rv_target - rv_center;
 
   if (frame != Frame::GCRF) {
-    retState = ConvertFrame(tai, retState, Frame::GCRF, frame);
+    retState = ConvertFrame(t_tai, retState, Frame::GCRF, frame);
   }
   return retState;
 }

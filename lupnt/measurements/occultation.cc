@@ -89,7 +89,7 @@ VecX Occultation::ComputeOccultation(Real epoch, const Vec3& r1, const Vec3& r2,
   // Compute distance between line of sight and center of each body
   VecX distances(bodies.size());
   for (size_t i = 0; i < bodies.size(); i++) {
-    // Vec6 GetBodyPosVel(const real tai, NaifId center, NaifId target);
+    // Vec6 GetBodyPosVel(const real t_tai, NaifId center, NaifId target);
     Vec3 rb = GetBodyPosVel(epoch, NaifId::SOLAR_SYSTEM_BARYCENTER, bodies[i],
                             Frame::GCRF)
                   .head(3);

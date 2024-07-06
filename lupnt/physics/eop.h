@@ -11,45 +11,42 @@
 namespace lupnt {
 
 // Struct to hold EOP data
-struct EOPData {
+struct EopFileData {
   VecXi years;
   VecXi months;
   VecXi days;
-  VecXi mjds;
+  VecXi mjds_utc;
   VecXd x;
   VecXd y;
   VecXd ut1_utc;
   VecXd lod;
-  VecXd dPsi;
-  VecXd dEps;
+  VecXd dpsi;
+  VecXd deps;
   VecXd xErr;
   VecXd yErr;
-  VecXd ut1_utcErr;
-  VecXd lodErr;
-  VecXd dPsiErr;
-  VecXd dEpsErr;
+  VecXd ut1_utc_err;
+  VecXd lod_err;
+  VecXd dpsi_err;
+  VecXd deps_err;
 };
 
-struct EOPResult {
+struct EopData {
   Real x_pole;
   Real y_pole;
-  Real UT1_UTC;
-  Real LOD;
-  Real dPsi;
-  Real dEps;
+  Real ut1_utc;
+  Real lod;
+  Real dpsi;
+  Real deps;
   Real dx_pole;
   Real dy_pole;
-  Real TAI_UTC;
+  Real tai_utc;
 };
 
-// Function to count lines in the file
-size_t CountLines(const std::string& filename);
-
-// Function to load EOP data from the file
-std::shared_ptr<EOPData> LoadEOPData(const std::string& filename);
+void LoadEopData(const std::filesystem::path& filepath);
 
 // Function to manage IERS time and polar motion data
-EOPResult InterpolateEOPData(const std::shared_ptr<EOPData>& eop_data,
-                             Real mjdUTC, bool interpolate);
+EopData GetEopData(Real mjd_utc, bool interpolate = true);
+
+Real GetUt1UtcDifference(Real mjd_utc, bool interpolate = true);
 
 }  // namespace lupnt

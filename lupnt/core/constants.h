@@ -25,26 +25,26 @@
   }
 
 #define DEFINE_STATIC_VECTORS_MATRICES(size)              \
-  using Vec##size = Eigen::Matrix<Real, size, 1>;         \
-  using Vec##size##d = Eigen::Matrix<double, size, 1>;    \
-  using Vec##size##i = Eigen::Matrix<int, size, 1>;       \
-  using Mat##size = Eigen::Matrix<Real, size, size>;      \
-  using Mat##size##d = Eigen::Matrix<double, size, size>; \
-  using Mat##size##i = Eigen::Matrix<int, size, size>;    \
-  using RowVec##size##d = Eigen::Matrix<double, 1, size>; \
-  using RowVec##size##i = Eigen::Matrix<int, 1, size>;    \
-  using RowVec##size = Eigen::Matrix<Real, 1, size>;
+  using Vec##size = Matrix<Real, size, 1>;         \
+  using Vec##size##d = Matrix<double, size, 1>;    \
+  using Vec##size##i = Matrix<int, size, 1>;       \
+  using Mat##size = Matrix<Real, size, size>;      \
+  using Mat##size##d = Matrix<double, size, size>; \
+  using Mat##size##i = Matrix<int, size, size>;    \
+  using RowVec##size##d = Matrix<double, 1, size>; \
+  using RowVec##size##i = Matrix<int, 1, size>;    \
+  using RowVec##size = Matrix<Real, 1, size>;
 
 #define DEFINE_DYNAMIC_VECTORS_MATRICES()                              \
-  using VecX = Eigen::Matrix<Real, Eigen::Dynamic, 1>;                 \
-  using VecXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;              \
-  using VecXi = Eigen::Matrix<int, Eigen::Dynamic, 1>;                 \
-  using MatX = Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic>;    \
-  using MatXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; \
-  using MatXi = Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;    \
-  using RowVecX = Eigen::Matrix<Real, 1, Eigen::Dynamic>;              \
-  using RowVecXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;           \
-  using RowVecXi = Eigen::Matrix<int, 1, Eigen::Dynamic>;
+  using VecX = Matrix<Real, Eigen::Dynamic, 1>;                 \
+  using VecXd = Matrix<double, Eigen::Dynamic, 1>;              \
+  using VecXi = Matrix<int, Eigen::Dynamic, 1>;                 \
+  using MatX = Matrix<Real, Eigen::Dynamic, Eigen::Dynamic>;    \
+  using MatXd = Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; \
+  using MatXi = Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;    \
+  using RowVecX = Matrix<Real, 1, Eigen::Dynamic>;              \
+  using RowVecXd = Matrix<double, 1, Eigen::Dynamic>;           \
+  using RowVecXi = Matrix<int, 1, Eigen::Dynamic>;
 
 #define DEFINE_VECTORS_MATRICES()    \
   DEFINE_STATIC_VECTORS_MATRICES(1)  \
@@ -61,18 +61,24 @@
 
 namespace lupnt {
 
+using Eigen::Dynamic;
+using Eigen::Vector;
+using Eigen::VectorX;
+using Eigen::Matrix;
+using Eigen::MatrixX;
+
 using Real = autodiff::real;
 template <int rows, int cols>
-using Mat = Eigen::Matrix<Real, rows, cols>;
+using Mat = Matrix<Real, rows, cols>;
 template <int rows, int cols>
-using Matd = Eigen::Matrix<double, rows, cols>;
+using Matd = Matrix<double, rows, cols>;
 template <int size>
-using Vec = Eigen::Matrix<Real, size, 1>;
+using Vec = Matrix<Real, size, 1>;
 template <int size>
-using Vecd = Eigen::Matrix<double, size, 1>;
+using Vecd = Matrix<double, size, 1>;
 template <int size>
-using RowVecd = Eigen::Matrix<double, 1, size>;
-using RowVecXd = Eigen::Matrix<double, 1, Eigen::Dynamic>;
+using RowVecd = Matrix<double, 1, size>;
+using RowVecXd = Matrix<double, 1, Eigen::Dynamic>;
 using Quat = Eigen::Quaternion<Real>;
 using Quatd = Eigen::Quaternion<double>;
 using AngleAxis = Eigen::AngleAxis<Real>;
@@ -127,16 +133,16 @@ static constexpr double HOURS_DAY = 24.0;
 static constexpr double DAYS_WEEK = 7.0;
 
 static constexpr double DAYS_YEAR = 365.25;
-static constexpr double DAYS_JULIAN_CENTURY = 36525.00;
+static constexpr double JD_CENTURY = 36525.00;
 static constexpr double DAYS_SEC = 1.1574074074074074074074074074074e-5;
 
 static constexpr double TIME_OF_J2000 =
-    883655990.850000;                             // 2000/01/01 43167.85
-static constexpr double JD_OF_J2000 = 2451545.0;  // JD of J2000 epoch
-static constexpr double MJD_J2000 = 51544.5;      // MJD of J2000 epoch
+    883655990.850000;                          // 2000/01/01 43167.85
+static constexpr double JD_J2000 = 2451545.0;  // JD of J2000 epoch
+static constexpr double MJD_J2000 = 51544.5;   // MJD of J2000 epoch
 
-// 2000/01/01 11:59:27.965622
-static constexpr double A1MJD_OF_J2000 = 21545.00000000;
+// Vallado page 94
+static constexpr double JD_T0 = 2443144.5003725;
 // Vallado page 187 (= JD_NOV_17_1858)
 static constexpr double JD_MJD_OFFSET = 2400000.5;
 // GMAT Math Spec section 2.3
@@ -148,13 +154,8 @@ static constexpr double JD_JAN_5_1941 = 2430000.0;
 // old name JD_MJD_OFFSET
 static constexpr double JD_NOV_17_1858 = 2400000.5;
 
-static constexpr double TDB_COEFF1 = 0.001658;
-static constexpr double TDB_COEFF2 = 0.00001385;
-static constexpr double M_E_OFFSET = 357.5277233;
-static constexpr double M_E_COEFF1 = 35999.05034;
-static constexpr double T_TT_OFFSET = JD_OF_J2000;
-static constexpr double T_TT_COEFF1 = DAYS_JULIAN_CENTURY;
 static constexpr double L_B = 1.550505e-8;
+static constexpr double L_G = 6.969290134e-10;
 static constexpr double NUM_SECS = SECS_DAY;
 
 static constexpr int JULIAN_DATE_OF_010541 = 2430000;
@@ -189,6 +190,8 @@ static constexpr double P_SUN =
 
 // File Pathes -----------------------------------------------------------------
 static const std::filesystem::path CSPICE_KER_DIR = GetDataPath() / "ephemeris";
+static const std::string TAI_UTC_FILENAME = "tai-utc.dat";
+static const std::string EOP_FILENAME = "eopc04_08.62-now";
 
 // Moon mean elements
 
@@ -220,15 +223,19 @@ enum class NaifId {
 };
 
 namespace TimeSys {
+// Time
 const std::string TAI = "TAI";
 const std::string TDB = "TDB";
 const std::string TT = "TT";
 const std::string UTC = "UTC";
+// Modified Julian Date (MJD)
 const std::string MJD_TAI = "MJD_TAI";
 const std::string MJD_TDB = "MJD_TDB";
 const std::string MJD_TT = "MJD_TT";
 const std::string MJD_UTC = "MJD_UTC";
+// Julian Date (JD)
 }  // namespace TimeSys
+
 // TAI         International Atomic Time
 //    TDB         Barycentric Dynamical Time
 //    TT          Terrestrial Time

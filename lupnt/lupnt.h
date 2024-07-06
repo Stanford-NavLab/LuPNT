@@ -56,5 +56,6 @@
 #include "physics/solar_system.h"
 #include "physics/spice_interface.h"
 #include "physics/state.h"
+#include "physics/tai_utc.h"
 #include "physics/time.h"
 

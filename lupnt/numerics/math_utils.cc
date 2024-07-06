@@ -20,6 +20,20 @@
 
 namespace lupnt {
 
+
+template <typename T>
+VectorX<T> arange(T start, T stop, T step){
+  std::vector<T> values;
+  for (T value = start; value < stop; value += step) {
+    values.push_back(value);
+  }
+  return Eigen::Map<VectorX<T>>(values.data(), values.size());
+}
+
+template VectorX<int> arange<int>(int start, int stop, int step);
+template VectorX<double> arange<double>(double start, double stop, double step);
+template VectorX<Real> arange<Real>(Real start, Real stop, Real step);
+
 /// @brief Compute the angle between two vectors
 /// @param x First vector
 /// @param y Second vector
@@ -358,6 +372,30 @@ VecXd ToDouble(const VecX &x) {
 /// @return Matrix of doubles
 MatXd ToDouble(const MatX &x) {
   MatXd y = x.cast<double>();
+  return y;
+}
+
+std::vector<double> ToDoubleVec(const VecX &x) {
+  std::vector<double> y(x.size());
+  for (int i = 0; i < x.size(); i++) {
+    y[i] = x(i).val();
+  }
+  return y;
+}
+
+std::vector<double> ToDoubleVec(const VecXd &x) {
+  std::vector<double> y(x.size());
+  for (int i = 0; i < x.size(); i++) {
+    y[i] = x(i);
+  }
+  return y;
+}
+
+std::vector<double> ToDoubleVec(const VecXi &x) {
+  std::vector<double> y(x.size());
+  for (int i = 0; i < x.size(); i++) {
+    y[i] = x(i);
+  }
   return y;
 }
 

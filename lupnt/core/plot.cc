@@ -6,7 +6,6 @@
 #include "lupnt/numerics/math_utils.h"
 
 namespace lupnt {
-
 /// @brief Plot a 3D line
 /// @param x x-coordinates
 /// @param y y-coordinates

@@ -17,6 +17,21 @@
 #include "lupnt/core/constants.h"
 
 // Function:
+// Real = func(Real)
+// New definitions:
+// Vec = func(Vec)
+#define VEC_DEF_REAL(func) VecX func(const VecX &x);
+
+#define VEC_IMP_REAL(func)               \
+  VecX func(const VecX &x) {             \
+    VecX out(x.size());                  \
+    for (int i = 0; i < x.size(); i++) { \
+      out(i) = func(x(i));               \
+    }                                    \
+    return out;                          \
+  }
+
+// Function:
 // Vec<size> = func(Vec<size>)
 // New definitions:
 // Mat<-1,size> = (Mat<-1,size>)

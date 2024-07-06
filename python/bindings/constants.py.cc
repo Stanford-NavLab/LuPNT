@@ -17,10 +17,10 @@ void init_constants(py::module& m) {
   m.attr("SECS_HOUR") = py::float_(SECS_HOUR);
   m.attr("SECS_MINUTE") = py::float_(SECS_MINUTE);
   m.attr("DAYS_YEAR") = py::float_(DAYS_YEAR);
-  m.attr("DAYS_JULIAN_CENTURY") = py::float_(DAYS_JULIAN_CENTURY);
+  m.attr("JD_CENTURY") = py::float_(JD_CENTURY);
   m.attr("DAYS_SEC") = py::float_(DAYS_SEC);
   m.attr("TIME_OF_J2000") = py::float_(TIME_OF_J2000);
-  m.attr("JD_OF_J2000") = py::float_(JD_OF_J2000);
+  m.attr("JD_J2000") = py::float_(JD_J2000);
   m.attr("MJD_OF_J2000") = py::float_(MJD_J2000);
   m.attr("A1MJD_OF_J2000") = py::float_(A1MJD_OF_J2000);
   m.attr("JD_MJD_OFFSET") = py::float_(JD_MJD_OFFSET);

@@ -16,8 +16,8 @@ TEST_CASE("SpiceInterface.String2TDB") {
 }
 
 TEST_CASE("SpiceInterface.String2TAI") {
-  Real tai = String2TAI("2023-04-15 00:00:00 TDB");
-  REQUIRE(tai.val() == 7.347887678143708e+08);
+  Real t_tai = String2TAI("2023-04-15 00:00:00 TDB");
+  REQUIRE(t_tai.val() == 7.347887678143708e+08);
 }
 
 TEST_CASE("SpiceInterface.TDBtoStringUTC") {
@@ -68,7 +68,7 @@ TEST_CASE("SpiceInterface.GetFrameConversionMat") {
 }
 
 TEST_CASE("SpiceInterface.GetBodyPosVel") {
-  Real tai = String2TAI("2023-04-15 00:00:00 TDB");
+  Real t_tai = String2TAI("2023-04-15 00:00:00 TDB");
 
   // 4. GetBodyPosVel
   std::string target = "MOON";
@@ -78,7 +78,7 @@ TEST_CASE("SpiceInterface.GetBodyPosVel") {
   // NaifId target_id = 301;
 
   Vec6 posvel(6);
-  posvel = GetBodyPosVel(tai, NaifId::EARTH, NaifId::MOON, Frame::GCRF);
+  posvel = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::GCRF);
 
   Vec6 posvel_expected{263638.289944174,  -221028.422146322, -131883.110768214,
                        0.734154922271287, 0.697461344892098, 0.325673181901724};
