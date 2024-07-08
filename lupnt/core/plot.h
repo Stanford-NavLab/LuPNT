@@ -1,5 +1,6 @@
-#include <lupnt/core/constants.h>
 #include <matplot/matplot.h>
+
+#include "lupnt/core/constants.h"
 
 #pragma once
 

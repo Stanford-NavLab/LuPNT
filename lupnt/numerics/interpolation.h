@@ -1,8 +1,8 @@
-#include <lupnt/core/constants.h>
-
 #include <cassert>
 #include <iostream>
 #include <vector>
+
+#include "lupnt/core/constants.h"
 
 namespace lupnt {
 

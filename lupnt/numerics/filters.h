@@ -11,9 +11,9 @@
 
 #pragma once
 
-#include <lupnt/core/constants.h>
-
 #include <Eigen/QR>
+
+#include "lupnt/core/constants.h"
 
 namespace lupnt {
 

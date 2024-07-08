@@ -11,9 +11,9 @@
 
 #pragma once
 
-#include <lupnt/measurements/occultation.h>
-
 #include <memory>
+
+#include "lupnt/measurements/occultation.h"
 
 namespace lupnt {
 

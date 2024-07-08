@@ -11,11 +11,11 @@
 
 #pragma once
 
-#include <lupnt/core/constants.h>
-
 #include <random>
 #include <tuple>
 #include <utility>
+
+#include "lupnt/core/constants.h"
 
 namespace lupnt {
 

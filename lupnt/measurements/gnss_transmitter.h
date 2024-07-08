@@ -11,14 +11,13 @@
 
 #pragma once
 
-#include <lupnt/agents/comm_device.h>
-#include <lupnt/measurements/transmission.h>
-
 #include <string>
 #include <tuple>
 
 #include "antenna.h"
 #include "gnss_measurement.h"
+#include "lupnt/agents/comm_device.h"
+#include "lupnt/measurements/transmission.h"
 
 namespace lupnt {
 

@@ -8,13 +8,12 @@
  * @copyright Copyright (c) 2023
  *
  */
-#include <lupnt/physics/orbit_state.h>
-
 #include <Eigen/QR>
-#include "lupnt/core/constants.h"
-#include "lupnt/numerics/math_utils.h"
 
 #include "dynamics.h"
+#include "lupnt/core/constants.h"
+#include "lupnt/numerics/math_utils.h"
+#include "lupnt/physics/orbit_state.h"
 
 namespace lupnt {
 

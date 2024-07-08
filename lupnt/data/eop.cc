@@ -89,7 +89,7 @@ void LoadEopFileData(const std::filesystem::path& filepath) {
 }
 
 Real GetUt1UtcDifference(Real mjd_utc) {
-  EopData eop = GetEopData(mjd_utc, interpolate);
+  EopData eop = GetEopData(mjd_utc);
   return eop.ut1_utc;
 }
 
@@ -116,40 +116,15 @@ EopData GetEopData(Real mjd_utc) {
 
   uint order = 3;
   LagrangeInterpolator interp(eop->mjds_utc, mjd_utc.val(), order);
-
-  if (interpolate) {
-    // Linear interpolation
-    Real s = (mjd_utc - eop->mjds_utc(i_prev)) /
-             (eop->mjds_utc(i_next) - eop->mjds_utc(i_prev));
-
-    auto interp = [](Real x0, Real x1, Real s) { return x0 + (x1 - x0) * s; };
-    data.x_pole = interp(eop->x(i_prev), eop->x(i_next), s) * RAD_ARCSEC;
-    data.y_pole = interp(eop->y(i_prev), eop->y(i_next), s) * RAD_ARCSEC;
-    data.ut1_utc = interp(eop->ut1_utc(i_prev), eop->ut1_utc(i_next), s);
-    data.lod = interp(eop->lod(i_prev), eop->lod(i_next), s);
-    data.dpsi = interp(eop->dpsi(i_prev), eop->dpsi(i_next), s) * RAD_ARCSEC;
-    data.deps = interp(eop->deps(i_prev), eop->deps(i_next), s) * RAD_ARCSEC;
-    data.dx_pole = interp(eop->xErr(i_prev), eop->xErr(i_next), s) * RAD_ARCSEC;
-    data.dy_pole = interp(eop->yErr(i_prev), eop->yErr(i_next), s) * RAD_ARCSEC;
-    data.tai_utc = eop->ut1_utc_err(i_prev);
-
-  } else {
-    // Use the nearest point
-    int index = abs(mjd_utc - eop->mjds_utc(i_prev)) <
-                        abs(mjd_utc - eop->mjds_utc(i_next))
-                    ? i_prev
-                    : i_next;
-    data.x_pole = eop->x(index) * RAD_ARCSEC;
-    data.y_pole = eop->y(index) * RAD_ARCSEC;
-    data.ut1_utc = eop->ut1_utc(index);
-    data.lod = eop->lod(index);
-    data.dpsi = eop->dpsi(index) * RAD_ARCSEC;
-    data.deps = eop->deps(index) * RAD_ARCSEC;
-    data.dx_pole = eop->xErr(index) * RAD_ARCSEC;
-    data.dy_pole = eop->yErr(index) * RAD_ARCSEC;
-    data.tai_utc = eop->ut1_utc_err(index);
-  }
-
+  data.x_pole = interp.Interpolate(eop->x) * RAD_ARCSEC;
+  data.y_pole = interp.Interpolate(eop->y) * RAD_ARCSEC;
+  data.ut1_utc = interp.Interpolate(eop->ut1_utc);
+  data.lod = interp.Interpolate(eop->lod);
+  data.dpsi = interp.Interpolate(eop->dpsi) * RAD_ARCSEC;
+  data.deps = interp.Interpolate(eop->deps) * RAD_ARCSEC;
+  data.dx_pole = interp.Interpolate(eop->xErr) * RAD_ARCSEC;
+  data.dy_pole = interp.Interpolate(eop->yErr) * RAD_ARCSEC;
+  data.tai_utc = interp.Interpolate(eop->ut1_utc_err);
   return data;
 }
 

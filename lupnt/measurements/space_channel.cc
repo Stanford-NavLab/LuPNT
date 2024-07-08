@@ -11,12 +11,12 @@
 
 #include "space_channel.h"
 
-#include <lupnt/agents/agent.h>
-#include <lupnt/agents/comm_device.h>
-
 #include <iomanip>
 #include <iostream>
 #include <string>
+
+#include "lupnt/agents/agent.h"
+#include "lupnt/agents/comm_device.h"
 
 namespace lupnt {
 

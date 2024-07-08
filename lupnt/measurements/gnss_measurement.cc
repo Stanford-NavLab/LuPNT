@@ -10,8 +10,7 @@
  */
 #include "gnss_measurement.h"
 
-#include <lupnt/numerics/math_utils.h>
-
+#include "lupnt/numerics/math_utils.h"
 #include "radio_measurement.h"
 
 namespace lupnt {

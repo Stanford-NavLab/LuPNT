@@ -11,11 +11,10 @@
 
 #pragma once
 
-#include <lupnt/agents/agent.h>
-#include <lupnt/core/constants.h>
-
 #include <vector>
 
+#include "lupnt/agents/agent.h"
+#include "lupnt/core/constants.h"
 #include "radio_measurement.h"
 
 namespace lupnt {
