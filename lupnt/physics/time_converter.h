@@ -39,8 +39,10 @@ Real TTtoTCB(Real t_tdb);
 Real MJDtoTime(Real mjd);
 Real TimeToMJD(Real t);
 
-Real TAItoJulianDateTT(Real t_tai);
-Real EarthRotationAngle(Real mjd_ut1);
+Real JDtoTime(Real jd);
+Real TimeToJD(Real t);
+
+Real EarthRotationAngle(Real t_tai);
 Real GregorianToMJD(int year, int month, int day, int hour = 0, int min = 0,
                     Real sec = 0);
 Real GregorianToTime(int year, int month, int day, int hour = 0, int min = 0,

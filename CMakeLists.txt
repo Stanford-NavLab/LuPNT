@@ -27,6 +27,13 @@ set(CMAKE_CXX_STANDARD 23)          # ensure cmake instructs compiler to use C++
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # ensure the C++ standard given before is actually used
 set(CMAKE_CXX_EXTENSIONS OFF)       # avoid compile flags of the type -std=gnu++1z added by cmake
 
+# Set compiler warning flags
+# if(MSVC)
+#     add_compile_options(/W4 /WX) # Use /W4 for level 4 warnings, /WX to treat warnings as errors
+# else()
+#     add_compile_options(-Wall -Wextra -Wpedantic -Werror) # For GCC and Clang
+# endif()
+
 # Build the library
 add_subdirectory(lupnt)
 

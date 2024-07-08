@@ -68,5 +68,6 @@ CartesianOrbitState ConvertFrame(Real t_tai,
                                  const CartesianOrbitState &state_in,
                                  Frame frame_out);
 
-Mat6 Op2Mi(Real t_tai);
+Mat6 RotOp2Mi(Real t_tai);
+
 }  // namespace lupnt

@@ -7,11 +7,11 @@
 #include <string>
 #include <vector>
 
+#include "lupnt/data/eop.h"
+#include "lupnt/data/tai_utc.h"
 #include "lupnt/numerics/graphs.h"
 #include "lupnt/numerics/math_utils.h"
-#include "lupnt/physics/eop.h"
 #include "lupnt/physics/solar_system.h"
-#include "lupnt/physics/tai_utc.h"
 
 #define TIME_CONVERSION(from, to, func) \
   {{TimeSys::from, TimeSys::to}, [](Real t) -> Real { return func(t); }}
@@ -147,10 +147,10 @@ Real TTtoTCB(Real t_tt) {
   return t_tcb;
 }
 
-Real EarthRotationAngle(Real t_jd_ut1) {
+Real EarthRotationAngle(Real t_ut1) {
   double theta_0 = 0.7790572732640;
   double dtheta_dt = 1.00273781191135448;
-  Real theta_era = TWO_PI * (theta_0 + dtheta_dt * (t_jd_ut1 - JD_J2000));
+  Real theta_era = TWO_PI * (theta_0 + dtheta_dt * t_ut1 / SECS_DAY);
   return Wrap2Pi(theta_era);
 }
 
@@ -220,6 +220,9 @@ Real MJDtoTime(Real mjd) { return (mjd - MJD_J2000) * SECS_DAY; }
 
 Real TimeToMJD(Real t) { return t / SECS_DAY + MJD_J2000; }
 
+Real JDToTime(Real jd) { return (jd - JD_J2000) * SECS_DAY; }
+Real TimeToJD(Real t) { return t / SECS_DAY + JD_J2000; }
+
 /// @brief Convert Modified Julian Date to date string
 /// @param mjd Modified Julian Date
 /// @param precision Number of seconds precision
@@ -272,5 +275,7 @@ VEC_IMP_REAL(TTtoTCB)
 
 VEC_IMP_REAL(MJDtoTime)
 VEC_IMP_REAL(TimeToMJD)
+VEC_IMP_REAL(JDToTime)
+VEC_IMP_REAL(TimeToJD)
 
 }  // namespace lupnt

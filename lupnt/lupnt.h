@@ -16,8 +16,11 @@
 #include "core/scheduler.h"
 #include "core/user_file_path.h"
 
-// datasets
-#include "datasets/crater_data.h"
+// data
+#include "data/crater_data.h"
+#include "data/eop.h"
+#include "data/iau_sofa.h"
+#include "data/tai_utc.h"
 
 // dynamics
 #include "dynamics/dynamics.h"
@@ -41,6 +44,7 @@
 #include "numerics/filters.h"
 #include "numerics/graphs.h"
 #include "numerics/integrator.h"
+#include "numerics/interpolation.h"
 #include "numerics/math_utils.h"
 #include "numerics/string_utils.h"
 #include "numerics/vector_macros.h"
@@ -50,13 +54,12 @@
 #include "physics/cheby.h"
 #include "physics/clock.h"
 #include "physics/coordinates.h"
-#include "physics/eop.h"
 #include "physics/frame_converter.h"
+#include "physics/frame_converter_spice.h"
 #include "physics/gravity.h"
 #include "physics/orbit_state.h"
 #include "physics/solar_system.h"
 #include "physics/spice_interface.h"
 #include "physics/state.h"
-#include "physics/tai_utc.h"
 #include "physics/time_converter.h"
 

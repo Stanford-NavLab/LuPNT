@@ -15,6 +15,7 @@
 #include <sstream>
 
 #include "lupnt/core/file.h"
+#include "lupnt/numerics/interpolation.h"
 #include "lupnt/numerics/math_utils.h"
 
 namespace lupnt {

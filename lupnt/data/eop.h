@@ -2,8 +2,6 @@
 
 #include <lupnt/core/constants.h>
 
-#include <Eigen/Dense>
-#include <autodiff/forward/real.hpp>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -42,11 +40,11 @@ struct EopData {
   Real tai_utc;
 };
 
-void LoadEopData(const std::filesystem::path& filepath);
+void LoadEopFileData(const std::filesystem::path& filepath);
 
 // Function to manage IERS time and polar motion data
-EopData GetEopData(Real mjd_utc, bool interpolate = true);
+EopData GetEopData(Real mjd_utc);
 
-Real GetUt1UtcDifference(Real mjd_utc, bool interpolate = true);
+Real GetUt1UtcDifference(Real mjd_utc);
 
 }  // namespace lupnt

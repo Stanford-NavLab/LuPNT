@@ -101,7 +101,7 @@ TEST_CASE("OrbitState", "Coordinates") {
 
 //   // Example 2-4 (Topocentric satellite motion)
 //   std::shared_ptr<EopFileData> eop_data =
-//       LoadEopData(GetFilePath("eopc04_08.62-now"));
+//       LoadEopFileData(GetFilePath("eopc04_08.62-now"));
 //   // 1962 1 1  37665  -0.012700   0.213000   0.0326338   0.0017230 0.064261
 //   // 0.006067 0.030000   0.030000  0.0020000  0.0014000    0.012000 0.002000
 //   RequireNearReal(eop_data->years(0), 1962, eps);
@@ -192,7 +192,7 @@ TEST_CASE("OrbitState", "Coordinates") {
 
 //   // Reloading the EOP data points to the same instance
 //   std::shared_ptr<EopFileData> eop_data_reloaded =
-//       LoadEopData(GetFilePath("eopc04_08.62-now"));
+//       LoadEopFileData(GetFilePath("eopc04_08.62-now"));
 //   REQUIRE(eop_data == eop_data_reloaded);
 
 //   // Time

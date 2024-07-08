@@ -24,7 +24,7 @@
     throw std::runtime_error(oss.str());        \
   }
 
-#define DEFINE_STATIC_VECTORS_MATRICES(size)              \
+#define DEFINE_STATIC_VECTORS_MATRICES(size)       \
   using Vec##size = Matrix<Real, size, 1>;         \
   using Vec##size##d = Matrix<double, size, 1>;    \
   using Vec##size##i = Matrix<int, size, 1>;       \
@@ -35,7 +35,7 @@
   using RowVec##size##i = Matrix<int, 1, size>;    \
   using RowVec##size = Matrix<Real, 1, size>;
 
-#define DEFINE_DYNAMIC_VECTORS_MATRICES()                              \
+#define DEFINE_DYNAMIC_VECTORS_MATRICES()                       \
   using VecX = Matrix<Real, Eigen::Dynamic, 1>;                 \
   using VecXd = Matrix<double, Eigen::Dynamic, 1>;              \
   using VecXi = Matrix<int, Eigen::Dynamic, 1>;                 \
@@ -62,10 +62,10 @@
 namespace lupnt {
 
 using Eigen::Dynamic;
-using Eigen::Vector;
-using Eigen::VectorX;
 using Eigen::Matrix;
 using Eigen::MatrixX;
+using Eigen::Vector;
+using Eigen::VectorX;
 
 using Real = autodiff::real;
 template <int rows, int cols>
@@ -192,6 +192,7 @@ static constexpr double P_SUN =
 static const std::filesystem::path CSPICE_KER_DIR = GetDataPath() / "ephemeris";
 static const std::string TAI_UTC_FILENAME = "tai-utc.dat";
 static const std::string EOP_FILENAME = "eopc04_08.62-now";
+static const std::string IAU_SOFA_FILENAME = "IAU_SOFA.DAT";
 
 // Moon mean elements
 
@@ -223,14 +224,14 @@ enum class NaifId {
 };
 
 namespace TimeSys {
-const std::string UT1 = "UT1"; // Universal Time 1
-const std::string UTC = "UTC"; // Coordinated Universal Time
-const std::string TAI = "TAI"; // International Atomic Time 
-const std::string TDB = "TDB"; // Barycentric Dynamical Time
-const std::string TT = "TT";  // Terrestrial Time 
-const std::string TCG = "TCG"; // Geocentric Coordinate Time
-const std::string TCB = "TCB"; // Barycentric Coordinate Time
-const std::string GPS = "GPS"; // Global Positioning System Time
+const std::string UT1 = "UT1";  // Universal Time 1
+const std::string UTC = "UTC";  // Coordinated Universal Time
+const std::string TAI = "TAI";  // International Atomic Time
+const std::string TDB = "TDB";  // Barycentric Dynamical Time
+const std::string TT = "TT";    // Terrestrial Time
+const std::string TCG = "TCG";  // Geocentric Coordinate Time
+const std::string TCB = "TCB";  // Barycentric Coordinate Time
+const std::string GPS = "GPS";  // Global Positioning System Time
 }  // namespace TimeSys
 
 }  // namespace lupnt

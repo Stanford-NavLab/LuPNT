@@ -56,9 +56,6 @@ Real RootMeanSquare(VecX x);
 Real Percentile(VecX x, double p);
 Real Std(VecX x);
 
-double LinearInterp1d(VecXd x, VecXd data, double ix);
-double LinearInterp2d(VecXd x, VecXd y, VecXd data, double ix, double iy);
-
 MatX SampleMVN(const VecX mean, const MatX cov, int nn, int seed = 0);
 MatX blkdiag(const MatX &A, const MatX &B);
 

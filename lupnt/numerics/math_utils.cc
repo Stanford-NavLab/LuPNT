@@ -20,9 +20,8 @@
 
 namespace lupnt {
 
-
 template <typename T>
-VectorX<T> arange(T start, T stop, T step){
+VectorX<T> arange(T start, T stop, T step) {
   std::vector<T> values;
   for (T value = start; value < stop; value += step) {
     values.push_back(value);
@@ -183,80 +182,6 @@ Real Std(VecX x) {
     sq_sum += (x(i) - mean) * (x(i) - mean);
   }
   return sqrt(sq_sum / x.size());
-}
-
-/// @brief Linear interpolation in 1D
-/// @param x Vector of x values
-/// @param data Vector of data values
-double LinearInterp1d(VecXd x, VecXd data, double ix) {
-  assert(x.size() == data.size());
-  assert(x.size() > 1);
-  assert(ix >= x[0] && ix <= x[x.size() - 1]);
-
-  int ix0 = 0;
-  int ix1 = 0;
-  for (int i = 0; i < x.size() - 1; i++) {
-    if (x[i] <= ix && x[i + 1] >= ix) {
-      ix0 = i;
-      ix1 = i + 1;
-      break;
-    }
-  }
-
-  double dx0 = ix - x[ix0];
-  double dx1 = x[ix1] - ix;
-
-  dx0 = dx0 / (x[ix1] - x[ix0]);
-  dx1 = dx1 / (x[ix1] - x[ix0]);
-
-  double result = data[ix0] * dx1 + data[ix1] * dx0;
-  return result;
-}
-
-/// @brief Linear interpolation in 2D
-/// @param x Vector of x values
-/// @param y Vector of y values
-/// @param data Matrix of data values
-/// @param ix x interpolation point
-double LinearInterp2d(VecXd x, VecXd y, VecXd data, double ix, double iy) {
-  assert(x.size() * y.size() == data.size());
-  assert(x.size() > 1);
-  assert(y.size() > 1);
-  assert(ix >= x[0] && ix <= x[x.size() - 1]);
-  assert(iy >= y[0] && iy <= y[y.size() - 1]);
-
-  int ix0 = 0;
-  int ix1 = 0;
-  for (int i = 0; i < x.size() - 1; i++) {
-    if (x[i] <= ix && x[i + 1] >= ix) {
-      ix0 = i;
-      ix1 = i + 1;
-      break;
-    }
-  }
-  int iy0 = 0;
-  int iy1 = 0;
-  for (int i = 0; i < y.size() - 1; i++) {
-    if (y[i] <= iy && y[i + 1] >= iy) {
-      iy0 = i;
-      iy1 = i + 1;
-      break;
-    }
-  }
-
-  double dx0 = ix - x[ix0];
-  double dx1 = x[ix1] - ix;
-  double dy0 = iy - y[iy0];
-  double dy1 = y[iy1] - iy;
-
-  dx0 = dx0 / (x[ix1] - x[ix0]);
-  dx1 = dx1 / (x[ix1] - x[ix0]);
-  dy0 = dy0 / (y[iy1] - y[iy0]);
-  dy1 = dy1 / (y[iy1] - y[iy0]);
-
-  double result = data(ix0, iy0) * dx1 * dy1 + data(ix0, iy1) * dx1 * dy0 +
-                  data(ix1, iy0) * dx0 * dy1 + data(ix1, iy1) * dx0 * dy0;
-  return result;
 }
 
 /// @brief Sample from a multivariate normal distribution

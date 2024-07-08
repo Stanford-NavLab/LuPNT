@@ -18,7 +18,7 @@ namespace lupnt {
 std::mutex tai_utc_mutex;
 std::shared_ptr<TaiUtcFileData> tai_utc_data;
 
-void LoadTaiUtcData(const std::filesystem::path& filepath) {
+void LoadTaiUtcFileData(const std::filesystem::path& filepath) {
   std::lock_guard<std::mutex> lock(tai_utc_mutex);
   if (tai_utc_data) return;  // Data already loaded
 
@@ -63,7 +63,7 @@ double Evaluate(double mjd, int i) {
 }
 
 double GetTaiUtcDifference(double mjd) {
-  if (!tai_utc_data) LoadTaiUtcData(GetFilePath(TAI_UTC_FILENAME));
+  if (!tai_utc_data) LoadTaiUtcFileData(GetFilePath(TAI_UTC_FILENAME));
   double jd = mjd + JD_MJD_OFFSET;
   if (jd < tai_utc_data->jd(0)) {
     return 0.0;

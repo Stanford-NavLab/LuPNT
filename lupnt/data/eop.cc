@@ -2,6 +2,7 @@
 
 #include <lupnt/core/constants.h>
 #include <lupnt/core/file.h>
+#include <lupnt/numerics/interpolation.h>
 
 #include <algorithm>
 #include <cassert>
@@ -15,7 +16,7 @@ namespace lupnt {
 std::shared_ptr<EopFileData> eop;
 std::mutex eop_mutex;
 
-void LoadEopData(const std::filesystem::path& filepath) {
+void LoadEopFileData(const std::filesystem::path& filepath) {
   std::lock_guard<std::mutex> lock(eop_mutex);
   if (eop) return;  // Data already loaded
 
@@ -87,13 +88,13 @@ void LoadEopData(const std::filesystem::path& filepath) {
   return;
 }
 
-Real GetUt1UtcDifference(Real mjd_utc, bool interpolate) {
+Real GetUt1UtcDifference(Real mjd_utc) {
   EopData eop = GetEopData(mjd_utc, interpolate);
   return eop.ut1_utc;
 }
 
-EopData GetEopData(Real mjd_utc, bool interpolate) {
-  if (!eop) LoadEopData(GetFilePath(EOP_FILENAME));
+EopData GetEopData(Real mjd_utc) {
+  if (!eop) LoadEopFileData(GetFilePath(EOP_FILENAME));
 
   EopData data;
 
@@ -113,14 +114,8 @@ EopData GetEopData(Real mjd_utc, bool interpolate) {
     return data;
   }
 
-  // Find closest MJD
-  int* start = eop->mjds_utc.data();
-  int* end = eop->mjds_utc.data() + eop->mjds_utc.size();
-  int val = static_cast<int>(mjd_utc);
-  auto it = std::lower_bound(start, end, val);
-
-  int i_prev = it - eop->mjds_utc.data();
-  int i_next = i_prev + 1;
+  uint order = 3;
+  LagrangeInterpolator interp(eop->mjds_utc, mjd_utc.val(), order);
 
   if (interpolate) {
     // Linear interpolation
