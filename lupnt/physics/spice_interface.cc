@@ -145,8 +145,8 @@ void ExtractPckCoeffs() {
   //    pckr02_c(handle, target)
 }
 
-Vec3d GetBodyPos(NaifId target, Real t_tai, Frame refFrame, NaifId obs,
-                 std::string abCorrection) {
+Vec3d GetBodyPosSpice(NaifId target, Real t_tai, Frame refFrame, NaifId obs,
+                      std::string abCorrection) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
@@ -380,13 +380,11 @@ Real ConvertTime(Real t, std::string from, std::string to) {
   return t_out;
 }
 
-Mat<-1, 6> GetBodyPosVel(const VecX &t_tai, NaifId center, NaifId target,
-                         Frame frame) {
+Mat<-1, 6> GetBodyPosVel(const VecX &t_tai, NaifId center, NaifId target) {
   if (!spice_loaded) LoadSpiceKernel();
   Mat<-1, 6> retState(t_tai.size(), 6);
   for (int i = 0; i < t_tai.size(); i++)
-    retState.row(i) =
-        GetBodyPosVel(t_tai(i), center, target, frame).transpose();
+    retState.row(i) = GetBodyPosVel(t_tai(i), center, target).transpose();
   return retState;
 }
 
@@ -396,11 +394,9 @@ Mat<-1, 6> GetBodyPosVel(const VecX &t_tai, NaifId center, NaifId target,
  * @param t_tai_MJD TAI in MJD (with the origin as JD_NOV_17_1858)
  * @param center  center body id
  * @param target  target body id
- * @return VecX  6x1 vector of position and velocity of target body
- * in center body J2000 frame
+ * @return Vec6 in intertial axes
  */
-Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target,
-                   Frame frame) {
+Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
@@ -413,31 +409,29 @@ Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target,
   Vec6 rv_center = Vec6::Zero();
   Vec6 rv_target = Vec6::Zero();
 
-  auto fetchPosVel = [&](NaifId body, Vec6 &rv) {
+  auto getCenterPosVel = [&](NaifId body, Vec6 &rv) {
     switch (body) {
       case NaifId::MOON:
       case NaifId::EARTH:
-        rv +=
-            GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH_BARYCENTER, frame);
+        rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH_BARYCENTER);
         break;
       case NaifId::MERCURY:
-        rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MERCURY_BARYCENTER,
-                            frame);
+        rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MERCURY_BARYCENTER);
         break;
       case NaifId::VENUS:
-        rv +=
-            GetBodyPosVel(t_tai, NaifId::SSB, NaifId::VENUS_BARYCENTER, frame);
+        rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::VENUS_BARYCENTER);
         break;
       case NaifId::MARS:
-        rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MARS_BARYCENTER, frame);
+        rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MARS_BARYCENTER);
         break;
       default:
         break;
     }
   };
 
-  fetchPosVel(center, rv_center);
-  fetchPosVel(target, rv_target);
+  // Get the position and velocity with respect to the SSB
+  getCenterPosVel(center, rv_center);
+  getCenterPosVel(target, rv_target);
 
   // convert TAI to TDB past J2000
   Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
@@ -457,12 +451,8 @@ Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target,
   }
   assert(found_center && found_target && "Chebyshev coefficients not found");
 
-  Vec6 retState = rv_target - rv_center;
-
-  if (frame != Frame::GCRF) {
-    retState = ConvertFrame(t_tai, retState, Frame::GCRF, frame);
-  }
-  return retState;
+  Vec6 rv = rv_target - rv_center;
+  return rv;
 }
 
 }  // namespace lupnt

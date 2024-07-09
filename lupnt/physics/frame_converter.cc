@@ -9,18 +9,71 @@
  *
  */
 
+#include "frame_converter.h"
+
 #include <filesystem>
 
 #include "cheby.h"
 #include "frame_converter_spice.h"
 #include "lupnt/core/constants.h"
+#include "lupnt/data/eop.h"
 #include "lupnt/data/iau_sofa.h"
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/time_converter.h"
 #include "spice_interface.h"
 
+#define FRAME_CONVERSION(from, to, func) \
+  {{Frame::from, Frame::to},             \
+   [](Real t, const Vec6& rv) -> Vec6 { return func(t, rv); }}
+
 namespace lupnt {
+
+std::map<std::pair<Frame, Frame>, std::function<Vec6(Real, const Vec6& rv)>>
+    frame_conversions = {FRAME_CONVERSION(GCRF, ITRF, GCRFtoITRF),
+                         FRAME_CONVERSION(ITRF, GCRF, ITRFtoGCRF),
+                         FRAME_CONVERSION(GCRF, EME, GCRFtoEME),
+                         FRAME_CONVERSION(EME, GCRF, EMEtoGCRF),
+                         FRAME_CONVERSION(GCRF, ICRF, GCRFtoICRF),
+                         FRAME_CONVERSION(ICRF, GCRF, ICRFtoGCRF),
+                         FRAME_CONVERSION(GCRF, MOON_CI, GCRFtoMI),
+                         FRAME_CONVERSION(MOON_CI, GCRF, MItoGCRF),
+                         FRAME_CONVERSION(MOON_CI, MOON_PA, MItoPA),
+                         FRAME_CONVERSION(MOON_PA, MOON_CI, PAtoMI),
+                         FRAME_CONVERSION(MOON_PA, MOON_ME, PAtoME),
+                         FRAME_CONVERSION(MOON_ME, MOON_PA, MEtoPA),
+                         FRAME_CONVERSION(GCRF, EMR, GCRFtoEMR),
+                         FRAME_CONVERSION(EMR, GCRF, EMRtoGCRF)};
+
+Real ConvertT(Real t, const std::string& from, const std::string& to) {
+  if (from == to) return t;
+  std::vector<std::string> path = FindShortestPath(from, to, time_conversions);
+  Real t_out = t;
+  for (size_t i = 0; i < path.size() - 1; i++) {
+    t_out = time_conversions[{path[i], path[i + 1]}](t_out);
+  }
+  return t_out;
+}
+
+/// @brief Convert the state vector from one coordinate system to another
+/// (with integer ID input)
+/// @param t_tai Epoch of the state vector
+/// @param rv_in   State vector in the original coordinate system
+/// @param frame_in Coordinate system of the original state vector
+/// @param frame_out Coordinate system of the converted state vector
+/// @return Vec6  State vector in the converted coordinate system
+///
+Vec6 ConvertFrame(Real t_tai, const Vec6& rv_in, Frame frame_in,
+                  Frame frame_out) {
+  if (frame_in == frame_out) return rv_in;
+  std::vector<Frame> path =
+      FindShortestPath(frame_in, frame_out, frame_conversions);
+  Vec6 rv_out = rv_in;
+  for (size_t i = 0; i < path.size() - 1; i++) {
+    rv_out = frame_conversions[{path[i], path[i + 1]}](t_tai, rv_out);
+  }
+  return rv_out;
+}
 
 CartesianOrbitState ConvertFrame(Real t_tai,
                                  const CartesianOrbitState& state_in,
@@ -94,227 +147,9 @@ Mat<-1, 3> ConvertFrame(VecX t_tai, const Mat<-1, 3>& r_in, Frame frame_in,
   return rv_out.leftCols(3);
 }
 
-///
-/// @brief Convert the state vector from one coordinate system to another
-/// (with integer ID input)
-///
-/// @param t_tai Epoch of the state vector
-/// @param rv_in   State vector in the original coordinate system
-/// @param frame_in Coordinate system of the original state vector
-/// @param frame_out Coordinate system of the converted state vector
-/// @return Vec6  State vector in the converted coordinate system
-///
-Vec6 ConvertFrame(Real t_tai, const Vec6& rv_in, Frame frame_in,
-                  Frame frame_out) {
-  if (frame_in == frame_out) {
-    return rv_in;
-  }
-
-  switch (frame_in) {
-    case ITRF: {
-      switch (frame_out) {
-        case GCRF: {
-          // Convert to GCRF
-          Mat6 Rrv_itrf2gcrf =
-              GetFrameConversionMat(t_tai, Frame::ITRF, Frame::GCRF);
-          Vec6 rv_gcrf = Rrv_itrf2gcrf * rv_in;
-          return rv_gcrf;
-        }
-        default: {  // First convert to GCRF and then to the desired frame
-          Vec6 rv_gcrf = ConvertFrame(t_tai, rv_in, ITRF, GCRF);
-          Vec6 rv_out = ConvertFrame(t_tai, rv_gcrf, GCRF, frame_out);
-          return rv_out;
-        }
-      }
-    }
-
-    case MOON_ME: {
-      switch (frame_out) {
-        case MOON_PA: {  // Convert to MOON_PA
-          Vec3 r_ME = rv_in.head(3);
-          Vec3 v_ME = rv_in.tail(3);
-
-          // Rotation Mat MOON_ME (in DE421) -> MOON_PA (in DE440)
-          // Reference:
-          // https://iopscience.iop.org/article/10.3847/1538-3881/abd414/pdf
-          Mat3 B_M = RotX(-0.2785 * DEG_PER_ARCSEC) *
-                     RotY(-78.6944 * DEG_PER_ARCSEC) *
-                     RotZ(-67.8526 * DEG_PER_ARCSEC);
-          Mat3 B_M_inv = B_M.transpose();
-
-          Vec3 r_PA = B_M * r_ME;
-          Vec3 v_PA = B_M * v_ME;
-          Vec6 rv_PA;
-          rv_PA << r_PA, v_PA;
-          return rv_PA;
-        }
-        default: {  // first convert to MOON_PA and then to the desired frame
-          Vec6 rv_pa = ConvertFrame(t_tai, rv_in, MOON_ME, MOON_PA);
-          Vec6 rv_out = ConvertFrame(t_tai, rv_pa, MOON_PA, frame_out);
-          return rv_out;
-        }
-      }
-    }
-
-    case MOON_PA: {
-      switch (frame_out) {
-        case MOON_ME: {
-          // Rotation Mat MOON_ME (in DE421) -> MOON_PA (in DE440)
-          // Reference:
-          // https://iopscience.iop.org/article/10.3847/1538-3881/abd414/pdf
-          Vec3 r_PA = rv_in.head(3);
-          Vec3 v_PA = rv_in.tail(3);
-          Mat3 B_M = RotX(-0.2785 * DEG_PER_ARCSEC) *
-                     RotY(-78.6944 * DEG_PER_ARCSEC) *
-                     RotZ(-67.8526 * DEG_PER_ARCSEC);
-          Vec3 r_ME = B_M * r_PA;
-          Vec3 v_ME = B_M * v_PA;
-          Vec6 rv_me;
-          rv_me << r_ME, v_ME;
-          return rv_me;
-        }
-        case MOON_CI: {  // Convert to Moon Inertial
-          Mat6 Mrot = GetFrameConversionMat(t_tai, Frame::MOON_PA, Frame::GCRF);
-          Vec6 rv_mi = Mrot * rv_in;
-          return rv_mi;
-        }
-        default: {  // first convert to MOON_CI and then to the desired frame
-          Vec6 rv_mi = ConvertFrame(t_tai, rv_in, MOON_PA, MOON_CI);
-          Vec6 rv_out = ConvertFrame(t_tai, rv_mi, MOON_CI, frame_out);
-          return rv_out;
-        }
-      }
-    }
-
-    case GCRF: {
-      switch (frame_out) {
-        case ICRF: {
-          Vec6 rv_icrf_ssb2e =
-              GetBodyPosVel(t_tai, NaifId::SOLAR_SYSTEM_BARYCENTER,
-                            NaifId::EARTH, Frame::GCRF);
-          Vec6 rv_icrf = rv_in + rv_icrf_ssb2e;
-          return rv_icrf;
-        }
-        case ITRF: {
-          Mat6 Rrv_gcrf2itrf =
-              GetFrameConversionMat(t_tai, Frame::GCRF, Frame::ITRF);
-          Vec6 rv_itrf = Rrv_gcrf2itrf * rv_in;
-          return rv_itrf;
-        }
-        case MOON_CI: {
-          Vec6 rv_icrf_m2e =
-              GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH, Frame::GCRF);
-          Vec6 rv_mi = rv_in + rv_icrf_m2e;
-          return rv_mi;
-        }
-        case EMR: {
-          Vec6 rv_icrf_emb2e = GetBodyPosVel(
-              t_tai, NaifId::EARTH_MOON_BARYCENTER, NaifId::EARTH, Frame::GCRF);
-          Vec6 rv_emr = Inertial2Rtn(rv_icrf_emb2e, rv_in);
-          return rv_emr;
-        }
-        case MOON_PA:
-        case MOON_ME: {
-          Vec6 rv_mi = ConvertFrame(t_tai, rv_in, GCRF, MOON_CI);
-          Vec6 rv_out = ConvertFrame(t_tai, rv_mi, MOON_CI, frame_out);
-          return rv_out;
-        }
-        default:
-          assert(false && "Conversion not found");
-      }
-    }
-
-    case MOON_CI: {
-      switch (frame_out) {
-        case GCRF: {
-          Vec6 rv_icrf_e2m =
-              GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::MOON_CI);
-          Vec6 rv_gcrf = rv_in + rv_icrf_e2m;
-          return rv_gcrf;
-        }
-        case MOON_PA: {
-          Mat6 Mrot = GetFrameConversionMat(t_tai, Frame::GCRF, Frame::MOON_PA);
-          Vec6 rv_pa = Mrot * rv_in;
-          return rv_pa;
-        }
-        case MOON_ME: {
-          Vec6 rv_pa = ConvertFrame(t_tai, rv_in, MOON_CI, MOON_PA);
-          Vec6 rv_out = ConvertFrame(t_tai, rv_pa, MOON_PA, frame_out);
-          return rv_out;
-        }
-        case MOON_OP: {
-          Mat6 R_op2mi = RotOp2Mi(t_tai);
-          Vec6 rv_op = R_op2mi.transpose() * rv_in;
-          return rv_op;
-        }
-        default: {
-          Vec6 rv_gcrf = ConvertFrame(t_tai, rv_in, MOON_CI, GCRF);
-          Vec6 rv_out = ConvertFrame(t_tai, rv_gcrf, GCRF, frame_out);
-          return rv_out;
-        }
-      }
-    }
-
-    case ICRF: {
-      switch (frame_out) {
-        case GCRF: {
-          Vec6 rv_icrf_ssb2e =
-              GetBodyPosVel(t_tai, NaifId::SOLAR_SYSTEM_BARYCENTER,
-                            NaifId::EARTH, Frame::ICRF);
-          Vec6 rv_gcrf = rv_in - rv_icrf_ssb2e;
-          return rv_gcrf;
-        }
-        default: {
-          Vec6 rv_gcrf = ConvertFrame(t_tai, rv_in, ICRF, GCRF);
-          Vec6 rv_out = ConvertFrame(t_tai, rv_gcrf, GCRF, frame_out);
-          return rv_out;
-        }
-      }
-    }
-
-    case EMR: {
-      switch (frame_out) {
-        case GCRF: {
-          Vec6 rv_icrf_emb2e = GetBodyPosVel(
-              t_tai, NaifId::EARTH, NaifId::EARTH_MOON_BARYCENTER, Frame::GCRF);
-          Vec6 rv_gcrf = Rtn2Inertial(rv_icrf_emb2e, rv_in);
-          return rv_gcrf;
-        }
-        default: {
-          Vec6 rv_gcrf = ConvertFrame(t_tai, rv_in, EMR, GCRF);
-          Vec6 rv_out = ConvertFrame(t_tai, rv_gcrf, GCRF, frame_out);
-          return rv_out;
-        }
-      }
-    }
-
-    case MOON_OP: {
-      switch (frame_out) {
-        case MOON_CI: {
-          Mat6 R_op2mi = RotOp2Mi(t_tai);
-          Vec6 rv_mi = R_op2mi * rv_in;
-          return rv_mi;
-        }
-        default: {
-          Vec6 rv_mi = ConvertFrame(t_tai, rv_in, MOON_OP, MOON_CI);
-          Vec6 rv_out = ConvertFrame(t_tai, rv_mi, MOON_CI, frame_out);
-          return rv_out;
-        }
-      }
-    }
-    default: {
-      assert(false && "Conversion not found");
-    }
-  }
-  assert(false && "Conversion not found");
-  return Vec6::Zero();
-}
-
 Mat6 RotOp2Mi(Real t_tai) {
-  Vec6 rv_earth_icrf =
-      GetBodyPosVel(t_tai, NaifId::SUN, NaifId::EARTH, Frame::ICRF);
-  Vec6 rv_moon_icrf =
-      GetBodyPosVel(t_tai, NaifId::SUN, NaifId::MOON, Frame::ICRF);
+  Vec6 rv_earth_icrf = GetBodyPosVel(t_tai, NaifId::SUN, NaifId::EARTH);
+  Vec6 rv_moon_icrf = GetBodyPosVel(t_tai, NaifId::SUN, NaifId::MOON);
 
   // Moon axis
   MatX iau_moon2icrf;
@@ -343,6 +178,7 @@ Mat6 RotOp2Mi(Real t_tai) {
   return R_op2mi_tot.cast<double>();
 }
 
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 34
 Mat3 RotPrecessionNutation(Real t_tai) {
   Real t_tt = ConvertT(t_tai, TimeSys::TAI, TimeSys::TT);
   Real jd_tt = TimeToJD(t_tt);
@@ -356,15 +192,287 @@ Mat3 RotPrecessionNutation(Real t_tai) {
   Mat3 mat{{1. - a * X * X, -a * X * Y, -X},
            {-a * X * Y, 1. - a * Y * Y, -Y},
            {X, Y, 1. - a * (X * X + Y * Y)}};
-  return RotZ(-s) * mat;
+  Mat3 R_pn = RotZ(-s) * mat;
+  return R_pn;
 }
 
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 35
 Mat3 RotSideralMotion(Real t_tai) {
   Real t_ut1 = ConvertT(t_tai, TimeSys::TAI, TimeSys::UT1);
   Real theta_era = EarthRotationAngle(t_ut1);
-  return RotZ(theta_era);
+  Mat3 R_s = RotZ(theta_era);
+  return R_s;
 }
 
-Mat3 RotPolarMotion(Real t_tai) {}
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 36
+Mat3 RotSideralMotionDot(Real t_tai) {
+  Real t_ut1 = ConvertT(t_tai, TimeSys::TAI, TimeSys::UT1);
+  Real theta_era = EarthRotationAngle(t_ut1);
+
+  Real t_utc = ConvertT(t_tai, TimeSys::TAI, TimeSys::UTC);
+  Real mjd_utc = TimeToMJD(t_utc);
+  EopData eop = GetEopData(mjd_utc);
+  Real lod = eop.lod;
+
+  Real w_E = 7.292115146706979e-5 * (1. - lod / SECS_DAY);
+  Mat3 R_s_dot{{-w_E * sin(theta_era), w_E * cos(theta_era), 0},
+               {-w_E * cos(theta_era), -w_E * sin(theta_era), 0},
+               {0, 0, 0}};
+  return R_s_dot;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 36
+Mat3 RotPolarMotion(Real t_tai) {
+  Real t_utc = ConvertT(t_tai, TimeSys::TAI, TimeSys::UTC);
+  Real t_tt = ConvertT(t_tai, TimeSys::TAI, TimeSys::TT);
+  Real mjd_utc = TimeToMJD(t_utc);
+
+  EopData eop = GetEopData(mjd_utc);
+  Real xp = eop.x_pole;
+  Real yp = eop.y_pole;
+  Real sp = -47e-6 * RAD_ARCSEC * (t_tt / JD_CENTURY);
+
+  Mat3 R_po = RotX(-yp) * RotY(-xp) * RotZ(sp);
+  return R_po;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 37
+Vec6 GCRFtoITRF(Real t_tai, const Vec6& rv_gcrf) {
+  Mat3 R_po = RotPolarMotion(t_tai);
+  Mat3 R_pn = RotPrecessionNutation(t_tai);
+  Mat3 R_s = RotSideralMotion(t_tai);
+  Mat3 R_s_dot = RotSideralMotionDot(t_tai);
+
+  Mat3 R = R_po * R_s * R_pn;
+  Mat3 R_dot = R_po * R_s_dot * R_pn;
+
+  Vec3 r_gcrf = rv_gcrf.head(3);
+  Vec3 v_gcrf = rv_gcrf.tail(3);
+
+  Vec3 r_itrf = R * r_gcrf;
+  Vec3 v_itrf = R * v_gcrf + R_dot * r_gcrf;
+
+  Vec6 rv_itrf;
+  rv_itrf << r_itrf, v_itrf;
+  return rv_itrf;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 37
+Vec6 ITRFtoGCRF(Real t_tai, const Vec6& rv_itrf) {
+  Mat3 R_po = RotPolarMotion(t_tai);
+  Mat3 R_pn = RotPrecessionNutation(t_tai);
+  Mat3 R_s = RotSideralMotion(t_tai);
+  Mat3 R_s_dot = RotSideralMotionDot(t_tai);
+
+  Mat3 R = R_po * R_s * R_pn;
+  Mat3 R_dot = R_po * R_s_dot * R_pn;
+
+  Mat3 R_inv = R.transpose();
+  Mat3 R_dot_inv = R_dot.transpose();
+
+  Vec3 r_itrf = rv_itrf.head(3);
+  Vec3 v_itrf = rv_itrf.tail(3);
+
+  Vec3 r_gcrf = R_inv * r_itrf;
+  Vec3 v_gcrf = R_inv * v_itrf + R_dot_inv * r_itrf;
+
+  Vec6 rv_gcrf;
+  rv_gcrf << r_gcrf, v_gcrf;
+  return rv_gcrf;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 38
+Mat3d EarthFrameBiasMatrix() {
+  const double da = FRAME_BIAS_DALPHA0;
+  const double xi = FRAME_BIAS_XI0;
+  const double eta = FRAME_BIAS_ETA0;
+  Mat3d B_e = RotX(-eta) * RotY(xi) * RotZ(da);
+  return B_e;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 38
+Mat3d EarthFrameBiasMatrixFirstOrder() {
+  const double da = FRAME_BIAS_DALPHA0;
+  const double xi = FRAME_BIAS_XI0;
+  const double eta = FRAME_BIAS_ETA0;
+  Mat3d B_e{{1, da, -xi}, {-da, 1, -eta}, {xi, eta, 1}};
+  return B_e;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 38
+Mat3d EarthFrameBiasMatrixSecondOrder() {
+  const double da = FRAME_BIAS_DALPHA0;
+  const double xi = FRAME_BIAS_XI0;
+  const double eta = FRAME_BIAS_ETA0;
+  Mat3d B_e{{1 - 0.5 * (da * da + xi * xi), da, -xi},
+            {-da - eta * xi, 1 - 0.5 * (da * da + eta * eta), -eta},
+            {xi - eta * da, eta + xi * da, 1 - 0.5 * (eta * eta + xi * xi)}};
+  return B_e;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 39
+Vec6 GCRFtoEME(Real t_tai, const Vec6& rv_gcrf) {
+  Mat3d B_e = EarthFrameBiasMatrix();
+  Vec3 r_gcrf = rv_gcrf.head(3);
+  Vec3 v_gcrf = rv_gcrf.tail(3);
+
+  Vec3 r_eme = B_e * r_gcrf;
+  Vec3 v_eme = B_e * v_gcrf;
+
+  Vec6 rv_eme;
+  rv_eme << r_eme, v_eme;
+  return rv_eme;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 39
+Vec6 EMEtoGCRF(Real t_tai, const Vec6& rv_eme) {
+  Mat3d B_e = EarthFrameBiasMatrix();
+  Vec3 r_eme = rv_eme.head(3);
+  Vec3 v_eme = rv_eme.tail(3);
+
+  Mat3d B_e_inv = B_e.transpose();
+  Vec3 r_gcrf = B_e_inv * r_eme;
+  Vec3 v_gcrf = B_e_inv * v_eme;
+
+  Vec6 rv_gcrf;
+  rv_gcrf << r_gcrf, v_gcrf;
+  return rv_gcrf;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 39
+Vec6 GCRFtoICRF(Real t_tai, const Vec6& rv_gcrf) {
+  Vec6 rv_earth2ssb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::SSB);
+  Vec6 rv_icrf = rv_gcrf + rv_earth2ssb;
+  return rv_icrf;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 40
+Vec6 ICRFtoGCRF(Real t_tai, const Vec6& rv_icrf) {
+  Vec6 rv_ssb2earth = GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH);
+  Vec6 rv_gcrf = rv_icrf + rv_ssb2earth;
+  return rv_gcrf;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 40
+Vec6 GCRFtoMI(Real t_tai, const Vec6& rv_gcrf) {
+  Vec6 rv_earth2moon = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON);
+  Vec6 rv_mi = rv_gcrf + rv_earth2moon;
+  return rv_mi;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 40
+Vec6 MItoGCRF(Real t_tai, const Vec6& rv_mi) {
+  Vec6 rv_earth2moon = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON);
+  Vec6 rv_gcrf = rv_mi - rv_earth2moon;
+  return rv_gcrf;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
+Mat3d RotMItoPA(Real t_tai) {
+  double psi = 0;
+  double theta = 0;
+  double phi = 0;
+  Mat3d Rot_mi2pa = RotZ(psi) * RotX(theta) * RotZ(phi);
+  return Rot_mi2pa;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
+Mat3d RotMItoPAdot(Real t_tai) {
+  double phi = 0;
+  double theta = 0;
+  double psi = 0;
+  double psi_dot = 0;
+  double spsi = sin(psi);
+  double cpsi = cos(psi);
+  Mat3d mat{{-psi_dot * spsi, psi_dot * cpsi, 0},
+            {-psi_dot * cpsi, -psi_dot * spsi, 0},
+            {0, 0, 0}};
+  Mat3d Rot_mi2pa_dot = mat * RotX(theta) * RotZ(phi);
+  return Rot_mi2pa_dot;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
+Vec6 MItoPA(Real t_tai, const Vec6& rv_mi) {
+  Mat3d Rot_mi2pa = RotMItoPA(t_tai);
+  Mat3d Rot_mi2pa_dot = RotMItoPAdot(t_tai);
+
+  Vec3 r_mi = rv_mi.head(3);
+  Vec3 v_mi = rv_mi.tail(3);
+
+  Vec3 r_pa = Rot_mi2pa * r_mi;
+  Vec3 v_pa = Rot_mi2pa * v_mi + Rot_mi2pa_dot * r_mi;
+
+  Vec6 rv_pa;
+  rv_pa << r_pa, v_pa;
+  return rv_pa;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
+Vec6 PAtoMI(Real t_tai, const Vec6& rv_pa) {
+  Mat3d Rot_mi2pa = RotMItoPA(t_tai);
+  Mat3d Rot_mi2pa_dot = RotMItoPAdot(t_tai);
+
+  Mat3d Rot_pa2mi = Rot_mi2pa.transpose();
+  Mat3d Rot_pa2mi_dot = Rot_mi2pa_dot.transpose();
+
+  Vec3 r_pa = rv_pa.head(3);
+  Vec3 v_pa = rv_pa.tail(3);
+
+  Vec3 r_mi = Rot_pa2mi * r_pa;
+  Vec3 v_mi = Rot_pa2mi * v_pa + Rot_pa2mi_dot * r_pa;
+
+  Vec6 rv_mi;
+  rv_mi << r_mi, v_mi;
+  return rv_mi;
+}
+
+Mat3d MoonFrameBiasMatrix() {
+  Mat3d B_moon = RotX(-0.2785 * RAD_ARCSEC) * RotY(-78.6944 * RAD_ARCSEC) *
+                 RotZ(-67.8526 * RAD_ARCSEC);
+  return B_moon;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 43
+Vec6 PAtoME(Real t_tai, const Vec6& rv_pa) {
+  Mat3d B_moon = MoonFrameBiasMatrix();
+  Vec3 r_pa = rv_pa.head(3);
+  Vec3 v_pa = rv_pa.tail(3);
+
+  Vec3 r_me = B_moon * r_pa;
+  Vec3 v_me = B_moon * v_pa;
+
+  Vec6 rv_me;
+  rv_me << r_me, v_me;
+  return rv_me;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 43
+Vec6 MEtoPA(Real t_tai, const Vec6& rv_me) {
+  Mat3d B_moon = MoonFrameBiasMatrix();
+  Vec3 r_me = rv_me.head(3);
+  Vec3 v_me = rv_me.tail(3);
+
+  Mat3d B_moon_inv = B_moon.transpose();
+  Vec3 r_pa = B_moon_inv * r_me;
+  Vec3 v_pa = B_moon_inv * v_me;
+
+  Vec6 rv_pa;
+  rv_pa << r_pa, v_pa;
+  return rv_pa;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 48
+Vec6 GCRFtoEMR(Real t_tai, const Vec6& rv_gcrf) {
+  Vec6 rv_earth2emb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::EMB);
+  Vec6 rv_emr = Inertial2Synodic(rv_earth2emb, rv_gcrf);
+  return rv_emr;
+}
+
+/// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 48
+Vec6 EMRtoGCRF(Real t_tai, const Vec6& rv_emr) {
+  Vec6 rv_earth2emb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::EMB);
+  Vec6 rv_gcrf = Synodic2Intertial(rv_earth2emb, rv_emr);
+  return rv_gcrf;
+}
 
 }  // namespace lupnt

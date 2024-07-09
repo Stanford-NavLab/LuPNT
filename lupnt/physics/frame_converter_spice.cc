@@ -190,9 +190,8 @@ Vec6 ConvertFrameSpice(Real t_tai, const Vec6& rv_in, Frame frame_in,
     case GCRF: {
       switch (frame_out) {
         case ICRF: {
-          Vec6 rv_icrf_ssb2e =
-              GetBodyPosVel(t_tai, NaifId::SOLAR_SYSTEM_BARYCENTER,
-                            NaifId::EARTH, Frame::GCRF);
+          Vec6 rv_icrf_ssb2e = GetBodyPosVel(
+              t_tai, NaifId::SOLAR_SYSTEM_BARYCENTER, NaifId::EARTH);
           Vec6 rv_icrf = rv_in + rv_icrf_ssb2e;
           return rv_icrf;
         }
@@ -203,15 +202,14 @@ Vec6 ConvertFrameSpice(Real t_tai, const Vec6& rv_in, Frame frame_in,
           return rv_itrf;
         }
         case MOON_CI: {
-          Vec6 rv_icrf_m2e =
-              GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH, Frame::GCRF);
+          Vec6 rv_icrf_m2e = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH);
           Vec6 rv_mi = rv_in + rv_icrf_m2e;
           return rv_mi;
         }
         case EMR: {
           Vec6 rv_icrf_emb2e = GetBodyPosVel(
-              t_tai, NaifId::EARTH_MOON_BARYCENTER, NaifId::EARTH, Frame::GCRF);
-          Vec6 rv_emr = Inertial2Rtn(rv_icrf_emb2e, rv_in);
+              t_tai, NaifId::EARTH_MOON_BARYCENTER, NaifId::EARTH);
+          Vec6 rv_emr = Inertial2Synodic(rv_icrf_emb2e, rv_in);
           return rv_emr;
         }
         case MOON_PA:
@@ -228,8 +226,7 @@ Vec6 ConvertFrameSpice(Real t_tai, const Vec6& rv_in, Frame frame_in,
     case MOON_CI: {
       switch (frame_out) {
         case GCRF: {
-          Vec6 rv_icrf_e2m =
-              GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::MOON_CI);
+          Vec6 rv_icrf_e2m = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON);
           Vec6 rv_gcrf = rv_in + rv_icrf_e2m;
           return rv_gcrf;
         }
@@ -259,9 +256,8 @@ Vec6 ConvertFrameSpice(Real t_tai, const Vec6& rv_in, Frame frame_in,
     case ICRF: {
       switch (frame_out) {
         case GCRF: {
-          Vec6 rv_icrf_ssb2e =
-              GetBodyPosVel(t_tai, NaifId::SOLAR_SYSTEM_BARYCENTER,
-                            NaifId::EARTH, Frame::ICRF);
+          Vec6 rv_icrf_ssb2e = GetBodyPosVel(
+              t_tai, NaifId::SOLAR_SYSTEM_BARYCENTER, NaifId::EARTH);
           Vec6 rv_gcrf = rv_in - rv_icrf_ssb2e;
           return rv_gcrf;
         }
@@ -276,9 +272,9 @@ Vec6 ConvertFrameSpice(Real t_tai, const Vec6& rv_in, Frame frame_in,
     case EMR: {
       switch (frame_out) {
         case GCRF: {
-          Vec6 rv_icrf_emb2e = GetBodyPosVel(
-              t_tai, NaifId::EARTH, NaifId::EARTH_MOON_BARYCENTER, Frame::GCRF);
-          Vec6 rv_gcrf = Rtn2Inertial(rv_icrf_emb2e, rv_in);
+          Vec6 rv_icrf_emb2e = GetBodyPosVel(t_tai, NaifId::EARTH,
+                                             NaifId::EARTH_MOON_BARYCENTER);
+          Vec6 rv_gcrf = Synodic2Intertial(rv_icrf_emb2e, rv_in);
           return rv_gcrf;
         }
         default: {

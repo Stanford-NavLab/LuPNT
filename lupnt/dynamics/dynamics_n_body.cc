@@ -48,9 +48,7 @@ VecX NBodyDynamics::ComputeRates(Real t_tai, const VecX& rv) const {
       a += ai;
     } else {
       // Body position w.r.t. the inertial frame origin [km]
-      Vec3 r_body = GetBodyPosVel(t_tai, central_body_.id, body.id,
-                                  central_body_.inertial_frame)
-                        .head(3);
+      Vec3 r_body = GetBodyPosVel(t_tai, central_body_.id, body.id).head(3);
       // Acceleration (inertial) [km/s^2]
       Vec3 ai = AccelerationPointMass(rv.head(3), r_body, body.GM);
       a += ai;
@@ -59,9 +57,7 @@ VecX NBodyDynamics::ComputeRates(Real t_tai, const VecX& rv) const {
 
   // Solar radiation pressure
   if (use_srp_) {
-    Vec3 r_sun = GetBodyPosVel(t_tai, central_body_.id, NaifId::SUN,
-                               central_body_.inertial_frame)
-                     .head(3);
+    Vec3 r_sun = GetBodyPosVel(t_tai, central_body_.id, NaifId::SUN).head(3);
 
     Vec3 a_srp =
         Illumination(r, r_sun, central_body_.R) *

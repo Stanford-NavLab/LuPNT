@@ -180,6 +180,11 @@ static constexpr double J2_MOON =
 static constexpr double C22_MOON =
     3.470983013194e-5;  // Sectorial value adjusted for perm. tide - Rigid C22
 
+// Transformations Between GCRF and Mean Equator and Equinox at J2000
+static constexpr double FRAME_BIAS_XI0 = -8.0561e-8;     // [rad]
+static constexpr double FRAME_BIAS_ETA0 = -3.3060e-8;    // [rad]
+static constexpr double FRAME_BIAS_DALPHA0 = 7.0783e-8;  // [rad]
+
 // Solar Radiation Pressure Constants
 // -------------------------------------------------
 static constexpr double AU = 149597970;      // AU [km]
@@ -193,6 +198,8 @@ static const std::filesystem::path CSPICE_KER_DIR = GetDataPath() / "ephemeris";
 static const std::string TAI_UTC_FILENAME = "tai-utc.dat";
 static const std::string EOP_FILENAME = "eopc04_08.62-now";
 static const std::string IAU_SOFA_FILENAME = "IAU_SOFA.DAT";
+static const std::filesystem::path ASCII_KERNEL_DIR =
+    GetDataPath() / "ephemeris" / "ascii";
 
 // Moon mean elements
 
@@ -200,12 +207,13 @@ static const std::string IAU_SOFA_FILENAME = "IAU_SOFA.DAT";
 // Reference:
 // https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/req/naif_ids.html
 enum class NaifId {
-  SOLAR_SYSTEM_BARYCENTER = 0,
   SSB = 0,
+  SOLAR_SYSTEM_BARYCENTER = SSB,
   MERCURY_BARYCENTER = 1,
   VENUS_BARYCENTER = 2,
-  EARTH_BARYCENTER = 3,
-  EARTH_MOON_BARYCENTER = 3,
+  EMB = 3,
+  EARTH_BARYCENTER = EMB,
+  EARTH_MOON_BARYCENTER = EMB,
   MARS_BARYCENTER = 4,
   JUPITER_BARYCENTER = 5,
   SATURN_BARYCENTER = 6,

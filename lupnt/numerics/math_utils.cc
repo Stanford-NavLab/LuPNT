@@ -233,56 +233,68 @@ MatX blkdiag(const MatX &A, const MatX &B) {
 /// @brief Active rotation matrix about the x-axis
 /// @param angle Angle in radians
 /// @return Rotation matrix
-Mat3 RotX(Real angle) {
-  Real c = cos(angle);
-  Real s = sin(angle);
-  Mat3 R{
+template <typename T>
+Matrix<T, 3, 3> RotX(T angle) {
+  T c = cos(angle);
+  T s = sin(angle);
+  Matrix<T, 3, 3> R{
       {1.0, 0.0, 0.0},
       {0.0, c, s},
       {0.0, -s, c},
   };
   return R;
 }
+template Mat3d RotX(double angle);
+template Mat3 RotX(Real angle);
 
 /// @brief Active rotation matrix about the y-axis
 /// @param angle Angle in radians
 /// @return Rotation matrix
-Mat3 RotY(Real angle) {
-  Real c = cos(angle);
-  Real s = sin(angle);
-  Mat3 R{
+template <typename T>
+Matrix<T, 3, 3> RotY(T angle) {
+  T c = cos(angle);
+  T s = sin(angle);
+  Matrix<T, 3, 3> R{
       {c, 0.0, -s},
       {0.0, 1.0, 0.0},
       {s, 0.0, c},
   };
   return R;
 }
+template Mat3d RotY(double angle);
+template Mat3 RotY(Real angle);
 
 /// @brief Active rotation matrix about the z-axis
 /// @param angle Angle in radians
 /// @return Rotation matrix
-Mat3 RotZ(Real angle) {
-  Real c = cos(angle);
-  Real s = sin(angle);
-  Mat3 R{
+template <typename T>
+Matrix<T, 3, 3> RotZ(T angle) {
+  T c = cos(angle);
+  T s = sin(angle);
+  Matrix<T, 3, 3> R{
       {c, s, 0.0},
       {-s, c, 0.0},
       {0.0, 0.0, 1.0},
   };
   return R;
 }
+template Mat3d RotZ(double angle);
+template Mat3 RotZ(Real angle);
 
 /// @brief Skew symmetric matrix from a vector
 /// @param x Input vector
 /// @return Skew symmetric matrix
-Mat3 Skew(Vec3 x) {
-  Mat3 skew{
+template <typename T>
+Matrix<T, 3, 3> Skew(Vector<T,3> x) {
+  Matrix<T, 3, 3> skew{
       {0.0, -x(2), x(1)},
       {x(2), 0.0, -x(0)},
       {-x(1), x(0), 0.0},
   };
   return skew;
 }
+template Mat3d Skew(Vec3d x);
+template Mat3 Skew(Vec3 x);
 
 /// @brief Convert a vector of floats to a vector of doubles
 /// @param x Input vector

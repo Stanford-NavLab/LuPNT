@@ -16,6 +16,9 @@
 #include "cheby.h"
 #include "lupnt/core/constants.h"
 
+#include <functional>
+#include <map>
+
 namespace lupnt {
 
 class CartesianOrbitState;
@@ -24,11 +27,11 @@ enum Frame {
   ITRF,         // International Terrestrial Reference Frame
   ECEF = ITRF,  // Earth-Centered Earth-Fixed
   GCRF,         // Geocentric Reference System
-  ECI = GCRF,   // Earth-Centered Inertial
+  EME,          // Earth-Centered mean equator and equinox at J2000
+  ECI = EME,    // Earth-Centered Inertial
   ICRF,         // International Celestial Reference System
   SER,          // Sun-Earth Rotating Frame
   GSE,          // Geocentric Solar Ecliptic
-  EME,          // Earth-Centered mean equator and equinox at J2000 t_tai
   MOD,          // Mean of date equatorial system
   TOD,          // True of date equatorial system
   EMR,          // Earth-Moon Rotating Frame
@@ -39,6 +42,10 @@ enum Frame {
   MARS_FIXED,   // Mars fixed frame
   VENUS_FIXED,  // Venus fixed frame
 };
+
+extern std::map<std::pair<Frame, Frame>,
+                std::function<Vec6(Real, const Vec6 &rv)>>
+    frame_conversions;
 
 // Vec = func(real, Vec)
 Vec6 ConvertFrame(Real t_tai, const Vec6 &rv_in, Frame frame_in,
@@ -69,5 +76,26 @@ CartesianOrbitState ConvertFrame(Real t_tai,
                                  Frame frame_out);
 
 Mat6 RotOp2Mi(Real t_tai);
+
+Vec6 ITRFtoGCRF(Real t_tai, const Vec6 &rv);
+Vec6 GCRFtoITRF(Real t_tai, const Vec6 &rv);
+
+Vec6 GCRFtoEME(Real t_tai, const Vec6 &rv);
+Vec6 EMEtoGCRF(Real t_tai, const Vec6 &rv);
+
+Vec6 GCRFtoICRF(Real t_tai, const Vec6 &rv);
+Vec6 ICRFtoGCRF(Real t_tai, const Vec6 &rv);
+
+Vec6 GCRFtoMI(Real t_tai, const Vec6 &rv);
+Vec6 MItoGCRF(Real t_tai, const Vec6 &rv);
+
+Vec6 MItoPA(Real t_tai, const Vec6 &rv);
+Vec6 PAtoMI(Real t_tai, const Vec6 &rv);
+
+Vec6 PAtoME(Real t_tai, const Vec6 &rv);
+Vec6 MEtoPA(Real t_tai, const Vec6 &rv);
+
+Vec6 GCRFtoEMR(Real t_tai, const Vec6 &rv);
+Vec6 EMRtoGCRF(Real t_tai, const Vec6 &rv);
 
 }  // namespace lupnt

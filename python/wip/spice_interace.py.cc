@@ -64,8 +64,8 @@ void init_spice_interface(py::module &m) {
           [](lupnt::NaifId targetName, double t_tai, lupnt::Frame refFrame,
              lupnt::NaifId obsName,
              std::string abCorrection) -> lupnt::Vector3d {
-            return lupnt::GetBodyPos(targetName, t_tai, refFrame, obsName,
-                                     abCorrection)
+            return lupnt::GetBodyPosSpice(targetName, t_tai, refFrame, obsName,
+                                          abCorrection)
                 .cast<double>();
           },
           py::arg("target_name"), py::arg("t_tai"), py::arg("ref_frame"),

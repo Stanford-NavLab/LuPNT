@@ -120,56 +120,56 @@ Vec6 Cart2Classical(Real dt, const Vec3 &r1, const Vec3 &r2, Real GM) {
 /// @param rv_c Chief spacecraft state [km, km/s]
 /// @param rv_d Deputy spacecraft state [km, km/s]
 /// @return Relative RTN state [km, km/s]
-CartesianOrbitState Inertial2Rtn(const CartesianOrbitState &rv_c,
-                                 const CartesianOrbitState &rv_d) {
-  return CartesianOrbitState(Inertial2Rtn(rv_c.GetVec(), rv_d.GetVec()),
+CartesianOrbitState Inertial2Synodic(const CartesianOrbitState &rv_c,
+                                     const CartesianOrbitState &rv_d) {
+  return CartesianOrbitState(Inertial2Synodic(rv_c.GetVec(), rv_d.GetVec()),
                              rv_c.GetCoordSystem());
 }
 
-Vec6 Inertial2Rtn(const Vec6 &rv_c, const Vec6 &rv_d) {
+Vec6 Inertial2Synodic(const Vec6 &rv_c, const Vec6 &rv_d) {
   Vec3 r_d = rv_d.head(3);
   Vec3 v_d = rv_d.tail(3);
   Vec3 r_c = rv_c.head(3);
   Vec3 v_c = rv_c.tail(3);
 
-  // RTN basis vectors
-  Vec3 uR = r_c.normalized();
-  Vec3 uN = (r_c.cross(v_c)).normalized();
-  Vec3 uT = uN.cross(uR);
+  Vec3 x = r_c.normalized();
+  Vec3 y = (r_c.cross(v_c)).normalized();
+  Vec3 z = y.cross(x);
 
-  Mat3 Rot_inert_rtn;  // Rotation matrix from inertial to RTN
-  Rot_inert_rtn << uR.transpose(), uT.transpose(), uN.transpose();
+  Mat3 R_inert2syn;
+  R_inert2syn << x.transpose(), z.transpose(), y.transpose();
 
   Vec3 w = r_c.cross(v_c) / r_c.norm();
-  Vec3 r_rtn_d = Rot_inert_rtn * (r_d - r_c);
-  Vec3 v_rtn_d = Rot_inert_rtn * (v_d - v_c - w.cross(r_d - r_c));
+  Vec3 r_syn_d = R_inert2syn * (r_d - r_c);
+  Vec3 v_syn_d = R_inert2syn * (v_d - v_c - w.cross(r_d - r_c));
 
-  Vec6 rv_rtn_d;
-  rv_rtn_d << r_rtn_d, v_rtn_d;
-  return rv_rtn_d;
+  Vec6 rv_syn_d;
+  rv_syn_d << r_syn_d, v_syn_d;
+  return rv_syn_d;
 }
 
-CartesianOrbitState Rtn2Inertial(const CartesianOrbitState &rv_c,
-                                 const CartesianOrbitState &rv_rtn_d) {
-  return CartesianOrbitState(Rtn2Inertial(rv_c.GetVec(), rv_rtn_d.GetVec()),
-                             rv_c.GetCoordSystem());
+CartesianOrbitState Synodic2Intertial(const CartesianOrbitState &rv_c,
+                                      const CartesianOrbitState &rv_syn_d) {
+  return CartesianOrbitState(
+      Synodic2Intertial(rv_c.GetVec(), rv_syn_d.GetVec()),
+      rv_c.GetCoordSystem());
 }
 
-Vec6 Rtn2Inertial(const Vec6 &rv_c, const Vec6 &rv_rtn_d) {
+Vec6 Synodic2Intertial(const Vec6 &rv_c, const Vec6 &rv_syn_d) {
   Vec3 r_c = rv_c.head(3);
   Vec3 v_c = rv_c.tail(3);
 
   // RTN basis vectors
-  Vec3 uR = r_c.normalized();
-  Vec3 uN = (r_c.cross(v_c)).normalized();
-  Vec3 uT = uN.cross(uR);
+  Vec3 x = r_c.normalized();
+  Vec3 y = (r_c.cross(v_c)).normalized();
+  Vec3 z = y.cross(x);
 
-  Mat3 Rot_rtn_inert;  // Rotation matrix from RTN to inertial
-  Rot_rtn_inert << uR, uT, uN;
+  Mat3 R_syn2inert;  // Rotation matrix from RTN to inertial
+  R_syn2inert << x, z, y;
 
   Vec3 w = r_c.cross(v_c) / r_c.norm();
-  Vec3 r_d = r_c + Rot_rtn_inert * rv_rtn_d.head(3);
-  Vec3 v_d = v_c + Rot_rtn_inert * rv_rtn_d.tail(3) + w.cross(r_d - r_c);
+  Vec3 r_d = r_c + R_syn2inert * rv_syn_d.head(3);
+  Vec3 v_d = v_c + R_syn2inert * rv_syn_d.tail(3) + w.cross(r_d - r_c);
 
   Vec6 rv_d;
   rv_d << r_d, v_d;
@@ -383,8 +383,8 @@ Vec6 RelQuasiNonsing2Classical(const Vec6 &coe_c, const Vec6 &RelQuasiNonsing) {
 }
 
 VEC_IMP_VECTOR_REAL(Classical2Cart, 6);
-VEC_IMP_VECTOR_VECTOR(Inertial2Rtn, 6);
-VEC_IMP_VECTOR_VECTOR(Rtn2Inertial, 6);
+VEC_IMP_VECTOR_VECTOR(Inertial2Synodic, 6);
+VEC_IMP_VECTOR_VECTOR(Synodic2Intertial, 6);
 VEC_IMP_VECTOR_REAL(Cart2Classical, 6);
 VEC_IMP_VECTOR_REAL(Classical2QuasiNonsing, 6);
 VEC_IMP_VECTOR_REAL(Classical2Equinoctial, 6);

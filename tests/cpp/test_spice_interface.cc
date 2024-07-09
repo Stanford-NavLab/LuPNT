@@ -28,15 +28,15 @@ TEST_CASE("SpiceInterface.TDBtoStringUTC") {
   REQUIRE(str == "2023 APR 15 00:00:00.000");
 }
 
-TEST_CASE("SpiceInterface.GetBodyPos") {
+TEST_CASE("SpiceInterface.GetBodyPosSpice") {
   Real t_tai = String2TAI("2023-04-15 00:00:00 TDB");
-  // 2. GetBodyPos: Get Body Position via SPICE
+  // 2. GetBodyPosSpice: Get Body Position via SPICE
   auto target = NaifId::MOON;
   auto observer = NaifId::EARTH;
   auto refframe = Frame::GCRF;
   std::string abcorr = "NONE";
 
-  Vec3d pos = GetBodyPos(target, t_tai, refframe, observer, abcorr);
+  Vec3d pos = GetBodyPosSpice(target, t_tai, refframe, observer, abcorr);
   // std::cout <<  std::setprecision (15) << "Moon Position from Earth at
   // 2023-04-15 00:00:00 TDB (J2000): " << pos[0] << " " << pos[1] << " " <<
   // pos[2] << std::endl;

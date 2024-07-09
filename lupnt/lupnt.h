@@ -20,6 +20,7 @@
 #include "data/crater_data.h"
 #include "data/eop.h"
 #include "data/iau_sofa.h"
+#include "data/kernels.h"
 #include "data/tai_utc.h"
 
 // dynamics

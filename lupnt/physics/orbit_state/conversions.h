@@ -10,13 +10,13 @@ Vec6 Cart2Classical(const Vec6 &rv, Real GM);
 Vec6 Cart2Classical(Real dt, const Vec3 &r1, const Vec3 &r2, Real GM);
 
 // - 2 CartesianOrbitState (relative)
-CartesianOrbitState Inertial2Rtn(const CartesianOrbitState &rv_c,
-                                 const CartesianOrbitState &rv_d);
-Vec6 Inertial2Rtn(const Vec6 &rv_c, const Vec6 &rv_d);
+CartesianOrbitState Inertial2Synodic(const CartesianOrbitState &rv_c,
+                                     const CartesianOrbitState &rv_d);
+Vec6 Inertial2Synodic(const Vec6 &rv_c, const Vec6 &rv_d);
 
-CartesianOrbitState Rtn2Inertial(const CartesianOrbitState &rv_c,
-                                 const CartesianOrbitState &rv_rtn_d);
-Vec6 Rtn2Inertial(const Vec6 &rv_c, const Vec6 &rv_rtn_d);
+CartesianOrbitState Synodic2Intertial(const CartesianOrbitState &rv_c,
+                                      const CartesianOrbitState &rv_syn_d);
+Vec6 Synodic2Intertial(const Vec6 &rv_c, const Vec6 &rv_syn_d);
 
 // From ClassicalOE
 // - 2 CartesianOrbitState
@@ -58,8 +58,8 @@ Vec6 RelQuasiNonsing2Classical(const Vec6 &coe, const Vec6 &RelQuasiNonsing);
 
 // Vector definitions
 VEC_DEF_VECTOR_REAL(Classical2Cart, 6);
-VEC_DEF_VECTOR_VECTOR(Inertial2Rtn, 6);
-VEC_DEF_VECTOR_VECTOR(Rtn2Inertial, 6);
+VEC_DEF_VECTOR_VECTOR(Inertial2Synodic, 6);
+VEC_DEF_VECTOR_VECTOR(Synodic2Intertial, 6);
 VEC_DEF_VECTOR_REAL(Cart2Classical, 6);
 VEC_DEF_VECTOR_REAL(Classical2QuasiNonsing, 6);
 VEC_DEF_VECTOR_REAL(Classical2Equinoctial, 6);

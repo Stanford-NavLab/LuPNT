@@ -44,13 +44,14 @@ int main() {
   std::cout << "XFORM_MOONPA:\n" << xform << std::endl;
   xform = GetFrameConversionMat(t_tai, Frame::MOON_CI, Frame::MOON_PA);
 
-  Vec3 x = GetBodyPos(NaifId::EARTH, t_tai, Frame::GCRF, NaifId::MOON, "NONE");
+  Vec3 x =
+      GetBodyPosSpice(NaifId::EARTH, t_tai, Frame::GCRF, NaifId::MOON, "NONE");
   std::cout << "r_moon2earth:\n" << x.transpose() << std::endl;
 
   x = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH, Frame::GCRF).head(3);
   std::cout << "r_moon2earth:\n" << x.transpose() << std::endl;
 
-  x = GetBodyPos(NaifId::SUN, t_tai, Frame::GCRF, NaifId::MOON, "NONE");
+  x = GetBodyPosSpice(NaifId::SUN, t_tai, Frame::GCRF, NaifId::MOON, "NONE");
   std::cout << "r_moon2sun:\n" << x.transpose() << std::endl;
 
   x = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::SUN, Frame::GCRF).head(3);
