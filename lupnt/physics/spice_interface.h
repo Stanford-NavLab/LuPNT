@@ -44,10 +44,9 @@ std::string TDBtoStringUTC(Real t_tdb, int prec);
 
 Real ConvertTime(Real t, std::string from_time, std::string to_time);
 
-Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target, Frame frame);
-Mat<-1, 6> GetBodyPosVel(const VecX &t_tai, NaifId center, NaifId target,
-                         Frame frame);
-Vec3d GetBodyPos(NaifId target, Real t_tai, Frame refFrame, NaifId obs,
-                 std::string abCorrection);
+Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target);
+Mat<-1, 6> GetBodyPosVel(const VecX &t_tai, NaifId center, NaifId target);
+Vec3d GetBodyPosSpice(NaifId target, Real t_tai, Frame refFrame, NaifId obs,
+                      std::string abCorrection);
 
 }  // namespace lupnt

@@ -41,7 +41,7 @@ std::map<std::pair<OrbitStateRepres, OrbitStateRepres>,
 std::map<std::pair<OrbitStateRepres, OrbitStateRepres>,
          std::function<Vec6(const Vec6&, const Vec6&)>>
     relative_conversions = {
-        RELATIVE_CONVERSION(CARTESIAN, RTN, Inertial2Rtn),
+        RELATIVE_CONVERSION(CARTESIAN, RTN, Inertial2Synodic),
         RELATIVE_CONVERSION(QUASINONSINGULAR_ROE, CLASSICAL_OE,
                             RelQuasiNonsing2Classical),
 };

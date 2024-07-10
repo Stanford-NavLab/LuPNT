@@ -59,10 +59,14 @@ Real Std(VecX x);
 MatX SampleMVN(const VecX mean, const MatX cov, int nn, int seed = 0);
 MatX blkdiag(const MatX &A, const MatX &B);
 
-Mat3 RotX(Real angle);
-Mat3 RotY(Real angle);
-Mat3 RotZ(Real angle);
-Mat3 Skew(Vec3 x);
+template <typename T>
+Matrix<T, 3, 3> RotX(T angle);
+template <typename T>
+Matrix<T, 3, 3> RotY(T angle);
+template <typename T>
+Matrix<T, 3, 3> RotZ(T angle);
+template <typename T>
+Matrix<T, 3, 3> Skew(T x);
 
 VecXd ToDouble(const VecX &x);
 MatXd ToDouble(const MatX &x);
