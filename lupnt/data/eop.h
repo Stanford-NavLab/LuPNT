@@ -13,7 +13,8 @@ struct EopFileData {
   VecXi years;
   VecXi months;
   VecXi days;
-  VecXi mjds_utc;
+  // VecXi mjds_utc;
+  VecXd mjds_utc;
   VecXd x;
   VecXd y;
   VecXd ut1_utc;

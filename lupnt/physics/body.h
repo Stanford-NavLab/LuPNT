@@ -41,7 +41,7 @@ struct Body {
   bool use_gravity_field;
   GravityField gravity_field;
 
-    static Body Sun();
+  static Body Sun();
   static Body Moon();
   static Body Earth();
   static Body Venus();

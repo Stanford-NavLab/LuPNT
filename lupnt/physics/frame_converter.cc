@@ -365,6 +365,9 @@ Mat3 RotSideralMotion(Real t_tai) {
   return RotZ(theta_era);
 }
 
-Mat3 RotPolarMotion(Real t_tai) {}
+Mat3 RotPolarMotion(Real t_tai) {
+  // Not implemented
+  return Mat3::Identity();
+}
 
 }  // namespace lupnt

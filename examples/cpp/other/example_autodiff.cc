@@ -4,8 +4,7 @@
 using namespace lupnt;
 
 int main() {
-  Vec6 coe{9750.5,        0.7,          deg2rad(63.5),
-           deg2rad(90.0), deg2rad(0.0), deg2rad(30.0)};
+  Vec6 coe{9750.5, 0.7, DEG * 63.5, DEG * 90.0, 0.0, DEG * 30.0};
   auto cart = Classical2Cart(coe, GM_MOON);
   auto coe2 = Cart2Classical(cart, GM_MOON);
   auto cart2 = Classical2Cart(coe2, GM_MOON);

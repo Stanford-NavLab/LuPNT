@@ -40,7 +40,9 @@ int main() {
   Body earth = Body::Earth();
 
   for (int h : {0, 25, 50, 100}) {
-    Body moon = Body::Moon(h, h);
+    Body moon = Body::Moon();
+    moon.gravity_field = ReadHarmonicGravityField(
+        "data/gravity_field/moon_gravity_field.shm", h, h, false);
     // moon.sphericalHarmonics = false;
 
     // Dynamics
