@@ -15,7 +15,7 @@ namespace lupnt {
 
 /// @brief Create a Body object for the Moon
 /// @return Body object for the Moon
-Body Body::Moon() {
+Body Body::Moon(int n_max, int m_max, std::string gravity_file) {
   Body moon;
   moon.name = "MOON";
   moon.id = NaifId::MOON;
@@ -23,12 +23,14 @@ Body Body::Moon() {
   moon.inertial_frame = Frame::MOON_CI;
   moon.GM = GM_MOON;
   moon.R = R_MOON;
+  moon.gravity_field =
+      ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
   return moon;
 }
 
 /// @brief Create a Body object for the Earth
 /// @return Body object for the Earth
-Body Body::Earth() {
+Body Body::Earth(int n_max, int m_max, std::string gravity_file) {
   Body earth;
   earth.name = "EARTH";
   earth.id = NaifId::EARTH;
@@ -36,6 +38,8 @@ Body Body::Earth() {
   earth.inertial_frame = Frame::GCRF;
   earth.GM = GM_EARTH;
   earth.R = R_EARTH;
+  earth.gravity_field =
+      ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
 
   return earth;
 }
@@ -55,25 +59,29 @@ Body Body::Sun() {
 
 /// @brief Create a Body object for Mars
 /// @return Body object for Mars
-Body Body::Mars() {
+Body Body::Mars(int n_max, int m_max, std::string gravity_file) {
   Body mars;
   mars.name = "MARS";
   mars.id = NaifId::MARS;
   mars.fixed_frame = Frame::MARS_FIXED;
   mars.GM = 0.4282837566395650E+05;
   mars.R = 0.3396000000000000E+04;
+  mars.gravity_field =
+      ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
   return mars;
 }
 
 /// @brief Create a Body object for Venus
 /// @return Body object for Venus
-Body Body::Venus() {
+Body Body::Venus(int n_max, int m_max, std::string gravity_file) {
   Body venus;
   venus.name = "VENUS";
   venus.id = NaifId::VENUS;
   venus.fixed_frame = Frame::VENUS_FIXED;
   venus.GM = 0.3248585920790000E+06;
   venus.R = 0.6051000000000000E+04;
+  venus.gravity_field =
+      ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
   return venus;
 }
 

@@ -11,13 +11,17 @@
 #include "lupnt/numerics/graphs.h"
 #include "orbit_states.h"
 
-#define ABSOLUTE_CONVERSION(from, to, func)        \
-  {{OrbitStateRepres::from, OrbitStateRepres::to}, \
-   [](const Vec6& x, Real GM) -> Vec6 { return func(x, GM); }}
+#define ABSOLUTE_CONVERSION(from, to, func)                        \
+  {                                                                \
+    {OrbitStateRepres::from, OrbitStateRepres::to},                \
+        [](const Vec6& x, Real GM) -> Vec6 { return func(x, GM); } \
+  }
 
-#define RELATIVE_CONVERSION(from, to, func)        \
-  {{OrbitStateRepres::from, OrbitStateRepres::to}, \
-   [](const Vec6& x, const Vec6& y) -> Vec6 { return func(x, y); }}
+#define RELATIVE_CONVERSION(from, to, func)                             \
+  {                                                                     \
+    {OrbitStateRepres::from, OrbitStateRepres::to},                     \
+        [](const Vec6& x, const Vec6& y) -> Vec6 { return func(x, y); } \
+  }
 
 namespace lupnt {
 
@@ -46,15 +50,17 @@ std::map<std::pair<OrbitStateRepres, OrbitStateRepres>,
                             RelQuasiNonsing2Classical),
 };
 
-Vec6 ConvertOrbitState(const Vec6& state_in, OrbitStateRepres repres_in,
-                       OrbitStateRepres repres_out, Real GM) {
+Vec6 ConvertOrbitState(const Vec6& state_in, OrbitStateRepres& repres_in,
+                       OrbitStateRepres& repres_out, Real GM) {
   if (repres_in == repres_out) {
     return state_in;
   }
 
+  // std::vector<OrbitStateRepres> path =
+  //     FindShortestPath<OrbitStateRepres, Vec6(const Vec6&, Real)>(
+  //         repres_in, repres_out, absolute_conversions);
   std::vector<OrbitStateRepres> path =
-      FindShortestPath<OrbitStateRepres, Vec6(const Vec6&, Real)>(
-          repres_in, repres_out, absolute_conversions);
+      FindShortestPath(repres_in, repres_out, absolute_conversions);
 
   Vec6 state = state_in;
   for (size_t i = 0; i < path.size() - 1; i++) {

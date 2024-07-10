@@ -12,7 +12,6 @@
 // lupnt includes
 #include <lupnt/core/file.h>
 #include <lupnt/dynamics/dynamics.h>
-#include <lupnt/dynamics/gravity_field.h>
 #include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/frame_converter.h>
 #include <lupnt/physics/orbit_state.h>

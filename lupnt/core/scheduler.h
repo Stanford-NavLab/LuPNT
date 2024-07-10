@@ -16,8 +16,8 @@ class Scheduler {
  private:
   static std::priority_queue<Event> events;
   static double time_;
-  Scheduler() = delete;
-  ~Scheduler() = delete;
+  // Scheduler() = delete;
+  // ~Scheduler() = delete;
 
  public:
   static void Schedule(double time, std::function<void(double)> func,

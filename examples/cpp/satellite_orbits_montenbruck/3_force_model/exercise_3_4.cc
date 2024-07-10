@@ -12,7 +12,10 @@ using namespace std;
 int main() {
   // Time
   Real mjd0_utc = GregorianToMJD(1999, 03, 01, 00, 00, 0.0);  // [days]
-  Real t_tai0 = ConvertTime(mjd0_utc, TimeSys::MJD_UTC, TimeSys::TAI);  // [s]
+  Real t_tai0 = MJDtoTime(mjd0_utc);                          // [s]
+
+  // Real t_tai0 = ConvertTime(mjd0_utc, TimeSys::MJD_UTC, TimeSys::TAI);  //
+  // [s]
 
   // Propagation
   Real dt = 120.0;                           // [s] Time step
