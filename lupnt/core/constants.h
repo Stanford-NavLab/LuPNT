@@ -228,7 +228,10 @@ enum class NaifId {
   MARS = 499,
   PHOBOS = 401,
   DEIMOS = 402,
-  JUPITER = 599
+  JUPITER = 599,
+  SATURN = 699,
+  URANUS = 799,
+  NEPTUNE = 899,
 };
 
 namespace TimeSys {
