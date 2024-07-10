@@ -247,7 +247,7 @@ std::pair<double, double> ComputePolinomial(double x, const double* scale,
     w0 = coeff[offset + num] + (x2 * w0 - tmp);
   }
   double f = coeff[offset] + (x * w0 - w1);
-  double df = (w0 + x * dw0 - dw1) / scale[1] / SECS_DAY;
+  double df = (w0 + x * dw0 - dw1) / scale[1];
   return {f, df};
 }
 

@@ -1,4 +1,5 @@
 #include <lupnt/lupnt.h>
+#include <omp.h>
 
 #include <filesystem>
 #include <iostream>
@@ -61,11 +62,48 @@ int main() {
       GetBodyPosSpice(NaifId::MERCURY, t_tai, Frame::GCRF, NaifId::SSB, "NONE");
   Vec6 rv_mercury = GetBodyPosVel(t_tai, EphemID::MERCURY);
   auto fmt = Eigen::IOFormat(16, 0, ", ", ", ", "", "", "[", "]");
-  cout << rv_mercury_.head(3).transpose().format(fmt) << endl;
-  cout << r_mercury__.head(3).transpose().format(fmt) << endl;
-  cout << rv_mercury.head(3).transpose().format(fmt) << endl;
-  cout << rv_mercury_.tail(3).transpose().format(fmt) << endl;
-  cout << rv_mercury.tail(3).transpose().format(fmt) << endl;
+  cout << "Cheby (new)" << rv_mercury.head(3).transpose().format(fmt) << endl;
+  cout << "Cheby (old)" << rv_mercury_.head(3).transpose().format(fmt) << endl;
+  cout << "Spice      " << r_mercury__.head(3).transpose().format(fmt) << endl;
+  cout << "Cheby (new)" << rv_mercury_.tail(3).transpose().format(fmt) << endl;
+  cout << "Cheby (old)" << rv_mercury.tail(3).transpose().format(fmt) << endl;
+
+  // Benchmark the ephemerides
+  int n = 5'000'000;
+  auto start = chrono::high_resolution_clock::now();
+#pragma omp parallel for
+  for (int i = 0; i < n; i++) {
+    GetBodyPosVel(t_tai, EphemID::MERCURY);
+  }
+  auto end = chrono::high_resolution_clock::now();
+  auto duration =
+      chrono::duration_cast<chrono::milliseconds>(end - start).count();
+  cout << "Total cheby (new, multiproc.) " << duration << " ms" << endl;
+
+  start = chrono::high_resolution_clock::now();
+  for (int i = 0; i < n; i++) {
+    GetBodyPosVel(t_tai, EphemID::MERCURY);
+  }
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+  cout << "Total cheby (new) " << duration << " ms" << endl;
+
+  start = chrono::high_resolution_clock::now();
+  for (int i = 0; i < n; i++) {
+    GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MERCURY);
+  }
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+  cout << "Total cheby (old) " << duration << " ms" << endl;
+
+  start = chrono::high_resolution_clock::now();
+  for (int i = 0; i < n; i++) {
+    GetBodyPosSpice(NaifId::MERCURY, t_tai, Frame::GCRF, NaifId::SSB, "NONE");
+    // GetFrameConversionMat(t_tai, Frame::MOON_PA, Frame::ITRF);
+  }
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+  cout << "Total spice " << duration << " ms" << endl;
 
   return 0;
 }
