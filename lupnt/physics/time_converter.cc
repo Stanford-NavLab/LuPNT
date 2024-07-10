@@ -220,7 +220,7 @@ Real MJDtoTime(Real mjd) { return (mjd - MJD_J2000) * SECS_DAY; }
 
 Real TimeToMJD(Real t) { return t / SECS_DAY + MJD_J2000; }
 
-Real JDToTime(Real jd) { return (jd - JD_J2000) * SECS_DAY; }
+Real JDtoTime(Real jd) { return (jd - JD_J2000) * SECS_DAY; }
 Real TimeToJD(Real t) { return t / SECS_DAY + JD_J2000; }
 
 /// @brief Convert Modified Julian Date to date string
@@ -275,7 +275,7 @@ VEC_IMP_REAL(TTtoTCB)
 
 VEC_IMP_REAL(MJDtoTime)
 VEC_IMP_REAL(TimeToMJD)
-VEC_IMP_REAL(JDToTime)
+VEC_IMP_REAL(JDtoTime)
 VEC_IMP_REAL(TimeToJD)
 
 }  // namespace lupnt

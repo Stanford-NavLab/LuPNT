@@ -45,16 +45,6 @@ std::map<std::pair<Frame, Frame>, std::function<Vec6(Real, const Vec6& rv)>>
                          FRAME_CONVERSION(GCRF, EMR, GCRFtoEMR),
                          FRAME_CONVERSION(EMR, GCRF, EMRtoGCRF)};
 
-Real ConvertT(Real t, const std::string& from, const std::string& to) {
-  if (from == to) return t;
-  std::vector<std::string> path = FindShortestPath(from, to, time_conversions);
-  Real t_out = t;
-  for (size_t i = 0; i < path.size() - 1; i++) {
-    t_out = time_conversions[{path[i], path[i + 1]}](t_out);
-  }
-  return t_out;
-}
-
 /// @brief Convert the state vector from one coordinate system to another
 /// (with integer ID input)
 /// @param t_tai Epoch of the state vector

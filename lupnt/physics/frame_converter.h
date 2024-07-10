@@ -11,13 +11,12 @@
 
 #pragma once
 
+#include <functional>
+#include <map>
 #include <memory>
 
 #include "cheby.h"
 #include "lupnt/core/constants.h"
-
-#include <functional>
-#include <map>
 
 namespace lupnt {
 
