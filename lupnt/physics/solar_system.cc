@@ -425,40 +425,40 @@ Vec4 PlanetOrientation(NaifId id, Real t_tdb) {
       W = 329.5988 + 6.1385108 * d + 0.01067257 * sin(RAD * M1) -
           0.00112309 * sin(RAD * M2) - 0.00011040 * sin(RAD * M3) -
           0.00002539 * sin(RAD * M4) - 0.00000571 * sin(RAD * M5);
-      Wdot = 6.1385025;
+      Wdot = 6.1385025 / SECS_DAY;
       break;
 
     case NaifId::VENUS:
       alpha0 = 272.76;
       delta0 = 67.16;
       W = 160.20 - 1.4813688 * d;
-      Wdot = -1.4813688;
+      Wdot = -1.4813688 / SECS_DAY;
       break;
 
     case NaifId::MARS:
-      alpha0 = 317.269202 - 0.10927547 * T +
-               0.000068 * sin(RAD * 198.991226 + 19139.48199857 * T) +
-               0.000238 * sin(RAD * 226.292679 + 38280.8511281 * T) +
-               0.000052 * sin(RAD * 249.663391 + 57420.72515937 * T) +
-               0.000009 * sin(RAD * 266.183510 + 76560.63679507 * T) +
-               0.419057 * sin(RAD * 79.398797 + 0.50426157 * T);
+      alpha0 = 317.269202 - 0.10927547 * T;
+      alpha0 += 0.000068 * sin(RAD * (198.991226 + 19139.4819985 * T)) +
+                0.000238 * sin(RAD * (226.292679 + 38280.8511281 * T)) +
+                0.000052 * sin(RAD * (249.663391 + 57420.7251593 * T)) +
+                0.000009 * sin(RAD * (266.183510 + 76560.6367950 * T)) +
+                0.419057 * sin(RAD * (79.398797 + 0.5042615 * T));
 
-      delta0 = 54.432516 - 0.05827105 * T +
-               0.000051 * cos(RAD * 122.433576 + 19139.94074767 * T) +
-               0.000141 * cos(RAD * 43.058401 + 38280.87532727 * T) +
-               0.000031 * cos(RAD * 57.663379 + 57420.75172057 * T) +
-               0.000005 * cos(RAD * 79.476401 + 76560.64950047 * T) +
-               1.591274 * cos(RAD * 166.325722 + 0.50426157 * T);
+      delta0 = 54.432516 - 0.05827105 * T;
+      delta0 += 0.000051 * cos(RAD * (122.433576 + 19139.9407476 * T)) +
+                0.000141 * cos(RAD * (43.058401 + 38280.8753272 * T)) +
+                0.000031 * cos(RAD * (57.663379 + 57420.7517205 * T)) +
+                0.000005 * cos(RAD * (79.476401 + 76560.6495004 * T)) +
+                1.591274 * cos(RAD * (166.325722 + 0.5042615 * T));
 
-      W = 176.049863 + 350.891982443297 * d +
-          0.000145 * sin(RAD * 129.071773 + 19140.03282447 * d) +
-          0.000157 * sin(RAD * 36.352167 + 38281.04735917 * d) +
-          0.000040 * sin(RAD * 56.668646 + 57420.92953607 * d) +
-          0.000001 * sin(RAD * 67.364003 + 76560.25522157 * d) +
-          0.000001 * sin(RAD * 104.792680 + 95700.43875787 * d) -
-          0.584542 * sin(RAD * 95.391654 + 0.50426157 * d);
+      W = 176.049863 + 350.891982443297 * d;
+      W += 0.000145 * sin(RAD * (129.071773 + 19140.0328244 * d)) +
+           0.000157 * sin(RAD * (36.352167 + 38281.0473591 * d)) +
+           0.000040 * sin(RAD * (56.668646 + 57420.9295360 * d)) +
+           0.000001 * sin(RAD * (67.364003 + 76560.2552215 * d)) +
+           0.000001 * sin(RAD * (104.792680 + 95700.4387578 * d)) +
+           0.584542 * sin(RAD * (95.391654 + 0.5042615 * d));
 
-      Wdot = 350.89198226;
+      Wdot = 350.89198226 / SECS_DAY;
       break;
 
     case NaifId::JUPITER:
@@ -476,21 +476,21 @@ Vec4 PlanetOrientation(NaifId id, Real t_tdb) {
                0.000013 * cos(RAD * Jd) + 0.000926 * cos(RAD * Je);
 
       W = 284.95 + 870.5360000 * d;
-      Wdot = 870.5366420;
+      Wdot = 870.5366420 / SECS_DAY;
       break;
 
     case NaifId::SATURN:
       alpha0 = 40.589 - 0.036 * T;
       delta0 = 83.537 - 0.004 * T;
       W = 38.90 + 810.7939024 * d;
-      Wdot = 810.7939024;
+      Wdot = 810.793902 / SECS_DAY;
       break;
 
     case NaifId::URANUS:
       alpha0 = 257.311;
       delta0 = -15.175;
       W = 203.81 - 501.1600928 * d;
-      Wdot = -501.1600928;
+      Wdot = -501.1600928 / SECS_DAY;
       break;
 
     case NaifId::NEPTUNE:
@@ -499,7 +499,7 @@ Vec4 PlanetOrientation(NaifId id, Real t_tdb) {
       alpha0 = 299.36 + 0.70 * sin(RAD * N);
       delta0 = 43.46 - 0.51 * cos(RAD * N);
       W = 249.978 + 541.1397757 * d - 0.48 * sin(RAD * N);
-      Wdot = 536.3128492 - 0.48 * Ndot * cos(RAD * N);
+      Wdot = 536.3128492 - 0.48 * Ndot * cos(RAD * N) / SECS_DAY;
       break;
 
     // otherwise throw error
@@ -600,7 +600,7 @@ Mat6 RotPosVelInertialToBodyFixed(NaifId id, Real t_tdb) {
   Mat3 Rv_BI = RotZ(alpha0 + PI / 2).transpose() *
                RotX(PI / 2 - delta0).transpose() * dWRotT;
   Mat3 Rr_IB = Rr_BI.transpose();
-  Mat3 Rv_IB = -Rr_BI.transpose() * Rv_BI * Rr_BI;
+  Mat3 Rv_IB = Rv_BI.transpose();
 
   Mat6 Rrv_IB;
   // Blocks
