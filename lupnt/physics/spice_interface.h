@@ -24,10 +24,9 @@ namespace lupnt {
 
 // map from CoordSytem to string
 const std::map<Frame, std::string> frametem_string = {
-    {Frame::ITRF, "ITRF93"},
-    {Frame::GCRF, "J2000"},
-    {Frame::MOON_PA, "MOON_PA"},
-    {Frame::MOON_CI, "J2000"},
+    {Frame::ITRF, "ITRF93"},         {Frame::GCRF, "J2000"},
+    {Frame::MOON_PA, "MOON_PA"},     {Frame::MOON_CI, "J2000"},
+    {Frame::MARS_FIXED, "IAU_MARS"}, {Frame::VENUS_FIXED, "IAU_VENUS"},
 };
 
 static segment_t *cheby_s;
