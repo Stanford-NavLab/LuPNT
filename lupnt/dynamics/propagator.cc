@@ -23,6 +23,21 @@ NumericalPropagator::NumericalPropagator(std::string integratorType) {
     integrator = std::make_unique<RK4>();
   else if (integratorType == "RK8")
     integrator = std::make_unique<RK8>();
+  else if (integratorType == "RKF45") {
+    IntegratorParams params = IntegratorParams();
+    integrator = std::make_unique<RKF45>(params);
+  } else
+    throw std::invalid_argument("Invalid Integrator Type");
+};
+
+NumericalPropagator::NumericalPropagator(std::string integratorType,
+                                         IntegratorParams params) {
+  if (integratorType == "RK4")
+    integrator = std::make_unique<RK4>();
+  else if (integratorType == "RK8")
+    integrator = std::make_unique<RK8>();
+  else if (integratorType == "RKF45")
+    integrator = std::make_unique<RKF45>(params);
   else
     throw std::invalid_argument("Invalid Integrator Type");
 };
@@ -35,8 +50,12 @@ VecX NumericalPropagator::Propagate(ODE odefunc, Real t0, Real tf, VecX x0,
   Real step;
   while (t <= tf) {
     step = std::min(dt, tf - t);
-    x = integrator->Step(odefunc, t, x, step);
+    x = integrator->Step(odefunc, t, x, step);  // update x and step
     t += dt;
+    if (log_history_) {
+      t_history_.push_back(t);
+      x_history_.push_back(x);
+    }
   }
   return x;
 };

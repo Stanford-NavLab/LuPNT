@@ -14,6 +14,19 @@
 #include "unistd.h"
 
 namespace lupnt {
+
+void IntegratorParams::CheckIntegratorParams() {
+  if (max_iter < 1) {
+    throw std::invalid_argument("max_iter must be greater than 0");
+  }
+  if (abstol < 0) {
+    throw std::invalid_argument("abstol must be non-negative");
+  }
+  if (reltol < 0) {
+    throw std::invalid_argument("reltol must be non-negative");
+  }
+}
+
 /**
  * @brief One step of Runge-Kutta Integration
  *
@@ -22,7 +35,7 @@ namespace lupnt {
  * @param x  The state to propagate
  * @param dt  Timestep
  */
-VecX RK4::Step(const ODE f, const Real t, const VecX x, const Real dt) {
+VecX RK4::Step(const ODE f, const Real t, const VecX x, Real& dt) {
   // usleep(1000);
   // return x + x;
 
@@ -58,7 +71,7 @@ VecX RK4::Step(const ODE f, const Real t, const VecX x, const Real dt) {
  * @ref
  * https://www.mathworks.com/matlabcentral/fileexchange/55431-runge-kutta-8th-order-integration
  */
-VecX RK8::Step(const ODE f, const Real t, const VecX x, const Real dt) {
+VecX RK8::Step(const ODE f, const Real t, const VecX x, Real& dt) {
   // 1
   VecX k_1 = f(t, x) * dt;
 
@@ -117,6 +130,83 @@ VecX RK8::Step(const ODE f, const Real t, const VecX x, const Real dt) {
             840;
 
   return x + dx;
+}
+
+/**
+ * @brief One step of Runge-Kutta-Fehlberg Integration
+ *
+ * @param f  The ODE function to propagate
+ * @param t  Time
+ * @param x  The state to propagate
+ * @param dt  Timestep
+ *
+ * @ref
+ * https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta%E2%80%93Fehlberg_method
+ */
+
+VecX RKF45::Step(const ODE f, const Real t, const VecX x, Real& dt) {
+  // Initialize vectors for intermediate steps
+  int n = x.size();
+  std::vector<VecX> k(6, VecX(n));
+  VecX x_temp(n), x_err(n), x_next(n);
+  double abstol_ = params_.abstol;
+  double reltol_ = params_.reltol;
+  int max_iter_ = params_.max_iter;
+
+  for (int iter = 0; iter < max_iter_; ++iter) {
+    // Compute k1 to k6
+    VecX k1 = f(t, x) * dt;
+    VecX k2 = f(t + dt / 4.0, x + k1 * (1.0 / 4.0)) * dt;
+    VecX k3 =
+        f(t + dt * 3.0 / 8.0, x + k1 * (3.0 / 32.0) + k2 * (9.0 / 32.0)) * dt;
+    VecX k4 = f(t + dt * 12.0 / 13.0, x + k1 * (1932.0 / 2197.0) -
+                                          k2 * (7200.0 / 2197.0) +
+                                          k3 * (7296.0 / 2197.0)) *
+              dt;
+    VecX k5 = f(t + dt, x + k1 * (439.0 / 216.0) - k2 * 8.0 +
+                            k3 * (3680.0 / 513.0) - k4 * (845.0 / 4104.0)) *
+              dt;
+    VecX k6 = f(t + dt / 2.0, x - k1 * (8.0 / 27.0) + k2 * 2.0 -
+                                  k3 * (3544.0 / 2565.0) +
+                                  k4 * (1859.0 / 4104.0) - k5 * (11.0 / 40.0)) *
+              dt;
+
+    // 4th order solution
+    VecX x4 = x + k1 * (25.0 / 216.0) + k3 * (1408.0 / 2565.0) +
+              k4 * (2197.0 / 4104.0) - k5 * (1.0 / 5.0);
+
+    // 5th order solution
+    VecX x5 = x + k1 * (16.0 / 135.0) + k3 * (6656.0 / 12825.0) +
+              k4 * (28561.0 / 56430.0) - k5 * (9.0 / 50.0) + k6 * (2.0 / 55.0);
+
+    // Compute the error norm
+    Real err_norm = 0.0;
+    double tol = 0.0;
+    double error = 0.0;
+    bool within_tolerance = true;
+    double max_error = 0.0;
+    for (size_t i = 0; i < n; ++i) {
+      error = std::abs(x5(i).val() - x4(i).val());
+      tol = std::max(reltol_ * std::abs(x5(i).val()), abstol_);
+      max_error = std::max(max_error, error / tol);
+      if (error > tol) {
+        within_tolerance = false;
+      }
+    }
+
+    // Adjust the time step
+    double beta = 0.9;  // safety factor
+    dt = beta * dt * std::pow(1.0 / max_error, 1.0 / 5.0);
+
+    // Check if the step is acceptable
+    if (within_tolerance) {
+      // Accept the step
+      x_next = x4;
+      break;
+    }
+  }
+
+  return x_next;
 }
 
 }  // namespace lupnt
