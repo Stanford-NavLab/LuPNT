@@ -34,7 +34,11 @@ class NumericalPropagator {
   VecX Propagate(ODE odefunc, Real t0, Real tf, VecX x0, Real dt);
   VecX PropagateWithStm(ODE odefunc, Real t0, Real tf, VecX x0, Real dt,
                         MatXd &J);
-  void LogHistory(bool log_history);
+  void SetLogHistory(bool log_history) { log_history_ = log_history; };
+  void GetTimeHistory(std::vector<Real> &t_history) { t_history = t_history_; };
+  void GetStateHistory(std::vector<VecX> &x_history) {
+    x_history = x_history_;
+  };
 };
 
 }  // namespace lupnt
