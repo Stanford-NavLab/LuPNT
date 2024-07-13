@@ -143,70 +143,142 @@ VecX RK8::Step(const ODE f, const Real t, const VecX x, Real& dt) {
  * @ref
  * https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta%E2%80%93Fehlberg_method
  */
-
-VecX RKF45::Step(const ODE f, const Real t, const VecX x, Real& dt) {
-  // Initialize vectors for intermediate steps
+VecX IRKF::Step(const ODE f, const Real t, const VecX x, Real& dt) {
   int n = x.size();
-  std::vector<VecX> k(6, VecX(n));
-  VecX x_temp(n), x_err(n), x_next(n);
-  double abstol_ = params_.abstol;
-  double reltol_ = params_.reltol;
-  int max_iter_ = params_.max_iter;
 
-  for (int iter = 0; iter < max_iter_; ++iter) {
-    // Compute k1 to k6
-    VecX k1 = f(t, x) * dt;
-    VecX k2 = f(t + dt / 4.0, x + k1 * (1.0 / 4.0)) * dt;
-    VecX k3 =
-        f(t + dt * 3.0 / 8.0, x + k1 * (3.0 / 32.0) + k2 * (9.0 / 32.0)) * dt;
-    VecX k4 = f(t + dt * 12.0 / 13.0, x + k1 * (1932.0 / 2197.0) -
-                                          k2 * (7200.0 / 2197.0) +
-                                          k3 * (7296.0 / 2197.0)) *
-              dt;
-    VecX k5 = f(t + dt, x + k1 * (439.0 / 216.0) - k2 * 8.0 +
-                            k3 * (3680.0 / 513.0) - k4 * (845.0 / 4104.0)) *
-              dt;
-    VecX k6 = f(t + dt / 2.0, x - k1 * (8.0 / 27.0) + k2 * 2.0 -
-                                  k3 * (3544.0 / 2565.0) +
-                                  k4 * (1859.0 / 4104.0) - k5 * (11.0 / 40.0)) *
-              dt;
+  VecX x_new_low(n), x_new_high(n);
 
-    // 4th order solution
-    VecX x4 = x + k1 * (25.0 / 216.0) + k3 * (1408.0 / 2565.0) +
-              k4 * (2197.0 / 4104.0) - k5 * (1.0 / 5.0);
+  for (int iter = 0; iter < params_.max_iter; ++iter) {
+    Update(f, t, x, dt, x_new_low, x_new_high);
+    bool within_tolerance = ComputeRelError(x_new_low, x_new_high, dt);
 
-    // 5th order solution
-    VecX x5 = x + k1 * (16.0 / 135.0) + k3 * (6656.0 / 12825.0) +
-              k4 * (28561.0 / 56430.0) - k5 * (9.0 / 50.0) + k6 * (2.0 / 55.0);
+    if (within_tolerance) break;
+  }
 
-    // Compute the error norm
-    Real err_norm = 0.0;
-    double tol = 0.0;
-    double error = 0.0;
-    bool within_tolerance = true;
-    double max_error = 0.0;
-    for (size_t i = 0; i < n; ++i) {
-      error = std::abs(x5(i).val() - x4(i).val());
-      tol = std::max(reltol_ * std::abs(x5(i).val()), abstol_);
-      max_error = std::max(max_error, error / tol);
-      if (error > tol) {
-        within_tolerance = false;
-      }
-    }
+  return x_new_low;
+}
 
-    // Adjust the time step
-    double beta = 0.9;  // safety factor
-    dt = beta * dt * std::pow(1.0 / max_error, 1.0 / 5.0);
+bool IRKF::ComputeRelError(const VecX& x_new_low, const VecX& x_new_high,
+                           Real& dt) {
+  // Compute the error norm
+  Real err_norm = 0.0;
+  double tol = 0.0;
+  double error = 0.0;
+  bool within_tolerance = true;
+  double max_error = 0.0;
+  int n = x_new_low.size();
 
-    // Check if the step is acceptable
-    if (within_tolerance) {
-      // Accept the step
-      x_next = x4;
-      break;
+  // Non-conservative acceptance threshold
+  double accept_thresh =
+      std::pow(order_ + 1,
+               (order_ + 1) / order_);  // J.C. Butcher, Numerical Methods for
+                                        // Ordinary Differential Equations, p291
+
+  for (size_t i = 0; i < n; ++i) {
+    error = std::abs(x_new_high(i).val() - x_new_low(i).val());
+    tol = std::max(params_.reltol * std::abs(x_new_high(i).val()),
+                   params_.abstol);
+    max_error = std::max(max_error, error / tol);
+    if ((error / tol) > accept_thresh) {
+      within_tolerance = false;
     }
   }
 
-  return x_next;
+  // Update timestep
+  double beta = 0.9;  // safety factor
+  double s = beta * std::pow(1.0 / max_error, 1.0 / (order_ + 1));
+  s = std::max(0.5,
+               std::min(2.0, s));  // J.C. Butcher, Numerical Methods for
+                                   // Ordinary Differential Equations, (371a)
+  dt = s * dt;
+
+  return within_tolerance;
+}
+
+/**
+ * @brief One step of Runge-Kutta-Fehlberg 45 Integration
+ *
+ * @param f  The ODE function to propagate
+ * @param t  Time
+ * @param x  The state to propagate
+ * @param dt  Timestep
+ *
+ * @ref
+ * https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta%E2%80%93Fehlberg_method
+ */
+
+void RKF45::Update(const ODE f, const Real t, const VecX x, const Real dt,
+                   VecX& x_new_low, VecX& x_new_high) {
+  // Compute k1 to k6
+  VecX k1 = f(t, x) * dt;
+  VecX k2 = f(t + dt / 4.0, x + k1 * (1.0 / 4.0)) * dt;
+  VecX k3 =
+      f(t + dt * 3.0 / 8.0, x + k1 * (3.0 / 32.0) + k2 * (9.0 / 32.0)) * dt;
+  VecX k4 = f(t + dt * 12.0 / 13.0, x + k1 * (1932.0 / 2197.0) -
+                                        k2 * (7200.0 / 2197.0) +
+                                        k3 * (7296.0 / 2197.0)) *
+            dt;
+  VecX k5 = f(t + dt, x + k1 * (439.0 / 216.0) - k2 * 8.0 +
+                          k3 * (3680.0 / 513.0) - k4 * (845.0 / 4104.0)) *
+            dt;
+  VecX k6 = f(t + dt / 2.0, x - k1 * (8.0 / 27.0) + k2 * 2.0 -
+                                k3 * (3544.0 / 2565.0) +
+                                k4 * (1859.0 / 4104.0) - k5 * (11.0 / 40.0)) *
+            dt;
+
+  // 4th order solution
+  x_new_low = x + k1 * (25.0 / 216.0) + k3 * (1408.0 / 2565.0) +
+              k4 * (2197.0 / 4104.0) - k5 * (1.0 / 5.0);
+
+  // 5th order solution
+  x_new_high = x + k1 * (16.0 / 135.0) + k3 * (6656.0 / 12825.0) +
+               k4 * (28561.0 / 56430.0) - k5 * (9.0 / 50.0) + k6 * (2.0 / 55.0);
+}
+
+void RKF78::Update(const ODE f, const Real t, const VecX x, const Real dt,
+                   VecX& x_new_low, VecX& x_new_high) {
+  // Calculate the intermediate values
+  VecX k1 = f(t, x) * dt;
+  VecX k2 = f(t + dt / 18.0, x + k1 * (1.0 / 18.0)) * dt;
+  VecX k3 = f(t + dt / 12.0, x + k1 * (1.0 / 48.0) + k2 * (1.0 / 16.0)) * dt;
+  VecX k4 = f(t + dt / 8.0, x + k1 * (1.0 / 32.0) + k3 * (3.0 / 32.0)) * dt;
+  VecX k5 =
+      f(t + dt * 5.0 / 16.0, x + k1 * (5.0 / 16.0) + k4 * (5.0 / 16.0)) * dt;
+  VecX k6 = f(t + dt * 3.0 / 8.0,
+              x + k1 * (3.0 / 80.0) + k4 * (3.0 / 16.0) + k5 * (3.0 / 80.0)) *
+            dt;
+  VecX k7 = f(t + dt * 59.0 / 400.0, x + k1 * (29443841.0 / 614563906.0) +
+                                         k3 * (77736538.0 / 692538347.0) -
+                                         k4 * (28693883.0 / 1125000000.0) +
+                                         k5 * (23124283.0 / 1800000000.0)) *
+            dt;
+  VecX k8 = f(t + dt * 93.0 / 200.0, x + k1 * (16016141.0 / 946692911.0) +
+                                         k3 * (61564180.0 / 158732637.0) +
+                                         k4 * (22789713.0 / 633445777.0) +
+                                         k5 * (545815736.0 / 2771057229.0) -
+                                         k6 * (180193667.0 / 1043307555.0)) *
+            dt;
+  VecX k9 =
+      f(t + dt * 549.0 / 550.0,
+        x + k1 * (39632708.0 / 573591083.0) + k3 * (75514994.0 / 376528297.0) +
+            k4 * (28693883.0 / 1125000000.0) + k5 * (15800238.0 / 500000000.0) -
+            k6 * (156804367.0 / 2090555510.0) +
+            k7 * (80566776.0 / 778733348.0)) *
+      dt;
+
+  // 7th order solution
+  x_new_low =
+      x + k1 * (14005451.0 / 335480064.0) + k3 * (16225225.0 / 120670894.0) +
+      k4 * (127486337.0 / 998941664.0) + k5 * (88077776.0 / 592463802.0) +
+      k6 * (17653274.0 / 135979299.0) + k7 * (43200761.0 / 128927046.0) +
+      k8 * (171529931.0 / 209343607.0);
+
+  // 8th order solution
+  x_new_high =
+      x + k1 * (13451932.0 / 455176623.0) + k3 * (808719846.0 / 976000145.0) +
+      k4 * (1945804.0 / 25534653.0) + k5 * (808719846.0 / 976000145.0) +
+      k6 * (808719846.0 / 976000145.0) + k7 * (808719846.0 / 976000145.0) +
+      k8 * (808719846.0 / 976000145.0) + k9 * (808719846.0 / 976000145.0);
 }
 
 }  // namespace lupnt

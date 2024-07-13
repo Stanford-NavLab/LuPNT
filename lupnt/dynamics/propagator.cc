@@ -19,14 +19,16 @@ NumericalPropagator::NumericalPropagator() {
 };
 
 NumericalPropagator::NumericalPropagator(std::string integratorType) {
+  IntegratorParams params = IntegratorParams();  // default params
   if (integratorType == "RK4")
     integrator = std::make_unique<RK4>();
   else if (integratorType == "RK8")
     integrator = std::make_unique<RK8>();
-  else if (integratorType == "RKF45") {
-    IntegratorParams params = IntegratorParams();
+  else if (integratorType == "RKF45")
     integrator = std::make_unique<RKF45>(params);
-  } else
+  else if (integratorType == "RKF78")
+    integrator = std::make_unique<RKF78>(params);
+  else
     throw std::invalid_argument("Invalid Integrator Type");
 };
 
@@ -38,6 +40,8 @@ NumericalPropagator::NumericalPropagator(std::string integratorType,
     integrator = std::make_unique<RK8>();
   else if (integratorType == "RKF45")
     integrator = std::make_unique<RKF45>(params);
+  else if (integratorType == "RKF78")
+    integrator = std::make_unique<RKF78>(params);
   else
     throw std::invalid_argument("Invalid Integrator Type");
 };
