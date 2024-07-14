@@ -6,6 +6,9 @@
 
 using namespace lupnt;
 
+double deg2rad(double deg) { return deg * DEG; }
+double rad2deg(double rad) { return rad * RAD; }
+
 int main() {
   // Configuration
   bool show_orbit_plot = true;
@@ -50,7 +53,7 @@ int main() {
     for (int j = 0; j < N_lons; j++) {
       int k = i * N_lons + j;
       Vec3 geo(lats(i), lons(j), 0);
-      r_usr_pa.row(k) = LatLonAlt2Ecef(geo, R_MOON).transpose();
+      r_usr_pa.row(k) = LatLonAlt2Cart(geo, R_MOON).transpose();
     }
   }
   std::cout << "Latitudes (deg)" << std::endl;

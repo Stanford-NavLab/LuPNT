@@ -78,7 +78,8 @@ TEST_CASE("SpiceInterface.GetBodyPosVel") {
   // NaifId target_id = 301;
 
   Vec6 posvel(6);
-  posvel = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::GCRF);
+  // posvel = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::GCRF);
+  posvel = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON);
 
   Vec6 posvel_expected{263638.289944174,  -221028.422146322, -131883.110768214,
                        0.734154922271287, 0.697461344892098, 0.325673181901724};

@@ -17,4 +17,10 @@ Vec3 MoonPositionLowPrecision(Real mjd_tt);
 
 Mat3 GreenwichHourAngleMatrix(Real mjd_ut1);
 
+Vec4 PlanetOrientation(NaifId id, Real t_tdb);
+Mat3 RotPosInertialToBodyFixed(NaifId id, Real t_tdb);
+Mat3 RotPosBodyFixedToInertial(NaifId id, Real t_tdb);
+Mat6 RotPosVelBodyFixedToInertial(NaifId id, Real t_tdb);
+Mat6 RotPosVelInertialToBodyFixed(NaifId id, Real t_tdb);
+
 }  // namespace lupnt

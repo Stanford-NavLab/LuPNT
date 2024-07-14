@@ -394,4 +394,219 @@ Mat3 GreenwichHourAngleMatrix(Real mjd_ut1) {
   return RotZ(GreenwichApparentSiderealTime(mjd_ut1));
 }
 
+/// @brief  Compute alpha0, delta0, W0 from the planetary ephemeris
+///         References:  IAU Working Report
+///         (https://link-springer-com.stanford.idm.oclc.org/article/10.1007/s10569-017-9805-5)
+///         For Wdot used value from GMAT R2022a Specification
+/// @param id   Naif ID of the planet
+/// @param t_tdb  Terrestrial Time (TDB) in seconds since J2000
+/// @return  Planet orientation vector (alpha0 [rad], delta0 [rad], W0 [rad],
+/// Wdot[rad/s])
+Vec4 PlanetOrientation(NaifId id, Real t_tdb) {
+  Real d = t_tdb / SECS_DAY;  // Interval in days from J2000
+  Real T = d / 36525.0;       // Interval in Julian Centries
+  Real alpha0, delta0, W, Wdot;
+  Real M1, M2, M3, M4, M5;
+  Real Ja, Jb, Jc, Jd, Je;
+  Real N, Ndot;
+
+  switch (id) {
+    case NaifId::MERCURY:
+      // Mercury
+      M1 = 174.7910857 + 4.092335 * d;
+      M2 = 349.5821714 + 8.184670 * d;
+      M3 = 164.3732571 + 12.277005 * d;
+      M4 = 339.1643429 + 16.369340 * d;
+      M5 = 153.9554286 + 20.461675 * d;
+
+      // Calculation
+      alpha0 = 281.0103 - 0.0328 * T;
+      delta0 = 61.4155 - 0.0049 * T;
+      W = 329.5988 + 6.1385108 * d + 0.01067257 * sin(RAD * M1) -
+          0.00112309 * sin(RAD * M2) - 0.00011040 * sin(RAD * M3) -
+          0.00002539 * sin(RAD * M4) - 0.00000571 * sin(RAD * M5);
+      Wdot = 6.1385025 / SECS_DAY;
+      break;
+
+    case NaifId::VENUS:
+      alpha0 = 272.76;
+      delta0 = 67.16;
+      W = 160.20 - 1.4813688 * d;
+      Wdot = -1.4813688 / SECS_DAY;
+      break;
+
+    case NaifId::MARS:
+      alpha0 = 317.269202 - 0.10927547 * T;
+      alpha0 += 0.000068 * sin(RAD * (198.991226 + 19139.4819985 * T)) +
+                0.000238 * sin(RAD * (226.292679 + 38280.8511281 * T)) +
+                0.000052 * sin(RAD * (249.663391 + 57420.7251593 * T)) +
+                0.000009 * sin(RAD * (266.183510 + 76560.6367950 * T)) +
+                0.419057 * sin(RAD * (79.398797 + 0.5042615 * T));
+
+      delta0 = 54.432516 - 0.05827105 * T;
+      delta0 += 0.000051 * cos(RAD * (122.433576 + 19139.9407476 * T)) +
+                0.000141 * cos(RAD * (43.058401 + 38280.8753272 * T)) +
+                0.000031 * cos(RAD * (57.663379 + 57420.7517205 * T)) +
+                0.000005 * cos(RAD * (79.476401 + 76560.6495004 * T)) +
+                1.591274 * cos(RAD * (166.325722 + 0.5042615 * T));
+
+      W = 176.049863 + 350.891982443297 * d;
+      W += 0.000145 * sin(RAD * (129.071773 + 19140.0328244 * d)) +
+           0.000157 * sin(RAD * (36.352167 + 38281.0473591 * d)) +
+           0.000040 * sin(RAD * (56.668646 + 57420.9295360 * d)) +
+           0.000001 * sin(RAD * (67.364003 + 76560.2552215 * d)) +
+           0.000001 * sin(RAD * (104.792680 + 95700.4387578 * d)) +
+           0.584542 * sin(RAD * (95.391654 + 0.5042615 * d));
+
+      Wdot = 350.89198226 / SECS_DAY;
+      break;
+
+    case NaifId::JUPITER:
+      Ja = 99.360714 + 4850.4046 * T;
+      Jb = 175.895369 + 1191.9605 * T;
+      Jc = 300.323162 + 262.5475 * T;
+      Jd = 114.012305 + 6070.2476 * T;
+      Je = 49.511251 + 64.3000 * T;
+
+      alpha0 = 268.056595 - 0.0064997 * T + 0.000117 * sin(RAD * Ja) +
+               0.000938 * sin(RAD * Jb);
+
+      delta0 = 64.495303 + 0.0024137 * T + 0.000050 * cos(RAD * Ja) +
+               0.000404 * cos(RAD * Jb) + 0.000617 * cos(RAD * Jc) -
+               0.000013 * cos(RAD * Jd) + 0.000926 * cos(RAD * Je);
+
+      W = 284.95 + 870.5360000 * d;
+      Wdot = 870.5366420 / SECS_DAY;
+      break;
+
+    case NaifId::SATURN:
+      alpha0 = 40.589 - 0.036 * T;
+      delta0 = 83.537 - 0.004 * T;
+      W = 38.90 + 810.7939024 * d;
+      Wdot = 810.793902 / SECS_DAY;
+      break;
+
+    case NaifId::URANUS:
+      alpha0 = 257.311;
+      delta0 = -15.175;
+      W = 203.81 - 501.1600928 * d;
+      Wdot = -501.1600928 / SECS_DAY;
+      break;
+
+    case NaifId::NEPTUNE:
+      N = 357.85 + 52.316 * T;
+      Ndot = 6.0551e-4;
+      alpha0 = 299.36 + 0.70 * sin(RAD * N);
+      delta0 = 43.46 - 0.51 * cos(RAD * N);
+      W = 249.978 + 541.1397757 * d - 0.48 * sin(RAD * N);
+      Wdot = 536.3128492 - 0.48 * Ndot * cos(RAD * N) / SECS_DAY;
+      break;
+
+    // otherwise throw error
+    default:
+      throw std::invalid_argument("Invalid planet ID");
+      break;
+  }
+
+  // Return the three angles
+  Vec4 angles = {alpha0, delta0, W, Wdot};
+
+  // Convert to radians
+  for (int i = 0; i < 4; i++) {
+    angles[i] *= RAD;
+  }
+
+  return angles;
+}
+
+/// @brief Compute the 3x3 rotation matrix from the body-fixed frame to the
+/// inertial frame
+/// @param id   Naif ID of the planet
+/// @param t_tdb  Terrestrial Time (TDB) in seconds since J2000
+/// @return  Rotation matrix from the body-fixed frame to the inertial frame
+Mat3 RotPosBodyFixedToInertial(NaifId id, Real t_tdb) {
+  // Compute the planet orientation
+  Vec4 angles = PlanetOrientation(id, t_tdb);
+  Real alpha0 = angles[0];
+  Real delta0 = angles[1];
+  Real W = angles[2];
+
+  // Compute the rotation matrix
+  Mat3 Rr_BI = RotZ(alpha0 + PI / 2).transpose() *
+               RotX(PI / 2 - delta0).transpose() * RotZ(W).transpose();
+  return Rr_BI;
+}
+
+/// @brief Compute the 3x3 rotation matrix from the inertial frame to the
+/// body-fixed frame
+/// @param id   Naif ID of the planet
+/// @param t_tdb  Terrestrial Time (TDB) in seconds since J2000
+/// @return  Rotation matrix from the inertial frame to the body-fixed frame
+Mat3 RotPosInertialToBodyFixed(NaifId id, Real t_tdb) {
+  // Compute the planet orientation
+  Mat3 Rr_BI = RotPosBodyFixedToInertial(id, t_tdb);
+  Mat3 Rr_IB = Rr_BI.transpose();
+  return Rr_IB;
+}
+
+/// @brief Compute the 6x6 rotation matrix from the body-fixed frame to the
+/// inertial frame
+/// @param id   Naif ID of the planet
+/// @param t_tdb  Terrestrial Time (TDB) in seconds since J2000
+/// @return  Rotation matrix from the body-fixed frame to the inertial frame
+Mat6 RotPosVelBodyFixedToInertial(NaifId id, Real t_tdb) {
+  // Compute the planet orientation
+  Vec4 angles = PlanetOrientation(id, t_tdb);
+  Real alpha0 = angles[0];
+  Real delta0 = angles[1];
+  Real W = angles[2];
+  Real Wdot = angles[3];
+
+  Mat3 dWRotT;
+  dWRotT << -Wdot * sin(W), -Wdot * cos(W), 0, Wdot * cos(W), -Wdot * sin(W), 0,
+      0, 0, 0;
+
+  // Compute the rotation matrix
+  Mat3 Rr_BI = RotPosBodyFixedToInertial(id, t_tdb);
+  Mat3 Rv_BI = RotZ(alpha0 + PI / 2).transpose() *
+               RotX(PI / 2 - delta0).transpose() * dWRotT;
+
+  Mat6 Rrv_BI;
+  // Blocks
+  Rrv_BI << Rr_BI, Mat3::Zero(), Rv_BI, Rr_BI;
+
+  return Rrv_BI;
+}
+
+/// @brief Compute the 6x6 rotation matrix from the inertial frame to the
+/// body-fixed frame
+/// @param id   Naif ID of the planet
+/// @param t_tdb  Terrestrial Time (TDB) in seconds since J2000
+/// @return  Rotation matrix from the inertial frame to the body-fixed frame
+Mat6 RotPosVelInertialToBodyFixed(NaifId id, Real t_tdb) {
+  // Compute the planet orientation
+  Vec4 angles = PlanetOrientation(id, t_tdb);
+  Real alpha0 = angles[0];
+  Real delta0 = angles[1];
+  Real W = angles[2];
+  Real Wdot = angles[3];
+
+  Mat3 dWRotT;
+  dWRotT << -Wdot * sin(W), -Wdot * cos(W), 0, Wdot * cos(W), -Wdot * sin(W), 0,
+      0, 0, 0;
+
+  // Compute the rotation matrix
+  Mat3 Rr_BI = RotPosBodyFixedToInertial(id, t_tdb);
+  Mat3 Rv_BI = RotZ(alpha0 + PI / 2).transpose() *
+               RotX(PI / 2 - delta0).transpose() * dWRotT;
+  Mat3 Rr_IB = Rr_BI.transpose();
+  Mat3 Rv_IB = Rv_BI.transpose();
+
+  Mat6 Rrv_IB;
+  // Blocks
+  Rrv_IB << Rr_IB, Mat3::Zero(), Rv_IB, Rr_IB;
+
+  return Rrv_IB;
+}
+
 }  // namespace lupnt

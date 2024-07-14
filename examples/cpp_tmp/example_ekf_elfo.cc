@@ -102,8 +102,14 @@ int main() {
   auto dyn_true = std::make_shared<NBodyDynamics>();  // true dynamics
 
   auto earth = Body::Earth();
-  auto moon_true = Body::Moon(moon_sph_true, moon_sph_true);
-  auto moon_est = Body::Moon(moon_sph_est, moon_sph_est);
+  auto moon_true = Body::Moon();
+  auto moon_est = Body::Moon();
+
+  // load spherical harmonics
+  moon_true.gravity_field =
+      ReadHarmonicGravityField("moon", moon_sph_true, moon_sph_true, true);
+  moon_est.gravity_field =
+      ReadHarmonicGravityField("moon", moon_sph_est, moon_sph_est, true);
 
   dyn_true->AddBody(moon_true);
   dyn_true->SetPrimaryBody(moon_true);

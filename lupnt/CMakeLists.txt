@@ -55,12 +55,31 @@ if (NOT CSPICE_INCLUDE_DIR OR NOT CSPICE_LIBRARY)
     message(FATAL_ERROR "CSPICE library not found. Please install CSPICE.")
 endif()
 
-# Add the include paths to the lupnt target
+# Path to the OpenMP include directory
+find_path(OpenMP_INCLUDE_DIR NAMES omp.h
+          PATHS
+          /opt/homebrew/opt/libomp/include
+          /usr/local/opt/libomp/include
+          /usr/local/include
+          /usr/include
+          $ENV{OpenMP_ROOT}/include
+          DOC "Path to the OpenMP include directory")
+find_library(OpenMP_omp_LIBRARY NAMES omp
+             PATHS
+             /opt/homebrew/opt/libomp/lib
+             /usr/local/opt/libomp/lib
+             $ENV{OpenMP_ROOT}/lib
+             DOC "Path to the CSPICE library")
+if (NOT OpenMP_INCLUDE_DIR OR NOT OpenMP_omp_LIBRARY)
+    message(FATAL_ERROR "OpenMP library not found. Please install OpenMP.")
+endif()
+
 target_include_directories(lupnt
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
         ${CSPICE_INCLUDE_DIR} # Add CSPICE include directory
+        ${OpenMP_INCLUDE_DIR} # Add OpenMP include directory
 )
 
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)

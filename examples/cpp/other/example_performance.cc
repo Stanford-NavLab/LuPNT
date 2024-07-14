@@ -12,7 +12,6 @@
 // lupnt includes
 #include <lupnt/core/file.h>
 #include <lupnt/dynamics/dynamics.h>
-#include <lupnt/dynamics/gravity_field.h>
 #include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/frame_converter.h>
 #include <lupnt/physics/orbit_state.h>
@@ -40,7 +39,9 @@ int main() {
   Body earth = Body::Earth();
 
   for (int h : {0, 25, 50, 100}) {
-    Body moon = Body::Moon(h, h);
+    Body moon = Body::Moon();
+    moon.gravity_field = ReadHarmonicGravityField(
+        "data/gravity_field/moon_gravity_field.shm", h, h, false);
     // moon.sphericalHarmonics = false;
 
     // Dynamics

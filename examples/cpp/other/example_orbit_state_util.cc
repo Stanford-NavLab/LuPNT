@@ -1,5 +1,6 @@
 #include <lupnt/core/constants.h>
 #include <lupnt/numerics/math_utils.h>
+#include <lupnt/physics/coordinates.h>
 #include <lupnt/physics/orbit_state.h>
 
 using namespace lupnt;
@@ -32,6 +33,6 @@ int main() {
 
   Vec3 r_cart_ref{0, 0, 0};
   Vec3 r_aer{1e-3, 1e-3, 5e3};
-  Vec3 r = AzimuthElevationRange2Cart(r_cart_ref, r_aer);
+  Vec3 r = AzElRange2Cart(r_cart_ref, r_aer);
   std::cout << "r = " << r.transpose() << std::endl;
 }

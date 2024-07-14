@@ -1,5 +1,8 @@
 file(GLOB_RECURSE CPPFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cc)
 
+# Remove example_ekf_elfo.cc from the list to compile
+list(REMOVE_ITEM CPPFILES "example_ekf_elfo.cc")
+
 find_package(OpenMP REQUIRED)
 
 foreach(CPPFILE ${CPPFILES})

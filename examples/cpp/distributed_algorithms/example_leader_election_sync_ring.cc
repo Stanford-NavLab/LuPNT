@@ -104,13 +104,14 @@ class LeaderElectionSyncRingApp : public Application {
       cout << "[Agent " << id_ << "] Sending " << id_ << " at t = " << t
            << endl;
       for (const auto &transceiver : agent_->GetTransceivers()) {
-        transceiver->Send(t, Transmission(id_));
+        // transmittion instance with _id
+        transceiver->Send(t, Transmission{id_});
       }
     } else if (id_received_ > id_) {
       cout << "[Agent " << id_ << "] Sending " << id_received_
            << " at t = " << t << endl;
       for (const auto &transceiver : agent_->GetTransceivers()) {
-        transceiver->Send(t, Transmission(id_received_));
+        transceiver->Send(t, Transmission{id_received_});
       }
     } else if (id_received_ < id_) {
       cout << "[Agent " << id_ << "] Doing nothing" << " at t = " << t << endl;

@@ -11,8 +11,8 @@
 
 #include "spice_interface.h"
 
-#include <cspice/SpiceUsr.h>
-#include <cspice/SpiceZfc.h>
+#include <SpiceUsr.h>
+#include <SpiceZfc.h>
 #include <string.h>
 
 #include <filesystem>

@@ -22,7 +22,7 @@ void init_constants(py::module& m) {
   m.attr("TIME_OF_J2000") = py::float_(TIME_OF_J2000);
   m.attr("JD_J2000") = py::float_(JD_J2000);
   m.attr("MJD_OF_J2000") = py::float_(MJD_J2000);
-  m.attr("A1MJD_OF_J2000") = py::float_(A1MJD_OF_J2000);
+  // m.attr("A1MJD_OF_J2000") = py::float_(A1MJD_OF_J2000);
   m.attr("JD_MJD_OFFSET") = py::float_(JD_MJD_OFFSET);
   m.attr("TT_TAI_OFFSET") = py::float_(TT_TAI_OFFSET);
   m.attr("A1_TAI_OFFSET") = py::float_(A1_TAI_OFFSET);
