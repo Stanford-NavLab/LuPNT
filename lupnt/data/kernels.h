@@ -41,6 +41,7 @@ Console.WriteLine(de.getPlanet(1, de.getHeader().jdStart)[0]);
 #include <vector>
 
 #include "lupnt/core/constants.h"
+#include "lupnt/physics/spice_interface.h"
 #include "lupnt/physics/time_converter.h"
 
 #define MAXCOEFF 1020
@@ -80,6 +81,8 @@ struct EphemerisHeaderData {
   std::vector<int> coeff_offset;
   std::vector<int> n_coeffs;
   std::vector<int> n_subintervals;
+  double AU;
+  double EMRAT;
   std::vector<int> n_properties = {3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 1};
 };
 
@@ -252,8 +255,10 @@ std::pair<double, double> ComputePolinomial(double x, const double* scale,
 }
 
 VecXd GetBodyPosVel(Real t_tai, int id) {
-  Real t_tdb = ConvertT(t_tai, TimeSys::TAI, TimeSys::TDB);
-  double jd_tdb = TimeToJD(t_tdb).val();
+  double t_tdb_ = ConvertTime(t_tai, "TAI", "TDB").val();
+  double t_tdb = ConvertT(t_tai, TimeSys::TAI, TimeSys::TDB).val();
+  double jd_tdb = t_tdb / SECS_DAY + JD_J2000;
+  double jd_tdb_ = ConvertTime(t_tai, "TAI", "JDTDB").val();
 
   // Block
   double Dt = ephemeris_data.header.step;
@@ -269,6 +274,7 @@ VecXd GetBodyPosVel(Real t_tai, int id) {
   int n_coeff = header.n_coeffs[id] * header.n_properties[id];
   int offset = header.coeff_offset[id] + j * n_coeff - 3;
   double jd_tdb_subint = block.jd_tdb_start + j * Dt_subint;
+
   double scale[2] = {jd_tdb_subint + Dt_subint / 2., Dt_subint / 2.};
 
   VecXd rv(6);

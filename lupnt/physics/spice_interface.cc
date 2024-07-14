@@ -352,26 +352,26 @@ Real ConvertTime(Real t, std::string from, std::string to) {
     return t;
   }
   // The string contains MJD or JD convert to second
-  if (from.find("MJD") != std::string::npos) {
-    Real t_new = (t - MJD_J2000) / SECS_DAY;
-    std::string from_new = from.substr(4);
-    return ConvertTime(t_new, from_new, to);
-  }
-  if (from.find("JD") != std::string::npos) {
-    Real t_new = (t - JD_J2000) * SECS_DAY;
-    std::string from_new = from.substr(3);
-    return ConvertTime(t_new, from_new, to);
-  }
-  if (to.find("MJD") != std::string::npos) {
-    std::string to_new = to.substr(4);
-    Real t_new = ConvertTime(t, from, to_new);
-    return t_new * SECS_DAY + MJD_J2000;
-  }
-  if (to.find("JD") != std::string::npos) {
-    std::string to_new = to.substr(3);
-    Real t_new = ConvertTime(t, from, to_new);
-    return t_new / SECS_DAY + JD_J2000;
-  }
+  // if (from.find("MJD") != std::string::npos) {
+  //   Real t_new = (t - MJD_J2000) / SECS_DAY;
+  //   std::string from_new = from.substr(4);
+  //   return ConvertTime(t_new, from_new, to);
+  // }
+  // if (from.find("JD") != std::string::npos) {
+  //   Real t_new = (t - JD_J2000) * SECS_DAY;
+  //   std::string from_new = from.substr(3);
+  //   return ConvertTime(t_new, from_new, to);
+  // }
+  // if (to.find("MJD") != std::string::npos) {
+  //   std::string to_new = to.substr(4);
+  //   Real t_new = ConvertTime(t, from, to_new);
+  //   return t_new * SECS_DAY + MJD_J2000;
+  // }
+  // if (to.find("JD") != std::string::npos) {
+  //   std::string to_new = to.substr(3);
+  //   Real t_new = ConvertTime(t, from, to_new);
+  //   return t_new / SECS_DAY + JD_J2000;
+  // }
 
   SpiceDouble t_in = t.val();
   SpiceDouble t_out_spice = unitim_c(t_in, from.c_str(), to.c_str());

@@ -54,7 +54,7 @@ int main() {
   ReadEphemerisCoefficientsFile(ASCII_KERNEL_DIR / "de440" / "ascp01950.440",
                                 data);
 
-  double jd_tdb = 2458832.6;
+  double jd_tdb = 2469264.5;
   Real t_tdb = JDtoTime(jd_tdb);
   Real t_tai = ConvertTime(t_tdb, "TDB", "TAI");
   Vec6 rv_mercury_ = GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MERCURY);
@@ -67,7 +67,7 @@ int main() {
   cout << "Spice      " << r_mercury__.head(3).transpose().format(fmt) << endl;
   cout << "Cheby (new)" << rv_mercury_.tail(3).transpose().format(fmt) << endl;
   cout << "Cheby (old)" << rv_mercury.tail(3).transpose().format(fmt) << endl;
-
+  return 0;
   // Benchmark the ephemerides
   int n = 5'000'000;
   auto start = chrono::high_resolution_clock::now();

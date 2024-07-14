@@ -112,14 +112,21 @@ Real TDBtoTT(Real t_tdb) {
 }
 
 Real TTtoTDB(Real t_tt) {
-  Real T_tt = t_tt / SECS_DAY / JD_CENTURY;
-  Real t_tdb = t_tt + 0.001657 * sin(628.3076 * T_tt + 6.2401) +
-               0.000022 * sin(575.3385 * T_tt + 4.2970) +
-               0.000014 * sin(1256.6152 * T_tt + 6.1969) +
-               0.000005 * sin(606.9777 * T_tt + 4.0212) +
-               0.000005 * sin(52.9691 * T_tt + 0.4444) +
-               0.000002 * sin(21.3299 * T_tt + 5.5431) +
-               0.000010 * T_tt * sin(628.3076 * T_tt + 4.2490);
+  // Real T_tt = t_tt / SECS_DAY / JD_CENTURY;
+  // Real t_tdb = t_tt + 0.001657 * sin(628.3076 * T_tt + 6.2401) +
+  //              0.000022 * sin(575.3385 * T_tt + 4.2970) +
+  //              0.000014 * sin(1256.6152 * T_tt + 6.1969) +
+  //              0.000005 * sin(606.9777 * T_tt + 4.0212) +
+  //              0.000005 * sin(52.9691 * T_tt + 0.4444) +
+  //              0.000002 * sin(21.3299 * T_tt + 5.5431) +
+  //              0.000010 * T_tt * sin(628.3076 * T_tt + 4.2490);
+  Real t_tdb = t_tt;
+  Real t_tdb_new = 0;
+  do {
+    t_tdb_new = t_tdb;
+    Real t_tdb_tt = t_tdb - TTtoTDB(t_tt);
+    t_tdb = t_tt - t_tdb_tt;
+  } while (abs(t_tdb - t_tdb_new) > 1e-12);
   return t_tdb;
 }
 
