@@ -21,9 +21,9 @@ int main() {
   jd_tdb_sp = ConvertTime(t_tt_sp, TimeSys::TT, TimeSys::JD_TDB);
 
   t_tt = t_tt_sp;
-  t_tdb = ConvertT(t_tt, TimeSys::TT, TimeSys::TDB);
-  t_tai = ConvertT(t_tt, TimeSys::TT, TimeSys::TAI);
-  t_gps = ConvertT(t_tt, TimeSys::TT, TimeSys::GPS);
+  t_tdb = ConvertTime(t_tt, TimeSys::TT, TimeSys::TDB);
+  t_tai = ConvertTime(t_tt, TimeSys::TT, TimeSys::TAI);
+  t_gps = ConvertTime(t_tt, TimeSys::TT, TimeSys::GPS);
   jd_tt = TimeToJD(t_tt);
   jd_tdb = TimeToJD(t_tdb);
 

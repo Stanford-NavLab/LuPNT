@@ -15,7 +15,7 @@
 #include "lupnt/agents/agent.h"
 #include "lupnt/core/user_file_path.h"
 #include "lupnt/numerics/string_utils.h"
-#include "lupnt/physics/spice_interface.h"
+#include "lupnt/data/kernels.h"
 
 namespace lupnt {
 
@@ -50,29 +50,29 @@ void GnssTransmitter::InitializeGPSTransmitter() {
       if (gps_type == "IIA") {
         tx_param_.P_tx = 14.3;       // dB-W
         ant_name = gps_table[i][4];  // ACE Pattern
-        freq_list = {"L1", "L2"};
+        freq_list = { "L1", "L2" };
       } else if (gps_type == "IIR") {
         tx_param_.P_tx = 15.0;       // dB_W
         ant_name = gps_table[i][3];  // LM Pattern
-        freq_list = {"L1", "L2"};
+        freq_list = { "L1", "L2" };
       } else if (gps_type == "IIR-M") {
         tx_param_.P_tx = 15.0;       // dB_W
         ant_name = gps_table[i][3];  // LM Pattern
-        freq_list = {"L1", "L2"};
+        freq_list = { "L1", "L2" };
       } else if (gps_type == "IIF") {
         tx_param_.P_tx = 14.3;       // dB_W
         ant_name = gps_table[i][4];  // ACE Pattern
-        freq_list = {"L1", "L2", "L5"};
+        freq_list = { "L1", "L2", "L5" };
       } else if (gps_type == "III") {
         tx_param_.P_tx = 14.3;       // dB_W
         ant_name = gps_table[i][4];  // ACE Pattern
-        freq_list = {"L1", "L2", "L5"};
+        freq_list = { "L1", "L2", "L5" };
       } else {
         std::runtime_error("Invalid GPS type");
       }
 
       std::cout << "PRN: " << prn_ << " type: " << gps_type
-                << " Antenna: " << ant_name << std::endl;
+        << " Antenna: " << ant_name << std::endl;
 
       antenna_ = Antenna(ant_name);
       break;
@@ -86,7 +86,7 @@ void GnssTransmitter::InitializeGPSTransmitter() {
  */
 void GnssTransmitter::InitializeGLONASSTransmitter() {
   std::cout << "Antenna type not implemented yet for " << gnss_type_
-            << std::endl;
+    << std::endl;
 }
 
 /**
@@ -95,7 +95,7 @@ void GnssTransmitter::InitializeGLONASSTransmitter() {
  */
 void GnssTransmitter::InitializeGALILEOTransmitter() {
   std::cout << "Antenna type not implemented yet for " << gnss_type_
-            << std::endl;
+    << std::endl;
 }
 
 /**
@@ -103,7 +103,7 @@ void GnssTransmitter::InitializeGALILEOTransmitter() {
  */
 void GnssTransmitter::InitializeBEIDOUTransmitter() {
   std::cout << "Antenna type not implemented yet for " << gnss_type_
-            << std::endl;
+    << std::endl;
 }
 
 /**
@@ -115,21 +115,21 @@ void GnssTransmitter::InitializeBEIDOUTransmitter() {
  * @return Vec3d
  */
 std::vector<Vec3d> GnssTransmitter::GetTransmitterOrientation(
-    double t, Vec3d& r_tx_gcrf) {
+  double t, Vec3d& r_tx_gcrf) {
   // (Sun-Earth) - (Sat-Earth)
   Vec3d r_sat2sun =
-      GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN).cast<double>().head(3) -
-      r_tx_gcrf;
+    GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN).cast<double>().head(3) -
+    r_tx_gcrf;
   auto e_z_gnss = -r_tx_gcrf.normalized();  // Face towards earth center
   auto e_y_gnss = r_sat2sun.cross(r_tx_gcrf).normalized();
   auto e_x_gnss = e_y_gnss.cross(e_z_gnss).normalized();
 
-  std::vector<Vec3d> e_gnss = {e_x_gnss, e_y_gnss, e_z_gnss};
+  std::vector<Vec3d> e_gnss = { e_x_gnss, e_y_gnss, e_z_gnss };
   return e_gnss;
 }
 
 double GnssTransmitter::GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf,
-                                                   Vec3d r_rx_gcrf) {
+  Vec3d r_rx_gcrf) {
   auto e_gnss = GnssTransmitter::GetTransmitterOrientation(t, r_tx_gcrf);
   Vec3d e_x_gnss = e_gnss[0];
   Vec3d e_y_gnss = e_gnss[1];

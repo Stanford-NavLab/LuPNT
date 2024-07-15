@@ -35,8 +35,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)       # avoid compile flags of the type -std=gnu++
 # endif()
 
 # OpenMP
-set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
-set(OpenMP_CXX_LIB_NAMES "omp")
+# set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
+# set(OpenMP_CXX_LIB_NAMES "omp")
 
 # Build the library
 add_subdirectory(lupnt)

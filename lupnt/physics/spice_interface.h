@@ -46,7 +46,10 @@ Real ConvertTime(Real t, std::string from_time, std::string to_time);
 
 Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target);
 Mat<-1, 6> GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target);
-Vec3d GetBodyPosSpice(NaifId target, Real t_tai, Frame refFrame, NaifId obs,
-    std::string abCorrection);
+
+Vec3d GetBodyPosSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame = Frame::GCRF,
+    std::string abCorrection = "NONE");
+Vec6d GetBodyPosVelSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame = Frame::GCRF,
+    std::string abCorrection = "NONE");
 } // namespace spice
 }  // namespace lupnt

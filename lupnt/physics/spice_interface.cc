@@ -146,42 +146,76 @@ void ExtractPckCoeffs() {
   //    pckr02_c(handle, target)
 }
 
-Vec3d GetBodyPosSpice(NaifId target, Real t_tai, Frame refFrame, NaifId obs,
+Vec3d GetBodyPosSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
   std::string abCorrection) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
 
   SpiceDouble ptarg[3];
-  Vec3d targetPos;
+  Vec3d r;
 
-  std::string targetName = std::to_string((int)target);
-  std::string obsName = std::to_string((int)obs);
+  std::string targ_str = std::to_string((int)target);
+  std::string obs_str = std::to_string((int)obs);
   std::string frame_str = frametem_string.at(refFrame);
 
   // TODO: this cuts the relatonship between t_tdb and matrix
   Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
-  SpiceDouble t_tdb_spice = (SpiceDouble)t_tdb.val();
-  const char* target_spice =
-    strcpy(new char[targetName.length() + 1], targetName.c_str());
+  SpiceDouble et = t_tdb.val();
+  const char* targ =
+    strcpy(new char[targ_str.length() + 1], targ_str.c_str());
   const char* ref = strcpy(new char[frame_str.length() + 1], frame_str.c_str());
   const char* abcorr =
     strcpy(new char[abCorrection.length() + 1], abCorrection.c_str());
   const char* obs_spice =
-    strcpy(new char[obsName.length() + 1], obsName.c_str());
+    strcpy(new char[obs_str.length() + 1], obs_str.c_str());
   SpiceDouble lt;
 
   // void spkpos_c(ConstSpiceChar * targ, SpiceDouble t_tdb, ConstSpiceChar *
   // ref, ConstSpiceChar * abcorr,
   //               ConstSpiceChar * obs, SpiceDouble ptarg[3], SpiceDouble * lt)
-  spkpos_c(target_spice, t_tdb_spice, ref, abcorr, obs_spice, ptarg, &lt);
+  spkpos_c(targ, et, ref, abcorr, obs_spice, ptarg, &lt);
+  for (int i = 0; i < 3; i++) r(i) = ptarg[i];
+  return r;
+}
 
-  for (int i = 0; i < 3; i++) {
-    targetPos(i) = ptarg[i];
+Vec6d GetBodyPosVelSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
+  std::string abCorrection) {
+  if (!spice_loaded) {
+    LoadSpiceKernel();
   }
 
-  return targetPos;
+  SpiceDouble starg[6];
+  Vec6d rv;
+
+  std::string targ_str = std::to_string((int)target);
+  std::string obs_str = std::to_string((int)obs);
+  std::string frame_str = frametem_string.at(refFrame);
+
+  // TODO: this cuts the relatonship between t_tdb and matrix
+  Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
+  SpiceDouble et = t_tdb.val();
+  const char* targ =
+    strcpy(new char[targ_str.length() + 1], targ_str.c_str());
+  const char* ref = strcpy(new char[frame_str.length() + 1], frame_str.c_str());
+  const char* abcorr =
+    strcpy(new char[abCorrection.length() + 1], abCorrection.c_str());
+  const char* obs_spice =
+    strcpy(new char[obs_str.length() + 1], obs_str.c_str());
+  SpiceDouble lt;
+
+  //  void spkez_c ( SpiceInt            targ,
+  //                 SpiceDouble         et,
+  //                 ConstSpiceChar     *ref,
+  //                 ConstSpiceChar     *abcorr,
+  //                 SpiceInt            obs,
+  //                 SpiceDouble         starg[6],
+  //                 SpiceDouble        *lt        )
+  spkezr_c(targ, et, ref, abcorr, obs_spice, starg, &lt);
+  for (int i = 0; i < 6; i++) rv(i) = starg[i];
+  return rv;
 }
+
 
 /**
  * @brief Get the Frame Conversion Mat object
@@ -307,9 +341,9 @@ Real String2TAI(std::string str) {
  */
 std::string TDBtoStringUTC(Real t_tdb, int prec = 3) {
   if (!spice_loaded) LoadSpiceKernel();
-  SpiceDouble t_tdb_spice = t_tdb.val();
+  SpiceDouble et = t_tdb.val();
   SpiceChar str[100];
-  et2utc_c(t_tdb_spice, "C", prec, 100, str);
+  et2utc_c(et, "C", prec, 100, str);
   return std::string(str);
 }
 
@@ -415,8 +449,7 @@ Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
     if (cheby_s[i].target == (int)target) {
       rv_target += cheby_posvel_ad(t_tdb, cheby_s[i].seg, cheby_s[i].len);
       found_target = true;
-    }
-    else if (cheby_s[i].target == (int)center) {
+    } else if (cheby_s[i].target == (int)center) {
       rv_center += cheby_posvel_ad(t_tdb, cheby_s[i].seg, cheby_s[i].len);
       found_center = true;
     }

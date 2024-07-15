@@ -22,7 +22,7 @@ int main() {
   std::string filename = "JGM3.cof";
   auto fmt = Eigen::IOFormat(10, 0, ", ", "\n", "[", "]");
   GravityField grav =
-      ReadHarmonicGravityField(filename, n_max, n_max, normalized);
+    ReadHarmonicGravityField(filename, n_max, n_max, normalized);
 
   cout << "Exercise 3-1: Gravity Field Computation " << endl << endl;
   cout << " Order   CPU Time [s]" << endl << endl;
@@ -31,13 +31,13 @@ int main() {
   int n;
   for (n = 2; n <= n_max; n += 2) {
     double start = omp_get_wtime();
-    // #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < N_Step; i++) {
       Vec3 a = AccelarationGravityField(r, grav.GM, grav.R, grav.CS, n, n);
     }
     double end = omp_get_wtime();
     cout << setw(4) << n << setprecision(2) << fixed << setw(13)
-         << (end - start) << endl;
+      << (end - start) << endl;
   }
   return 0;
 }

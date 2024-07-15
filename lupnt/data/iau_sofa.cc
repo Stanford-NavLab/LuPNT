@@ -51,7 +51,7 @@ IauSofaData GetIauSofaData(Real jd_tt) {
 
   size_t index;
   if (jd_tt < iau_sofa->jd_tt(0) ||
-      jd_tt > iau_sofa->jd_tt(iau_sofa->jd_tt.size() - 1)) {
+    jd_tt > iau_sofa->jd_tt(iau_sofa->jd_tt.size() - 1)) {
     index = (jd_tt < iau_sofa->jd_tt(0)) ? 0 : iau_sofa->jd_tt.size() - 1;
     data.X = iau_sofa->X(index);
     data.Y = iau_sofa->Y(index);

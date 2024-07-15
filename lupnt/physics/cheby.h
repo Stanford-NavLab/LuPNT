@@ -30,28 +30,28 @@ the constant term.  The scaling of x is provided by the midpoint scale[0] and
 the radius scale[1].  x must fall in the range scale[0] - scale[1] to
 scale[0] + scale[1].  Outside of that range, the polynomial is not valid.
 */
-void cheby_eval(double x, double *scale, double *coeff, long num, double *f,
-                double *df);
-Vec2 cheby_eval_ad(Real x, double *scale, double *coeff, long num);
+void cheby_eval(double x, double* scale, double* coeff, long num, double* f,
+  double* df);
+Vec2 cheby_eval_ad(Real x, double* scale, double* coeff, long num);
 
 /**
  * @brief Find the appropriate SPK record for time t and compute the position
  * and velocity for that time.  Returns 0 on success, 1 if the time is not
  * covered by the segment. */
-int cheby_posvel(double t, double *seg, long len, double pos[3], double vel[3]);
-Vec6 cheby_posvel_ad(Real t, double *seg, long len);
+int cheby_posvel(double t, double* seg, long len, double pos[3], double vel[3]);
+Vec6 cheby_posvel_ad(Real t, double* seg, long len);
 
 /**
  * @brief Verify that the provided segment meets the constraints of a uniform
  set of coefficient records.  Return 0 on success or 1 if the segment is
  invalid. This should be done before using the segment in order to avoid
  segfaults on invalid data. */
-int cheby_verify(double *seg, long len);
+int cheby_verify(double* seg, long len);
 
 /**
  * @brief Print an error message
  */
-void cheby_err(char const *msg, ...);
+void cheby_err(char const* msg, ...);
 
 /**
  * @brief SPK segment descriptor.
@@ -61,7 +61,7 @@ typedef struct {
   long center;  // center body code
   long frame;   // frame of reference code
   long len;     // length of segment in doubles
-  double *seg;  // allocated segment
+  double* seg;  // allocated segment
 } segment_t;
 
 /**
@@ -70,7 +70,7 @@ typedef struct {
    position, and the reference frame code.  Load the segment and verify its
    structure.  On success return 0.  If there is an error, return 1 and set
    s->seg to NULL. */
-int cheby_segment(SpiceInt daf, SpiceDouble *dc, SpiceInt *ic, segment_t *s);
+int cheby_segment(SpiceInt daf, SpiceDouble* dc, SpiceInt* ic, segment_t* s);
 
 /**
  * @brief Scan through the SPK file path and extract all of the Chebyshev
@@ -80,11 +80,11 @@ int cheby_segment(SpiceInt daf, SpiceDouble *dc, SpiceInt *ic, segment_t *s);
    used by cheby_verify() and cheby_posvel() above, with no dependency on or
    reference to the SPICE library.
 */
-segment_t *spk_extract(char const *path, long *segs);
+segment_t* spk_extract(char const* path, long* segs);
 
 /**
  * @brief
  * Free the resources of an SPK structure created by spk_extract(). */
-void spk_free(segment_t *s, long n);
+void spk_free(segment_t* s, long n);
 
 }  // namespace lupnt

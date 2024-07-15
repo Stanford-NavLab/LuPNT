@@ -12,7 +12,7 @@
 #include "gnss_receiver.h"
 
 #include "gnss_measurement.h"
-#include "lupnt/physics/spice_interface.h"
+#include "lupnt/data/kernels.h"
 
 namespace lupnt {
 
@@ -25,7 +25,7 @@ void GnssReceiver::InitializeReceiverParams() {
     // Lunar Gnss Receiver
     rx_param_.Ts = 190.0;  // System noise temp [K]
     rx_param_.Ae =
-        0.0;  // Attenuation due to atmosphere (should be negative) [dB]
+      0.0;  // Attenuation due to atmosphere (should be negative) [dB]
     rx_param_.Nf = -2.85;  // Noise figure of receiver/LNA [dB]
     rx_param_.L = -0.16;  // Receiver implementation, A/D conversion losses [dB]
     rx_param_.As = 0.0;   // System losses, in front of LNA [dB]
@@ -38,7 +38,8 @@ void GnssReceiver::InitializeReceiverParams() {
     gnssr_param_.Bn = 0.2;   // Code loop noise bandwidth [Hz]
     gnssr_param_.D = 0.3;    // Early-to-late correlator spacing (chips)
 
-  } else {
+  }
+  else {
     std::runtime_error("Receiver name not found");
   }
 }
@@ -52,11 +53,11 @@ void GnssReceiver::InitializeReceiverParams() {
  * @return Vec3d   unit vector of the receiver orientation
  */
 std::vector<Vec3d> GnssReceiver::GetReceiverOrientation(double t,
-                                                        Vec3d& r_rx_gcrf,
-                                                        std::string mode) {
+  Vec3d& r_rx_gcrf,
+  std::string mode) {
   Vec3d r_sat2sun =
-      GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN).cast<double>().head(3) -
-      r_rx_gcrf;  // (SUN-Earth) - (Sat-Earth) = (Sun-Sat)
+    GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN).cast<double>().head(3) -
+    r_rx_gcrf;  // (SUN-Earth) - (Sat-Earth) = (Sun-Sat)
 
   Vec3d e_zero = Vec3d::Zero();
 
@@ -65,11 +66,12 @@ std::vector<Vec3d> GnssReceiver::GetReceiverOrientation(double t,
     auto e_y = r_sat2sun.cross(r_rx_gcrf).normalized();
     auto e_x = e_y.cross(e_z).normalized();
 
-    std::vector<Vec3d> e_sat = {e_x, e_y, e_z};
+    std::vector<Vec3d> e_sat = { e_x, e_y, e_z };
     return e_sat;
-  } else {
+  }
+  else {
     std::runtime_error("Receiver mode not implemented yet");
-    std::vector<Vec3d> e_sat = {e_zero, e_zero, e_zero};
+    std::vector<Vec3d> e_sat = { e_zero, e_zero, e_zero };
     return e_sat;
   }
 }
@@ -84,7 +86,7 @@ std::vector<Vec3d> GnssReceiver::GetReceiverOrientation(double t,
  * @return double
  */
 double GnssReceiver::GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf,
-                                            Vec3d r_rx_gcrf, std::string mode) {
+  Vec3d r_rx_gcrf, std::string mode) {
   auto e_sat = GnssReceiver::GetReceiverOrientation(t, r_rx_gcrf, mode);
   auto e_x = e_sat[0];
   auto e_y = e_sat[1];
