@@ -28,20 +28,20 @@
 namespace lupnt {
 
 std::map<std::pair<std::string, std::string>, std::function<Real(Real)>>
-    time_conversions = {TIME_CONVERSION(UTC, UT1, UTCtoUT1),
-                        TIME_CONVERSION(UT1, UTC, UT1toUTC),
-                        TIME_CONVERSION(TAI, UTC, TAItoUTC),
-                        TIME_CONVERSION(UTC, TAI, UTCtoTAI),
-                        TIME_CONVERSION(TAI, TT, TAItoTT),
-                        TIME_CONVERSION(TT, TAI, TTtoTAI),
-                        TIME_CONVERSION(TCG, TT, TCGtoTT),
-                        TIME_CONVERSION(TT, TCG, TTtoTCG),
-                        TIME_CONVERSION(TT, TDB, TTtoTDB),
-                        TIME_CONVERSION(TDB, TT, TDBtoTT),
-                        TIME_CONVERSION(TAI, GPS, TAItoGPS),
-                        TIME_CONVERSION(GPS, TAI, GPStoTAI),
-                        TIME_CONVERSION(TCB, TDB, TCBtoTDB),
-                        TIME_CONVERSION(TT, TCB, TTtoTCB)};
+time_conversions = { TIME_CONVERSION(UTC, UT1, UTCtoUT1),
+                    TIME_CONVERSION(UT1, UTC, UT1toUTC),
+                    TIME_CONVERSION(TAI, UTC, TAItoUTC),
+                    TIME_CONVERSION(UTC, TAI, UTCtoTAI),
+                    TIME_CONVERSION(TAI, TT, TAItoTT),
+                    TIME_CONVERSION(TT, TAI, TTtoTAI),
+                    TIME_CONVERSION(TCG, TT, TCGtoTT),
+                    TIME_CONVERSION(TT, TCG, TTtoTCG),
+                    TIME_CONVERSION(TT, TDB, TTtoTDB),
+                    TIME_CONVERSION(TDB, TT, TDBtoTT),
+                    TIME_CONVERSION(TAI, GPS, TAItoGPS),
+                    TIME_CONVERSION(GPS, TAI, GPStoTAI),
+                    TIME_CONVERSION(TCB, TDB, TCBtoTDB),
+                    TIME_CONVERSION(TT, TCB, TTtoTCB) };
 
 Real ConvertT(Real t, const std::string& from, const std::string& to) {
   if (from == to) return t;
@@ -105,28 +105,30 @@ Real TCGtoTT(Real t_tcg) {
   return t_tcg + tt_tcg;
 }
 
+/// @brief 
+/// @param t_tdb 
+/// @return 
+/// @ref https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/req/time.html#The%20Relationship%20between%20TT%20and%20TDB
 Real TDBtoTT(Real t_tdb) {
-  Real T_tdb = t_tdb / SECS_DAY / JD_CENTURY;
-  Real M_e = 357.5277233 + 35999.05034 * T_tdb;
-  return 0;
+  double k = 1.657e-3;
+  double eb = 1.671e-2;
+  Real mean_anom = 6.239996 + 1.99096871e-7 * t_tdb;
+  Real ecc_anom = mean_anom + eb * sin(mean_anom);
+  Real t_tt = t_tdb - k * sin(ecc_anom);
+  return t_tt;
 }
 
+/// @brief 
+/// @param t_tt 
+/// @return 
+/// @ref https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB
+/// @note Accurate to about 30 microseconds
 Real TTtoTDB(Real t_tt) {
-  // Real T_tt = t_tt / SECS_DAY / JD_CENTURY;
-  // Real t_tdb = t_tt + 0.001657 * sin(628.3076 * T_tt + 6.2401) +
-  //              0.000022 * sin(575.3385 * T_tt + 4.2970) +
-  //              0.000014 * sin(1256.6152 * T_tt + 6.1969) +
-  //              0.000005 * sin(606.9777 * T_tt + 4.0212) +
-  //              0.000005 * sin(52.9691 * T_tt + 0.4444) +
-  //              0.000002 * sin(21.3299 * T_tt + 5.5431) +
-  //              0.000010 * T_tt * sin(628.3076 * T_tt + 4.2490);
-  Real t_tdb = t_tt;
-  Real t_tdb_new = 0;
-  do {
-    t_tdb_new = t_tdb;
-    Real t_tdb_tt = t_tdb - TTtoTDB(t_tt);
-    t_tdb = t_tt - t_tdb_tt;
-  } while (abs(t_tdb - t_tdb_new) > 1e-12);
+  double k = 1.657e-3;
+  double eb = 1.671e-2;
+  Real mean_anom = 6.239996 + 1.99096871e-7 * t_tt;
+  Real ecc_anom = mean_anom + eb * sin(mean_anom);
+  Real t_tdb = t_tt + k * sin(ecc_anom);
   return t_tdb;
 }
 
@@ -173,7 +175,7 @@ Real GregorianToMJD(int year, int month, int day, int hour, int min, Real sec) {
     b = (year / 400) - (year / 100) + (year / 4);  // Gregorian calendar
 
   Real mjd_midnight =
-      365L * year - 679004L + b + int(30.6001 * (month + 1)) + day;
+    365L * year - 679004L + b + int(30.6001 * (month + 1)) + day;
   Real frac_of_day = (hour + min / 60.0 + sec / 3600.0) / 24.0;
   return mjd_midnight + frac_of_day;
 }
@@ -184,7 +186,8 @@ std::tuple<int, int, int, int, int, Real> MJDtoGregorian(Real mjd) {
   if (a < 2299161) {          // Julian calendar
     b = 0;
     c = a + 1524;
-  } else {  // Gregorian calendar
+  }
+  else {  // Gregorian calendar
     b = long((a - 1867216.25) / 36524.25);
     c = a + b - (b / 4) + 1525;
   }
@@ -203,7 +206,7 @@ std::tuple<int, int, int, int, int, Real> MJDtoGregorian(Real mjd) {
 }
 
 Real GregorianToTime(int year, int month, int day, int hour, int min,
-                     Real sec) {
+  Real sec) {
   Real mjd = GregorianToMJD(year, month, day, hour, min, sec);
   return MJDtoTime(mjd);
 }
@@ -218,7 +221,7 @@ Real GreenwichMeanSiderealTime(Real mjd_ut1) {
   Real T = (mjd_ut1 - MJD_J2000) / JD_CENTURY;
 
   Real gmst = 24110.54841 + 8640184.812866 * T0 + 1.002737909350795 * ut1 +
-              (0.093104 - 6.2e-6 * T) * T * T;  // [s]
+    (0.093104 - 6.2e-6 * T) * T * T;  // [s]
 
   return TWO_PI * frac(gmst / SECS_DAY);  // [rad]
 }
@@ -228,7 +231,10 @@ Real MJDtoTime(Real mjd) { return (mjd - MJD_J2000) * SECS_DAY; }
 Real TimeToMJD(Real t) { return t / SECS_DAY + MJD_J2000; }
 
 Real JDtoTime(Real jd) { return (jd - JD_J2000) * SECS_DAY; }
-Real TimeToJD(Real t) { return t / SECS_DAY + JD_J2000; }
+
+Real TimeToJD(Real t) {
+  return t / SECS_DAY + JD_J2000;
+}
 
 /// @brief Convert Modified Julian Date to date string
 /// @param mjd Modified Julian Date
@@ -237,7 +243,7 @@ Real TimeToJD(Real t) { return t / SECS_DAY + JD_J2000; }
 std::string MJDtoGregorianString(Real mjd, int precision) {
   double pow10 = pow(10, precision);
   Real mjd_round =
-      (round(mjd * SECS_DAY * pow10, precision) + 0.1) / (SECS_DAY * pow10);
+    (round(mjd * SECS_DAY * pow10, precision) + 0.1) / (SECS_DAY * pow10);
   auto [year, month, day, hour, min, sec] = MJDtoGregorian(mjd_round);
   std::stringstream ss;
   sec = round(sec, precision);
@@ -248,7 +254,7 @@ std::string MJDtoGregorianString(Real mjd, int precision) {
   ss << std::setw(2) << std::setfill('0') << min << ":";
   ss << std::setw(2) << std::setfill('0') << floor(sec) << ".";
   ss << std::fixed << std::setprecision(0) << std::setw(precision)
-     << std::setfill('0') << round((sec - floor(sec)) * pow(10, precision));
+    << std::setfill('0') << round((sec - floor(sec)) * pow(10, precision));
   return ss.str();
 }
 
@@ -262,7 +268,7 @@ std::string TimeToGregorianString(Real t, int precision) {
 /// @return GAST [rad]
 Real GreenwichApparentSiderealTime(Real mjd_ut1) {
   return mod(GreenwichMeanSiderealTime(mjd_ut1) + EquinoxEquation(mjd_ut1),
-             TWO_PI);
+    TWO_PI);
 }
 
 VEC_IMP_REAL(UTCtoUT1)

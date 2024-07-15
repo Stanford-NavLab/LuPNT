@@ -83,7 +83,7 @@ struct EphemerisHeaderData {
   std::vector<int> n_subintervals;
   double AU;
   double EMRAT;
-  std::vector<int> n_properties = {3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 1};
+  std::vector<int> n_properties = { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 1 };
 };
 
 struct EphemerisBlock {
@@ -164,9 +164,11 @@ void ParseGroup1050(std::ifstream& infile, EphemerisHeaderData& data) {
     while (iss >> value) {
       if (i == 0) {
         start_locations.push_back(value);
-      } else if (i == 1) {
+      }
+      else if (i == 1) {
         n_coeffs.push_back(value);
-      } else if (i == 2) {
+      }
+      else if (i == 2) {
         n_subintervals.push_back(value);
       }
     }
@@ -178,7 +180,7 @@ void ParseGroup1050(std::ifstream& infile, EphemerisHeaderData& data) {
 }
 
 void ReadEphemerisHeaderFile(const std::string& filepath,
-                             EphemerisHeaderData& data) {
+  EphemerisHeaderData& data) {
   std::ifstream infile(filepath);
   assert(infile.is_open() && "Unable to open file");
   std::string line, empty_line;
@@ -187,15 +189,20 @@ void ReadEphemerisHeaderFile(const std::string& filepath,
       std::istringstream iss(line);
       std::string temp;
       iss >> temp >> data.KSIZE >> temp >> data.NCOEFF;
-    } else if (line.find("GROUP   1010") != std::string::npos) {
+    }
+    else if (line.find("GROUP   1010") != std::string::npos) {
       ParseGroup1010(infile, data);
-    } else if (line.find("GROUP   1030") != std::string::npos) {
+    }
+    else if (line.find("GROUP   1030") != std::string::npos) {
       ParseGroup1030(infile, data);
-    } else if (line.find("GROUP   1040") != std::string::npos) {
+    }
+    else if (line.find("GROUP   1040") != std::string::npos) {
       ParseGroup1040(infile, data);
-    } else if (line.find("GROUP   1041") != std::string::npos) {
+    }
+    else if (line.find("GROUP   1041") != std::string::npos) {
       ParseGroup1041(infile, data);
-    } else if (line.find("GROUP   1050") != std::string::npos) {
+    }
+    else if (line.find("GROUP   1050") != std::string::npos) {
       ParseGroup1050(infile, data);
     }
   }
@@ -203,7 +210,7 @@ void ReadEphemerisHeaderFile(const std::string& filepath,
 }
 
 void ReadEphemerisCoefficientsFile(const std::string& filepath,
-                                   EphemerisHeaderData& data) {
+  EphemerisHeaderData& data) {
   ephemeris_data.header = data;
   ephemeris_data.blocks.clear();
 
@@ -235,8 +242,8 @@ void ReadEphemerisCoefficientsFile(const std::string& filepath,
 }
 
 std::pair<double, double> ComputePolinomial(double x, const double* scale,
-                                            const double* coeff, int offset,
-                                            int num) {
+  const double* coeff, int offset,
+  int num) {
   double x2, w0 = 0., w1 = 0., dw0 = 0., dw1 = 0., tmp;
 
   x = (x - scale[0]) / scale[1];
@@ -251,20 +258,18 @@ std::pair<double, double> ComputePolinomial(double x, const double* scale,
   }
   double f = coeff[offset] + (x * w0 - w1);
   double df = (w0 + x * dw0 - dw1) / scale[1];
-  return {f, df};
+  return { f, df };
 }
 
 VecXd GetBodyPosVel(Real t_tai, int id) {
-  double t_tdb_ = ConvertTime(t_tai, "TAI", "TDB").val();
   double t_tdb = ConvertT(t_tai, TimeSys::TAI, TimeSys::TDB).val();
-  double jd_tdb = t_tdb / SECS_DAY + JD_J2000;
-  double jd_tdb_ = ConvertTime(t_tai, "TAI", "JDTDB").val();
+  double jd_tdb = TimeToJD(t_tdb).val();
 
   // Block
   double Dt = ephemeris_data.header.step;
   int i = int((jd_tdb - ephemeris_data.jd_tdb_start) / Dt);
   assert(i >= 0 && i < ephemeris_data.blocks.size() &&
-         "Block index out of range");  // TODO: Load proper file
+    "Block index out of range");  // TODO: Load proper file
   EphemerisBlock& block = ephemeris_data.blocks[i];
   EphemerisHeaderData& header = ephemeris_data.header;
 
@@ -272,21 +277,26 @@ VecXd GetBodyPosVel(Real t_tai, int id) {
   double Dt_subint = Dt / header.n_subintervals[id];
   int j = int((jd_tdb - block.jd_tdb_start) / Dt_subint);
   int n_coeff = header.n_coeffs[id] * header.n_properties[id];
-  int offset = header.coeff_offset[id] + j * n_coeff - 3;
+  int offset = header.coeff_offset[id] + j * n_coeff - 3.;
   double jd_tdb_subint = block.jd_tdb_start + j * Dt_subint;
-
-  double scale[2] = {jd_tdb_subint + Dt_subint / 2., Dt_subint / 2.};
+  double scale[2] = { jd_tdb_subint + Dt_subint / 2., Dt_subint / 2. }; // center and half width
+  scale[0] = JDtoTime(scale[0]).val();
+  scale[1] *= SECS_DAY;
 
   VecXd rv(6);
   for (int i = 0; i < 3; i++) {
-    auto [pos, vel] = ComputePolinomial(jd_tdb, scale, block.coeff, offset,
-                                        header.n_coeffs[id]);
+    auto [pos, vel] = ComputePolinomial(t_tdb, scale, block.coeff, offset,
+      header.n_coeffs[id]);
     rv[i] = pos;
     rv[i + 3] = vel / SECS_DAY;
     offset += header.n_coeffs[id];
   }
   return rv;
 }
+
+double GetTtTdbDifference(double t_tai) {
+  return 0.0;
+};
 
 }  // namespace jpl_de
 }  // namespace lupnt

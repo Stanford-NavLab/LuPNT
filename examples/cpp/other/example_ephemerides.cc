@@ -15,12 +15,12 @@ int main() {
   // Output the parsed data for verification
   cout << "KSIZE: " << data.KSIZE << "\nNCOEFF: " << data.NCOEFF << endl;
   cout << "Start Info: " << data.start_info
-       << "\nFinal Info: " << data.final_info << endl;
+    << "\nFinal Info: " << data.final_info << endl;
   cout << "Start Epoch: " << data.jd_tdb_start
-       << "\nFinal Epoch: " << data.jd_tdb_end << "\nStep: " << data.step
-       << endl;
+    << "\nFinal Epoch: " << data.jd_tdb_end << "\nStep: " << data.step
+    << endl;
 
-  cout << "Constant Names:" << endl;
+  cout << endl << "Constant Names:" << endl;
   int i = 0;
   for (const auto& name : data.constant_names) {
     cout << name << " ";
@@ -34,34 +34,29 @@ int main() {
     cout << value << " ";
     if (++i > 10) break;
   }
-  cout << endl;
+  cout << endl << endl;
 
   cout << "Group 1050 Data:" << endl;
   cout << "Start Locations: ";
-  for (const auto& loc : data.coeff_offset) {
-    cout << loc << " ";
-  }
+  for (const auto& loc : data.coeff_offset) cout << loc << " ";
+
   cout << "\nNumber of Coefficients: ";
-  for (const auto& num : data.n_coeffs) {
-    cout << num << " ";
-  }
+  for (const auto& num : data.n_coeffs) cout << num << " ";
   cout << "\nNumber of Properties: ";
-  for (const auto& sets : data.n_subintervals) {
-    cout << sets << " ";
-  }
-  cout << endl;
+  for (const auto& sets : data.n_subintervals) cout << sets << " ";
+  cout << endl << endl;
 
   ReadEphemerisCoefficientsFile(ASCII_KERNEL_DIR / "de440" / "ascp01950.440",
-                                data);
+    data);
 
-  double jd_tdb = 2469264.5;
+  double jd_tdb = 2458850.5;
   Real t_tdb = JDtoTime(jd_tdb);
   Real t_tai = ConvertTime(t_tdb, "TDB", "TAI");
   Vec6 rv_mercury_ = GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MERCURY);
   Vec3 r_mercury__ =
-      GetBodyPosSpice(NaifId::MERCURY, t_tai, Frame::GCRF, NaifId::SSB, "NONE");
+    GetBodyPosSpice(NaifId::MERCURY, t_tai, Frame::GCRF, NaifId::SSB, "NONE");
   Vec6 rv_mercury = GetBodyPosVel(t_tai, EphemID::MERCURY);
-  auto fmt = Eigen::IOFormat(16, 0, ", ", ", ", "", "", "[", "]");
+  auto fmt = Eigen::IOFormat(14, 0, ", ", ", ", "", "", "[", "]");
   cout << "Cheby (new)" << rv_mercury.head(3).transpose().format(fmt) << endl;
   cout << "Cheby (old)" << rv_mercury_.head(3).transpose().format(fmt) << endl;
   cout << "Spice      " << r_mercury__.head(3).transpose().format(fmt) << endl;
@@ -77,7 +72,7 @@ int main() {
   }
   auto end = chrono::high_resolution_clock::now();
   auto duration =
-      chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    chrono::duration_cast<chrono::milliseconds>(end - start).count();
   cout << "Total cheby (new, multiproc.) " << duration << " ms" << endl;
 
   start = chrono::high_resolution_clock::now();

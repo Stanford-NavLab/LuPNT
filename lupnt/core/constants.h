@@ -90,21 +90,15 @@ DEFINE_VECTORS_MATRICES()
 static constexpr double PI_DEG = 180.0;
 static constexpr double PI_OVER_TWO_DEG = 90.0;
 static constexpr double TWO_PI_DEG = 360.0;
-static constexpr double PI =
-    3.14159265358979323846264338327950288419716939937511;
-static constexpr double TWO_PI =
-    6.28318530717958647692528676655900576839433879875022;
-static constexpr double PI_OVER_TWO =
-    1.57079632679489661923132169163975144209858469968756;
-static constexpr double E =
-    2.71828182845904523536028747135266249775724709369996;
-static constexpr double EPS = 1.0e-10;
+static constexpr double PI = 3.14159265358979323846264338327950288419716939937511;
+static constexpr double TWO_PI = 6.28318530717958647692528676655900576839433879875022;
+static constexpr double PI_OVER_TWO = 1.57079632679489661923132169163975144209858469968756;
+static constexpr double E = 2.71828182845904523536028747135266249775724709369996;
+static constexpr double EPS = 1.0e-16;
 
 // Angle conversion
-static constexpr double RAD =
-    3.14159265358979323846264338327950288419716939937511 / 180.0;
-static constexpr double DEG =
-    180.0 / 3.14159265358979323846264338327950288419716939937511;
+static constexpr double RAD = 3.14159265358979323846264338327950288419716939937511 / 180.0;
+static constexpr double DEG = 180.0 / 3.14159265358979323846264338327950288419716939937511;
 
 static constexpr double ARCSEC_PER_DEGREE = 3600.0;
 static constexpr double DEG_PER_ARCSEC = 1.0 / 3600.0;
@@ -136,8 +130,7 @@ static constexpr double DAYS_YEAR = 365.25;
 static constexpr double JD_CENTURY = 36525.00;
 static constexpr double DAYS_SEC = 1.1574074074074074074074074074074e-5;
 
-static constexpr double TIME_OF_J2000 =
-    883655990.850000;                          // 2000/01/01 43167.85
+static constexpr double TIME_OF_J2000 = 883655990.850000; // 2000/01/01 43167.85
 static constexpr double JD_J2000 = 2451545.0;  // JD of J2000 epoch
 static constexpr double MJD_J2000 = 51544.5;   // MJD of J2000 epoch
 
@@ -176,9 +169,9 @@ static constexpr double WGS84_F = 1.0 / 298.257223563;  // [-]
 static constexpr double J2_EARTH = 1.08262668e-3;
 // static constexpr double J2_MOON = 9.08901807506000e-5;
 static constexpr double J2_MOON =
-    9.094278450270e-5;  // Zonal value adjusted for permanent tide - Rigid J2
+9.094278450270e-5;  // Zonal value adjusted for permanent tide - Rigid J2
 static constexpr double C22_MOON =
-    3.470983013194e-5;  // Sectorial value adjusted for perm. tide - Rigid C22
+3.470983013194e-5;  // Sectorial value adjusted for perm. tide - Rigid C22
 
 // Transformations Between GCRF and Mean Equator and Equinox at J2000
 static constexpr double FRAME_BIAS_XI0 = -8.0561e-8;     // [rad]
@@ -191,7 +184,7 @@ static constexpr double AU = 149597970;      // AU [km]
 static constexpr double S_AU = 1358 * 1e-6;  // Mean Solar Flux at 1 AU [W/km^2]
 static constexpr double C = 299792.458;      // Light speed [km/s]
 static constexpr double P_SUN =
-    S_AU / C;  // Solar radiation pressure at 1 AU [N/km^2] = 4.56e-6 N/m^2
+S_AU / C;  // Solar radiation pressure at 1 AU [N/km^2] = 4.56e-6 N/m^2
 
 // File Pathes -----------------------------------------------------------------
 static const std::filesystem::path CSPICE_KER_DIR = GetDataPath() / "ephemeris";
@@ -199,7 +192,7 @@ static const std::string TAI_UTC_FILENAME = "tai-utc.dat";
 static const std::string EOP_FILENAME = "eopc04_08.62-now";
 static const std::string IAU_SOFA_FILENAME = "IAU_SOFA.DAT";
 static const std::filesystem::path ASCII_KERNEL_DIR =
-    GetDataPath() / "ephemeris" / "ascii";
+GetDataPath() / "ephemeris" / "ascii";
 
 // Moon mean elements
 
@@ -243,6 +236,8 @@ const std::string TT = "TT";    // Terrestrial Time
 const std::string TCG = "TCG";  // Geocentric Coordinate Time
 const std::string TCB = "TCB";  // Barycentric Coordinate Time
 const std::string GPS = "GPS";  // Global Positioning System Time
+const std::string JD_TT = "JDTDT";
+const std::string JD_TDB = "JDTDB";
 }  // namespace TimeSys
 
 }  // namespace lupnt

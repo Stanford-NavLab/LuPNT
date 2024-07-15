@@ -37,9 +37,9 @@ template VectorX<Real> arange<Real>(Real start, Real stop, Real step);
 /// @param x First vector
 /// @param y Second vector
 /// @return Angle between the two vectors in radians
-Real AngleBetweenVecs(const VecX &x, const VecX &y) {
+Real AngleBetweenVecs(const VecX& x, const VecX& y) {
   return 2.0 * atan2((x.normalized() - y.normalized()).norm(),
-                     (x.normalized() + y.normalized()).norm());
+    (x.normalized() + y.normalized()).norm());
 }
 
 /// @brief Wrap angle in radians to [-pi, pi]
@@ -116,7 +116,7 @@ Vec3 Degrees2DegMinSec(Real deg) {
   Real d = floor(deg);
   Real m = floor((deg - d) * 60);
   Real s = (deg - d - m / 60) * 3600;
-  return Vec3{d, m, s};
+  return Vec3{ d, m, s };
 }
 
 /// @brief Convert degrees, minutes, and seconds to degrees
@@ -127,15 +127,29 @@ Real DegMinSec2Degrees(Vec3 dms) {
   return decdeg;
 }
 
+Real sind(Real x) {
+  return sin(x * RAD);
+}
+
+Real cosd(Real x) {
+  return cos(x * RAD);
+}
+
+Real tand(Real x) {
+  return tan(x * RAD);
+}
+
 /// @brief Compute the safe acos function
 /// @param x Input value
 /// @return acos(x) if x is in [-1, 1], otherwise acos(x - EPS) or acos(x + EPS)
 Real safe_acos(Real x) {
   if (x >= 1.0) {
     return acos(x - EPS);
-  } else if (x <= -1.0) {
+  }
+  else if (x <= -1.0) {
     return acos(x + EPS);
-  } else {
+  }
+  else {
     return acos(x);
   }
 }
@@ -146,9 +160,11 @@ Real safe_acos(Real x) {
 Real safe_asin(Real x) {
   if (x >= 1.0) {
     return asin(x - 1e-16);
-  } else if (x <= -1.0) {
+  }
+  else if (x <= -1.0) {
     return asin(x + 1e-16);
-  } else {
+  }
+  else {
     return asin(x);
   }
 }
@@ -162,8 +178,8 @@ Real RootMeanSquare(VecX x) { return sqrt(x.array().pow(2).sum() / x.size()); }
 /// @param x Input vector
 /// @param p Percentile value
 Real Percentile(VecX x, double p) {
-  Real *start = x.data();
-  Real *end = x.data() + x.size();
+  Real* start = x.data();
+  Real* end = x.data() + x.size();
   std::sort(start, end);
   int index = std::ceil(p * x.size());
   if (index > (x.size() - 1)) {
@@ -202,9 +218,10 @@ MatX SampleMVN(const VecX mean, const MatX covar, int nn, int seed) {
   if (cholSolver.info() == Eigen::Success) {
     // Use cholesky solver
     normTransform = cholSolver.matrixL();
-  } else {
+  }
+  else {
     std::runtime_error(
-        "The covariance matrix must be symmetric and pos-definite.");
+      "The covariance matrix must be symmetric and pos-definite.");
   }
 
   MatX randN(xsize, nn);
@@ -224,7 +241,7 @@ MatX SampleMVN(const VecX mean, const MatX covar, int nn, int seed) {
 /// @param A First matrix
 /// @param B Second matrix
 /// @return Block diagonal matrix
-MatX blkdiag(const MatX &A, const MatX &B) {
+MatX blkdiag(const MatX& A, const MatX& B) {
   MatX C(A.rows() + B.rows(), A.cols() + B.cols());
   C << A, MatX::Zero(A.rows(), B.cols()), MatX::Zero(B.rows(), A.cols()), B;
   return C;
@@ -285,7 +302,7 @@ template Mat3 RotZ(Real angle);
 /// @param x Input vector
 /// @return Skew symmetric matrix
 template <typename T>
-Matrix<T, 3, 3> Skew(Vector<T,3> x) {
+Matrix<T, 3, 3> Skew(Vector<T, 3> x) {
   Matrix<T, 3, 3> skew{
       {0.0, -x(2), x(1)},
       {x(2), 0.0, -x(0)},
@@ -299,7 +316,7 @@ template Mat3 Skew(Vec3 x);
 /// @brief Convert a vector of floats to a vector of doubles
 /// @param x Input vector
 /// @return Vector of doubles
-VecXd ToDouble(const VecX &x) {
+VecXd ToDouble(const VecX& x) {
   VecXd y = x.cast<double>();
   return y;
 }
@@ -307,12 +324,12 @@ VecXd ToDouble(const VecX &x) {
 /// @brief Convert a matrix of floats to a matrix of doubles
 /// @param x Input matrix
 /// @return Matrix of doubles
-MatXd ToDouble(const MatX &x) {
+MatXd ToDouble(const MatX& x) {
   MatXd y = x.cast<double>();
   return y;
 }
 
-std::vector<double> ToDoubleVec(const VecX &x) {
+std::vector<double> ToDoubleVec(const VecX& x) {
   std::vector<double> y(x.size());
   for (int i = 0; i < x.size(); i++) {
     y[i] = x(i).val();
@@ -320,7 +337,7 @@ std::vector<double> ToDoubleVec(const VecX &x) {
   return y;
 }
 
-std::vector<double> ToDoubleVec(const VecXd &x) {
+std::vector<double> ToDoubleVec(const VecXd& x) {
   std::vector<double> y(x.size());
   for (int i = 0; i < x.size(); i++) {
     y[i] = x(i);
@@ -328,7 +345,7 @@ std::vector<double> ToDoubleVec(const VecXd &x) {
   return y;
 }
 
-std::vector<double> ToDoubleVec(const VecXi &x) {
+std::vector<double> ToDoubleVec(const VecXi& x) {
   std::vector<double> y(x.size());
   for (int i = 0; i < x.size(); i++) {
     y[i] = x(i);
@@ -354,11 +371,13 @@ Real F(Real eta, Real m, Real l) {
       a *= w * (n + 2.0) / (n + 1.5);
       W += a;
     } while (abs(a) >= eps);
-  } else {
+  }
+  else {
     if (w > 0.0) {
       g = 2.0 * asin(sqrt(w));
       W = (2.0 * g - sin(2.0 * g)) / pow(sin(g), 3);
-    } else {
+    }
+    else {
       g = 2.0 * log(sqrt(-w) + sqrt(1.0 - w));  // =2.0*arsinh(sqrt(-w))
       W = (sinh(2.0 * g) - 2.0 * g) / pow(sinh(g), 3);
     }
@@ -387,7 +406,7 @@ Real RatioOfSectorToTriangleArea(Vec3 r1, Vec3 r2, Real tau) {
 
   // Start with Hansen's approximation
   Real eta2 =
-      (12.0 + 10.0 * sqrt(1.0 + (44.0 / 9.0) * m / (l + 5.0 / 6.0))) / 22.0;
+    (12.0 + 10.0 * sqrt(1.0 + (44.0 / 9.0) * m / (l + 5.0 / 6.0))) / 22.0;
   Real eta1 = eta2 + 0.1;
 
   // Secant method

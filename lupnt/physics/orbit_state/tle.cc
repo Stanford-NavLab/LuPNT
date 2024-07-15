@@ -21,27 +21,32 @@
 #include "orbit_states.h"
 
 namespace lupnt {
-TLE TLE::FromLines(const std::string &line1, const std::string &line2,
-                   const std::string &line3) {
+TLE TLE::FromLines(const std::string& line1, const std::string& line2,
+  const std::string& line3) {
   TLE tle;
   if (line1.substr(0, 3) == "GPS") {
     tle.name = "GPS";
     tle.prn = stod(SplitString(line1, '(')[1].substr(4, 2));
-  } else if (line1.substr(0, 3) == "BEI") {
+  }
+  else if (line1.substr(0, 3) == "BEI") {
     tle.name = "BEIDOU";
     std::vector<std::string> split = SplitString(line1, '(');
     if (split[1].substr(0, 1) == "C") {
       tle.prn = stod(split[1].substr(1, 2));
-    } else {
+    }
+    else {
       tle.prn = 0;
     }
-  } else if (line1.substr(0, 3) == "GSA") {
+  }
+  else if (line1.substr(0, 3) == "GSA") {
     tle.name = "GALILEO";
     tle.prn = stod(SplitString(line1, '(')[1].substr(5, 2));
-  } else if (line1.substr(0, 3) == "COS") {
+  }
+  else if (line1.substr(0, 3) == "COS") {
     tle.name = "GLONASS";
     tle.prn = stod(SplitString(line1, '(')[1].substr(0, 3));
-  } else {
+  }
+  else {
     tle.name = line1;
     tle.prn = 0;
   }
@@ -57,14 +62,14 @@ TLE TLE::FromLines(const std::string &line1, const std::string &line2,
 
   // compute TAI from epoch
   std::string fullyear_string = "20" + line2.substr(18, 2);
-  Real epochYearStartTAI = String2TAI(fullyear_string + "/01/01 00:00:00 UTC");
+  Real epochYearStartTAI = spice::String2TAI(fullyear_string + "/01/01 00:00:00 UTC");
   double epochTAI = epochYearStartTAI.val() + tle.epochDay * SECS_DAY;
   tle.epochTAI = epochTAI;
 
   return tle;
 };
 
-std::vector<TLE> TLE::FromFile(const std::string &filename) {
+std::vector<TLE> TLE::FromFile(const std::string& filename) {
   std::ifstream inputFile(filename);
   if (!inputFile.is_open()) {
     throw std::runtime_error("Could not open file " + filename);
@@ -72,7 +77,7 @@ std::vector<TLE> TLE::FromFile(const std::string &filename) {
   std::vector<TLE> tles;
   std::string line1, line2, line3;
   while (getline(inputFile, line1) && getline(inputFile, line2) &&
-         getline(inputFile, line3)) {
+    getline(inputFile, line3)) {
     TLE tle = TLE::FromLines(line1, line2, line3);
     tles.push_back(tle);
   };

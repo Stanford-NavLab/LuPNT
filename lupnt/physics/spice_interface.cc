@@ -27,6 +27,7 @@
 
 namespace lupnt {
 
+namespace spice {
 bool spice_loaded = false;
 
 /**
@@ -59,17 +60,17 @@ void LoadSpiceKernel(void) {
   // http://spiftp.esac.esa.int/workshops/2012_04_ESAC_WORKSHOP/Tutorials/27_lunar-earth_pck-fk.pdf
   furnsh_c("moon_pa_de440_200625.bpc");
   furnsh_c("earth_200101_990628_predict.bpc");  // low fidelity long history
-                                                // earth EOP
+  // earth EOP
   furnsh_c(
-      "earth_000101_230805_230512.bpc");  // shorter histrory precise earth EOP
+    "earth_000101_230805_230512.bpc");  // shorter histrory precise earth EOP
 
   // Load Chebyshev coefficients
   cheby_s = spk_extract("de440.bsp", &cheby_n);
 
   if (cheby_s == NULL) {
     cheby_err(
-        "could not load SPK file - Please Download the SPK file. See "
-        "data/ephemeris/readme.md for instructions");
+      "could not load SPK file - Please Download the SPK file. See "
+      "data/ephemeris/readme.md for instructions");
   }
 
   // move back to original directory
@@ -86,7 +87,7 @@ void LoadSpiceKernel(void) {
 void ExtractPckCoeffs() {
   int handle;
   SpiceInt pck_handle;
-  ConstSpiceChar *pck_file = "../data/ephemeris/moon_pa_de440_200625.bpc";
+  ConstSpiceChar* pck_file = "../data/ephemeris/moon_pa_de440_200625.bpc";
   double t_tdb = 8000.0;
   int body = 301;
   double descr[5];
@@ -146,7 +147,7 @@ void ExtractPckCoeffs() {
 }
 
 Vec3d GetBodyPosSpice(NaifId target, Real t_tai, Frame refFrame, NaifId obs,
-                      std::string abCorrection) {
+  std::string abCorrection) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
@@ -161,13 +162,13 @@ Vec3d GetBodyPosSpice(NaifId target, Real t_tai, Frame refFrame, NaifId obs,
   // TODO: this cuts the relatonship between t_tdb and matrix
   Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
   SpiceDouble t_tdb_spice = (SpiceDouble)t_tdb.val();
-  const char *target_spice =
-      strcpy(new char[targetName.length() + 1], targetName.c_str());
-  const char *ref = strcpy(new char[frame_str.length() + 1], frame_str.c_str());
-  const char *abcorr =
-      strcpy(new char[abCorrection.length() + 1], abCorrection.c_str());
-  const char *obs_spice =
-      strcpy(new char[obsName.length() + 1], obsName.c_str());
+  const char* target_spice =
+    strcpy(new char[targetName.length() + 1], targetName.c_str());
+  const char* ref = strcpy(new char[frame_str.length() + 1], frame_str.c_str());
+  const char* abcorr =
+    strcpy(new char[abCorrection.length() + 1], abCorrection.c_str());
+  const char* obs_spice =
+    strcpy(new char[obsName.length() + 1], obsName.c_str());
   SpiceDouble lt;
 
   // void spkpos_c(ConstSpiceChar * targ, SpiceDouble t_tdb, ConstSpiceChar *
@@ -205,10 +206,10 @@ Mat6d GetFrameConversionMat(Real t_tai, Frame from_frame, Frame to_frame) {
   std::string from_frame_str = frametem_string.at(from_frame);
   std::string to_frame_str = frametem_string.at(to_frame);
 
-  const char *from_frame_char =
-      strcpy(new char[from_frame_str.length() + 1], from_frame_str.c_str());
-  const char *to_frame_char =
-      strcpy(new char[to_frame_str.length() + 1], to_frame_str.c_str());
+  const char* from_frame_char =
+    strcpy(new char[from_frame_str.length() + 1], from_frame_str.c_str());
+  const char* to_frame_char =
+    strcpy(new char[to_frame_str.length() + 1], to_frame_str.c_str());
 
   sxform_c(from_frame_char, to_frame_char, et_spice, xform);
 
@@ -329,7 +330,7 @@ std::string TAItoStringUTC(Real t_tai, int prec = 3) {
 /**
  * @brief Convert time from one time system to another
  *
- * @param t        in time in seconds
+ * @param t     in time in seconds
  * @param from  from time system
  *  String ID   Time system
  *  ---------   --------------------------
@@ -348,31 +349,7 @@ std::string TAItoStringUTC(Real t_tai, int prec = 3) {
  */
 Real ConvertTime(Real t, std::string from, std::string to) {
   if (!spice_loaded) LoadSpiceKernel();
-  if (from == to) {
-    return t;
-  }
-  // The string contains MJD or JD convert to second
-  // if (from.find("MJD") != std::string::npos) {
-  //   Real t_new = (t - MJD_J2000) / SECS_DAY;
-  //   std::string from_new = from.substr(4);
-  //   return ConvertTime(t_new, from_new, to);
-  // }
-  // if (from.find("JD") != std::string::npos) {
-  //   Real t_new = (t - JD_J2000) * SECS_DAY;
-  //   std::string from_new = from.substr(3);
-  //   return ConvertTime(t_new, from_new, to);
-  // }
-  // if (to.find("MJD") != std::string::npos) {
-  //   std::string to_new = to.substr(4);
-  //   Real t_new = ConvertTime(t, from, to_new);
-  //   return t_new * SECS_DAY + MJD_J2000;
-  // }
-  // if (to.find("JD") != std::string::npos) {
-  //   std::string to_new = to.substr(3);
-  //   Real t_new = ConvertTime(t, from, to_new);
-  //   return t_new / SECS_DAY + JD_J2000;
-  // }
-
+  if (from == to) return t;
   SpiceDouble t_in = t.val();
   SpiceDouble t_out_spice = unitim_c(t_in, from.c_str(), to.c_str());
   double offset = t_out_spice - t_in;  // offset in seconds
@@ -380,7 +357,7 @@ Real ConvertTime(Real t, std::string from, std::string to) {
   return t_out;
 }
 
-Mat<-1, 6> GetBodyPosVel(const VecX &t_tai, NaifId center, NaifId target) {
+Mat<-1, 6> GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target) {
   if (!spice_loaded) LoadSpiceKernel();
   Mat<-1, 6> retState(t_tai.size(), 6);
   for (int i = 0; i < t_tai.size(); i++)
@@ -397,37 +374,35 @@ Mat<-1, 6> GetBodyPosVel(const VecX &t_tai, NaifId center, NaifId target) {
  * @return Vec6 in intertial axes
  */
 Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
-  if (!spice_loaded) {
+  if (!spice_loaded)
     LoadSpiceKernel();
-  }
-  if (center == target) {
+  if (center == target)
     return Vec6::Zero();
-  }
 
   bool found_center = center == NaifId::SSB;
   bool found_target = target == NaifId::SSB;
   Vec6 rv_center = Vec6::Zero();
   Vec6 rv_target = Vec6::Zero();
 
-  auto getCenterPosVel = [&](NaifId body, Vec6 &rv) {
+  auto getCenterPosVel = [&](NaifId body, Vec6& rv) {
     switch (body) {
-      case NaifId::MOON:
-      case NaifId::EARTH:
-        rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH_BARYCENTER);
-        break;
-      case NaifId::MERCURY:
-        rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MERCURY_BARYCENTER);
-        break;
-      case NaifId::VENUS:
-        rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::VENUS_BARYCENTER);
-        break;
-      case NaifId::MARS:
-        rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MARS_BARYCENTER);
-        break;
-      default:
-        break;
+    case NaifId::MOON:
+    case NaifId::EARTH:
+      rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH_BARYCENTER);
+      break;
+    case NaifId::MERCURY:
+      rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MERCURY_BARYCENTER);
+      break;
+    case NaifId::VENUS:
+      rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::VENUS_BARYCENTER);
+      break;
+    case NaifId::MARS:
+      rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MARS_BARYCENTER);
+      break;
+    default:
+      break;
     }
-  };
+    };
 
   // Get the position and velocity with respect to the SSB
   getCenterPosVel(center, rv_center);
@@ -440,7 +415,8 @@ Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
     if (cheby_s[i].target == (int)target) {
       rv_target += cheby_posvel_ad(t_tdb, cheby_s[i].seg, cheby_s[i].len);
       found_target = true;
-    } else if (cheby_s[i].target == (int)center) {
+    }
+    else if (cheby_s[i].target == (int)center) {
       rv_center += cheby_posvel_ad(t_tdb, cheby_s[i].seg, cheby_s[i].len);
       found_center = true;
     }
@@ -454,5 +430,7 @@ Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
   Vec6 rv = rv_target - rv_center;
   return rv;
 }
+
+}  // namespace spice
 
 }  // namespace lupnt
