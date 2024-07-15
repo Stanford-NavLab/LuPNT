@@ -15,15 +15,15 @@
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/body.h"
 #include "lupnt/physics/solar_system.h"
-#include "lupnt/physics/spice_interface.h"
+#include "lupnt/data/kernels.h"
 
 namespace lupnt {
 
 NBodyDynamics::NBodyDynamics(std::string integratorType)
-    : NumericalOrbitDynamics(
-          std::bind(&NBodyDynamics::ComputeRates, this, std::placeholders::_1,
-                    std::placeholders::_2),
-          OrbitStateRepres::CARTESIAN, integratorType) {};
+  : NumericalOrbitDynamics(
+    std::bind(&NBodyDynamics::ComputeRates, this, std::placeholders::_1,
+      std::placeholders::_2),
+    OrbitStateRepres::CARTESIAN, integratorType) {};
 
 VecX NBodyDynamics::ComputeRates(Real t_tai, const VecX& rv) const {
   assert(rv.size() == 6);
@@ -38,15 +38,16 @@ VecX NBodyDynamics::ComputeRates(Real t_tai, const VecX& rv) const {
       auto& grav = body.gravity_field;
       // Position (body-fixed) [km]
       Vec3 r_bf = ConvertFrame(t_tai, r, central_body_.inertial_frame,
-                               body.fixed_frame);
+        body.fixed_frame);
       // Acceleration (body-fixed) [km/s^2]
       Vec3 a_bf = AccelarationGravityField(r_bf, grav.GM, grav.R, grav.CS,
-                                           grav.n_max, grav.m_max);
+        grav.n_max, grav.m_max);
       // Acceleration (inertial) [km/s^2]
       Vec3 ai = ConvertFrame(t_tai, a_bf, body.fixed_frame,
-                             central_body_.inertial_frame);
+        central_body_.inertial_frame);
       a += ai;
-    } else {
+    }
+    else {
       // Body position w.r.t. the inertial frame origin [km]
       Vec3 r_body = GetBodyPosVel(t_tai, central_body_.id, body.id).head(3);
       // Acceleration (inertial) [km/s^2]
@@ -60,8 +61,8 @@ VecX NBodyDynamics::ComputeRates(Real t_tai, const VecX& rv) const {
     Vec3 r_sun = GetBodyPosVel(t_tai, central_body_.id, NaifId::SUN).head(3);
 
     Vec3 a_srp =
-        Illumination(r, r_sun, central_body_.R) *
-        AccelerationSolarRadiation(r, r_sun, area_, mass_, CR_, P_SUN, AU);
+      Illumination(r, r_sun, central_body_.R) *
+      AccelerationSolarRadiation(r, r_sun, area_, mass_, CR_, P_SUN, AU);
     a += a_srp;
   }
 

@@ -12,8 +12,8 @@ namespace lupnt {
 extern std::map<std::pair<std::string, std::string>, std::function<Real(Real)>>
 time_conversions;
 
-Real ConvertT(Real t, const std::string& from, const std::string& to);
-VecX ConvertT(VecX t, const std::string& from, const std::string& to);
+Real ConvertTime(Real t, const std::string& from, const std::string& to);
+VecX ConvertTime(VecX t, const std::string& from, const std::string& to);
 
 Real UTCtoUT1(Real t_utc);
 Real UT1toUTC(Real t_ut1);

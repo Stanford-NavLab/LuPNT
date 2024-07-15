@@ -43,7 +43,7 @@ time_conversions = { TIME_CONVERSION(UTC, UT1, UTCtoUT1),
                     TIME_CONVERSION(TCB, TDB, TCBtoTDB),
                     TIME_CONVERSION(TT, TCB, TTtoTCB) };
 
-Real ConvertT(Real t, const std::string& from, const std::string& to) {
+Real ConvertTime(Real t, const std::string& from, const std::string& to) {
   if (from == to) return t;
   std::vector<std::string> path = FindShortestPath(from, to, time_conversions);
   Real t_out = t;
@@ -53,10 +53,10 @@ Real ConvertT(Real t, const std::string& from, const std::string& to) {
   return t_out;
 }
 
-VecX ConvertT(VecX t, const std::string& from, const std::string& to) {
+VecX ConvertTime(VecX t, const std::string& from, const std::string& to) {
   VecX t_out(t.size());
   for (int i = 0; i < t.size(); i++) {
-    t_out(i) = ConvertT(t(i), from, to);
+    t_out(i) = ConvertTime(t(i), from, to);
   }
   return t_out;
 }
