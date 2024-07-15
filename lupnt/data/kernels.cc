@@ -5,7 +5,6 @@
 
 namespace lupnt {
 
-
 namespace EphemID {
 size_t MERCURY = 0;
 size_t VENUS = 1;
@@ -25,17 +24,16 @@ size_t TT_TDB = 14;
 };  // namespace EphemID
 
 std::map<NaifId, size_t> naif2ephemId = {
-  {NaifId::MERCURY, EphemID::MERCURY},
-  {NaifId::VENUS, EphemID::VENUS},
-  {NaifId::EARTH_MOON_BARYCENTER, EphemID::EARTH_MOON_BARYCENTER},
-  {NaifId::MARS, EphemID::MARS},
-  {NaifId::JUPITER, EphemID::JUPITER},
-  {NaifId::SATURN, EphemID::SATURN},
-  {NaifId::URANUS, EphemID::URANUS},
-  {NaifId::NEPTUNE, EphemID::NEPTUNE},
-  {NaifId::MOON, EphemID::MOON},
+    {NaifId::MERCURY, EphemID::MERCURY},
+    {NaifId::VENUS, EphemID::VENUS},
+    {NaifId::EARTH_MOON_BARYCENTER, EphemID::EARTH_MOON_BARYCENTER},
+    {NaifId::MARS, EphemID::MARS},
+    {NaifId::JUPITER, EphemID::JUPITER},
+    {NaifId::SATURN, EphemID::SATURN},
+    {NaifId::URANUS, EphemID::URANUS},
+    {NaifId::NEPTUNE, EphemID::NEPTUNE},
+    {NaifId::MOON, EphemID::MOON},
 };
-
 
 struct EphemerisHeaderData {
   int KSIZE;
@@ -53,7 +51,7 @@ struct EphemerisHeaderData {
   std::vector<int> n_subintervals;
   double AU;
   double EMRAT;
-  std::vector<int> n_properties = { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 1 };
+  std::vector<int> n_properties = {3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 1};
 };
 
 struct EphemerisBlock {
@@ -78,7 +76,6 @@ double ParseDouble(const std::string& str) {
     if (c == 'D') c = 'e';
   return std::stod(s);
 }
-
 
 void ParseGroup1010(std::ifstream& infile, EphemerisHeaderData& data) {
   std::string line, empty_line;
@@ -152,7 +149,7 @@ void ParseGroup1050(std::ifstream& infile, EphemerisHeaderData& data) {
 }
 
 void ReadEphemerisHeaderFile(const std::string& filepath,
-  EphemerisHeaderData& data) {
+                             EphemerisHeaderData& data) {
   std::ifstream infile(filepath);
   assert(infile.is_open() && "Unable to open file");
   std::string line, empty_line;
@@ -177,7 +174,7 @@ void ReadEphemerisHeaderFile(const std::string& filepath,
 }
 
 void ReadEphemerisCoefficientsFile(const std::string& filepath,
-  EphemerisHeaderData& data) {
+                                   EphemerisHeaderData& data) {
   ephemeris_data = std::make_shared<EphemerisData>();
   ephemeris_data->header = data;
   ephemeris_data->blocks.clear();
@@ -209,9 +206,9 @@ void ReadEphemerisCoefficientsFile(const std::string& filepath,
   ephemeris_data->jd_tdb_end = ephemeris_data->blocks.back().jd_tdb_end;
 }
 
-std::pair<Real, Real> ComputePolinomial(Real x, const double* scale,
-  const double* coeff, int offset,
-  int num) {
+std::pair<Real, Real> ComputePolynomial(Real x, const double* scale,
+                                        const double* coeff, int offset,
+                                        int num) {
   Real x2, w0 = 0., w1 = 0., dw0 = 0., dw1 = 0., tmp;
 
   x = (x - scale[0]) / scale[1];
@@ -226,7 +223,7 @@ std::pair<Real, Real> ComputePolinomial(Real x, const double* scale,
   }
   Real f = coeff[offset] + (x * w0 - w1);
   Real df = (w0 + x * dw0 - dw1) / scale[1];
-  return { f, df };
+  return {f, df};
 }
 
 void LoadEphemerisData() {
@@ -236,7 +233,7 @@ void LoadEphemerisData() {
   EphemerisHeaderData data;
   ReadEphemerisHeaderFile(ASCII_KERNEL_DIR / "de440" / "header.440", data);
   ReadEphemerisCoefficientsFile(ASCII_KERNEL_DIR / "de440" / "ascp01950.440",
-    data);
+                                data);
 }
 
 Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
@@ -249,7 +246,7 @@ Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
   double Dt = ephemeris_data->header.step;
   int i = int((jd_tdb - ephemeris_data->jd_tdb_start) / Dt);
   assert(i >= 0 && i < ephemeris_data->blocks.size() &&
-    "Block index out of range");  // TODO: Load proper file
+         "Block index out of range");  // TODO: Load proper file
   EphemerisBlock& block = ephemeris_data->blocks[i];
   EphemerisHeaderData& header = ephemeris_data->header;
 
@@ -260,14 +257,15 @@ Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
   int n_coeff = header.n_coeffs[id] * header.n_properties[id];
   int offset = header.coeff_offset[id] + j * n_coeff - 3.;
   double jd_tdb_subint = block.jd_tdb_start + j * Dt_subint;
-  double scale[2] = { jd_tdb_subint + Dt_subint / 2., Dt_subint / 2. }; // center and half width
+  double scale[2] = {jd_tdb_subint + Dt_subint / 2.,
+                     Dt_subint / 2.};  // center and half width
   scale[0] = JDtoTime(scale[0]).val();
   scale[1] *= SECS_DAY;
 
   Vec6 rv;
   for (int i = 0; i < 3; i++) {
-    auto [pos, vel] = ComputePolinomial(t_tdb, scale, block.coeff, offset,
-      header.n_coeffs[id]);
+    auto [pos, vel] = ComputePolynomial(t_tdb, scale, block.coeff, offset,
+                                        header.n_coeffs[id]);
     rv[i] = pos;
     rv[i + 3] = vel;
     offset += header.n_coeffs[id];
