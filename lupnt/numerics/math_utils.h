@@ -73,6 +73,7 @@ MatXd ToDouble(const MatX &x);
 std::vector<double> ToDoubleVec(const VecX &x);
 std::vector<double> ToDoubleVec(const VecXd &x);
 std::vector<double> ToDoubleVec(const VecXi &x);
+std::vector<double> ToDoubleVec(const std::vector<Real> &x);
 
 Real RatioOfSectorToTriangleArea(Vec3 r1, Vec3 r2, Real tau);
 

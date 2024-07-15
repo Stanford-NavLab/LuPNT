@@ -73,11 +73,5 @@ class RKF45 : public IRKF {
               VecX& x_new_low, VecX& x_new_high) override;
 };
 
-class RKF78 : public IRKF {
- public:
-  RKF78(IntegratorParams params) : IRKF(params, 7){};
-  void Update(const ODE f, const Real t, const VecX x, const Real dt,
-              VecX& x_new_low, VecX& x_new_high) override;
-};
 
 }  // namespace lupnt

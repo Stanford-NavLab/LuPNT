@@ -285,7 +285,7 @@ template Mat3 RotZ(Real angle);
 /// @param x Input vector
 /// @return Skew symmetric matrix
 template <typename T>
-Matrix<T, 3, 3> Skew(Vector<T,3> x) {
+Matrix<T, 3, 3> Skew(Vector<T, 3> x) {
   Matrix<T, 3, 3> skew{
       {0.0, -x(2), x(1)},
       {x(2), 0.0, -x(0)},
@@ -332,6 +332,14 @@ std::vector<double> ToDoubleVec(const VecXi &x) {
   std::vector<double> y(x.size());
   for (int i = 0; i < x.size(); i++) {
     y[i] = x(i);
+  }
+  return y;
+}
+
+std::vector<double> ToDoubleVec(const std::vector<Real> &x) {
+  std::vector<double> y(x.size());
+  for (int i = 0; i < x.size(); i++) {
+    y[i] = x[i].val();
   }
   return y;
 }
