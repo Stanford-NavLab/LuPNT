@@ -48,6 +48,8 @@ int main() {
     NumericalPropagator prop_rkf45 = NumericalPropagator("RKF45", params);
 
     Real dt = 0.01;  // time step
+    Real t0 = 0.0;   // initial time
+    Real tf = 10.0;  // final time
 
     std::vector<NumericalPropagator*> vec_prop = {&prop_rk4, &prop_rk8,
                                                   &prop_rkf45};
@@ -62,7 +64,7 @@ int main() {
       auto start = std::chrono::high_resolution_clock::now();
       VecX x(2);
       x << 1.0, 0.0;  // initial position
-      x = vec_prop[j]->Propagate(vec_ode[p], 0.0, 10.0, x, dt);
+      x = vec_prop[j]->Propagate(vec_ode[p], t0, tf, x, dt);
       auto end = std::chrono::high_resolution_clock::now();
       vec_elapsed_seconds[j] = end - start;
       vec_x[j] = x;

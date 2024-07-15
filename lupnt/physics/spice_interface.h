@@ -29,7 +29,8 @@ const std::map<Frame, std::string> frametem_string = {
     {Frame::MARS_FIXED, "IAU_MARS"}, {Frame::VENUS_FIXED, "IAU_VENUS"},
 };
 
-static segment_t *cheby_s;
+namespace spice {
+static segment_t* cheby_s;
 static long cheby_n;
 void LoadSpiceKernel(void);
 void ExtractPckCoeffs(void);
@@ -44,8 +45,8 @@ std::string TDBtoStringUTC(Real t_tdb, int prec);
 Real ConvertTime(Real t, std::string from_time, std::string to_time);
 
 Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target);
-Mat<-1, 6> GetBodyPosVel(const VecX &t_tai, NaifId center, NaifId target);
+Mat<-1, 6> GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target);
 Vec3d GetBodyPosSpice(NaifId target, Real t_tai, Frame refFrame, NaifId obs,
-                      std::string abCorrection);
-
+    std::string abCorrection);
+} // namespace spice
 }  // namespace lupnt
