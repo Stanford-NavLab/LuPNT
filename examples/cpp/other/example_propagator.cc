@@ -85,10 +85,12 @@ int main() {
       for (int i = 0; i < 2; i++) {
         subplot(2, 1, i + 1);
         for (int j = 0; j < n_methods; j++) {
-          std::vector<double> t_plot = ToDoubleVec(vec_t_history[j]);
-          std::vector<double> x_plot(t_plot.size());
-          std::vector<double> v_plot(t_plot.size());
+          int tsize = vec_t_history[j].size();
+          std::vector<double> t_plot(tsize);
+          std::vector<double> x_plot(tsize);
+          std::vector<double> v_plot(tsize);
           for (int k = 0; k < t_plot.size(); k++) {
+            t_plot[k] = vec_t_history[j][k].val();
             x_plot[k] = vec_x_history[j][k](0).val();
             v_plot[k] = vec_x_history[j][k](1).val();
           }

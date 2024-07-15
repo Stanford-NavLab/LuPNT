@@ -11,32 +11,32 @@ using namespace Catch::Matchers;
 
 // Demonstrate some basic assertions.
 TEST_CASE("SpiceInterface.String2TDB") {
-  Real et = String2TDB("2023-04-15 00:00:00 TDB");
+  Real et = spice::String2TDB("2023-04-15 00:00:00 TDB");
   REQUIRE(et.val() == 734788800);
 }
 
 TEST_CASE("SpiceInterface.String2TAI") {
-  Real t_tai = String2TAI("2023-04-15 00:00:00 TDB");
+  Real t_tai = spice::String2TAI("2023-04-15 00:00:00 TDB");
   REQUIRE(t_tai.val() == 7.347887678143708e+08);
 }
 
 TEST_CASE("SpiceInterface.TDBtoStringUTC") {
-  Real et = String2TDB("2023-04-15 00:00:00 UTC");
+  Real et = spice::String2TDB("2023-04-15 00:00:00 UTC");
   int prec = 3;
-  std::string str = TDBtoStringUTC(et, prec);
+  std::string str = spice::TDBtoStringUTC(et, prec);
   //   std::cout << str << std::endl;
   REQUIRE(str == "2023 APR 15 00:00:00.000");
 }
 
 TEST_CASE("SpiceInterface.GetBodyPosSpice") {
-  Real t_tai = String2TAI("2023-04-15 00:00:00 TDB");
+  Real t_tai = spice::String2TAI("2023-04-15 00:00:00 TDB");
   // 2. GetBodyPosSpice: Get Body Position via SPICE
   auto target = NaifId::MOON;
   auto observer = NaifId::EARTH;
   auto refframe = Frame::GCRF;
   std::string abcorr = "NONE";
 
-  Vec3d pos = GetBodyPosSpice(target, t_tai, refframe, observer, abcorr);
+  Vec3d pos = spice::GetBodyPosSpice(t_tai, observer, target, refframe, abcorr);
   // std::cout <<  std::setprecision (15) << "Moon Position from Earth at
   // 2023-04-15 00:00:00 TDB (J2000): " << pos[0] << " " << pos[1] << " " <<
   // pos[2] << std::endl;
@@ -48,7 +48,7 @@ TEST_CASE("SpiceInterface.GetBodyPosSpice") {
 }
 
 TEST_CASE("SpiceInterface.GetFrameConversionMat") {
-  Real t_tai = String2TAI("2023-04-15 00:00:00 TDB");
+  Real t_tai = spice::String2TAI("2023-04-15 00:00:00 TDB");
 
   // 3: GetFrameConversionMat
   Mat6 xform(6, 6);
@@ -63,12 +63,12 @@ TEST_CASE("SpiceInterface.GetFrameConversionMat") {
       {1.47075571708085e-10, 5.94642717972108e-11, -3.31788286899988e-13,
        0.00224357543019373, 3.04773366301969e-05, 0.999997482717042}};
 
-  xform = GetFrameConversionMat(t_tai, Frame::GCRF, Frame::ITRF);
+  xform = spice::GetFrameConversionMat(t_tai, Frame::GCRF, Frame::ITRF);
   RequireNearRealMat(xform, xform_expected, 1e-6);
 }
 
 TEST_CASE("SpiceInterface.GetBodyPosVel") {
-  Real t_tai = String2TAI("2023-04-15 00:00:00 TDB");
+  Real t_tai = spice::String2TAI("2023-04-15 00:00:00 TDB");
 
   // 4. GetBodyPosVel
   std::string target = "MOON";
@@ -79,7 +79,7 @@ TEST_CASE("SpiceInterface.GetBodyPosVel") {
 
   Vec6 posvel(6);
   // posvel = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::GCRF);
-  posvel = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON);
+  posvel = spice::GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON);
 
   Vec6 posvel_expected{263638.289944174,  -221028.422146322, -131883.110768214,
                        0.734154922271287, 0.697461344892098, 0.325673181901724};

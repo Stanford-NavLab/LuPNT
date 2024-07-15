@@ -33,7 +33,7 @@ int main() {
   pos << 5102.5096, 6123.01152, 6378.1368;
   vel << -4.7432196, 0.7905366, 5.553375619;
   posvel_GCRF << pos, vel;
-  Real t_tai = String2TAI("2001/04/06 07:51:28.788 UTC");
+  Real t_tai = spice::String2TAI("2001/04/06 07:51:28.788 UTC");
 
   VecX posvel_ITRF = ConvertFrame(t_tai, posvel_GCRF, from, to);
 
