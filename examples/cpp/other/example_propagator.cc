@@ -3,6 +3,7 @@
 
 using namespace lupnt;
 using namespace matplot;
+using namespace std;
 
 double OMEGA = 2.0 * M_PI;  // angular frequency
 
@@ -70,8 +71,8 @@ int main() {
       vec_x[j] = x;
       vec_prop[j]->GetTimeHistory(vec_t_history[j]);
       vec_prop[j]->GetStateHistory(vec_x_history[j]);
-      std::cout << "Finished Method: " << vec_method[j] << " - "
-                << vec_ode_name[p] << std::endl;
+      cout << "Finished Method: " << vec_method[j] << " - " << vec_ode_name[p]
+           << endl;
     }
 
     vv_x.push_back(vec_x);
@@ -119,16 +120,17 @@ int main() {
 
   // Print Results
   for (int p = 0; p < n_problem; p++) {
-    std::cout << "Problem: " << vec_ode_name[p] << std::endl;
-    std::cout << "Method    " << "Elapsed Time (ms)    " << "Final Position"
-              << std::endl;
-    std::cout << "----------------------------------------------------"
-              << std::endl;
+    cout << "Problem: " << vec_ode_name[p] << endl;
+    cout << "----------------------------------------------------" << endl;
+    cout << setw(10) << "Method" << "  Elapsed Time (ms)"
+         << "    Final Position" << endl;
+    cout << "----------------------------------------------------" << endl;
     for (int j = 0; j < n_methods; j++) {
-      std::cout << vec_method[j] << "      "
-                << vv_elapsed_seconds[p][j].count() * 1e3 << "    "
-                << vv_x[p][j].transpose() << std::endl;
+      cout << setw(10) << vec_method[j] << "      "
+           << vv_elapsed_seconds[p][j].count() * 1e3 << "       "
+           << vv_x[p][j].transpose() << endl;
     }
-    std::cout << " " << std::endl;
+    cout << "----------------------------------------------------" << endl;
+    cout << " " << endl;
   }
 }
