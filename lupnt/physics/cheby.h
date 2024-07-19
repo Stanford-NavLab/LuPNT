@@ -31,7 +31,7 @@ the radius scale[1].  x must fall in the range scale[0] - scale[1] to
 scale[0] + scale[1].  Outside of that range, the polynomial is not valid.
 */
 void cheby_eval(double x, double* scale, double* coeff, long num, double* f,
-  double* df);
+                double* df);
 Vec2 cheby_eval_ad(Real x, double* scale, double* coeff, long num);
 
 /**
@@ -47,11 +47,6 @@ Vec6 cheby_posvel_ad(Real t, double* seg, long len);
  invalid. This should be done before using the segment in order to avoid
  segfaults on invalid data. */
 int cheby_verify(double* seg, long len);
-
-/**
- * @brief Print an error message
- */
-void cheby_err(char const* msg, ...);
 
 /**
  * @brief SPK segment descriptor.

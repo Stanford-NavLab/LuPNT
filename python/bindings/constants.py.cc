@@ -30,14 +30,14 @@ void init_constants(py::module& m) {
   m.attr("JD_JAN_5_1941") = py::float_(JD_JAN_5_1941);
 
   // Coordinate System Constants
-  m.attr("d_E_M") = py::float_(d_E_M);
+  m.attr("D_EARTH_MOON") = py::float_(D_EARTH_MOON);
   m.attr("GM_EARTH") = py::float_(GM_EARTH);
   m.attr("GM_MOON") = py::float_(GM_MOON);
-  m.attr("d_E_EMB") = py::float_(d_E_EMB);
+  m.attr("D_EARTH_EMB") = py::float_(D_EARTH_EMB);
   m.attr("R_EARTH") = py::float_(R_EARTH);
   m.attr("R_MOON") = py::float_(R_MOON);
   m.attr("OMEGA_E_M") = py::float_(OMEGA_E_M);
-  m.attr("d_M_EMB") = py::float_(d_M_EMB);
+  m.attr("D_MOON_EMB") = py::float_(D_MOON_EMB);
 
   m.attr("J2_EARTH") = py::float_(J2_EARTH);
   m.attr("J2_MOON") = py::float_(J2_MOON);

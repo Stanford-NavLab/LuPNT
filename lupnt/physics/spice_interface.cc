@@ -14,11 +14,11 @@
 #include <SpiceUsr.h>
 #include <SpiceZfc.h>
 #include <string.h>
-#include <mutex>
 
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <mutex>
 
 #include "lupnt/core/user_file_path.h"
 #include "lupnt/numerics/math_utils.h"
@@ -30,57 +30,44 @@ namespace lupnt {
 
 namespace spice {
 bool spice_loaded = false;
-std::mutex spice_mutex;
 
 /**
  * @brief load the Spice kernels
  *
  */
 void LoadSpiceKernel(void) {
-  std::lock_guard<std::mutex> lock(spice_mutex);
   if (spice_loaded) return;
-
   SpiceInt kcount;
-
   ktotal_c("ALL", &kcount);
+  if (kcount > 0) return;
 
-  if (kcount > 0) { /* return if the kernel is already loaded */
-    return;
-  }
-
-  // move to cspice directory
   std::string orig_dir = std::filesystem::current_path().string();
   std::filesystem::current_path(CSPICE_KER_DIR);
 
-  /* Load SPICE Kernels */
-  // system("cd ../data/spice_kernel");
-  furnsh_c("naif0012.tls");          // leap seconds
-  furnsh_c("de440.bsp");             // planetary ephemeris
+  furnsh_c("naif0012.tls");  // leap seconds
+  furnsh_c("de440.bsp");     // planetary ephemeris
   // furnsh_c("pck00011.tpc");          // planetary constants
-  // furnsh_c("moon_assoc_pa.tf");      // assing pa as default moon orientation
-  // furnsh_c("moon_de440_220930.tf");  // add moon_pa
+  // furnsh_c("moon_assoc_pa.tf");      // assing pa as default moon
+  // orientation furnsh_c("moon_de440_220930.tf");  // add moon_pa
 
   // high fidelity lunar and earth orientation parameters
   // reference:
   // http://spiftp.esac.esa.int/workshops/2012_04_ESAC_WORKSHOP/Tutorials/27_lunar-earth_pck-fk.pdf
   // furnsh_c("moon_pa_de440_200625.bpc");
-  // furnsh_c("earth_200101_990628_predict.bpc");  // low fidelity long history
+  // furnsh_c("earth_200101_990628_predict.bpc");  // low fidelity long
+  // history
   // // earth EOP
   // furnsh_c(
-  //   "earth_000101_230805_230512.bpc");  // shorter histrory precise earth EOP
+  //   "earth_000101_230805_230512.bpc");  // shorter histrory precise earth
+  //   EOP
 
   // Load Chebyshev coefficients
   cheby_s = spk_extract("de440.bsp", &cheby_n);
+  assert(cheby_s != nullptr &&
+         "Could not load SPK file - Please Download the SPK file. See "
+         "data/ephemeris/readme.md for instructions");
 
-  if (cheby_s == nullptr) {
-    cheby_err(
-      "could not load SPK file - Please Download the SPK file. See "
-      "data/ephemeris/readme.md for instructions");
-  }
-
-  // move back to original directory
   std::filesystem::current_path(orig_dir);
-
   spice_loaded = true;
   return;
 }
@@ -110,8 +97,8 @@ void ExtractPckCoeffs() {
 
   // The fundamental quantities defined by PCK orientation models are actually
   // Euler angles, not matrices. These Euler angles, which we call ``RA, DEC,
-  // and W,'' are related to the transformation operator returned from pxform_c
-  // by the equation rotate = [ W ]   [ Pi/2 - DEC ]   [ Pi/2 + RA ]
+  // and W,'' are related to the transformation operator returned from
+  // pxform_c by the equation rotate = [ W ]   [ Pi/2 - DEC ]   [ Pi/2 + RA ]
   //              3                1               3
   // To directly retrieve these angles, use the call:
 
@@ -152,7 +139,7 @@ void ExtractPckCoeffs() {
 }
 
 Vec3d GetBodyPosSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
-  std::string abCorrection) {
+                      std::string abCorrection) {
   if (!spice_loaded) {
     LoadSpiceKernel();
   }
@@ -165,18 +152,18 @@ Vec3d GetBodyPosSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
   Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
   SpiceDouble ptarg[3];
   SpiceDouble et = t_tdb.val();
-  const char* targ =
-    strcpy(new char[targ_str.length() + 1], targ_str.c_str());
+  const char* targ = strcpy(new char[targ_str.length() + 1], targ_str.c_str());
   const char* ref = strcpy(new char[frame_str.length() + 1], frame_str.c_str());
   const char* abcorr =
-    strcpy(new char[abCorrection.length() + 1], abCorrection.c_str());
+      strcpy(new char[abCorrection.length() + 1], abCorrection.c_str());
   const char* obs_spice =
-    strcpy(new char[obs_str.length() + 1], obs_str.c_str());
+      strcpy(new char[obs_str.length() + 1], obs_str.c_str());
   SpiceDouble lt;
 
   // void spkpos_c(ConstSpiceChar * targ, SpiceDouble t_tdb, ConstSpiceChar *
   // ref, ConstSpiceChar * abcorr,
-  //               ConstSpiceChar * obs, SpiceDouble ptarg[3], SpiceDouble * lt)
+  //               ConstSpiceChar * obs, SpiceDouble ptarg[3], SpiceDouble *
+  //               lt)
   spkpos_c(targ, et, ref, abcorr, obs_spice, ptarg, &lt);
 
   Vec3d r;
@@ -185,7 +172,7 @@ Vec3d GetBodyPosSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
 }
 
 Vec6d GetBodyPosVelSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
-  std::string abCorrection) {
+                         std::string abCorrection) {
   if (!spice_loaded) LoadSpiceKernel();
 
   SpiceDouble starg[6];
@@ -198,13 +185,12 @@ Vec6d GetBodyPosVelSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
   // TODO: this cuts the relatonship between t_tdb and matrix
   Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
   SpiceDouble et = t_tdb.val();
-  const char* targ =
-    strcpy(new char[targ_str.length() + 1], targ_str.c_str());
+  const char* targ = strcpy(new char[targ_str.length() + 1], targ_str.c_str());
   const char* ref = strcpy(new char[frame_str.length() + 1], frame_str.c_str());
   const char* abcorr =
-    strcpy(new char[abCorrection.length() + 1], abCorrection.c_str());
+      strcpy(new char[abCorrection.length() + 1], abCorrection.c_str());
   const char* obs_spice =
-    strcpy(new char[obs_str.length() + 1], obs_str.c_str());
+      strcpy(new char[obs_str.length() + 1], obs_str.c_str());
   SpiceDouble lt;
 
   //  void spkez_c ( SpiceInt            targ,
@@ -214,12 +200,11 @@ Vec6d GetBodyPosVelSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
   //                 SpiceInt            obs,
   //                 SpiceDouble         starg[6],
   //                 SpiceDouble        *lt        )
-  std::lock_guard<std::mutex> lock(spice_mutex);
+#pragma omp critical
   spkezr_c(targ, et, ref, abcorr, obs_spice, starg, &lt);
   for (int i = 0; i < 6; i++) rv(i) = starg[i];
   return rv;
 }
-
 
 /**
  * @brief Get the Frame Conversion Mat object
@@ -243,10 +228,10 @@ Mat6d GetFrameConversionMat(Real t_tai, Frame from_frame, Frame to_frame) {
   std::string to_frame_str = frametem_string.at(to_frame);
 
   const char* from_frame_char =
-    strcpy(new char[from_frame_str.length() + 1], from_frame_str.c_str());
+      strcpy(new char[from_frame_str.length() + 1], from_frame_str.c_str());
   const char* to_frame_char =
-    strcpy(new char[to_frame_str.length() + 1], to_frame_str.c_str());
-
+      strcpy(new char[to_frame_str.length() + 1], to_frame_str.c_str());
+#pragma omp critical
   sxform_c(from_frame_char, to_frame_char, et_spice, xform);
 
   for (int i = 0; i < 6; i++) {
@@ -387,9 +372,9 @@ Real ConvertTime(Real t, std::string from, std::string to) {
   if (!spice_loaded) LoadSpiceKernel();
   if (from == to) return t;
   SpiceDouble t_in = t.val();
-
-  std::lock_guard<std::mutex> lock(spice_mutex);
-  SpiceDouble t_out_spice = unitim_c(t_in, from.c_str(), to.c_str());
+  SpiceDouble t_out_spice;
+#pragma omp critical
+  t_out_spice = unitim_c(t_in, from.c_str(), to.c_str());
   double offset = t_out_spice - t_in;  // offset in seconds
   Real t_out = t + offset;             // this is to convert to real
   return t_out;
@@ -421,12 +406,37 @@ Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
   Vec6 rv_center = Vec6::Zero();
   Vec6 rv_target = Vec6::Zero();
 
-  if (center == NaifId::EARTH || center == NaifId::MOON) {
-    rv_center = GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH_MOON_BARYCENTER);
-  }
-  if (target == NaifId::EARTH || target == NaifId::MOON) {
-    rv_target = GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH_MOON_BARYCENTER);
-  }
+  // Earth-Moon system
+  const int i_moon = 10;                   // EMB-MOON
+  const double emr = 81.3005682214972154;  // Earth/Moon mass ratio (DE440)
+  assert(cheby_s[i_moon].target == NaifId::MOON &&
+         cheby_s[i_moon].center == NaifId::EMB);
+
+  if (center == NaifId::EARTH && target == NaifId::MOON)
+    return cheby_posvel_ad(t_tdb, cheby_s[i_moon].seg, cheby_s[i_moon].len) *
+           (emr + 1.) / emr;
+  if (center == NaifId::MOON && target == NaifId::EARTH)
+    return -cheby_posvel_ad(t_tdb, cheby_s[i_moon].seg, cheby_s[i_moon].len) *
+           emr / (emr + 1.);
+
+  if (center == NaifId::EMB && target == NaifId::MOON)
+    return cheby_posvel_ad(t_tdb, cheby_s[i_moon].seg, cheby_s[i_moon].len);
+  if (center == NaifId::MOON && target == NaifId::EMB)
+    return -cheby_posvel_ad(t_tdb, cheby_s[i_moon].seg, cheby_s[i_moon].len);
+
+  if (center == NaifId::EMB && target == NaifId::EARTH)
+    return -cheby_posvel_ad(t_tdb, cheby_s[i_moon].seg, cheby_s[i_moon].len) /
+           emr;
+  if (center == NaifId::EARTH && target == NaifId::EMB)
+    return cheby_posvel_ad(t_tdb, cheby_s[i_moon].seg, cheby_s[i_moon].len) /
+           emr;
+
+  if (center == NaifId::EARTH || center == NaifId::MOON)
+    rv_center =
+        GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH_MOON_BARYCENTER);
+  if (target == NaifId::EARTH || target == NaifId::MOON)
+    rv_target =
+        GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH_MOON_BARYCENTER);
 
   for (int i = 0; i < cheby_n; i++) {
     if (cheby_s[i].target == (int)target) {

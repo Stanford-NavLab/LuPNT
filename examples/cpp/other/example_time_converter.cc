@@ -7,12 +7,12 @@ using namespace lupnt;
 using namespace std;
 
 int main() {
-  Real t_tai, t_tdb, t_tt, t_gps; // [s]
-  Real t_tai_sp, t_tdb_sp, t_tt_sp, t_gps_sp; // [s]
-  Real jd_tdb, jd_tt; // [days]
-  Real jd_tdb_sp, jd_tt_sp; // [days]
+  Real t_tai, t_tdb, t_tt, t_gps;              // [s]
+  Real t_tai_sp, t_tdb_sp, t_tt_sp, t_gps_sp;  // [s]
+  Real jd_tdb, jd_tt;                          // [days]
+  Real jd_tdb_sp, jd_tt_sp;                    // [days]
 
-  // J2000 
+  // J2000
   t_tt_sp = 1.23456789e12;
   t_tdb_sp = ConvertTime(t_tt_sp, TimeSys::TT, TimeSys::TDB);
   t_tai_sp = ConvertTime(t_tt_sp, TimeSys::TT, TimeSys::TAI);

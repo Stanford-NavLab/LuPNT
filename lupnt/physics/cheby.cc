@@ -54,17 +54,17 @@ namespace lupnt {
     size is half that of double, so that two SpiceInt's fit in a SpiceDouble.
  */
 
- /**
-  * @brief Evaluate the given Chebyshev polynomial at x, returning both the
-  evaluated polynomial in *f, and the evaluated derivative of the polymonial in
-  *df. The number of coefficients is num (the degree of the polynomial is num -
-  1), and the coefficients are coeff[0..num-1].  The first coefficient coeff[0]
-  is the constant term.  The scaling of x is provided by the midpoint scale[0]
-  and the radius scale[1].  x must fall in the range scale[0] - scale[1] to
-    scale[0] + scale[1].  Outside of that range, the polynomial is not valid.
- */
+/**
+ * @brief Evaluate the given Chebyshev polynomial at x, returning both the
+ evaluated polynomial in *f, and the evaluated derivative of the polymonial in
+ *df. The number of coefficients is num (the degree of the polynomial is num -
+ 1), and the coefficients are coeff[0..num-1].  The first coefficient coeff[0]
+ is the constant term.  The scaling of x is provided by the midpoint scale[0]
+ and the radius scale[1].  x must fall in the range scale[0] - scale[1] to
+   scale[0] + scale[1].  Outside of that range, the polynomial is not valid.
+*/
 void cheby_eval(double x, double* scale, double* coeff, long num, double* f,
-  double* df) {
+                double* df) {
   double x2, w0 = 0., w1 = 0., dw0 = 0., dw1 = 0., tmp;
 
   x = (x - scale[0]) / scale[1];
@@ -94,7 +94,7 @@ Vec2 cheby_eval_ad(Real x, double* scale, double* coeff, long num) {
     w0 = coeff[num] + (x2 * w0 - tmp);
   }
 
-  Vec2 ret_state{ coeff[0] + (x * w0 - w1), (w0 + x * dw0 - dw1) / scale[1] };
+  Vec2 ret_state{coeff[0] + (x * w0 - w1), (w0 + x * dw0 - dw1) / scale[1]};
   return ret_state;
 }
 
@@ -103,11 +103,11 @@ Vec2 cheby_eval_ad(Real x, double* scale, double* coeff, long num) {
  * and velocity for that time.  Returns 0 on success, 1 if the time is not
  * covered by the segment. */
 int cheby_posvel(double t, double* seg, long len, double pos[3],
-  double vel[3]) {
+                 double vel[3]) {
   long k, num;
 
   k = (long)floor((t - seg[len - 4]) /   // seg[len-4] is initial epoch
-    seg[len - 3]);         // seg[len-3] is record span
+                  seg[len - 3]);         // seg[len-3] is record span
   if (k < 0 || k >= (long)seg[len - 1])  // seg[len-1] is number of records
     return 1;
   num = (long)seg[len - 2];  // seg[len-2] is size of record
@@ -123,7 +123,7 @@ Vec6 cheby_posvel_ad(Real t, double* seg, long len) {
   long k, num;
 
   k = (long)floor((t.val() - seg[len - 4]) /  // seg[len-4] is initial epoch
-    seg[len - 3]);              // seg[len-3] is record span
+                  seg[len - 3]);              // seg[len-3] is record span
   if (k < 0 || k >= (long)seg[len - 1])       // seg[len-1] is number of records
     return Vec6::Zero();
 
@@ -135,7 +135,7 @@ Vec6 cheby_posvel_ad(Real t, double* seg, long len) {
   Vec2 ydy = cheby_eval_ad(t, seg, seg + 2 + num, num);
   Vec2 zdz = cheby_eval_ad(t, seg, seg + 2 + 2 * num, num);
 
-  Vec6 posvel{ xdx[0], ydy[0], zdz[0], xdx[1], ydy[1], zdz[1] };
+  Vec6 posvel{xdx[0], ydy[0], zdz[0], xdx[1], ydy[1], zdz[1]};
   return posvel;
 }
 
@@ -146,18 +146,18 @@ Vec6 cheby_posvel_ad(Real t, double* seg, long len) {
  segfaults on invalid data. */
 int cheby_verify(double* seg, long len) {
   double recs = seg[len - 1],  // number of records
-    elts = seg[len - 2],     // elements (doubles) in each record
-    span = seg[len - 3],     // time span of each record in seconds
-    init = seg[len - 4];     // initial epoch in seconds relative to J2000
+      elts = seg[len - 2],     // elements (doubles) in each record
+      span = seg[len - 3],     // time span of each record in seconds
+      init = seg[len - 4];     // initial epoch in seconds relative to J2000
   long n, k;
-  double* p, * q;
+  double *p, *q;
 
   if (recs != (long)recs ||                      // recs is an integer
-    elts != (long)elts ||                      // elts is an integer
-    (long)recs * (long)elts + 4 != len ||      // total length is correct
-    3 * (((long)elts - 2) / 3) + 2 != elts ||  // integer number of coeffs
-    seg[0] - seg[1] != init ||                 // 1st start is init
-    span != 2 * seg[1])                        // 1st radius matches span
+      elts != (long)elts ||                      // elts is an integer
+      (long)recs * (long)elts + 4 != len ||      // total length is correct
+      3 * (((long)elts - 2) / 3) + 2 != elts ||  // integer number of coeffs
+      seg[0] - seg[1] != init ||                 // 1st start is init
+      span != 2 * seg[1])                        // 1st radius matches span
     return 1;
   n = (long)recs;
   k = (long)elts;
@@ -165,7 +165,7 @@ int cheby_verify(double* seg, long len) {
   while (--n) {
     q = p + k;                       // scan all q following p
     if (q[1] != p[1] ||              // all radii the same
-      q[0] - q[1] != p[0] + p[1])  // next start is last end
+        q[0] - q[1] != p[0] + p[1])  // next start is last end
       return 1;
     p = q;
   }
@@ -219,8 +219,8 @@ int cheby_segment(SpiceInt daf, SpiceDouble* dc, SpiceInt* ic, segment_t* s) {
   // verify the integrity of the segment
   last = s->seg + s->len - 4 - (long)(s->seg[s->len - 2]);
   if (cheby_verify(s->seg, s->len) ||  // segment structure ok
-    dc[0] != s->seg[s->len - 4] ||   // start epoch matches
-    dc[1] != last[0] + last[1]) {    // end epoch matches
+      dc[0] != s->seg[s->len - 4] ||   // start epoch matches
+      dc[1] != last[0] + last[1]) {    // end epoch matches
     free(s->seg);
     s->seg = NULL;
     cheby_err("SPK segment format is invalid");
@@ -249,7 +249,7 @@ segment_t* spk_extract(char const* path, long* segs) {
   const SpiceInt nd = 2, ni = 6;
   SpiceDouble dc[nd];
   SpiceInt ic[ni];
-  segment_t* spk, * mem;
+  segment_t *spk, *mem;
 
   // turn off error reporting and aborts for SPICE functions
   errprt_c("set", 0, (char*)"none");
@@ -278,7 +278,7 @@ segment_t* spk_extract(char const* path, long* segs) {
     dafus_c(sum.d, nd, ni, dc, ic);  // unpack the array summary
     if (failed_c()) break;
     if (ic[3] == 2)  // Chebyshev position only
-      (*segs)++; // count segment
+      (*segs)++;     // count segment
   }
   if (failed_c() || *segs == 0) {
     reset_c();
