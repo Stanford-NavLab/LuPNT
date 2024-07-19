@@ -14,6 +14,7 @@
 #include <SpiceUsr.h>
 #include <SpiceZfc.h>
 #include <string.h>
+#include <mutex>
 
 #include <filesystem>
 #include <fstream>
@@ -29,12 +30,16 @@ namespace lupnt {
 
 namespace spice {
 bool spice_loaded = false;
+std::mutex spice_mutex;
 
 /**
  * @brief load the Spice kernels
  *
  */
 void LoadSpiceKernel(void) {
+  std::lock_guard<std::mutex> lock(spice_mutex);
+  if (spice_loaded) return;
+
   SpiceInt kcount;
 
   ktotal_c("ALL", &kcount);
@@ -51,23 +56,23 @@ void LoadSpiceKernel(void) {
   // system("cd ../data/spice_kernel");
   furnsh_c("naif0012.tls");          // leap seconds
   furnsh_c("de440.bsp");             // planetary ephemeris
-  furnsh_c("pck00011.tpc");          // planetary constants
-  furnsh_c("moon_assoc_pa.tf");      // assing pa as default moon orientation
-  furnsh_c("moon_de440_220930.tf");  // add moon_pa
+  // furnsh_c("pck00011.tpc");          // planetary constants
+  // furnsh_c("moon_assoc_pa.tf");      // assing pa as default moon orientation
+  // furnsh_c("moon_de440_220930.tf");  // add moon_pa
 
   // high fidelity lunar and earth orientation parameters
   // reference:
   // http://spiftp.esac.esa.int/workshops/2012_04_ESAC_WORKSHOP/Tutorials/27_lunar-earth_pck-fk.pdf
-  furnsh_c("moon_pa_de440_200625.bpc");
-  furnsh_c("earth_200101_990628_predict.bpc");  // low fidelity long history
-  // earth EOP
-  furnsh_c(
-    "earth_000101_230805_230512.bpc");  // shorter histrory precise earth EOP
+  // furnsh_c("moon_pa_de440_200625.bpc");
+  // furnsh_c("earth_200101_990628_predict.bpc");  // low fidelity long history
+  // // earth EOP
+  // furnsh_c(
+  //   "earth_000101_230805_230512.bpc");  // shorter histrory precise earth EOP
 
   // Load Chebyshev coefficients
   cheby_s = spk_extract("de440.bsp", &cheby_n);
 
-  if (cheby_s == NULL) {
+  if (cheby_s == nullptr) {
     cheby_err(
       "could not load SPK file - Please Download the SPK file. See "
       "data/ephemeris/readme.md for instructions");
@@ -152,15 +157,13 @@ Vec3d GetBodyPosSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
     LoadSpiceKernel();
   }
 
-  SpiceDouble ptarg[3];
-  Vec3d r;
-
   std::string targ_str = std::to_string((int)target);
   std::string obs_str = std::to_string((int)obs);
   std::string frame_str = frametem_string.at(refFrame);
 
   // TODO: this cuts the relatonship between t_tdb and matrix
   Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
+  SpiceDouble ptarg[3];
   SpiceDouble et = t_tdb.val();
   const char* targ =
     strcpy(new char[targ_str.length() + 1], targ_str.c_str());
@@ -175,15 +178,15 @@ Vec3d GetBodyPosSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
   // ref, ConstSpiceChar * abcorr,
   //               ConstSpiceChar * obs, SpiceDouble ptarg[3], SpiceDouble * lt)
   spkpos_c(targ, et, ref, abcorr, obs_spice, ptarg, &lt);
+
+  Vec3d r;
   for (int i = 0; i < 3; i++) r(i) = ptarg[i];
   return r;
 }
 
 Vec6d GetBodyPosVelSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
   std::string abCorrection) {
-  if (!spice_loaded) {
-    LoadSpiceKernel();
-  }
+  if (!spice_loaded) LoadSpiceKernel();
 
   SpiceDouble starg[6];
   Vec6d rv;
@@ -211,6 +214,7 @@ Vec6d GetBodyPosVelSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
   //                 SpiceInt            obs,
   //                 SpiceDouble         starg[6],
   //                 SpiceDouble        *lt        )
+  std::lock_guard<std::mutex> lock(spice_mutex);
   spkezr_c(targ, et, ref, abcorr, obs_spice, starg, &lt);
   for (int i = 0; i < 6; i++) rv(i) = starg[i];
   return rv;
@@ -226,9 +230,7 @@ Vec6d GetBodyPosVelSpice(Real t_tai, NaifId obs, NaifId target, Frame refFrame,
  * @return VecXd
  */
 Mat6d GetFrameConversionMat(Real t_tai, Frame from_frame, Frame to_frame) {
-  if (!spice_loaded) {
-    LoadSpiceKernel();
-  }
+  if (!spice_loaded) LoadSpiceKernel();
 
   Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
 
@@ -385,6 +387,8 @@ Real ConvertTime(Real t, std::string from, std::string to) {
   if (!spice_loaded) LoadSpiceKernel();
   if (from == to) return t;
   SpiceDouble t_in = t.val();
+
+  std::lock_guard<std::mutex> lock(spice_mutex);
   SpiceDouble t_out_spice = unitim_c(t_in, from.c_str(), to.c_str());
   double offset = t_out_spice - t_in;  // offset in seconds
   Real t_out = t + offset;             // this is to convert to real
@@ -408,42 +412,21 @@ Mat<-1, 6> GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target) {
  * @return Vec6 in intertial axes
  */
 Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
-  if (!spice_loaded)
-    LoadSpiceKernel();
-  if (center == target)
-    return Vec6::Zero();
+  if (!spice_loaded) LoadSpiceKernel();
+  if (center == target) return Vec6::Zero();
 
+  Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
   bool found_center = center == NaifId::SSB;
   bool found_target = target == NaifId::SSB;
   Vec6 rv_center = Vec6::Zero();
   Vec6 rv_target = Vec6::Zero();
 
-  auto getCenterPosVel = [&](NaifId body, Vec6& rv) {
-    switch (body) {
-    case NaifId::MOON:
-    case NaifId::EARTH:
-      rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH_BARYCENTER);
-      break;
-    case NaifId::MERCURY:
-      rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MERCURY_BARYCENTER);
-      break;
-    case NaifId::VENUS:
-      rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::VENUS_BARYCENTER);
-      break;
-    case NaifId::MARS:
-      rv += GetBodyPosVel(t_tai, NaifId::SSB, NaifId::MARS_BARYCENTER);
-      break;
-    default:
-      break;
-    }
-    };
-
-  // Get the position and velocity with respect to the SSB
-  getCenterPosVel(center, rv_center);
-  getCenterPosVel(target, rv_target);
-
-  // convert TAI to TDB past J2000
-  Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
+  if (center == NaifId::EARTH || center == NaifId::MOON) {
+    rv_center = GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH_MOON_BARYCENTER);
+  }
+  if (target == NaifId::EARTH || target == NaifId::MOON) {
+    rv_target = GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH_MOON_BARYCENTER);
+  }
 
   for (int i = 0; i < cheby_n; i++) {
     if (cheby_s[i].target == (int)target) {
@@ -453,10 +436,7 @@ Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
       rv_center += cheby_posvel_ad(t_tdb, cheby_s[i].seg, cheby_s[i].len);
       found_center = true;
     }
-
-    if (found_center && found_target) {
-      break;
-    }
+    if (found_center && found_target) break;
   }
   assert(found_center && found_target && "Chebyshev coefficients not found");
 

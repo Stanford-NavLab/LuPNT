@@ -205,7 +205,6 @@ enum class NaifId {
   MERCURY_BARYCENTER = 1,
   VENUS_BARYCENTER = 2,
   EMB = 3,
-  EARTH_BARYCENTER = EMB,
   EARTH_MOON_BARYCENTER = EMB,
   MARS_BARYCENTER = 4,
   JUPITER_BARYCENTER = 5,
@@ -226,6 +225,34 @@ enum class NaifId {
   URANUS = 799,
   NEPTUNE = 899,
 };
+
+static std::string toString(NaifId id) {
+  switch (id) {
+  case NaifId::SOLAR_SYSTEM_BARYCENTER: return "SOLAR_SYSTEM_BARYCENTER";
+  case NaifId::MERCURY_BARYCENTER: return "MERCURY_BARYCENTER";
+  case NaifId::VENUS_BARYCENTER: return "VENUS_BARYCENTER";
+  case NaifId::EARTH_MOON_BARYCENTER: return "EARTH_MOON_BARYCENTER";
+  case NaifId::MARS_BARYCENTER: return "MARS_BARYCENTER";
+  case NaifId::JUPITER_BARYCENTER: return "JUPITER_BARYCENTER";
+  case NaifId::SATURN_BARYCENTER: return "SATURN_BARYCENTER";
+  case NaifId::URANUS_BARYCENTER: return "URANUS_BARYCENTER";
+  case NaifId::NEPTUNE_BARYCENTER: return "NEPTUNE_BARYCENTER";
+  case NaifId::PLUTO_BARYCENTER: return "PLUTO_BARYCENTER";
+  case NaifId::SUN: return "SUN";
+  case NaifId::MERCURY: return "MERCURY";
+  case NaifId::VENUS: return "VENUS";
+  case NaifId::EARTH: return "EARTH";
+  case NaifId::MOON: return "MOON";
+  case NaifId::MARS: return "MARS";
+  case NaifId::PHOBOS: return "PHOBOS";
+  case NaifId::DEIMOS: return "DEIMOS";
+  case NaifId::JUPITER: return "JUPITER";
+  case NaifId::SATURN: return "SATURN";
+  case NaifId::URANUS: return "URANUS";
+  case NaifId::NEPTUNE: return "NEPTUNE";
+  default: return "UNKNOWN";
+  }
+}
 
 namespace TimeSys {
 const std::string UT1 = "UT1";  // Universal Time 1

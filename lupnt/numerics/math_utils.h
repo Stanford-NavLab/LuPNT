@@ -73,7 +73,7 @@ template <typename T>
 Matrix<T, 3, 3> Skew(T x);
 
 VecXd ToDouble(const VecX& x);
-MatXd ToDouble(const MatX& x);
+// MatXd ToDouble(const MatX& x);
 std::vector<double> ToDoubleVec(const VecX& x);
 std::vector<double> ToDoubleVec(const VecXd& x);
 std::vector<double> ToDoubleVec(const VecXi& x);

@@ -6,15 +6,15 @@
 namespace lupnt {
 
 namespace EphemID {
-size_t MERCURY = 0;
-size_t VENUS = 1;
+size_t MERCURY_BARYCENTER = 0;
+size_t VENUS_BARYCENTER = 1;
 size_t EARTH_MOON_BARYCENTER = 2;
-size_t MARS = 3;
-size_t JUPITER = 4;
-size_t SATURN = 5;
-size_t URANUS = 6;
-size_t NEPTUNE = 7;
-size_t PLUTO = 8;
+size_t MARS_BARYCENTER = 3;
+size_t JUPITER_BARYCENTER = 4;
+size_t SATURN_BARYCENTER = 5;
+size_t URANUS_BARYCENTER = 6;
+size_t NEPTUNE_BARYCENTER = 7;
+size_t PLUTO_BARYCENTER = 8;
 size_t MOON = 9;
 size_t SUN = 10;
 size_t EARTH_NUTATIONS = 11;
@@ -24,15 +24,16 @@ size_t TT_TDB = 14;
 };  // namespace EphemID
 
 std::map<NaifId, size_t> naif2ephemId = {
-    {NaifId::MERCURY, EphemID::MERCURY},
-    {NaifId::VENUS, EphemID::VENUS},
+    {NaifId::MERCURY_BARYCENTER, EphemID::MERCURY_BARYCENTER},
+    {NaifId::VENUS_BARYCENTER, EphemID::VENUS_BARYCENTER},
     {NaifId::EARTH_MOON_BARYCENTER, EphemID::EARTH_MOON_BARYCENTER},
-    {NaifId::MARS, EphemID::MARS},
-    {NaifId::JUPITER, EphemID::JUPITER},
-    {NaifId::SATURN, EphemID::SATURN},
-    {NaifId::URANUS, EphemID::URANUS},
-    {NaifId::NEPTUNE, EphemID::NEPTUNE},
+    {NaifId::MARS_BARYCENTER, EphemID::MARS_BARYCENTER},
+    {NaifId::JUPITER_BARYCENTER, EphemID::JUPITER_BARYCENTER},
+    {NaifId::SATURN_BARYCENTER, EphemID::SATURN_BARYCENTER},
+    {NaifId::URANUS_BARYCENTER, EphemID::URANUS_BARYCENTER},
+    {NaifId::NEPTUNE_BARYCENTER, EphemID::NEPTUNE_BARYCENTER},
     {NaifId::MOON, EphemID::MOON},
+    {NaifId::SUN, EphemID::SUN},
 };
 
 struct EphemerisHeaderData {
@@ -44,14 +45,11 @@ struct EphemerisHeaderData {
   double jd_tdb_start;
   double jd_tdb_end;
   double step;
-  std::vector<std::string> constant_names;
-  std::vector<double> constant_values;
   std::vector<int> coeff_offset;
   std::vector<int> n_coeffs;
   std::vector<int> n_subintervals;
-  double AU;
-  double EMRAT;
-  std::vector<int> n_properties = {3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 1};
+  std::map<std::string, double> constants;
+  std::vector<int> n_properties = { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 1 };
 };
 
 struct EphemerisBlock {
@@ -95,32 +93,36 @@ void ParseGroup1030(std::ifstream& infile, EphemerisHeaderData& data) {
   std::getline(infile, empty_line);
 }
 
-void ParseGroup1040(std::ifstream& infile, EphemerisHeaderData& data) {
+std::vector<std::string> ParseGroup1040(std::ifstream& infile, EphemerisHeaderData& data) {
   std::string line, empty_line;
   std::getline(infile, empty_line);
   int num_constants;
   infile >> num_constants;
   std::string constant;
+  std::vector<std::string> constant_names;
   for (int i = 0; i < num_constants; ++i) {
     infile >> constant;
-    data.constant_names.push_back(constant);
+    constant_names.push_back(constant);
   }
   std::getline(infile, empty_line);
   std::getline(infile, empty_line);
+  return constant_names;
 }
 
-void ParseGroup1041(std::ifstream& infile, EphemerisHeaderData& data) {
+std::vector<double> ParseGroup1041(std::ifstream& infile, EphemerisHeaderData& data) {
   std::string line, empty_line;
   std::getline(infile, empty_line);
   int num_values;
   infile >> num_values;
   std::string value_str;
+  std::vector<double> constant_values;
   for (int i = 0; i < num_values; ++i) {
     infile >> value_str;
-    data.constant_values.push_back(ParseDouble(value_str));
+    constant_values.push_back(ParseDouble(value_str));
   }
   std::getline(infile, empty_line);
   std::getline(infile, empty_line);
+  return constant_values;
 }
 
 void ParseGroup1050(std::ifstream& infile, EphemerisHeaderData& data) {
@@ -149,10 +151,12 @@ void ParseGroup1050(std::ifstream& infile, EphemerisHeaderData& data) {
 }
 
 void ReadEphemerisHeaderFile(const std::string& filepath,
-                             EphemerisHeaderData& data) {
+  EphemerisHeaderData& data) {
   std::ifstream infile(filepath);
   assert(infile.is_open() && "Unable to open file");
   std::string line, empty_line;
+  std::vector<std::string> constant_names;
+  std::vector<double> constant_values;
   while (std::getline(infile, line)) {
     if (line.find("KSIZE") != std::string::npos) {
       std::istringstream iss(line);
@@ -163,18 +167,20 @@ void ReadEphemerisHeaderFile(const std::string& filepath,
     } else if (line.find("GROUP   1030") != std::string::npos) {
       ParseGroup1030(infile, data);
     } else if (line.find("GROUP   1040") != std::string::npos) {
-      ParseGroup1040(infile, data);
+      constant_names = ParseGroup1040(infile, data);
     } else if (line.find("GROUP   1041") != std::string::npos) {
-      ParseGroup1041(infile, data);
+      constant_values = ParseGroup1041(infile, data);
     } else if (line.find("GROUP   1050") != std::string::npos) {
       ParseGroup1050(infile, data);
     }
   }
   infile.close();
+  for (size_t i = 0; i < constant_names.size(); ++i)
+    data.constants[constant_names[i]] = constant_values[i];
 }
 
 void ReadEphemerisCoefficientsFile(const std::string& filepath,
-                                   EphemerisHeaderData& data) {
+  EphemerisHeaderData& data) {
   ephemeris_data = std::make_shared<EphemerisData>();
   ephemeris_data->header = data;
   ephemeris_data->blocks.clear();
@@ -207,8 +213,7 @@ void ReadEphemerisCoefficientsFile(const std::string& filepath,
 }
 
 std::pair<Real, Real> ComputePolynomial(Real x, const double* scale,
-                                        const double* coeff, int offset,
-                                        int num) {
+  const double* coeff, int offset, int num) {
   Real x2, w0 = 0., w1 = 0., dw0 = 0., dw1 = 0., tmp;
 
   x = (x - scale[0]) / scale[1];
@@ -223,7 +228,7 @@ std::pair<Real, Real> ComputePolynomial(Real x, const double* scale,
   }
   Real f = coeff[offset] + (x * w0 - w1);
   Real df = (w0 + x * dw0 - dw1) / scale[1];
-  return {f, df};
+  return { f, df };
 }
 
 void LoadEphemerisData() {
@@ -233,10 +238,10 @@ void LoadEphemerisData() {
   EphemerisHeaderData data;
   ReadEphemerisHeaderFile(ASCII_KERNEL_DIR / "de440" / "header.440", data);
   ReadEphemerisCoefficientsFile(ASCII_KERNEL_DIR / "de440" / "ascp01950.440",
-                                data);
+    data);
 }
 
-Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
+Vec6 GetBodyPosVelKernel(Real t_tai, NaifId target) {
   if (!ephemeris_data) LoadEphemerisData();
 
   Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
@@ -246,7 +251,7 @@ Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
   double Dt = ephemeris_data->header.step;
   int i = int((jd_tdb - ephemeris_data->jd_tdb_start) / Dt);
   assert(i >= 0 && i < ephemeris_data->blocks.size() &&
-         "Block index out of range");  // TODO: Load proper file
+    "Block index out of range");  // TODO: Load proper file
   EphemerisBlock& block = ephemeris_data->blocks[i];
   EphemerisHeaderData& header = ephemeris_data->header;
 
@@ -257,20 +262,70 @@ Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
   int n_coeff = header.n_coeffs[id] * header.n_properties[id];
   int offset = header.coeff_offset[id] + j * n_coeff - 3.;
   double jd_tdb_subint = block.jd_tdb_start + j * Dt_subint;
-  double scale[2] = {jd_tdb_subint + Dt_subint / 2.,
-                     Dt_subint / 2.};  // center and half width
+  double scale[2] = { jd_tdb_subint + Dt_subint / 2.,
+                     Dt_subint / 2. };  // center and half width
   scale[0] = JDtoTime(scale[0]).val();
   scale[1] *= SECS_DAY;
 
   Vec6 rv;
   for (int i = 0; i < 3; i++) {
     auto [pos, vel] = ComputePolynomial(t_tdb, scale, block.coeff, offset,
-                                        header.n_coeffs[id]);
+      header.n_coeffs[id]);
     rv[i] = pos;
     rv[i + 3] = vel;
     offset += header.n_coeffs[id];
   }
   return rv;
+}
+
+Vec6 GetEarthPosVel(Real t_tai) {
+  Vec6 rv_emb = GetBodyPosVelKernel(t_tai, NaifId::EMB);
+  Vec6 rv_moon = GetBodyPosVelKernel(t_tai, NaifId::MOON);
+  double emr = ephemeris_data->header.constants["EMRAT"];
+  Vec6 rv_earth = rv_emb - rv_moon / (1. + emr);
+  return rv_earth;
+}
+
+Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target) {
+  Vec6 rv_center = Vec6::Zero();
+  Vec6 rv_target = Vec6::Zero();
+
+  if (center == NaifId::EARTH && target == NaifId::MOON) {
+    Vec6 rv_moon = GetBodyPosVelKernel(t_tai, NaifId::MOON);
+    double emr = ephemeris_data->header.constants["EMRAT"];
+    return rv_moon * (2. + emr) / (1. + emr);
+  }
+  if (center == NaifId::MOON && target == NaifId::EARTH) {
+    Vec6 rv_moon = GetBodyPosVelKernel(t_tai, NaifId::MOON);
+    double emr = ephemeris_data->header.constants["EMRAT"];
+    return -rv_moon * (2. + emr) / (1. + emr);
+  }
+  if (center == NaifId::EMB && target == NaifId::MOON) {
+    return GetBodyPosVelKernel(t_tai, NaifId::MOON);
+  }
+  if (center == NaifId::MOON && target == NaifId::EMB) {
+    return -GetBodyPosVelKernel(t_tai, NaifId::MOON);
+  }
+
+  if (center == NaifId::EARTH) {
+    rv_center = GetEarthPosVel(t_tai);
+  } else if (center == NaifId::MOON) {
+    rv_center = GetBodyPosVelKernel(t_tai, NaifId::EMB) +
+      GetBodyPosVelKernel(t_tai, NaifId::MOON);
+  } else if (center != NaifId::SSB) {
+    rv_center = GetBodyPosVelKernel(t_tai, center);
+  }
+
+  if (target == NaifId::EARTH) {
+    rv_target = GetEarthPosVel(t_tai);
+  } else if (target == NaifId::MOON) {
+    rv_target = GetBodyPosVelKernel(t_tai, NaifId::EMB) +
+      GetBodyPosVelKernel(t_tai, NaifId::MOON);
+  } else if (target != NaifId::SSB) {
+    rv_target = GetBodyPosVelKernel(t_tai, target);
+  }
+
+  return rv_target - rv_center;
 }
 
 Mat<-1, 6> GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target) {
