@@ -317,8 +317,8 @@ Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target) {
   if (center == NaifId::EARTH) {
     rv_center = GetEarthPosVel(t_tdb);
   } else if (center == NaifId::MOON) {
-    rv_center = GetBodyPosVelKernel(t_tdb, NaifId::EMB) +
-                GetBodyPosVelKernel(t_tdb, NaifId::MOON);
+    rv_center =
+        GetEarthPosVel(t_tdb) + GetBodyPosVelKernel(t_tdb, NaifId::MOON);
   } else if (center != NaifId::SSB) {
     rv_center = GetBodyPosVelKernel(t_tdb, center);
   }
@@ -326,8 +326,8 @@ Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target) {
   if (target == NaifId::EARTH) {
     rv_target = GetEarthPosVel(t_tdb);
   } else if (target == NaifId::MOON) {
-    rv_target = GetBodyPosVelKernel(t_tdb, NaifId::EMB) +
-                GetBodyPosVelKernel(t_tdb, NaifId::MOON);
+    rv_target =
+        GetEarthPosVel(t_tdb) + GetBodyPosVelKernel(t_tdb, NaifId::MOON);
   } else if (target != NaifId::SSB) {
     rv_target = GetBodyPosVelKernel(t_tdb, target);
   }
