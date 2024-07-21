@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - guillemc
 
   pull_request:
 
