@@ -118,7 +118,7 @@ static constexpr double MILE_M = 1609.344;
 static constexpr double KM_M = 0.001;
 static constexpr double M_KM = 1000.0;
 
-// Time system constants -------------------------------------------------------
+// Time system constants ******************************************************
 static constexpr double SECS_DAY = 86400.0;
 static constexpr double SECS_HOUR = 3600.0;
 static constexpr double SECS_MINUTE = 60.0;
@@ -194,14 +194,13 @@ static constexpr double FRAME_BIAS_ETA0 = -3.3060e-8;    // [rad]
 static constexpr double FRAME_BIAS_DALPHA0 = 7.0783e-8;  // [rad]
 
 // Solar Radiation Pressure Constants
-// -------------------------------------------------
 static constexpr double AU = 149597970;      // AU [km]
 static constexpr double S_AU = 1358 * 1e-6;  // Mean Solar Flux at 1 AU [W/km^2]
 static constexpr double C = 299792.458;      // Light speed [km/s]
 static constexpr double P_SUN =
     S_AU / C;  // Solar radiation pressure at 1 AU [N/km^2] = 4.56e-6 N/m^2
 
-// File Pathes -----------------------------------------------------------------
+// File Path *******************************************************************
 static const std::filesystem::path CSPICE_KER_DIR = GetDataPath() / "ephemeris";
 constexpr const char* TAI_UTC_FILENAME = "tai-utc.dat";
 constexpr const char* EOP_FILENAME = "eopc04_08.62-now";

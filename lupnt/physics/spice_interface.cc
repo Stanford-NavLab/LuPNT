@@ -409,8 +409,8 @@ Vec6 GetBodyPosVel(const Real t_tai, NaifId center, NaifId target) {
   // Earth-Moon system
   const int i_moon = 10;                   // EMB-MOON
   const double emr = 81.3005682214972154;  // Earth/Moon mass ratio (DE440)
-  assert(cheby_s[i_moon].target == NaifId::MOON &&
-         cheby_s[i_moon].center == NaifId::EMB);
+  assert(cheby_s[i_moon].target == int(NaifId::MOON) &&
+         cheby_s[i_moon].center == int(NaifId::EMB));
 
   if (center == NaifId::EARTH && target == NaifId::MOON)
     return cheby_posvel_ad(t_tdb, cheby_s[i_moon].seg, cheby_s[i_moon].len) *

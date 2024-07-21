@@ -56,6 +56,7 @@ endif()
 # # # Build the examples
 if(LUPNT_BUILD_EXAMPLES)
     add_subdirectory(examples/cpp)
+    add_subdirectory(examples/cmake-project)
 endif()
 
 # # Build the docs

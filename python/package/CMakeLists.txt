@@ -12,19 +12,8 @@ add_custom_target(lupnt-setuptools ALL
 
 # Ensure the path where the python package is installed is not empty
 if(NOT DEFINED LUPNT_PYTHON_INSTALL_PREFIX)
-    # file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX} LUPNT_PYTHON_INSTALL_PREFIX)
-    execute_process(
-        COMMAND ${Python_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_path('purelib'))"
-        OUTPUT_VARIABLE PYTHON_SITE_PACKAGES_DIR
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    set(LUPNT_PYTHON_INSTALL_PREFIX ${PYTHON_SITE_PACKAGES_DIR})
+    file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX} LUPNT_PYTHON_INSTALL_PREFIX)
 endif()
 
 # Create an install target for the lupnt python package
-install(CODE "execute_process(COMMAND pip install . --no-deps --force-reinstall --no-compile --target=${LUPNT_PYTHON_INSTALL_PREFIX} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})")
-
-add_custom_target(lupnt-dev
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pylupnt> ${CMAKE_SOURCE_DIR}/python/package/lupnt
-    DEPENDS pylupnt
-)
+install(CODE "execute_process(COMMAND pip install . --no-deps --force-reinstall --no-compile --prefix=${LUPNT_PYTHON_INSTALL_PREFIX} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})")

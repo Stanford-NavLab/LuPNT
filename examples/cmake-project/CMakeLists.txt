@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
-
-project(app)
-
+project(cmake-project)
+include_directories(SYSTEM /opt/homebrew/include)
 find_package(lupnt)
-
-add_executable(app main.cpp)
-
-target_link_libraries(app lupnt::lupnt)
+add_executable(cmake-project main.cpp)
+target_link_libraries(cmake-project lupnt::lupnt)
