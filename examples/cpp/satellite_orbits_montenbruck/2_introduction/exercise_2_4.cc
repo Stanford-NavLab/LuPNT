@@ -37,8 +37,8 @@ int main() {
        << "yyyy/mm/dd hh:mm:ss.sss     [deg]     [deg]     [km]" << endl;
 
   for (int minute = 6; minute <= 24; minute++) {
-    Real mjd_utc = mjd0_utc + minute / MINUTES_DAY;  // [days]
-    Real dt = (mjd_utc - mjd0_utc) * SECS_DAY;       // [s]
+    Real mjd_utc = mjd0_utc + minute / MINS_DAY;  // [days]
+    Real dt = (mjd_utc - mjd0_utc) * SECS_DAY;    // [s]
 
     Vec6 coe = KeplerianDynamics::PropagateClassicalOE(coe0, dt, GM_EARTH);
     Vec6 rv_eci = Classical2Cart(coe, GM_EARTH);

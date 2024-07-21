@@ -19,7 +19,7 @@ int main() {
   cout << fixed << setprecision(p1);
   cout << "UT1 = " << setw(w1) << TimeToGregorianString(t_ut1, p1);
   cout << fixed << setprecision(p2);
-  cout << "  T_UT1 = " << t_ut1 / SECS_DAY / JD_CENTURY << endl;
+  cout << "  T_UT1 = " << t_ut1 / SECS_DAY / DAYS_CENTURY << endl;
   cout << fixed << setprecision(p1);
   cout << "UTC = " << setw(w1) << TimeToGregorianString(t_utc, p1) << endl;
   cout << "TAI = " << setw(w1) << TimeToGregorianString(t_tai, p1) << endl;
@@ -27,10 +27,10 @@ int main() {
   cout << fixed << setprecision(p1);
   cout << "TT  = " << setw(w1) << TimeToGregorianString(t_tt, p1);
   cout << fixed << setprecision(p2);
-  cout << "  T_TT  = " << t_tt / SECS_DAY / JD_CENTURY << endl;
+  cout << "  T_TT  = " << t_tt / SECS_DAY / DAYS_CENTURY << endl;
   cout << fixed << setprecision(p1);
   cout << "TDB = " << setw(w1) << TimeToGregorianString(t_tdb, p1);
   cout << fixed << setprecision(p2);
-  cout << "  T_TDB = " << t_tdb / SECS_DAY / JD_CENTURY << endl;
+  cout << "  T_TDB = " << t_tdb / SECS_DAY / DAYS_CENTURY << endl;
   return 0;
 }

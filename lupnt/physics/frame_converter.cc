@@ -18,10 +18,10 @@
 #include "lupnt/core/constants.h"
 #include "lupnt/data/eop.h"
 #include "lupnt/data/iau_sofa.h"
+#include "lupnt/data/kernels.h"
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/time_converter.h"
-#include "lupnt/data/kernels.h"
 
 #define FRAME_CONVERSION(from, to, func) \
   {{Frame::from, Frame::to},             \
@@ -30,20 +30,20 @@
 namespace lupnt {
 
 std::map<std::pair<Frame, Frame>, std::function<Vec6(Real, const Vec6& rv)>>
-frame_conversions = { FRAME_CONVERSION(GCRF, ITRF, GCRFtoITRF),
-                     FRAME_CONVERSION(ITRF, GCRF, ITRFtoGCRF),
-                     FRAME_CONVERSION(GCRF, EME, GCRFtoEME),
-                     FRAME_CONVERSION(EME, GCRF, EMEtoGCRF),
-                     FRAME_CONVERSION(GCRF, ICRF, GCRFtoICRF),
-                     FRAME_CONVERSION(ICRF, GCRF, ICRFtoGCRF),
-                     FRAME_CONVERSION(GCRF, MOON_CI, GCRFtoMI),
-                     FRAME_CONVERSION(MOON_CI, GCRF, MItoGCRF),
-                     FRAME_CONVERSION(MOON_CI, MOON_PA, MItoPA),
-                     FRAME_CONVERSION(MOON_PA, MOON_CI, PAtoMI),
-                     FRAME_CONVERSION(MOON_PA, MOON_ME, PAtoME),
-                     FRAME_CONVERSION(MOON_ME, MOON_PA, MEtoPA),
-                     FRAME_CONVERSION(GCRF, EMR, GCRFtoEMR),
-                     FRAME_CONVERSION(EMR, GCRF, EMRtoGCRF) };
+    frame_conversions = {FRAME_CONVERSION(GCRF, ITRF, GCRFtoITRF),
+                         FRAME_CONVERSION(ITRF, GCRF, ITRFtoGCRF),
+                         FRAME_CONVERSION(GCRF, EME, GCRFtoEME),
+                         FRAME_CONVERSION(EME, GCRF, EMEtoGCRF),
+                         FRAME_CONVERSION(GCRF, ICRF, GCRFtoICRF),
+                         FRAME_CONVERSION(ICRF, GCRF, ICRFtoGCRF),
+                         FRAME_CONVERSION(GCRF, MOON_CI, GCRFtoMI),
+                         FRAME_CONVERSION(MOON_CI, GCRF, MItoGCRF),
+                         FRAME_CONVERSION(MOON_CI, MOON_PA, MItoPA),
+                         FRAME_CONVERSION(MOON_PA, MOON_CI, PAtoMI),
+                         FRAME_CONVERSION(MOON_PA, MOON_ME, PAtoME),
+                         FRAME_CONVERSION(MOON_ME, MOON_PA, MEtoPA),
+                         FRAME_CONVERSION(GCRF, EMR, GCRFtoEMR),
+                         FRAME_CONVERSION(EMR, GCRF, EMRtoGCRF)};
 
 /// @brief Convert the state vector from one coordinate system to another
 /// (with integer ID input)
@@ -54,10 +54,10 @@ frame_conversions = { FRAME_CONVERSION(GCRF, ITRF, GCRFtoITRF),
 /// @return Vec6  State vector in the converted coordinate system
 ///
 Vec6 ConvertFrame(Real t_tai, const Vec6& rv_in, Frame frame_in,
-  Frame frame_out) {
+                  Frame frame_out) {
   if (frame_in == frame_out) return rv_in;
   std::vector<Frame> path =
-    FindShortestPath(frame_in, frame_out, frame_conversions);
+      FindShortestPath(frame_in, frame_out, frame_conversions);
   Vec6 rv_out = rv_in;
   for (size_t i = 0; i < path.size() - 1; i++) {
     rv_out = frame_conversions[{path[i], path[i + 1]}](t_tai, rv_out);
@@ -66,16 +66,16 @@ Vec6 ConvertFrame(Real t_tai, const Vec6& rv_in, Frame frame_in,
 }
 
 CartesianOrbitState ConvertFrame(Real t_tai,
-  const CartesianOrbitState& state_in,
-  Frame frame_out) {
+                                 const CartesianOrbitState& state_in,
+                                 Frame frame_out) {
   Vec6 rv_in = state_in.GetVec();
   Vec6 rv_out =
-    ConvertFrame(t_tai, rv_in, state_in.GetCoordSystem(), frame_out);
+      ConvertFrame(t_tai, rv_in, state_in.GetCoordSystem(), frame_out);
   return CartesianOrbitState(rv_out, frame_out);
 }
 
 Vec3 ConvertFrame(Real t_tai, const Vec3& r_in, Frame frame_in,
-  Frame frame_out) {
+                  Frame frame_out) {
   Vec6 rv_in;
   rv_in << r_in, Vec3::Zero();
   Vec6 rv_out_6 = ConvertFrame(t_tai, rv_in, frame_in, frame_out);
@@ -83,17 +83,17 @@ Vec3 ConvertFrame(Real t_tai, const Vec3& r_in, Frame frame_in,
 }
 
 Mat<-1, 6> ConvertFrame(Real t_tai, const Mat<-1, 6>& rv_in, Frame frame_in,
-  Frame frame_out) {
+                        Frame frame_out) {
   Mat<-1, 6> rv_out(rv_in.rows(), 6);
   for (int i = 0; i < rv_in.rows(); i++) {
     rv_out.row(i) = ConvertFrame(t_tai, rv_in.row(i).transpose().eval(),
-      frame_in, frame_out);
+                                 frame_in, frame_out);
   }
   return rv_out;
 }
 
 Mat<-1, 3> ConvertFrame(Real t_tai, const Mat<-1, 3>& r_in, Frame frame_in,
-  Frame frame_out) {
+                        Frame frame_out) {
   Mat<-1, 6> rv_in(r_in.rows(), 6);
   rv_in << r_in, Mat<-1, 3>::Zero(r_in.rows(), 3);
   Mat<-1, 6> rv_out = ConvertFrame(t_tai, rv_in, frame_in, frame_out);
@@ -101,7 +101,7 @@ Mat<-1, 3> ConvertFrame(Real t_tai, const Mat<-1, 3>& r_in, Frame frame_in,
 }
 
 Mat<-1, 6> ConvertFrame(VecX t_tai, const Vec6& rv_in, Frame frame_in,
-  Frame frame_out) {
+                        Frame frame_out) {
   Mat<-1, 6> rv_out(t_tai.size(), 6);
   for (int i = 0; i < t_tai.size(); i++) {
     rv_out.row(i) = ConvertFrame(t_tai(i), rv_in, frame_in, frame_out);
@@ -110,7 +110,7 @@ Mat<-1, 6> ConvertFrame(VecX t_tai, const Vec6& rv_in, Frame frame_in,
 }
 
 Mat<-1, 3> ConvertFrame(VecX t_tai, const Vec3& r_in, Frame frame_in,
-  Frame frame_out) {
+                        Frame frame_out) {
   Mat<-1, 6> rv_in(t_tai.size(), 6);
   rv_in << r_in, Mat<-1, 3>::Zero(t_tai.size(), 3);
   Mat<-1, 6> rv_out = ConvertFrame(t_tai, rv_in, frame_in, frame_out);
@@ -118,18 +118,18 @@ Mat<-1, 3> ConvertFrame(VecX t_tai, const Vec3& r_in, Frame frame_in,
 }
 
 Mat<-1, 6> ConvertFrame(VecX t_tai, const Mat<-1, 6>& rv_in, Frame frame_in,
-  Frame frame_out) {
+                        Frame frame_out) {
   assert(t_tai.size() == rv_in.rows() && "Epoch and rv_in must have same size");
   Mat<-1, 6> rv_out(t_tai.size(), 6);
   for (int i = 0; i < t_tai.size(); i++) {
     rv_out.row(i) = ConvertFrame(t_tai(i), rv_in.row(i).transpose().eval(),
-      frame_in, frame_out);
+                                 frame_in, frame_out);
   }
   return rv_out;
 }
 
 Mat<-1, 3> ConvertFrame(VecX t_tai, const Mat<-1, 3>& r_in, Frame frame_in,
-  Frame frame_out) {
+                        Frame frame_out) {
   assert(t_tai.size() == r_in.rows() && "Epoch and r_in must have same size");
   Mat<-1, 6> rv_in(t_tai.size(), 6);
   rv_in << r_in, Mat<-1, 3>::Zero(t_tai.size(), 3);
@@ -143,7 +143,8 @@ Mat6 RotOp2Mi(Real t_tai) {
 
   // IAU pole
   Vec3 iau_pole = Vec3::UnitZ();
-  Vec3 iau_pole_icrf = ConvertFrame(t_tai, iau_pole, Frame::MOON_PA, Frame::GCRF);
+  Vec3 iau_pole_icrf =
+      ConvertFrame(t_tai, iau_pole, Frame::MOON_PA, Frame::GCRF);
 
   // MOON_OP unit vectors
   Vec3 dr = rv_earth_icrf.head(3) - rv_moon_icrf.head(3);
@@ -174,9 +175,9 @@ Mat3 RotPrecessionNutation(Real t_tai) {
   Real s = iau_data.s;
 
   Real a = 1. / (1. + sqrt(1. - X * X - Y * Y));
-  Mat3 mat{ {1. - a * X * X, -a * X * Y, -X},
+  Mat3 mat{{1. - a * X * X, -a * X * Y, -X},
            {-a * X * Y, 1. - a * Y * Y, -Y},
-           {X, Y, 1. - a * (X * X + Y * Y)} };
+           {X, Y, 1. - a * (X * X + Y * Y)}};
   Mat3 R_pn = RotZ(-s) * mat;
   return R_pn;
 }
@@ -200,9 +201,9 @@ Mat3 RotSideralMotionDot(Real t_tai) {
   Real lod = eop.lod;
 
   Real w_E = 7.292115146706979e-5 * (1. - lod / SECS_DAY);
-  Mat3 R_s_dot{ {-w_E * sin(theta_era), w_E * cos(theta_era), 0},
+  Mat3 R_s_dot{{-w_E * sin(theta_era), w_E * cos(theta_era), 0},
                {-w_E * cos(theta_era), -w_E * sin(theta_era), 0},
-               {0, 0, 0} };
+               {0, 0, 0}};
   return R_s_dot;
 }
 
@@ -215,7 +216,7 @@ Mat3 RotPolarMotion(Real t_tai) {
   EopData eop = GetEopData(mjd_utc);
   Real xp = eop.x_pole;
   Real yp = eop.y_pole;
-  Real sp = -47e-6 * RAD_ARCSEC * (t_tt / JD_CENTURY);
+  Real sp = -47e-6 * RAD_ARCSEC * (t_tt / DAYS_CENTURY);
 
   Mat3 R_po = RotX(-yp) * RotY(-xp) * RotZ(sp);
   return R_po;
@@ -280,7 +281,7 @@ Mat3d EarthFrameBiasMatrixFirstOrder() {
   const double da = FRAME_BIAS_DALPHA0;
   const double xi = FRAME_BIAS_XI0;
   const double eta = FRAME_BIAS_ETA0;
-  Mat3d B_e{ {1, da, -xi}, {-da, 1, -eta}, {xi, eta, 1} };
+  Mat3d B_e{{1, da, -xi}, {-da, 1, -eta}, {xi, eta, 1}};
   return B_e;
 }
 
@@ -289,9 +290,9 @@ Mat3d EarthFrameBiasMatrixSecondOrder() {
   const double da = FRAME_BIAS_DALPHA0;
   const double xi = FRAME_BIAS_XI0;
   const double eta = FRAME_BIAS_ETA0;
-  Mat3d B_e{ {1 - 0.5 * (da * da + xi * xi), da, -xi},
+  Mat3d B_e{{1 - 0.5 * (da * da + xi * xi), da, -xi},
             {-da - eta * xi, 1 - 0.5 * (da * da + eta * eta), -eta},
-            {xi - eta * da, eta + xi * da, 1 - 0.5 * (eta * eta + xi * xi)} };
+            {xi - eta * da, eta + xi * da, 1 - 0.5 * (eta * eta + xi * xi)}};
   return B_e;
 }
 
@@ -369,9 +370,9 @@ Mat3d RotMItoPAdot(Real t_tai) {
   double psi_dot = 0;
   double spsi = sin(psi);
   double cpsi = cos(psi);
-  Mat3d mat{ {-psi_dot * spsi, psi_dot * cpsi, 0},
+  Mat3d mat{{-psi_dot * spsi, psi_dot * cpsi, 0},
             {-psi_dot * cpsi, -psi_dot * spsi, 0},
-            {0, 0, 0} };
+            {0, 0, 0}};
   Mat3d Rot_mi2pa_dot = mat * RotX(theta) * RotZ(phi);
   return Rot_mi2pa_dot;
 }
@@ -413,7 +414,7 @@ Vec6 PAtoMI(Real t_tai, const Vec6& rv_pa) {
 
 Mat3d MoonFrameBiasMatrix() {
   Mat3d B_moon = RotX(-0.2785 * RAD_ARCSEC) * RotY(-78.6944 * RAD_ARCSEC) *
-    RotZ(-67.8526 * RAD_ARCSEC);
+                 RotZ(-67.8526 * RAD_ARCSEC);
   return B_moon;
 }
 

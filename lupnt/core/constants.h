@@ -86,10 +86,7 @@ using AngleAxisd = Eigen::AngleAxis<double>;
 
 DEFINE_VECTORS_MATRICES()
 
-// Math constants --------------------------------------------------------------
-static constexpr double PI_DEG = 180.0;
-static constexpr double PI_OVER_TWO_DEG = 90.0;
-static constexpr double TWO_PI_DEG = 360.0;
+// Math constants
 static constexpr double PI =
     3.14159265358979323846264338327950288419716939937511;
 static constexpr double TWO_PI =
@@ -105,20 +102,19 @@ static constexpr double RAD =
     3.14159265358979323846264338327950288419716939937511 / 180.0;
 static constexpr double DEG =
     180.0 / 3.14159265358979323846264338327950288419716939937511;
-
-static constexpr double ARCSEC_PER_DEGREE = 3600.0;
-static constexpr double DEG_PER_ARCSEC = 1.0 / 3600.0;
-static constexpr double RAD_ARCSEC = DEG_PER_ARCSEC * RAD;
+static constexpr double ARCSEC_DEG = 3600.0;
+static constexpr double DEG_ARCSEC = 1.0 / ARCSEC_DEG;
+static constexpr double RAD_ARCSEC = DEG_ARCSEC * RAD;
 static constexpr double ARCSEC_RAD = 1.0 / RAD_ARCSEC;
 
-// Mass conversion
+// Mass
 static constexpr double LBM_TO_KG = 0.45359237;
 static constexpr double SLUG_TO_KG = 14.59390294;
 
 // Length
-static constexpr double INCH_TO_M = 0.0254;
-static constexpr double FOOT_TO_M = 0.3048;
-static constexpr double STATUTE_MILE_TO_M = 1609.344;
+static constexpr double INCH_M = 0.0254;
+static constexpr double FOOT_M = 0.3048;
+static constexpr double MILE_M = 1609.344;
 static constexpr double KM_M = 0.001;
 static constexpr double M_KM = 1000.0;
 
@@ -127,13 +123,13 @@ static constexpr double SECS_DAY = 86400.0;
 static constexpr double SECS_HOUR = 3600.0;
 static constexpr double SECS_MINUTE = 60.0;
 
-static constexpr double MINUTES_HOUR = 60.0;
-static constexpr double MINUTES_DAY = 1440.0;
+static constexpr double MINS_HOUR = 60.0;
+static constexpr double MINS_DAY = 1440.0;
 static constexpr double HOURS_DAY = 24.0;
 static constexpr double DAYS_WEEK = 7.0;
 
 static constexpr double DAYS_YEAR = 365.25;
-static constexpr double JD_CENTURY = 36525.00;
+static constexpr double DAYS_CENTURY = 36525.00;
 static constexpr double DAYS_SEC = 1.1574074074074074074074074074074e-5;
 
 static constexpr double TIME_OF_J2000 =
@@ -207,9 +203,9 @@ static constexpr double P_SUN =
 
 // File Pathes -----------------------------------------------------------------
 static const std::filesystem::path CSPICE_KER_DIR = GetDataPath() / "ephemeris";
-static const std::string TAI_UTC_FILENAME = "tai-utc.dat";
-static const std::string EOP_FILENAME = "eopc04_08.62-now";
-static const std::string IAU_SOFA_FILENAME = "IAU_SOFA.DAT";
+constexpr const char* TAI_UTC_FILENAME = "tai-utc.dat";
+constexpr const char* EOP_FILENAME = "eopc04_08.62-now";
+constexpr const char* IAU_SOFA_FILENAME = "IAU_SOFA.DAT";
 static const std::filesystem::path ASCII_KERNEL_DIR =
     GetDataPath() / "ephemeris" / "ascii";
 
@@ -297,16 +293,16 @@ static std::string toString(NaifId id) {
 }
 
 namespace TimeSys {
-const std::string UT1 = "UT1";  // Universal Time 1
-const std::string UTC = "UTC";  // Coordinated Universal Time
-const std::string TAI = "TAI";  // International Atomic Time
-const std::string TDB = "TDB";  // Barycentric Dynamical Time
-const std::string TT = "TT";    // Terrestrial Time
-const std::string TCG = "TCG";  // Geocentric Coordinate Time
-const std::string TCB = "TCB";  // Barycentric Coordinate Time
-const std::string GPS = "GPS";  // Global Positioning System Time
-const std::string JD_TT = "JDTDT";
-const std::string JD_TDB = "JDTDB";
+constexpr const char* UT1 = "UT1";  // Universal Time 1
+constexpr const char* UTC = "UTC";  // Coordinated Universal Time
+constexpr const char* TAI = "TAI";  // International Atomic Time
+constexpr const char* TDB = "TDB";  // Barycentric Dynamical Time
+constexpr const char* TT = "TT";    // Terrestrial Time
+constexpr const char* TCG = "TCG";  // Geocentric Coordinate Time
+constexpr const char* TCB = "TCB";  // Barycentric Coordinate Time
+constexpr const char* GPS = "GPS";  // Global Positioning System Time
+constexpr const char* JD_TT = "JDTDT";
+constexpr const char* JD_TDB = "JDTDB";
 }  // namespace TimeSys
 
 }  // namespace lupnt
