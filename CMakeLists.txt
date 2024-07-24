@@ -1,68 +1,110 @@
-# The minimum required cmake version
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.14...3.22)
 
-# Add cmake modules of this project to the module path
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+# ---- Project ----
 
-# Use ccache to speed up repeated compilations
-include(CCache)
+project(
+  LuPNT
+  VERSION 1.0
+  LANGUAGES CXX
+)
 
-# Name and details of the project
-project(lupnt VERSION 1.1.2 LANGUAGES CXX)
+# ---- Include guards ----
 
-# Include the cmake variables with values for installation directories
-include(GNUInstallDirs)
-
-# Ensure proper configuration if in a conda environment
-include(CondaAware)
-
-# Define build options
-option(LUPNT_BUILD_TESTS "Enable the compilation of the test files." ON)
-option(LUPNT_BUILD_PYTHON "Enable the compilation of the python bindings." ON)
-option(LUPNT_BUILD_EXAMPLES "Enable the compilation of the example files." ON)
-option(LUPNT_BUILD_DOCS "Enable the build of the documentation and website." ON)
-
-# lupnt requires a c++23 enabled compiler
-set(CMAKE_CXX_STANDARD 23)          # ensure cmake instructs compiler to use C++23
-set(CMAKE_CXX_STANDARD_REQUIRED ON) # ensure the C++ standard given before is actually used
-set(CMAKE_CXX_EXTENSIONS OFF)       # avoid compile flags of the type -std=gnu++1z added by cmake
-
-# Set compiler warning flags
-# if(MSVC)
-#     add_compile_options(/W4 /WX) # Use /W4 for level 4 warnings, /WX to treat warnings as errors
-# else()
-#     add_compile_options(-Wall -Wextra -Wpedantic -Werror) # For GCC and Clang
-# endif()
-
-# OpenMP
-# set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
-# set(OpenMP_CXX_LIB_NAMES "omp")
-
-# Build the library
-add_subdirectory(lupnt)
-
-# Build the tests
-if(LUPNT_BUILD_TESTS)
-    add_subdirectory(tests/cpp)
+if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
+  message(
+    FATAL_ERROR
+      "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there."
+  )
 endif()
 
-# Build the python wrappers
-if(LUPNT_BUILD_PYTHON)
-    find_package(Python COMPONENTS Interpreter Development)
-    find_package(pybind11 REQUIRED)
-    add_subdirectory(python)
-endif()
+# ---- Add dependencies ----
 
-# # # Build the examples
-if(LUPNT_BUILD_EXAMPLES)
-    add_subdirectory(examples/cpp)
-    add_subdirectory(examples/cmake-project)
-endif()
+include(cmake/CPM.cmake)
+add_subdirectory(thirdparty)
 
-# # Build the docs
-# if(LUPNT_BUILD_DOCS)
-#     add_subdirectory(docs)
-# endif()
+# ---- Add source files ----
 
-# Install the cmake config files that permit users to use find_package(lupnt)
-include(lupntInstallCMakeConfigFiles)
+# Note: globbing sources is considered bad practice as CMake's generators may not detect new files
+# automatically. Keep that in mind when changing files, or explicitly mention them here.
+file(GLOB_RECURSE headers CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+file(GLOB_RECURSE sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cc")
+
+# ---- Create library ----
+
+# Note: for header-only libraries change all PUBLIC flags to INTERFACE and create an interface
+# target: add_library(${PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME} ${headers} ${sources})
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
+
+# being a cross-platform target, we enforce standards conformance on MSVC
+target_compile_options(${PROJECT_NAME} PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
+
+function(target_link_libraries_system target)
+  set(libs ${ARGN})
+  foreach(lib ${libs})
+    get_target_property(lib_include_dirs ${lib} INTERFACE_INCLUDE_DIRECTORIES)
+    target_include_directories(${target} SYSTEM PRIVATE ${lib_include_dirs})
+    target_link_libraries(${target} ${lib})
+  endforeach(lib)
+endfunction(target_link_libraries_system)
+
+# Link dependencies
+target_link_libraries_system(
+  ${PROJECT_NAME} fmt::fmt Eigen3::Eigen matplot autodiff::autodiff cspice
+)
+
+target_include_directories(
+  ${PROJECT_NAME}
+  PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+         $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
+         $<BUILD_INTERFACE:${cspice_SOURCE_DIR}/include>
+)
+
+# enable compiler warnings if(NOT TEST_INSTALLED_VERSION) if(CMAKE_CXX_COMPILER_ID MATCHES "Clang"
+# OR CMAKE_CXX_COMPILER_ID MATCHES "GNU") target_compile_options(${PROJECT_NAME} PRIVATE -Wall
+# -Wpedantic -Wextra -Werror) elseif(MSVC) target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+# target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS) endif() endif()
+
+# ---- Create an installable target ----
+# this allows users to install and find the library via `find_package()`.
+
+# the location where the project's version header will be placed should match the project's regular
+# header paths
+string(TOLOWER ${PROJECT_NAME}/version.h VERSION_HEADER_LOCATION)
+
+packageProject(
+  # the name of the target to export
+  NAME ${PROJECT_NAME}
+  # the version of the target to export
+  VERSION ${PROJECT_VERSION}
+  # a temporary directory to create the config files
+  BINARY_DIR ${PROJECT_BINARY_DIR}
+  # location of the target's public headers
+  INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include
+  # should match the target's INSTALL_INTERFACE include directory
+  INCLUDE_DESTINATION
+    include/${PROJECT_NAME}-${PROJECT_VERSION}
+    # (optional) option to install only header files with matching pattern
+    INCLUDE_HEADER_PATTERN "*.h"
+    # semicolon separated list of the project's dependencies
+  DEPENDENCIES ${LUPNT_DEPENDENCIES}
+  # (optional) create a header containing the version info Note: that the path to headers should be
+  # lowercase
+  VERSION_HEADER "${VERSION_HEADER_LOCATION}"
+  # (optional) install your library with a namespace (Note: do NOT add extra '::')
+  NAMESPACE ${PROJECT_NAME}
+  # (optional) define the project's version compatibility, defaults to `AnyNewerVersion` supported
+  # values: `AnyNewerVersion|SameMajorVersion|SameMinorVersion|ExactVersion`
+  COMPATIBILITY
+    SameMajorVersion
+    # (optional) option to disable the versioning of install destinations
+    DISABLE_VERSION_SUFFIX
+    YES
+    # (optional) option to ignore target architecture for package resolution defaults to YES for
+    # header only (i.e. INTERFACE) libraries
+    ARCH_INDEPENDENT
+    YES
+    # (optional) option to generate CPack variables
+    CPACK
+    YES
+)
