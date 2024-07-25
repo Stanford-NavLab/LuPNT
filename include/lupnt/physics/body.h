@@ -18,40 +18,35 @@
 
 namespace lupnt {
 
-struct GravityField {
-  int n_max, m_max;  // Maximum degree and order
-  int n, m;          // Degree and order
+  struct GravityField {
+    int n_max, m_max;  // Maximum degree and order
+    int n, m;          // Degree and order
 
-  Real GM;  // Gravitational constant [km^3/s^2]
-  Real R;   // Reference radius [km]
-  MatX CS;  // Unnormalized coefficients
-};
+    Real GM;  // Gravitational constant [km^3/s^2]
+    Real R;   // Reference radius [km]
+    MatX CS;  // Unnormalized coefficients
+  };
 
-struct Body {
-  NaifId id;
-  std::string name;
+  struct Body {
+    NaifId id;
+    std::string name;
 
-  Real GM;
-  Real R;
-  int n, m;
+    Real GM;
+    Real R;
+    int n, m;
 
-  Frame fixed_frame;
-  Frame inertial_frame;
+    Frame fixed_frame;
+    Frame inertial_frame;
 
-  bool use_gravity_field;
-  GravityField gravity_field;
+    bool use_gravity_field;
+    GravityField gravity_field;
 
-  static Body Sun();
-  static Body Moon(int n_max = 0, int m_max = 0,
-                   std::string gravity_file = "EGM96.cof");
-  static Body Earth(int n_max = 0, int m_max = 0,
-                    std::string gravity_file = "grgm900.cof");
-  static Body Venus(int n_max = 0, int m_max = 0,
-                    std::string gravity_file = "MGN75HSAAP.cof");
-  static Body Mars(int n_max = 0, int m_max = 0,
-                   std::string gravity_file = "GMM1.cof");
-};
+    static Body Sun();
+    static Body Moon(int n_max = 0, int m_max = 0, std::string gravity_file = "EGM96.cof");
+    static Body Earth(int n_max = 0, int m_max = 0, std::string gravity_file = "grgm900.cof");
+    static Body Venus(int n_max = 0, int m_max = 0, std::string gravity_file = "MGN75HSAAP.cof");
+    static Body Mars(int n_max = 0, int m_max = 0, std::string gravity_file = "GMM1.cof");
+  };
 
-GravityField ReadHarmonicGravityField(const std::string& filename, int n, int m,
-                                      bool normalized);
+  GravityField ReadHarmonicGravityField(const std::string& filename, int n, int m, bool normalized);
 }  // namespace lupnt

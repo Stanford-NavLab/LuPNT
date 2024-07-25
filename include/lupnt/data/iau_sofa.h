@@ -8,22 +8,22 @@
 
 namespace lupnt {
 
-// Struct to hold EOP data
-struct IauSofaFileData {
-  VecXd jd_tt;
-  VecXd X;
-  VecXd Y;
-  VecXd s;
-};
+  // Struct to hold EOP data
+  struct IauSofaFileData {
+    VecXd jd_tt;
+    VecXd X;
+    VecXd Y;
+    VecXd s;
+  };
 
-struct IauSofaData {
-  Real X;
-  Real Y;
-  Real s;
-};
+  struct IauSofaData {
+    Real X;
+    Real Y;
+    Real s;
+  };
 
-void LoadIauSofaFileData(const std::filesystem::path& filepath);
+  void LoadIauSofaFileData(const std::filesystem::path& filepath);
 
-IauSofaData GetIauSofaData(Real jd_tt);
+  IauSofaData GetIauSofaData(Real jd_tt);
 
 }  // namespace lupnt

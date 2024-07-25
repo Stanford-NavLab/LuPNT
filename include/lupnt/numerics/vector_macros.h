@@ -58,33 +58,32 @@
   Mat<-1, size> func(const Mat<-1, size> &x, Real y);    \
   Mat<-1, size> func(const Mat<-1, size> &x, const VecX &y);
 
-#define VEC_IMP_VECTOR_REAL(func, size)                                      \
-  Mat<-1, size> func(const Vec<size> &x, const VecX &y) {                    \
-    Mat<-1, size> out(y.rows(), size);                                       \
-    for (int i = 0; i < y.rows(); i++) {                                     \
-      out.row(i) = func(x, y(i));                                            \
-    }                                                                        \
-    return out;                                                              \
-  }                                                                          \
-  Mat<-1, size> func(const Mat<-1, size> &x, Real y) {                       \
-    Mat<-1, size> out(x.rows(), size);                                       \
-    for (int i = 0; i < x.rows(); i++) {                                     \
-      Vec<size> x_ = x.row(i);                                               \
-      out.row(i) = func(x_, y);                                              \
-    }                                                                        \
-    return out;                                                              \
-  }                                                                          \
-  Mat<-1, size> func(const Mat<-1, size> &x, const VecX &y) {                \
-    ASSERT_WITH_MESSAGE(x.rows() == y.rows(),                                \
-                        __PRETTY_FUNCTION__ << "\nSize mismatch:"            \
-                                            << " x.rows() = " << x.rows()    \
-                                            << ", y.rows() = " << y.rows()); \
-    Mat<-1, size> out(x.rows(), size);                                       \
-    for (int i = 0; i < x.rows(); i++) {                                     \
-      Vec<size> x_ = x.row(i);                                               \
-      out.row(i) = func(x_, y(i));                                           \
-    }                                                                        \
-    return out;                                                              \
+#define VEC_IMP_VECTOR_REAL(func, size)                                                            \
+  Mat<-1, size> func(const Vec<size> &x, const VecX &y) {                                          \
+    Mat<-1, size> out(y.rows(), size);                                                             \
+    for (int i = 0; i < y.rows(); i++) {                                                           \
+      out.row(i) = func(x, y(i));                                                                  \
+    }                                                                                              \
+    return out;                                                                                    \
+  }                                                                                                \
+  Mat<-1, size> func(const Mat<-1, size> &x, Real y) {                                             \
+    Mat<-1, size> out(x.rows(), size);                                                             \
+    for (int i = 0; i < x.rows(); i++) {                                                           \
+      Vec<size> x_ = x.row(i);                                                                     \
+      out.row(i) = func(x_, y);                                                                    \
+    }                                                                                              \
+    return out;                                                                                    \
+  }                                                                                                \
+  Mat<-1, size> func(const Mat<-1, size> &x, const VecX &y) {                                      \
+    ASSERT_WITH_MESSAGE(x.rows() == y.rows(), __PRETTY_FUNCTION__ << "\nSize mismatch:"            \
+                                                                  << " x.rows() = " << x.rows()    \
+                                                                  << ", y.rows() = " << y.rows()); \
+    Mat<-1, size> out(x.rows(), size);                                                             \
+    for (int i = 0; i < x.rows(); i++) {                                                           \
+      Vec<size> x_ = x.row(i);                                                                     \
+      out.row(i) = func(x_, y(i));                                                                 \
+    }                                                                                              \
+    return out;                                                                                    \
   }
 // Function:
 // Vec<size> = func(Vec<size>, Real, Real)
@@ -114,35 +113,34 @@
   Mat<-1, size> func(const Vec<size> &x, const Mat<-1, size> &y, Real z); \
   Mat<-1, size> func(const Mat<-1, size> &x, const Mat<-1, size> &y, Real z);
 
-#define VEC_IMP_VECTOR_VECTOR_REAL(func, size)                                 \
-  Mat<-1, size> func(const Mat<-1, size> &x, const Vec<size> &y, Real z) {     \
-    Mat<-1, size> out(x.rows(), size);                                         \
-    for (int i = 0; i < x.rows(); i++) {                                       \
-      Vec<size> x_ = x.row(i);                                                 \
-      out.row(i) = func(x_, y, z);                                             \
-    }                                                                          \
-    return out;                                                                \
-  }                                                                            \
-  Mat<-1, size> func(const Vec<size> &x, const Mat<-1, size> &y, Real z) {     \
-    Mat<-1, size> out(y.rows(), size);                                         \
-    for (int i = 0; i < y.rows(); i++) {                                       \
-      Vec<size> y_ = y.row(i);                                                 \
-      out.row(i) = func(x, y_, z);                                             \
-    }                                                                          \
-    return out;                                                                \
-  }                                                                            \
-  Mat<-1, size> func(const Mat<-1, size> &x, const Mat<-1, size> &y, Real z) { \
-    ASSERT_WITH_MESSAGE(x.rows() == y.rows(),                                  \
-                        __PRETTY_FUNCTION__ << "\nSize mismatch:"              \
-                                            << " x.rows() = " << x.rows()      \
-                                            << ", y.rows() = " << y.rows());   \
-    Mat<-1, size> out(x.rows(), size);                                         \
-    for (int i = 0; i < x.rows(); i++) {                                       \
-      Vec<size> x_ = x.row(i);                                                 \
-      Vec<size> y_ = y.row(i);                                                 \
-      out.row(i) = func(x_, y_, z);                                            \
-    }                                                                          \
-    return out;                                                                \
+#define VEC_IMP_VECTOR_VECTOR_REAL(func, size)                                                     \
+  Mat<-1, size> func(const Mat<-1, size> &x, const Vec<size> &y, Real z) {                         \
+    Mat<-1, size> out(x.rows(), size);                                                             \
+    for (int i = 0; i < x.rows(); i++) {                                                           \
+      Vec<size> x_ = x.row(i);                                                                     \
+      out.row(i) = func(x_, y, z);                                                                 \
+    }                                                                                              \
+    return out;                                                                                    \
+  }                                                                                                \
+  Mat<-1, size> func(const Vec<size> &x, const Mat<-1, size> &y, Real z) {                         \
+    Mat<-1, size> out(y.rows(), size);                                                             \
+    for (int i = 0; i < y.rows(); i++) {                                                           \
+      Vec<size> y_ = y.row(i);                                                                     \
+      out.row(i) = func(x, y_, z);                                                                 \
+    }                                                                                              \
+    return out;                                                                                    \
+  }                                                                                                \
+  Mat<-1, size> func(const Mat<-1, size> &x, const Mat<-1, size> &y, Real z) {                     \
+    ASSERT_WITH_MESSAGE(x.rows() == y.rows(), __PRETTY_FUNCTION__ << "\nSize mismatch:"            \
+                                                                  << " x.rows() = " << x.rows()    \
+                                                                  << ", y.rows() = " << y.rows()); \
+    Mat<-1, size> out(x.rows(), size);                                                             \
+    for (int i = 0; i < x.rows(); i++) {                                                           \
+      Vec<size> x_ = x.row(i);                                                                     \
+      Vec<size> y_ = y.row(i);                                                                     \
+      out.row(i) = func(x_, y_, z);                                                                \
+    }                                                                                              \
+    return out;                                                                                    \
   }
 
 // Function:
@@ -156,35 +154,34 @@
   Mat<-1, size> func(const Mat<-1, size> &x, const Vec<size> &y);     \
   Mat<-1, size> func(const Vec<size> &x, const Mat<-1, size> &y);
 
-#define VEC_IMP_VECTOR_VECTOR(func, size)                                    \
-  Mat<-1, size> func(const Mat<-1, size> &x, const Mat<-1, size> &y) {       \
-    ASSERT_WITH_MESSAGE(x.rows() == y.rows(),                                \
-                        __PRETTY_FUNCTION__ << "\nSize mismatch:"            \
-                                            << " x.rows() = " << x.rows()    \
-                                            << ", y.rows() = " << y.rows()); \
-    Mat<-1, size> out(x.rows(), size);                                       \
-    for (int i = 0; i < x.rows(); i++) {                                     \
-      Vec<size> x_ = x.row(i);                                               \
-      Vec<size> y_ = y.row(i);                                               \
-      out.row(i) = func(x_, y_);                                             \
-    }                                                                        \
-    return out;                                                              \
-  }                                                                          \
-  Mat<-1, size> func(const Mat<-1, size> &x, const Vec<size> &y) {           \
-    Mat<-1, size> out(x.rows(), size);                                       \
-    for (int i = 0; i < x.rows(); i++) {                                     \
-      Vec<size> x_ = x.row(i);                                               \
-      out.row(i) = func(x_, y);                                              \
-    }                                                                        \
-    return out;                                                              \
-  }                                                                          \
-  Mat<-1, size> func(const Vec<size> &x, const Mat<-1, size> &y) {           \
-    Mat<-1, size> out(y.rows(), size);                                       \
-    for (int i = 0; i < y.rows(); i++) {                                     \
-      Vec<size> y_ = y.row(i);                                               \
-      out.row(i) = func(x, y_);                                              \
-    }                                                                        \
-    return out;                                                              \
+#define VEC_IMP_VECTOR_VECTOR(func, size)                                                          \
+  Mat<-1, size> func(const Mat<-1, size> &x, const Mat<-1, size> &y) {                             \
+    ASSERT_WITH_MESSAGE(x.rows() == y.rows(), __PRETTY_FUNCTION__ << "\nSize mismatch:"            \
+                                                                  << " x.rows() = " << x.rows()    \
+                                                                  << ", y.rows() = " << y.rows()); \
+    Mat<-1, size> out(x.rows(), size);                                                             \
+    for (int i = 0; i < x.rows(); i++) {                                                           \
+      Vec<size> x_ = x.row(i);                                                                     \
+      Vec<size> y_ = y.row(i);                                                                     \
+      out.row(i) = func(x_, y_);                                                                   \
+    }                                                                                              \
+    return out;                                                                                    \
+  }                                                                                                \
+  Mat<-1, size> func(const Mat<-1, size> &x, const Vec<size> &y) {                                 \
+    Mat<-1, size> out(x.rows(), size);                                                             \
+    for (int i = 0; i < x.rows(); i++) {                                                           \
+      Vec<size> x_ = x.row(i);                                                                     \
+      out.row(i) = func(x_, y);                                                                    \
+    }                                                                                              \
+    return out;                                                                                    \
+  }                                                                                                \
+  Mat<-1, size> func(const Vec<size> &x, const Mat<-1, size> &y) {                                 \
+    Mat<-1, size> out(y.rows(), size);                                                             \
+    for (int i = 0; i < y.rows(); i++) {                                                           \
+      Vec<size> y_ = y.row(i);                                                                     \
+      out.row(i) = func(x, y_);                                                                    \
+    }                                                                                              \
+    return out;                                                                                    \
   }
 
 // Function:

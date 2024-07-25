@@ -48,8 +48,8 @@ Console.WriteLine(de.getPlanet(1, de.getHeader().jdStart)[0]);
 
 namespace lupnt {
 
-double GetTtTdbDifference(double t_tai);
-Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target);
-Mat<-1, 6> GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target);
+  double GetTtTdbDifference(double t_tai);
+  Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target);
+  Mat<-1, 6> GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target);
 
 }  // namespace lupnt
