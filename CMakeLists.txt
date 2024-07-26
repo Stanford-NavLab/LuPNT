@@ -20,6 +20,7 @@ endif()
 
 # ---- Add dependencies ----
 
+include(cmake/FindOpenMP.cmake)
 include(cmake/CPM.cmake)
 add_subdirectory(thirdparty)
 
@@ -54,7 +55,6 @@ target_link_libraries_system(
   ${PROJECT_NAME} fmt::fmt Eigen3::Eigen matplot autodiff::autodiff cspice
 )
 
-include(cmake/FindOpenMP.cmake)
 target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)
 target_include_directories(${PROJECT_NAME} PUBLIC ${OpenMP_INCLUDE_DIRS})
 
@@ -65,10 +65,15 @@ target_include_directories(
          $<BUILD_INTERFACE:${cspice_SOURCE_DIR}/include>
 )
 
-# enable compiler warnings if(NOT TEST_INSTALLED_VERSION) if(CMAKE_CXX_COMPILER_ID MATCHES "Clang"
-# OR CMAKE_CXX_COMPILER_ID MATCHES "GNU") target_compile_options(${PROJECT_NAME} PRIVATE -Wall
-# -Wpedantic -Wextra -Werror) elseif(MSVC) target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
-# target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS) endif() endif()
+# enable compiler warnings
+# if(NOT TEST_INSTALLED_VERSION)
+#   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+#     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wpedantic -Wextra -Werror)
+#   elseif(MSVC)
+#     # target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+#     target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS)
+#   endif()
+# endif()
 
 # ---- Create an installable target ----
 # this allows users to install and find the library via `find_package()`.

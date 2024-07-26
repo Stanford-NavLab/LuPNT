@@ -20,6 +20,9 @@ jobs:
     runs-on: macos-latest
 
     steps:
+      - name: install OpenMP
+        run: brew install libomp
+
       - uses: actions/checkout@v3
 
       - uses: actions/cache@v3
