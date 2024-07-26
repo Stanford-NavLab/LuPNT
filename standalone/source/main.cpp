@@ -3,6 +3,7 @@
 #include <lupnt/lupnt.h>
 #include <lupnt/version.h>
 #include <matplot/matplot.h>
+#include <omp.h>
 
 #include <Eigen/Dense>
 #include <autodiff/forward/dual.hpp>

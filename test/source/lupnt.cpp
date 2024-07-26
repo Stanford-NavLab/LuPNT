@@ -1,7 +1,12 @@
+#include <SpiceUsr.h>
 #include <doctest/doctest.h>
 #include <lupnt/lupnt.h>
 #include <lupnt/version.h>
+#include <matplot/matplot.h>
+#include <omp.h>
 
+#include <Eigen/Core>
+#include <autodiff/forward/dual.hpp>
 #include <string>
 
 TEST_CASE("LuPNT") {

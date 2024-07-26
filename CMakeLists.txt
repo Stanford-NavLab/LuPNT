@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.14...3.22)
+set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)
 
 # ---- Project ----
 
@@ -43,8 +44,8 @@ function(target_link_libraries_system target)
   set(libs ${ARGN})
   foreach(lib ${libs})
     get_target_property(lib_include_dirs ${lib} INTERFACE_INCLUDE_DIRECTORIES)
-    target_include_directories(${target} SYSTEM PRIVATE ${lib_include_dirs})
-    target_link_libraries(${target} ${lib})
+    target_include_directories(${target} SYSTEM PUBLIC ${lib_include_dirs})
+    target_link_libraries(${target} PUBLIC SYSTEM ${lib})
   endforeach(lib)
 endfunction(target_link_libraries_system)
 
@@ -52,6 +53,10 @@ endfunction(target_link_libraries_system)
 target_link_libraries_system(
   ${PROJECT_NAME} fmt::fmt Eigen3::Eigen matplot autodiff::autodiff cspice
 )
+
+include(cmake/FindOpenMP.cmake)
+target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)
+target_include_directories(${PROJECT_NAME} PUBLIC ${OpenMP_INCLUDE_DIRS})
 
 target_include_directories(
   ${PROJECT_NAME}
