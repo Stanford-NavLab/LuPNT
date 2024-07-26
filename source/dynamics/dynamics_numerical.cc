@@ -149,7 +149,7 @@ namespace lupnt {
       : mu_(GM),
         NumericalOrbitDynamics(std::bind(&CartesianTwoBodyDynamics::ComputeRates, this,
                                          std::placeholders::_1, std::placeholders::_2),
-                               OrbitStateRepres::CARTESIAN, integratorType) {};
+                               OrbitStateRepres::CARTESIAN, integratorType){};
 
   VecX CartesianTwoBodyDynamics::ComputeRates(Real t, const VecX &x) const {
     Vec6 dxdt;
@@ -171,7 +171,7 @@ namespace lupnt {
       : mu_(GM),
         NumericalOrbitDynamics(std::bind(&MoonFixedDynamics::ComputeRates, this,
                                          std::placeholders::_1, std::placeholders::_2),
-                               OrbitStateRepres::CARTESIAN, integratorType) {};
+                               OrbitStateRepres::CARTESIAN, integratorType){};
 
   VecX MoonFixedDynamics::ComputeRates(Real t, const VecX &x) const {
     Vec6 dxdt;
@@ -196,7 +196,7 @@ namespace lupnt {
         Rbody_(Rbody),
         NumericalOrbitDynamics(std::bind(&J2CartTwoBodyDynamics::ComputeRates, this,
                                          std::placeholders::_1, std::placeholders::_2),
-                               OrbitStateRepres::CARTESIAN, integratorType) {};
+                               OrbitStateRepres::CARTESIAN, integratorType){};
 
   VecX J2CartTwoBodyDynamics::ComputeRates(Real t, const VecX &x) const {
     VecX acc(6);
@@ -231,7 +231,7 @@ namespace lupnt {
         Rbody(Rbody_in),
         NumericalOrbitDynamics(std::bind(&J2KeplerianDynamics::ComputeRates, this,
                                          std::placeholders::_1, std::placeholders::_2),
-                               OrbitStateRepres::CARTESIAN, integratorType) {};
+                               OrbitStateRepres::CARTESIAN, integratorType){};
 
   VecX J2KeplerianDynamics::ComputeRates(Real t, const VecX &x) const {
     Real p = x(0) * (1.0 - x(1) * x(1));
@@ -256,7 +256,7 @@ namespace lupnt {
   MoonMeanDynamics::MoonMeanDynamics(std::string integratorType)
       : NumericalOrbitDynamics(std::bind(&MoonMeanDynamics::ComputeRates, this,
                                          std::placeholders::_1, std::placeholders::_2),
-                               OrbitStateRepres::CARTESIAN, integratorType) {};
+                               OrbitStateRepres::CARTESIAN, integratorType){};
 
   VecX MoonMeanDynamics::ComputeRates(Real t, const VecX &x) const {
     Real a = x(0);

@@ -23,8 +23,10 @@
 #include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/time_converter.h"
 
-#define FRAME_CONVERSION(from, to, func) \
-  {{Frame::from, Frame::to}, [](Real t, const Vec6& rv) -> Vec6 { return func(t, rv); }}
+#define FRAME_CONVERSION(from, to, func)                                                 \
+  {                                                                                      \
+    {Frame::from, Frame::to}, [](Real t, const Vec6& rv) -> Vec6 { return func(t, rv); } \
+  }
 
 namespace lupnt {
 

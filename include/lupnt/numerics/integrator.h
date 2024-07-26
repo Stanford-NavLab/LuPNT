@@ -36,7 +36,7 @@ namespace lupnt {
   class IIntegrator {
   public:
     virtual VecX Step(const ODE f, const Real t, const VecX x, Real& dt) = 0;
-    virtual ~IIntegrator() {};
+    virtual ~IIntegrator(){};
   };
 
   // Runge-Kutta Integrators
@@ -58,7 +58,7 @@ namespace lupnt {
 
   public:
     IRKF() = default;
-    IRKF(IntegratorParams params, int order) : params_(params), order_(order) {};
+    IRKF(IntegratorParams params, int order) : params_(params), order_(order){};
     VecX Step(const ODE f, const Real t, const VecX x, Real& dt) override;
     bool ComputeRelError(const VecX& x_new_low, const VecX& x_new_high, Real& dt);
     virtual void Update(const ODE f, const Real t, const VecX x, const Real dt, VecX& x_new_low,
@@ -69,7 +69,7 @@ namespace lupnt {
 
   class RKF45 : public IRKF {
   public:
-    RKF45(IntegratorParams params) : IRKF(params, 4) {};
+    RKF45(IntegratorParams params) : IRKF(params, 4){};
     void Update(const ODE f, const Real t, const VecX x, const Real dt, VecX& x_new_low,
                 VecX& x_new_high) override;
   };

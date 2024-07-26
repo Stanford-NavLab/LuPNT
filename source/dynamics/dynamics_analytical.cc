@@ -21,7 +21,7 @@ namespace lupnt {
   // KeplerianDynamics
   // ****************************************************************************
 
-  KeplerianDynamics::KeplerianDynamics(double GM) : mu_(GM) {};
+  KeplerianDynamics::KeplerianDynamics(double GM) : mu_(GM){};
 
   // ClassicalOE
   void KeplerianDynamics::Propagate(ClassicalOE &state, Real dt) {
@@ -65,7 +65,7 @@ namespace lupnt {
     ClohessyWiltshireDynamics
     ************************************************************************** */
 
-  ClohessyWiltshireDynamics::ClohessyWiltshireDynamics(Real a_in, Real n_in) : a(a_in), n(n_in) {};
+  ClohessyWiltshireDynamics::ClohessyWiltshireDynamics(Real a_in, Real n_in) : a(a_in), n(n_in){};
 
   void ClohessyWiltshireDynamics::Propagate(OrbitState &state, Real tEnd) {
     if (state.GetOrbitStateRepres() != OrbitStateRepres::CARTESIAN)
@@ -120,7 +120,7 @@ namespace lupnt {
   // YamanakaAnkersenDynamics
   // ****************************************************************************
 
-  YamanakaAnkersenDynamics::YamanakaAnkersenDynamics() : a(0.0), n(0.0), e(0.0), M0(0.0) {};
+  YamanakaAnkersenDynamics::YamanakaAnkersenDynamics() : a(0.0), n(0.0), e(0.0), M0(0.0){};
   void YamanakaAnkersenDynamics::Propagate(CartesianOrbitState &state, Real tEnd) {
     if (state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN) {
       VecX xEnd = ComputeMat(tEnd) * K;
@@ -235,7 +235,7 @@ namespace lupnt {
   // ****************************************************************************
 
   RoeGeometricMappingDynamics::RoeGeometricMappingDynamics()
-      : a(0.0), n(0.0), e(0.0), M0(0.0), ex(0.0), ey(0.0), tInit(0.0) {};
+      : a(0.0), n(0.0), e(0.0), M0(0.0), ex(0.0), ey(0.0), tInit(0.0){};
   void RoeGeometricMappingDynamics::Propagate(CartesianOrbitState &state, Real tEnd) {
     if (state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN) {
       std::cout << "xStart: " << state.GetVec().transpose() << std::endl;

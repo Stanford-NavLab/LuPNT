@@ -13,8 +13,10 @@
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/solar_system.h"
 
-#define TIME_CONVERSION(from, to, func) \
-  {{TimeSys::from, TimeSys::to}, [](Real t) -> Real { return func(t); }}
+#define TIME_CONVERSION(from, to, func)                                  \
+  {                                                                      \
+    {TimeSys::from, TimeSys::to}, [](Real t) -> Real { return func(t); } \
+  }
 
 /// @ref
 /// D. Folta, N. Bosanac, I. Elliott, L. Mann, R. Mesarch, and J. Rosales,

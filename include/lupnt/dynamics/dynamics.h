@@ -42,7 +42,7 @@ namespace lupnt {
 
   public:
     NumericalDynamics(ODE odefunc, std::string integrator = "RK4")
-        : odefunc_(odefunc), propagator_(integrator) {};
+        : odefunc_(odefunc), propagator_(integrator){};
 
     void SetTimeStep(Real dt) { dt_ = dt.val(); };
     void PropagateX(VecX &x, Real t0, Real tf);
@@ -62,7 +62,7 @@ namespace lupnt {
    */
   class AnalyticalDynamics : public IDynamics {
   public:
-    virtual ~AnalyticalDynamics() {};
+    virtual ~AnalyticalDynamics(){};
     virtual OrbitState CreateOrbitState(Vec6 &x) = 0;
     virtual void Propagate(OrbitState &state, Real t0, Real dt) = 0;
     virtual void PropagateWithSTM(OrbitState &state, Real t0, Real dt, Mat6d &stm) = 0;
