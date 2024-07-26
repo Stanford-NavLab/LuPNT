@@ -65,15 +65,10 @@ target_include_directories(
          $<BUILD_INTERFACE:${cspice_SOURCE_DIR}/include>
 )
 
-# enable compiler warnings
-# if(NOT TEST_INSTALLED_VERSION)
-#   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-#     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wpedantic -Wextra -Werror)
-#   elseif(MSVC)
-#     # target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
-#     target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS)
-#   endif()
-# endif()
+# enable compiler warnings if(NOT TEST_INSTALLED_VERSION) if(CMAKE_CXX_COMPILER_ID MATCHES "Clang"
+# OR CMAKE_CXX_COMPILER_ID MATCHES "GNU") target_compile_options(${PROJECT_NAME} PRIVATE -Wall
+# -Wpedantic -Wextra -Werror) elseif(MSVC) # target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+# target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS) endif() endif()
 
 # ---- Create an installable target ----
 # this allows users to install and find the library via `find_package()`.
