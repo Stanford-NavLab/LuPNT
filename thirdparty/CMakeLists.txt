@@ -37,6 +37,7 @@ CPMAddPackage(
   NAME cspice
   GITHUB_REPOSITORY tudat-team/cspice-cmake
   GIT_TAG master
+  OPTIONS "CMAKE_BUILD_TYPE Release"
 )
 
 # matplotplusplus
@@ -44,7 +45,7 @@ CPMAddPackage(
   NAME matplotplusplus
   GIT_TAG v1.2.1
   GITHUB_REPOSITORY alandefreitas/matplotplusplus
-  OPTIONS "MATPLOTPP_BUILD_INSTALLER ON" "MATPLOTPP_BUILD_PACKAGE ON"
+  OPTIONS "MATPLOTPP_BUILD_INSTALLER ON" "MATPLOTPP_BUILD_PACKAGE ON" "CMAKE_BUILD_TYPE Release"
 )
 install(
   TARGETS cimg
