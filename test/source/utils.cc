@@ -29,16 +29,14 @@ static void RequireNearRealMat(const MatX& a, const MatX& b, double abs_error) {
   }
 }
 
-static void RequireNearDoubleVec(const VecXd& a, const VecXd& b,
-                                 double abs_error) {
+static void RequireNearDoubleVec(const VecXd& a, const VecXd& b, double abs_error) {
   REQUIRE(a.size() == b.size());
   for (int i = 0; i < a.size(); ++i) {
     REQUIRE_THAT(a[i], WithinAbs(b[i], abs_error));
   }
 }
 
-static void RequireNearDoubleMat(const MatXd& a, const MatXd& b,
-                                 double abs_error) {
+static void RequireNearDoubleMat(const MatXd& a, const MatXd& b, double abs_error) {
   REQUIRE(a.rows() == b.rows());
   REQUIRE(a.cols() == b.cols());
   for (int i = 0; i < a.rows(); ++i) {
@@ -57,9 +55,8 @@ static void RequireNearDouble(double a, double b, double abs_error) {
 }
 
 // inputs: vector, function(vector), jacobian
-static void NumericalJacobian(
-    std::function<void(VecX&, Real)> propagate_function, const VecX& vec,
-    Real dt, Mat6d& jacobian, double eps = 1e-6) {
+static void NumericalJacobian(std::function<void(VecX&, Real)> propagate_function, const VecX& vec,
+                              Real dt, Mat6d& jacobian, double eps = 1e-6) {
   int n = vec.size();
   VecX vec_p;
   VecX vec_m;
@@ -79,8 +76,7 @@ static void NumericalJacobian(
 
 static std::ifstream OpenTestDataFile(const std::string& filename) {
   std::filesystem::path lupnt_data_path = GetDataPath();
-  std::filesystem::path test_data_path =
-      lupnt_data_path.parent_path() / "test" / "data";
+  std::filesystem::path test_data_path = lupnt_data_path.parent_path() / "test" / "data";
   std::filesystem::path file_path = test_data_path / filename;
   // Open text file
   std::ifstream file(file_path, std::ios::in);
@@ -88,8 +84,7 @@ static std::ifstream OpenTestDataFile(const std::string& filename) {
   return file;
 }
 
-static std::vector<double> ReadVector(std::ifstream& file,
-                                      bool skip_line = false) {
+static std::vector<double> ReadVector(std::ifstream& file, bool skip_line = false) {
   std::string line;
   if (skip_line) {
     assert(std::getline(file, line));

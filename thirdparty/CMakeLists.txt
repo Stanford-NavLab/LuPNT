@@ -32,8 +32,9 @@ CPMAddPackage(
           "AUTODIFF_BUILD_PYTHON OFF"
 )
 
+# cspice
 CPMAddPackage(
-  NAME cspice 
+  NAME cspice
   GITHUB_REPOSITORY gcasadesus/cspice
   GIT_TAG master
   OPTIONS "CMAKE_BUILD_TYPE Release"

@@ -48,8 +48,7 @@ TEST_CASE("Test_KeplerianDynamics_ClassicalOE") {
   Mat6d stm;
   Mat6d stm_numerical;
   for (int i = 0; i < 100; i++) {
-    NumericalJacobian(propagate_function, coe_state.GetVec(), dt, stm_numerical,
-                      1e-6);
+    NumericalJacobian(propagate_function, coe_state.GetVec(), dt, stm_numerical, 1e-6);
     kep_dyn.PropagateWithStm(coe_state, dt, stm);
 
     RequireNearDoubleMat(stm, stm_numerical, 1e-6);
