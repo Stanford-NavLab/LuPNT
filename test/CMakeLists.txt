@@ -32,7 +32,7 @@ endif()
 
 # ---- Create binary ----
 
-file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
+file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cc)
 add_executable(${PROJECT_NAME} ${sources})
 target_link_libraries(${PROJECT_NAME} Catch2::Catch2WithMain LuPNT::LuPNT)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
