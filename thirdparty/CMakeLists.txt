@@ -66,8 +66,8 @@ install(
   DESTINATION include
 )
 
-# Create a variable called LUPNT_DEPENDENCIES that should be available at the parent scope
+# LuPNT dependencies used for installing
 set(LUPNT_DEPENDENCIES
-    "fmt 7.1.3;Eigen 3.4;autodiff 1.1.2;cspice;matplot 1.2.1"
+    "fmt 7.1.3;Eigen3 3.4;autodiff 1.1;cspice;Matplot++ 1.2;OpenMP"
     PARENT_SCOPE
 )
