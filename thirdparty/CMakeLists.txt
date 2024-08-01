@@ -33,10 +33,16 @@ CPMAddPackage(
 )
 
 # cspice
+# CPMAddPackage(
+#   NAME cspice
+#   GITHUB_REPOSITORY tudat-team/cspice-cmake
+#   GIT_TAG master
+#   OPTIONS "CMAKE_BUILD_TYPE Release"
+# )
+
 CPMAddPackage(
-  NAME cspice
-  GITHUB_REPOSITORY tudat-team/cspice-cmake
-  GIT_TAG master
+  NAME cspice 
+  SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/cspice
   OPTIONS "CMAKE_BUILD_TYPE Release"
 )
 

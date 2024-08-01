@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <SpiceUsr.h>
+#include <cspice/SpiceUsr.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>

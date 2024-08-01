@@ -1,4 +1,4 @@
-#include <SpiceUsr.h>
+#include <cspice/SpiceUsr.h>
 #include <fmt/format.h>
 #include <lupnt/lupnt.h>
 #include <lupnt/version.h>

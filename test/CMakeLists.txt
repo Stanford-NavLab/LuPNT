@@ -16,8 +16,13 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/tools.cmake)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/CPM.cmake)
 
-CPMAddPackage("gh:doctest/doctest@2.4.9")
 CPMAddPackage("gh:TheLartians/Format.cmake@1.7.3")
+CPMAddPackage(
+  NAME Catch2
+  GITHUB_REPOSITORY catchorg/Catch2
+  VERSION 3.6.0
+  OPTIONS "CMAKE_BUILD_TYPE=Release"
+)
 
 if(TEST_INSTALLED_VERSION)
   find_package(LuPNT REQUIRED)
@@ -29,19 +34,18 @@ endif()
 
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
 add_executable(${PROJECT_NAME} ${sources})
-target_link_libraries(${PROJECT_NAME} doctest::doctest LuPNT::LuPNT)
+target_link_libraries(${PROJECT_NAME} Catch2::Catch2WithMain LuPNT::LuPNT)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 
 # ---- Add LuPNTTests ----
 
 enable_testing()
 
-# Note: doctest and similar testing frameworks can automatically configure CMake tests. For other
-# testing frameworks add the tests target instead: add_test(NAME ${PROJECT_NAME} COMMAND
-# ${PROJECT_NAME})
-
-include(${doctest_SOURCE_DIR}/scripts/cmake/doctest.cmake)
-doctest_discover_tests(${PROJECT_NAME})
+list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
+message(STATUS "Catch2_SOURCE_DIR: ${Catch2_SOURCE_DIR}")
+include(CTest)
+include(Catch)
+catch_discover_tests(${PROJECT_NAME})
 
 # ---- code coverage ----
 

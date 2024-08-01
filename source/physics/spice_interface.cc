@@ -11,8 +11,8 @@
 
 #include "lupnt/physics/spice_interface.h"
 
-#include <SpiceUsr.h>
-#include <SpiceZfc.h>
+#include <cspice/SpiceUsr.h>
+#include <cspice/SpiceZfc.h>
 #include <string.h>
 
 #include <filesystem>
