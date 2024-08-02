@@ -33,7 +33,7 @@ file(GLOB_RECURSE sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*
 
 # Create a single header file lupnt.h with all includes
 function(process_directory dir)
-  file(WRITE ${dir}/lupnt.h "#pragma once\n\n")
+  file(WRITE ${dir}/lupnt.h "#pragma once\n")
   file(
     GLOB SUBDIRS
     LIST_DIRECTORIES true
@@ -45,7 +45,7 @@ function(process_directory dir)
     if(IS_DIRECTORY ${dir}/${subdir})
       # Format the directory name for a comment
       string(REGEX REPLACE "^${dir}/" "" subdir_name ${subdir})
-      file(APPEND ${dir}/lupnt.h "// ${subdir_name}\n")
+      file(APPEND ${dir}/lupnt.h "\n// ${subdir_name}\n")
       # Find all .h files in the current subdirectory
       file(
         GLOB HEADER_FILES
@@ -57,8 +57,6 @@ function(process_directory dir)
         # Create relative include path
         file(APPEND ${dir}/lupnt.h "#include \"lupnt/${subdir}/${file}\"\n")
       endforeach()
-      # Add an empty line for readability between subdirectory sections
-      file(APPEND ${dir}/lupnt.h "\n")
     endif()
   endforeach()
 endfunction()
