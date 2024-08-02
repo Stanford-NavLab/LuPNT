@@ -28,8 +28,41 @@ add_subdirectory(thirdparty)
 
 # Note: globbing sources is considered bad practice as CMake's generators may not detect new files
 # automatically. Keep that in mind when changing files, or explicitly mention them here.
-file(GLOB_RECURSE headers CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
-file(GLOB_RECURSE sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cc")
+file(GLOB_RECURSE headers CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/lupnt/*.h)
+file(GLOB_RECURSE sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cc)
+
+# Create a single header file lupnt.h with all includes
+function(process_directory dir)
+  file(WRITE ${dir}/lupnt.h "#pragma once\n\n")
+  file(
+    GLOB SUBDIRS
+    LIST_DIRECTORIES true
+    RELATIVE ${dir}
+    ${dir}/*
+  )
+  list(FILTER SUBDIRS EXCLUDE REGEX "^\\.|\\.\\./")
+  foreach(subdir ${SUBDIRS})
+    if(IS_DIRECTORY ${dir}/${subdir})
+      # Format the directory name for a comment
+      string(REGEX REPLACE "^${dir}/" "" subdir_name ${subdir})
+      file(APPEND ${dir}/lupnt.h "// ${subdir_name}\n")
+      # Find all .h files in the current subdirectory
+      file(
+        GLOB HEADER_FILES
+        RELATIVE ${dir}/${subdir}
+        ${dir}/${subdir}/*.h
+      )
+      list(SORT HEADER_FILES)
+      foreach(file ${HEADER_FILES})
+        # Create relative include path
+        file(APPEND ${dir}/lupnt.h "#include \"${subdir}/${file}\"\n")
+      endforeach()
+      # Add an empty line for readability between subdirectory sections
+      file(APPEND ${dir}/lupnt.h "\n")
+    endif()
+  endforeach()
+endfunction()
+process_directory(${CMAKE_CURRENT_SOURCE_DIR}/include/lupnt)
 
 # ---- Create library ----
 
