@@ -1,0 +1,47 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pylupnt"
+version = "1.0.0"
+description = "Lunar Positioning, Navigation, and Timing (PNT) library"
+readme = "README.md"
+license = {text = "MIT"}
+authors=[{name="Guillem Casadesus Vila", email="guillemc@stanford.edu"},{name="Keidai Iiyama", email="kiiyama@stanford.edu"}]
+maintainers=[{name="Guillem Casadesus Vila", email="guillemc@stanford.edu"},{name="Keidai Iiyama", email="kiiyama@stanford.edu"}]
+requires-python = ">=3.7"
+dependencies = ["numpy"]
+keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "example", "wheel", "pypi", "conda-forge"]
+classifiers=[
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+Github = "https://github.com/ssciwr/pylupnt"
+Documentation = "https://pylupnt.readthedocs.io"
+
+[project.optional-dependencies]
+test = ["pytest"]
+docs = ["cmake", "breathe", "sphinx_rtd_theme"]
+
+[tool.scikit-build.cmake]
+source-dir = "python"
+
+[tool.cibuildwheel]
+test-extras = "test"
+test-command = "python -m pytest {project}/test/python -v"
+test-skip = "pp* *-musllinux* *-manylinux_i686"
