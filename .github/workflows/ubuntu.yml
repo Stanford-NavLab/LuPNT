@@ -35,8 +35,6 @@ jobs:
         with:
           path: data
           key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
-          restore-keys: |
-            LuPNT_data-
 
       - name: download and unzip LuPNT_data
         if: steps.cache-lupnt-data.outputs.cache-hit != 'true'
