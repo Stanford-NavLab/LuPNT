@@ -18,7 +18,4 @@ TEST_CASE("LuPNT") {
                              && Catch::Matchers::WithinAbs(expected, 1e-6));
 }
 
-TEST_CASE("LuPNT version") {
-  REQUIRE(std::string_view(LUPNT_VERSION) == std::string_view("1.0"));
-  REQUIRE(std::string(LUPNT_VERSION) == std::string("1.0"));
-}
+TEST_CASE("LuPNT version") { REQUIRE(std::string(LUPNT_VERSION) == std::string("1.0")); }
