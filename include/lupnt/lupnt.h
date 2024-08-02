@@ -65,4 +65,3 @@
 #include "lupnt/physics/spice_interface.h"
 #include "lupnt/physics/state.h"
 #include "lupnt/physics/time_converter.h"
-
