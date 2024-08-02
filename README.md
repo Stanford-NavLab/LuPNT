@@ -3,7 +3,7 @@
 [![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Ubuntu/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
 [![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Style/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
 [![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Install/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
-[![codecov](https://codecov.io/gh/Stanford-NavLab/LuPNT/branch/master/graph/badge.svg)](https://codecov.io/gh/Stanford-NavLab/LuPNT)
+[![codecov](https://codecov.io/gh/Stanford-NavLab/LuPNT/branch/guillemc/graph/badge.svg)](https://codecov.io/gh/Stanford-NavLab/LuPNT)
 
 <p align="center">
   <img src="https://repository-images.githubusercontent.com/254842585/4dfa7580-7ffb-11ea-99d0-46b8fe2f4170" height="175" width="auto" />

@@ -55,7 +55,7 @@ function(process_directory dir)
       list(SORT HEADER_FILES)
       foreach(file ${HEADER_FILES})
         # Create relative include path
-        file(APPEND ${dir}/lupnt.h "#include \"${subdir}/${file}\"\n")
+        file(APPEND ${dir}/lupnt.h "#include \"lupnt/${subdir}/${file}\"\n")
       endforeach()
       # Add an empty line for readability between subdirectory sections
       file(APPEND ${dir}/lupnt.h "\n")
