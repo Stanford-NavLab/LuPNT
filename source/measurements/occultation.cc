@@ -45,7 +45,7 @@ namespace lupnt {
       occ_atmos = ((alpha_earth < beta_atmos) && (tx2usr_norm > tx2earth_norm * cos(beta_atmos)));
       occ_ionos = ((alpha_earth < beta_ionos) && (tx2usr_norm > tx2earth_norm * cos(beta_ionos)));
     } else {
-      occ_earth = (alpha_earth < (M_PI / 2.0 + min_elevation_));
+      occ_earth = (alpha_earth < (PI / 2.0 + min_elevation_));
       occ_atmos = true;
       occ_ionos = true;
     }
@@ -65,7 +65,7 @@ namespace lupnt {
       // Compute occultation (alpha_moon < beta and tx2usr_norm > tx2hor_norm)
       occ_moon = ((alpha_moon < beta_moon) && (tx2usr_norm > tx2moon_norm * cos(beta_moon)));
     } else {
-      occ_moon = (alpha_moon < (M_PI / 2.0 + min_elevation_));
+      occ_moon = (alpha_moon < (PI / 2.0 + min_elevation_));
     }
 
     return {{"earth", occ_earth}, {"atmos", occ_atmos}, {"ionos", occ_ionos}, {"moon", occ_moon}};

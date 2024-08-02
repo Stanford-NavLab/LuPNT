@@ -22,7 +22,7 @@ namespace lupnt {
     std::lock_guard<std::mutex> lock(tai_utc_mutex);
     if (tai_utc_data) return;  // Data already loaded
 
-    size_t n_lines = CountLines(filepath);
+    size_t n_lines = CountLines(filepath.string());
     std::ifstream file(filepath);
     assert(file.is_open() && "Unable to open file");
 

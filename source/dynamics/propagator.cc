@@ -10,7 +10,7 @@
  */
 #include "lupnt/dynamics/propagator.h"
 
-#include "unistd.h"
+#include <algorithm>
 
 namespace lupnt {
 

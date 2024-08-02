@@ -12,16 +12,18 @@
 #include "lupnt/agents/gnss_constellation.h"
 
 #include "lupnt/physics/orbit_state/tle.h"
+#include <filesystem>
+#include <string>
 
 namespace lupnt {
 
   void GnssConstellation::LoadTleFile(std::string filename) {
-    auto path = kTlePath / filename;
+    std::filesystem::path path = kTlePath / filename;
     path += ".txt";
 
     bool is_first = true;
 
-    for (auto tle : TLE::FromFile(path)) {
+    for (auto tle : TLE::FromFile(path.string())) {
       // extract epoch
       if (is_first) {
         epoch_ = tle.epochTAI;

@@ -8,7 +8,7 @@ using namespace Catch::Matchers;
 
 namespace {
 
-  double OMEGA = 2.0 * M_PI;  // angular frequency
+  double OMEGA = 2.0 * PI;  // angular frequency
   double EPS = 1e-5;          // tolerance
 
   ODE HarmonicOscillator = [](const Real t, const VecX& x) {

@@ -11,13 +11,13 @@ namespace lupnt {
 
   class LagrangeInterpolator {
   public:
-    LagrangeInterpolator(const VecXd& x, double xi, uint order);
+    LagrangeInterpolator(const VecXd& x, double xi, int order);
     double Interpolate(const VecXd& data);
 
   private:
     VecXd x_;
     double xi_;
-    uint order_;
+    int order_;
     VecXd weights_;
     int i0_;
 

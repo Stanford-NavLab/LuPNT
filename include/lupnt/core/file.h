@@ -140,8 +140,8 @@ namespace lupnt {
     Eigen::IOFormat fmt{Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n"};
   };
 
-  static size_t CountLines(const std::string& filename) {
-    std::ifstream file(filename);
+  static size_t CountLines(const std::filesystem::path& filepath) {
+    std::ifstream file(filepath);
     assert(file.is_open() && "Unable to open file");
 
     size_t lineCount = 0;

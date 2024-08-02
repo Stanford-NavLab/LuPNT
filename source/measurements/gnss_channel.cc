@@ -84,7 +84,7 @@ namespace lupnt {
       for (int freq_idx = 0; freq_idx < tx->freq_list.size(); freq_idx++) {
         std::string freq_name = tx->freq_list[freq_idx];
         double freq = tx->freq_map[freq_name];
-        double Ad = 20.0 * log10((C / freq) / (4.0 * M_PI * d));
+        double Ad = 20.0 * log10((C / freq) / (4.0 * PI * d));
         double scalars = tx->tx_param_.P_tx + rx.rx_param_.Ae + rx.rx_param_.As
                          - (10.0 * log10(rx.rx_param_.Ts)) + 228.6 + rx.rx_param_.Nf
                          + rx.rx_param_.L;

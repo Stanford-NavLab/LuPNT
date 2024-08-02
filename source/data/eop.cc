@@ -10,6 +10,8 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <string>
+#include <filesystem>
 
 namespace lupnt {
 
@@ -21,7 +23,7 @@ namespace lupnt {
     if (eop) return;  // Data already loaded
 
     int n_header_lines = 14;
-    size_t n_lines = CountLines(filepath) - n_header_lines;
+    size_t n_lines = CountLines(filepath.string()) - n_header_lines;
     std::ifstream file(filepath);
     assert(file.is_open() && "Unable to open file");
 
@@ -112,7 +114,7 @@ namespace lupnt {
       return data;
     }
 
-    uint order = 3;
+    int order = 3;
     LagrangeInterpolator interp(eop->mjds_utc, mjd_utc.val(), order);
     data.x_pole = interp.Interpolate(eop->x) * RAD_ARCSEC;
     data.y_pole = interp.Interpolate(eop->y) * RAD_ARCSEC;

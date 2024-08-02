@@ -242,9 +242,9 @@ namespace lupnt {
     Real p1 = tan(i / 2) * cos(Omega);
     Real p2 = tan(i / 2) * sin(Omega);
 
-    Psi = fmod(Psi.val(), 2 * M_PI);
-    if (Psi > M_PI) {
-      Psi = Psi - 2 * M_PI;
+    Psi = fmod(Psi.val(), 2 * PI);
+    if (Psi > PI) {
+      Psi = Psi - 2 * PI;
     }
 
     return Vec6(a, Psi, tq1, tq2, p1, p2);
@@ -309,9 +309,9 @@ namespace lupnt {
     Real E = atan2(sin(f) * sqrt(1 - e * e), cos(f) + e);
     Real M = E - e * sin(E);
 
-    w = std::fmod(w.val(), 2 * M_PI);
-    M = std::fmod(M.val(), 2 * M_PI);
-    if (std::abs(M.val() - 2 * M_PI) < std::numeric_limits<double>::epsilon()) {
+    w = std::fmod(w.val(), 2 * PI);
+    M = std::fmod(M.val(), 2 * PI);
+    if (std::abs(M.val() - 2 * PI) < std::numeric_limits<double>::epsilon()) {
       M = 0;
     }
 

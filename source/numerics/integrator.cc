@@ -11,8 +11,6 @@
 
 #include "lupnt/numerics/integrator.h"
 
-#include "unistd.h"
-
 namespace lupnt {
 
   void IntegratorParams::CheckIntegratorParams() {

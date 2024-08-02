@@ -60,7 +60,7 @@ namespace lupnt {
     return result;
   }
 
-  LagrangeInterpolator::LagrangeInterpolator(const VecXd& x, double xi, uint order)
+  LagrangeInterpolator::LagrangeInterpolator(const VecXd& x, double xi, int order)
       : x_(x), xi_(xi), order_(order) {
     assert(x.size() > order);
     assert(xi >= x[0] && xi <= x[x.size() - 1]);

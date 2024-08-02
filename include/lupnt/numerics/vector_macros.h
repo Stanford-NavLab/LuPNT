@@ -75,9 +75,7 @@
     return out;                                                                                    \
   }                                                                                                \
   Mat<-1, size> func(const Mat<-1, size> &x, const VecX &y) {                                      \
-    ASSERT_WITH_MESSAGE(x.rows() == y.rows(), __PRETTY_FUNCTION__ << "\nSize mismatch:"            \
-                                                                  << " x.rows() = " << x.rows()    \
-                                                                  << ", y.rows() = " << y.rows()); \
+    ASSERT_WITH_MESSAGE(x.rows() == y.rows(), "Size mismatch"); \
     Mat<-1, size> out(x.rows(), size);                                                             \
     for (int i = 0; i < x.rows(); i++) {                                                           \
       Vec<size> x_ = x.row(i);                                                                     \
@@ -131,9 +129,7 @@
     return out;                                                                                    \
   }                                                                                                \
   Mat<-1, size> func(const Mat<-1, size> &x, const Mat<-1, size> &y, Real z) {                     \
-    ASSERT_WITH_MESSAGE(x.rows() == y.rows(), __PRETTY_FUNCTION__ << "\nSize mismatch:"            \
-                                                                  << " x.rows() = " << x.rows()    \
-                                                                  << ", y.rows() = " << y.rows()); \
+    ASSERT_WITH_MESSAGE(x.rows() == y.rows(), "Size mismatch"); \
     Mat<-1, size> out(x.rows(), size);                                                             \
     for (int i = 0; i < x.rows(); i++) {                                                           \
       Vec<size> x_ = x.row(i);                                                                     \
@@ -156,9 +152,7 @@
 
 #define VEC_IMP_VECTOR_VECTOR(func, size)                                                          \
   Mat<-1, size> func(const Mat<-1, size> &x, const Mat<-1, size> &y) {                             \
-    ASSERT_WITH_MESSAGE(x.rows() == y.rows(), __PRETTY_FUNCTION__ << "\nSize mismatch:"            \
-                                                                  << " x.rows() = " << x.rows()    \
-                                                                  << ", y.rows() = " << y.rows()); \
+    ASSERT_WITH_MESSAGE(x.rows() == y.rows(), "Size mismatch"); \
     Mat<-1, size> out(x.rows(), size);                                                             \
     for (int i = 0; i < x.rows(); i++) {                                                           \
       Vec<size> x_ = x.row(i);                                                                     \

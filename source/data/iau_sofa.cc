@@ -20,7 +20,7 @@ namespace lupnt {
     std::lock_guard<std::mutex> lock(iau_sofa_mutex);
     if (iau_sofa) return;  // Data already loaded
 
-    size_t n_lines = CountLines(filepath);
+    size_t n_lines = CountLines(filepath.string());
     std::ifstream file(filepath);
     assert(file.is_open() && "Unable to open file");
 
@@ -57,7 +57,7 @@ namespace lupnt {
       data.s = iau_sofa->s(index);
     }
 
-    uint order = 9;
+    int order = 9;
     LagrangeInterpolator interp(iau_sofa->jd_tt, jd_tt.val(), order);
     data.X = interp.Interpolate(iau_sofa->X);
     data.Y = interp.Interpolate(iau_sofa->Y);
