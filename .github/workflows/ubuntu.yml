@@ -42,7 +42,7 @@ jobs:
         if: steps.cache-lupnt-data.outputs.cache-hit != 'true'
         run: |
           curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
-          unzip LuPNT_data.zip -d data
+          unzip LuPNT_data.zip
           rm LuPNT_data.zip
 
       - name: configure
