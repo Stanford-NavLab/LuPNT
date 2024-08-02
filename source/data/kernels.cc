@@ -1,9 +1,9 @@
 #include "lupnt/data/kernels.h"
 
 #include <cassert>
+#include <filesystem>
 #include <mutex>
 #include <string>
-#include <filesystem>
 
 namespace lupnt {
 
@@ -180,7 +180,8 @@ namespace lupnt {
       data.constants[constant_names[i]] = constant_values[i];
   }
 
-  void ReadEphemerisCoefficientsFile(const std::filesystem::path& filepath, EphemerisHeaderData& data) {
+  void ReadEphemerisCoefficientsFile(const std::filesystem::path& filepath,
+                                     EphemerisHeaderData& data) {
     ephemeris_data = std::make_shared<EphemerisData>();
     ephemeris_data->header = data;
     ephemeris_data->blocks.clear();
