@@ -28,7 +28,7 @@ jobs:
         id: cache-cpm-modules
         with:
           path: "**/cpm_modules"
-          key: cpm-modules-${{ github.workflow }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+          key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
 
       - uses: actions/cache@v3
         id: cache-lupnt-data
