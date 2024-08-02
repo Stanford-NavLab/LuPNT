@@ -55,7 +55,7 @@ target_link_libraries_system(
   ${PROJECT_NAME} fmt::fmt Eigen3::Eigen matplot autodiff::autodiff cspice
 )
 
-target_include_directories(${PROJECT_NAME} PUBLIC SYSTEM ${OpenMP_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${OpenMP_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)
 
 target_include_directories(

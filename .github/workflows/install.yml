@@ -14,7 +14,7 @@ on:
 env:
   CTEST_OUTPUT_ON_FAILURE: 1
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
-  LUPNT_DATA_PATH: ${{ github.workspace }}/data
+  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
 
 jobs:
   build:
@@ -24,9 +24,25 @@ jobs:
       - uses: actions/checkout@v3
 
       - uses: actions/cache@v3
+        id: cache-cpm-modules
         with:
           path: "**/cpm_modules"
           key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+
+      - uses: actions/cache@v3
+        id: cache-lupnt
+        with:
+          path: LuPNT_data
+          key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
+          restore-keys: |
+            LuPNT_data-
+
+      - name: download and unzip LuPNT_data
+        if: steps.cache-lupnt.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+          unzip LuPNT_data.zip
+          rm LuPNT_data.zip
 
       - name: build and install library
         run: |

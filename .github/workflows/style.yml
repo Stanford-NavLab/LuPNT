@@ -13,7 +13,7 @@ on:
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
-  LUPNT_DATA_PATH: ${{ github.workspace }}/data
+  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
 
 jobs:
   build:
