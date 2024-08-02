@@ -40,8 +40,9 @@ jobs:
       - name: download and unzip LuPNT_data
         if: steps.cache-lupnt.outputs.cache-hit != 'true'
         run: |
+          $ProgressPreference = 'SilentlyContinue'
           Invoke-WebRequest -Uri "https://bit.ly/LuPNT_data" -OutFile "LuPNT_data.zip"
-          Expand-Archive -Path "LuPNT_data.zip" -DestinationPath "LuPNT_data"
+          Expand-Archive -Path "LuPNT_data.zip" -DestinationPath "."
           Remove-Item "LuPNT_data.zip"
 
       - name: configure
