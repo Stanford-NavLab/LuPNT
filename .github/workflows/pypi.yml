@@ -12,6 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install OpenMP (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install -y libomp-dev
+
+      - name: Install OpenMP (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install libomp
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.18
 
