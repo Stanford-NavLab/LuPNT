@@ -19,5 +19,5 @@ file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/bindings/*.cc)
 
 pybind11_add_module(_pylupnt ${sources})
 target_link_libraries(_pylupnt PUBLIC LuPNT::LuPNT)
-set_target_properties(_pylupnt PROPERTIES CXX_STANDARD 20 )
+set_target_properties(_pylupnt PROPERTIES CXX_STANDARD 20)
 install(TARGETS _pylupnt DESTINATION pylupnt)
