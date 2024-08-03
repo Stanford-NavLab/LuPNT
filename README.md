@@ -5,6 +5,12 @@
 [![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Ubuntu/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
 [![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Style/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
 [![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Install/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
+[![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Python/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI Release](https://img.shields.io/pypi/v/pylupnt.svg)](https://pypi.org/project/pylupnt)
+[![Conda Release](https://img.shields.io/conda/v/conda-forge/pylupnt)](https://anaconda.org/conda-forge/pylupnt)
+[![Python Versions](https://img.shields.io/pypi/pyversions/pylupnt)](https://pypi.org/project/pylupnt)
+[![Documentation Status](https://readthedocs.org/projects/pylupnt/badge/)](https://pylupnt.readthedocs.io/)
 [![codecov](https://codecov.io/gh/Stanford-NavLab/LuPNT/branch/guillemc/graph/badge.svg)](https://codecov.io/gh/Stanford-NavLab/LuPNT)
 
 
