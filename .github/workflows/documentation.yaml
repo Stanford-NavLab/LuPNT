@@ -2,8 +2,14 @@ name: Documentation
 
 on:
   push:
-    tags:
-      - "*"
+    branches:
+      - master
+      - main
+      - guillemc
+  pull_request:
+    branches:
+      - master
+      - main
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules

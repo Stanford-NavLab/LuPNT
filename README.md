@@ -15,7 +15,7 @@
 
 
 <p align="center">
-  <img src="doc/LuPNT_background.png" width="auto" />
+  <img src="doc/_static/LuPNT_background.png" width="auto" />
 </p>
 
 `LuPNT` is an open-source C++/Python library for Lunar Positioning, Navigation, and Timing (PNT) Research. This project is a product of the [Stanford NAV Lab](https://navlab.stanford.edu/).

@@ -127,15 +127,10 @@ namespace lupnt {
 
   // Vallado page 94
   static constexpr double JD_T0 = 2443144.5003725;
-  // Vallado page 187 (= JD_NOV_17_1858)
   static constexpr double JD_MJD_OFFSET = 2400000.5;
-  // GMAT Math Spec section 2.3
   static constexpr double TT_TAI_OFFSET = 32.184;
-  // GMAT Math Spec section 2.1
   static constexpr double A1_TAI_OFFSET = 0.0343817;
-  // old name JULIAN_DATE_OF_010541
   static constexpr double JD_JAN_5_1941 = 2430000.0;
-  // old name JD_MJD_OFFSET
   static constexpr double JD_NOV_17_1858 = 2400000.5;
 
   static constexpr double L_B = 1.550505e-8;
