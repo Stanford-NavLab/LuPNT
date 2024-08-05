@@ -25,12 +25,6 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: brew install libomp
 
-      - name: Install OpenMP on Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          choco install llvm
-          SET PATH=%PATH%;C:\Program Files\LLVM\bin
-
       # Install cibuildwheel
       - name: Install cibuildwheel
         run: python -m pip install cibuildwheel==2.20.0

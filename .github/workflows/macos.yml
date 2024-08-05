@@ -5,7 +5,7 @@ on:
     branches:
       - master
       - main
-      - guillemc
+      # - guillemc
   pull_request:
     branches:
       - master
