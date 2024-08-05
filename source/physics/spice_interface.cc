@@ -42,7 +42,7 @@ namespace lupnt {
       if (kcount > 0) return;
 
       std::string orig_dir = std::filesystem::current_path().string();
-      std::filesystem::current_path(CSPICE_KER_DIR);
+      std::filesystem::current_path(GetCspiceKernelDir());
 
       furnsh_c("naif0012.tls");  // leap seconds
       furnsh_c("de440.bsp");     // planetary ephemeris

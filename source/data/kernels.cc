@@ -237,8 +237,8 @@ namespace lupnt {
     if (ephemeris_data) return;  // Data already loaded
 
     EphemerisHeaderData data;
-    ReadEphemerisHeaderFile(ASCII_KERNEL_DIR / "de440" / "header.440", data);
-    ReadEphemerisCoefficientsFile(ASCII_KERNEL_DIR / "de440" / "ascp01950.440", data);
+    ReadEphemerisHeaderFile(GetAsciiKernelDir() / "de440" / "header.440", data);
+    ReadEphemerisCoefficientsFile(GetAsciiKernelDir() / "de440" / "ascp01950.440", data);
   }
 
   Vec6 GetBodyPosVelKernel(Real t_tdb, NaifId target) {

@@ -21,7 +21,7 @@
 `LuPNT` is an open-source C++/Python library for Lunar Positioning, Navigation, and Timing (PNT) Research. This project is a product of the [Stanford NAV Lab](https://navlab.stanford.edu/).
 If using this project in your own work please cite the following:
 
-```
+```bibtex
 @inproceedings{IiyamaCasadesus2023,
   title = {LuPNT: Open-Souce Simulator for Lunar Positioning, Navigation, and Timing},
   author={Iiyama, Keidai and Casadesus Vila, Guillem and Gao, Grace},
@@ -49,6 +49,17 @@ If using this project in your own work please cite the following:
 
 To cleanly separate the library and subproject code, the outer `CMakeList.txt` only defines the library itself while the tests and other subprojects are self-contained in their own directories. 
 During development it is usually convenient to [build all subprojects at once](#build-everything-at-once).
+
+## Dependencies
+
+```bash
+sudo apt-get update 
+sudo apt-get install -y libomp-dev
+```
+
+```bash
+brew install libomp
+```
 
 ### Build and run the standalone target
 

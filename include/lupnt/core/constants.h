@@ -189,11 +189,11 @@ namespace lupnt {
       = S_AU / C;  // Solar radiation pressure at 1 AU [N/km^2] = 4.56e-6 N/m^2
 
   // File Path *******************************************************************
-  static const std::filesystem::path CSPICE_KER_DIR = GetDataPath() / "ephemeris";
   constexpr const char* TAI_UTC_FILENAME = "tai-utc.dat";
   constexpr const char* EOP_FILENAME = "eopc04_08.62-now";
   constexpr const char* IAU_SOFA_FILENAME = "IAU_SOFA.DAT";
-  static const std::filesystem::path ASCII_KERNEL_DIR = GetDataPath() / "ephemeris" / "ascii";
+  static std::filesystem::path GetCspiceKernelDir() { return GetDataPath() / "ephemeris"; }
+  static std::filesystem::path GetAsciiKernelDir() { return GetDataPath() / "ephemeris" / "ascii"; }
 
   // Moon mean elements
 

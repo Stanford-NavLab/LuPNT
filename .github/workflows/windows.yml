@@ -30,13 +30,13 @@ jobs:
           key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
 
       - uses: actions/cache@v3
-        id: cache-lupnt
+        id: cache-lupnt-data
         with:
           path: LuPNT_data
           key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
 
-      - name: download and unzip LuPNT_data
-        if: steps.cache-lupnt.outputs.cache-hit != 'true'
+      - name: Download and unzip LuPNT_data
+        if: steps.cache-lupnt-data.outputs.cache-hit != 'true'
         run: |
           $ProgressPreference = 'SilentlyContinue'
           Invoke-WebRequest -Uri "https://bit.ly/LuPNT_data" -OutFile "LuPNT_data.zip"
