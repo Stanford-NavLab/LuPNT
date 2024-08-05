@@ -26,6 +26,8 @@ jobs:
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.18
+        env:
+          CIBW_VERBOSE: 1  # Enable verbose output for cibuildwheel
 
       - uses: actions/upload-artifact@v4
         with:
@@ -39,7 +41,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build sdist
-        run: pipx run build --sdist
+        run: pipx run build --sdist -v  # Enable verbose output for build
 
       - uses: actions/upload-artifact@v4
         with:
@@ -62,4 +64,4 @@ jobs:
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          verbose: true
+          verbose: true  # Enable verbose output for PyPI publish
