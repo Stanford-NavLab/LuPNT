@@ -17,6 +17,35 @@ maintainers=[
     {name="Keidai Iiyama",          email="kiiyama@stanford.edu"},
 ]
 requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "astropy",
+    "auto_mix_prep",
+    # "bpy",
+    "dataset",
+    "filterpy",
+    "h5py",
+    "mathutils",
+    "matplotlib",
+    "mlflow",
+    "mlflow_skinny",
+    "networkx",
+    "numba",
+    "onnx",
+    "openvino",
+    "pandas",
+    "Pillow",
+    "plotly",
+    "scikit_learn",
+    "scipy",
+    "setuptools",
+    "spiceypy",
+    "torch",
+    "torchvision",
+    "tqdm",
+    "pybind11_stubgen",
+    "ipywidgets",
+]
 keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "example", "wheel", "pypi", "conda-forge"]
 classifiers=[
     "Programming Language :: C++",
@@ -30,10 +59,6 @@ classifiers=[
     "Operating System :: POSIX :: Linux",
     "License :: OSI Approved :: MIT License",
 ]
-dynamic = ["dependencies"]
-
-[tool.setuptools.dynamic]
-dependencies = {file = ["source/python/requirements.txt"]}
 
 [project.urls]
 Github = "https://github.com/Stanford-NavLab/LuPNT"

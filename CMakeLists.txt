@@ -5,7 +5,6 @@ set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)
 
 project(
   LuPNT
-  VERSION 1.0
   LANGUAGES CXX
 )
 set(CMAKE_CXX_STANDARD 17)
@@ -64,6 +63,22 @@ function(process_directory dir)
   endforeach()
 endfunction()
 process_directory(${CMAKE_CURRENT_SOURCE_DIR}/include/lupnt)
+
+# ---- Set project version ----
+
+file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/source/version.txt PROJECT_VERSION_READ)
+foreach(ver ${PROJECT_VERSION_READ})
+    if (ver MATCHES "(MAJOR|MINOR|PATCH) +([^ ]+)$")
+        set(PROJECT_VERSION_READ_${CMAKE_MATCH_1} ${CMAKE_MATCH_2} CACHE INTERNAL "")
+    endif()
+endforeach()
+string(CONCAT PROJECT_VERSION_CONCAT
+    ${PROJECT_VERSION_READ_MAJOR}
+    .${PROJECT_VERSION_READ_MINOR}
+    .${PROJECT_VERSION_READ_PATCH}
+)
+set(PROJECT_VERSION ${PROJECT_VERSION_CONCAT})
+message("Version is ${PROJECT_VERSION}")
 
 # ---- Create library ----
 
