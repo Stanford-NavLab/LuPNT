@@ -5,13 +5,13 @@ project(LuPNTPython LANGUAGES CXX)
 
 # --- Import tools ----
 
-include(${CMAKE_CURRENT_LIST_DIR}/../cmake/tools.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/tools.cmake)
 
 # ---- Dependencies ----
 
-include(${CMAKE_CURRENT_LIST_DIR}/../cmake/CPM.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/CPM.cmake)
 CPMAddPackage("gh:pybind/pybind11@2.13.1")
-CPMAddPackage(NAME LuPNT SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
+CPMAddPackage(NAME LuPNT SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 
 # ---- Create standalone executable ----
 
@@ -29,4 +29,10 @@ install(TARGETS _pylupnt DESTINATION pylupnt)
 add_custom_command(TARGET _pylupnt POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:_pylupnt> ${CMAKE_CURRENT_LIST_DIR}/pylupnt
     COMMENT "Copying _pylupnt to current directory"
+)
+
+add_custom_command(TARGET _pylupnt POST_BUILD
+    COMMAND pybind11-stubgen pylupnt --output-dir "." --enum-class-locations "Frame:pylupnt"
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    COMMENT "Generating Python stubs using pybind11-stubgen"
 )

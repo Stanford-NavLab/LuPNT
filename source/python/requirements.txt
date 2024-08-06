@@ -23,5 +23,6 @@ spiceypy
 torch
 torchvision
 tqdm
+pybind11_stubgen
 ipywidgets
 ipyml

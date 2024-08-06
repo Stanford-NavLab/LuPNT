@@ -53,12 +53,12 @@ A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timi
     Please duplicate the module and meta data here.
     Meta data can be a string at the end that says python_only. To be used for pure python module (no pybind).
     MAKE_DOCS/python_api/pylupnt
-    MAKE_DOCS/python_api/pylupnt.plot
-    MAKE_DOCS/python_api/pylupnt.render
-    MAKE_DOCS/python_api/pylupnt.scenarios
+    MAKE_DOCS/python_api/pylupnt.plot python_only
+    MAKE_DOCS/python_api/pylupnt.render python_only
+    MAKE_DOCS/python_api/pylupnt.scenarios python_only
     MAKE_DOCS/python_api/pylupnt.ephemeris_parsing python_only
     MAKE_DOCS/python_api/pylupnt.math_utils python_only
-    MAKE_DOCS/python_api/pylupnt.utils
+    MAKE_DOCS/python_api/pylupnt.utils python_only
 
 .. _cpp_api_index:
 

@@ -1,8 +1,8 @@
 from __future__ import annotations
 import logging as logging
 import mathutils as mathutils
-import numpy as np
 import numpy
+import numpy as np
 import os as os
 from pylupnt import utils
 from scipy.spatial.transform._rotation import Rotation as R

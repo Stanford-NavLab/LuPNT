@@ -17,7 +17,9 @@ maintainers=[
     {name="Keidai Iiyama",          email="kiiyama@stanford.edu"},
 ]
 requires-python = ">=3.11"
-dependencies = ["numpy"]
+dependencies = [
+    "numpy",
+]
 keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "example", "wheel", "pypi", "conda-forge"]
 classifiers=[
     "Programming Language :: C++",
@@ -31,6 +33,10 @@ classifiers=[
     "Operating System :: POSIX :: Linux",
     "License :: OSI Approved :: MIT License",
 ]
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["source/python/requirements.txt"]}
 
 [project.urls]
 Github = "https://github.com/Stanford-NavLab/LuPNT"
@@ -54,7 +60,7 @@ docs = [
 ]
 
 [tool.scikit-build.cmake]
-source-dir = "python"
+source-dir = "source/python"
 
 [tool.cibuildwheel]
 test-extras = "test"
