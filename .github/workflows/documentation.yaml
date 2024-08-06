@@ -19,6 +19,9 @@ jobs:
     name: Build and publish documentation
     runs-on: macos-latest
     steps:
+      - name: Install OpenMP
+        run: brew install libomp
+
       - uses: actions/checkout@v3
 
       - uses: actions/cache@v3
