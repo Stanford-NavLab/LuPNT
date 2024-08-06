@@ -1,4 +1,31 @@
-#### Create Examples
+cmake_minimum_required(VERSION 3.14...3.22)
+set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)
 
-add_executable(example1 ${CMAKE_CURRENT_SOURCE_DIR}/example1.cpp)
-target_link_libraries(example1 PRIVATE LuPNT::CPPL)
+project(LuPNTExamples LANGUAGES CXX)
+
+# --- Import tools ----
+
+include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/tools.cmake)
+
+# ---- Dependencies ----
+
+include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/CPM.cmake)
+CPMAddPackage(NAME LuPNT SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
+
+# ---- Create examples executable ----
+
+file(GLOB_RECURSE examples RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cc)
+# Remove example_ekf_elfo.cc from the list to compile
+list(REMOVE_ITEM examples "example_ekf_elfo.cc")
+
+find_package(OpenMP REQUIRED)
+
+foreach(example ${examples})
+    get_filename_component(name ${example} NAME_WE)
+    get_filename_component(dir ${example} DIRECTORY)
+
+    add_executable(${name} ${example})
+    target_link_libraries(${name} PRIVATE LuPNT::LuPNT)
+    set_target_properties(${name} PROPERTIES CXX_STANDARD 20)
+    set_target_properties(${name} PROPERTIES FOLDER "examples/${dir}")
+endforeach()
