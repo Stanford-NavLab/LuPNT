@@ -23,3 +23,10 @@ if(APPLE)
   set_target_properties(_pylupnt PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 endif(APPLE)
 install(TARGETS _pylupnt DESTINATION pylupnt)
+
+# ---- Copy generated target to current list dir ----
+
+add_custom_command(TARGET _pylupnt POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:_pylupnt> ${CMAKE_CURRENT_LIST_DIR}/pylupnt
+    COMMENT "Copying _pylupnt to current directory"
+)

@@ -216,7 +216,7 @@ texinfo_documents = [
         "LuPNT Documentation",
         author,
         "LuPNT",
-        "Basic Python and CPP Library",
+        "Lunar Positioning, Navigation, and Timing (PNT)",
         "Miscellaneous",
     ),
 ]

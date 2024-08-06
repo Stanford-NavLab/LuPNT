@@ -1,10 +1,22 @@
-"""Lunar Positioning, Navigation, and Timing (LuPNT) Library"""
-
-# here we import the contents of our compiled C++ module
 try:
     from ._pylupnt import *  # py2 py3 compatible
-    from .python_code import pure_python_list
-except Exception:
+
+    from .utils import *
+    from . import plot
+    from . import render
+    from .math_utils import *
+    from . import scenarios
+
+except ImportError as e:
+    print(e)
+    print("Import failed. Trying as python wheel.")
+
     # this was installed with as a python wheel
     from _pylupnt import *
-    from python_code import pure_python_list
+
+    import plot
+    import render
+    from utils import *
+    from math_utils import *
+    import scenarios
+    import dataset

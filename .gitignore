@@ -5,3 +5,4 @@ cpm_modules
 LuPNT_data*
 *cache*
 docs
+*.so

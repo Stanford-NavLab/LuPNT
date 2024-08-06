@@ -4,15 +4,15 @@
    contain the root `toctree` directive.
    NOTE: The python modules documentation for PURE python modules must be explicitly annotated with meta data. See below Line 51.
 
-.. image:: _static/LuPNT_background.png
+.. image::_static/LuPNT_background.png
     :alt: LuPNT background
     :width: 100%
     :align: center
 
------------
+LuPNT
+================
+A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timing (PNT)
 
-LuPNT: A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timing (PNT)
-===============================================
 
 .. only: not latex
 
@@ -42,13 +42,23 @@ LuPNT: A C++/Python Library for Lunar Communications, Positioning, Navigation, a
     :caption: Python API
 
     python_api/pylupnt
-    python_api/pylupnt.python_code
+    python_api/pylupnt.plot
+    python_api/pylupnt.render
+    python_api/pylupnt.scenarios
+    python_api/pylupnt.ephemeris_parsing
+    python_api/pylupnt.math_utils
+    python_api/pylupnt.utils
 
 ..
-    This is a comment. Please duplicate the module and meta data you want here!
+    Please duplicate the module and meta data here.
     Meta data can be a string at the end that says python_only. To be used for pure python module (no pybind).
     MAKE_DOCS/python_api/pylupnt
-    MAKE_DOCS/python_api/pylupnt.python_code python_only
+    MAKE_DOCS/python_api/pylupnt.plot
+    MAKE_DOCS/python_api/pylupnt.render
+    MAKE_DOCS/python_api/pylupnt.scenarios
+    MAKE_DOCS/python_api/pylupnt.ephemeris_parsing python_only
+    MAKE_DOCS/python_api/pylupnt.math_utils python_only
+    MAKE_DOCS/python_api/pylupnt.utils
 
 .. _cpp_api_index:
 

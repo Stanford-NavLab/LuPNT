@@ -1,0 +1,27 @@
+astropy
+auto_mix_prep
+# bpy
+dataset
+filterpy
+h5py
+mathutils
+matplotlib
+mlflow
+mlflow_skinny
+networkx
+numba
+numpy
+onnx
+openvino
+pandas
+Pillow
+plotly
+scikit_learn
+scipy
+setuptools
+spiceypy
+torch
+torchvision
+tqdm
+ipywidgets
+ipyml

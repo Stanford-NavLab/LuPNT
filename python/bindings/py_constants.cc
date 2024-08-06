@@ -62,6 +62,9 @@ void init_constants(py::module& m) {
   m.attr("GM_VENUS") = py::float_(GM_VENUS);
   m.attr("GM_EARTH") = py::float_(GM_EARTH);
 
+  m.attr("R_MOON") = py::float_(R_MOON);
+  m.attr("R_EARTH") = py::float_(R_EARTH);
+
   py::enum_<NaifId>(m, "NaifId")
       .value("SOLAR_SYSTEM_BARYCENTER", NaifId::SOLAR_SYSTEM_BARYCENTER)
       .value("SSB", NaifId::SSB)

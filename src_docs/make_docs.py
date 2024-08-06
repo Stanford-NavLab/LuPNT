@@ -238,7 +238,7 @@ class SphinxDocsBuilder:
         # We use the modules listed in the index.rst file here.
         self.documented_modules = self._get_module_names_from_index_rst()
 
-        # self.documented_modules = "pylupnt.pylupnt_pybind"  # Points to the pylupnt.so
+        # self.documented_modules = "pylupnt._pylupnt"  # Points to the pylupnt.so
         # self.c_module_relative = "pylupnt"  # The relative module reference to pylupnt.so
         self.python_api_output_dir = "python_api"
         self.html_output_dir = html_output_dir
