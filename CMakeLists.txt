@@ -8,6 +8,9 @@ project(
   VERSION 1.0
   LANGUAGES CXX
 )
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # ---- Include guards ----
 
@@ -94,10 +97,15 @@ target_include_directories(
                          $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
-# enable compiler warnings if(NOT TEST_INSTALLED_VERSION) if(CMAKE_CXX_COMPILER_ID MATCHES "Clang"
-# OR CMAKE_CXX_COMPILER_ID MATCHES "GNU") target_compile_options(${PROJECT_NAME} PRIVATE -Wall
-# -Wpedantic -Wextra -Werror) elseif(MSVC) # target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
-# target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS) endif() endif()
+# enable compiler warnings 
+if(NOT TEST_INSTALLED_VERSION) 
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wpedantic -Wextra) # -Werror) 
+elseif(MSVC) 
+target_compile_options(${PROJECT_NAME} PRIVATE /W4) # /WX)
+target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS) 
+endif() 
+endif()
 
 # ---- Create an installable target ----
 # this allows users to install and find the library via `find_package()`.

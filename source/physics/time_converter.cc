@@ -13,10 +13,8 @@
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/solar_system.h"
 
-#define TIME_CONVERSION(from, to, func)                                  \
-  {                                                                      \
-    {TimeSys::from, TimeSys::to}, [](Real t) -> Real { return func(t); } \
-  }
+#define TIME_CONVERSION(from, to, func) \
+  {{TimeSys::from, TimeSys::to}, [](Real t) -> Real { return func(t); }}
 
 /// @ref
 /// D. Folta, N. Bosanac, I. Elliott, L. Mann, R. Mesarch, and J. Rosales,
@@ -43,7 +41,8 @@ namespace lupnt {
     std::vector<std::string> path = FindShortestPath(from, to, time_conversions);
     Real t_out = t;
     for (size_t i = 0; i < path.size() - 1; i++) {
-      t_out = time_conversions[{path[i], path[i + 1]}](t_out);
+      std::function<Real(Real)> f = time_conversions[{path[i], path[i + 1]}];
+      t_out = f(t_out);
     }
     return t_out;
   }

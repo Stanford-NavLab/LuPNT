@@ -23,10 +23,8 @@
 #include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/time_converter.h"
 
-#define FRAME_CONVERSION(from, to, func)                                                 \
-  {                                                                                      \
-    {Frame::from, Frame::to}, [](Real t, const Vec6& rv) -> Vec6 { return func(t, rv); } \
-  }
+#define FRAME_CONVERSION(from, to, func) \
+  {{Frame::from, Frame::to}, [](Real t, const Vec6& rv) -> Vec6 { return func(t, rv); }}
 
 namespace lupnt {
 
@@ -52,7 +50,8 @@ namespace lupnt {
     std::vector<Frame> path = FindShortestPath(frame_in, frame_out, frame_conversions);
     Vec6 rv_out = rv_in;
     for (size_t i = 0; i < path.size() - 1; i++) {
-      rv_out = frame_conversions[{path[i], path[i + 1]}](t_tai, rv_out);
+      std::function<Vec6(Real, const Vec6& rv)> f = frame_conversions[{path[i], path[i + 1]}];
+      rv_out = f(t_tai, rv_out);
     }
     return rv_out;
   }
@@ -80,10 +79,13 @@ namespace lupnt {
   }
 
   Mat<-1, 3> ConvertFrame(Real t_tai, const Mat<-1, 3>& r_in, Frame frame_in, Frame frame_out) {
-    Mat<-1, 6> rv_in(r_in.rows(), 6);
-    rv_in << r_in, Mat<-1, 3>::Zero(r_in.rows(), 3);
-    Mat<-1, 6> rv_out = ConvertFrame(t_tai, rv_in, frame_in, frame_out);
-    return rv_out.leftCols(3);
+    Mat<-1, 3> r_out(r_in.rows(), 3);
+    for (int i = 0; i < r_in.rows(); i++) {
+      Vec6 rv_in;
+      rv_in << r_in.row(i).transpose(), Vec3::Zero();
+      r_out.row(i) = ConvertFrame(t_tai, rv_in, frame_in, frame_out).head(3);
+    }
+    return r_out;
   }
 
   Mat<-1, 6> ConvertFrame(VecX t_tai, const Vec6& rv_in, Frame frame_in, Frame frame_out) {
@@ -95,10 +97,12 @@ namespace lupnt {
   }
 
   Mat<-1, 3> ConvertFrame(VecX t_tai, const Vec3& r_in, Frame frame_in, Frame frame_out) {
-    Mat<-1, 6> rv_in(t_tai.size(), 6);
-    rv_in << r_in, Mat<-1, 3>::Zero(t_tai.size(), 3);
-    Mat<-1, 6> rv_out = ConvertFrame(t_tai, rv_in, frame_in, frame_out);
-    return rv_out.leftCols(3);
+    Mat<-1, 3> r_out(t_tai.size(), 3);
+    Vec6 rv_in;
+    rv_in << r_in, Vec3::Zero();
+    for (int i = 0; i < t_tai.size(); i++)
+      r_out.row(i) = ConvertFrame(t_tai(i), rv_in, frame_in, frame_out).head(3);
+    return r_out;
   }
 
   Mat<-1, 6> ConvertFrame(VecX t_tai, const Mat<-1, 6>& rv_in, Frame frame_in, Frame frame_out) {

@@ -28,9 +28,9 @@ MAX_COLS = 100
 
 
 def __lldb_init_module(debugger, internal_dict):
-    # real
+    # Real
     debugger.HandleCommand(
-        'type summary add --summary-string "${var.m_data.__elems_[0]}" lupnt::real'
+        'type summary add --summary-string "${var.m_data.__elems_[0]}" lupnt::Real'
     )
     # lupnt Vec and Mat
     debugger.HandleCommand(
@@ -258,7 +258,7 @@ class MatChildProvider:
             # double
             child = data.CreateChildAtOffset(name, offset, self._scalar_type)
         else:
-            # real
+            # Real
             if self._fixed_storage:
                 child = data.GetChildAtIndex(new_index)
             else:

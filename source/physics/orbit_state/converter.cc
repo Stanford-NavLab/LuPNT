@@ -11,17 +11,13 @@
 #include "lupnt/physics/orbit_state/conversions.h"
 #include "lupnt/physics/orbit_state/orbit_states.h"
 
-#define ABSOLUTE_CONVERSION(from, to, func)                        \
-  {                                                                \
-    {OrbitStateRepres::from, OrbitStateRepres::to},                \
-        [](const Vec6& x, Real GM) -> Vec6 { return func(x, GM); } \
-  }
+#define ABSOLUTE_CONVERSION(from, to, func)        \
+  {{OrbitStateRepres::from, OrbitStateRepres::to}, \
+   [](const Vec6& x, Real GM) -> Vec6 { return func(x, GM); }}
 
-#define RELATIVE_CONVERSION(from, to, func)                             \
-  {                                                                     \
-    {OrbitStateRepres::from, OrbitStateRepres::to},                     \
-        [](const Vec6& x, const Vec6& y) -> Vec6 { return func(x, y); } \
-  }
+#define RELATIVE_CONVERSION(from, to, func)        \
+  {{OrbitStateRepres::from, OrbitStateRepres::to}, \
+   [](const Vec6& x, const Vec6& y) -> Vec6 { return func(x, y); }}
 
 namespace lupnt {
 
@@ -44,8 +40,8 @@ namespace lupnt {
           RELATIVE_CONVERSION(QUASINONSINGULAR_ROE, CLASSICAL_OE, RelQuasiNonsing2Classical),
   };
 
-  Vec6 ConvertOrbitState(const Vec6& state_in, OrbitStateRepres& repres_in,
-                         OrbitStateRepres& repres_out, Real GM) {
+  Vec6 ConvertOrbitState(const Vec6& state_in, OrbitStateRepres repres_in,
+                         OrbitStateRepres repres_out, Real GM) {
     if (repres_in == repres_out) {
       return state_in;
     }
