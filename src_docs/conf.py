@@ -74,11 +74,12 @@ exhale_args = {
     "rootFileTitle": "C++ Library API",
     "doxygenStripFromPath": "..",
     # Suggested optional arguments
-    "createTreeView": True,
+    "createTreeView": False,
     # TIP: if using the sphinx-bootstrap-theme, you need
     # "treeViewIsBootstrap": True,
     "exhaleExecutesDoxygen": True,
     "exhaleDoxygenStdin": "INPUT = ../include",
+    "contentsDirectives": False,
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -135,7 +136,7 @@ todo_include_todos = False
 # html_theme = 'alabaster'
 # theme_path = os.path.join(current_file_dir, "..", "3rdparty",
 #                           "open3d_sphinx_theme")
-html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
 # html_theme_path = [theme_path]
 html_favicon = ""
 html_logo = "_static/LuPNT_square.png"

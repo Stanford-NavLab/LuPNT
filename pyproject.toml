@@ -34,11 +34,24 @@ classifiers=[
 
 [project.urls]
 Github = "https://github.com/Stanford-NavLab/LuPNT"
-Documentation = "https://pylupnt.readthedocs.io"
+Documentation = "https://lupnt.readthedocs.io"
 
 [project.optional-dependencies]
 test = ["pytest"]
-docs = ["cmake", "breathe", "sphinx_rtd_theme"]
+docs = [
+    "cmake", 
+    "breathe", 
+    "sphinx_rtd_theme",
+    "notebook",
+    "sphinx",
+    "exhale",
+    "breathe",
+    "m2r",
+    "nbsphinx",
+    "nbsphinx-link",
+    "jinja2",
+    "lxml_html_clean",
+]
 
 [tool.scikit-build.cmake]
 source-dir = "python"

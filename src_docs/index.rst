@@ -4,14 +4,14 @@
    contain the root `toctree` directive.
    NOTE: The python modules documentation for PURE python modules must be explicitly annotated with meta data. See below Line 51.
 
-.. image::_static/LuPNT_background.png
-    :alt: LuPNT Logo
-    :width: 320px
+.. image:: _static/LuPNT_background.png
+    :alt: LuPNT background
+    :width: 100%
     :align: center
 
 -----------
 
-LuPNT: A Great LuPNT
+LuPNT: A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timing (PNT)
 ===============================================
 
 .. only: not latex
