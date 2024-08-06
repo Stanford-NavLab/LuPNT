@@ -277,11 +277,11 @@ class SphinxDocsBuilder:
         build_dir = os.path.join(self.html_output_dir, "html")
 
         if self.is_release:
-            # version_list = [
-            #     line.rstrip("\n").split(" ")[1] for line in open("../src/version.txt")
-            # ]
-            # release_version = ".".join(version_list[:3])
-            release_version = "1.0.0"
+            version_list = [
+                line.rstrip("\n").split(" ")[1]
+                for line in open("../source/version.txt")
+            ]
+            release_version = ".".join(version_list[:3])
             print("Building docs for release:", release_version)
 
             cmd = [

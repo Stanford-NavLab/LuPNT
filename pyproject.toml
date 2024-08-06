@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pylupnt"
-version = "1.0"
+version = "0.0.2"
 description = "Lunar Positioning, Navigation, and Timing (PNT) library"
 readme = "README.md"
 license = {text = "MIT"}

@@ -1,7 +1,3 @@
-""" Manage Versions in a python project
-This will bump the file holding the current version (src/version.txt) as well as tag releases 
-"""
-
 import argparse
 from pathlib import Path
 from git import Repo
@@ -19,7 +15,7 @@ def parse_args():
         help="Bump version of project",
     )
     parser.add_argument(
-        "--version_file", default="src/version.txt", help="Path to version file"
+        "--version_file", default="source/version.txt", help="Path to version file"
     )
     parser.add_argument(
         "--tag", dest="tag", action="store_true", default=False, help="Create git tag"
@@ -31,8 +27,8 @@ def parse_args():
     return args
 
 
-def bump(bump_type: str = "patch", version_file="src/version.txt"):
-    with open("src/version.txt", "r") as f:
+def bump(bump_type: str = "patch", version_file="source/version.txt"):
+    with open(version_file, "r") as f:
         lines = f.readlines()
     version = [int(line.split(" ")[1].strip()) for line in lines if line]
 
@@ -48,16 +44,34 @@ def bump(bump_type: str = "patch", version_file="src/version.txt"):
         version[2] += 1
 
     if bump_type != "none":
-        with open("src/version.txt", "w") as f:
-            f.write("MAJOR {}\nMINOR {}\nPATCH {}".format(*version))
+        with open(version_file, "w") as f:
+            f.write("MAJOR {}\nMINOR {}\nPATCH {}\n".format(*version))
+
+        # Update pyproject.toml
+        update_pyproject_toml(version)
     else:
         pass
         # print("Not incrementing version, bump was 'none'.\n")
 
-    string_ints = [str(int_version) for int_version in version]
-    version_str = ".".join(string_ints)
-
+    version_str = ".".join(map(str, version))
     return version_str
+
+
+def update_pyproject_toml(version):
+    pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
+    if not pyproject_path.exists():
+        print("pyproject.toml not found.")
+        return
+
+    with open(pyproject_path, "r") as f:
+        lines = f.readlines()
+
+    with open(pyproject_path, "w") as f:
+        for line in lines:
+            if line.startswith("version ="):
+                f.write(f'version = "{version[0]}.{version[1]}.{version[2]}"\n')
+            else:
+                f.write(line)
 
 
 def create_tag(version_str, message="Tagged for release"):
