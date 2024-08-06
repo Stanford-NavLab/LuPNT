@@ -17,9 +17,6 @@ maintainers=[
     {name="Keidai Iiyama",          email="kiiyama@stanford.edu"},
 ]
 requires-python = ">=3.11"
-dependencies = [
-    "numpy",
-]
 keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "example", "wheel", "pypi", "conda-forge"]
 classifiers=[
     "Programming Language :: C++",

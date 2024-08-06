@@ -30,9 +30,3 @@ add_custom_command(TARGET _pylupnt POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:_pylupnt> ${CMAKE_CURRENT_LIST_DIR}/pylupnt
     COMMENT "Copying _pylupnt to current directory"
 )
-
-add_custom_command(TARGET _pylupnt POST_BUILD
-    COMMAND pybind11-stubgen pylupnt --output-dir "." --enum-class-locations "Frame:pylupnt"
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-    COMMENT "Generating Python stubs using pybind11-stubgen"
-)
