@@ -46,11 +46,23 @@ namespace lupnt {
   /// @param angle Angle in radians
   /// @return Wrapped angle in radians
   Real Wrap2Pi(Real angle) { return atan2(sin(angle), cos(angle)); }
+  VecX Wrap2Pi(VecX angle) {
+    int n = angle.size();
+    VecX out(n);
+    for (int i = 0; i < n; i++) out(i) = Wrap2Pi(angle(i));
+    return out;
+  }
 
   /// @brief Wrap angle in radians to [0, 2pi]
   /// @param angle Angle in radians
   /// @return Wrapped angle in radians
   Real Wrap2TwoPi(Real angle) { return angle - TWO_PI * floor(angle / TWO_PI); }
+  VecX Wrap2TwoPi(VecX angle) {
+    int n = angle.size();
+    VecX out(n);
+    for (int i = 0; i < n; i++) out(i) = Wrap2TwoPi(angle(i));
+    return out;
+  }
 
   /// @brief Round a number to n decimal places
   /// @param x Number to round
@@ -103,11 +115,23 @@ namespace lupnt {
   /// @param x Decimal value
   /// @return Decibel value
   Real Decimal2Decibel(Real x) { return 10 * log10(x); }
+  VecX Decimal2Decibel(VecX angle) {
+    int n = angle.size();
+    VecX out(n);
+    for (int i = 0; i < n; i++) out(i) = Decimal2Decibel(angle(i));
+    return out;
+  }
 
   /// @brief Convert decibel value to decimal
   /// @param x Decibel value
   /// @return Decimal value
   Real Decibel2Decimal(Real x) { return pow(10, x / 10); }
+  VecX Decibel2Decimal(VecX angle) {
+    int n = angle.size();
+    VecX out(n);
+    for (int i = 0; i < n; i++) out(i) = Decibel2Decimal(angle(i));
+    return out;
+  }
 
   /// @brief Convert degrees to degrees, minutes, and seconds
   /// @param deg Angle in degrees

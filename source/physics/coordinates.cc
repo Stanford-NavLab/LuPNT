@@ -128,4 +128,17 @@ namespace lupnt {
     return xyz;
   }
 
+  // Vector implementations
+  VEC_IMP_VECTOR(LatLonAlt2Cart, 3)
+  VEC_IMP_VECTOR(Cart2LatLonAlt, 3)
+  VEC_IMP_VECTOR_REAL(LatLonAlt2Cart, 3)
+  VEC_IMP_VECTOR_REAL(Cart2LatLonAlt, 3)
+  VEC_IMP_VECTOR_REAL_REAL(LatLonAlt2Cart, 3)
+  VEC_IMP_VECTOR_REAL_REAL(Cart2LatLonAlt, 3)
+
+  VEC_IMP_VECTOR_VECTOR(EastNorthUp2Cart, 3)
+  VEC_IMP_VECTOR_VECTOR(Cart2EastNorthUp, 3)
+
+  VEC_IMP_VECTOR_VECTOR(Cart2AzElRange, 3)
+  VEC_IMP_VECTOR_VECTOR(AzElRange2Cart, 3)
 }  // namespace lupnt
