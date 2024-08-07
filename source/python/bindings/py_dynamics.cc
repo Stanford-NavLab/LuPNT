@@ -74,7 +74,7 @@ void init_dynamics(py::module &m) {
       .def(
           "propagate",
           [](NumericalOrbitDynamics &dyn, Vec6d &x, double t0, VecXd &tfs, double dt,
-             bool progress) -> VecXd {
+             bool progress) -> MatXd {
             Vec6 x_real = x.cast<Real>();
             VecX tfs_real = tfs.cast<Real>();
             return dyn.Propagate(x_real, t0, tfs_real, progress).cast<double>();
@@ -133,7 +133,7 @@ void init_dynamics(py::module &m) {
       .def_static("Moon", &Body::Moon, py::arg("n_max") = 0, py::arg("m_max") = 0,
                   py::arg("gravity_file") = "EGM96.cof")
       .def_static("Earth", &Body::Earth, py::arg("n_max") = 0, py::arg("m_max") = 0,
-                  py::arg("gravity_file") = "grgm900.cof")
+                  py::arg("gravity_file") = "grgm900c.cof")
       .def_static("Mars", &Body::Mars, py::arg("n_max") = 0, py::arg("m_max") = 0,
                   py::arg("gravity_file") = "GMM1.cof")
       .def_static("Venus", &Body::Venus, py::arg("n_max") = 0, py::arg("m_max") = 0,

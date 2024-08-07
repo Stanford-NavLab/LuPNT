@@ -2,10 +2,10 @@ from __future__ import annotations
 import numpy
 import pylupnt
 import typing
-__all__ = ['A1_TAI_OFFSET', 'ARCSEC_DEG', 'ARCSEC_RAD', 'AzElRange2Cart', 'Body', 'CARTESIAN', 'CLASSICAL_OE', 'Cart2AzElRange', 'Cart2EastNorthUp', 'Cart2LatLonAlt', 'CartesianOrbitState', 'CartesianTwoBodyDynamics', 'ClassicalOE', 'DAYS_CENTURY', 'DAYS_SEC', 'DAYS_WEEK', 'DAYS_YEAR', 'DEG', 'DEG_ARCSEC', 'DEIMOS', 'DELAUNAY_OE', 'Decibel2Decimal', 'Decimal2Decibel', 'DegMinSec2Degrees', 'Degrees2DegMinSec', 'E', 'EARTH', 'EARTH_MOON_BARYCENTER', 'ECEF', 'ECI', 'EMB', 'EME', 'EMR', 'EPS', 'EQUINOTICAL_OE', 'EastNorthUp2Cart', 'EquinoctialOE', 'FOOT_M', 'Frame', 'GCRF', 'GM_EARTH', 'GM_MERCURY', 'GM_SUN', 'GM_VENUS', 'GPS', 'GSE', 'HOURS_DAY', 'ICRF', 'INCH_M', 'ITRF', 'JD_J2000', 'JD_JAN_5_1941', 'JD_MJD_OFFSET', 'JD_NOV_17_1858', 'JD_T0', 'JD_TDB', 'JD_TT', 'JULIAN_DATE_OF_010541', 'JUPITER', 'JUPITER_BARYCENTER', 'KM_M', 'KeplerianDynamics', 'LBM_TO_KG', 'L_B', 'L_G', 'LatLonAlt2Cart', 'MARS', 'MARS_BARYCENTER', 'MARS_FIXED', 'MERCURY', 'MERCURY_BARYCENTER', 'MILE_M', 'MINS_DAY', 'MINS_HOUR', 'MJD_J2000', 'MOD', 'MOON', 'MOON_CI', 'MOON_ME', 'MOON_OP', 'MOON_PA', 'M_KM', 'NBodyDynamics', 'NEPTUNE_BARYCENTER', 'NUM_SECS', 'NaifId', 'NumericalOrbitDynamics', 'OrbitState', 'OrbitStateRepres', 'PHOBOS', 'PI', 'PI_OVER_TWO', 'PLUTO_BARYCENTER', 'QUASINONSINGULAR_ROE', 'QUASI_NONSINGULAR_OE', 'QuasiNonsingOE', 'QuasiNonsingROE', 'RAD', 'RAD_ARCSEC', 'R_EARTH', 'R_MOON', 'SATURN_BARYCENTER', 'SECS_DAY', 'SECS_HOUR', 'SECS_MINUTE', 'SER', 'SINGULAR_ROE', 'SLUG_TO_KG', 'SOLAR_SYSTEM_BARYCENTER', 'SSB', 'SUN', 'SingularROE', 'TAI', 'TCB', 'TCG', 'TDB', 'TIME_OF_J2000', 'TOD', 'TT', 'TT_TAI_OFFSET', 'TWO_PI', 'URANUS_BARYCENTER', 'UT1', 'UTC', 'VENUS', 'VENUS_BARYCENTER', 'VENUS_FIXED', 'Wrap2Pi', 'Wrap2TwoPi', 'cartesian_to_classical', 'classical_to_cartesian', 'classical_to_delaunay', 'classical_to_equinoctial', 'classical_to_quasi_nonsingular', 'compute_occultation', 'convert_frame', 'convert_orbit_state', 'delaunay_to_classical', 'eccentric_to_mean_anomaly', 'eccentric_to_true_anomaly', 'equinoctial_to_classical', 'mean_to_eccentric_anomaly', 'mean_to_true_anomaly', 'quasi_nonsingular_to_classical', 'relative_quasi_nonsingular_to_classical', 'true_to_eccentric_anomaly', 'true_to_mean_anomaly']
+__all__ = ['A1_TAI_OFFSET', 'ARCSEC_DEG', 'ARCSEC_RAD', 'AzElRange2Cart', 'Body', 'CARTESIAN', 'CLASSICAL_OE', 'Cart2AzElRange', 'Cart2EastNorthUp', 'Cart2LatLonAlt', 'CartesianOrbitState', 'CartesianTwoBodyDynamics', 'ClassicalOE', 'DAYS_CENTURY', 'DAYS_SEC', 'DAYS_WEEK', 'DAYS_YEAR', 'DEG', 'DEG_ARCSEC', 'DEIMOS', 'DELAUNAY_OE', 'Decibel2Decimal', 'Decimal2Decibel', 'DegMinSec2Degrees', 'Degrees2DegMinSec', 'E', 'EARTH', 'EARTH_MOON_BARYCENTER', 'ECEF', 'ECI', 'EMB', 'EME', 'EMR', 'EPS', 'EQUINOTICAL_OE', 'EastNorthUp2Cart', 'EquinoctialOE', 'FOOT_M', 'Frame', 'GCRF', 'GM_EARTH', 'GM_MERCURY', 'GM_MOON', 'GM_SUN', 'GM_VENUS', 'GPS', 'GSE', 'HOURS_DAY', 'ICRF', 'INCH_M', 'ITRF', 'JD_J2000', 'JD_JAN_5_1941', 'JD_MJD_OFFSET', 'JD_NOV_17_1858', 'JD_T0', 'JD_TDB', 'JD_TT', 'JULIAN_DATE_OF_010541', 'JUPITER', 'JUPITER_BARYCENTER', 'KM_M', 'KeplerianDynamics', 'LBM_TO_KG', 'L_B', 'L_G', 'LatLonAlt2Cart', 'MARS', 'MARS_BARYCENTER', 'MARS_FIXED', 'MERCURY', 'MERCURY_BARYCENTER', 'MILE_M', 'MINS_DAY', 'MINS_HOUR', 'MJD_J2000', 'MOD', 'MOON', 'MOON_CI', 'MOON_ME', 'MOON_OP', 'MOON_PA', 'M_KM', 'NBodyDynamics', 'NEPTUNE_BARYCENTER', 'NUM_SECS', 'NaifId', 'NumericalOrbitDynamics', 'OrbitState', 'OrbitStateRepres', 'PHOBOS', 'PI', 'PI_OVER_TWO', 'PLUTO_BARYCENTER', 'QUASINONSINGULAR_ROE', 'QUASI_NONSINGULAR_OE', 'QuasiNonsingOE', 'QuasiNonsingROE', 'RAD', 'RAD_ARCSEC', 'R_EARTH', 'R_MOON', 'SATURN_BARYCENTER', 'SECS_DAY', 'SECS_HOUR', 'SECS_MINUTE', 'SER', 'SINGULAR_ROE', 'SLUG_TO_KG', 'SOLAR_SYSTEM_BARYCENTER', 'SSB', 'SUN', 'SingularROE', 'SpiceInterface', 'TAI', 'TCB', 'TCG', 'TDB', 'TIME_OF_J2000', 'TOD', 'TT', 'TT_TAI_OFFSET', 'TWO_PI', 'URANUS_BARYCENTER', 'UT1', 'UTC', 'VENUS', 'VENUS_BARYCENTER', 'VENUS_FIXED', 'Wrap2Pi', 'Wrap2TwoPi', 'cartesian_to_classical', 'classical_to_cartesian', 'classical_to_delaunay', 'classical_to_equinoctial', 'classical_to_quasi_nonsingular', 'compute_occultation', 'convert_frame', 'convert_orbit_state', 'delaunay_to_classical', 'eccentric_to_mean_anomaly', 'eccentric_to_true_anomaly', 'equinoctial_to_classical', 'mean_to_eccentric_anomaly', 'mean_to_true_anomaly', 'quasi_nonsingular_to_classical', 'relative_quasi_nonsingular_to_classical', 'true_to_eccentric_anomaly', 'true_to_mean_anomaly']
 class Body:
     @staticmethod
-    def Earth(n_max: int = 0, m_max: int = 0, gravity_file: str = 'grgm900.cof') -> Body:
+    def Earth(n_max: int = 0, m_max: int = 0, gravity_file: str = 'grgm900c.cof') -> Body:
         ...
     @staticmethod
     def Mars(n_max: int = 0, m_max: int = 0, gravity_file: str = 'GMM1.cof') -> Body:
@@ -385,6 +385,39 @@ class SingularROE(OrbitState):
     def __init__(self, arg0: numpy.ndarray[numpy.float64[6, 1]], arg1: Frame) -> None:
         ...
     def __repr__(self) -> str:
+        ...
+class SpiceInterface:
+    @staticmethod
+    def convert_time(t_tai: float, from: str, to: str) -> float:
+        ...
+    @staticmethod
+    def extract_pck_coeffs() -> None:
+        ...
+    @staticmethod
+    def get_body_pos_spice(t_tai: float, obs: NaifId, target: NaifId, ref_frame: Frame, ab_correction: str) -> numpy.ndarray[numpy.float64[3, 1]]:
+        ...
+    @staticmethod
+    @typing.overload
+    def get_body_pos_vel(t_tai: float, center: NaifId, target: NaifId) -> numpy.ndarray[numpy.float64[6, 1]]:
+        ...
+    @staticmethod
+    @typing.overload
+    def get_body_pos_vel(t_tai: numpy.ndarray[numpy.float64[m, 1]], center: NaifId, target: NaifId) -> numpy.ndarray[numpy.float64[m, 6]]:
+        ...
+    @staticmethod
+    def get_frame_conversion_mat(t_tai: float, from: Frame, to: Frame) -> numpy.ndarray[numpy.float64[6, 6]]:
+        ...
+    @staticmethod
+    def load_spice_kernel() -> None:
+        ...
+    @staticmethod
+    def string_to_tai(gregorian_date: str) -> float:
+        ...
+    @staticmethod
+    def string_to_tdb(gregorian_date: str) -> float:
+        ...
+    @staticmethod
+    def tdb_to_string_utc(t_tdb: float, precision: int) -> str:
         ...
 @typing.overload
 def AzElRange2Cart(aer: numpy.ndarray[numpy.float64[3, 1]], xyz_ref: numpy.ndarray[numpy.float64[3, 1]]) -> numpy.ndarray[numpy.float64[3, 1]]:
@@ -805,6 +838,7 @@ FOOT_M: float = 0.3048
 GCRF: Frame  # value = <Frame.GCRF: 1>
 GM_EARTH: float = 398600.435507
 GM_MERCURY: float = 22031.868551
+GM_MOON: float = 4902.800118
 GM_SUN: float = 132712440041.27942
 GM_VENUS: float = 324858.592
 GPS: str = 'GPS'

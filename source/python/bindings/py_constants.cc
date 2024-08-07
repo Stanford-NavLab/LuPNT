@@ -61,6 +61,7 @@ void init_constants(py::module& m) {
   m.attr("GM_MERCURY") = py::float_(GM_MERCURY);
   m.attr("GM_VENUS") = py::float_(GM_VENUS);
   m.attr("GM_EARTH") = py::float_(GM_EARTH);
+  m.attr("GM_MOON") = py::float_(GM_MOON);
 
   m.attr("R_MOON") = py::float_(R_MOON);
   m.attr("R_EARTH") = py::float_(R_EARTH);

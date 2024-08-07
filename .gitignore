@@ -1,4 +1,4 @@
-build*
+/*build*/
 .vscode
 cpm_modules
 .DS_Store
