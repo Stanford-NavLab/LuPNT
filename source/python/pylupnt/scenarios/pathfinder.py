@@ -25,7 +25,7 @@ def load():
                 [sma, ecc[i_pl], inc[i_pl], raan[i_pl], aop[i_pl], ma[i_spl]]
             )
 
-    rv0_m2sc_op = pnt.classical_to_cartesian(coe_op, pnt.MU_MOON)
+    rv0_m2sc_op = pnt.classical2cartesian(coe_op, pnt.MU_MOON)
     rv0_m2sc_mi = pnt.FrameConverter.convert(
         t0_tai, rv0_m2sc_op, pnt.MOON_OP, pnt.MOON_CI
     )

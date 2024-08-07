@@ -13,7 +13,7 @@ i = deg2Rad(87.87)
 Omega = deg2Rad(227.89)
 w = deg2Rad(53.38)
 nu = deg2Rad(92.335)
-M = pnt.true_to_mean_anomaly(nu, e)
+M = pnt.true2mean_anomaly(nu, e)
 
 oe = np.array([a, e, i, Omega, w, M])
 

@@ -115,10 +115,16 @@ namespace lupnt {
   /// @param x Decimal value
   /// @return Decibel value
   Real Decimal2Decibel(Real x) { return 10 * log10(x); }
-  VecX Decimal2Decibel(VecX angle) {
-    int n = angle.size();
+  VecX Decimal2Decibel(VecX x) {
+    int n = x.size();
     VecX out(n);
-    for (int i = 0; i < n; i++) out(i) = Decimal2Decibel(angle(i));
+    for (int i = 0; i < n; i++) out(i) = Decimal2Decibel(x(i));
+    return out;
+  }
+  MatX Decimal2Decibel(MatX x) {
+    MatX out(x.rows(), x.cols());
+    for (int i = 0; i < x.rows(); i++)
+      for (int j = 0; j < x.cols(); j++) out(i, j) = Decimal2Decibel(x(i, j));
     return out;
   }
 
@@ -126,10 +132,15 @@ namespace lupnt {
   /// @param x Decibel value
   /// @return Decimal value
   Real Decibel2Decimal(Real x) { return pow(10, x / 10); }
-  VecX Decibel2Decimal(VecX angle) {
-    int n = angle.size();
-    VecX out(n);
-    for (int i = 0; i < n; i++) out(i) = Decibel2Decimal(angle(i));
+  VecX Decibel2Decimal(VecX x) {
+    VecX out(x.size());
+    for (int i = 0; i < x.size(); i++) out(i) = Decibel2Decimal(x(i));
+    return out;
+  }
+  MatX Decibel2Decimal(MatX x) {
+    MatX out(x.rows(), x.cols());
+    for (int i = 0; i < x.rows(); i++)
+      for (int j = 0; j < x.cols(); j++) out(i, j) = Decibel2Decimal(x(i, j));
     return out;
   }
 
@@ -140,7 +151,7 @@ namespace lupnt {
     Real d = floor(deg);
     Real m = floor((deg - d) * 60);
     Real s = (deg - d - m / 60) * 3600;
-    return Vec3{d, m, s};
+    return Vec3(d, m, s);
   }
 
   /// @brief Convert degrees, minutes, and seconds to degrees

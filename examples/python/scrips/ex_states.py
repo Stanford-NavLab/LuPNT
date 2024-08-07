@@ -18,7 +18,7 @@ i = deg2Rad(87.87)
 Omega = deg2Rad(227.89)
 w = deg2Rad(53.38)
 nu = deg2Rad(92.335)
-M = pnt.true_to_mean_anomaly(nu, e)
+M = pnt.true2mean_anomaly(nu, e)
 
 x_oe = pnt.ClassicalOE(np.array([a, e, i, Omega, w, M]), frame=pnt.Frame.ITRF)
 print(" ")
@@ -29,7 +29,7 @@ print("")
 print("a = ", x_oe.a)
 
 # Convert orbital elements to Cartesian state
-x_cart_from_oe = pnt.classical_to_cartesian(x_oe, mu=pnt.MU_EARTH)
+x_cart_from_oe = pnt.classical2cartesian(x_oe, mu=pnt.MU_EARTH)
 print(" ")
 print("Converted Cartesian State:")
 print(x_cart_from_oe.vector)

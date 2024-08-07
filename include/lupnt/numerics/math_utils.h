@@ -38,9 +38,12 @@ namespace lupnt {
   VecX Wrap2TwoPi(VecX angle);
 
   Real Decimal2Decibel(Real x);
-  Real Decibel2Decimal(Real x);
   VecX Decimal2Decibel(VecX x);
+  MatX Decimal2Decibel(MatX x);
+
+  Real Decibel2Decimal(Real x);
   VecX Decibel2Decimal(VecX x);
+  MatX Decibel2Decimal(MatX x);
 
   Real round(Real x, int n = 0);
   Real frac(Real x);

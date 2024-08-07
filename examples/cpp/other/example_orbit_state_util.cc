@@ -33,6 +33,6 @@ int main() {
 
   Vec3 r_cart_ref{0, 0, 0};
   Vec3 r_aer{1e-3, 1e-3, 5e3};
-  Vec3 r = AzElRange2Cart(r_cart_ref, r_aer);
+  Vec3 r = AzElRange2Cart(r_aer, r_cart_ref);
   std::cout << "r = " << r.transpose() << std::endl;
 }
