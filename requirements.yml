@@ -28,5 +28,6 @@ dependencies:
   - setuptools
   - spiceypy
   - tqdm
-  - pybind11-stubgen
+  - mypy
   - ipywidgets
+  - ipympl

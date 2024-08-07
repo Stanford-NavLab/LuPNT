@@ -23,8 +23,8 @@ A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timi
     :caption: Getting Started
 
     introduction
+    development
     builddocs
-
 
 .. _tutorial_index:
 
