@@ -222,7 +222,7 @@ TEST_CASE("OrbitState", "Coordinates") {
 
 //   // Propagation
 //   real minute = 6;
-//   mjd_utc = mjd0_utc + minute * SECS_PER_MINUTE / SECS_PER_DAY;
+//   mjd_utc = mjd0_utc + minute * SECS_MINUTE / SECS_PER_DAY;
 //   real mjd_ut1 = UTCtoUT1(mjd_utc);
 //   real t = (mjd_utc - mjd0_utc) * SECS_PER_DAY;
 //   coe = KeplerianDynamics::PropagateClassicalOE(coe0, t, GM_EARTH);

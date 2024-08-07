@@ -25,16 +25,14 @@ def load():
                 [sma, ecc[i_pl], inc[i_pl], raan[i_pl], aop[i_pl], ma[i_spl]]
             )
 
-    rv0_m2sc_op = pnt.classical2cartesian(coe_op, pnt.MU_MOON)
-    rv0_m2sc_mi = pnt.FrameConverter.convert(
-        t0_tai, rv0_m2sc_op, pnt.MOON_OP, pnt.MOON_CI
-    )
+    rv0_m2sc_op = pnt.classical2cartesian(coe_op, pnt.GM_MOON)
+    rv0_m2sc_mi = pnt.convert_frame(t0_tai, rv0_m2sc_op, pnt.MOON_OP, pnt.MOON_CI)
 
     # Time
     sma = coe_op[0, 0]  # [km] Semi-major axis
-    period = 2 * np.pi * np.sqrt(np.power(sma, 3) / pnt.MU_MOON)  # [s] Orbital period
-    Dt = 5 * pnt.SECS_PER_MINUTE  # [s] Simulation time step
-    dt = 5 * pnt.SECS_PER_MINUTE  # [s] Propagation time step
+    period = 2 * np.pi * np.sqrt(np.power(sma, 3) / pnt.GM_MOON)  # [s] Orbital period
+    Dt = 5 * pnt.SECS_MINUTE  # [s] Simulation time step
+    dt = 5 * pnt.SECS_MINUTE  # [s] Propagation time step
     tf = period  # [s] Simulation final time
     Nt = int(tf / Dt)  # [-] Number of time steps
     tspan = np.linspace(0, tf, Nt)  # [s] Time since first epoch
@@ -52,14 +50,14 @@ def load():
     rv_m2sc_pa = np.zeros((N_sat, Nt, 6))
     for i_sat in range(N_sat):
         rv_m2sc_mi[i_sat] = dyn.propagate(rv0_m2sc_mi[i_sat], t0_tai, t_tai)
-        rv_m2sc_pa[i_sat] = pnt.FrameConverter.convert(
+        rv_m2sc_pa[i_sat] = pnt.convert_frame(
             t_tai, rv_m2sc_mi[i_sat], pnt.MOON_CI, pnt.MOON_PA
         )
 
     rv_m2e_mi = pnt.SpiceInterface.get_body_pos_vel(t_tai, pnt.MOON, pnt.EARTH)
-    rv_m2e_pa = pnt.FrameConverter.convert(t_tai, rv_m2e_mi, pnt.MOON_CI, pnt.MOON_PA)
+    rv_m2e_pa = pnt.convert_frame(t_tai, rv_m2e_mi, pnt.MOON_CI, pnt.MOON_PA)
     rv_m2s_mi = pnt.SpiceInterface.get_body_pos_vel(t_tai, pnt.MOON, pnt.SUN)
-    rv_m2s_pa = pnt.FrameConverter.convert(t_tai, rv_m2s_mi, pnt.MOON_CI, pnt.MOON_PA)
+    rv_m2s_pa = pnt.convert_frame(t_tai, rv_m2s_mi, pnt.MOON_CI, pnt.MOON_PA)
 
     # Directions
     e_sc2m = np.array(-rv_m2sc_mi[:, :, 0:3])

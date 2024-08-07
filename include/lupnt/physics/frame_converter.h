@@ -64,27 +64,28 @@ namespace lupnt {
   CartesianOrbitState ConvertFrame(Real t_tai, const CartesianOrbitState &state_in,
                                    Frame frame_out);
 
-  Mat6 RotOp2Mi(Real t_tai);
+  Vec6 ITRF2GCRF(Real t_tai, const Vec6 &rv);
+  Vec6 GCRF2ITRF(Real t_tai, const Vec6 &rv);
 
-  Vec6 ITRFtoGCRF(Real t_tai, const Vec6 &rv);
-  Vec6 GCRFtoITRF(Real t_tai, const Vec6 &rv);
+  Vec6 GCRF2EME(Real t_tai, const Vec6 &rv);
+  Vec6 EME2GCRF(Real t_tai, const Vec6 &rv);
 
-  Vec6 GCRFtoEME(Real t_tai, const Vec6 &rv);
-  Vec6 EMEtoGCRF(Real t_tai, const Vec6 &rv);
+  Vec6 GCRF2ICRF(Real t_tai, const Vec6 &rv);
+  Vec6 ICRF2GCRF(Real t_tai, const Vec6 &rv);
 
-  Vec6 GCRFtoICRF(Real t_tai, const Vec6 &rv);
-  Vec6 ICRFtoGCRF(Real t_tai, const Vec6 &rv);
+  Vec6 GCRF2MoonCI(Real t_tai, const Vec6 &rv);
+  Vec6 MoonMI2GCRF(Real t_tai, const Vec6 &rv);
 
-  Vec6 GCRFtoMI(Real t_tai, const Vec6 &rv);
-  Vec6 MItoGCRF(Real t_tai, const Vec6 &rv);
+  Vec6 MoonMI2MoonPA(Real t_tai, const Vec6 &rv);
+  Vec6 MoonPA2MoonCI(Real t_tai, const Vec6 &rv);
 
-  Vec6 MItoPA(Real t_tai, const Vec6 &rv);
-  Vec6 PAtoMI(Real t_tai, const Vec6 &rv);
+  Vec6 MoonPA2MoonME(Real t_tai, const Vec6 &rv);
+  Vec6 MoonME2MoonPA(Real t_tai, const Vec6 &rv);
 
-  Vec6 PAtoME(Real t_tai, const Vec6 &rv);
-  Vec6 MEtoPA(Real t_tai, const Vec6 &rv);
+  Vec6 GCRF2EMR(Real t_tai, const Vec6 &rv);
+  Vec6 EMR2GCRF(Real t_tai, const Vec6 &rv);
 
-  Vec6 GCRFtoEMR(Real t_tai, const Vec6 &rv);
-  Vec6 EMRtoGCRF(Real t_tai, const Vec6 &rv);
+  Vec6 MoonME2MoonOP(Real t_tai, const Vec6 &rv);
+  Vec6 MoonOP2MoonME(Real t_tai, const Vec6 &rv);
 
 }  // namespace lupnt

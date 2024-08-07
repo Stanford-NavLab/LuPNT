@@ -125,7 +125,7 @@ TEST_CASE("Test_CartesianJ2Dynamics") {
   real w = 0.0 * RAD_PER_DEG;       // [rad]
   real M = 0.0 * RAD_PER_DEG;       // [rad]
 
-  double GM = MU_MOON;
+  double GM = GM_MOON;
   double J2 = J2_MOON;
   double Rbody = R_MOON;
   real dt = 10.0;

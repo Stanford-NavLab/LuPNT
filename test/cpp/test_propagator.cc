@@ -10,7 +10,7 @@ using namespace Catch::Matchers;
 
 namespace {
 
-  double MU_MOON = 4902.800066;  // [km^3/s^2]
+  double GM_MOON = 4902.800066;  // [km^3/s^2]
 
   ODE TwoBodyODE = [](const Real t, const VecX& x) {
     VecX acc(6);
@@ -20,7 +20,7 @@ namespace {
     Real r_norm = r.norm();
 
     acc.head(3) = v;
-    acc.tail(3) = -MU_MOON * r / pow(r_norm, 3);
+    acc.tail(3) = -GM_MOON * r / pow(r_norm, 3);
 
     return acc;
   };

@@ -17,7 +17,7 @@ print(
 print(rv_in_ad)
 print(" ")
 
-rv_out_ad = pnt.FrameConverter.convert(epoch, rv_in_ad, frame_in, frame_out)
+rv_out_ad = pnt.convert_frame(epoch, rv_in_ad, frame_in, frame_out)
 
 print("ITRF:")
 print(rv_out_ad)

@@ -28,14 +28,24 @@
 
 namespace lupnt {
 
-  std::map<std::pair<Frame, Frame>, std::function<Vec6(Real, const Vec6& rv)>> frame_conversions
-      = {FRAME_CONVERSION(GCRF, ITRF, GCRFtoITRF),   FRAME_CONVERSION(ITRF, GCRF, ITRFtoGCRF),
-         FRAME_CONVERSION(GCRF, EME, GCRFtoEME),     FRAME_CONVERSION(EME, GCRF, EMEtoGCRF),
-         FRAME_CONVERSION(GCRF, ICRF, GCRFtoICRF),   FRAME_CONVERSION(ICRF, GCRF, ICRFtoGCRF),
-         FRAME_CONVERSION(GCRF, MOON_CI, GCRFtoMI),  FRAME_CONVERSION(MOON_CI, GCRF, MItoGCRF),
-         FRAME_CONVERSION(MOON_CI, MOON_PA, MItoPA), FRAME_CONVERSION(MOON_PA, MOON_CI, PAtoMI),
-         FRAME_CONVERSION(MOON_PA, MOON_ME, PAtoME), FRAME_CONVERSION(MOON_ME, MOON_PA, MEtoPA),
-         FRAME_CONVERSION(GCRF, EMR, GCRFtoEMR),     FRAME_CONVERSION(EMR, GCRF, EMRtoGCRF)};
+  std::map<std::pair<Frame, Frame>, std::function<Vec6(Real, const Vec6& rv)>> frame_conversions = {
+      FRAME_CONVERSION(GCRF, ITRF, GCRF2ITRF),
+      FRAME_CONVERSION(ITRF, GCRF, ITRF2GCRF),
+      FRAME_CONVERSION(GCRF, EME, GCRF2EME),
+      FRAME_CONVERSION(EME, GCRF, EME2GCRF),
+      FRAME_CONVERSION(GCRF, ICRF, GCRF2ICRF),
+      FRAME_CONVERSION(ICRF, GCRF, ICRF2GCRF),
+      FRAME_CONVERSION(GCRF, MOON_CI, GCRF2MoonCI),
+      FRAME_CONVERSION(MOON_CI, GCRF, MoonMI2GCRF),
+      FRAME_CONVERSION(MOON_CI, MOON_PA, MoonMI2MoonPA),
+      FRAME_CONVERSION(MOON_PA, MOON_CI, MoonPA2MoonCI),
+      FRAME_CONVERSION(MOON_PA, MOON_ME, MoonPA2MoonME),
+      FRAME_CONVERSION(MOON_ME, MOON_PA, MoonME2MoonPA),
+      FRAME_CONVERSION(GCRF, EMR, GCRF2EMR),
+      FRAME_CONVERSION(EMR, GCRF, EMR2GCRF),
+      FRAME_CONVERSION(MOON_ME, MOON_OP, MoonME2MoonOP),
+      FRAME_CONVERSION(MOON_OP, MOON_ME, MoonOP2MoonME),
+  };
 
   /// @brief Convert the state vector from one coordinate system to another
   /// (with integer ID input)
@@ -122,32 +132,6 @@ namespace lupnt {
     return rv_out.leftCols(3);
   }
 
-  Mat6 RotOp2Mi(Real t_tai) {
-    Vec6 rv_earth_icrf = GetBodyPosVel(t_tai, NaifId::SUN, NaifId::EARTH);
-    Vec6 rv_moon_icrf = GetBodyPosVel(t_tai, NaifId::SUN, NaifId::MOON);
-
-    // IAU pole
-    Vec3 iau_pole = Vec3::UnitZ();
-    Vec3 iau_pole_icrf = ConvertFrame(t_tai, iau_pole, Frame::MOON_PA, Frame::GCRF);
-
-    // MOON_OP unit vectors
-    Vec3 dr = rv_earth_icrf.head(3) - rv_moon_icrf.head(3);
-    Vec3 dv = rv_earth_icrf.tail(3) - rv_moon_icrf.tail(3);
-    Vec3 z_op = dr.cross(dv).normalized();
-    Vec3 x_op = iau_pole_icrf.cross(z_op).normalized();
-    Vec3 y_op = z_op.cross(x_op).normalized();
-
-    // create rotation matrix from MOON_OP to MOON_CI
-    Mat3 R_op2mi;
-    R_op2mi << x_op, y_op, z_op;
-
-    Mat6 R_op2mi_tot = Mat6::Zero();
-    R_op2mi_tot.topLeftCorner(3, 3) = R_op2mi;
-    R_op2mi_tot.bottomRightCorner(3, 3) = R_op2mi;
-
-    return R_op2mi_tot.cast<double>();
-  }
-
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 34
   Mat3 RotPrecessionNutation(Real t_tai) {
     Real t_tt = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TT);
@@ -207,7 +191,7 @@ namespace lupnt {
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 37
-  Vec6 GCRFtoITRF(Real t_tai, const Vec6& rv_gcrf) {
+  Vec6 GCRF2ITRF(Real t_tai, const Vec6& rv_gcrf) {
     Mat3 R_po = RotPolarMotion(t_tai);
     Mat3 R_pn = RotPrecessionNutation(t_tai);
     Mat3 R_s = RotSideralMotion(t_tai);
@@ -228,7 +212,7 @@ namespace lupnt {
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 37
-  Vec6 ITRFtoGCRF(Real t_tai, const Vec6& rv_itrf) {
+  Vec6 ITRF2GCRF(Real t_tai, const Vec6& rv_itrf) {
     Mat3 R_po = RotPolarMotion(t_tai);
     Mat3 R_pn = RotPrecessionNutation(t_tai);
     Mat3 R_s = RotSideralMotion(t_tai);
@@ -281,7 +265,7 @@ namespace lupnt {
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 39
-  Vec6 GCRFtoEME(Real t_tai, const Vec6& rv_gcrf) {
+  Vec6 GCRF2EME(Real t_tai, const Vec6& rv_gcrf) {
     Mat3d B_e = EarthFrameBiasMatrix();
     Vec3 r_gcrf = rv_gcrf.head(3);
     Vec3 v_gcrf = rv_gcrf.tail(3);
@@ -295,7 +279,7 @@ namespace lupnt {
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 39
-  Vec6 EMEtoGCRF(Real t_tai, const Vec6& rv_eme) {
+  Vec6 EME2GCRF(Real t_tai, const Vec6& rv_eme) {
     Mat3d B_e = EarthFrameBiasMatrix();
     Vec3 r_eme = rv_eme.head(3);
     Vec3 v_eme = rv_eme.tail(3);
@@ -310,28 +294,28 @@ namespace lupnt {
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 39
-  Vec6 GCRFtoICRF(Real t_tai, const Vec6& rv_gcrf) {
+  Vec6 GCRF2ICRF(Real t_tai, const Vec6& rv_gcrf) {
     Vec6 rv_earth2ssb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::SSB);
     Vec6 rv_icrf = rv_gcrf + rv_earth2ssb;
     return rv_icrf;
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 40
-  Vec6 ICRFtoGCRF(Real t_tai, const Vec6& rv_icrf) {
+  Vec6 ICRF2GCRF(Real t_tai, const Vec6& rv_icrf) {
     Vec6 rv_ssb2earth = GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH);
     Vec6 rv_gcrf = rv_icrf + rv_ssb2earth;
     return rv_gcrf;
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 40
-  Vec6 GCRFtoMI(Real t_tai, const Vec6& rv_gcrf) {
+  Vec6 GCRF2MoonCI(Real t_tai, const Vec6& rv_gcrf) {
     Vec6 rv_earth2moon = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON);
     Vec6 rv_mi = rv_gcrf + rv_earth2moon;
     return rv_mi;
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 40
-  Vec6 MItoGCRF(Real t_tai, const Vec6& rv_mi) {
+  Vec6 MoonMI2GCRF(Real t_tai, const Vec6& rv_mi) {
     Vec6 rv_earth2moon = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON);
     Vec6 rv_gcrf = rv_mi - rv_earth2moon;
     return rv_gcrf;
@@ -361,7 +345,7 @@ namespace lupnt {
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
-  Vec6 MItoPA(Real t_tai, const Vec6& rv_mi) {
+  Vec6 MoonMI2MoonPA(Real t_tai, const Vec6& rv_mi) {
     Mat3d Rot_mi2pa = RotMItoPA(t_tai);
     Mat3d Rot_mi2pa_dot = RotMItoPAdot(t_tai);
 
@@ -377,7 +361,7 @@ namespace lupnt {
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
-  Vec6 PAtoMI(Real t_tai, const Vec6& rv_pa) {
+  Vec6 MoonPA2MoonCI(Real t_tai, const Vec6& rv_pa) {
     Mat3d Rot_mi2pa = RotMItoPA(t_tai);
     Mat3d Rot_mi2pa_dot = RotMItoPAdot(t_tai);
 
@@ -402,7 +386,7 @@ namespace lupnt {
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 43
-  Vec6 PAtoME(Real t_tai, const Vec6& rv_pa) {
+  Vec6 MoonPA2MoonME(Real t_tai, const Vec6& rv_pa) {
     Mat3d B_moon = MoonFrameBiasMatrix();
     Vec3 r_pa = rv_pa.head(3);
     Vec3 v_pa = rv_pa.tail(3);
@@ -416,7 +400,7 @@ namespace lupnt {
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 43
-  Vec6 MEtoPA(Real t_tai, const Vec6& rv_me) {
+  Vec6 MoonME2MoonPA(Real t_tai, const Vec6& rv_me) {
     Mat3d B_moon = MoonFrameBiasMatrix();
     Vec3 r_me = rv_me.head(3);
     Vec3 v_me = rv_me.tail(3);
@@ -431,17 +415,73 @@ namespace lupnt {
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 48
-  Vec6 GCRFtoEMR(Real t_tai, const Vec6& rv_gcrf) {
+  Vec6 GCRF2EMR(Real t_tai, const Vec6& rv_gcrf) {
     Vec6 rv_earth2emb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::EMB);
     Vec6 rv_emr = Inertial2Synodic(rv_earth2emb, rv_gcrf);
     return rv_emr;
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 48
-  Vec6 EMRtoGCRF(Real t_tai, const Vec6& rv_emr) {
+  Vec6 EMR2GCRF(Real t_tai, const Vec6& rv_emr) {
     Vec6 rv_earth2emb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::EMB);
     Vec6 rv_gcrf = Synodic2Intertial(rv_earth2emb, rv_emr);
     return rv_gcrf;
+  }
+
+  /// @brief Transform from moon frame to earth frame
+  /// @param t_tai
+  /// @param rv_me
+  /// @return Vec6
+  /// @ref
+  /// T. A. Ely, ‘Stable Constellations of Frozen Elliptical Inclined Lunar Orbits’, J of
+  /// Astronaut Sci, vol. 53, no. 3, pp. 301–316, Sep. 2005, doi: 10.1007/BF03546355.
+  Vec6 MoonME2MoonOP(Real t_tai, const Vec6& rv_me) {
+    Vec6 rv_m2e = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH);
+    Vec3 r = rv_m2e.head(3);
+    Vec3 v = rv_m2e.tail(3);
+
+    Vec3 z_op = r.cross(v).normalized();
+    Vec3 i_pole = Vec3::UnitZ();
+    Vec3 x_op = i_pole.cross(z_op).normalized();
+    Vec3 y_op = z_op.cross(x_op).normalized();
+
+    Mat3 R_op2me;
+    R_op2me << x_op, y_op, z_op;
+    Mat3 R_me2op = R_op2me.transpose();
+
+    Vec3 r_op = R_me2op * rv_me.head(3);
+    Vec3 v_op = R_me2op * rv_me.tail(3);
+    Vec6 rv_op;
+    rv_op << r_op, v_op;
+    return rv_op;
+  }
+
+  /// @brief Transform from moon frame to earth frame
+  /// @param t_tai
+  /// @param rv_op
+  /// @return Vec6
+  /// @ref
+  /// T. A. Ely, ‘Stable Constellations of Frozen Elliptical Inclined Lunar Orbits’, J of
+  /// Astronaut Sci, vol. 53, no. 3, pp. 301–316, Sep. 2005, doi: 10.1007/BF03546355.
+  Vec6 MoonOP2MoonME(Real t_tai, const Vec6& rv_op) {
+    Vec6 rv_m2e = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH);
+    Vec3 r = rv_m2e.head(3);
+    Vec3 v = rv_m2e.tail(3);
+
+    Vec3 z_op = r.cross(v).normalized();
+    Vec3 i_pole = Vec3::UnitZ();
+    Vec3 x_op = i_pole.cross(z_op).normalized();
+    Vec3 y_op = z_op.cross(x_op).normalized();
+
+    Mat3 R_op2me;
+    R_op2me << x_op, y_op, z_op;
+    Mat3 R_me2op = R_op2me.transpose();
+
+    Vec3 r_me = R_op2me * rv_op.head(3);
+    Vec3 v_me = R_op2me * rv_op.tail(3);
+    Vec6 rv_me;
+    rv_me << r_me, v_me;
+    return rv_me;
   }
 
 }  // namespace lupnt

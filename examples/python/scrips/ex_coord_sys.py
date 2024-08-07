@@ -11,7 +11,7 @@ print(
 print(rv_in)
 print(" ")
 
-rv_out = pnt.FrameConverter.convert(
+rv_out = pnt.convert_frame(
     epoch, rv_in, frame_in=pnt.Frame.GCRF, frame_out=pnt.Frame.ITRF
 )
 

@@ -90,6 +90,31 @@ namespace lupnt {
       return rv_out.leftCols(3);
     }
 
+    Mat6 RotOp2Mi(Real t_tai) {
+      Vec6 rv_earth_icrf = GetBodyPosVel(t_tai, NaifId::SUN, NaifId::EARTH);
+      Vec6 rv_moon_icrf = GetBodyPosVel(t_tai, NaifId::SUN, NaifId::MOON);
+
+      // IAU pole
+      Vec3 iau_pole = Vec3::UnitZ();
+      Vec3 iau_pole_icrf = ConvertFrame(t_tai, iau_pole, Frame::MOON_PA, Frame::GCRF);
+
+      // MOON_OP unit vectors
+      Vec3 dr = rv_earth_icrf.head(3) - rv_moon_icrf.head(3);
+      Vec3 dv = rv_earth_icrf.tail(3) - rv_moon_icrf.tail(3);
+      Vec3 z_op = dr.cross(dv).normalized();
+      Vec3 x_op = iau_pole_icrf.cross(z_op).normalized();
+      Vec3 y_op = z_op.cross(x_op).normalized();
+
+      // create rotation matrix from MOON_OP to MOON_CI
+      Mat3 R_op2mi;
+      R_op2mi << x_op, y_op, z_op;
+
+      Mat6 R_op2mi_tot = Mat6::Zero();
+      R_op2mi_tot.topLeftCorner(3, 3) = R_op2mi;
+      R_op2mi_tot.bottomRightCorner(3, 3) = R_op2mi;
+
+      return R_op2mi_tot.cast<double>();
+    }
     ///
     /// @brief Convert the state vector from one coordinate system to another
     /// (with integer ID input)
