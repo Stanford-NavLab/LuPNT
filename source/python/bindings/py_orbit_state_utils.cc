@@ -102,36 +102,15 @@ void init_orbit_state_utils(py::module &m) {
   VECTORIZED_BINDING_FROM_REAL_REAL("true_to_mean_anomaly", True2MeanAnomaly, "f", "e");
 
   // Coordinate System Conversions
-  // VECTORIZED_BINDING_FROM_VECTOR("LatLonAlt2Cart", LatLonAlt2Cart, 3, "r_geo");
-  m.def(
-      "LatLonAlt2Cart",
-      [](const Vecd<3> &x) -> Vecd<3> {
-        return LatLonAlt2Cart(x.cast<Real>().eval()).cast<double>();
-      },
-      py::arg("r_geo"));
-  m.def(
-      "LatLonAlt2Cart",
-      [](const Matd<-1, 3> &x) -> Matd<-1, 3> {
-        return LatLonAlt2Cart(x.cast<Real>().eval()).cast<double>();
-      },
-      py::arg("r_geo"));
+  VECTORIZED_BINDING_FROM_VECTOR("lat_lon_alt_to_cart", LatLonAlt2Cart, 3, "r_geo");
+  VECTORIZED_BINDING_FROM_VECTOR("cart_to_lat_lon_alt", Cart2LatLonAlt, 3, "r_cart");
+  VECTORIZED_BINDING_FROM_VECTOR_REAL("lat_lon_alt_to_cart", LatLonAlt2Cart, 3, "r_geo", "R_body");
+  VECTORIZED_BINDING_FROM_VECTOR_REAL("cart_to_lat_lon_alt", Cart2LatLonAlt, 3, "r_cart", "R_body");
 
-  // VECTORIZED_BINDING_FROM_VECTOR("Cart2LatLonAlt", Cart2LatLonAlt, 3, "r_cart");
-  m.def(
-      "Cart2LatLonAlt",
-      [](const Vecd<3> &x) -> Vecd<3> {
-        return Cart2LatLonAlt(x.cast<Real>().eval()).cast<double>();
-      },
-      py::arg("r_cart"));
-  m.def(
-      "Cart2LatLonAlt",
-      [](const Matd<-1, 3> &x) -> Matd<-1, 3> {
-        return Cart2LatLonAlt(x.cast<Real>().eval()).cast<double>();
-      },
-      py::arg("r_cart"));
-
-  VECTORIZED_BINDING_FROM_VECTOR_VECTOR("EastNorthUp2Cart", EastNorthUp2Cart, 3, "enu", "xyz_ref");
-  VECTORIZED_BINDING_FROM_VECTOR_VECTOR("Cart2EastNorthUp", Cart2EastNorthUp, 3, "xzy", "xyz_ref");
-  VECTORIZED_BINDING_FROM_VECTOR_VECTOR("Cart2AzElRange", Cart2AzElRange, 3, "xzy", "xyz_ref");
-  VECTORIZED_BINDING_FROM_VECTOR_VECTOR("AzElRange2Cart", AzElRange2Cart, 3, "aer", "xyz_ref");
+  VECTORIZED_BINDING_FROM_VECTOR_VECTOR("east_north_up_to_cart", EastNorthUp2Cart, 3, "enu",
+                                        "xyz_ref");
+  VECTORIZED_BINDING_FROM_VECTOR_VECTOR("cart_to_east_north_up", Cart2EastNorthUp, 3, "xzy",
+                                        "xyz_ref");
+  VECTORIZED_BINDING_FROM_VECTOR_VECTOR("cart_to_az_el_range", Cart2AzElRange, 3, "xzy", "xyz_ref");
+  VECTORIZED_BINDING_FROM_VECTOR_VECTOR("az_el_range_to_cart", AzElRange2Cart, 3, "aer", "xyz_ref");
 }

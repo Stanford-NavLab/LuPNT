@@ -106,7 +106,11 @@ namespace lupnt {
   /// doi: 10.1007/978-3-642-58351-3.
   Vec3 AccelerationPointMass(const Vec3& r, const Vec3& s, Real GM) {
     Vec3 d = r - s;
-    Vec3 a = (-GM) * (d / pow(d.norm(), 3) + s / pow(s.norm(), 3));
+    // a = -GM * (d / |d|^3 + s / |s|^3)
+    Vec3 a;
+    if (s.norm() > EPS) a += s / pow(s.norm(), 3);
+    if (d.norm() > EPS) a += d / pow(d.norm(), 3);
+    a *= -GM;
     return a;
   }
 
@@ -119,7 +123,7 @@ namespace lupnt {
   /// @param P0 Solar radiation pressure at 1 AUa
   /// @param AU Length of one Astronomical Unit
   /// @return Acceleration [km/s^2]
-  /// @ref
+  /// @note
   /// O. Montenbruck and G. Eberhard, Satellite orbits: models, methods, and
   /// applications. Berlin : New York: Springer, 2000.
   /// doi: 10.1007/978-3-642-58351-3.

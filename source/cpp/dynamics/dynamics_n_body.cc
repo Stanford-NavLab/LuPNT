@@ -22,7 +22,7 @@ namespace lupnt {
   NBodyDynamics::NBodyDynamics(std::string integratorType)
       : NumericalOrbitDynamics(std::bind(&NBodyDynamics::ComputeRates, this, std::placeholders::_1,
                                          std::placeholders::_2),
-                               OrbitStateRepres::CARTESIAN, integratorType){};
+                               OrbitStateRepres::CARTESIAN, integratorType) {};
 
   VecX NBodyDynamics::ComputeRates(Real t_tai, const VecX& rv) const {
     assert(rv.size() == 6);
