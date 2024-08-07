@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
 from .. import utils
+
 from .. import _pylupnt as _pnt
 
 

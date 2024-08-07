@@ -14,9 +14,8 @@ except ImportError as e:
     # this was installed with as a python wheel
     from _pylupnt import *
 
+    from utils import *
     import plot
     import render
-    from utils import *
     from math_utils import *
     import scenarios
-    import dataset

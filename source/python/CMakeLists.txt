@@ -24,21 +24,12 @@ if(APPLE)
 endif(APPLE)
 install(TARGETS _pylupnt DESTINATION pylupnt)
 
-# ---- Utility to generate stubs ----
-
-add_custom_target(pylupnt-stubs ALL
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target _pylupnt
-    COMMAND pybind11-stubgen pylupnt --output-dir "." --enum-class-locations "Frame:pylupnt"
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-    COMMENT "Building _pylupnt and generating Python stubs using pybind11-stubgen"
-)
-
 # ---- Utility for development build ----
 
 add_custom_target(pylupnt-dev ALL
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target _pylupnt
-    COMMAND pybind11-stubgen pylupnt --output-dir "." --enum-class-locations "Frame:pylupnt"
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:_pylupnt> ${CMAKE_CURRENT_LIST_DIR}/pylupnt
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-    COMMENT "Building _pylupnt, generating stubs, and copying _pylupnt to current directory"
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:_pylupnt> .
+    COMMAND stubgen -m _pylupnt -o .                   
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/pylupnt
+    COMMENT "Building _pylupnt, removing old stubs, generating new stubs, and copying _pylupnt to current directory"
 )
