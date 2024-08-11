@@ -1,0 +1,46 @@
+name: Python
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - guillemc
+  pull_request:
+    branches:
+      - master
+      - main
+
+env:
+  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
+
+jobs:
+  python:
+    name: "${{ matrix.os }} :: Python ${{ matrix.python-version }}"
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.11"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+
+      - name: Install OpenMP (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install -y libomp-dev
+
+      - name: Install OpenMP (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install libomp
+
+      - name: Install Python bindings using pip
+        run: python -m pip install .[test] -v
+
+      - name: Run Python tests
+        run: python -m pytest test/python -v
