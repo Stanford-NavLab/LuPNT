@@ -19,14 +19,16 @@
 
 namespace lupnt {
 
-enum class ISLMeasurementType {
-  PR,   // Pseudorange
-  PRR,  // Pseudorange rate
-  TWR,  // Two-way range
-  TWRR  // Two-way range rate
+enum class IslMeasurementType {
+  PR,    // Pseudorange
+  PRR,   // Pseudorange rate
+  TWR,   // Two-way range
+  TWRR,  // Two-way range rate
+  DWR,   // Dual one-way range
+  DWRR,  // Dual one-way range rate
 };
 
-class ISLMeasurement {
+class IslMeasurement {
  private:
   Spacecraft* transmit_sat;
   Spacecraft* receiver_sat;
@@ -43,19 +45,19 @@ class ISLMeasurement {
   double delay_tw;
 
  public:
-  ISLMeasurement(Spacecraft* transmit_sat, Spacecraft* receiver_sat);
+  IslMeasurement(Spacecraft* transmit_sat, Spacecraft* receiver_sat);
   double GetCN0() const { return CN0; }
 
   // True Measurement Generation
-  VecXd GetTrueISLMeasurement(double epoch);
+  VecXd GetTrueIslMeasurement(double epoch);
 
   // Predicted Measurement
-  VecXd GetPredictedISLMeasurement(double epoch, Vec6 rv_trans_pred,
+  VecXd GetPredictedIslMeasurement(double epoch, Vec6 rv_trans_pred,
                                    Vec6 rv_rec_pred, Vec2 clk_trans_pred,
                                    Vec2 clk_rec_pred,
-                                   std::vector<ISLMeasurementType> meas_type,
+                                   std::vector<IslMeasurementType> meas_type,
                                    Frame frame_in = Frame::MOON_CI);
-  VecXd GetPredictedISLPR(double epoch, Vec6);
+  VecXd GetPredictedIslPR(double epoch, Vec6);
 };
 
 }  // namespace lupnt
