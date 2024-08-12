@@ -18,7 +18,7 @@
 
 namespace lupnt {
 
-class GnssTransmission;
+struct GnssTransmission;
 class GnssTransmitter;
 class GnssReceiver;
 

@@ -82,7 +82,7 @@ ITransmission SpaceChannel::ComputeLinkBudget(std::shared_ptr<Transmitter> &tx,
   double CN0 = EIRP_dB - fsl_loss_dB + 228.6 + G_T_rx_dB + loss;
   double CN = CN0 - 10.0 * log10(tx->bandwidth);
   double RP = CN0 - 228.6 + 10.0 * log10(rx->rx_param_.Ts);  // Received Power
-  double RP_N0 = RP - 10.0 * log10(rx.rx_param_.Ts);  // Received Power/Noise
+  double RP_N0 = RP - 10.0 * log10(rx->rx_param_.Ts);  // Received Power/Noise
 
   return received_trans;
 }

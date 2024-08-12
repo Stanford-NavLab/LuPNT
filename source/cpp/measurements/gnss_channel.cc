@@ -32,11 +32,26 @@ std::vector<GnssTransmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
 
   // Messages from other comms systems that can generate Gnss messages
   for (auto &tx : tx_devices) {
-    double tau = SolveLightTimeDelayRx(tx, rx, t);
-    std::shared_ptr<CartesianOrbitState> rv_rx_gcrf =
-        rx->GetAgent()->GetCartesianGCRFStateAtEpoch(t);
-    std::shared_ptr<CartesianOrbitState> rv_tx_gcrf =
-        tx->GetAgent()->GetCartesianGCRFStateAtEpoch(t - tau);
+    // Solve light time delay
+    double tau = 0.0;  // light time delay
+    auto rv_rx_gcrf = rx.GetAgent()->GetCartesianGCRFStateAtEpoch(t);
+    auto rv_tx_gcrf = tx->GetAgent()->GetCartesianGCRFStateAtEpoch(t - tau);
+
+    // Compute Light time delay
+    double tau_prev = 0.0;  // propagation time
+    int n_iter = 0;
+    int max_iter = 100;
+
+    for (int n_iter = 0; n_iter < max_iter; n_iter++) {
+      rv_tx_gcrf = tx->GetAgent()->GetCartesianGCRFStateAtEpoch(t - tau);
+      double rho = (rv_tx_gcrf->r() - rv_rx_gcrf->r()).norm().val();
+      tau = rho / C;
+      if (fabs(tau - tau_prev) < 1e-12)
+        break;
+      else {
+        tau_prev = tau;
+      }
+    }
 
     // Transmission and reception times
     double t_rx = t;
@@ -66,7 +81,7 @@ std::vector<GnssTransmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
     double d = (rv_tx_gcrf->r() - rv_rx_gcrf->r()).norm().val();
 
     // Link budget
-    for (int freq_idx = 0; freq_idx < tx->freq_list.size(); freq_idx++) {
+    for (size_t freq_idx = 0; freq_idx < tx->freq_list.size(); freq_idx++) {
       std::string freq_name = tx->freq_list[freq_idx];
       double freq = tx->freq_map[freq_name];
       double Ad = 20.0 * log10((C / freq) / (4.0 * PI * d));

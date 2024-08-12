@@ -6,3 +6,5 @@ LuPNT_data*
 *cache*
 docs
 *.so
+/data/*
+/doc/*
