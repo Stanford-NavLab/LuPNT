@@ -28,7 +28,6 @@ class GnssTransmitter : public Transmitter {
   std::string gnss_type_;              // Name of the atenna system
   std::string txrx = "TX";             // Type of comms system
   int prn_;                            // PRN of the transmitter satellite
-  double freq_tx;                      // Transmit frequency [Hz]
   double Rc;                           // Ranging chip rate [Hz]
   std::vector<std::string> freq_list;  // List of frequencies (by signal names)
   std::map<std::string, double> freq_map;  // map string to frequencies

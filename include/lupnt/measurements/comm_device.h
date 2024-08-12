@@ -37,20 +37,24 @@ struct TransmitterParam {
 class Transmitter : public ICommDevice {
  public:
   Antenna antenna_;
+  double freq_tx;    // Transmit frequency [Hz]
+  double bandwidth;  // Bandwidth of the signal [Hz]
   virtual ~Transmitter() = default;
   std::string txrx = "tx";
   TransmitterParam tx_param_;
   virtual inline std::shared_ptr<Agent> GetAgent() const = 0;
   virtual inline void SetAgent(const std::shared_ptr<Agent> &agent) = 0;
+  virtual inline double GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf,
+                                                   Vec3d r_rx_gcrf) = 0;
 };
 
 struct ReceiverParam {
-  double Ts;  // System noise temp [K]
-  double Ae;  // Attenuation due to atmosphere (should be negative) [dB]
-  double Nf;  // Noise figure of receiver/LNA [dB]
-  double L;   // Receiver implementation, A/D conversion losses [dB]
-  double As;  // System losses, in front of LNA [dB]
-  double CN0threshold;  // CN0 threshold for receiving signals [dB-Hz]
+  double Ts = 290;   // System noise temp [K]
+  double Ae = -0.0;  // Attenuation due to atmosphere (should be negative) [dB]
+  double L = -0.0;  // Receiver implementation, A/D conversion losses (should be
+                    // negative) [dB]
+  double As = -0.0;  // System losses, in front of LNA (should be negative) [dB]
+  double CN0threshold = 20.0;  // CN0 threshold for receiving signals [dB-Hz]
 };
 
 class Receiver : public ICommDevice {
@@ -61,11 +65,14 @@ class Receiver : public ICommDevice {
   ReceiverParam rx_param_;
   virtual inline std::shared_ptr<Agent> GetAgent() const = 0;
   virtual inline void SetAgent(const std::shared_ptr<Agent> &agent) = 0;
+  virtual inline double GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf,
+                                               Vec3d r_rx_gcrf) = 0;
 };
 
 class Tranceiver : public ICommDevice {
  public:
   Antenna antenna_;
+  double freq_tx;  // Transmit frequency [Hz]
   virtual ~Tranceiver() = default;
   std::string txrx = "txrx";
   TransmitterParam tx_param_;

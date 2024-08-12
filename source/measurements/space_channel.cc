@@ -22,8 +22,8 @@
 
 namespace lupnt {
 
-ITransmission SpaceChannel::ComputeLinkBudget(std::shared_ptr<ICommDevice> &tx,
-                                              std::shared_ptr<ICommDevice> &rx,
+ITransmission SpaceChannel::ComputeLinkBudget(std::shared_ptr<Transmitter> &tx,
+                                              std::shared_ptr<Receiver> &rx,
                                               double t,
                                               std::string time_fixed) {
   ITransmission received_trans;  // create an empty vector
@@ -65,11 +65,27 @@ ITransmission SpaceChannel::ComputeLinkBudget(std::shared_ptr<ICommDevice> &tx,
     vis_all = vis_occult["all"];
   }
 
+  // Link Budget
+  double At = tx->GetTransmittionAntennaGain(
+      t_tx, rv_tx_gcrf->r().cast<double>(), rv_rx_gcrf->r().cast<double>());
+  double Ar = rx->GetReceiverAntennaGain(t_rx, rv_tx_gcrf->r().cast<double>(),
+                                         rv_rx_gcrf->r().cast<double>());
+
+  double dist = (rv_tx_gcrf->r() - rv_rx_gcrf->r()).norm().val();
+  double lambda = C / tx->freq_tx;
+  double fsl_loss_dB = ComputeFreeSpaceLossdB(dist, lambda);
+
+  double EIRP_dB = tx->tx_param_.P_tx + At;
+  double G_T_rx_dB = Ar - 10.0 * log10(rx->rx_param_.Ts);
+  double loss = rx->rx_param_.Ae + rx->rx_param_.As +
+                rx->rx_param_.L;  // sum of lossess (minus)
+  double CN0 = EIRP_dB - fsl_loss_dB + 228.6 + G_T_rx_dB + loss;
+
   return received_trans;
 }
 
-double SpaceChannel::SolveLightTimeDelayRx(std::shared_ptr<ICommDevice> &tx,
-                                           std::shared_ptr<ICommDevice> &rx,
+double SpaceChannel::SolveLightTimeDelayRx(std::shared_ptr<Transmitter> &tx,
+                                           std::shared_ptr<Receiver> &rx,
                                            double t_rx) {
   // Transmitter and receiver positions and velocities
   double tau = 0.0;  // light time delay
@@ -95,8 +111,8 @@ double SpaceChannel::SolveLightTimeDelayRx(std::shared_ptr<ICommDevice> &tx,
   return tau;
 }
 
-double SpaceChannel::SolveLightTimeDelayTx(std::shared_ptr<ICommDevice> &tx,
-                                           std::shared_ptr<ICommDevice> &rx,
+double SpaceChannel::SolveLightTimeDelayTx(std::shared_ptr<Transmitter> &tx,
+                                           std::shared_ptr<Receiver> &rx,
                                            double t_tx) {
   // Transmitter and receiver positions and velocities
   double tau = 0.0;  // light time delay

@@ -26,7 +26,7 @@ void GnssReceiver::InitializeReceiverParams() {
     rx_param_.Ts = 190.0;  // System noise temp [K]
     rx_param_.Ae =
         0.0;  // Attenuation due to atmosphere (should be negative) [dB]
-    rx_param_.Nf = -2.85;  // Noise figure of receiver/LNA [dB]
+    // rx_param_.Nf = -2.85;  // Noise figure of receiver/LNA [dB]
     rx_param_.L = -0.16;  // Receiver implementation, A/D conversion losses [dB]
     rx_param_.As = 0.0;   // System losses, in front of LNA [dB]
     rx_param_.CN0threshold = 15.0;  // CN0 threshold [dB-Hz]
@@ -84,8 +84,12 @@ std::vector<Vec3d> GnssReceiver::GetReceiverOrientation(double t,
  * @return double
  */
 double GnssReceiver::GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf,
-                                            Vec3d r_rx_gcrf, std::string mode) {
-  auto e_sat = GnssReceiver::GetReceiverOrientation(t, r_rx_gcrf, mode);
+                                            Vec3d r_rx_gcrf) {
+  if (attitude_mode_ == "NONE") {
+    std::runtime_error("Receiver attitude mode not set");
+  }
+  auto e_sat =
+      GnssReceiver::GetReceiverOrientation(t, r_rx_gcrf, attitude_mode_);
   auto e_x = e_sat[0];
   auto e_y = e_sat[1];
   auto e_z = e_sat[2];

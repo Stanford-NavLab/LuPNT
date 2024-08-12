@@ -71,12 +71,10 @@ std::vector<GnssTransmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
     if (vis["EARTH"] || vis["MOON"]) continue;  // quit if occulted
 
     // Transmitter and Receiver Antenna gain
-    std::string receiver_orientation = "PZ_EarthPoint";
     double At = tx->GetTransmittionAntennaGain(
         t_tx, rv_tx_gcrf->r().cast<double>(), rv_rx_gcrf->r().cast<double>());
     double Ar = rx.GetReceiverAntennaGain(t_rx, rv_tx_gcrf->r().cast<double>(),
-                                          rv_rx_gcrf->r().cast<double>(),
-                                          receiver_orientation);
+                                          rv_rx_gcrf->r().cast<double>());
 
     // Generate transmission
     GnssTransmission trans = tx->GenerateTransmission(t_tx);
@@ -88,8 +86,7 @@ std::vector<GnssTransmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
       double freq = tx->freq_map[freq_name];
       double Ad = 20.0 * log10((C / freq) / (4.0 * PI * d));
       double scalars = tx->tx_param_.P_tx + rx.rx_param_.Ae + rx.rx_param_.As -
-                       (10.0 * log10(rx.rx_param_.Ts)) + 228.6 +
-                       rx.rx_param_.Nf + rx.rx_param_.L;
+                       (10.0 * log10(rx.rx_param_.Ts)) + 228.6 + rx.rx_param_.L;
       trans.CN0 = At + Ar + Ad + scalars;
 
       if (At <= -499.0 || vis["earth"] || vis["moon"] ||

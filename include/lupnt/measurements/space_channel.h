@@ -20,6 +20,8 @@ namespace lupnt {
 class ITransmission;
 
 class ICommDevice;
+class Transmitter;
+class Receiver;
 
 class SpaceChannel {
  private:
@@ -48,9 +50,9 @@ class SpaceChannel {
    * @param time_fixed  time fixed at transmitter or receiver (tx or rx)
    * @param transmission  transmission object
    */
-  ITransmission ComputeLinkBudget(std::shared_ptr<ICommDevice> &txDevice,
-                                  std::shared_ptr<ICommDevice> &rxDevice,
-                                  double t, std::string time_fixed);
+  ITransmission ComputeLinkBudget(std::shared_ptr<Transmitter> &txDevice,
+                                  std::shared_ptr<Receiver> &rxDevice, double t,
+                                  std::string time_fixed);
 
   /**
    * @brief Solve the light time delay at the receiver
@@ -60,8 +62,8 @@ class SpaceChannel {
    * @param t_rx  receiver time
    * @return double  light time delay
    */
-  double SolveLightTimeDelayRx(std::shared_ptr<ICommDevice> &tx,
-                               std::shared_ptr<ICommDevice> &rx, double t_rx);
+  double SolveLightTimeDelayRx(std::shared_ptr<Transmitter> &tx,
+                               std::shared_ptr<Receiver> &rx, double t_rx);
 
   /**
    * @brief Solve the light time delay at the transmitter
@@ -70,8 +72,8 @@ class SpaceChannel {
    * @param t_tx   transmitter time
    * @return double   light time delay
    */
-  double SolveLightTimeDelayTx(std::shared_ptr<ICommDevice> &tx,
-                               std::shared_ptr<ICommDevice> &rx, double t_tx);
+  double SolveLightTimeDelayTx(std::shared_ptr<Transmitter> &tx,
+                               std::shared_ptr<Receiver> &rx, double t_tx);
 
   /**
    * @brief Compute the free space loss

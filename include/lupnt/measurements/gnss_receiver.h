@@ -27,7 +27,8 @@ class GnssChannel;
 class GnssReceiver : public Receiver {
  public:
   GnssReceiverParam gnssr_param_;
-  std::string receiver_name_;  // Name of the receiver system
+  std::string receiver_name_;           // Name of the receiver system
+  std::string attitude_mode_ = "NONE";  // Attitude mode of the receiver
 
   GnssReceiver(std::string receiver_name) : receiver_name_(receiver_name) {
     antenna_ = Antenna(receiver_name_);
@@ -35,10 +36,11 @@ class GnssReceiver : public Receiver {
   };
 
   // Receiver Gain Calculators
+  void SetReceiverAttitudeMode(std::string mode) { attitude_mode_ = mode; };
+
   std::vector<Vec3d> GetReceiverOrientation(double t, Vec3d& r_rx_gcrf,
                                             std::string mode);
-  double GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf,
-                                std::string mode);
+  double GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf);
 
   void InitializeReceiverParams();
   void SetCN0Threshold(double CN0threshold) {
