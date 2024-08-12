@@ -80,8 +80,9 @@ docs = [
     "lxml_html_clean",
 ]
 
-[tool.scikit-build.cmake]
-source-dir = "source/python"
+[tool.scikit-build]
+wheel.packages = ["source/python/pylupnt"]
+cmake.source-dir = "source/python"
 
 [tool.cibuildwheel]
 test-extras = "test"
