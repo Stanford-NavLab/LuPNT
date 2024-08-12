@@ -39,7 +39,7 @@ class Occultation {
    * @param tx_planet    The planet surface the transmitter is on
    * @return std::map<std::string, bool>
    */
-  static std::map<std::string, bool> ComputeOccultation(
+  static std::map<std::string, bool> ComputeOccultationGnss(
       const Vec3d tx_eci, const Vec3d tx_mci, const Vec3d rx_eci,
       const Vec3d rx_mci, const std::string tx_planet);
 
@@ -56,7 +56,7 @@ class Occultation {
    * @return std::map<string, bool>  A map of the planets and their occultation,
    * ["all"] is the total occultation
    */
-  std::map<std::string, bool> ComputeOccultation(
+  static std::map<std::string, bool> ComputeOccultation(
       Real epoch, const Vec3& r1, const Vec3& r2, Frame cs1, Frame cs2,
       const std::vector<NaifId>& bodies, const VecXd& atm_h);
 
@@ -72,7 +72,7 @@ class Occultation {
    * @param bodies   The list of planets to check for occultation (naif ids)
    * @return std::vector<std::map<string, bool>>
    */
-  std::vector<std::map<std::string, bool>> ComputeOccultation(
+  static std::vector<std::map<std::string, bool>> ComputeOccultation(
       Real epoch, const Mat<-1, 3>& r1, const Mat<-1, 3>& r2, Frame cs1,
       Frame cs2, const std::vector<NaifId>& bodies, const VecXd& atm_h);
 
@@ -88,7 +88,7 @@ class Occultation {
    * @param bodies   The list of planets to check for occultation (naif ids)
    * @return std::vector<std::map<string, bool>>
    */
-  std::vector<std::map<std::string, bool>> ComputeOccultation(
+  static std::vector<std::map<std::string, bool>> ComputeOccultation(
       const VecX& epoch, const Mat<-1, 3>& r1, const Mat<-1, 3>& r2, Frame cs1,
       Frame cs2, const std::vector<NaifId>& bodies, const VecXd& atm_h);
 };

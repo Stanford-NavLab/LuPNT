@@ -61,7 +61,7 @@ class GnssTransmitter : public Transmitter {
   double GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf);
 
   // Get the Transmittion Information
-  Transmission GenerateTransmission(double t);
+  GnssTransmission GenerateTransmission(double t);
 
   // Getters and Setters
   void SetChannel(std::shared_ptr<GnssChannel> ch) { channel = ch; };

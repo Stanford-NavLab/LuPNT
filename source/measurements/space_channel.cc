@@ -18,13 +18,16 @@
 #include "lupnt/agents/agent.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/measurements/comm_device.h"
+#include "lupnt/physics/occultation.h"
 
 namespace lupnt {
 
-void SpaceChannel::ComputeLinkBudget(std::shared_ptr<ICommDevice> &tx,
-                                     std::shared_ptr<ICommDevice> &rx, double t,
-                                     std::string time_fixed,
-                                     Transmission &transmission) {
+ITransmission SpaceChannel::ComputeLinkBudget(std::shared_ptr<ICommDevice> &tx,
+                                              std::shared_ptr<ICommDevice> &rx,
+                                              double t,
+                                              std::string time_fixed) {
+  ITransmission received_trans;  // create an empty vector
+
   // Transmitter and receiver positions and velocities
   double tau = 0.0;  // light time delay
   std::shared_ptr<CartesianOrbitState> rv_rx_gcrf;
@@ -51,6 +54,18 @@ void SpaceChannel::ComputeLinkBudget(std::shared_ptr<ICommDevice> &tx,
   }
 
   // Commpute Occultations
+  bool vis_all = true;
+
+  if (occult_bodies_.size() > 0) {
+    Real epoch = (t_tx + t_rx) / 2.0;
+    std::map<std::string, bool> vis_occult;
+    vis_occult = Occultation::ComputeOccultation(
+        epoch, rv_tx_gcrf->r(), rv_rx_gcrf->r(), Frame::GCRF, Frame::GCRF,
+        occult_bodies_, occult_alt_);
+    vis_all = vis_occult["all"];
+  }
+
+  return received_trans;
 }
 
 double SpaceChannel::SolveLightTimeDelayRx(std::shared_ptr<ICommDevice> &tx,

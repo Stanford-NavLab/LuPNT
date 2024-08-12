@@ -17,11 +17,28 @@
 
 namespace lupnt {
 
-class Transmission;
+class ITransmission;
+
 class ICommDevice;
 
 class SpaceChannel {
+ private:
+  std::vector<NaifId> occult_bodies_;
+  VecXd occult_alt_;
+
  public:
+  /**
+   * @brief Construct a new Space Channel object
+   *
+   * @param occult_bodies  occulting bodies
+   * @param occult_alt  occultation altitude
+   */
+  void SetOccultationBodies(std::vector<NaifId> occult_bodies,
+                            VecXd occult_alt) {
+    occult_bodies_ = occult_bodies;
+    occult_alt_ = occult_alt;
+  }
+
   /**
    * @brief Compute the link budget
    *
@@ -31,9 +48,9 @@ class SpaceChannel {
    * @param time_fixed  time fixed at transmitter or receiver (tx or rx)
    * @param transmission  transmission object
    */
-  void ComputeLinkBudget(std::shared_ptr<ICommDevice> &txDevice,
-                         std::shared_ptr<ICommDevice> &rxDevice, double t,
-                         std::string time_fixed, Transmission &transmission);
+  ITransmission ComputeLinkBudget(std::shared_ptr<ICommDevice> &txDevice,
+                                  std::shared_ptr<ICommDevice> &rxDevice,
+                                  double t, std::string time_fixed);
 
   /**
    * @brief Solve the light time delay at the receiver

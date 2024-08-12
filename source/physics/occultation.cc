@@ -17,7 +17,7 @@
 
 namespace lupnt {
 
-std::map<std::string, bool> Occultation::ComputeOccultation(
+std::map<std::string, bool> Occultation::ComputeOccultationGnss(
     const Vec3d tx_eci, const Vec3d tx_mci, const Vec3d rx_eci,
     const Vec3d rx_mci, const std::string tx_planet) {
   Vec3d tx2usr = rx_eci - tx_eci;
@@ -101,6 +101,13 @@ std::map<std::string, bool> Occultation::ComputeOccultation(
     Vec3d r12 = (r2_icrf - r1_icrf).cast<double>();  // 1->2
     Vec3d r1b = (rb - r1_icrf).cast<double>();       // 1->body
     Vec3d r2b = (rb - r2_icrf).cast<double>();       // 2->body
+
+    // If the transmitter or receiver is inside the atmosphere, ignore
+    // ocuultation computation (Likely they are ground users)
+    if ((r1b.norm() < atm_h(i)) || (r2b.norm() < atm_h(i))) {
+      vis[toString(bodies[i])] = true;
+      continue;
+    }
 
     // Compute angle between (tx->Body center) and (tx->rx)
     double r1b_norm = r1b.norm();

@@ -18,6 +18,7 @@
 
 namespace lupnt {
 
+class GnssTransmission;
 class GnssTransmitter;
 class GnssReceiver;
 
@@ -31,7 +32,7 @@ class GnssChannel : public SpaceChannel {
     rx_devices.push_back(dev);
   }
 
-  std::vector<Transmission> Receive(GnssReceiver &rx, double t);
+  std::vector<GnssTransmission> Receive(GnssReceiver &rx, double t);
 
   std::vector<std::shared_ptr<GnssReceiver>> rx_devices;
   std::vector<std::shared_ptr<GnssTransmitter>> tx_devices;
