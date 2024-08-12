@@ -12,17 +12,25 @@
 
 namespace lupnt {
 
-  int Agent::id_counter_ = 0;
+int Agent::id_counter_ = 0;
 
-  std::shared_ptr<CartesianOrbitState> Agent::GetCartesianGCRFStateAtEpoch(Real epoch,
-                                                                           Frame frame) {
-    auto state = std::make_shared<OrbitState>(*state_);
-    if (epoch != epoch_) dynamics_->Propagate(*state, epoch_, epoch, 1.0 * SECS_MINUTE);
-    // TODO
-    Real GM = 0.0;  //  GetBodyData(bodyId_).GM;
-    auto cartOrbitState = std::static_pointer_cast<CartesianOrbitState>(
-        ConvertOrbitStateRepresentation(state, OrbitStateRepres::CARTESIAN, GM));
-    return ConvertOrbitStateFrame(cartOrbitState, epoch, Frame::GCRF);
+std::shared_ptr<CartesianOrbitState> Spacecraft::GetCartesianGCRFStateAtEpoch(
+    Real epoch) {
+  std::shared_ptr<OrbitState> state = GetOrbitState();
+  Real current_epoch = GetEpoch();
+  std::shared_ptr<NumericalOrbitDynamics> dynamics =
+      std::dynamic_pointer_cast<NumericalOrbitDynamics>(GetDynamics());
+
+  if (epoch != current_epoch) {
+    // set dt
+    Real dt = (epoch - current_epoch) / 10;
+    dynamics->Propagate(*state, current_epoch, epoch, dt);
   }
+  // TODO
+  Real GM = 0.0;  //  GetBodyData(bodyId_).GM;
+  auto cartOrbitState = std::static_pointer_cast<CartesianOrbitState>(
+      ConvertOrbitStateRepresentation(state, OrbitStateRepres::CARTESIAN, GM));
+  return ConvertOrbitStateFrame(cartOrbitState, epoch, Frame::GCRF);
+}
 
 };  // namespace lupnt

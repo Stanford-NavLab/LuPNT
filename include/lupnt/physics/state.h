@@ -13,16 +13,18 @@
 
 namespace lupnt {
 
-  /**
-   * @brief Interface for States
-   *
-   */
-  class IState {
-  public:
-    virtual ~IState() = default;
-    virtual inline int GetSize() const = 0;
-    virtual inline Real GetValue(int idx) const = 0;
-    virtual inline void SetValue(Real val, int idx) = 0;
-  };
+/**
+ * @brief Interface for States
+ *
+ */
+class IState {
+ public:
+  virtual ~IState() = default;
+  virtual inline int GetSize() const = 0;
+  virtual inline Real GetValue(int idx) const = 0;
+  virtual inline void SetValue(Real val, int idx) = 0;
+  virtual inline VecX GetVecX() const = 0;
+  virtual inline void SetVecX(const VecX &x) = 0;
+};
 
 }  // namespace lupnt

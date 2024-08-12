@@ -13,25 +13,35 @@
 
 #include <memory>
 
-#include "lupnt/measurements/occultation.h"
+#include "lupnt/physics/occultation.h"
 
 namespace lupnt {
 
-  class Transmission;
-  class ICommDevice;
+class Transmission;
+class ICommDevice;
 
-  class SpaceChannel {
-  public:
-    /**
-     * @brief Calculates the transmitter-receiver link budget.
-     *
-     * The following are the link budget equations:
-     * AP = P_sv + At + Ad + Ae;
-     * RP = AP + Ar + As;
-     * CN0 = RP - (10 * log10(Ts)) + 228.6 + Nf + L;
-     *
-     */
-    void computeLinkBudget(std::shared_ptr<ICommDevice> &tx, std::shared_ptr<ICommDevice> &rx,
-                           double t_tx, double t_rx, Transmission &transmission);
-  };
+class SpaceChannel {
+ public:
+  /**
+   * @brief Calculates the transmitter-receiver link budget.
+   *
+   * The following are the link budget equations:
+   * AP = P_sv + At + Ad + Ae;
+   * RP = AP + Ar + As;
+   * CN0 = RP - (10 * log10(Ts)) + 228.6 + Nf + L;
+   *
+   */
+  void ComputeLinkBudget(std::shared_ptr<ICommDevice> &tx,
+                         std::shared_ptr<ICommDevice> &rx, double t_tx,
+                         double t_rx, Transmission &transmission);
+
+  /**
+   * @brief Compute the free space loss
+   *
+   * @param dist Distance between the transmitter and receiver [km]
+   * @param lambda Wavelength of the signal [km]
+   * @return double Free space loss [dB]
+   */
+  double ComputeFreeSpaceLossdB(double dist, double lambda);
+};
 }  // namespace lupnt

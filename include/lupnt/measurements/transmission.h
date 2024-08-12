@@ -40,6 +40,7 @@ namespace lupnt {
     double AP;
     double RP;
 
+    // occultation parameters
     bool vis_earth;
     bool vis_moon;
     bool vis_antenna;

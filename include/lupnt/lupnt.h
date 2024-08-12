@@ -3,10 +3,8 @@
 // agents
 #include "lupnt/agents/agent.h"
 #include "lupnt/agents/application.h"
-#include "lupnt/agents/comm_device.h"
 #include "lupnt/agents/gnss_constellation.h"
 #include "lupnt/agents/state_estimation_app.h"
-#include "lupnt/agents/state_estimation_app_gnss.h"
 #include "lupnt/agents/task_scheduling.h"
 
 // core
@@ -32,13 +30,13 @@
 
 // measurements
 #include "lupnt/measurements/antenna.h"
+#include "lupnt/measurements/comm_device.h"
 #include "lupnt/measurements/gnss_channel.h"
 #include "lupnt/measurements/gnss_measurement.h"
 #include "lupnt/measurements/gnss_receiver.h"
 #include "lupnt/measurements/gnss_receiver_param.h"
 #include "lupnt/measurements/gnss_transmitter.h"
 #include "lupnt/measurements/intersatellite_link.h"
-#include "lupnt/measurements/occultation.h"
 #include "lupnt/measurements/radio_measurement.h"
 #include "lupnt/measurements/space_channel.h"
 #include "lupnt/measurements/transmission.h"
@@ -60,6 +58,7 @@
 #include "lupnt/physics/frame_converter.h"
 #include "lupnt/physics/frame_converter_spice.h"
 #include "lupnt/physics/gravity.h"
+#include "lupnt/physics/occultation.h"
 #include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/solar_system.h"
 #include "lupnt/physics/spice_interface.h"
