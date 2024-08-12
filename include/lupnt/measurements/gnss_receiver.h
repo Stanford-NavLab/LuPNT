@@ -26,7 +26,6 @@ class GnssChannel;
 
 class GnssReceiver : public Receiver {
  public:
-  Antenna antenna_;
   GnssReceiverParam gnssr_param_;
   std::string receiver_name_;  // Name of the receiver system
 

@@ -17,6 +17,7 @@
 #include "lupnt/core/constants.h"
 #include "lupnt/dynamics/dynamics.h"
 #include "lupnt/measurements/comm_device.h"
+#include "lupnt/physics/attitude_state.h"
 #include "lupnt/physics/clock.h"
 #include "lupnt/physics/frame_converter.h"
 #include "lupnt/physics/orbit_state.h"
@@ -39,6 +40,7 @@ class Agent {
   Real epoch_;
   std::shared_ptr<IState> rv_;
   std::shared_ptr<IDynamics> dynamics_;
+  std::shared_ptr<AttitudeState> attitude_;
   std::vector<std::shared_ptr<ICommDevice>> devices_;
 
   ClockState clock_;
@@ -75,15 +77,17 @@ class Agent {
   void Propagate(const Real epoch) {
     if (epoch == epoch_) return;
 
+    // Update orbit state
     VecX x = rv_->GetVecX();
-
     dynamics_->PropagateX(x, epoch_, epoch);
-
     rv_->SetVecX(x);
 
+    // Update clock state
     if (clock_dynamics_ != nullptr) {
       clock_dynamics_->PropagateWithNoise(clock_, epoch_, epoch);
     }
+
+    // TBD: Update attitude state
 
     epoch_ = epoch;
   }

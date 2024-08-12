@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include "lupnt/core/constants.h"
+
 namespace lupnt {
 
 /**

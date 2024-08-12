@@ -23,17 +23,38 @@ class ICommDevice;
 class SpaceChannel {
  public:
   /**
-   * @brief Calculates the transmitter-receiver link budget.
+   * @brief Compute the link budget
    *
-   * The following are the link budget equations:
-   * AP = P_sv + At + Ad + Ae;
-   * RP = AP + Ar + As;
-   * CN0 = RP - (10 * log10(Ts)) + 228.6 + Nf + L;
-   *
+   * @param txDevice  transmitter device
+   * @param rxDevice  receiver device
+   * @param t         time
+   * @param time_fixed  time fixed at transmitter or receiver (tx or rx)
+   * @param transmission  transmission object
    */
-  void ComputeLinkBudget(std::shared_ptr<ICommDevice> &tx,
-                         std::shared_ptr<ICommDevice> &rx, double t_tx,
-                         double t_rx, Transmission &transmission);
+  void ComputeLinkBudget(std::shared_ptr<ICommDevice> &txDevice,
+                         std::shared_ptr<ICommDevice> &rxDevice, double t,
+                         std::string time_fixed, Transmission &transmission);
+
+  /**
+   * @brief Solve the light time delay at the receiver
+   *
+   * @param tx  transmitter device
+   * @param rx  receiver device
+   * @param t_rx  receiver time
+   * @return double  light time delay
+   */
+  double SolveLightTimeDelayRx(std::shared_ptr<ICommDevice> &tx,
+                               std::shared_ptr<ICommDevice> &rx, double t_rx);
+
+  /**
+   * @brief Solve the light time delay at the transmitter
+   *
+   * @param tx   transmitter device
+   * @param t_tx   transmitter time
+   * @return double   light time delay
+   */
+  double SolveLightTimeDelayTx(std::shared_ptr<ICommDevice> &tx,
+                               std::shared_ptr<ICommDevice> &rx, double t_tx);
 
   /**
    * @brief Compute the free space loss
@@ -44,4 +65,5 @@ class SpaceChannel {
    */
   double ComputeFreeSpaceLossdB(double dist, double lambda);
 };
+
 }  // namespace lupnt

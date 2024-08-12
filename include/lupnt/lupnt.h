@@ -51,6 +51,8 @@
 #include "lupnt/numerics/vector_macros.h"
 
 // physics
+#include "lupnt/physics/attitude_conversions.h"
+#include "lupnt/physics/attitude_state.h"
 #include "lupnt/physics/body.h"
 #include "lupnt/physics/cheby.h"
 #include "lupnt/physics/clock.h"

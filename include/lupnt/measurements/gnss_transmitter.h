@@ -25,7 +25,6 @@ class GnssChannel;
 
 class GnssTransmitter : public Transmitter {
  public:
-  Antenna antenna_;                    // Antenna gain pattern [deg & dB]
   std::string gnss_type_;              // Name of the atenna system
   std::string txrx = "TX";             // Type of comms system
   int prn_;                            // PRN of the transmitter satellite
