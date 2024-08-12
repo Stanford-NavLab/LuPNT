@@ -32,26 +32,11 @@ std::vector<GnssTransmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
 
   // Messages from other comms systems that can generate Gnss messages
   for (auto &tx : tx_devices) {
-    // Transmitter and receiver positions and velocities
-    double tau = 0.0;  // light time delay
-    auto rv_rx_gcrf = rx.GetAgent()->GetCartesianGCRFStateAtEpoch(t);
-    auto rv_tx_gcrf = tx->GetAgent()->GetCartesianGCRFStateAtEpoch(t - tau);
-
-    // Compute Light time delay
-    double tau_prev = 0.0;  // propagation time
-    int n_iter = 0;
-    int max_iter = 100;
-
-    for (int n_iter = 0; n_iter < max_iter; n_iter++) {
-      rv_tx_gcrf = tx->GetAgent()->GetCartesianGCRFStateAtEpoch(t - tau);
-      double rho = (rv_tx_gcrf->r() - rv_rx_gcrf->r()).norm().val();
-      tau = rho / C;
-      if (fabs(tau - tau_prev) < 1e-12)
-        break;
-      else {
-        tau_prev = tau;
-      }
-    }
+    double tau = SolveLightTimeDelayRx(tx, rx, t);
+    std::shared_ptr<CartesianOrbitState> rv_rx_gcrf =
+        rx->GetAgent()->GetCartesianGCRFStateAtEpoch(t);
+    std::shared_ptr<CartesianOrbitState> rv_tx_gcrf =
+        tx->GetAgent()->GetCartesianGCRFStateAtEpoch(t - tau);
 
     // Transmission and reception times
     double t_rx = t;
