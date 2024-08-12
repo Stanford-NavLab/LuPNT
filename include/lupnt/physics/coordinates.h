@@ -18,5 +18,16 @@ namespace lupnt {
   Vec3 AzElRange2Cart(const Vec3 &aer, const Vec3 &xyz_ref, Real R_body = 0, Real flattening = 0);
 
   // Vector implementations
+  VEC_DEF_VECTOR(LatLonAlt2Cart, 3)
+  VEC_DEF_VECTOR(Cart2LatLonAlt, 3)
+  VEC_DEF_VECTOR_REAL(LatLonAlt2Cart, 3)
+  VEC_DEF_VECTOR_REAL(Cart2LatLonAlt, 3)
+  VEC_DEF_VECTOR_REAL_REAL(LatLonAlt2Cart, 3)
+  VEC_DEF_VECTOR_REAL_REAL(Cart2LatLonAlt, 3)
 
+  VEC_DEF_VECTOR_VECTOR(EastNorthUp2Cart, 3)
+  VEC_DEF_VECTOR_VECTOR(Cart2EastNorthUp, 3)
+
+  VEC_DEF_VECTOR_VECTOR(Cart2AzElRange, 3)
+  VEC_DEF_VECTOR_VECTOR(AzElRange2Cart, 3)
 }  // namespace lupnt

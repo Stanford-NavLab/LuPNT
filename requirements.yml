@@ -1,0 +1,32 @@
+channels:
+  - pytorch-nightly
+  - conda-forge
+  - gurobi
+  - defaults
+dependencies:
+  - numpy
+  - astropy
+  - cvxpy
+  - dataset
+  - filterpy
+  - matplotlib
+  - mlflow
+  - mlflow-skinny
+  - networkx
+  - numba
+  - onnx
+  - openvino
+  - pandas
+  - pytorch 
+  - torchvision 
+  - torchaudio
+  - Pillow
+  - plotly
+  - scikit-learn
+  - scipy
+  - setuptools
+  - spiceypy
+  - tqdm
+  - mypy
+  - ipywidgets
+  - ipympl

@@ -5,9 +5,11 @@ set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)
 
 project(
   LuPNT
-  VERSION 1.0
   LANGUAGES CXX
 )
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # ---- Include guards ----
 
@@ -29,7 +31,7 @@ add_subdirectory(thirdparty)
 # Note: globbing sources is considered bad practice as CMake's generators may not detect new files
 # automatically. Keep that in mind when changing files, or explicitly mention them here.
 file(GLOB_RECURSE headers CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/lupnt/*.h)
-file(GLOB_RECURSE sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cc)
+file(GLOB_RECURSE sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/cpp/*.cc)
 
 # Create a single header file lupnt.h with all includes
 function(process_directory dir)
@@ -61,6 +63,22 @@ function(process_directory dir)
   endforeach()
 endfunction()
 process_directory(${CMAKE_CURRENT_SOURCE_DIR}/include/lupnt)
+
+# ---- Set project version ----
+
+file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/source/version.txt PROJECT_VERSION_READ)
+foreach(ver ${PROJECT_VERSION_READ})
+    if (ver MATCHES "(MAJOR|MINOR|PATCH) +([^ ]+)$")
+        set(PROJECT_VERSION_READ_${CMAKE_MATCH_1} ${CMAKE_MATCH_2} CACHE INTERNAL "")
+    endif()
+endforeach()
+string(CONCAT PROJECT_VERSION_CONCAT
+    ${PROJECT_VERSION_READ_MAJOR}
+    .${PROJECT_VERSION_READ_MINOR}
+    .${PROJECT_VERSION_READ_PATCH}
+)
+set(PROJECT_VERSION ${PROJECT_VERSION_CONCAT})
+message("Version is ${PROJECT_VERSION}")
 
 # ---- Create library ----
 
@@ -94,10 +112,15 @@ target_include_directories(
                          $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
-# enable compiler warnings if(NOT TEST_INSTALLED_VERSION) if(CMAKE_CXX_COMPILER_ID MATCHES "Clang"
-# OR CMAKE_CXX_COMPILER_ID MATCHES "GNU") target_compile_options(${PROJECT_NAME} PRIVATE -Wall
-# -Wpedantic -Wextra -Werror) elseif(MSVC) # target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
-# target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS) endif() endif()
+# enable compiler warnings 
+if(NOT TEST_INSTALLED_VERSION) 
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wpedantic -Wextra) # -Werror) 
+elseif(MSVC) 
+target_compile_options(${PROJECT_NAME} PRIVATE /W4) # /WX)
+target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS) 
+endif() 
+endif()
 
 # ---- Create an installable target ----
 # this allows users to install and find the library via `find_package()`.

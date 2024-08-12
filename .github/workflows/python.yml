@@ -33,7 +33,9 @@ jobs:
 
       - name: Install OpenMP (Linux)
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install -y libomp-dev
+        run: |
+          sudo apt-get update 
+          sudo apt-get install -y libomp-dev
 
       - name: Install OpenMP (macOS)
         if: matrix.os == 'macos-latest'

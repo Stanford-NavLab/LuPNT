@@ -50,22 +50,18 @@ If using this project in your own work please cite the following:
 To cleanly separate the library and subproject code, the outer `CMakeList.txt` only defines the library itself while the tests and other subprojects are self-contained in their own directories. 
 During development it is usually convenient to [build all subprojects at once](#build-everything-at-once).
 
-## Dependencies
+### Dependencies
 
-```bash
-sudo apt-get update 
-sudo apt-get install -y libomp-dev
-```
-
-```bash
-brew install libomp
-```
+LuPNT requires [OpenMP](https://www.openmp.org) library for multiprocessing and a data directory. 
+The installation scripts for MacOS, Ubuntu, and Windows can be found under `scripts`. 
+Note that the data directory can be place anywhere as long as its path is correctly set.
+Execute the scripts before building the library.
 
 ### Build and run the standalone target
 
-Use the following command to build and run the executable target.
+Use the following command to build and run the executable target. 
 
-```bash
+```powershell
 cmake -S standalone -B build/standalone
 cmake --build build/standalone
 ./build/standalone/LuPNT --help

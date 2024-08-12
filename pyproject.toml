@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pylupnt"
-version = "1.0.0"
+version = "0.0.1"
 description = "Lunar Positioning, Navigation, and Timing (PNT) library"
 readme = "README.md"
 license = {text = "MIT"}
@@ -17,7 +17,34 @@ maintainers=[
     {name="Keidai Iiyama",          email="kiiyama@stanford.edu"},
 ]
 requires-python = ">=3.11"
-dependencies = ["numpy"]
+dependencies = [
+    "numpy",
+    "astropy",
+    "auto_mix_prep",
+    # "bpy",
+    "dataset",
+    "filterpy",
+    "mathutils",
+    "matplotlib",
+    "mlflow",
+    "mlflow_skinny",
+    "networkx",
+    "numba",
+    "onnx",
+    "openvino",
+    "pandas",
+    "Pillow",
+    "plotly",
+    "scikit_learn",
+    "scipy",
+    "setuptools",
+    "spiceypy",
+    "torch",
+    "torchvision",
+    "tqdm",
+    "mypy",
+    "ipywidgets",
+]
 keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "example", "wheel", "pypi", "conda-forge"]
 classifiers=[
     "Programming Language :: C++",
@@ -34,14 +61,28 @@ classifiers=[
 
 [project.urls]
 Github = "https://github.com/Stanford-NavLab/LuPNT"
-Documentation = "https://pylupnt.readthedocs.io"
+Documentation = "https://lupnt.readthedocs.io"
 
 [project.optional-dependencies]
 test = ["pytest"]
-docs = ["cmake", "breathe", "sphinx_rtd_theme"]
+docs = [
+    "cmake", 
+    "breathe", 
+    "sphinx_rtd_theme",
+    "notebook",
+    "sphinx",
+    "exhale",
+    "breathe",
+    "m2r",
+    "nbsphinx",
+    "nbsphinx-link",
+    "jinja2",
+    "lxml_html_clean",
+]
 
-[tool.scikit-build.cmake]
-source-dir = "python"
+[tool.scikit-build]
+wheel.packages = ["source/python/pylupnt"]
+cmake.source-dir = "source/python"
 
 [tool.cibuildwheel]
 test-extras = "test"
