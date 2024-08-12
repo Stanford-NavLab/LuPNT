@@ -17,12 +17,24 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/tools.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/CPM.cmake)
 
 CPMAddPackage("gh:TheLartians/Format.cmake@1.7.3")
+set_target_properties(check-cmake-format PROPERTIES FOLDER format)
+set_target_properties(check-clang-format PROPERTIES FOLDER format)
+set_target_properties(check-format       PROPERTIES FOLDER format)
+set_target_properties(fix-cmake-format   PROPERTIES FOLDER format)
+set_target_properties(fix-clang-format   PROPERTIES FOLDER format)
+set_target_properties(fix-format         PROPERTIES FOLDER format)
+set_target_properties(clang-format       PROPERTIES FOLDER format)
+set_target_properties(cmake-format       PROPERTIES FOLDER format)
+set_target_properties(format             PROPERTIES FOLDER format)
+
 CPMAddPackage(
   NAME Catch2
   GITHUB_REPOSITORY catchorg/Catch2
   VERSION 3.6.0
   # OPTIONS "CMAKE_BUILD_TYPE=Release"
 )
+set_target_properties(Catch2         PROPERTIES FOLDER thirdparty)
+set_target_properties(Catch2WithMain PROPERTIES FOLDER thirdparty)
 
 if(TEST_INSTALLED_VERSION)
   find_package(LuPNT REQUIRED)

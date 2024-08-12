@@ -24,7 +24,6 @@ dependencies = [
     # "bpy",
     "dataset",
     "filterpy",
-    "h5py",
     "mathutils",
     "matplotlib",
     "mlflow",
@@ -43,7 +42,7 @@ dependencies = [
     "torch",
     "torchvision",
     "tqdm",
-    "pybind11_stubgen",
+    "mypy",
     "ipywidgets",
 ]
 keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "example", "wheel", "pypi", "conda-forge"]

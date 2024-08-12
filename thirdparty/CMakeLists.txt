@@ -60,6 +60,14 @@ install(
   DESTINATION include
 )
 
+set_target_properties(fmt       PROPERTIES FOLDER thirdparty)
+set_target_properties(cspice    PROPERTIES FOLDER thirdparty)
+set_target_properties(matplot   PROPERTIES FOLDER thirdparty)
+set_target_properties(nodesoup  PROPERTIES FOLDER thirdparty)
+set_target_properties(demos     PROPERTIES FOLDER thirdparty)
+set_target_properties(uninstall PROPERTIES FOLDER thirdparty)
+
+
 # LuPNT dependencies used for installing
 set(LUPNT_DEPENDENCIES
     "fmt 7.1.3;Eigen3 3.4;autodiff 1.1;cspice;Matplot++ 1.2;OpenMP"

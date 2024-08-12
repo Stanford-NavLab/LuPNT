@@ -3,7 +3,6 @@ auto_mix_prep
 # bpy
 dataset
 filterpy
-h5py
 mathutils
 matplotlib
 mlflow
