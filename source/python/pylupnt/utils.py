@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 LUPNT_DATA_PATH = os.getenv("LUPNT_DATA_PATH")
+print(os.environ)
 assert LUPNT_DATA_PATH is not None, "Environment variable LUPNT_DATA_PATH not set"
 
 
