@@ -368,7 +368,8 @@ if __name__ == "__main__":
 
     if args.copy:
         html_out = os.path.join(pwd, "_out", "html")
-        doc_folder = os.path.join(pwd, "..", "docs")
+        doc_folder = os.path.join(pwd, "..", "build", "docs")
+        os.makedirs(doc_folder, exist_ok=True)
         if os.path.exists(doc_folder):
             print("Removing old docs folder")
             shutil.rmtree(doc_folder)

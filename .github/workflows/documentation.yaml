@@ -31,19 +31,20 @@ jobs:
 
       - name: Install dependencies
         run: |
+          cd docs
           brew install doxygen
           python3 -m venv venv
           source venv/bin/activate
-          pip install jinja2 Pygments
+          pip install -r requirements.txt
 
       - name: Build
         run: |
+          cd docs
           source venv/bin/activate
-          cmake -Sdocumentation -Bbuild
-          cmake --build build --target GenerateDocs
+          python make_docs.py
 
       - name: Publish
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/doxygen/html
+          publish_dir: ./build/docs
