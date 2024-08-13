@@ -57,7 +57,8 @@ class GnssTransmitter : public Transmitter {
 
   // Get transmitter orientatiion
   std::vector<Vec3d> GetTransmitterOrientation(double t, Vec3d& rv_tx_gcrf);
-  double GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf);
+  double GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf,
+                                    Vec3d r_rx_gcrf) override;
 
   // Get the Transmittion Information
   GnssTransmission GenerateTransmission(double t);

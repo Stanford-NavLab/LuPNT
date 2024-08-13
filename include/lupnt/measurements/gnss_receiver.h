@@ -40,7 +40,8 @@ class GnssReceiver : public Receiver {
 
   std::vector<Vec3d> GetReceiverOrientation(double t, Vec3d& r_rx_gcrf,
                                             std::string mode);
-  double GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf);
+  double GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf,
+                                Vec3d r_rx_gcrf) override;
 
   void InitializeReceiverParams();
   void SetCN0Threshold(double CN0threshold) {

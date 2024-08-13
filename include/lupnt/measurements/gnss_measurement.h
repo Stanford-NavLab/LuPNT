@@ -214,7 +214,7 @@ class GnssMeasurement {
    * @param frame_in  coordinate system of the input state
    */
   VecX GetPredictedGnssMeasurement(double epoch, Vec6 rv_pred, Vec2 clk_pred,
-                                   VecX N_pred, VecXd &H_gnss,
+                                   VecX N_pred, MatXd &H_gnss,
                                    std::vector<GnssMeasurementType> meas_type,
                                    Frame frame_in = Frame::MOON_CI);
 
@@ -229,7 +229,7 @@ class GnssMeasurement {
    * @return VecX
    */
   VecX GetPredictedPseudorange(double epoch, Vec6 rv_pred, Vec2 clk_pred,
-                               VecXd &H_pr, Frame frame_in = Frame::MOON_CI);
+                               MatXd &H_pr, Frame frame_in = Frame::MOON_CI);
 
   /**
    * @brief Get the Pseudorange Analytical Jacobian object
@@ -242,7 +242,7 @@ class GnssMeasurement {
    * @return * VecX
    */
   VecX GetPredictedPseudorangeAnalyticalJacobian(
-      double epoch, Vec6 rv_pred, Vec2 clk_pred, VecXd &H_pr,
+      double epoch, Vec6 rv_pred, Vec2 clk_pred, MatXd &H_pr,
       Frame frame_in = Frame::MOON_CI);
 
   /**
@@ -256,7 +256,7 @@ class GnssMeasurement {
    * @return VecX
    */
   VecX GetPredictedPseudorangerate(double epoch, Vec6 rv_pred, Vec2 clk_pred,
-                                   VecXd &H_prr,
+                                   MatXd &H_prr,
                                    Frame frame_in = Frame::MOON_CI);
 
   /**
@@ -270,7 +270,7 @@ class GnssMeasurement {
    * @return VecX
    */
   VecX GetPredictedCarrierPhase(double epoch, Vec6 rv_pred, Vec2 clk_pred,
-                                VecX N_pred, VecXd &H_cp,
+                                VecX N_pred, MatXd &H_cp,
                                 Frame frame_in = Frame::MOON_CI);
 
   /*********************************************************************

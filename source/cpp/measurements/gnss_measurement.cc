@@ -231,7 +231,7 @@ VecX GnssMeasurement::GetCarrierPhase(bool with_noise, int seed) {
  *  Methods for predicted measurement generation
  ***********************************************************/
 VecX GnssMeasurement::GetPredictedGnssMeasurement(
-    double epoch, Vec6 rv_pred, Vec2 clk_pred, VecX N_pred, VecXd &H_gnss,
+    double epoch, Vec6 rv_pred, Vec2 clk_pred, VecX N_pred, MatXd &H_gnss,
     std::vector<GnssMeasurementType> meas_type, Frame frame_in) {
   // number of measurements
   int n_meas_all = n_meas * meas_type.size();
@@ -245,8 +245,8 @@ VecX GnssMeasurement::GetPredictedGnssMeasurement(
 
   VecX z(n_meas_all);
   H_gnss.resize(n_meas_all, state_size);
-  H_gnss = VecXd::Zero(n_meas_all, state_size);
-  VecXd H_pr(n_meas, state_size), H_prr(n_meas, state_size),
+  H_gnss = MatXd::Zero(n_meas_all, state_size);
+  MatXd H_pr(n_meas, state_size), H_prr(n_meas, state_size),
       H_cp(n_meas, state_size);
 
   int i = 0;
@@ -254,19 +254,19 @@ VecX GnssMeasurement::GetPredictedGnssMeasurement(
   for (auto type : meas_type) {
     switch (type) {
       case GnssMeasurementType::PR:
-        H_pr = VecXd::Zero(n_meas, state_size);
+        H_pr = MatXd::Zero(n_meas, state_size);
         z.segment(i * n_meas, n_meas) =
             GetPredictedPseudorange(epoch, rv_pred, clk_pred, H_pr, frame_in);
         H_gnss.block(i * n_meas, 0, n_meas, 8) = H_pr;
         break;
       case GnssMeasurementType::PRR:
-        H_prr = VecXd::Zero(n_meas, state_size);
+        H_prr = MatXd::Zero(n_meas, state_size);
         z.segment(i * n_meas, n_meas) = GetPredictedPseudorangerate(
             epoch, rv_pred, clk_pred, H_prr, frame_in);
         H_gnss.block(i * n_meas, 0, n_meas, 8) = H_prr;
         break;
       case GnssMeasurementType::CP:
-        H_cp = VecXd::Zero(n_meas, state_size);
+        H_cp = MatXd::Zero(n_meas, state_size);
         z.segment(i * n_meas, n_meas) = GetPredictedCarrierPhase(
             epoch, rv_pred, clk_pred, N_pred, H_cp, frame_in);
         H_gnss.block(i * n_meas, 0, n_meas, 9) = H_cp;
@@ -282,7 +282,7 @@ VecX GnssMeasurement::GetPredictedGnssMeasurement(
 }
 
 VecX GnssMeasurement::GetPredictedPseudorange(double epoch, Vec6 rv_pred,
-                                              Vec2 clk_pred, VecXd &H_pr,
+                                              Vec2 clk_pred, MatXd &H_pr,
                                               Frame frame_in) {
   auto func = [epoch, frame_in, this](const Vec6 rv_in, const Vec2 clk) {
     Vec6 rv_gcrf = ConvertFrame(epoch, rv_in, frame_in, Frame::GCRF);
@@ -303,7 +303,7 @@ VecX GnssMeasurement::GetPredictedPseudorange(double epoch, Vec6 rv_pred,
 }
 
 VecX GnssMeasurement::GetPredictedPseudorangeAnalyticalJacobian(
-    double epoch, Vec6 rv_pred, Vec2 clk_pred, VecXd &H_pr, Frame frame_in) {
+    double epoch, Vec6 rv_pred, Vec2 clk_pred, MatXd &H_pr, Frame frame_in) {
   auto rv_gcrf = ConvertFrame(epoch, rv_pred, frame_in, Frame::GCRF);
   Vec3 r_rx = rv_gcrf.head(3);
   Real dt_rx = clk_pred(0);
@@ -330,7 +330,7 @@ VecX GnssMeasurement::GetPredictedPseudorangeAnalyticalJacobian(
 }
 
 VecX GnssMeasurement::GetPredictedPseudorangerate(double epoch, Vec6 rv_pred,
-                                                  Vec2 clk_pred, VecXd &H_prr,
+                                                  Vec2 clk_pred, MatXd &H_prr,
                                                   Frame frame_in) {
   auto func = [epoch, frame_in, this](const Vec6 rv_in, const Vec2 clk) {
     Vec6 rv_gcrf = ConvertFrame(epoch, rv_in, frame_in, Frame::GCRF);
@@ -353,7 +353,7 @@ VecX GnssMeasurement::GetPredictedPseudorangerate(double epoch, Vec6 rv_pred,
 
 VecX GnssMeasurement::GetPredictedCarrierPhase(double epoch, Vec6 rv_pred,
                                                Vec2 clk_pred, VecX N_pred,
-                                               VecXd &H_cp, Frame frame_in) {
+                                               MatXd &H_cp, Frame frame_in) {
   auto func = [epoch, frame_in, this](const Vec6 rv_in, const Vec2 clk,
                                       const VecX N_pred) {
     Vec6 rv_gcrf = ConvertFrame(epoch, rv_in, frame_in, Frame::GCRF);
