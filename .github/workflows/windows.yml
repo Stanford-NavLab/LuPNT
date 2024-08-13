@@ -17,7 +17,7 @@ env:
   LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
 
     steps:

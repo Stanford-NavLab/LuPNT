@@ -15,7 +15,7 @@ env:
   LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
 
 jobs:
-  python:
+  build-python:
     name: "${{ matrix.os }} :: Python ${{ matrix.python-version }}"
     runs-on: ${{matrix.os}}
     strategy:

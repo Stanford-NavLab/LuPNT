@@ -18,7 +18,7 @@ env:
   LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
 
 jobs:
-  build:
+  build-ubuntu:
     runs-on: ubuntu-latest
 
     steps:
