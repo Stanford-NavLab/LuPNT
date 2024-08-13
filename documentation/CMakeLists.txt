@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.14...3.22)
 project(LuPNTDocs)
 
 # ---- Dependencies ----
-
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/FindOpenMP.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/CPM.cmake)
 
 CPMAddPackage("gh:mosra/m.css#a0d292ec311b97fefd21e93cdefb60f88d19ede6")

@@ -21,11 +21,12 @@ if(NOT ${OpenMP_FOUND} OR NOT ${OpenMP_CXX_FOUND})
           OUTPUT_VARIABLE BREW_LIBOMP_PREFIX
           OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
-        set(OpenMP_CXX_LIB_NAMES omp)
+        message(STATUS "Using Homebrew libomp from ${BREW_LIBOMP_PREFIX}")
+        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp=lomp")
+        set(OpenMP_CXX_LIB_NAMES libomp)
         set(OpenMP_omp_LIBRARY ${BREW_LIBOMP_PREFIX}/lib/libomp.dylib)
-        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp")
-        set(OpenMP_C_LIB_NAMES omp)
+        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp=lomp")
+        set(OpenMP_C_LIB_NAMES libomp)
         set(OpenMP_INCLUDE_DIRS ${BREW_LIBOMP_PREFIX}/include)
         message(STATUS "Using Homebrew libomp from ${BREW_LIBOMP_PREFIX}")
       endif()
@@ -38,7 +39,22 @@ if(NOT ${OpenMP_FOUND} OR NOT ${OpenMP_CXX_FOUND})
   endif()
 endif()
 
+# set cmake options for OpenMP
+execute_process(
+  COMMAND ${BREW} --prefix libomp
+  OUTPUT_VARIABLE BREW_LIBOMP_PREFIX
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+message(STATUS "Using Homebrew libomp from ${BREW_LIBOMP_PREFIX}")
+set(OpenMP_C_LIB_NAMES "libomp")
+set(OpenMP_CXX_LIB_NAMES "libomp")
+set(OpenMP_libomp_LIBRARY ${BREW_LIBOMP_PREFIX}/lib/libomp.dylib)
+set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp ${BREW_LIBOMP_PREFIX}/lib/libomp.dylib -I${BREW_LIBOMP_PREFIX}/include")
+set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp ${BREW_LIBOMP_PREFIX}/lib/libomp.dylib -I${BREW_LIBOMP_PREFIX}/include")
+
+
 find_package(OpenMP REQUIRED)
+
 if(NOT TARGET OpenMP::OpenMP_CXX)
   add_library(OpenMP_TARGET INTERFACE)
   add_library(OpenMP::OpenMP_CXX ALIAS OpenMP_TARGET)
@@ -47,4 +63,6 @@ if(NOT TARGET OpenMP::OpenMP_CXX)
   target_link_libraries(OpenMP_TARGET INTERFACE Threads::Threads)
   target_link_libraries(OpenMP_TARGET INTERFACE ${OpenMP_CXX_FLAGS})
   target_include_directories(OpenMP_TARGET INTERFACE ${OpenMP_INCLUDE_DIRS})
+else()
+  message(STATUS "OpenMP found")
 endif()

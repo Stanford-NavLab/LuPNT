@@ -9,9 +9,9 @@
  *
  */
 #include <lupnt/core/constants.h>
-#include <lupnt/measurements/occultation.h>
 #include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/frame_converter.h>
+#include <lupnt/physics/occultation.h>
 
 #include <memory>
 
@@ -32,7 +32,7 @@ void printOccultation(Vec6 state_tx_vec, Vec6 state_rx_vec,
   tmp_ad = ConvertFrame(t, state_rx_vec, Frame::MOON_CI, Frame::GCRF);
   user_eci = tmp_ad.segment(0, 3).cast<double>();
 
-  std::map<std::string, bool> occ = Occultation::ComputeOccultation(
+  std::map<std::string, bool> occ = Occultation::ComputeOccultationGnss(
       segment_eci, segment_mi, user_eci, user_mi, seg_planet);
 
   for (auto &o : occ) {

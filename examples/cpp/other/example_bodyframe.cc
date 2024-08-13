@@ -45,7 +45,8 @@ int main() {
   std::cout << " " << std::endl;
 
   // Inertial to Body
-  Mat6d i2b_spice = spice::GetFrameConversionMat(t_tai, Frame::GCRF, fixed_frame);
+  Mat6d i2b_spice =
+      spice::GetFrameConversionMat(t_tai, Frame::GCRF, fixed_frame);
   std::cout << "GCRF to PLANET FIXED (SPICE)" << std::endl;
   // Print with clean formatting
   std::cout << i2b_spice.format(

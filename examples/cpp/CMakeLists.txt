@@ -8,7 +8,7 @@ project(LuPNTExamples LANGUAGES CXX)
 include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/tools.cmake)
 
 # ---- Dependencies ----
-
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/FindOpenMP.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/CPM.cmake)
 CPMAddPackage(NAME LuPNT SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 

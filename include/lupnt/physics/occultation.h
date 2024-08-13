@@ -30,7 +30,7 @@ class Occultation {
 
  public:
   /**
-   * @brief Compute occultation between a tx and a rx
+   * @brief Compute occultation between a tx and a rx for Lunar satellites
    *
    * @param tx_eci   The tx position in the Earth-centered inertial
    * @param tx_mci   The tx position in the Moon-centered inertial

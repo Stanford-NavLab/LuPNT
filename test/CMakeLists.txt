@@ -13,7 +13,7 @@ option(TEST_INSTALLED_VERSION "Test the version found by find_package" OFF)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/tools.cmake)
 
 # ---- Dependencies ----
-
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/FindOpenMP.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/CPM.cmake)
 
 CPMAddPackage("gh:TheLartians/Format.cmake@1.7.3")
