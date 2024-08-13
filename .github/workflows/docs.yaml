@@ -15,7 +15,7 @@ env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
 
 jobs:
-  build:
+  build-docs:
     name: Build and publish documentation
     runs-on: macos-latest
     steps:
@@ -28,6 +28,24 @@ jobs:
         with:
           path: "**/cpm_modules"
           key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+
+      - name: cache LuPNT_data
+        id: cache-lupnt
+        uses: actions/cache@v3
+        with:
+          path: data
+          key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
+
+      - name: download and unzip LuPNT_data
+        if: steps.cache-lupnt.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+          unzip LuPNT_data.zip
+          rm LuPNT_data.zip
+          
+      - name: Install pylupnt
+        run: |
+          pip install .
 
       - name: Install dependencies
         run: |

@@ -31,15 +31,46 @@ jobs:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
 
-      - name: Install OpenMP (Linux)
+      - uses: actions/cache@v3
+        id: cache-lupnt-data
+        with:
+          path: LuPNT_data
+          key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
+        
+      # Ubuntu
+      - name: Install OpenMP and download data (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
+          echo "LUPNT_DATA_PATH = $LUPNT_DATA_PATH"
           sudo apt-get update 
           sudo apt-get install -y libomp-dev
 
+      # MacOS
       - name: Install OpenMP (macOS)
         if: matrix.os == 'macos-latest'
         run: brew install libomp
+
+      # MacOS + Ubuntu
+      - name: Download and unzip LuPNT_data (MacOS + Ubuntu)
+        if: |
+          (matrix.os == 'macos-latest'   || 
+            matrix.os == 'ubuntu-latest') &&
+          steps.cache-lupnt-data.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+          unzip LuPNT_data.zip
+          rm LuPNT_data.zip
+
+      # Windows
+      - name: Download and unzip LuPNT_data (Windows)
+        if:  |
+          matrix.os == 'windows-latest' &&
+          steps.cache-lupnt-data.outputs.cache-hit != 'true'
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://bit.ly/LuPNT_data" -OutFile "LuPNT_data.zip"
+          Expand-Archive -Path "LuPNT_data.zip" -DestinationPath "."
+          Remove-Item "LuPNT_data.zip"
 
       - name: Install Python bindings using pip
         run: python -m pip install .[test] -v
