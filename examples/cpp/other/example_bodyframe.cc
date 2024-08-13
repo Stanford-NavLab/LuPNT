@@ -26,8 +26,7 @@ int main() {
   std::cout << " " << std::endl;
 
   // Body to Inertial
-  Mat6d b2i_spice =
-      spice::GetFrameConversionMat(t_tai, fixed_frame, Frame::GCRF);
+  Mat6d b2i_spice = spice::GetFrameConversionMat(t_tai, fixed_frame, Frame::GCRF);
   std::cout << "PLANET FIXED to GCRF (SPICE)" << std::endl;
   // Print with clean formatting
   std::cout << b2i_spice.format(
@@ -37,8 +36,7 @@ int main() {
   std::cout << " " << std::endl;
   Mat6 b2i = RotPosVelBodyFixedToInertial(id, t_tdb);
   std::cout << "PLANET FIXED to GCRF (lupnt)" << std::endl;
-  std::cout << b2i.format(
-      Eigen::IOFormat(Eigen::StreamPrecision, 0, " ", "\n", "", "", "", ""));
+  std::cout << b2i.format(Eigen::IOFormat(Eigen::StreamPrecision, 0, " ", "\n", "", "", "", ""));
 
   std::cout << " " << std::endl;
   std::cout << " --------------------------------------------" << std::endl;
@@ -55,8 +53,7 @@ int main() {
   std::cout << " " << std::endl;
   Mat6 i2b = RotPosVelInertialToBodyFixed(id, t_tdb);
   std::cout << "GCRF to PLANET FIXED (lupnt)" << std::endl;
-  std::cout << i2b.format(
-      Eigen::IOFormat(Eigen::StreamPrecision, 0, " ", "\n", "", "", "", ""));
+  std::cout << i2b.format(Eigen::IOFormat(Eigen::StreamPrecision, 0, " ", "\n", "", "", "", ""));
 
   return 0;
 }

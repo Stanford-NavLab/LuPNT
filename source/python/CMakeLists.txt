@@ -26,10 +26,12 @@ install(TARGETS _pylupnt DESTINATION pylupnt)
 
 # ---- Utility for development build ----
 
-add_custom_target(pylupnt-dev
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target _pylupnt
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:_pylupnt> .
-    COMMAND stubgen -m _pylupnt -o .
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/pylupnt
-    COMMENT "Building _pylupnt, removing old stubs, generating new stubs, and copying _pylupnt to current directory"
+add_custom_target(
+  pylupnt-dev
+  COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target _pylupnt
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:_pylupnt> .
+  COMMAND stubgen -m _pylupnt -o .
+  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/pylupnt
+  COMMENT
+    "Building _pylupnt, removing old stubs, generating new stubs, and copying _pylupnt to current directory"
 )

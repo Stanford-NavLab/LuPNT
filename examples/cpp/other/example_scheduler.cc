@@ -17,9 +17,7 @@
 
 using namespace lupnt;
 
-void eventFunction(double time) {
-  std::cout << "Event executed at time: " << time << std::endl;
-}
+void eventFunction(double time) { std::cout << "Event executed at time: " << time << std::endl; }
 
 int main() {
   Scheduler scheduler;

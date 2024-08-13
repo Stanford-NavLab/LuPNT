@@ -37,7 +37,7 @@ namespace lupnt {
     int state_types_ = 0;
 
   public:
-    JointState(){};
+    JointState() {};
     JointState(std::vector<IState*> state_vec) {
       int state_vec_size = 0;
       for (int i = 0; state_vec.size(); i++) {

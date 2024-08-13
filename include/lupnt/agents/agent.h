@@ -45,7 +45,7 @@ namespace lupnt {
     std::unique_ptr<ClockDynamics> clock_dynamics_;
 
   public:
-    Agent() : id_(id_counter_++), clock_(ClockState(Vec2d::Zero())){};
+    Agent() : id_(id_counter_++), clock_(ClockState(Vec2d::Zero())) {};
 
     // Getters
     Real GetEpoch() { return epoch_; }

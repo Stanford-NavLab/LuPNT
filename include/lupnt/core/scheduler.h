@@ -35,8 +35,7 @@ namespace lupnt {
     static void ScheduleApplication(Application &app, double time = 0.0,
                                     double freq = std::numeric_limits<double>::infinity()) {
       app.Setup();
-      ScheduleEvent(Event(
-          time, [&app](double t) { app.Step(t); }, app.GetFrequency()));
+      ScheduleEvent(Event(time, [&app](double t) { app.Step(t); }, app.GetFrequency()));
     }
 
     static void RunSimulation(double endTime = std::numeric_limits<double>::infinity()) {

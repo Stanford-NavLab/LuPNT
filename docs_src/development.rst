@@ -3,7 +3,7 @@
 Development with VSCode
 =======================
 
-You can debud Python and C++ by installing the `Python C++ Debugger <https://marketplace.visualstudio.com/items?itemName=benjamin-simmonds.pythoncpp-debug>`_ extension. The website provides examples for debugging in Windows and with ``gdb``.
+You can debug Python and C++ by installing the `Python C++ Debugger <https://marketplace.visualstudio.com/items?itemName=benjamin-simmonds.pythoncpp-debug>`_ extension. The website provides examples for debugging in Windows and with ``gdb``.
 
 For Apple silicon, install the `CodeLLDB <https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb>`_ extension and create the file ``.vscode/launch.json`` with the following configurations. 
 Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.

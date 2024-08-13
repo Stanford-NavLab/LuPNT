@@ -25,8 +25,8 @@ int main() {
   for (int i = 0; i <= N_step; i++) {
     mjd_tt = mjd0 + i * dt;
     r = MoonPositionLowPrecision(mjd_tt) / 1000.0;
-    cout << "  " << MJDtoGregorianString(mjd_tt, 1) << "      "
-         << r.transpose().format(fmt) << endl;
+    cout << "  " << MJDtoGregorianString(mjd_tt, 1) << "      " << r.transpose().format(fmt)
+         << endl;
   };
 
   cout << endl << " Moon position from DE405" << endl;
@@ -37,8 +37,7 @@ int main() {
     Real tt = (mjd_tt - MJD_J2000) * SECS_DAY;
     Real t_tai = ConvertTime(tt, TimeSys::TT, TimeSys::TAI);
     r = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON).head(3);
-    cout << " " << MJDtoGregorianString(mjd_tt, 1) << "      "
-         << r.transpose().format(fmt) << endl;
+    cout << " " << MJDtoGregorianString(mjd_tt, 1) << "      " << r.transpose().format(fmt) << endl;
   };
 
   return 0;

@@ -31,8 +31,7 @@ int main() {
     Vec6 rv_old = spice::GetBodyPosVel(t_tai, center, id);
     Vec6 rv_spi = spice::GetBodyPosVelSpice(t_tai, center, id);
     Vec6 rv_new = GetBodyPosVel(t_tai, center, id);
-    auto fmt =
-        Eigen::IOFormat(16, Eigen::AutoAlign, ", ", ", ", "", "", "[", "]");
+    auto fmt = Eigen::IOFormat(16, Eigen::AutoAlign, ", ", ", ", "", "", "[", "]");
     cout << toString(center) << " -> " << toString(id) << endl;
     cout << "LuPNT       " << rv_new.transpose().format(fmt) << endl;
     cout << "LuPNT+Spice " << rv_old.transpose().format(fmt) << endl;
@@ -57,8 +56,8 @@ int main() {
   for (int i = 0; i < n; i++) GetBodyPosVel(t_tai, center, target);
   end = high_resolution_clock::now();
   duration = duration_cast<milliseconds>(end - start).count();
-  cout << setw(w) << left << ("LuPNT (" + to_string(n_threads) + " threads)")
-       << duration << " ms" << endl;
+  cout << setw(w) << left << ("LuPNT (" + to_string(n_threads) + " threads)") << duration << " ms"
+       << endl;
 
   start = high_resolution_clock::now();
   for (int i = 0; i < n; i++) spice::GetBodyPosVel(t_tai, center, target);

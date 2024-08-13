@@ -6,11 +6,9 @@
 int main() {
   using namespace matplot;
   auto t = iota(0, pi / 500, 40 * pi);
-  auto xt =
-      transform(t, [](auto t) { return (3. + cos(sqrt(32.) * t)) * cos(t); });
+  auto xt = transform(t, [](auto t) { return (3. + cos(sqrt(32.) * t)) * cos(t); });
   auto yt = transform(t, [](auto t) { return sin(sqrt(32.) * t); });
-  auto zt =
-      transform(t, [](auto t) { return (3. + cos(sqrt(32.) * t)) * sin(t); });
+  auto zt = transform(t, [](auto t) { return (3. + cos(sqrt(32.) * t)) * sin(t); });
   plot3(xt, yt, zt);
   axis(equal);
   xlabel("x(t)");
