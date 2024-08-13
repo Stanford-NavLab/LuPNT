@@ -31,7 +31,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake
-          pip3 install clang-format cmake_format pyyaml
+          pip3 install clang-format==18.1.8 cmake_format==0.6.13 pyyaml
 
       - name: configure
         run: cmake -Stest -Bbuild
