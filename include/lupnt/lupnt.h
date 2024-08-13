@@ -7,7 +7,6 @@
 #include "lupnt/agents/gnss_constellation.h"
 #include "lupnt/agents/state_estimation_app.h"
 #include "lupnt/agents/state_estimation_app_gnss.h"
-#include "lupnt/agents/task_scheduling.h"
 
 // core
 #include "lupnt/core/constants.h"

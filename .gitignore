@@ -4,5 +4,4 @@ cpm_modules
 .DS_Store
 LuPNT_data*
 *cache*
-docs
 *.so

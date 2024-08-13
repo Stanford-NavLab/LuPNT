@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14...3.22)
+cmake_minimum_required(VERSION 3.14)
 set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)
 
 project(LuPNTExamples LANGUAGES CXX)
@@ -6,6 +6,7 @@ project(LuPNTExamples LANGUAGES CXX)
 # --- Import tools ----
 
 include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/tools.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/FindOpenMP.cmake)
 
 # ---- Dependencies ----
 
@@ -32,4 +33,13 @@ foreach(example ${examples})
   target_link_libraries(${name} PRIVATE LuPNT::LuPNT)
   set_target_properties(${name} PROPERTIES CXX_STANDARD 20)
   set_target_properties(${name} PROPERTIES FOLDER "examples/${dir}")
+  set_target_properties(${name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/examples)
+endforeach()
+
+# Create a custom target to build all examples
+add_custom_target(all_examples)
+foreach(example ${examples})
+    get_filename_component(name ${example} NAME_WE)
+    add_dependencies(all_examples ${name})
+    set_target_properties(all_examples PROPERTIES FOLDER "examples")
 endforeach()
