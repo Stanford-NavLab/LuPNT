@@ -16,7 +16,7 @@ maintainers=[
     {name="Guillem Casadesus Vila", email="guillemc@stanford.edu"},
     {name="Keidai Iiyama",          email="kiiyama@stanford.edu"},
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "numpy",
     "astropy",
@@ -48,7 +48,6 @@ keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "examp
 classifiers=[
     "Programming Language :: C++",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
@@ -65,8 +64,8 @@ Documentation = "https://lupnt.readthedocs.io"
 [project.optional-dependencies]
 test = ["pytest"]
 docs = [
-    "cmake", 
-    "breathe", 
+    "cmake",
+    "breathe",
     "sphinx_rtd_theme",
     "notebook",
     "sphinx",

@@ -16,8 +16,8 @@ dependencies:
   - numba
   - onnx
   - pandas
-  - pytorch 
-  - torchvision 
+  - pytorch
+  - torchvision
   - torchaudio
   - Pillow
   - plotly

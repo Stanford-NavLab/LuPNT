@@ -30,11 +30,11 @@ jobs:
         with:
           path: LuPNT_data
           key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
-        
+
       - name: Install OpenMP and download data (Ubuntu)
         run: |
           echo "LUPNT_DATA_PATH = $LUPNT_DATA_PATH"
-          sudo apt-get update 
+          sudo apt-get update
           sudo apt-get install -y libomp-dev
           sudo apt-get install -y doxygen
           sudo apt-get install -y pandoc

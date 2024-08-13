@@ -5,13 +5,13 @@ Development with VSCode
 
 You can debug Python and C++ by installing the `Python C++ Debugger <https://marketplace.visualstudio.com/items?itemName=benjamin-simmonds.pythoncpp-debug>`_ extension. The website provides examples for debugging in Windows and with ``gdb``.
 
-For Apple silicon, install the `CodeLLDB <https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb>`_ extension and create the file ``.vscode/launch.json`` with the following configurations. 
+For Apple silicon, install the `CodeLLDB <https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb>`_ extension and create the file ``.vscode/launch.json`` with the following configurations.
 This extension allows debugging C++ code.
 
 Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.
 
 .. code-block:: python
-    
+
         {
             "configurations": [
                 {
@@ -21,7 +21,7 @@ Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.
                     "pid": "",
                     "initCommands": [
                         # ***** CHANGE THIS *****
-                        "command script import \"YOUR-PATH-TO-LUPNT/LuPNT/eigenlldb.py\"", 
+                        "command script import \"YOUR-PATH-TO-LUPNT/LuPNT/eigenlldb.py\"",
                         # ***** CHANGE THIS *****
                     ],
                 },
@@ -37,7 +37,7 @@ Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.
                     "name": "* Python/C++ Debugger",
                     "type": "pythoncpp",
                     "request": "launch",
-                    "pythonLaunchName": "* Python Debugger: Current File", 
+                    "pythonLaunchName": "* Python Debugger: Current File",
                     "cppAttachName": "* Attach",
                 },
             ],
@@ -49,7 +49,7 @@ Edit the ``.vscode/settings.json`` file to debug all targets using CodeLLDB.
 Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.
 
 .. code-block:: python
-    
+
     {
         "cmake.sourceDirectory": "${workspaceFolder}/all",
         "cmake.debugConfig": {
@@ -59,13 +59,13 @@ Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.
             "program": "${command:cmake.launchTargetPath}",
             "initCommands": [
                 // ***** CHANGE THIS *****
-                "command script import \"YOUR-PATH-TO-LUPNT/LuPNT/eigenlldb.py\"", 
+                "command script import \"YOUR-PATH-TO-LUPNT/LuPNT/eigenlldb.py\"",
                 // ***** CHANGE THIS *****
             ],
         },
     }
 
-To use the ``eigenlldb.py`` script for pretty printing with the CodeLLDB extension, we need to install numpy within its Python distribution. 
+To use the ``eigenlldb.py`` script for pretty printing with the CodeLLDB extension, we need to install numpy within its Python distribution.
 Open the VSCode Command Palette by pressing ``Command + Shift + P`` (or ``Ctrl + Shift + P``), and select ``LLDB: Command Prompt``.
 Once the LLDB command prompt opens, enter ``pip install numpy``.
 
@@ -104,17 +104,17 @@ In the VSCode debug console use ``p <variable-name>`` to print the name of a var
 Run the CMake target ``pylupnt-dev`` to automatically build ``pylupnt``, i.e., LuPNT and the python bindings, copy the generated ``_pylupnt.*.so`` file to ``source/python/pylupnt``, and generate stubs for the bindings. The stubs allow IDEs like VSCode to find the contents of a compiled package such us our bindings. Finally, add ``source/python/pylupnt`` to your python path by adding the environment variable
 
 .. code-block:: bash
-    
+
         export PYTHONPATH="YOUR-PATH-TO-LUPNT/LuPNT/source/python:${PYTHONPATH}"
 
 You can check whether it was added by restarting your terminal session or VSCode and executing
 
 .. code-block:: bash
-    
+
         python -c "import sys; print(sys.path)"
 
 Now you should be able to execute
 
 .. code-block:: bash
-    
+
         python -c "import pylupnt as pnt; print(pnt.R_MOON)"

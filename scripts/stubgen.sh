@@ -42,5 +42,5 @@
 #   --dry-run             Don't write stubs. Parses module and report errors
 #   --stub-extension EXT  The file extension of the generated stubs. Must be 'pyi' (default) or 'py'
 
-pybind11-stubgen pylupnt --output-dir "$(dirname "${BASH_SOURCE[0]}")/../source/python" --enum-class-locations "Frame:pylupnt" 
+pybind11-stubgen pylupnt --output-dir "$(dirname "${BASH_SOURCE[0]}")/../source/python" --enum-class-locations "Frame:pylupnt"
 # --print-invalid-expressions-as-is

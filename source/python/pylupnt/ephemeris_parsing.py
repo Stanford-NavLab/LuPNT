@@ -1,4 +1,5 @@
 import argparse
+
 # import gnss_lib_py as glp
 from datetime import datetime, timedelta
 import numpy as np
@@ -32,7 +33,7 @@ import numpy as np
 #                 times.append(t0)
 #         #next time step
 #         t0 = t0 + timedelta(seconds=dt)
-        
+
 #     #must convert to gps milliseconds (ASSUMING THE DATETIMES ARE IN UTC)
 #     gps_millis = glp.datetime_to_gps_millis(times)
 #     #create NaVData() object
