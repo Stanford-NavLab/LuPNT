@@ -12,7 +12,7 @@ jobs:
         os: [ubuntu-latest]
     env:
       LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
-      CIBW_ENVIRONMENT: LUPNT_DATA_PATH=${{ github.workspace }}/LuPNT_data
+      CIBW_ENVIRONMENT: LUPNT_DATA_PATH=/project/LuPNT_data
       MACOSX_DEPLOYMENT_TARGET: 14.0
 
     steps:
@@ -62,7 +62,7 @@ jobs:
       # All
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.20   
-
+        
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}

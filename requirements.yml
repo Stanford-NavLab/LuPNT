@@ -15,7 +15,6 @@ dependencies:
   - networkx
   - numba
   - onnx
-  - openvino
   - pandas
   - pytorch 
   - torchvision 

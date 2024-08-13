@@ -31,7 +31,6 @@ dependencies = [
     "networkx",
     "numba",
     "onnx",
-    "openvino",
     "pandas",
     "Pillow",
     "plotly",

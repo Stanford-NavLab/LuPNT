@@ -1,4 +1,4 @@
-name: Docs
+name: Python
 
 on:
   push:
@@ -12,17 +12,13 @@ on:
       - main
 
 env:
-  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
+  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
 
 jobs:
   build-docs:
-    name: Build and publish documentation
-    runs-on: macos-latest
+    runs-on: "ubuntu-latest"
     steps:
-      - name: Install OpenMP
-        run: brew install libomp
-
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
@@ -30,40 +26,31 @@ jobs:
           allow-prereleases: true
 
       - uses: actions/cache@v3
+        id: cache-lupnt-data
         with:
-          path: "**/cpm_modules"
-          key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-
-      - name: cache LuPNT_data
-        id: cache-lupnt
-        uses: actions/cache@v3
-        with:
-          path: data
+          path: LuPNT_data
           key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
+        
+      - name: Install OpenMP and download data (Ubuntu)
+        run: |
+          echo "LUPNT_DATA_PATH = $LUPNT_DATA_PATH"
+          sudo apt-get update 
+          sudo apt-get install -y libomp-dev
+          sudo apt-get install -y doxygen
+          sudo apt-get install -y pandoc
 
-      - name: download and unzip LuPNT_data
-        if: steps.cache-lupnt.outputs.cache-hit != 'true'
+      - name: Download and unzip LuPNT_data (MacOS + Ubuntu)
+        if: steps.cache-lupnt-data.outputs.cache-hit != 'true'
         run: |
           curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
           unzip LuPNT_data.zip
           rm LuPNT_data.zip
 
-      - name: Install pylupnt
+      - name: Build docs
         run: |
           python -m pip install . -v
-
-      - name: Install dependencies
-        run: |
           cd docs
-          brew install doxygen
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
-
-      - name: Build
-        run: |
-          cd docs
-          source venv/bin/activate
+          python -m pip install -r requirements.txt
           python make_docs.py
 
       - name: Publish
