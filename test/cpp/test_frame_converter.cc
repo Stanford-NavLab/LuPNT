@@ -58,9 +58,12 @@ TEST_CASE("Frame_Converter") {
 
   // Vec6 = func(real, Vec6)
   for (auto frame_in : frame_list) {
+    std::cout << "Converting from " << Frame::ITRF << " to " << frame_in << std::endl;
     Vec6 rv_converted = ConvertFrame(t_tai, rv_init, Frame::ITRF, frame_in);
     for (auto frame_out : frame_list) {
+      std::cout << "Converting from " << frame_in << " to " << frame_out << std::endl;
       Vec6 rv_back = ConvertFrame(t_tai, rv_converted, frame_in, frame_out);
+      std::cout << "Converting from " << frame_out << " to " << Frame::ITRF << std::endl;
       Vec6 rv_final = ConvertFrame(t_tai, rv_back, frame_out, Frame::ITRF);
       RequireNearRealVec(rv_init, rv_final, epsilon);
     }

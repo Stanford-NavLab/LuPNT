@@ -6,6 +6,8 @@ Development with VSCode
 You can debug Python and C++ by installing the `Python C++ Debugger <https://marketplace.visualstudio.com/items?itemName=benjamin-simmonds.pythoncpp-debug>`_ extension. The website provides examples for debugging in Windows and with ``gdb``.
 
 For Apple silicon, install the `CodeLLDB <https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb>`_ extension and create the file ``.vscode/launch.json`` with the following configurations. 
+This extension allows debugging C++ code.
+
 Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.
 
 .. code-block:: python
@@ -62,6 +64,10 @@ Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.
             ],
         },
     }
+
+To use the ``eigenlldb.py`` script for pretty printing with the CodeLLDB extension, we need to install numpy within its Python distribution. 
+Open the VSCode Command Palette by pressing ``Command + Shift + P`` (or ``Ctrl + Shift + P``), and select ``LLDB: Command Prompt``.
+Once the LLDB command prompt opens, enter ``pip install numpy``.
 
 In the VSCode debug console use ``p <variable-name>`` to print the name of a variables or ``? <variable-name>`` to inspect its raw contents. For example, for position vector and velocity vector would be.
 

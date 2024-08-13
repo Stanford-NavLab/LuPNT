@@ -41,7 +41,6 @@ jobs:
       - name: Install OpenMP and download data (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          echo "LUPNT_DATA_PATH = $LUPNT_DATA_PATH"
           sudo apt-get update 
           sudo apt-get install -y libomp-dev
 

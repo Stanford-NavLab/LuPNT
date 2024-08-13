@@ -116,11 +116,13 @@ namespace lupnt {
     std::string line;
     while (std::getline(file, line)) {
       if (line.find("POTFIELD") != std::string::npos) {
-        std::istringstream iss(line);
-        std::string potfield;
-        int n_max, m_max, dummy;
+        std::string potfield = line.substr(0, 8);
+        int n_max = std::stoi(line.substr(8, 3));
+        int m_max = std::stoi(line.substr(11, 3));
+
+        std::istringstream iss(line.substr(14));
         double GM, r, dummyFactor;
-        iss >> potfield >> n_max >> m_max >> dummy >> GM >> r >> dummyFactor;
+        iss >> GM >> r >> dummyFactor;
         gravity_field.n_max = n_max;
         gravity_field.m_max = m_max;
         gravity_field.GM = GM * pow(KM_M, 3);
@@ -136,11 +138,12 @@ namespace lupnt {
     // Read coefficient lines
     while (std::getline(file, line)) {
       if (line.find("RECOEF") != std::string::npos) {
-        std::istringstream iss(line);
-        std::string recoef;
-        int n, m;
+        std::string recoef = line.substr(0, 8);
+        int n = std::stoi(line.substr(8, 3));
+        int m = std::stoi(line.substr(11, 3));
+        std::istringstream iss(line.substr(14));
         double cnm, snm = 0.0;
-        iss >> recoef >> n >> m >> cnm;
+        iss >> cnm;
         if (n >= n_max + 1) break;
         if (m >= m_max + 1) continue;
 
