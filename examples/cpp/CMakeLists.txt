@@ -33,13 +33,15 @@ foreach(example ${examples})
   target_link_libraries(${name} PRIVATE LuPNT::LuPNT)
   set_target_properties(${name} PROPERTIES CXX_STANDARD 20)
   set_target_properties(${name} PROPERTIES FOLDER "examples/${dir}")
-  set_target_properties(${name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/examples)
+  set_target_properties(
+    ${name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/examples
+  )
 endforeach()
 
 # Create a custom target to build all examples
 add_custom_target(all_examples)
 foreach(example ${examples})
-    get_filename_component(name ${example} NAME_WE)
-    add_dependencies(all_examples ${name})
-    set_target_properties(all_examples PROPERTIES FOLDER "examples")
+  get_filename_component(name ${example} NAME_WE)
+  add_dependencies(all_examples ${name})
+  set_target_properties(all_examples PROPERTIES FOLDER "examples")
 endforeach()
