@@ -12,47 +12,41 @@
 using namespace Catch::Matchers;
 using namespace lupnt;
 
-static void RequireNearRealVec(const VecX& a, const VecX& b, double abs_error) {
-  REQUIRE(a.size() == b.size());
-  for (int i = 0; i < a.size(); ++i) {
-    REQUIRE_THAT(a[i].val(), WithinAbs(b[i].val(), abs_error));
+#define REQUIRE_NEAR_REAL_VEC(a, b, abs_error) \
+  REQUIRE(a.size() == b.size()); \
+  for (int i = 0; i < a.size(); ++i) { \
+    REQUIRE_THAT(a[i].val(), WithinAbs(b[i].val(), abs_error)); \
   }
-}
 
-static void RequireNearRealMat(const MatX& a, const MatX& b, double abs_error) {
-  REQUIRE(a.rows() == b.rows());
-  REQUIRE(a.cols() == b.cols());
-  for (int i = 0; i < a.rows(); ++i) {
-    for (int j = 0; j < a.cols(); ++j) {
-      REQUIRE_THAT(a(i, j).val(), WithinAbs(b(i, j).val(), abs_error));
-    }
+#define REQUIRE_NEAR_REAL_MAT(a, b, abs_error) \
+  REQUIRE(a.rows() == b.rows()); \
+  REQUIRE(a.cols() == b.cols()); \
+  for (int i = 0; i < a.rows(); ++i) { \
+    for (int j = 0; j < a.cols(); ++j) { \
+      REQUIRE_THAT(a(i, j).val(), WithinAbs(b(i, j).val(), abs_error)); \
+    } \
   }
-}
 
-static void RequireNearDoubleVec(const VecXd& a, const VecXd& b, double abs_error) {
-  REQUIRE(a.size() == b.size());
-  for (int i = 0; i < a.size(); ++i) {
-    REQUIRE_THAT(a[i], WithinAbs(b[i], abs_error));
+#define REQUIRE_NEAR_DOUBLE_VEC(a, b, abs_error) \
+  REQUIRE(a.size() == b.size()); \
+  for (int i = 0; i < a.size(); ++i) { \
+    REQUIRE_THAT(a[i], WithinAbs(b[i], abs_error)); \
   }
-}
 
-static void RequireNearDoubleMat(const MatXd& a, const MatXd& b, double abs_error) {
-  REQUIRE(a.rows() == b.rows());
-  REQUIRE(a.cols() == b.cols());
-  for (int i = 0; i < a.rows(); ++i) {
-    for (int j = 0; j < a.cols(); ++j) {
-      REQUIRE_THAT(a(i, j), WithinAbs(b(i, j), abs_error));
-    }
+#define REQUIRE_NEAR_DOUBLE_MAT(a, b, abs_error) \
+  REQUIRE(a.rows() == b.rows()); \
+  REQUIRE(a.cols() == b.cols()); \
+  for (int i = 0; i < a.rows(); ++i) { \
+    for (int j = 0; j < a.cols(); ++j) { \
+      REQUIRE_THAT(a(i, j), WithinAbs(b(i, j), abs_error)); \
+    } \
   }
-}
 
-static void RequireNearReal(Real a, Real b, double abs_error) {
-  REQUIRE_THAT(a.val(), WithinAbs(b.val(), abs_error));
-}
+#define REQUIRE_NEAR_REAL(a, b, abs_error) \
+  REQUIRE_THAT(a.val(), WithinAbs(b.val(), abs_error))
 
-static void RequireNearDouble(double a, double b, double abs_error) {
-  REQUIRE_THAT(a, WithinAbs(b, abs_error));
-}
+#define REQUIRE_NEAR_DOUBLE(a, b, abs_error) \
+  REQUIRE_THAT(a, WithinAbs(b, abs_error))
 
 // inputs: vector, function(vector), jacobian
 static void NumericalJacobian(std::function<void(VecX&, Real)> propagate_function, const VecX& vec,

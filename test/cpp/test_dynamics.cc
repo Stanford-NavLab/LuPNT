@@ -33,7 +33,7 @@ TEST_CASE("Test_KeplerianDynamics_ClassicalOE") {
     kep_dyn.Propagate(coe_state, dt);
     coe_analytical(5) = Wrap2Pi(coe_analytical(5) + n * dt);
 
-    RequireNearRealVec(coe_state.GetVec(), coe_analytical, 1e-6);
+    REQUIRE_NEAR_REAL_VEC(coe_state.GetVec(), coe_analytical, 1e-6);
     dt += 2.0;
   }
 
@@ -51,7 +51,7 @@ TEST_CASE("Test_KeplerianDynamics_ClassicalOE") {
     NumericalJacobian(propagate_function, coe_state.GetVec(), dt, stm_numerical, 1e-6);
     kep_dyn.PropagateWithStm(coe_state, dt, stm);
 
-    RequireNearDoubleMat(stm, stm_numerical, 1e-6);
+    REQUIRE_NEAR_DOUBLE_MAT(stm, stm_numerical, 1e-6);
     dt += 2.0;
   }
 }
@@ -84,8 +84,8 @@ TEST_CASE("Test_CartesianTwoBodyDynamics") {
     tb_dyn.Propagate(cart_vector, 0.0, dt, 1.0);
 
     cart_vector_kep = Classical2Cart(coe_state.GetVec(), GM);
-    RequireNearRealVec(cart_vector_kep, cart_state.GetVec(), 1e-6);
-    RequireNearRealVec(cart_vector_kep, cart_vector, 1e-6);
+    REQUIRE_NEAR_REAL_VEC(cart_vector_kep, cart_state.GetVec(), 1e-6);
+    REQUIRE_NEAR_REAL_VEC(cart_vector_kep, cart_vector, 1e-6);
   }
 
   // Propagation with STM
@@ -106,11 +106,11 @@ TEST_CASE("Test_CartesianTwoBodyDynamics") {
     tb_dyn.PropagateWithStm(cart_state, 0.0, dt, 0.1, stm_state);
     tb_dyn.PropagateWithStm(cart_vector, 0.0, dt, 0.1, stm_vector);
 
-    RequireNearRealVec(cart_numerical, cart_state.GetVec(), 1e-6);
-    RequireNearRealVec(cart_numerical, cart_vector, 1e-6);
+    REQUIRE_NEAR_REAL_VEC(cart_numerical, cart_state.GetVec(), 1e-6);
+    REQUIRE_NEAR_REAL_VEC(cart_numerical, cart_vector, 1e-6);
 
-    RequireNearDoubleMat(stm_numerical, stm_state, 1e-5);
-    RequireNearDoubleMat(stm_numerical, stm_vector, 1e-5);
+    REQUIRE_NEAR_DOUBLE_MAT(stm_numerical, stm_state, 1e-5);
+    REQUIRE_NEAR_DOUBLE_MAT(stm_numerical, stm_vector, 1e-5);
   }
 }
 
