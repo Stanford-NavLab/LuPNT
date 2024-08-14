@@ -60,7 +60,7 @@ jobs:
             if [ -n "$file_path" ]; then
               if ! grep -qE "show()|draw()" "$file_path"; then
                 echo -e "\n\n*********** Running example: $example ***********\n"
-                ./"$example"
+                timeout 1m ./"$example"  # Set maximum compute time to 5 minutes
               fi
             fi
           done

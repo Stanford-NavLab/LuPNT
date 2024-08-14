@@ -31,8 +31,8 @@ int main() {
   auto rv = CartesianOrbitState(cart);
   std::cout << "type = " << typeid(rv.r()).name() << std::endl;
 
-  Vec3 r_cart_ref{0, 0, 0};
-  Vec3 r_aer{1e-3, 1e-3, 5e3};
+  Vec3 r_cart_ref{1, 1, 1};
+  Vec3 r_aer{30 * RAD, 60 * RAD, 1};
   Vec3 r = AzElRange2Cart(r_aer, r_cart_ref);
   std::cout << "r = " << r.transpose() << std::endl;
 }

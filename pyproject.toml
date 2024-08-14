@@ -16,7 +16,7 @@ maintainers=[
     {name="Guillem Casadesus Vila", email="guillemc@stanford.edu"},
     {name="Keidai Iiyama",          email="kiiyama@stanford.edu"},
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "numpy",
     "astropy",
