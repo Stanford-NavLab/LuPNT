@@ -1,10 +1,15 @@
+# Get LuPNT data
 curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
 unzip LuPNT_data.zip
 rm LuPNT_data.zip
 
-export LUPNT_DATA_PATH=$(pwd)/LuPNT_data
+# Set the environment variable
+echo "export LUPNT_DATA_PATH=$(pwd)/LuPNT_data" >> ~/.bashrc
+source ~/.bashrc
 
+# Install LuPNT
+sudo apt-get update
+sudo apt-get install -y cmake libomp-dev
 pip install .
 
-nbgitpuller examples/python/notebooks --depth 1
-jupyter notebook --no-browser --port 8888 --ip 0.0.0.0 --NotebookApp.token="" --NotebookApp.password=""
+cd examples/python/notebooks
