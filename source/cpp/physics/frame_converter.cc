@@ -138,9 +138,9 @@ namespace lupnt {
     Real jd_tt = TimeToJD(t_tt);
 
     IauSofaData iau_data = GetIauSofaData(jd_tt);
-    Real X = iau_data.X;
-    Real Y = iau_data.Y;
-    Real s = iau_data.s;
+    Real X = iau_data.X * RAD_ARCSEC;
+    Real Y = iau_data.Y * RAD_ARCSEC;
+    Real s = iau_data.s * RAD_ARCSEC;
 
     Real a = 1. / (1. + sqrt(1. - X * X - Y * Y));
     Mat3 mat{{1. - a * X * X, -a * X * Y, -X},

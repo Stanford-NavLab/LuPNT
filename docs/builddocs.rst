@@ -23,20 +23,16 @@ Clone and build LuPNT from source.
 
 .. code-block:: bash
 
-    # For pip
-    pip install -r doc/requirements.txt
+    cd docs
 
-    # install binary dependencies
-    conda install -c conda-forge pandoc doxygen
+    # Install python requirements
+    pip install -r requirements.txt
 
+    # Install dependencies
+    sudo apt-get install doxygen pandoc # (Linux)
+    brew install doxygen pandoc # (Mac)
 
-Build
------
-
-.. code-block:: bash
-
-    cd doc
-
+    # Make docs
     python make_docs.py
 
-The docs html will be saved in ``docs/`` folder.
+The docs html will be saved in ``build/docs`` folder.

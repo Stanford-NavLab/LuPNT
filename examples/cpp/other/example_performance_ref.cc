@@ -1,9 +1,12 @@
+#include <lupnt/core/constants.h>
+
 #include <Eigen/Dense>
 #include <chrono>
 #include <iostream>
 
 using real = double;
 using Vec3 = Eigen::Vector3d;
+using lupnt::PI;
 
 // Function to convert geocentric coordinates to cartesian coordinates
 // (pass-by-value)
@@ -34,8 +37,8 @@ Vec3 Geocentric2CartRef(const Vec3 &r_geo, real radius) {
 }
 
 int main() {
-  Vec3 r_geo(6371.0, M_PI / 4,
-             M_PI / 4);              // Example geocentric coordinates (radius, theta, phi)
+  Vec3 r_geo(6371.0, PI / 4,
+             PI / 4);                // Example geocentric coordinates (radius, theta, phi)
   real radius = 6371.0;              // Earth's radius in kilometers
   const int iterations = 100000000;  // Number of iterations for timing
 

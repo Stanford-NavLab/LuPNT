@@ -38,6 +38,9 @@ namespace lupnt {
       std::istringstream iss(line);
       iss >> jd_tt >> X >> Y >> s;
       iau_sofa->jd_tt(row) = jd_tt;
+      iau_sofa->X(row) = X;
+      iau_sofa->Y(row) = Y;
+      iau_sofa->s(row) = s;
       ++row;
     }
     file.close();

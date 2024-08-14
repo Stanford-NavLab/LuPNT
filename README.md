@@ -6,15 +6,16 @@
 [![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Style/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
 [![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Install/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
 [![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Python/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
+[![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Examples/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
+[![Documentation Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Docs/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI Release](https://img.shields.io/pypi/v/pylupnt.svg)](https://pypi.org/project/pylupnt)
 [![Conda Release](https://img.shields.io/conda/v/conda-forge/pylupnt)](https://anaconda.org/conda-forge/pylupnt)
 [![Python Versions](https://img.shields.io/pypi/pyversions/pylupnt)](https://pypi.org/project/pylupnt)
-[![Documentation Status](https://readthedocs.org/projects/pylupnt/badge/)](https://pylupnt.readthedocs.io/)
 [![codecov](https://codecov.io/gh/Stanford-NavLab/LuPNT/branch/guillemc/graph/badge.svg)](https://codecov.io/gh/Stanford-NavLab/LuPNT)
 
 <p align="center">
-  <img src="doc/_static/LuPNT_background.png" width="auto" />
+  <img src="docs/_static/LuPNT_background.png" width="auto" />
 </p>
 
 `LuPNT` is an open-source C++/Python library for Lunar Positioning, Navigation, and Timing (PNT) Research. This project is a product of the [Stanford NAV Lab](https://navlab.stanford.edu/).

@@ -5,7 +5,7 @@ using namespace lupnt;
 using namespace matplot;
 using namespace std;
 
-double OMEGA = 2.0 * M_PI;  // angular frequency
+double OMEGA = 2.0 * PI;  // angular frequency
 
 ODE HarmonicOscillator = [](const Real t, const VecX& x) {
   VecX dxdt(2);
