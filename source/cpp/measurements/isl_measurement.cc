@@ -1,4 +1,4 @@
-#include "lupnt/measurements/intersatellite_link.h"
+#include "lupnt/measurements/isl_measurement.h"
 
 #include "lupnt/measurements/radio_measurement.h"
 
@@ -50,7 +50,6 @@ VecX IslMeasurement::GetPredictedIslMeasurement(
   // }
 
   return z;
-
-}  // namespace lupnt
+}
 
 }  // namespace lupnt

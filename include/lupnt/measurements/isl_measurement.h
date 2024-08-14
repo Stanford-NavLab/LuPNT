@@ -16,6 +16,7 @@
 #include "lupnt/agents/agent.h"
 #include "lupnt/core/constants.h"
 #include "radio_measurement.h"
+#include "transmission.h"
 
 namespace lupnt {
 
@@ -30,13 +31,12 @@ enum class IslMeasurementType {
 
 class IslMeasurement {
  private:
-  Spacecraft* transmit_sat;
-  Spacecraft* receiver_sat;
-
   // visibility
   std::vector<NaifId> occult_planets;
   VecXd vis_body;  // visibility body
   VecXd vis_anttena;
+
+  // Pair of stored
 
   // Link Budget
   double CN0;
@@ -45,11 +45,17 @@ class IslMeasurement {
   double delay_tw;
 
  public:
-  IslMeasurement(Spacecraft* transmit_sat, Spacecraft* receiver_sat);
+  IslMeasurement();
   double GetCN0() const { return CN0; }
 
   // True Measurement Generation
   VecX GetTrueIslMeasurement(double epoch);
+
+  // Generate Link
+  void GetOneWayLink(double epoch_tx, Spacecraft* transmit_sat,
+                     Spacecraft* receiver_sat);
+  void GetTwoWayLink(double epoch_tx, Spacecraft* transmit_sat,
+                     Spacecraft* receiver_sat);
 
   // Predicted Measurement
   VecX GetPredictedIslMeasurement(double epoch, Vec6 rv_trans_pred,
@@ -57,6 +63,7 @@ class IslMeasurement {
                                   Vec2 clk_rec_pred,
                                   std::vector<IslMeasurementType> meas_type,
                                   Frame frame_in);
+  //
 };
 
 }  // namespace lupnt

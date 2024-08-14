@@ -36,7 +36,7 @@
 #include "lupnt/measurements/gnss_receiver.h"
 #include "lupnt/measurements/gnss_receiver_param.h"
 #include "lupnt/measurements/gnss_transmitter.h"
-#include "lupnt/measurements/intersatellite_link.h"
+#include "lupnt/measurements/isl_measurement.h"
 #include "lupnt/measurements/radio_measurement.h"
 #include "lupnt/measurements/space_channel.h"
 #include "lupnt/measurements/transmission.h"

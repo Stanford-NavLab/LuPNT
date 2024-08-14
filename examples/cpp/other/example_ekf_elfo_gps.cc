@@ -49,9 +49,9 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
 
   // Moon spacecraft
   auto state = sat->GetCartesianGCRFStateAtEpoch(epoch);
-  auto sate_mi = ConvertOrbitStateFrame(state, epoch, Frame::MOON_CI);
+  auto state_mi = ConvertOrbitStateFrame(state, epoch, Frame::MOON_CI);
   auto state_gcrf = ConvertOrbitStateFrame(state, epoch, Frame::GCRF);
-  data_history->AddData("rv_moon_mi", t, sate_mi->GetVec());
+  data_history->AddData("rv_moon_mi", t, state_mi->GetVec());
   data_history->AddData("rv_moon_gcrf", t, state_gcrf->GetVec());
 
   // Estimation
