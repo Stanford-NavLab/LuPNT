@@ -6,3 +6,4 @@ LuPNT_data*
 *cache*
 *.so
 projects/**/
+/build*/
