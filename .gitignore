@@ -1,0 +1,8 @@
+/*build*/
+.vscode
+cpm_modules
+.DS_Store
+LuPNT_data*
+*cache*
+*.so
+projects/**/
