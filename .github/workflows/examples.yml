@@ -3,13 +3,12 @@ name: Examples
 on:
   push:
     branches:
-      - master
       - main
-      - guillemc
+      - development
   pull_request:
     branches:
-      - master
       - main
+      - development
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules

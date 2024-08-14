@@ -3,13 +3,12 @@ name: Docs
 on:
   push:
     branches:
-      - master
       - main
-      - guillemc
+      - development
   pull_request:
     branches:
-      - master
       - main
+      - development
 
 env:
   LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data

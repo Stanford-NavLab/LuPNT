@@ -3,13 +3,12 @@ name: MacOS
 on:
   push:
     branches:
-      - master
       - main
-      - guillemc
+      - development
   pull_request:
     branches:
-      - master
       - main
+      - development
 
 env:
   CTEST_OUTPUT_ON_FAILURE: 1
