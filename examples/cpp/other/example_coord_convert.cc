@@ -28,17 +28,17 @@ int main() {
   auto to = Frame::ITRF;    // Earth fixed frame
 
   // Vallado, p87
-  Vec6 posvel_GCRF;
+  Vec6 rv_gcrf;
   Vec3 pos, vel;
   pos << 5102.5096, 6123.01152, 6378.1368;
   vel << -4.7432196, 0.7905366, 5.553375619;
-  posvel_GCRF << pos, vel;
+  rv_gcrf << pos, vel;
   Real t_tai = spice::String2TAI("2001/04/06 07:51:28.788 UTC");
 
-  VecX posvel_ITRF = ConvertFrame(t_tai, posvel_GCRF, from, to);
+  VecX rv_itrf = ConvertFrame(t_tai, rv_gcrf, from, to);
 
-  std::cout << "Posvel at J2000 = " << posvel_GCRF << std::endl;
-  std::cout << "Posvel at ITRF = " << posvel_ITRF << std::endl;
+  std::cout << "rv at J2000 = " << rv_gcrf << std::endl;
+  std::cout << "rv at ITRF = " << rv_itrf << std::endl;
 
   return 0;
 }

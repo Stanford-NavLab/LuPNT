@@ -56,7 +56,6 @@ Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.
             "name": "* C++ Launch",
             "type": "lldb",
             "request": "launch",
-            "program": "${command:cmake.launchTargetPath}",
             "initCommands": [
                 // ***** CHANGE THIS *****
                 "command script import \"YOUR-PATH-TO-LUPNT/LuPNT/eigenlldb.py\"",
@@ -107,14 +106,32 @@ Run the CMake target ``pylupnt-dev`` to automatically build ``pylupnt``, i.e., L
 
         export PYTHONPATH="YOUR-PATH-TO-LUPNT/LuPNT/source/python:${PYTHONPATH}"
 
-You can check whether it was added by restarting your terminal session or VSCode and executing
+You can check whether it was added by restarting your terminal session or VSCode and executing the following command
 
 .. code-block:: bash
 
         python -c "import sys; print(sys.path)"
 
-Now you should be able to execute
+Now you can import the package and use it in your python scripts.
 
 .. code-block:: bash
 
         python -c "import pylupnt as pnt; print(pnt.R_MOON)"
+
+Pre-Commit Hook
+----------------
+
+To ensure that the code is formatted correctly, we use the `pre-commit <https://pre-commit.com/>`_ tool. The configuration file ``.pre-commit-config.yaml`` is located in the root directory of the repository. To install the pre-commit hook, run the following commands in the root directory of the repository.
+
+.. code-block:: bash
+
+        pip install pre-commit
+        pre-commit install
+
+This command installs the pre-commit hook in the repository. The hook is executed before each commit and checks the code formatting. If the code is not formatted correctly, the commit is rejected. To bypass the hook, use the ``--no-verify`` option when committing.
+
+To test the pre-commit hook, run the following command in the root directory of the repository.
+
+.. code-block:: bash
+
+        pre-commit run --all-files

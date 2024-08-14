@@ -1,5 +1,6 @@
 # Go to the root of the project
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
+ROOT_DIR=$(dirname "$(realpath "$0")")/..
+cd $ROOT_DIR
 # Configure and build
 cmake -Sexamples/cpp -Bbuild_examples -DCMAKE_BUILD_TYPE=Release
 cmake --build build_examples -j4 --target all_examples
@@ -14,6 +15,7 @@ for example in *; do
             exit_status=$?
             if [ $exit_status -ne 0 ]; then
                 echo -e "\n\n********** FAILED **********"
+                cd $ROOT_DIR
                 exit 1
             else
                 echo -e "\n\n********** SUCCESS **********"
@@ -21,4 +23,4 @@ for example in *; do
         fi
     fi
 done
-cd ..
+cd $ROOT_DIR
