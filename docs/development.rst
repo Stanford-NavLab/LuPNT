@@ -124,9 +124,9 @@ Run the CMake target ``pylupnt-dev`` to automatically build ``pylupnt``, i.e., L
 
 .. code-block:: bash
 
-        export PYTHONPATH="YOUR-PATH-TO-LUPNT/LuPNT/source/python:${PYTHONPATH}"
+        export PYTHONPATH="${PYTHONPATH}:YOUR-PATH-TO-LUPNT/LuPNT/source/python"
 
-You can check whether it was added by restarting your terminal session or VSCode and executing the following command
+You can check whether it was added by fully restarting your terminal session or VSCode and executing the following command
 
 .. code-block:: bash
 

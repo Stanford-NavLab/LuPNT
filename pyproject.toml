@@ -9,12 +9,10 @@ description = "Lunar Positioning, Navigation, and Timing (PNT) library"
 readme = "README.md"
 license = {text = "MIT"}
 authors=[
-    {name="Guillem Casadesus Vila", email="guillemc@stanford.edu"},
-    {name="Keidai Iiyama",          email="kiiyama@stanford.edu"},
+    {name="Guillem Casadesus Vila, Keidai Iiyama", email="guillemc@stanford.edu;kiiyama@stanford.edu"},
 ]
 maintainers=[
-    {name="Guillem Casadesus Vila", email="guillemc@stanford.edu"},
-    {name="Keidai Iiyama",          email="kiiyama@stanford.edu"},
+    {name="Guillem Casadesus Vila, Keidai Iiyama", email="guillemc@stanford.edu;kiiyama@stanford.edu"},
 ]
 requires-python = ">=3.12,<3.13"
 dependencies = [
