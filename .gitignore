@@ -5,4 +5,5 @@ cpm_modules
 LuPNT_data*
 *cache*
 *.so
-projects/**/
+projects/*
+!projects/CMakeLists.txt
