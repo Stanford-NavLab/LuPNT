@@ -1,0 +1,7 @@
+curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+unzip LuPNT_data.zip
+rm LuPNT_data.zip
+
+export LUPNT_DATA_PATH=$(pwd)/LuPNT_data
+
+pip install -r pyproject.toml
