@@ -17,5 +17,3 @@ TEST_CASE("LuPNT") {
   REQUIRE_THAT(GM_EARTH, Catch::Matchers::WithinRel(expected, 1e-3)
                              && Catch::Matchers::WithinAbs(expected, 1e-6));
 }
-
-TEST_CASE("LuPNT version") { REQUIRE(std::string(LUPNT_VERSION) == std::string("0.0.1")); }

@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         id: cache-cpm-modules
         with:
           path: "**/cpm_modules"
@@ -31,7 +31,7 @@ jobs:
           python-version: "3.12"
           allow-prereleases: true
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         id: cache-lupnt-data
         with:
           path: LuPNT_data
@@ -60,7 +60,7 @@ jobs:
           python make_docs.py
 
       - name: Publish
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.PERSONAL_TOKEN }}
           publish_dir: ./build/docs

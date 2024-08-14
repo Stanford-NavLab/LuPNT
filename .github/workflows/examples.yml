@@ -20,16 +20,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: "**/cpm_modules"
           key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
 
       - name: cache LuPNT_data
         id: cache-lupnt
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: data
           key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
