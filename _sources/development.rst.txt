@@ -3,10 +3,17 @@
 Development with VSCode
 =======================
 
+Debugging
+---------
+
 You can debug Python and C++ by installing the `Python C++ Debugger <https://marketplace.visualstudio.com/items?itemName=benjamin-simmonds.pythoncpp-debug>`_ extension. The website provides examples for debugging in Windows and with ``gdb``.
 
 For Apple silicon, install the `CodeLLDB <https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb>`_ extension and create the file ``.vscode/launch.json`` with the following configurations.
 This extension allows debugging C++ code.
+
+
+Launch Configurations
+---------------------
 
 Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.
 
@@ -45,6 +52,9 @@ Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.
 
 The ``Python/C++ Debugger`` starts your typical debugging session in python and passes the PID of your process to the C++ debugger.
 
+Settings
+--------
+
 Edit the ``.vscode/settings.json`` file to debug all targets using CodeLLDB.
 Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.
 
@@ -64,9 +74,15 @@ Change the path to ``eigenlldb.py`` to enable pretty printing of C++ types.
         },
     }
 
+Pretty Printing
+---------------
+
 To use the ``eigenlldb.py`` script for pretty printing with the CodeLLDB extension, we need to install numpy within its Python distribution.
 Open the VSCode Command Palette by pressing ``Command + Shift + P`` (or ``Ctrl + Shift + P``), and select ``LLDB: Command Prompt``.
 Once the LLDB command prompt opens, enter ``pip install numpy``.
+
+Debugging Variables
+-------------------
 
 In the VSCode debug console use ``p <variable-name>`` to print the name of a variables or ``? <variable-name>`` to inspect its raw contents. For example, for position vector and velocity vector would be.
 
@@ -99,6 +115,10 @@ In the VSCode debug console use ``p <variable-name>`` to print the name of a var
             use_gravity_field = true
             gravity_field = {n_max:1, m_max:3, n:1803047168, m:1, ...}
             [raw] = const lupnt::Body &
+
+
+Building the Python Bindings
+----------------------------
 
 Run the CMake target ``pylupnt-dev`` to automatically build ``pylupnt``, i.e., LuPNT and the python bindings, copy the generated ``_pylupnt.*.so`` file to ``source/python/pylupnt``, and generate stubs for the bindings. The stubs allow IDEs like VSCode to find the contents of a compiled package such us our bindings. Finally, add ``source/python/pylupnt`` to your python path by adding the environment variable
 

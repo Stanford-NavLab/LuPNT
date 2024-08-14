@@ -923,23 +923,21 @@ We also include the ability to write documentation in markdown or by using juypt
 </section>
 <section id="instal-dev-requirements">
 <h3>2. Instal Dev Requirements<a class="headerlink" href="#instal-dev-requirements" title="Link to this heading">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># For pip</span>
-pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>doc/requirements.txt
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>docs
 
-<span class="c1"># install binary dependencies</span>
-conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>pandoc<span class="w"> </span>doxygen
-</pre></div>
-</div>
-</section>
-</section>
-<section id="build">
-<h2>Build<a class="headerlink" href="#build" title="Link to this heading">¶</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>doc
+<span class="c1"># Install python requirements</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
 
+<span class="c1"># Install dependencies</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>doxygen<span class="w"> </span>pandoc<span class="w"> </span><span class="c1"># (Linux)</span>
+brew<span class="w"> </span>install<span class="w"> </span>doxygen<span class="w"> </span>pandoc<span class="w"> </span><span class="c1"># (Mac)</span>
+
+<span class="c1"># Make docs</span>
 python<span class="w"> </span>make_docs.py
 </pre></div>
 </div>
-<p>The docs html will be saved in <code class="docutils literal notranslate"><span class="pre">docs/</span></code> folder.</p>
+<p>The docs html will be saved in <code class="docutils literal notranslate"><span class="pre">build/docs</span></code> folder.</p>
+</section>
 </section>
 </section>
 
@@ -1004,7 +1002,6 @@ python<span class="w"> </span>make_docs.py
 <li><a class="reference internal" href="#instal-dev-requirements">2. Instal Dev Requirements</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#build">Build</a></li>
 </ul>
 </li>
 </ul>

@@ -910,9 +910,14 @@
         <article role="main" id="furo-main-content">
           <section id="development-with-vscode">
 <span id="development"></span><h1>Development with VSCode<a class="headerlink" href="#development-with-vscode" title="Link to this heading">¶</a></h1>
+<section id="debugging">
+<h2>Debugging<a class="headerlink" href="#debugging" title="Link to this heading">¶</a></h2>
 <p>You can debug Python and C++ by installing the <a class="reference external" href="https://marketplace.visualstudio.com/items?itemName=benjamin-simmonds.pythoncpp-debug">Python C++ Debugger</a> extension. The website provides examples for debugging in Windows and with <code class="docutils literal notranslate"><span class="pre">gdb</span></code>.</p>
 <p>For Apple silicon, install the <a class="reference external" href="https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb">CodeLLDB</a> extension and create the file <code class="docutils literal notranslate"><span class="pre">.vscode/launch.json</span></code> with the following configurations.
 This extension allows debugging C++ code.</p>
+</section>
+<section id="launch-configurations">
+<h2>Launch Configurations<a class="headerlink" href="#launch-configurations" title="Link to this heading">¶</a></h2>
 <p>Change the path to <code class="docutils literal notranslate"><span class="pre">eigenlldb.py</span></code> to enable pretty printing of C++ types.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="s2">&quot;configurations&quot;</span><span class="p">:</span> <span class="p">[</span>
@@ -947,6 +952,9 @@ This extension allows debugging C++ code.</p>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">Python/C++</span> <span class="pre">Debugger</span></code> starts your typical debugging session in python and passes the PID of your process to the C++ debugger.</p>
+</section>
+<section id="settings">
+<h2>Settings<a class="headerlink" href="#settings" title="Link to this heading">¶</a></h2>
 <p>Edit the <code class="docutils literal notranslate"><span class="pre">.vscode/settings.json</span></code> file to debug all targets using CodeLLDB.
 Change the path to <code class="docutils literal notranslate"><span class="pre">eigenlldb.py</span></code> to enable pretty printing of C++ types.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
@@ -964,9 +972,15 @@ Change the path to <code class="docutils literal notranslate"><span class="pre">
 <span class="p">}</span>
 </pre></div>
 </div>
+</section>
+<section id="pretty-printing">
+<h2>Pretty Printing<a class="headerlink" href="#pretty-printing" title="Link to this heading">¶</a></h2>
 <p>To use the <code class="docutils literal notranslate"><span class="pre">eigenlldb.py</span></code> script for pretty printing with the CodeLLDB extension, we need to install numpy within its Python distribution.
 Open the VSCode Command Palette by pressing <code class="docutils literal notranslate"><span class="pre">Command</span> <span class="pre">+</span> <span class="pre">Shift</span> <span class="pre">+</span> <span class="pre">P</span></code> (or <code class="docutils literal notranslate"><span class="pre">Ctrl</span> <span class="pre">+</span> <span class="pre">Shift</span> <span class="pre">+</span> <span class="pre">P</span></code>), and select <code class="docutils literal notranslate"><span class="pre">LLDB:</span> <span class="pre">Command</span> <span class="pre">Prompt</span></code>.
 Once the LLDB command prompt opens, enter <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">numpy</span></code>.</p>
+</section>
+<section id="debugging-variables">
+<h2>Debugging Variables<a class="headerlink" href="#debugging-variables" title="Link to this heading">¶</a></h2>
 <p>In the VSCode debug console use <code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">&lt;variable-name&gt;</span></code> to print the name of a variables or <code class="docutils literal notranslate"><span class="pre">?</span> <span class="pre">&lt;variable-name&gt;</span></code> to inspect its raw contents. For example, for position vector and velocity vector would be.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">Vec3</span><span class="w"> </span><span class="nf">r</span><span class="p">(</span><span class="mf">4338.99</span><span class="p">,</span><span class="w"> </span><span class="mf">-4338.99</span><span class="p">,</span><span class="w"> </span><span class="mf">-0.0757297</span><span class="p">);</span>
 <span class="n">Body</span><span class="w"> </span><span class="n">moon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Body</span><span class="o">::</span><span class="n">Moon</span><span class="p">();</span>
@@ -996,6 +1010,9 @@ p<span class="w"> </span>body
 <span class="w">    </span><span class="o">[</span>raw<span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>const<span class="w"> </span>lupnt::Body<span class="w"> </span><span class="p">&amp;</span>
 </pre></div>
 </div>
+</section>
+<section id="building-the-python-bindings">
+<h2>Building the Python Bindings<a class="headerlink" href="#building-the-python-bindings" title="Link to this heading">¶</a></h2>
 <p>Run the CMake target <code class="docutils literal notranslate"><span class="pre">pylupnt-dev</span></code> to automatically build <code class="docutils literal notranslate"><span class="pre">pylupnt</span></code>, i.e., LuPNT and the python bindings, copy the generated <code class="docutils literal notranslate"><span class="pre">_pylupnt.*.so</span></code> file to <code class="docutils literal notranslate"><span class="pre">source/python/pylupnt</span></code>, and generate stubs for the bindings. The stubs allow IDEs like VSCode to find the contents of a compiled package such us our bindings. Finally, add <code class="docutils literal notranslate"><span class="pre">source/python/pylupnt</span></code> to your python path by adding the environment variable</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span><span class="s2">&quot;YOUR-PATH-TO-LUPNT/LuPNT/source/python:</span><span class="si">${</span><span class="nv">PYTHONPATH</span><span class="si">}</span><span class="s2">&quot;</span>
 </pre></div>
@@ -1008,6 +1025,7 @@ p<span class="w"> </span>body
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import pylupnt as pnt; print(pnt.R_MOON)&quot;</span>
 </pre></div>
 </div>
+</section>
 <section id="pre-commit-hook">
 <h2>Pre-Commit Hook<a class="headerlink" href="#pre-commit-hook" title="Link to this heading">¶</a></h2>
 <p>To ensure that the code is formatted correctly, we use the <a class="reference external" href="https://pre-commit.com/">pre-commit</a> tool. The configuration file <code class="docutils literal notranslate"><span class="pre">.pre-commit-config.yaml</span></code> is located in the root directory of the repository. To install the pre-commit hook, run the following commands in the root directory of the repository.</p>
@@ -1079,6 +1097,12 @@ pre-commit<span class="w"> </span>install
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Development with VSCode</a><ul>
+<li><a class="reference internal" href="#debugging">Debugging</a></li>
+<li><a class="reference internal" href="#launch-configurations">Launch Configurations</a></li>
+<li><a class="reference internal" href="#settings">Settings</a></li>
+<li><a class="reference internal" href="#pretty-printing">Pretty Printing</a></li>
+<li><a class="reference internal" href="#debugging-variables">Debugging Variables</a></li>
+<li><a class="reference internal" href="#building-the-python-bindings">Building the Python Bindings</a></li>
 <li><a class="reference internal" href="#pre-commit-hook">Pre-Commit Hook</a></li>
 </ul>
 </li>
