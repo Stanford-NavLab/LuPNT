@@ -7,9 +7,18 @@ rm LuPNT_data.zip
 echo "export LUPNT_DATA_PATH=$(pwd)/LuPNT_data" >> ~/.bashrc
 source ~/.bashrc
 
+# Increase swap space
+sudo swapoff -a
+sudo dd if=/dev/zero of=/swapfile bs=1G count=16
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Set MAKEFLAGS environment variable
+export MAKEFLAGS=-j1
+
 # Install LuPNT
 sudo apt-get update
 sudo apt-get install -y cmake libomp-dev
-pip install .
+pip install . -v
 
 cd examples/python/notebooks
