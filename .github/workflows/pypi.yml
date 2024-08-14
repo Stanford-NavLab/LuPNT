@@ -16,8 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # os: [ubuntu-latest, windows-latest, macos-latest]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     env:
       LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
       CIBW_ENVIRONMENT: LUPNT_DATA_PATH=/project/LuPNT_data

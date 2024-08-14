@@ -1,0 +1,19 @@
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.12
+  - pip:
+      - .
+  - pip:
+      run: |
+        curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+        unzip LuPNT_data.zip
+        rm LuPNT_data.zip
+
+environment:
+  LUPNT_DATA_PATH: "/LuPNT_data"
+
+postBuild:
+  commands:
+    - cd examples/python/notebooks
