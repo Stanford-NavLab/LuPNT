@@ -17,7 +17,7 @@ sudo swapon /var/cache/swap/swap0
 sudo swapon -s
 
 # Set MAKEFLAGS environment variable
-export MAKEFLAGS="-j$(nproc)"
+export MAKEFLAGS="-j1"
 
 # Install LuPNT
 sudo apt-get update
