@@ -1,7 +1,0 @@
-<map id="LPT::J2KeplerianDynamics" name="LPT::J2KeplerianDynamics">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,592,175,677"/>
-<area shape="rect" id="Node000002" href="$class_l_p_t_1_1_numerical_dynamics.html" title=" " alt="" coords="9,279,171,544"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,558,93,592,87,592,87,558"/>
-<area shape="rect" id="Node000003" href="$class_l_p_t_1_1_i_orbit_dynamics.html" title="Interface for Orbit Dynamics (Todo: find a way to inherit this from IDynamics)" alt="" coords="19,5,161,231"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="93,245,93,279,87,279,87,245"/>
-</map>

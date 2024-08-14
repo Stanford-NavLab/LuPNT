@@ -1,32 +1,8 @@
-# system
-.urs_cookies
-*.asv
-*/*/*/codegen
+/*build*/
 .vscode
-.VSCodeCounter
+cpm_modules
 .DS_Store
-.venv*
-venv
-**/.DS_Store
-**/__pycache__
-
-third_party/cspice
-third_party/filament
-**/sensor_fusion/data
-**/sensor_fusion/output
-**/sensor_fusion/repos
-
-# internal
-build
-doc
-local
-output
-data/ephemeris
-data/surface
-examples/figures
-lupnt.egg-info
-docs/html
-*.profraw
+LuPNT_data*
+*cache*
 *.so
-**/figures
-**/cache
+projects/**/

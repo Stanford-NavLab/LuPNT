@@ -1,25 +1,28 @@
-![The Logo](docs/nav_lab_logo.png)
+# LuPNT
 
-[![codecov](https://codecov.io/github/Stanford-NavLab/LuPNT/graph/badge.svg?token=MFGWTJBC4A)](https://codecov.io/github/Stanford-NavLab/LuPNT)
+[![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/MacOS/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
+[![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Windows/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
+[![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Ubuntu/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
+[![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Style/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
+[![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Install/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
+[![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Python/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
+[![Actions Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Examples/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
+[![Documentation Status](https://github.com/Stanford-NavLab/LuPNT/workflows/Docs/badge.svg)](https://github.com/Stanford-NavLab/LuPNT/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI Release](https://img.shields.io/pypi/v/pylupnt.svg)](https://pypi.org/project/pylupnt)
+[![Python Versions](https://img.shields.io/pypi/pyversions/pylupnt)](https://pypi.org/project/pylupnt)
+[![codecov](https://codecov.io/gh/Stanford-NavLab/LuPNT/branch/guillemc/graph/badge.svg)](https://codecov.io/gh/Stanford-NavLab/LuPNT)
 
-# Welcome to the LuPNT Library
+<!-- [![Conda Release](https://img.shields.io/conda/v/conda-forge/pylupnt)](https://anaconda.org/conda-forge/pylupnt) -->
 
-`LuPNT` is an open-source C++/Python library for Lunar Positioning, Navigation, and Timing Research.
+<p align="center">
+  <img src="https://github.com/Stanford-NavLab/LuPNT/blob/guillemc/docs/_static/LuPNT_background.png?raw=true" width="auto" />
+</p>
 
-> **Note**: This project is under active development.
-
-## Source Code and Documentation
-
-All source code is available on GitHub at [github.com/stanford-navlab/LuPNT](https://github.com/stanford-navlab/LuPNT).
-
-The documentation is available at at [stanford-navlab.github.io/LuPNT/](https://stanford-navlab.github.io/LuPNT/).
-
-## Attribution
-
-This project is a product of the [Stanford NAV Lab](https://navlab.stanford.edu/).
+`LuPNT` is an open-source C++/Python library for Lunar Positioning, Navigation, and Timing (PNT) Research. This project is a product of the [Stanford NAV Lab](https://navlab.stanford.edu/).
 If using this project in your own work please cite the following:
 
-```
+```bibtex
 @inproceedings{IiyamaCasadesus2023,
   title = {LuPNT: Open-Souce Simulator for Lunar Positioning, Navigation, and Timing},
   author={Iiyama, Keidai and Casadesus Vila, Guillem and Gao, Grace},
@@ -30,214 +33,126 @@ If using this project in your own work please cite the following:
 }
 ```
 
-## Installation
-### Step 1: Install Required Packages and Files
-Todo: Create a bashfile to do the installation process.
+## Features
 
-- Third party libraries via git 
-  - You can clone the libraries by updating the gitsubmodule by calling the following command from the /LuPNT folder
-    - If it fails to install with the error message ``Error: Permission denied (publickey)``, it is likely because you don't have a key. See [here](https://docs.github.com/en/authentication/troubleshooting-ssh/error-permission-denied-publickey#make-sure-you-have-a-key-that-is-being-used) for the details
-  ```
-  git submodule update --init --recursive
-  ```
-  - The list of libraries that will be installed with the command above are:
-    - [autodiff](https://github.com/autodiff/autodiff)
-      - For automatic differentiation
-      - Tested with v.0.6.12
-      - Rename the entire folder to "autodiff", and place it under thirdparty
-    - [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
-      - For vector and matrix computation
-      - Tested with v3.4.0
-      - Rename the entire folder to "eigen", and place it under thirdparty
-    - [pybind](https://pybind11.readthedocs.io/en/stable/installing.html)
-        ```
-        git submodule add -b stable ../../pybind/pybind11 pybind11
-        git submodule update --init
-        ```
-- [cspice](https://naif.jpl.nasa.gov/naif/toolkit_C.html)
-    - For planetary ephemris and frame conversion
-    - Name the folder `cspice` and place it under thirdparty
-    - Then move `cpsice.a` and `csupport.a` under `cspice/lib` to under `cspice/`
-- [boost](https://www.boost.org/users/download/)
-- [GMAT](https://sourceforge.net/projects/gmat/files/GMAT/GMAT-R2016a/)
-  - Only required for testing
-- Ephemeris Files 
-  - See [here](data/ephemeris/readme.md) for instructions
-  - You can extract the kernel files from [here](https://www.dropbox.com/sh/npgjdndt9ma3tmr/AADnjjwIsdwQwsuarLrHRF76a?dl=0) as well
-  - Place the files under `/data/ephemeris`
+- [Modern CMake practices](https://pabloariasal.github.io/2018/02/19/its-time-to-do-cmake-right/)
+- Clean separation of library and executable code
+- Integrated test suite
+- Continuous integration via [GitHub Actions](https://help.github.com/en/actions/)
+- Code coverage via [codecov](https://codecov.io)
+- Code formatting enforced by [clang-format](https://clang.llvm.org/docs/ClangFormat.html) and [cmake-format](https://github.com/cheshirekow/cmake_format) via [Format.cmake](https://github.com/Stanford-NavLab/Format.cmake)
+- Reproducible dependency management via [CPM.cmake](https://github.com/Stanford-NavLab/CPM.cmake)
+- Installable target with automatic versioning information and header generation via [PackageProject.cmake](https://github.com/Stanford-NavLab/PackageProject.cmake)
+- Automatic [documentation](https://Stanford-NavLab.github.io/LuPNT) and deployment with [Doxygen](https://www.doxygen.nl) and [GitHub Pages](https://pages.github.com)
+- Support for [sanitizer tools, and more](#additional-tools)
 
-In summary, you should have a directory as below
+## Usage
 
-- LUPNT
-  - data
-    - ephemeris
-    - speherical_harmonics
-    - ...
-  - lupnt
-  - pylupnt
-  - ...
-  - third_party
-    - autodiff
-    - cspice
-      - cspice
-      - data
-      - ...
-      - cspice.a
-      - csupport.a
-    - eigen
-    - pybind11
+To cleanly separate the library and subproject code, the outer `CMakeList.txt` only defines the library itself while the tests and other subprojects are self-contained in their own directories.
+During development it is usually convenient to [build all subprojects at once](#build-everything-at-once).
 
-### Step 2: Do Additional Setups
-1. Add the path your .zshrc or .bashrc
-```
-$ export LUPNT_DATA_PATH="/absolute/path/to/the/data/folder/in/this/repo"
-$ export GMAT_PATH="/path/to/GMAT"
-```
-2. If you are using VSCode (recommended), do the additional setups as listed [here](#working-with-vscode)
+### Dependencies
 
-###  Step 3: Build the LuPNT Library
-After the build is completed, the generated library will be located at `build/lupnt/liblupnt.a`
+LuPNT requires [OpenMP](https://www.openmp.org) library for multiprocessing and a data directory.
+The installation scripts for MacOS, Ubuntu, and Windows can be found under `scripts`.
+Note that the data directory can be place anywhere as long as its path is correctly set.
+Execute the scripts before building the library.
 
-#### Option 1: From VScode (Recommended)
-1. From Extensions, download `CMAKE Tools`
-2. If you wish to use a conda environment or virtual environment, create and activate that environment. 
-  - The reason to activate it here is to get the desired paths to python in step 3.
+### Build and run the examples
 
-Example: 
-```
-conda activate (name of your environment)
-```
-3. Inside the .vscode directory in this project, create "settings.json" and add the following CMAKE option (This is required to robustly build pybind)
-```
-{
-    // cmake settings
-    "cmake.configureArgs": [
-        "-DPYTHON_INCLUDE_DIRS=path1string",
-        "-DPYTHON_LIBRARIES=path2string",
-        "-DPYTHON_EXECUTABLE=path3string",
-        "-DBUILD_EXAMPLES=ON"
-    ]
-}
-```
-In above, replace `path1string` with the output you get when typing in the following command in terminal
-```
-python3 -c "import sysconfig; print(sysconfig.get_path('include'))"       
-```
-Similarly, replace `path2string` with the output of the following command
-```
-python3 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"
-```
-Finally, replace `path3string` with the output of the following command
-```
-which python
+Use the following command to build and run the executable target.
+
+```bash
+cmake -S examples/cpp -B build/examples
+cmake --build build/examples -j4
+./build_examples/examples/<example-name> --help
 ```
 
-3. Configure and Build Project from the `CMAKE` tab
+### Build and run test suite
 
-#### Option 2: From Terminal 
-You can build the project by calling
-```
-$ mkdir build 
-$ cd build
-$ cmake .. -DPYTHON_INCLUDE_DIRS=$(python -c "import sysconfig; print(sysconfig.get_path('include'))")  \
--DPYTHON_LIBRARIES=$(python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))") \
--DBUILD_EXAMPLES=ON
-$ make 
-```
-The two cmake options will add the path to the python libraries which is required to build pybind.
+Use the following commands from the project's root directory to run the test suite.
 
-### Step 4: Install the Python LuPNT Library (pylupnt)
-For developers, see [here](bindings/readme.md) for details on how to add new python bindings.
-1. Run CMake to build the lupnt library with the python bindings (= execute step 3)
-2. (activate your local virtual environment e.g. venv, conda)
-3. Add permission to run the install script
-```
-$ sudo chmod 755 ./scripts/install_pylupnt.sh
-```
-3. Build and install the lupnt library (run this every time you change your c++ or python library)
-```
-$ ./scripts/install_pylupnt.sh
-```
-4. Now you can use the pylupnt library inside your project (see the codes under `examples_python/`)
-```
-$ import pylupnt as pnt
+```bash
+cmake -S test -B build/test
+cmake --build build/test -j4
+CTEST_OUTPUT_ON_FAILURE=1 cmake --build build/test --target test
+
+# or simply call the executable:
+./build/test/LuPNTTests
 ```
 
-### Step 5: Run Unit Tests
-To run the tests for the c++ codes, run the following script in the project root
-```
-$ ./build/test/runUnitTests
+To collect code coverage information, run CMake with the `-DENABLE_TEST_COVERAGE=1` option.
+
+### Run clang-format
+
+Use the following commands from the project's root directory to check and fix C++ and CMake source style.
+This requires _clang-format_, _cmake-format_ and _pyyaml_ to be installed on the current system.
+
+```bash
+cmake -S test -B build/test
+
+# view changes
+cmake --build build/test --target format
+
+# apply changes
+cmake --build build/test --target fix-format
 ```
 
-To run the tests for the Python bindings, run the following script in the project root 
-```
-$ python3 -m pytest test/python
+See [Format.cmake](https://github.com/Stanford-NavLab/Format.cmake) for details.
+These dependencies can be easily installed using pip.
+
+```bash
+pip install clang-format==14.0.6 cmake_format==0.6.11 pyyaml
 ```
 
+### Build the documentation
 
-## Reference for Developers
-- [Astrodynmaics Convention and Modeling Reference for Lunar, Cisluunar, and Librartion Point Orbits](https://www.colorado.edu/faculty/bosanac/sites/default/files/attached-files/nasa_tp_20220014814_final.pdf)
-- [Functions in Google Test](https://qiangbo-workspace.oss-cn-shanghai.aliyuncs.com/2018-12-05-gtest-and-coverage/PlainGoogleQuickTestReferenceGuide1.pdf)
-- Debugging with GDB
-  - Follow the process in this [video](https://www.youtube.com/watch?v=-tGSO5-eRRg)
-  - If the error 'ERROR: Unable to start debugging. Unexpected GDB output from command "-exec-run". Unable to find Mach task port for process-id 5264: (os/kern) failure (0x5).' appears when running the gdb, follow the process shown [here](https://sourceware.org/gdb/wiki/PermissionsDarwin)
+The documentation is automatically built and [published](https://Stanford-NavLab.github.io/LuPNT) whenever a [GitHub Release](https://help.github.com/en/github/administering-a-repository/managing-releases-in-a-repository) is created.
+To manually build documentation, call the following command.
 
-
-## Testing with GMAT
-- Some of the dynamics functions are tested by comparing outputs with the [GMAT](library) python API
-- See [here](https://sourceforge.net/p/gmat/git/ci/GMAT-R2020a/tree/application/api/API_README.txt) for instructions on how to setup the GMAT API for function
-- If you are a MAC OS user in Apple Silicon, the current python interface for GMAT only works for x86 platforms. You can create a conda environment with x86 python with the following commands.
-```
-CONDA_SUBDIR=osx-64 conda create -n gmat-env python=3.9 -y
-conda activate gmat-env
-conda env config vars set CONDA_SUBDIR=osx-64
-conda deactivate
-conda activate gmat-env
+```bash
+cmake -S documentation -B build/doc
+cmake --build build/doc --target GenerateDocs
+# view the docs
+open build/doc/doxygen/html/index.html
 ```
 
-## Working with VSCODE
-- This project uses the [Google C++ Style](https://google.github.io/styleguide/cppguide.html).
-  - Set the setting `C_Cpp: Clang_format_fallback Style` to `Google`.
-  - Set `C_Cpp: Clang_format_style` to `Google` if it is not set to `file`.
-- Install [prerequisites](https://code.visualstudio.com/docs/cpp/cmake-linux)
-- Install the extension CodeLLDB
-- Set up run/debug targets in the CMake window, or directly run targets
-- Setup useful shortcuts (Cmd+K Cmd+S) to run your run/debug targets easily
-  - CMake: Run Without Debugging
-  - CMake: Debug
-  - Debug: Start debugging
-- To view Eigen and autodiff objects when debugging, modify the debugger configuration:
-```
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "(lldb) Launch",
-            "type": "lldb",
-            "request": "launch",
-            // Resolved by CMake Tools:
-            "program": "${command:cmake.launchTargetPath}",
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "initCommands": [
-                "command script import \"absolute/path/to/your/eigenlldb.py\"",
-            ]
-        }
-    ]
-}
-```
-- A useful command for the debug console is `p` to print a variable or expression. For example, `$p rv_rx_gcrf->x_`, where `rv_rx_gcrf` is a `std::shared_ptr<State>`, results in:
-```
-(autodiff::VectorXreal) $2 = (
-  [0] = 291587.67232231156, 
-  [1] = 269354.82986367267, 
-  [2] = 76112.184704362284, 
-  [3] = -1.3616218570959222, 
-  [4] = 0.66603497742054196, 
-  [5] = 1.8768878200960224
-)
+To build the documentation locally, you will need Doxygen, jinja2 and Pygments installed on your system.
+
+### Build everything at once
+
+The project also includes an `all` directory that allows building all targets at the same time.
+This is useful during development, as it exposes all subprojects to your IDE and avoids redundant builds of the library.
+
+```bash
+cmake -S all -B build
+cmake --build build
+
+# run tests
+./build/test/LuPNTTests
+# format code
+cmake --build build --target fix-format
+# run standalone
+./build/standalone/LuPNT --help
+# build docs
+cmake --build build --target GenerateDocs
 ```
 
-# Install for Windows
-1. Clone the repo
-2. 
+### Additional tools
+
+The test and standalone subprojects include the [tools.cmake](cmake/tools.cmake) file which is used to import additional tools on-demand through CMake configuration arguments.
+The following are currently supported.
+
+#### Sanitizers
+
+Sanitizers can be enabled by configuring CMake with `-DUSE_SANITIZER=<Address | Memory | MemoryWithOrigins | Undefined | Thread | Leak | 'Address;Undefined'>`.
+
+#### Static Analyzers
+
+Static Analyzers can be enabled by setting `-DUSE_STATIC_ANALYZER=<clang-tidy | iwyu | cppcheck>`, or a combination of those in quotation marks, separated by semicolons.
+By default, analyzers will automatically find configuration files such as `.clang-format`.
+Additional arguments can be passed to the analyzers by setting the `CLANG_TIDY_ARGS`, `IWYU_ARGS` or `CPPCHECK_ARGS` variables.
+
+#### Ccache
+
+Ccache can be enabled by configuring with `-DUSE_CCACHE=<ON | OFF>`.

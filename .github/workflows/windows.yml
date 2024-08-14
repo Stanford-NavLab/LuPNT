@@ -1,0 +1,54 @@
+name: Windows
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+
+env:
+  CTEST_OUTPUT_ON_FAILURE: 1
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
+  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        id: cache-cpm-modules
+        with:
+          path: "**/cpm_modules"
+          key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+
+      - uses: actions/cache@v4
+        id: cache-lupnt-data
+        with:
+          path: LuPNT_data
+          key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
+
+      - name: Download and unzip LuPNT_data
+        if: steps.cache-lupnt-data.outputs.cache-hit != 'true'
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://bit.ly/LuPNT_data" -OutFile "LuPNT_data.zip"
+          Expand-Archive -Path "LuPNT_data.zip" -DestinationPath "."
+          Remove-Item "LuPNT_data.zip"
+
+      - name: configure
+        run: cmake -Stest -Bbuild
+
+      - name: build
+        run: cmake --build build --config Debug -j4
+
+      - name: test
+        run: |
+          cd build
+          ctest --build-config Debug

@@ -1,6 +1,0 @@
-from __future__ import annotations
-__all__ = ['extract_robbins_dataset', 'load_craters']
-def extract_robbins_dataset(df = None, column_keys = None, radians = True):
-    ...
-def load_craters(path = '../../data/lunar_crater_database_robbins_2018.csv', latlims = None, longlims = None, diamlims = (4, 100), ellipse_limit = 1.3, arc_lims = 0.0):
-    ...

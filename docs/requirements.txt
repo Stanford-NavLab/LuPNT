@@ -1,0 +1,17 @@
+gitpython # for version bump script
+pytest # for testing
+
+# Documentation Generation Packages
+notebook
+sphinx
+sphinx_rtd_theme
+exhale
+breathe
+m2r
+nbsphinx
+nbsphinx-link
+jinja2
+furo
+lxml_html_clean
+# Also need to use conda to install these through conda or get binaries another way
+# conda install -c conda-forge pandoc doxygen

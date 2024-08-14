@@ -1,52 +1,47 @@
-# define variables
-set(groupName "examples")
-set(linkLibraries "lupnt")
+cmake_minimum_required(VERSION 3.14)
+set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)
 
-# Get all script files
-file(GLOB script_files "example_*.cc" "**/example_*.cc")
+project(LuPNTExamples LANGUAGES CXX)
 
-# Separate into source files and headers (allows for adding headers to show up in
-# MSVC and Xcode projects).
-set(script_srcs "")
-set(script_headers "")
-foreach(script_file IN ITEMS ${script_files})
-    get_filename_component(script_ext ${script_file} EXT)
-    if(script_ext MATCHES "(h|H)")
-        list(APPEND script_headers ${script_file})
-    else()
-        list(APPEND script_srcs ${script_file})
-    endif()
+# --- Import tools ----
+
+include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/tools.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/FindOpenMP.cmake)
+
+# ---- Dependencies ----
+
+include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/CPM.cmake)
+CPMAddPackage(NAME LuPNT SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
+
+# ---- Create examples executable ----
+
+file(
+  GLOB_RECURSE examples
+  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+  *.cc
+)
+# Remove example_ekf_elfo.cc from the list to compile
+list(REMOVE_ITEM examples "example_ekf_elfo.cc")
+
+find_package(OpenMP REQUIRED)
+
+foreach(example ${examples})
+  get_filename_component(name ${example} NAME_WE)
+  get_filename_component(dir ${example} DIRECTORY)
+
+  add_executable(${name} ${example})
+  target_link_libraries(${name} PRIVATE LuPNT::LuPNT)
+  set_target_properties(${name} PROPERTIES CXX_STANDARD 20)
+  set_target_properties(${name} PROPERTIES FOLDER "examples/${dir}")
+  set_target_properties(
+    ${name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/examples
+  )
 endforeach()
 
-message(STATUS "Configuring examples")
-
-# Don't put test files in folders in MSVC and Xcode because they're already grouped
-source_group("" FILES ${script_srcs} ${script_headers})
-
-# Print script_srcs (only filenames, not full paths)
-foreach(script_src IN ITEMS ${script_srcs})
-    get_filename_component(script_name ${script_src} NAME)
-    message(STATUS "    ${script_name}")
-endforeach()
-
-# Create executables
-foreach(script_src IN ITEMS ${script_srcs})
-    # Get script base name
-    get_filename_component(script_name ${script_src} NAME_WE)
-
-    # Add executable
-    add_executable(${script_name} ${script_src} ${script_headers})
-    target_link_libraries(${script_name} ${linkLibraries})
-
-    # Apply user build flags from CMake cache variables:
-    # gtsam_apply_build_flags(${script_name})
-
-    # Add target dependencies
-    # add_dependencies(${groupName} ${script_name})
-
-    # Add TOPSRCDIR
-    set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${LuPNT_SOURCE_DIR}\"")
-
-    # Configure target folder (for MSVC and Xcode)
-    set_property(TARGET ${script_name} PROPERTY FOLDER "${groupName}")
+# Create a custom target to build all examples
+add_custom_target(all_examples)
+foreach(example ${examples})
+  get_filename_component(name ${example} NAME_WE)
+  add_dependencies(all_examples ${name})
+  set_target_properties(all_examples PROPERTIES FOLDER "examples")
 endforeach()

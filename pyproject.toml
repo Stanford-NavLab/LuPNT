@@ -1,52 +1,86 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel",
-    "ninja",
-    "cmake>=3.12",
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pylupnt"
+version = "0.0.1"
+description = "Lunar Positioning, Navigation, and Timing (PNT) library"
+readme = "README.md"
+license = {text = "MIT"}
+authors=[
+    {name="Guillem Casadesus Vila, Keidai Iiyama", email="guillemc@stanford.edu;kiiyama@stanford.edu"},
 ]
-build-backend = "setuptools.build_meta"
-
-[tool.mypy]
-files = "setup.py"
-python_version = "3.7"
-strict = true
-show_error_codes = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
-warn_unreachable = true
-
-[[tool.mypy.overrides]]
-module = ["ninja"]
-ignore_missing_imports = true
-
-
-[tool.pytest.ini_options]
-minversion = "6.0"
-addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
-xfail_strict = true
-filterwarnings = [
-    "error",
-    "ignore:(ast.Str|Attribute s|ast.NameConstant|ast.Num) is deprecated:DeprecationWarning:_pytest",
+maintainers=[
+    {name="Guillem Casadesus Vila, Keidai Iiyama", email="guillemc@stanford.edu;kiiyama@stanford.edu"},
 ]
-testpaths = ["tests"]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy",
+    "astropy",
+    "auto_mix_prep",
+    # "bpy",
+    "dataset",
+    "filterpy",
+    "mathutils",
+    "matplotlib",
+    "mlflow",
+    "mlflow_skinny",
+    "networkx",
+    "numba",
+    "onnx",
+    "pandas",
+    "Pillow",
+    "plotly",
+    "scikit_learn",
+    "scipy",
+    "setuptools",
+    "spiceypy",
+    "torch",
+    "torchvision",
+    "tqdm",
+    "mypy",
+    "ipywidgets",
+]
+keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "example", "wheel", "pypi", "conda-forge"]
+classifiers=[
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+Github = "https://github.com/Stanford-NavLab/LuPNT"
+Documentation = "https://lupnt.readthedocs.io"
+
+[project.optional-dependencies]
+test = ["pytest"]
+docs = [
+    "cmake",
+    "breathe",
+    "sphinx_rtd_theme",
+    "notebook",
+    "sphinx",
+    "exhale",
+    "breathe",
+    "m2r",
+    "nbsphinx",
+    "nbsphinx-link",
+    "jinja2",
+    "lxml_html_clean",
+]
+
+[tool.scikit-build]
+wheel.packages = ["source/python/pylupnt"]
+cmake.source-dir = "source/python"
 
 [tool.cibuildwheel]
-test-command = "pytest {project}/tests"
-test-extras = ["test"]
-test-skip = ["*universal2:arm64"]
-# Setuptools bug causes collision between pypy and cpython artifacts
-before-build = "rm -rf {project}/build"
-
-[tool.ruff]
-extend-select = [
-  "B",    # flake8-bugbear
-  "B904",
-  "I",    # isort
-  "PGH",  # pygrep-hooks
-  "RUF",  # Ruff-specific
-  "UP",   # pyupgrade
-]
-extend-ignore = [
-  "E501",   # Line too long
-]
-target-version = "py37"
+test-extras = "test"
+test-command = "python -m pytest {project}/test/python -v"
+test-skip = "pp* *-musllinux* *-manylinux_i686"

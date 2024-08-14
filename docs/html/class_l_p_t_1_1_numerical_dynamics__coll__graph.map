@@ -1,5 +1,0 @@
-<map id="LPT::NumericalDynamics" name="LPT::NumericalDynamics">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,279,167,544"/>
-<area shape="rect" id="Node000002" href="$class_l_p_t_1_1_i_orbit_dynamics.html" title="Interface for Orbit Dynamics (Todo: find a way to inherit this from IDynamics)" alt="" coords="15,5,157,231"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="89,245,89,279,83,279,83,245"/>
-</map>

@@ -1,2 +1,0 @@
-## GMAT Data Generation Files
-
