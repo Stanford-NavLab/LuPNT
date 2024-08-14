@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1af512729b7124b69274fb4cff220d3746:
+
+Variable lupnt::MJD_J2000
+=========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::MJD_J2000
+   :project: LuPNT_CPP

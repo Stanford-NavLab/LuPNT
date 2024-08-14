@@ -1,0 +1,6 @@
+pylupnt.utils.timed
+-------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autofunction:: timed

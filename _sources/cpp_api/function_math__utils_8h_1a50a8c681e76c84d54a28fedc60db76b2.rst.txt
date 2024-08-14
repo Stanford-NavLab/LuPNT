@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a50a8c681e76c84d54a28fedc60db76b2:
+
+Function lupnt::frac
+====================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::frac(Real)
+   :project: LuPNT_CPP

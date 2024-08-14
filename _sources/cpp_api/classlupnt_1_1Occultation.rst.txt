@@ -1,0 +1,17 @@
+.. _exhale_class_classlupnt_1_1Occultation:
+
+Class Occultation
+=================
+
+- Defined in :ref:`file_include_lupnt_measurements_occultation.h`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::Occultation
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

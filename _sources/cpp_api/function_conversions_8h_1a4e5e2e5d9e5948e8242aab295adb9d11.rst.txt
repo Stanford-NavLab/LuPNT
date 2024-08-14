@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1a4e5e2e5d9e5948e8242aab295adb9d11:
+
+Function lupnt::RelQuasiNonsing2Classical(const ClassicalOE&, const QuasiNonsingROE&)
+=====================================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RelQuasiNonsing2Classical(const ClassicalOE&, const QuasiNonsingROE&)
+   :project: LuPNT_CPP

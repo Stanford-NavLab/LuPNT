@@ -1,9 +1,0 @@
-<map id="Event.h" name="Event.h">
-<area shape="rect" id="Node000001" title="Event class." alt="" coords="100,5,167,31"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="5,79,83,105"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="120,34,72,72,68,68,117,29"/>
-<area shape="rect" id="Node000003" title=" " alt="" coords="107,79,160,105"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="136,31,136,64,131,64,131,31"/>
-<area shape="rect" id="Node000004" title=" " alt="" coords="183,79,252,105"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="149,30,194,67,191,72,146,34"/>
-</map>

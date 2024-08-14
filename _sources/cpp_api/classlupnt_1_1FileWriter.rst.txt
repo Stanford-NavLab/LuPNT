@@ -1,0 +1,17 @@
+.. _exhale_class_classlupnt_1_1FileWriter:
+
+Class FileWriter
+================
+
+- Defined in :ref:`file_include_lupnt_core_file.h`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::FileWriter
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

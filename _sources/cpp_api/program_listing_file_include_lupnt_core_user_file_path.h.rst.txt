@@ -1,0 +1,46 @@
+
+.. _program_listing_file_include_lupnt_core_user_file_path.h:
+
+Program Listing for File user_file_path.h
+=========================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_core_user_file_path.h>` (``include/lupnt/core/user_file_path.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <assert.h>
+   
+   #include <filesystem>
+   #include <iostream>
+   #include <optional>
+   #include <string>
+   
+   namespace lupnt {
+   
+     static std::filesystem::path GetDataPath() {
+       const char* dataPathEnv = std::getenv("LUPNT_DATA_PATH");
+       assert(dataPathEnv != nullptr && "Environment variable LUPNT_DATA_PATH is not set.");
+       return std::filesystem::path(dataPathEnv);
+     }
+   
+     static std::optional<std::filesystem::path> FindFileInDir(const std::filesystem::path& basePath,
+                                                               const std::string& filename) {
+       for (const auto& entry : std::filesystem::recursive_directory_iterator(basePath)) {
+         if (entry.path().filename().string() == filename) {
+           return entry.path();
+         }
+       }
+       return std::nullopt;
+     };
+   
+     static std::filesystem::path GetFilePath(const std::string& filename) {
+       auto filepath = FindFileInDir(GetDataPath(), filename);
+       assert(filepath.has_value() && "File not found.");
+       return filepath.value();
+     }
+   
+   }  // namespace lupnt

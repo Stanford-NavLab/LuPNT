@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a74c2b9dc4394a5c8e433b385a63157ca:
+
+Function lupnt::mod
+===================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::mod(Real, Real)
+   :project: LuPNT_CPP

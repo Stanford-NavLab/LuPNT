@@ -1,0 +1,6 @@
+pylupnt.utils.set_axes_equal
+----------------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autofunction:: set_axes_equal

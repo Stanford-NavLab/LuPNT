@@ -1,0 +1,38 @@
+
+.. _program_listing_file_include_lupnt_measurements_gnss_channel.h:
+
+Program Listing for File gnss_channel.h
+=======================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_measurements_gnss_channel.h>` (``include/lupnt/measurements/gnss_channel.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   
+   #pragma once
+   
+   #include <vector>
+   
+   #include "lupnt/measurements/occultation.h"
+   #include "lupnt/measurements/space_channel.h"
+   #include "lupnt/physics/frame_converter.h"
+   
+   namespace lupnt {
+   
+     class GnssTransmitter;
+     class GnssReceiver;
+   
+     class GnssChannel : public SpaceChannel {
+     public:
+       void AddTransmitter(std::shared_ptr<GnssTransmitter> &dev) { tx_devices.push_back(dev); }
+   
+       void AddReceiver(std::shared_ptr<GnssReceiver> &dev) { rx_devices.push_back(dev); }
+   
+       std::vector<Transmission> Receive(GnssReceiver &rx, double t);
+   
+       std::vector<std::shared_ptr<GnssReceiver>> rx_devices;
+       std::vector<std::shared_ptr<GnssTransmitter>> tx_devices;
+     };
+   }  // namespace lupnt

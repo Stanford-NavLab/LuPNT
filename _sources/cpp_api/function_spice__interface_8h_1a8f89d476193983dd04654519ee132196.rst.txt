@@ -1,0 +1,14 @@
+.. _exhale_function_spice__interface_8h_1a8f89d476193983dd04654519ee132196:
+
+Function lupnt::spice::LoadSpiceKernel
+======================================
+
+- Defined in :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spice::LoadSpiceKernel(void)
+   :project: LuPNT_CPP

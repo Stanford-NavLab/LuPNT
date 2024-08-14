@@ -1,0 +1,14 @@
+.. _exhale_variable_converter_8h_1adceeaa784ae931807ef9b505ad7dc827:
+
+Variable lupnt::absolute_conversions
+====================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_converter.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::absolute_conversions
+   :project: LuPNT_CPP

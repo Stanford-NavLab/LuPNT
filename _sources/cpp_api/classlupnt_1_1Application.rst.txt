@@ -1,0 +1,27 @@
+.. _exhale_class_classlupnt_1_1Application:
+
+Class Application
+=================
+
+- Defined in :ref:`file_include_lupnt_agents_application.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Derived Types
+*************
+
+- ``public lupnt::GnssStateEstimationApp`` (:ref:`exhale_class_classlupnt_1_1GnssStateEstimationApp`)
+- ``public lupnt::StateEstimationApp`` (:ref:`exhale_class_classlupnt_1_1StateEstimationApp`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::Application
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

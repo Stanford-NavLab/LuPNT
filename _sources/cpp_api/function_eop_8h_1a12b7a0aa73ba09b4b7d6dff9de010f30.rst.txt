@@ -1,0 +1,14 @@
+.. _exhale_function_eop_8h_1a12b7a0aa73ba09b4b7d6dff9de010f30:
+
+Function lupnt::LoadEopFileData
+===============================
+
+- Defined in :ref:`file_include_lupnt_data_eop.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::LoadEopFileData(const std::filesystem::path&)
+   :project: LuPNT_CPP

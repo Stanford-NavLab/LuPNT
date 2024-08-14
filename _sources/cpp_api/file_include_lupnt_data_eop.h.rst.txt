@@ -1,0 +1,72 @@
+
+.. _file_include_lupnt_data_eop.h:
+
+File eop.h
+==========
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_data>` (``include/lupnt/data``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/data/eop.h``)
+-----------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_data_eop.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``memory``
+
+- ``mutex``
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_struct_structlupnt_1_1EopData`
+
+- :ref:`exhale_struct_structlupnt_1_1EopFileData`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_eop_8h_1ac0da340bdf461d913b4d552488e0063d`
+
+- :ref:`exhale_function_eop_8h_1ac783334d3cbc7c788a44e73e088fb1cd`
+
+- :ref:`exhale_function_eop_8h_1a12b7a0aa73ba09b4b7d6dff9de010f30`
+

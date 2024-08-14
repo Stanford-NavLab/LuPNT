@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a41ffcb9143eda887f65fbd59840ad280:
+
+Variable lupnt::DEG_ARCSEC
+==========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::DEG_ARCSEC
+   :project: LuPNT_CPP

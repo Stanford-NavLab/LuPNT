@@ -1,0 +1,6 @@
+pylupnt.utils.format_element
+----------------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autofunction:: format_element

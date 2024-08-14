@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1abb8488002dea92d9c2a8e8f496d0f6be:
+
+Variable lupnt::L_B
+===================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::L_B
+   :project: LuPNT_CPP

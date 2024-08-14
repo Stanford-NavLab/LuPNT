@@ -1,0 +1,14 @@
+.. _exhale_function_solar__system_8h_1ae58353456c13005f6f54a516a1e25e0f:
+
+Function lupnt::EquinoxEquation
+===============================
+
+- Defined in :ref:`file_include_lupnt_physics_solar_system.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::EquinoxEquation(Real)
+   :project: LuPNT_CPP

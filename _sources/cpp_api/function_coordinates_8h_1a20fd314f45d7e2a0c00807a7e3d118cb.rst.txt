@@ -1,0 +1,14 @@
+.. _exhale_function_coordinates_8h_1a20fd314f45d7e2a0c00807a7e3d118cb:
+
+Function lupnt::Cart2LatLonAlt
+==============================
+
+- Defined in :ref:`file_include_lupnt_physics_coordinates.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Cart2LatLonAlt(const Vec3&, Real, Real)
+   :project: LuPNT_CPP

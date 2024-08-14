@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1aa1b8e6e4d1fb1317492cc409ae5b897c:
+
+Variable lupnt::TimeSys::TCG
+============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::TimeSys::TCG
+   :project: LuPNT_CPP

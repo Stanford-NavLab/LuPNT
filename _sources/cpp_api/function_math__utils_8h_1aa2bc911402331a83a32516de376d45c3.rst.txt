@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1aa2bc911402331a83a32516de376d45c3:
+
+Function lupnt::safe_acos
+=========================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::safe_acos(Real)
+   :project: LuPNT_CPP

@@ -1,0 +1,81 @@
+
+.. _file_include_lupnt_physics_solar_system.h:
+
+File solar_system.h
+===================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/physics/solar_system.h``)
+-----------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_solar_system.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_solar__system_8h_1a58acf831ce3ef6d50a933d2b52e6eb30`
+
+- :ref:`exhale_function_solar__system_8h_1ae58353456c13005f6f54a516a1e25e0f`
+
+- :ref:`exhale_function_solar__system_8h_1a0d06f03614727b4c98419b92a01a67e3`
+
+- :ref:`exhale_function_solar__system_8h_1a92a4751b5fc1fc19d026011f01735a90`
+
+- :ref:`exhale_function_solar__system_8h_1ad749971df9a0ed77cb715ed05d2d84b7`
+
+- :ref:`exhale_function_solar__system_8h_1a32ca7bf7fee2bd41c44d9c841821cba9`
+
+- :ref:`exhale_function_solar__system_8h_1a0f27b6b8a695c01a4551a4f779d9d7a0`
+
+- :ref:`exhale_function_solar__system_8h_1ae8d9547401a07e6d3e69fb728ea61c47`
+
+- :ref:`exhale_function_solar__system_8h_1a54fa4bd7ad2c90109d2ce808434fa24b`
+
+- :ref:`exhale_function_solar__system_8h_1a3e6cd24da4a6c79c012b7de32faf71eb`
+
+- :ref:`exhale_function_solar__system_8h_1ac053b3a4306af35863a1a078b463a40e`
+
+- :ref:`exhale_function_solar__system_8h_1aed17a7038668061e4ce47f52a4f8e2d7`
+
+- :ref:`exhale_function_solar__system_8h_1a14cde2a70a909e6580485dcfc0c907f1`
+
+- :ref:`exhale_function_solar__system_8h_1a5f29fb2f1768a6d7d3e0bf959467cffc`
+
+- :ref:`exhale_function_solar__system_8h_1a44e112cd80f7c5dad3c9ff143b5f9b9a`
+

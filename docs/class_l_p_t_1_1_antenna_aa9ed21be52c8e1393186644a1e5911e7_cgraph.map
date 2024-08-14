@@ -1,9 +1,0 @@
-<map id="LPT::Antenna::GetAntennaGain" name="LPT::Antenna::GetAntennaGain">
-<area shape="rect" id="Node000001" title="Get the Antenna Gain object." alt="" coords="5,67,209,92"/>
-<area shape="rect" id="Node000002" href="$_math_utils_8cpp.html#a7d0e1b3d0f9fcf5f942dee923bf1242e" title="Linear interpolation of a 2D data set." alt="" coords="257,29,390,55"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="185,63,242,53,243,59,186,69"/>
-<area shape="rect" id="Node000003" href="$_math_utils_8cpp.html#a18b2a0d53374293cd63a05dfc7703a48" title="Linear interpolation of a 2D data set." alt="" coords="257,103,390,128"/>
-<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="188,90,243,99,242,105,187,96"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="287,31,280,21,285,11,299,5,323,3,351,6,364,13,361,18,349,11,323,8,300,10,288,15,286,20,292,27"/>
-<area shape="poly" id="edge4_Node000003_Node000003" title=" " alt="" coords="287,104,280,94,285,84,299,78,323,76,351,79,364,87,361,91,349,84,323,81,300,83,288,88,286,93,292,101"/>
-</map>

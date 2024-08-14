@@ -1,0 +1,6 @@
+pylupnt.deg_min_sec2degrees
+---------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: deg_min_sec2degrees

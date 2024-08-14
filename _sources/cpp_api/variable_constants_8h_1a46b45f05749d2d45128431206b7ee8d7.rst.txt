@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a46b45f05749d2d45128431206b7ee8d7:
+
+Variable lupnt::TimeSys::UT1
+============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::TimeSys::UT1
+   :project: LuPNT_CPP

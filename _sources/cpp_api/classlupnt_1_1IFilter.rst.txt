@@ -1,0 +1,26 @@
+.. _exhale_class_classlupnt_1_1IFilter:
+
+Class IFilter
+=============
+
+- Defined in :ref:`file_include_lupnt_numerics_filters.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Derived Type
+************
+
+- ``public lupnt::EKF`` (:ref:`exhale_class_classlupnt_1_1EKF`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::IFilter
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

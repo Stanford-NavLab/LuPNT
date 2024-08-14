@@ -1,0 +1,17 @@
+.. _exhale_struct_structlupnt_1_1TaiUtcFileData:
+
+Struct TaiUtcFileData
+=====================
+
+- Defined in :ref:`file_include_lupnt_data_tai_utc.h`
+
+
+Struct Documentation
+--------------------
+
+
+.. doxygenstruct:: lupnt::TaiUtcFileData
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

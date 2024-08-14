@@ -1,0 +1,9 @@
+pylupnt.QuasiNonsingROE
+-----------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: QuasiNonsingROE
+    :members:
+    :undoc-members:
+    :inherited-members:

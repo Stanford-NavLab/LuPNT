@@ -1,0 +1,17 @@
+.. _exhale_class_classlupnt_1_1TLE:
+
+Class TLE
+=========
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_tle.h`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::TLE
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

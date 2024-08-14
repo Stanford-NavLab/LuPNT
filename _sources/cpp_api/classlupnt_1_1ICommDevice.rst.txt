@@ -1,0 +1,28 @@
+.. _exhale_class_classlupnt_1_1ICommDevice:
+
+Class ICommDevice
+=================
+
+- Defined in :ref:`file_include_lupnt_agents_comm_device.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Derived Types
+*************
+
+- ``public lupnt::Receiver`` (:ref:`exhale_class_classlupnt_1_1Receiver`)
+- ``public lupnt::Tranceiver`` (:ref:`exhale_class_classlupnt_1_1Tranceiver`)
+- ``public lupnt::Transmitter`` (:ref:`exhale_class_classlupnt_1_1Transmitter`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::ICommDevice
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

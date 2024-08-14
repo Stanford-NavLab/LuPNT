@@ -1,0 +1,17 @@
+.. _exhale_class_classlupnt_1_1ISLMeasurement:
+
+Class ISLMeasurement
+====================
+
+- Defined in :ref:`file_include_lupnt_measurements_intersatellite_link.h`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::ISLMeasurement
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

@@ -1,0 +1,74 @@
+
+.. _file_include_lupnt_physics_state.h:
+
+File state.h
+============
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+SPICE Interface functions. 
+
+
+Definition (``include/lupnt/physics/state.h``)
+----------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_state.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_agents_state_estimation_app.h`
+
+- :ref:`file_include_lupnt_dynamics_dynamics.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_physics_clock.h`
+
+- :ref:`file_include_lupnt_physics_orbit_state_orbit_states.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1IState`
+

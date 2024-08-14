@@ -1,0 +1,14 @@
+.. _exhale_function_spice__interface_8h_1a7b173c9636c3484c500574c5eb498761:
+
+Function lupnt::spice::TDBtoStringUTC
+=====================================
+
+- Defined in :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spice::TDBtoStringUTC(Real, int)
+   :project: LuPNT_CPP

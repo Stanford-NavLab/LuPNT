@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a3e363057282cdf6a48bb0a73812fef97:
+
+Variable lupnt::D_EARTH_MOON
+============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::D_EARTH_MOON
+   :project: LuPNT_CPP

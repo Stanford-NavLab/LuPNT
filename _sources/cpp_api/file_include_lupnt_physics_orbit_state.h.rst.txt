@@ -1,0 +1,76 @@
+
+.. _file_include_lupnt_physics_orbit_state.h:
+
+File orbit_state.h
+==================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+Orbit states. 
+
+
+Definition (``include/lupnt/physics/orbit_state.h``)
+----------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_orbit_state.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``orbit_state/anomaly.h`` (:ref:`file_include_lupnt_physics_orbit_state_anomaly.h`)
+
+- ``orbit_state/conversions.h`` (:ref:`file_include_lupnt_physics_orbit_state_conversions.h`)
+
+- ``orbit_state/converter.h`` (:ref:`file_include_lupnt_physics_orbit_state_converter.h`)
+
+- ``orbit_state/mean_osculating.h`` (:ref:`file_include_lupnt_physics_orbit_state_mean_osculating.h`)
+
+- ``orbit_state/orbit_states.h`` (:ref:`file_include_lupnt_physics_orbit_state_orbit_states.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_agents_agent.h`
+
+- :ref:`file_include_lupnt_agents_comm_device.h`
+
+- :ref:`file_include_lupnt_agents_gnss_constellation.h`
+
+- :ref:`file_include_lupnt_dynamics_dynamics.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_physics_coordinates.h`
+
+
+

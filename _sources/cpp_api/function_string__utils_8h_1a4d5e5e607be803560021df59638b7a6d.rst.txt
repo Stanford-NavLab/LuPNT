@@ -1,0 +1,14 @@
+.. _exhale_function_string__utils_8h_1a4d5e5e607be803560021df59638b7a6d:
+
+Function lupnt::SplitString
+===========================
+
+- Defined in :ref:`file_include_lupnt_numerics_string_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::SplitString(const std::string&, char)
+   :project: LuPNT_CPP

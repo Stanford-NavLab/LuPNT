@@ -1,7 +1,0 @@
-<map id="LPT::Application" name="LPT::Application">
-<area shape="rect" id="Node000001" title=" " alt="" coords="149,5,262,131"/>
-<area shape="rect" id="Node000002" href="$class_l_p_t_1_1_g_n_s_s_state_estimation_app.html" title=" " alt="" coords="5,179,203,384"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="172,145,155,180,150,178,167,142"/>
-<area shape="rect" id="Node000003" href="$class_l_p_t_1_1_state_estimation_app.html" title=" " alt="" coords="227,179,387,384"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="243,142,260,178,256,180,239,145"/>
-</map>

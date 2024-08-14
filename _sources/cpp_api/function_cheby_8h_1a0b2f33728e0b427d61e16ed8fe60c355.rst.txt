@@ -1,0 +1,14 @@
+.. _exhale_function_cheby_8h_1a0b2f33728e0b427d61e16ed8fe60c355:
+
+Function lupnt::cheby_verify
+============================
+
+- Defined in :ref:`file_include_lupnt_physics_cheby.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::cheby_verify(double *, long)
+   :project: LuPNT_CPP

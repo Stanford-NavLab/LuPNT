@@ -1,0 +1,14 @@
+.. _exhale_typedef_constants_8h_1a680e0f591a7a3b8ae68c2595e8167915:
+
+Typedef lupnt::Vec3i
+====================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::Vec3i
+   :project: LuPNT_CPP

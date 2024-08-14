@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1aaec9ad811eb99a4c55a863845e79d53b:
+
+Function lupnt::SampleMVN
+=========================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::SampleMVN(const VecX, const MatX, int, int)
+   :project: LuPNT_CPP

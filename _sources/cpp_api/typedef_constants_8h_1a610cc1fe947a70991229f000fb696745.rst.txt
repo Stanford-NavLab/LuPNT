@@ -1,0 +1,14 @@
+.. _exhale_typedef_constants_8h_1a610cc1fe947a70991229f000fb696745:
+
+Typedef lupnt::AngleAxisd
+=========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::AngleAxisd
+   :project: LuPNT_CPP

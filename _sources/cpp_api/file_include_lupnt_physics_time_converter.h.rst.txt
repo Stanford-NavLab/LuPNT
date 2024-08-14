@@ -1,0 +1,124 @@
+
+.. _file_include_lupnt_physics_time_converter.h:
+
+File time_converter.h
+=====================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/physics/time_converter.h``)
+-------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_time_converter.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``lupnt/numerics/graphs.h`` (:ref:`file_include_lupnt_numerics_graphs.h`)
+
+- ``lupnt/numerics/vector_macros.h`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+- ``tuple``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_data_kernels.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_time__converter_8h_1a796b75033aa499bc0b090512b472b525`
+
+- :ref:`exhale_function_time__converter_8h_1afa738144dafbdc16f7bc42a58e239b30`
+
+- :ref:`exhale_function_time__converter_8h_1a104c76d0f06d531c3e236b47a7510d77`
+
+- :ref:`exhale_function_time__converter_8h_1af8293e7fcf096addc0e221840d191a76`
+
+- :ref:`exhale_function_time__converter_8h_1a8ac9310c8d3db49b982c269af1f96e58`
+
+- :ref:`exhale_function_time__converter_8h_1afb38d5c27b5d28ee2ff013d8fb071cf3`
+
+- :ref:`exhale_function_time__converter_8h_1a002e62cb81c9d34f334a6fd6c0dc43b8`
+
+- :ref:`exhale_function_time__converter_8h_1a0a555ee20c91112d8d27bd01c440008e`
+
+- :ref:`exhale_function_time__converter_8h_1ad2c587b5d3082e969bdbe1c4c7d56a47`
+
+- :ref:`exhale_function_time__converter_8h_1a064db5c84078a48ce0bf7c7669b2d2ee`
+
+- :ref:`exhale_function_time__converter_8h_1a4ae8c6a60f05f7ac1483d2eb974bc9cc`
+
+- :ref:`exhale_function_time__converter_8h_1ae84ee97385423ac8ee5d3ec82c8d0da8`
+
+- :ref:`exhale_function_time__converter_8h_1a0ac78e8a6af90c211f2d249a2102513e`
+
+- :ref:`exhale_function_time__converter_8h_1a51c7dfe88360838c4e70e12ef1df97e8`
+
+- :ref:`exhale_function_time__converter_8h_1a049cda365f3989ce6d3d2b0b8e98ade0`
+
+- :ref:`exhale_function_time__converter_8h_1aa69f197158fa37c2cb6b5a02423ae369`
+
+- :ref:`exhale_function_time__converter_8h_1a0df78b0ba7a73a04d85cfdb91bae2e91`
+
+- :ref:`exhale_function_time__converter_8h_1afa4c48a17dce673a3495af01ff7a0154`
+
+- :ref:`exhale_function_time__converter_8h_1af7d175d956c092e0c86f89530b1f8e13`
+
+- :ref:`exhale_function_time__converter_8h_1abae40b4280b116e50adfafa9ed02a47b`
+
+- :ref:`exhale_function_time__converter_8h_1acdd1a5b51674bfafafaf5ddf8c5adc5d`
+
+- :ref:`exhale_function_time__converter_8h_1ae5cd024ea134701edb8fe74f24523e2a`
+
+- :ref:`exhale_function_time__converter_8h_1a6886c95daf6b12a194cb8a56a8abbc58`
+
+- :ref:`exhale_function_time__converter_8h_1a86b86440910d3df631eaa9266283d9f1`
+
+- :ref:`exhale_function_time__converter_8h_1ae433af3fae648c022fa78d90c78f70a5`
+
+- :ref:`exhale_function_time__converter_8h_1a705485488a01ea90d010f8636600063b`
+
+- :ref:`exhale_function_time__converter_8h_1a6728b54777ff49f3f409f1c1fd4d1319`
+
+- :ref:`exhale_function_time__converter_8h_1a47a9f32c28312dd3bcc8ea4623f69592`
+
+
+Variables
+---------
+
+
+- :ref:`exhale_variable_time__converter_8h_1a13ddec25fae916b3b68a15f55bf783f5`
+

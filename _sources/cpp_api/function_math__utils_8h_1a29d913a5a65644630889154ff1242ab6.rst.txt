@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a29d913a5a65644630889154ff1242ab6:
+
+Function lupnt::safe_asin
+=========================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::safe_asin(Real)
+   :project: LuPNT_CPP

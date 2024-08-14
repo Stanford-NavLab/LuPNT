@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1adb86a0f6bd2de04f0793b2a44f706143:
+
+Variable lupnt::RAD
+===================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::RAD
+   :project: LuPNT_CPP

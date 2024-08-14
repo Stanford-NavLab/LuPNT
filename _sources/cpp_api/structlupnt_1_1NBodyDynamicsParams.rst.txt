@@ -1,0 +1,17 @@
+.. _exhale_struct_structlupnt_1_1NBodyDynamicsParams:
+
+Struct NBodyDynamicsParams
+==========================
+
+- Defined in :ref:`file_include_lupnt_dynamics_dynamics.h`
+
+
+Struct Documentation
+--------------------
+
+
+.. doxygenstruct:: lupnt::NBodyDynamicsParams
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

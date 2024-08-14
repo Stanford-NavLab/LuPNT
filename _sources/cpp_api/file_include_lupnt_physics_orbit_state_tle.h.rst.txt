@@ -1,0 +1,51 @@
+
+.. _file_include_lupnt_physics_orbit_state_tle.h:
+
+File tle.h
+==========
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics_orbit_state>` (``include/lupnt/physics/orbit_state``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/physics/orbit_state/tle.h``)
+--------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_orbit_state_tle.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``memory``
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1TLE`
+

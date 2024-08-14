@@ -1,0 +1,18 @@
+pylupnt.plot
+------------
+
+.. currentmodule:: pylupnt.plot
+
+**Classes**
+
+.. autosummary::
+
+    KMeans
+    Plot3D
+
+
+.. toctree::
+    :hidden:
+
+    KMeans <pylupnt.plot.KMeans>
+    Plot3D <pylupnt.plot.Plot3D>

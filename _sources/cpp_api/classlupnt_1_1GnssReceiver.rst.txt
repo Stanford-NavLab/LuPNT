@@ -1,0 +1,26 @@
+.. _exhale_class_classlupnt_1_1GnssReceiver:
+
+Class GnssReceiver
+==================
+
+- Defined in :ref:`file_include_lupnt_measurements_gnss_receiver.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Base Type
+*********
+
+- ``public lupnt::Receiver`` (:ref:`exhale_class_classlupnt_1_1Receiver`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::GnssReceiver
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

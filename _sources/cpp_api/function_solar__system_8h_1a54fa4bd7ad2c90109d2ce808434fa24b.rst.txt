@@ -1,0 +1,14 @@
+.. _exhale_function_solar__system_8h_1a54fa4bd7ad2c90109d2ce808434fa24b:
+
+Function lupnt::PlanetOrientation
+=================================
+
+- Defined in :ref:`file_include_lupnt_physics_solar_system.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::PlanetOrientation(NaifId, Real)
+   :project: LuPNT_CPP

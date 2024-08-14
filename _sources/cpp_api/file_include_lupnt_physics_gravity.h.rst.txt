@@ -1,0 +1,52 @@
+
+.. _file_include_lupnt_physics_gravity.h:
+
+File gravity.h
+==============
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/physics/gravity.h``)
+------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_gravity.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``Eigen/Dense``
+
+- ``fstream``
+
+- ``iostream``
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+

@@ -1,0 +1,27 @@
+
+.. _program_listing_file_include_lupnt_agents_application.h:
+
+Program Listing for File application.h
+======================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_agents_application.h>` (``include/lupnt/agents/application.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   
+   #pragma once
+   
+   #include <memory>
+   
+   namespace lupnt {
+     class Application {
+     public:
+       virtual ~Application() {};
+   
+       virtual void Setup() = 0;
+       virtual void Step(double t) = 0;
+       virtual double GetFrequency() = 0;
+     };
+   };  // namespace lupnt

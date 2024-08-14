@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1afb38d5c27b5d28ee2ff013d8fb071cf3:
+
+Function lupnt::GreenwichMeanSiderealTime
+=========================================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GreenwichMeanSiderealTime(Real)
+   :project: LuPNT_CPP

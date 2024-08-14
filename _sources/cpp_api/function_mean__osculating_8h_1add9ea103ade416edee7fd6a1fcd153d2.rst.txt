@@ -1,0 +1,14 @@
+.. _exhale_function_mean__osculating_8h_1add9ea103ade416edee7fd6a1fcd153d2:
+
+Function lupnt::ComputeCorrectionMediumPeriod
+=============================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_mean_osculating.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ComputeCorrectionMediumPeriod(Vec6&, Vec6&)
+   :project: LuPNT_CPP

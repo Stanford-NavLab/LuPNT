@@ -1,0 +1,9 @@
+pylupnt.GridSpec
+----------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: GridSpec
+    :members:
+    :undoc-members:
+    :inherited-members:

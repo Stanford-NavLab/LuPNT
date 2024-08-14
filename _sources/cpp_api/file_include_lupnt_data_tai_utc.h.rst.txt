@@ -1,0 +1,60 @@
+
+.. _file_include_lupnt_data_tai_utc.h:
+
+File tai_utc.h
+==============
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_data>` (``include/lupnt/data``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/data/tai_utc.h``)
+---------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_data_tai_utc.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_struct_structlupnt_1_1TaiUtcFileData`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_tai__utc_8h_1a423dfaf81b8cd89d352f33d635e278f0`
+

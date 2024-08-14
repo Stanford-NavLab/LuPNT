@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a84dbd55be744269613b6768af63945ef:
+
+Function lupnt::ceil
+====================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ceil(Real)
+   :project: LuPNT_CPP

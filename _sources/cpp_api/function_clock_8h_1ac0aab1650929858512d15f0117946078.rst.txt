@@ -1,0 +1,14 @@
+.. _exhale_function_clock_8h_1ac0aab1650929858512d15f0117946078:
+
+Function lupnt::GetClockSigma
+=============================
+
+- Defined in :ref:`file_include_lupnt_physics_clock.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetClockSigma(ClockModel)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_solar__system_8h_1ae8d9547401a07e6d3e69fb728ea61c47:
+
+Function lupnt::NutationMatrixLowPrecision
+==========================================
+
+- Defined in :ref:`file_include_lupnt_physics_solar_system.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::NutationMatrixLowPrecision(Real)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a03025b75e76fff21e5d327ab6866d2d7:
+
+Variable lupnt::HOURS_DAY
+=========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::HOURS_DAY
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1ac13f8a8c27a91e1c9d4d3d413ce87a5f:
+
+Variable lupnt::MINS_HOUR
+=========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::MINS_HOUR
+   :project: LuPNT_CPP

@@ -1,0 +1,101 @@
+
+.. _file_include_lupnt_core_file.h:
+
+File file.h
+===========
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_core>` (``include/lupnt/core``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+File access utils. 
+
+
+Definition (``include/lupnt/core/file.h``)
+------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_core_file.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``filesystem``
+
+- ``fstream``
+
+- ``iostream``
+
+- ``lupnt/numerics/math_utils.h`` (:ref:`file_include_lupnt_numerics_math_utils.h`)
+
+- ``map``
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_agents_state_estimation_app.h`
+
+- :ref:`file_include_lupnt_agents_state_estimation_app_gnss.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1DataHistory`
+
+- :ref:`exhale_class_classlupnt_1_1File`
+
+- :ref:`exhale_class_classlupnt_1_1FileWriter`
+
+- :ref:`exhale_class_classlupnt_1_1Timestamped`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_file_8h_1a99b2df29ba5a495e93ba59496f9c26ce`
+

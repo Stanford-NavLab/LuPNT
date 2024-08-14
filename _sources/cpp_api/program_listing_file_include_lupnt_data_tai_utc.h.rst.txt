@@ -1,0 +1,24 @@
+
+.. _program_listing_file_include_lupnt_data_tai_utc.h:
+
+Program Listing for File tai_utc.h
+==================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_data_tai_utc.h>` (``include/lupnt/data/tai_utc.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #include <lupnt/core/constants.h>
+   
+   namespace lupnt {
+     struct TaiUtcFileData {
+       VecXd jd;
+       VecXd tai_utc;
+       VecXd mjd0;
+       VecXd scale;
+     };
+   
+     double GetTaiUtcDifference(double mjd);
+   }  // namespace lupnt

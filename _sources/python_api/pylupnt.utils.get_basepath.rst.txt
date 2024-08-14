@@ -1,0 +1,6 @@
+pylupnt.utils.get_basepath
+--------------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autofunction:: get_basepath

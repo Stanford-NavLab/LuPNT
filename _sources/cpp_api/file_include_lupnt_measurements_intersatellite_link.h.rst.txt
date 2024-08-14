@@ -1,0 +1,80 @@
+
+.. _file_include_lupnt_measurements_intersatellite_link.h:
+
+File intersatellite_link.h
+==========================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_measurements>` (``include/lupnt/measurements``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/measurements/intersatellite_link.h``)
+-----------------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_measurements_intersatellite_link.h.rst
+
+
+
+Detailed Description
+--------------------
+
+your name (you@domain.com) 
+
+0.1 
+
+2024-04-04
+
+Copyright (c) 2024 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/agents/agent.h`` (:ref:`file_include_lupnt_agents_agent.h`)
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``radio_measurement.h`` (:ref:`file_include_lupnt_measurements_radio_measurement.h`)
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1ISLMeasurement`
+
+
+Enums
+-----
+
+
+- :ref:`exhale_enum_intersatellite__link_8h_1aa6e8d3ada5a7e929f46d093a3643b34e`
+

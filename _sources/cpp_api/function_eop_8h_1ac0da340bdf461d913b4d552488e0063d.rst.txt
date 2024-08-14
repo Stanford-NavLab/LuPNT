@@ -1,0 +1,14 @@
+.. _exhale_function_eop_8h_1ac0da340bdf461d913b4d552488e0063d:
+
+Function lupnt::GetEopData
+==========================
+
+- Defined in :ref:`file_include_lupnt_data_eop.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetEopData(Real)
+   :project: LuPNT_CPP

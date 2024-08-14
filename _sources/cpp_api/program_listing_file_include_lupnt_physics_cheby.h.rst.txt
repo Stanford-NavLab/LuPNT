@@ -1,0 +1,48 @@
+
+.. _program_listing_file_include_lupnt_physics_cheby.h:
+
+Program Listing for File cheby.h
+================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_physics_cheby.h>` (``include/lupnt/physics/cheby.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   
+   #pragma once
+   
+   #include <cspice/SpiceUsr.h>
+   #include <math.h>
+   #include <stdarg.h>
+   #include <stdio.h>
+   #include <stdlib.h>
+   #include <string.h>
+   
+   #include "lupnt/core/constants.h"
+   
+   namespace lupnt {
+     void cheby_eval(double x, double* scale, double* coeff, long num, double* f, double* df);
+     Vec2 cheby_eval_ad(Real x, double* scale, double* coeff, long num);
+   
+     int cheby_posvel(double t, double* seg, long len, double pos[3], double vel[3]);
+     Vec6 cheby_posvel_ad(Real t, double* seg, long len);
+   
+     int cheby_verify(double* seg, long len);
+   
+     typedef struct {
+       long target;  // target body code
+       long center;  // center body code
+       long frame;   // frame of reference code
+       long len;     // length of segment in doubles
+       double* seg;  // allocated segment
+     } segment_t;
+   
+     int cheby_segment(SpiceInt daf, SpiceDouble* dc, SpiceInt* ic, segment_t* s);
+   
+     segment_t* spk_extract(char const* path, long* segs);
+   
+     void spk_free(segment_t* s, long n);
+   
+   }  // namespace lupnt

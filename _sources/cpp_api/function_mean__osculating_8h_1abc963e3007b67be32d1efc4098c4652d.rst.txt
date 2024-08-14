@@ -1,0 +1,14 @@
+.. _exhale_function_mean__osculating_8h_1abc963e3007b67be32d1efc4098c4652d:
+
+Function lupnt::ComputeSecondOrderMediumPeriod
+==============================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_mean_osculating.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ComputeSecondOrderMediumPeriod(Vec6&, Vec6&)
+   :project: LuPNT_CPP

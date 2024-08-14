@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a824a8099513dd6d0bf8c5170bc4f7675:
+
+Variable lupnt::DAYS_CENTURY
+============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::DAYS_CENTURY
+   :project: LuPNT_CPP

@@ -1,4 +1,0 @@
-<map id="LPT::SpiceInterface::ConvertTime" name="LPT::SpiceInterface::ConvertTime">
-<area shape="rect" id="node1" title="Convert time from one time system to another." alt="" coords="5,29,151,71"/>
-<area shape="rect" id="node2" href="$SpiceInterface_8cpp.html#a37ef193d9d9c280ca90a4dcfc6c42002" title="load the Spice kernels" alt="" coords="199,29,344,71"/>
-</map>

@@ -1,0 +1,31 @@
+
+.. _namespace_lupnt__TimeSys:
+
+Namespace lupnt::TimeSys
+========================
+
+
+
+Variables
+---------
+
+
+- :ref:`exhale_variable_constants_8h_1a801d2b4151541d847f281cf69e674d1b`
+
+- :ref:`exhale_variable_constants_8h_1a30aaa5f325f94ef5e0976053e7258d20`
+
+- :ref:`exhale_variable_constants_8h_1a5b87476f4babf311e651a954c7e39aee`
+
+- :ref:`exhale_variable_constants_8h_1ab146791f946e7cbd3601ed7fdf6a30c7`
+
+- :ref:`exhale_variable_constants_8h_1a7946971dd55ff7ee6f542c6258127ab5`
+
+- :ref:`exhale_variable_constants_8h_1aa1b8e6e4d1fb1317492cc409ae5b897c`
+
+- :ref:`exhale_variable_constants_8h_1a465b8ece3613a292ea923654fa89baa1`
+
+- :ref:`exhale_variable_constants_8h_1aecdabb8710431ae61ff1c70ea5f9dcfd`
+
+- :ref:`exhale_variable_constants_8h_1a46b45f05749d2d45128431206b7ee8d7`
+
+- :ref:`exhale_variable_constants_8h_1a9da0bc8cedd463cbba5280b3024f647a`

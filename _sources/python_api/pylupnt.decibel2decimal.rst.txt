@@ -1,0 +1,6 @@
+pylupnt.decibel2decimal
+-----------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: decibel2decimal

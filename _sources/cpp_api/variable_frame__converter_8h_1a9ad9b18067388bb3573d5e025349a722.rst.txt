@@ -1,0 +1,14 @@
+.. _exhale_variable_frame__converter_8h_1a9ad9b18067388bb3573d5e025349a722:
+
+Variable lupnt::frame_conversions
+=================================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_converter.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::frame_conversions
+   :project: LuPNT_CPP

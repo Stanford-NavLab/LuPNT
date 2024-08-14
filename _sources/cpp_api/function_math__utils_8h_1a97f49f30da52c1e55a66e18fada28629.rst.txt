@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a97f49f30da52c1e55a66e18fada28629:
+
+Function lupnt::Decimal2Decibel(VecX)
+=====================================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Decimal2Decibel(VecX)
+   :project: LuPNT_CPP

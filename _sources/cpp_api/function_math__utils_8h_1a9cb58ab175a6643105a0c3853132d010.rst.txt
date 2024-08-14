@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a9cb58ab175a6643105a0c3853132d010:
+
+Function lupnt::Decimal2Decibel(Real)
+=====================================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Decimal2Decibel(Real)
+   :project: LuPNT_CPP

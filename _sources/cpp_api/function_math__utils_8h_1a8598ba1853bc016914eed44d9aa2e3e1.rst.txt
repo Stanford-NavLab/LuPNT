@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a8598ba1853bc016914eed44d9aa2e3e1:
+
+Template Function lupnt::RotZ
+=============================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RotZ(T)
+   :project: LuPNT_CPP

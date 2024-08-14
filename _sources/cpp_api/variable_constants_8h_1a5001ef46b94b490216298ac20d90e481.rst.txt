@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a5001ef46b94b490216298ac20d90e481:
+
+Variable lupnt::MILE_M
+======================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::MILE_M
+   :project: LuPNT_CPP

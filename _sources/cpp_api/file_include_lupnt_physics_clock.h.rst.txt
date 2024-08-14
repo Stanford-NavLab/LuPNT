@@ -1,0 +1,100 @@
+
+.. _file_include_lupnt_physics_clock.h:
+
+File clock.h
+============
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+Clock class. 
+
+
+Definition (``include/lupnt/physics/clock.h``)
+----------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_clock.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/dynamics/dynamics.h`` (:ref:`file_include_lupnt_dynamics_dynamics.h`)
+
+- ``lupnt/numerics/math_utils.h`` (:ref:`file_include_lupnt_numerics_math_utils.h`)
+
+- ``state.h`` (:ref:`file_include_lupnt_physics_orbit_state.h`)
+
+- ``tuple``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_agents_agent.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1ClockDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1ClockState`
+
+
+Enums
+-----
+
+
+- :ref:`exhale_enum_clock_8h_1a1d1456dc1d1a3e8509d7354d57097a05`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_clock_8h_1ad584d981daf7b26be3495b2142f178df`
+
+- :ref:`exhale_function_clock_8h_1addde7edeebb10a9b4a28d9198ecb73db`
+
+- :ref:`exhale_function_clock_8h_1ac0aab1650929858512d15f0117946078`
+

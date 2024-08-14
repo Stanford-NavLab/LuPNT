@@ -1,0 +1,98 @@
+
+.. _file_include_lupnt_agents_agent.h:
+
+File agent.h
+============
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_agents>` (``include/lupnt/agents``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+List of agents. 
+
+
+Definition (``include/lupnt/agents/agent.h``)
+---------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_agents_agent.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``comm_device.h`` (:ref:`file_include_lupnt_agents_comm_device.h`)
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``lupnt/dynamics/dynamics.h`` (:ref:`file_include_lupnt_dynamics_dynamics.h`)
+
+- ``lupnt/physics/clock.h`` (:ref:`file_include_lupnt_physics_clock.h`)
+
+- ``lupnt/physics/frame_converter.h`` (:ref:`file_include_lupnt_physics_frame_converter.h`)
+
+- ``lupnt/physics/orbit_state.h`` (:ref:`file_include_lupnt_physics_orbit_state.h`)
+
+- ``memory``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_agents_gnss_constellation.h`
+
+- :ref:`file_include_lupnt_agents_state_estimation_app.h`
+
+- :ref:`file_include_lupnt_agents_state_estimation_app_gnss.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_measurements_intersatellite_link.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1Agent`
+
+- :ref:`exhale_class_classlupnt_1_1GroundStation`
+
+- :ref:`exhale_class_classlupnt_1_1Rover`
+
+- :ref:`exhale_class_classlupnt_1_1Spacecraft`
+

@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a691580fd958dd4586f4d08440b647487:
+
+Variable lupnt::GM_JUPITER_SYSTEM
+=================================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::GM_JUPITER_SYSTEM
+   :project: LuPNT_CPP

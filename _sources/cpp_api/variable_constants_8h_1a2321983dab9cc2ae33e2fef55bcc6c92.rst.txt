@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a2321983dab9cc2ae33e2fef55bcc6c92:
+
+Variable lupnt::GM_MERCURY
+==========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::GM_MERCURY
+   :project: LuPNT_CPP

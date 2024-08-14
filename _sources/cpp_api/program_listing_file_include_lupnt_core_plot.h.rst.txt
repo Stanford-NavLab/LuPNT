@@ -1,0 +1,28 @@
+
+.. _program_listing_file_include_lupnt_core_plot.h:
+
+Program Listing for File plot.h
+===============================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_core_plot.h>` (``include/lupnt/core/plot.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #include <matplot/matplot.h>
+   
+   #include "lupnt/core/constants.h"
+   
+   #pragma once
+   
+   namespace lupnt {
+   
+     matplot::line_handle plot3(const VecX& x, const VecX& y, const VecX& z,
+                                std::string_view line_spec = "");
+   
+     matplot::line_handle plot(const VecX& x, const VecX& y, std::string_view line_spec = "");
+   
+     matplot::line_handle scatter3(const VecX& x, const VecX& y, const VecX& z, const VecX& sizes,
+                                   std::string_view marker = "o");
+   }  // namespace lupnt

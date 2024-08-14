@@ -1,5 +1,0 @@
-<map id="LPT::J2CartesianTwoBodyDynamics" name="LPT::J2CartesianTwoBodyDynamics">
-<area shape="rect" id="node1" title=" " alt="" coords="5,520,255,612"/>
-<area shape="rect" id="node2" href="$classLPT_1_1NumericalDynamics.html" title=" " alt="" coords="38,248,222,472"/>
-<area shape="rect" id="node3" href="$classLPT_1_1IOrbitDynamics.html" title="Interface for Orbit Dynamics (Todo: find a way to inherit this from IDynamics)" alt="" coords="45,5,215,200"/>
-</map>

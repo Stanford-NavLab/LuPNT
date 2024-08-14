@@ -1,0 +1,85 @@
+
+.. _file_include_lupnt_core_event.h:
+
+File event.h
+============
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_core>` (``include/lupnt/core``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+Event class. 
+
+
+Definition (``include/lupnt/core/event.h``)
+-------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_core_event.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``functional``
+
+- ``limits``
+
+- ``memory``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_core_scheduler.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1Event`
+
+
+Defines
+-------
+
+
+- :ref:`exhale_define_event_8h_1a12c2040f25d8e3a7b9e1c2024c618cb6`
+

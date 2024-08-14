@@ -1,0 +1,17 @@
+.. _exhale_class_classlupnt_1_1Event:
+
+Class Event
+===========
+
+- Defined in :ref:`file_include_lupnt_core_event.h`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::Event
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

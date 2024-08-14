@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1a8ac9310c8d3db49b982c269af1f96e58:
+
+Function lupnt::GreenwichApparentSiderealTime
+=============================================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GreenwichApparentSiderealTime(Real)
+   :project: LuPNT_CPP

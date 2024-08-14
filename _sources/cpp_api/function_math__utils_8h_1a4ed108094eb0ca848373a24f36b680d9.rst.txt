@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a4ed108094eb0ca848373a24f36b680d9:
+
+Function lupnt::sind
+====================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::sind(Real)
+   :project: LuPNT_CPP

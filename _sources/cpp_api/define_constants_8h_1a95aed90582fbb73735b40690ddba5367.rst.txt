@@ -1,0 +1,14 @@
+.. _exhale_define_constants_8h_1a95aed90582fbb73735b40690ddba5367:
+
+Define DEFINE_VECTORS_MATRICES
+==============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Define Documentation
+--------------------
+
+
+.. doxygendefine:: DEFINE_VECTORS_MATRICES
+   :project: LuPNT_CPP

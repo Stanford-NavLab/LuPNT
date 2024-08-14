@@ -1,0 +1,14 @@
+.. _exhale_function_solar__system_8h_1a92a4751b5fc1fc19d026011f01735a90:
+
+Function lupnt::MeanObliquity
+=============================
+
+- Defined in :ref:`file_include_lupnt_physics_solar_system.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::MeanObliquity(Real)
+   :project: LuPNT_CPP

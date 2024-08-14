@@ -1,0 +1,14 @@
+.. _exhale_function_eop_8h_1ac783334d3cbc7c788a44e73e088fb1cd:
+
+Function lupnt::GetUt1UtcDifference
+===================================
+
+- Defined in :ref:`file_include_lupnt_data_eop.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetUt1UtcDifference(Real)
+   :project: LuPNT_CPP

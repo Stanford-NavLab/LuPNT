@@ -1,0 +1,14 @@
+.. _exhale_function_kernels_8h_1a8c7f75f688c1db0f7e635645cf0b8290:
+
+Function lupnt::GetTtTdbDifference
+==================================
+
+- Defined in :ref:`file_include_lupnt_data_kernels.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetTtTdbDifference(double)
+   :project: LuPNT_CPP

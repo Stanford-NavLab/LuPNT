@@ -1,0 +1,6 @@
+pylupnt.compute_occultation
+---------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: compute_occultation

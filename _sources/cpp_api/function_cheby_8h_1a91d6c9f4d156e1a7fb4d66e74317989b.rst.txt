@@ -1,0 +1,14 @@
+.. _exhale_function_cheby_8h_1a91d6c9f4d156e1a7fb4d66e74317989b:
+
+Function lupnt::spk_extract
+===========================
+
+- Defined in :ref:`file_include_lupnt_physics_cheby.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spk_extract(char const *, long *)
+   :project: LuPNT_CPP

@@ -1,5 +1,0 @@
-<map id="LPT::MoonFixedDynamics" name="LPT::MoonFixedDynamics">
-<area shape="rect" id="node1" title=" " alt="" coords="5,520,192,612"/>
-<area shape="rect" id="node2" href="$classLPT_1_1NumericalDynamics.html" title=" " alt="" coords="7,248,191,472"/>
-<area shape="rect" id="node3" href="$classLPT_1_1IOrbitDynamics.html" title="Interface for Orbit Dynamics (Todo: find a way to inherit this from IDynamics)" alt="" coords="14,5,183,200"/>
-</map>

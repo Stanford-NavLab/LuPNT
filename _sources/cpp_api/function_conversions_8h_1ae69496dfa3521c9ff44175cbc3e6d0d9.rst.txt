@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1ae69496dfa3521c9ff44175cbc3e6d0d9:
+
+Function lupnt::Cart2Classical(Real, const Vec3&, const Vec3&, Real)
+====================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Cart2Classical(Real, const Vec3&, const Vec3&, Real)
+   :project: LuPNT_CPP

@@ -1,0 +1,17 @@
+.. _exhale_struct_structlupnt_1_1EopData:
+
+Struct EopData
+==============
+
+- Defined in :ref:`file_include_lupnt_data_eop.h`
+
+
+Struct Documentation
+--------------------
+
+
+.. doxygenstruct:: lupnt::EopData
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

@@ -1,0 +1,9 @@
+pylupnt.NBodyDynamics
+---------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: NBodyDynamics
+    :members:
+    :undoc-members:
+    :inherited-members:

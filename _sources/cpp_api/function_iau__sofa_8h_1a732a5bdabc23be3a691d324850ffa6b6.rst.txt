@@ -1,0 +1,14 @@
+.. _exhale_function_iau__sofa_8h_1a732a5bdabc23be3a691d324850ffa6b6:
+
+Function lupnt::LoadIauSofaFileData
+===================================
+
+- Defined in :ref:`file_include_lupnt_data_iau_sofa.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::LoadIauSofaFileData(const std::filesystem::path&)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a348e89e5912b380dee422676c5570a5f:
+
+Variable lupnt::D_EARTH_EMB
+===========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::D_EARTH_EMB
+   :project: LuPNT_CPP

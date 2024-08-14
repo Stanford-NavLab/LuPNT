@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1ae1e49a6c76abab898c961ea56eea56db:
+
+Variable lupnt::SECS_MINUTE
+===========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::SECS_MINUTE
+   :project: LuPNT_CPP

@@ -1,0 +1,6 @@
+pylupnt.delaunay2classical
+--------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: delaunay2classical

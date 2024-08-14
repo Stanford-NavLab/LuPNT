@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1af07b7eda38db55c1f1726c69be540531:
+
+Variable lupnt::INCH_M
+======================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::INCH_M
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a21fd4886e950744af1ffe8ed2acc9738:
+
+Variable lupnt::R_MOON
+======================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::R_MOON
+   :project: LuPNT_CPP

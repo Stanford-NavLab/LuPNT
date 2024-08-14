@@ -1,0 +1,17 @@
+.. _exhale_struct_structlupnt_1_1GnssReceiverParam:
+
+Struct GnssReceiverParam
+========================
+
+- Defined in :ref:`file_include_lupnt_measurements_gnss_receiver_param.h`
+
+
+Struct Documentation
+--------------------
+
+
+.. doxygenstruct:: lupnt::GnssReceiverParam
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

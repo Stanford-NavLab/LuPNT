@@ -1,0 +1,14 @@
+.. _exhale_typedef_constants_8h_1a1b58528c89f8781fcd4a0475a43e4b61:
+
+Typedef lupnt::RowVec8i
+=======================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::RowVec8i
+   :project: LuPNT_CPP

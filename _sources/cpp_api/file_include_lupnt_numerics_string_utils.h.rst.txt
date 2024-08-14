@@ -1,0 +1,78 @@
+
+.. _file_include_lupnt_numerics_string_utils.h:
+
+File string_utils.h
+===================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_numerics>` (``include/lupnt/numerics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+String util functions. 
+
+
+Definition (``include/lupnt/numerics/string_utils.h``)
+------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_numerics_string_utils.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``filesystem``
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_string__utils_8h_1a2cdea1a7f73666664fade96927086e5b`
+
+- :ref:`exhale_function_string__utils_8h_1a4d5e5e607be803560021df59638b7a6d`
+

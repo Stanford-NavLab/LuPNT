@@ -1,0 +1,103 @@
+
+.. _file_include_lupnt_physics_orbit_state_converter.h:
+
+File converter.h
+================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics_orbit_state>` (``include/lupnt/physics/orbit_state``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/physics/orbit_state/converter.h``)
+--------------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_orbit_state_converter.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``functional``
+
+- ``map``
+
+- ``memory``
+
+- ``orbit_states.h`` (:ref:`file_include_lupnt_physics_orbit_state_orbit_states.h`)
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+- ``tuple``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_physics_orbit_state.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Enums
+-----
+
+
+- :ref:`exhale_enum_frame__converter_8h_1ab3490cfa260b63428dc146a439d2f1b4`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_frame__converter_8h_1ad70bf6df453bf49d860ef4642775cf44`
+
+- :ref:`exhale_function_frame__converter_8h_1ad05fee70fcd7ac3bb4ff0fed98df72c5`
+
+- :ref:`exhale_function_frame__converter_8h_1a14bc62981fd9cba0ead46494a17c9661`
+
+- :ref:`exhale_function_frame__converter_8h_1ad808775284f932ee2f82277ee1e49605`
+
+- :ref:`exhale_function_frame__converter_8h_1ad3e830757ab3cf013b33740f88f64150`
+
+- :ref:`exhale_function_frame__converter_8h_1af2111e8357bf7c940e0030f2de64dc57`
+
+- :ref:`exhale_function_frame__converter_8h_1af09a11b6110b6dabdf0ab6c2efd1241a`
+
+- :ref:`exhale_function_frame__converter_8h_1a91d26703ff71af98bc13d8892cb7f03b`
+
+- :ref:`exhale_function_frame__converter_8h_1a9b5dacb2a5c3df88dfdd965d33aa9761`
+
+- :ref:`exhale_function_converter_8h_1a901cc16357baa920906a606df9203d1f`
+
+- :ref:`exhale_function_converter_8h_1aba6a90f5160dc4a933a2403415dbb6f1`
+
+- :ref:`exhale_function_converter_8h_1a6c7fb5a77f8ce014ce6094e2d7139bf3`
+
+- :ref:`exhale_function_converter_8h_1ad29a0c58f0910a54d6f8ff0f15a24edd`
+
+
+Variables
+---------
+
+
+- :ref:`exhale_variable_converter_8h_1adceeaa784ae931807ef9b505ad7dc827`
+
+- :ref:`exhale_variable_converter_8h_1a36e3e7e176d2c9f52a08f6356cd74be1`
+

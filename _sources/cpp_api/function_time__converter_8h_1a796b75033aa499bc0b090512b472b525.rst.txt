@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1a796b75033aa499bc0b090512b472b525:
+
+Function lupnt::ConvertTime(Real, const std::string&, const std::string&)
+=========================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ConvertTime(Real, const std::string&, const std::string&)
+   :project: LuPNT_CPP

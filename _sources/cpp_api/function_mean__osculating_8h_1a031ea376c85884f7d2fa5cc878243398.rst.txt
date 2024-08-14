@@ -1,0 +1,14 @@
+.. _exhale_function_mean__osculating_8h_1a031ea376c85884f7d2fa5cc878243398:
+
+Function lupnt::Mean2Osculating(const Vec6&, Real, Real)
+========================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_mean_osculating.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Mean2Osculating(const Vec6&, Real, Real)
+   :project: LuPNT_CPP

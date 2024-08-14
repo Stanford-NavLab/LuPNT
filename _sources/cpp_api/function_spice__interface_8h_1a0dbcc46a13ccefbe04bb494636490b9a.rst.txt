@@ -1,0 +1,14 @@
+.. _exhale_function_spice__interface_8h_1a0dbcc46a13ccefbe04bb494636490b9a:
+
+Function lupnt::spice::GetBodyPosVel(const Real, NaifId, NaifId)
+================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spice::GetBodyPosVel(const Real, NaifId, NaifId)
+   :project: LuPNT_CPP

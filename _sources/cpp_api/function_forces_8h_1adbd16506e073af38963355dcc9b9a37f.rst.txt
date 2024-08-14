@@ -1,0 +1,14 @@
+.. _exhale_function_forces_8h_1adbd16506e073af38963355dcc9b9a37f:
+
+Function lupnt::Illumination
+============================
+
+- Defined in :ref:`file_include_lupnt_dynamics_forces.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Illumination(const Vec3&, const Vec3&, Real)
+   :project: LuPNT_CPP

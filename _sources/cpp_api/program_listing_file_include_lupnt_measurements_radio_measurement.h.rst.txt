@@ -1,0 +1,32 @@
+
+.. _program_listing_file_include_lupnt_measurements_radio_measurement.h:
+
+Program Listing for File radio_measurement.h
+============================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_measurements_radio_measurement.h>` (``include/lupnt/measurements/radio_measurement.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   
+   #pragma once
+   
+   #include "lupnt/numerics/math_utils.h"
+   #include "lupnt/physics/frame_converter.h"
+   
+   namespace lupnt {
+   
+     class RadioMeasurement {
+     public:
+       static Real ComputePseudorange(VecX r_tx, VecX r_rx, Real dt_tx, Real dt_rx, Real offset);
+   
+       static Real ComputePseudorangerate(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx, Real dt_tx_dot,
+                                          Real dt_rx_dot, Real offset);
+   
+       static Real ComputeDopplerShift(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx, Real dt_tx_dot,
+                                       Real dt_rx_dot, Real f, Real offset);
+     };
+   
+   }  // namespace lupnt

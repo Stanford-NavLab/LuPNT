@@ -1,0 +1,14 @@
+.. _exhale_enum_gnss__measurement_8h_1ac7d0acec0a22a3d623dfb3c27706407c:
+
+Enum GnssMeasurementType
+========================
+
+- Defined in :ref:`file_include_lupnt_measurements_gnss_measurement.h`
+
+
+Enum Documentation
+------------------
+
+
+.. doxygenenum:: lupnt::GnssMeasurementType
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_define_orbit__states_8h_1ad02adf989bbe783a4e172aef7fcaa6f4:
+
+Define GETSET_ELEM
+==================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_orbit_states.h`
+
+
+Define Documentation
+--------------------
+
+
+.. doxygendefine:: GETSET_ELEM
+   :project: LuPNT_CPP

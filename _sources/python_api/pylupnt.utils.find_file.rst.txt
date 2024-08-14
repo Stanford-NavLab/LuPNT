@@ -1,0 +1,6 @@
+pylupnt.utils.find_file
+-----------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autofunction:: find_file

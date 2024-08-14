@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a8e162e298108dd6a712a8fd117a2e871:
+
+Variable lupnt::P_SUN
+=====================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::P_SUN
+   :project: LuPNT_CPP

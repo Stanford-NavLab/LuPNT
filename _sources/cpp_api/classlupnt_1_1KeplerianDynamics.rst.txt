@@ -1,0 +1,17 @@
+.. _exhale_class_classlupnt_1_1KeplerianDynamics:
+
+Class KeplerianDynamics
+=======================
+
+- Defined in :ref:`file_include_lupnt_dynamics_dynamics.h`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::KeplerianDynamics
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

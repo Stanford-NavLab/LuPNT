@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a370096c8662122674178541fbba10276:
+
+Function lupnt::tand
+====================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::tand(Real)
+   :project: LuPNT_CPP

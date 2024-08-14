@@ -1,0 +1,9 @@
+pylupnt.Frame
+-------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: Frame
+    :members:
+    :undoc-members:
+    :inherited-members:

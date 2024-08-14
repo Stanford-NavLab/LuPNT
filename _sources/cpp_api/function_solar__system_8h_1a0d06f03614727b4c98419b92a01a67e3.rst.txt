@@ -1,0 +1,14 @@
+.. _exhale_function_solar__system_8h_1a0d06f03614727b4c98419b92a01a67e3:
+
+Function lupnt::GreenwichHourAngleMatrix
+========================================
+
+- Defined in :ref:`file_include_lupnt_physics_solar_system.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GreenwichHourAngleMatrix(Real)
+   :project: LuPNT_CPP

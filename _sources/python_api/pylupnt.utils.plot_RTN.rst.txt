@@ -1,0 +1,6 @@
+pylupnt.utils.plot_RTN
+----------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autofunction:: plot_RTN

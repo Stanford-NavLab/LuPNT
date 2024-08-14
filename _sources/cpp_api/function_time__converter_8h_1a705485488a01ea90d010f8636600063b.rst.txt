@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1a705485488a01ea90d010f8636600063b:
+
+Function lupnt::UT1toUTC
+========================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::UT1toUTC(Real)
+   :project: LuPNT_CPP

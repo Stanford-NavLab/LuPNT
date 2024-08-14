@@ -1,0 +1,14 @@
+.. _exhale_define_kernels_8h_1a79bd2810e131df6189e69ed5662911d1:
+
+Define MAXCOEFF
+===============
+
+- Defined in :ref:`file_include_lupnt_data_kernels.h`
+
+
+Define Documentation
+--------------------
+
+
+.. doxygendefine:: MAXCOEFF
+   :project: LuPNT_CPP

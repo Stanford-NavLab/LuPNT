@@ -1,0 +1,29 @@
+
+.. _program_listing_file_include_lupnt_measurements_gnss_receiver_param.h:
+
+Program Listing for File gnss_receiver_param.h
+==============================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_measurements_gnss_receiver_param.h>` (``include/lupnt/measurements/gnss_receiver_param.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   
+   #pragma once
+   
+   namespace lupnt {
+   
+     struct GnssReceiverParam {
+       // Receiver chip parameter
+       double Bp;  // Carrier loop noise bandwidth [Hz]
+       double T;   // Tracking loop integration time [s]
+       double b;   // normalized bandwidth [Hz]
+       double Bn;  // Code loop noise bandwidth [Hz]
+       double D;   // Early-to-late correlator spacing (chips)
+       double Rc;  // chipping rate
+       double Tc;  // chip period [s]
+     };
+   
+   }  // namespace lupnt

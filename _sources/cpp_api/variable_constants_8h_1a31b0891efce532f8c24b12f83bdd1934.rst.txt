@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a31b0891efce532f8c24b12f83bdd1934:
+
+Variable lupnt::C22_MOON
+========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::C22_MOON
+   :project: LuPNT_CPP

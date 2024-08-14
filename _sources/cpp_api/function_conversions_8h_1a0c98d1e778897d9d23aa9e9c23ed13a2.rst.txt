@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1a0c98d1e778897d9d23aa9e9c23ed13a2:
+
+Function lupnt::Delaunay2Classical(const Vec6&, Real)
+=====================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Delaunay2Classical(const Vec6&, Real)
+   :project: LuPNT_CPP

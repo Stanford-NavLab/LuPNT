@@ -1,7 +1,0 @@
-<map id="LPT::Agent" name="LPT::Agent">
-<area shape="rect" id="Node000001" title="Agent base class." alt="" coords="5,5,233,351"/>
-<area shape="rect" id="Node000002" href="$class_l_p_t_1_1_rover.html" title="Rover Agent." alt="" coords="23,399,101,464"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="80,365,72,399,67,398,74,364"/>
-<area shape="rect" id="Node000003" href="$class_l_p_t_1_1_spacecraft.html" title="Spacecraft Agent." alt="" coords="125,399,231,464"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="165,364,173,398,168,399,160,365"/>
-</map>

@@ -1,0 +1,68 @@
+
+.. _file_include_lupnt_numerics_interpolation.h:
+
+File interpolation.h
+====================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_numerics>` (``include/lupnt/numerics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/numerics/interpolation.h``)
+-------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_numerics_interpolation.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``cassert``
+
+- ``iostream``
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1LagrangeInterpolator`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_interpolation_8h_1a747e5f5a4b46e8274b0055599444542d`
+
+- :ref:`exhale_function_interpolation_8h_1ab80fb33bffa16b3bf785b38c52225cd1`
+

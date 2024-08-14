@@ -1,7 +1,0 @@
-<map id="LPT::SpiceInterface::GetFrameConversionMatrix" name="LPT::SpiceInterface::GetFrameConversionMatrix">
-<area shape="rect" id="Node000001" title="Get the Frame Conversion Matrix object." alt="" coords="5,29,195,70"/>
-<area shape="poly" id="edge1_Node000001_Node000001" title=" " alt="" coords="60,29,58,19,65,10,79,5,100,3,123,5,137,12,135,17,122,10,100,8,80,10,68,15,63,20,65,28"/>
-<area shape="rect" id="Node000002" href="$_spice_interface_8cpp.html#a37ef193d9d9c280ca90a4dcfc6c42002" title="load the Spice kernels" alt="" coords="243,29,378,70"/>
-<area shape="poly" id="edge2_Node000001_Node000002" title=" " alt="" coords="195,47,228,47,228,52,195,52"/>
-<area shape="poly" id="edge3_Node000002_Node000002" title=" " alt="" coords="270,29,269,19,275,10,289,5,310,3,334,5,347,12,345,17,332,10,310,8,290,10,278,15,274,20,276,28"/>
-</map>

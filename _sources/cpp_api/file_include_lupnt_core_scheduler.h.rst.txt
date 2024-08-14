@@ -1,0 +1,67 @@
+
+.. _file_include_lupnt_core_scheduler.h:
+
+File scheduler.h
+================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_core>` (``include/lupnt/core``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/core/scheduler.h``)
+-----------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_core_scheduler.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``cmath``
+
+- ``functional``
+
+- ``limits``
+
+- ``lupnt/agents/application.h`` (:ref:`file_include_lupnt_agents_application.h`)
+
+- ``lupnt/core/event.h`` (:ref:`file_include_lupnt_core_event.h`)
+
+- ``memory``
+
+- ``queue``
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1Scheduler`
+

@@ -1,0 +1,14 @@
+.. _exhale_function_spice__interface_8h_1a150f4943faf7783cb2624eff36ba454b:
+
+Function lupnt::spice::ConvertTime
+==================================
+
+- Defined in :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spice::ConvertTime(Real, std::string, std::string)
+   :project: LuPNT_CPP

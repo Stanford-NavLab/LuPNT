@@ -1,0 +1,14 @@
+.. _exhale_variable_spice__interface_8h_1a6f2665fa8690dbc7eb69633e6e8c779c:
+
+Variable lupnt::spice::cheby_n
+==============================
+
+- Defined in :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::spice::cheby_n
+   :project: LuPNT_CPP

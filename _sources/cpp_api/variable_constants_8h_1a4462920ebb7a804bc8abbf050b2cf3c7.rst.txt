@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a4462920ebb7a804bc8abbf050b2cf3c7:
+
+Variable lupnt::JD_MJD_OFFSET
+=============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::JD_MJD_OFFSET
+   :project: LuPNT_CPP

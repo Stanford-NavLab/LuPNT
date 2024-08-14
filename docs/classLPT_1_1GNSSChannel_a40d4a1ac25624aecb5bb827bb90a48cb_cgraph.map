@@ -1,5 +1,0 @@
-<map id="LPT::GNSSChannel::Receive" name="LPT::GNSSChannel::Receive">
-<area shape="rect" id="node1" title="Receiver receives all available GNSS signals." alt="" coords="5,29,207,56"/>
-<area shape="rect" id="node2" href="$MathUtils_8cpp.html#a645eea2914e4bd646eedb64deb148aa6" title="Calculate the 2&#45;norm of ad::vector." alt="" coords="255,29,341,56"/>
-<area shape="rect" id="node3" href="$MathUtils_8cpp.html#ae2a720fd8e16772da7b293bb5e1be510" title="Calculate the dot product of two ad vectors." alt="" coords="389,29,463,56"/>
-</map>

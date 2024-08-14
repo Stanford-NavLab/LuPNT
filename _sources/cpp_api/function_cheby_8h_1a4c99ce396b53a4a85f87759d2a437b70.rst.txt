@@ -1,0 +1,14 @@
+.. _exhale_function_cheby_8h_1a4c99ce396b53a4a85f87759d2a437b70:
+
+Function lupnt::cheby_segment
+=============================
+
+- Defined in :ref:`file_include_lupnt_physics_cheby.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::cheby_segment(SpiceInt, SpiceDouble *, SpiceInt *, segment_t *)
+   :project: LuPNT_CPP

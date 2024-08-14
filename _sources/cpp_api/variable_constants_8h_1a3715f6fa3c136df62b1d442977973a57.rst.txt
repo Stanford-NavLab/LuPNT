@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a3715f6fa3c136df62b1d442977973a57:
+
+Variable lupnt::SLUG_TO_KG
+==========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::SLUG_TO_KG
+   :project: LuPNT_CPP

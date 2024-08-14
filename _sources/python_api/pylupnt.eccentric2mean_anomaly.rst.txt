@@ -1,0 +1,6 @@
+pylupnt.eccentric2mean_anomaly
+------------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: eccentric2mean_anomaly

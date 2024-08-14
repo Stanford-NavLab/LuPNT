@@ -1,0 +1,36 @@
+
+.. _program_listing_file_include_lupnt_physics_orbit_state_anomaly.h:
+
+Program Listing for File anomaly.h
+==================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_physics_orbit_state_anomaly.h>` (``include/lupnt/physics/orbit_state/anomaly.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include "lupnt/numerics/vector_macros.h"
+   #include "orbit_states.h"
+   
+   namespace lupnt {
+   
+     // Anomaly
+     Real Ecc2TrueAnomaly(Real E, Real e);
+     Real Ecc2MeanAnomaly(Real E, Real e);
+     Real Mean2EccAnomaly(Real M, Real e);
+     Real True2EccAnomaly(Real nu, Real e);
+     Real Mean2TrueAnomaly(Real M, Real e);
+     Real True2MeanAnomaly(Real f, Real e);
+   
+     // Vector definitions
+     VEC_DEF_REAL_REAL(Ecc2TrueAnomaly);
+     VEC_DEF_REAL_REAL(Ecc2MeanAnomaly);
+     VEC_DEF_REAL_REAL(Mean2EccAnomaly);
+     VEC_DEF_REAL_REAL(True2EccAnomaly);
+     VEC_DEF_REAL_REAL(Mean2TrueAnomaly);
+     VEC_DEF_REAL_REAL(True2MeanAnomaly);
+   
+   }  // namespace lupnt

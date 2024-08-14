@@ -1,0 +1,69 @@
+
+.. _file_include_lupnt_core_user_file_path.h:
+
+File user_file_path.h
+=====================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_core>` (``include/lupnt/core``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/core/user_file_path.h``)
+----------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_core_user_file_path.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``assert.h``
+
+- ``filesystem``
+
+- ``iostream``
+
+- ``optional``
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_core_constants.h`
+
+- :ref:`file_include_lupnt_dynamics_forces.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_user__file__path_8h_1a2b27a98006d8f15342097ef02834a7e1`
+
+- :ref:`exhale_function_user__file__path_8h_1af1ba31f491c6709de18b471c11efbd30`
+
+- :ref:`exhale_function_user__file__path_8h_1af5193189087f9cbf580c6c13e0a68dc1`
+

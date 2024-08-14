@@ -1,0 +1,14 @@
+.. _exhale_define_vector__macros_8h_1aeee1c1802f9e1abc0d8cb0e37b0928a6:
+
+Define VEC_DEF_REAL_REAL
+========================
+
+- Defined in :ref:`file_include_lupnt_numerics_vector_macros.h`
+
+
+Define Documentation
+--------------------
+
+
+.. doxygendefine:: VEC_DEF_REAL_REAL
+   :project: LuPNT_CPP

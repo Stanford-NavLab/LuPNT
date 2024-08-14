@@ -1,0 +1,9 @@
+pylupnt.KeplerianDynamics
+-------------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: KeplerianDynamics
+    :members:
+    :undoc-members:
+    :inherited-members:

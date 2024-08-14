@@ -1,0 +1,14 @@
+.. _exhale_variable_converter_8h_1a36e3e7e176d2c9f52a08f6356cd74be1:
+
+Variable lupnt::relative_conversions
+====================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_converter.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::relative_conversions
+   :project: LuPNT_CPP

@@ -1,0 +1,27 @@
+.. _dir_include_lupnt_numerics:
+
+
+Directory numerics
+==================
+
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt>` (``include/lupnt``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+*Directory path:* ``include/lupnt/numerics``
+
+
+Files
+-----
+
+- :ref:`file_include_lupnt_numerics_filters.h`
+- :ref:`file_include_lupnt_numerics_graphs.h`
+- :ref:`file_include_lupnt_numerics_integrator.h`
+- :ref:`file_include_lupnt_numerics_interpolation.h`
+- :ref:`file_include_lupnt_numerics_math_utils.h`
+- :ref:`file_include_lupnt_numerics_string_utils.h`
+- :ref:`file_include_lupnt_numerics_vector_macros.h`
+
+

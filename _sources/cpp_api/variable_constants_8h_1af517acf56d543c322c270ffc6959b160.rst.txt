@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1af517acf56d543c322c270ffc6959b160:
+
+Variable lupnt::GM_VESTA
+========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::GM_VESTA
+   :project: LuPNT_CPP

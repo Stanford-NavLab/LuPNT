@@ -1,0 +1,14 @@
+.. _exhale_function_tai__utc_8h_1a423dfaf81b8cd89d352f33d635e278f0:
+
+Function lupnt::GetTaiUtcDifference
+===================================
+
+- Defined in :ref:`file_include_lupnt_data_tai_utc.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetTaiUtcDifference(double)
+   :project: LuPNT_CPP

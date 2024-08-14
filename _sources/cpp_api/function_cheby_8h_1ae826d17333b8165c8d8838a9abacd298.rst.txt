@@ -1,0 +1,14 @@
+.. _exhale_function_cheby_8h_1ae826d17333b8165c8d8838a9abacd298:
+
+Function lupnt::cheby_posvel_ad
+===============================
+
+- Defined in :ref:`file_include_lupnt_physics_cheby.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::cheby_posvel_ad(Real, double *, long)
+   :project: LuPNT_CPP

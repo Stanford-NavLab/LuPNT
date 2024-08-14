@@ -1,0 +1,14 @@
+.. _exhale_function_solar__system_8h_1a0f27b6b8a695c01a4551a4f779d9d7a0:
+
+Function lupnt::NutationMatrix
+==============================
+
+- Defined in :ref:`file_include_lupnt_physics_solar_system.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::NutationMatrix(Real)
+   :project: LuPNT_CPP

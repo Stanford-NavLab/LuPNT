@@ -1,7 +1,0 @@
-<map id="LPT::CartesianOrbitState" name="LPT::CartesianOrbitState">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,552,163,737"/>
-<area shape="rect" id="Node000002" href="$class_l_p_t_1_1_orbit_state.html" title=" " alt="" coords="7,159,161,504"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="87,518,87,552,81,552,81,518"/>
-<area shape="rect" id="Node000003" href="$class_l_p_t_1_1_i_state.html" title="Interface for States." alt="" coords="29,5,139,111"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="87,125,87,159,81,159,81,125"/>
-</map>

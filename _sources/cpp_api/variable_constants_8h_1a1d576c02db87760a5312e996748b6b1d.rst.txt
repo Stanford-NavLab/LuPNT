@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a1d576c02db87760a5312e996748b6b1d:
+
+Variable lupnt::JULIAN_DATE_OF_010541
+=====================================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::JULIAN_DATE_OF_010541
+   :project: LuPNT_CPP

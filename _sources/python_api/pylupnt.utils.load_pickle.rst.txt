@@ -1,0 +1,6 @@
+pylupnt.utils.load_pickle
+-------------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autofunction:: load_pickle

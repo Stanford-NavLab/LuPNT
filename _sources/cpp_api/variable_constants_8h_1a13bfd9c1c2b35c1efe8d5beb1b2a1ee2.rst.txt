@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a13bfd9c1c2b35c1efe8d5beb1b2a1ee2:
+
+Variable lupnt::RAD_ARCSEC
+==========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::RAD_ARCSEC
+   :project: LuPNT_CPP

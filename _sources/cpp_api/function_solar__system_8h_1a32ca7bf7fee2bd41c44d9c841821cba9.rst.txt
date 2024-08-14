@@ -1,0 +1,14 @@
+.. _exhale_function_solar__system_8h_1a32ca7bf7fee2bd41c44d9c841821cba9:
+
+Function lupnt::NutAngles
+=========================
+
+- Defined in :ref:`file_include_lupnt_physics_solar_system.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::NutAngles(Real)
+   :project: LuPNT_CPP

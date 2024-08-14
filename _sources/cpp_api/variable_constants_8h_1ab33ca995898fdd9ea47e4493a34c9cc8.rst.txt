@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1ab33ca995898fdd9ea47e4493a34c9cc8:
+
+Variable lupnt::KM_M
+====================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::KM_M
+   :project: LuPNT_CPP

@@ -1,0 +1,88 @@
+
+.. _file_include_lupnt_measurements_gnss_receiver.h:
+
+File gnss_receiver.h
+====================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_measurements>` (``include/lupnt/measurements``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+Gnss receiver class. 
+
+
+Definition (``include/lupnt/measurements/gnss_receiver.h``)
+-----------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_measurements_gnss_receiver.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``gnss_channel.h`` (:ref:`file_include_lupnt_measurements_gnss_channel.h`)
+
+- ``gnss_measurement.h`` (:ref:`file_include_lupnt_measurements_gnss_measurement.h`)
+
+- ``lupnt/agents/comm_device.h`` (:ref:`file_include_lupnt_agents_comm_device.h`)
+
+- ``lupnt/measurements/transmission.h`` (:ref:`file_include_lupnt_measurements_transmission.h`)
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+- ``tuple``
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_agents_state_estimation_app.h`
+
+- :ref:`file_include_lupnt_agents_state_estimation_app_gnss.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1GnssReceiver`
+

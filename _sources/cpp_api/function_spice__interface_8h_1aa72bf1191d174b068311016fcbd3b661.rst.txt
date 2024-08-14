@@ -1,0 +1,14 @@
+.. _exhale_function_spice__interface_8h_1aa72bf1191d174b068311016fcbd3b661:
+
+Function lupnt::spice::TAItoStringUTC
+=====================================
+
+- Defined in :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spice::TAItoStringUTC(Real, int)
+   :project: LuPNT_CPP

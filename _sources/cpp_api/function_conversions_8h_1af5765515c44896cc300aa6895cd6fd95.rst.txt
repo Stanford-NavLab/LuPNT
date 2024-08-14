@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1af5765515c44896cc300aa6895cd6fd95:
+
+Function lupnt::Cart2Classical(const CartesianOrbitState&, Real)
+================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Cart2Classical(const CartesianOrbitState&, Real)
+   :project: LuPNT_CPP

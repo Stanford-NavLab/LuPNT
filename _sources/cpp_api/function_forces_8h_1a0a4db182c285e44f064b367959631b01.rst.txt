@@ -1,0 +1,14 @@
+.. _exhale_function_forces_8h_1a0a4db182c285e44f064b367959631b01:
+
+Function lupnt::AccelerationPointMass
+=====================================
+
+- Defined in :ref:`file_include_lupnt_dynamics_forces.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::AccelerationPointMass(const Vec3&, const Vec3&, Real)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_tmp_8h_1a616847444ed43f411cf42f6359173f96:
+
+Template Function lupnt::make_vector
+====================================
+
+- Defined in :ref:`file_include_lupnt_tmp.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::make_vector(std::size_t)
+   :project: LuPNT_CPP

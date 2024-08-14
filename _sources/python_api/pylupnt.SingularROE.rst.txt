@@ -1,0 +1,9 @@
+pylupnt.SingularROE
+-------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: SingularROE
+    :members:
+    :undoc-members:
+    :inherited-members:

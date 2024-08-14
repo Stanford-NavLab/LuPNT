@@ -1,0 +1,32 @@
+.. _exhale_class_classlupnt_1_1NumericalDynamics:
+
+Class NumericalDynamics
+=======================
+
+- Defined in :ref:`file_include_lupnt_dynamics_dynamics.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Base Type
+*********
+
+- ``public lupnt::IDynamics`` (:ref:`exhale_class_classlupnt_1_1IDynamics`)
+
+
+Derived Type
+************
+
+- ``public lupnt::NumericalOrbitDynamics`` (:ref:`exhale_class_classlupnt_1_1NumericalOrbitDynamics`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::NumericalDynamics
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

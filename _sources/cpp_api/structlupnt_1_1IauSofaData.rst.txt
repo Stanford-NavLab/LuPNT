@@ -1,0 +1,17 @@
+.. _exhale_struct_structlupnt_1_1IauSofaData:
+
+Struct IauSofaData
+==================
+
+- Defined in :ref:`file_include_lupnt_data_iau_sofa.h`
+
+
+Struct Documentation
+--------------------
+
+
+.. doxygenstruct:: lupnt::IauSofaData
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

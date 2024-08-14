@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1ab105124b16d36332a1c5d16aceb839aa:
+
+Variable lupnt::NUM_SECS
+========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::NUM_SECS
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_spice__interface_8h_1a0b84cbf0d439aee2f59a21238ca8d399:
+
+Function lupnt::spice::GetFrameConversionMat
+============================================
+
+- Defined in :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spice::GetFrameConversionMat(Real, Frame, Frame)
+   :project: LuPNT_CPP

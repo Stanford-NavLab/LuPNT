@@ -1,0 +1,6 @@
+pylupnt.equinoctial2classical
+-----------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: equinoctial2classical

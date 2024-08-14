@@ -1,0 +1,14 @@
+.. _exhale_typedef_forces_8h_1a7a3778f5d48ae8344f583260d6128b67:
+
+Typedef Matrix3
+===============
+
+- Defined in :ref:`file_include_lupnt_dynamics_forces.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: Matrix3
+   :project: LuPNT_CPP

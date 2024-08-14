@@ -1,5 +1,0 @@
-<map id="LPT::Antenna::GetAntennaGain" name="LPT::Antenna::GetAntennaGain">
-<area shape="rect" id="node1" title="Get the Antenna Gain object." alt="" coords="5,67,227,93"/>
-<area shape="rect" id="node2" href="$MathUtils_8cpp.html#a7d0e1b3d0f9fcf5f942dee923bf1242e" title="Linear interpolation of a 2D data set." alt="" coords="275,29,421,56"/>
-<area shape="rect" id="node3" href="$MathUtils_8cpp.html#a18b2a0d53374293cd63a05dfc7703a48" title="Linear interpolation of a 2D data set." alt="" coords="275,104,421,131"/>
-</map>

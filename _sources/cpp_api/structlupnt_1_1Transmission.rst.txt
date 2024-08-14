@@ -1,0 +1,17 @@
+.. _exhale_struct_structlupnt_1_1Transmission:
+
+Struct Transmission
+===================
+
+- Defined in :ref:`file_include_lupnt_measurements_transmission.h`
+
+
+Struct Documentation
+--------------------
+
+
+.. doxygenstruct:: lupnt::Transmission
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a6a6cd67ea1176ef4f28379661ec04c3d:
+
+Variable lupnt::GM_CERES
+========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::GM_CERES
+   :project: LuPNT_CPP

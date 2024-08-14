@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1aa3acbf2555c6abdf618c228aba22aac7:
+
+Variable lupnt::SECS_DAY
+========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::SECS_DAY
+   :project: LuPNT_CPP

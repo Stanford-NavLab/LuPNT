@@ -1,0 +1,95 @@
+
+.. _file_include_lupnt_numerics_integrator.h:
+
+File integrator.h
+=================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_numerics>` (``include/lupnt/numerics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+Integrator interfaces. 
+
+
+Definition (``include/lupnt/numerics/integrator.h``)
+----------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_numerics_integrator.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``functional``
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_dynamics_dynamics.h`
+
+- :ref:`file_include_lupnt_dynamics_propagator.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1IIntegrator`
+
+- :ref:`exhale_class_classlupnt_1_1IntegratorParams`
+
+- :ref:`exhale_class_classlupnt_1_1IRKF`
+
+- :ref:`exhale_class_classlupnt_1_1RK4`
+
+- :ref:`exhale_class_classlupnt_1_1RK8`
+
+- :ref:`exhale_class_classlupnt_1_1RKF45`
+
+
+Typedefs
+--------
+
+
+- :ref:`exhale_typedef_integrator_8h_1aba5e8aa90c2a4ceeddc4b503acd4dba6`
+

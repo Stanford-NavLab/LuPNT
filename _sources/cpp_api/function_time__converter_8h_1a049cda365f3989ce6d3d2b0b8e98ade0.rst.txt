@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1a049cda365f3989ce6d3d2b0b8e98ade0:
+
+Function lupnt::TAItoUTC
+========================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::TAItoUTC(Real)
+   :project: LuPNT_CPP

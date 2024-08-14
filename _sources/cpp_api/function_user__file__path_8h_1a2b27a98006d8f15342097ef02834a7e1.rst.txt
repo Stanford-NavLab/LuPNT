@@ -1,0 +1,14 @@
+.. _exhale_function_user__file__path_8h_1a2b27a98006d8f15342097ef02834a7e1:
+
+Function lupnt::FindFileInDir
+=============================
+
+- Defined in :ref:`file_include_lupnt_core_user_file_path.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::FindFileInDir(const std::filesystem::path&, const std::string&)
+   :project: LuPNT_CPP

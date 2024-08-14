@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a2c3d74e6132497db37b1b4c8b8ecc9e3:
+
+Variable lupnt::TIME_OF_J2000
+=============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::TIME_OF_J2000
+   :project: LuPNT_CPP

@@ -1,0 +1,28 @@
+.. _exhale_class_classlupnt_1_1Agent:
+
+Class Agent
+===========
+
+- Defined in :ref:`file_include_lupnt_agents_agent.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Derived Types
+*************
+
+- ``public lupnt::GroundStation`` (:ref:`exhale_class_classlupnt_1_1GroundStation`)
+- ``public lupnt::Rover`` (:ref:`exhale_class_classlupnt_1_1Rover`)
+- ``public lupnt::Spacecraft`` (:ref:`exhale_class_classlupnt_1_1Spacecraft`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::Agent
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

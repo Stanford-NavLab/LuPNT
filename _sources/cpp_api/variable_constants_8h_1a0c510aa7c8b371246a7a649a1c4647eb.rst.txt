@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a0c510aa7c8b371246a7a649a1c4647eb:
+
+Variable lupnt::GM_SATURN_SYSTEM
+================================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::GM_SATURN_SYSTEM
+   :project: LuPNT_CPP

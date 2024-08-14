@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a83fcf45d6fafde82f9d44b2152a1999f:
+
+Function lupnt::ToDoubleVec
+===========================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ToDoubleVec(const VecX&)
+   :project: LuPNT_CPP

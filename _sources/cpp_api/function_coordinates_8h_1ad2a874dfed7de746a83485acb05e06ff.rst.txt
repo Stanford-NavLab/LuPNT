@@ -1,0 +1,14 @@
+.. _exhale_function_coordinates_8h_1ad2a874dfed7de746a83485acb05e06ff:
+
+Function lupnt::Cart2EastNorthUp
+================================
+
+- Defined in :ref:`file_include_lupnt_physics_coordinates.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Cart2EastNorthUp(const Vec3&, const Vec3&, Real, Real)
+   :project: LuPNT_CPP

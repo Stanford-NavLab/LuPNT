@@ -1,0 +1,26 @@
+.. _exhale_class_classlupnt_1_1J2KeplerianDynamics:
+
+Class J2KeplerianDynamics
+=========================
+
+- Defined in :ref:`file_include_lupnt_dynamics_dynamics.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Base Type
+*********
+
+- ``public lupnt::NumericalOrbitDynamics`` (:ref:`exhale_class_classlupnt_1_1NumericalOrbitDynamics`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::J2KeplerianDynamics
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

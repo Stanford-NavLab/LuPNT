@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1aaec16d653b10cd1dcd03c19988f8f14d:
+
+Variable lupnt::GM_PLUTO_SYSTEM
+===============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::GM_PLUTO_SYSTEM
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_solar__system_8h_1a44e112cd80f7c5dad3c9ff143b5f9b9a:
+
+Function lupnt::SunPositionLowPrecision
+=======================================
+
+- Defined in :ref:`file_include_lupnt_physics_solar_system.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::SunPositionLowPrecision(Real)
+   :project: LuPNT_CPP

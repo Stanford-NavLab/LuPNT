@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1a83a7c80bff313fad47ffadf3e32d0134:
+
+Function lupnt::Synodic2Intertial(const Vec6&, const Vec6&)
+===========================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Synodic2Intertial(const Vec6&, const Vec6&)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1ab743489c6a66118b252ad98f07dd73c2:
+
+Function lupnt::VEC_DEF_VECTOR_REAL(Classical2Cart, 6)
+======================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::VEC_DEF_VECTOR_REAL(Classical2Cart, 6)
+   :project: LuPNT_CPP

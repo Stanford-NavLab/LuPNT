@@ -1,0 +1,26 @@
+
+.. _program_listing_file_include_lupnt_physics_state.h:
+
+Program Listing for File state.h
+================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_physics_state.h>` (``include/lupnt/physics/state.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   
+   #pragma once
+   
+   namespace lupnt {
+   
+     class IState {
+     public:
+       virtual ~IState() = default;
+       virtual inline int GetSize() const = 0;
+       virtual inline Real GetValue(int idx) const = 0;
+       virtual inline void SetValue(Real val, int idx) = 0;
+     };
+   
+   }  // namespace lupnt

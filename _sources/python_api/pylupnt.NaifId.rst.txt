@@ -1,0 +1,9 @@
+pylupnt.NaifId
+--------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: NaifId
+    :members:
+    :undoc-members:
+    :inherited-members:

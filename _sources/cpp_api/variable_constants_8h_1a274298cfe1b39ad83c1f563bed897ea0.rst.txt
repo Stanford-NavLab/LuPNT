@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a274298cfe1b39ad83c1f563bed897ea0:
+
+Variable lupnt::DEG
+===================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::DEG
+   :project: LuPNT_CPP

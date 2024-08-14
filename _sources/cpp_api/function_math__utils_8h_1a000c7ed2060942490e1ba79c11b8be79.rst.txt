@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a000c7ed2060942490e1ba79c11b8be79:
+
+Function lupnt::DegMinSec2Degrees
+=================================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::DegMinSec2Degrees(Vec3)
+   :project: LuPNT_CPP

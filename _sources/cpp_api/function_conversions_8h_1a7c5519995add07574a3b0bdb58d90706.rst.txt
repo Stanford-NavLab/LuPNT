@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1a7c5519995add07574a3b0bdb58d90706:
+
+Function lupnt::VEC_DEF_VECTOR_REAL(Equinoctial2Classical, 6)
+=============================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::VEC_DEF_VECTOR_REAL(Equinoctial2Classical, 6)
+   :project: LuPNT_CPP

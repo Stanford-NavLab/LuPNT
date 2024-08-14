@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1afd608e17e57ece06ab18e67c950dd6de:
+
+Variable lupnt::PI
+==================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::PI
+   :project: LuPNT_CPP

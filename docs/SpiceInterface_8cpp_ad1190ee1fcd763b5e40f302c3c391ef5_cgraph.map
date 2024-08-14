@@ -1,5 +1,0 @@
-<map id="LPT::SpiceInterface::GetBodyPosVel" name="LPT::SpiceInterface::GetBodyPosVel">
-<area shape="rect" id="node1" title="Get the Body Position and Velocity using Chebyshev polynomials." alt="" coords="5,59,151,100"/>
-<area shape="rect" id="node2" href="$SpiceInterface_8cpp.html#af325f617b7e3d6a65c37b6ca4dfd52b3" title="Convert time from one time system to another." alt="" coords="199,29,344,71"/>
-<area shape="rect" id="node3" href="$SpiceInterface_8cpp.html#a37ef193d9d9c280ca90a4dcfc6c42002" title="load the Spice kernels" alt="" coords="392,59,537,100"/>
-</map>

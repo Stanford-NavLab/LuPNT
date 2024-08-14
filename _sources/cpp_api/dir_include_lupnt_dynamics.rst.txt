@@ -1,0 +1,23 @@
+.. _dir_include_lupnt_dynamics:
+
+
+Directory dynamics
+==================
+
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt>` (``include/lupnt``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+*Directory path:* ``include/lupnt/dynamics``
+
+
+Files
+-----
+
+- :ref:`file_include_lupnt_dynamics_dynamics.h`
+- :ref:`file_include_lupnt_dynamics_forces.h`
+- :ref:`file_include_lupnt_dynamics_propagator.h`
+
+

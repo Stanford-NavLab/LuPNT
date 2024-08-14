@@ -1,8 +1,0 @@
-<map id="LPT::ICommDevice" name="LPT::ICommDevice">
-<area shape="rect" id="node1" title=" " alt="" coords="179,5,330,112"/>
-<area shape="rect" id="node2" href="$classLPT_1_1Receiver.html" title=" " alt="" coords="53,167,168,289"/>
-<area shape="rect" id="node4" href="$classLPT_1_1Tranceiver.html" title=" " alt="" coords="192,160,317,296"/>
-<area shape="rect" id="node5" href="$classLPT_1_1Transmitter.html" title=" " alt="" coords="342,167,474,289"/>
-<area shape="rect" id="node3" href="$classLPT_1_1GNSSReceiver.html" title=" " alt="" coords="5,381,216,619"/>
-<area shape="rect" id="node6" href="$classLPT_1_1GNSSTransmitter.html" title=" " alt="" coords="289,344,527,656"/>
-</map>

@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1ab146791f946e7cbd3601ed7fdf6a30c7:
+
+Variable lupnt::TimeSys::TAI
+============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::TimeSys::TAI
+   :project: LuPNT_CPP

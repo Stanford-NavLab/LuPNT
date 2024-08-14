@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a6dbac77bd1ee005c6a65bf65d337b879:
+
+Variable lupnt::WGS84_A
+=======================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::WGS84_A
+   :project: LuPNT_CPP

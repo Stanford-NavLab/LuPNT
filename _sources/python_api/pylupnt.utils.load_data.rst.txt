@@ -1,0 +1,6 @@
+pylupnt.utils.load_data
+-----------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autofunction:: load_data

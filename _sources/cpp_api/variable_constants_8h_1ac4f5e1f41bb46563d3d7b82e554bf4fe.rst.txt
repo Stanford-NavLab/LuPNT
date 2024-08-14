@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1ac4f5e1f41bb46563d3d7b82e554bf4fe:
+
+Variable lupnt::DAYS_YEAR
+=========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::DAYS_YEAR
+   :project: LuPNT_CPP

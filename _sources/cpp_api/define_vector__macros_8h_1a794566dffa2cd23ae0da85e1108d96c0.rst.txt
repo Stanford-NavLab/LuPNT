@@ -1,0 +1,14 @@
+.. _exhale_define_vector__macros_8h_1a794566dffa2cd23ae0da85e1108d96c0:
+
+Define VEC_DEF_VECTOR_VECTOR
+============================
+
+- Defined in :ref:`file_include_lupnt_numerics_vector_macros.h`
+
+
+Define Documentation
+--------------------
+
+
+.. doxygendefine:: VEC_DEF_VECTOR_VECTOR
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a8416750f7152eafebe630bea1ba0dc6d:
+
+Variable lupnt::FOOT_M
+======================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::FOOT_M
+   :project: LuPNT_CPP

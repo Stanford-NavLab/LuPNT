@@ -1,0 +1,59 @@
+
+.. _program_listing_file_include_lupnt_measurements_transmission.h:
+
+Program Listing for File transmission.h
+=======================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_measurements_transmission.h>` (``include/lupnt/measurements/transmission.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   
+   #pragma once
+   
+   #include <string>
+   
+   #include "gnss_receiver_param.h"
+   
+   namespace lupnt {
+   
+     struct Transmission {
+       // Clock time [s]
+       double t_tx;
+       double t_rx;
+   
+       // frequency [Hz]
+       double freq;
+       std::string freq_label;
+   
+       // Clock offset from Gnss time [s]
+       double dt_tx;
+       double dt_rx;
+   
+       // Clock drift from Gnss time [s/s]
+       double dt_tx_dot;
+       double dt_rx_dot;
+   
+       double I_rx;  // Ionospheric delay [m] (n_satellites * n_bands)
+       double T_rx;  // Tropospheric delay [m] (n_satellites)
+       double CN0;   // Carrier-to-noise density [dB-Hz] (n_satellites * n_bands)
+   
+       double AP;
+       double RP;
+   
+       bool vis_earth;
+       bool vis_moon;
+       bool vis_antenna;
+       bool vis_atmos;
+       bool vis_ionos;
+   
+       GnssReceiverParam gnssr_param;
+   
+       double chip_rate;  // receiver chip rate [Hz]
+   
+       int ID_tx;
+       Vec3d r_tx, v_tx, r_rx, v_rx;
+     };
+   }  // namespace lupnt

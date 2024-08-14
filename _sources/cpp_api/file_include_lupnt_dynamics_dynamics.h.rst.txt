@@ -1,0 +1,114 @@
+
+.. _file_include_lupnt_dynamics_dynamics.h:
+
+File dynamics.h
+===============
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_dynamics>` (``include/lupnt/dynamics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+Interface for Dynamics. 
+
+
+Definition (``include/lupnt/dynamics/dynamics.h``)
+--------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_dynamics_dynamics.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/dynamics/propagator.h`` (:ref:`file_include_lupnt_dynamics_propagator.h`)
+
+- ``lupnt/numerics/integrator.h`` (:ref:`file_include_lupnt_numerics_integrator.h`)
+
+- ``lupnt/physics/body.h`` (:ref:`file_include_lupnt_physics_body.h`)
+
+- ``lupnt/physics/orbit_state.h`` (:ref:`file_include_lupnt_physics_orbit_state.h`)
+
+- ``lupnt/physics/state.h`` (:ref:`file_include_lupnt_physics_state.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_agents_agent.h`
+
+- :ref:`file_include_lupnt_agents_gnss_constellation.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_physics_clock.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_struct_structlupnt_1_1NBodyDynamicsParams`
+
+- :ref:`exhale_class_classlupnt_1_1AnalyticalDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1CartesianTwoBodyDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1ClohessyWiltshireDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1IDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1J2CartTwoBodyDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1J2KeplerianDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1KeplerianDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1MoonFixedDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1MoonMeanDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1NBodyDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1NumericalDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1NumericalOrbitDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1RoeGeometricMappingDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1YamanakaAnkersenDynamics`
+

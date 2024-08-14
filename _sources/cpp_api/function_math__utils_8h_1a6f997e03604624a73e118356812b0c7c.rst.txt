@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a6f997e03604624a73e118356812b0c7c:
+
+Template Function lupnt::Skew
+=============================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Skew(T)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_coordinates_8h_1a831e7853d878a5249b3f88397bf66419:
+
+Function lupnt::AzElRange2Cart
+==============================
+
+- Defined in :ref:`file_include_lupnt_physics_coordinates.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::AzElRange2Cart(const Vec3&, const Vec3&, Real, Real)
+   :project: LuPNT_CPP

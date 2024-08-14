@@ -1,0 +1,79 @@
+
+.. _file_include_lupnt_physics_coordinates.h:
+
+File coordinates.h
+==================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/physics/coordinates.h``)
+----------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_coordinates.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/numerics/vector_macros.h`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+- ``orbit_state.h`` (:ref:`file_include_lupnt_physics_orbit_state.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_coordinates_8h_1a831e7853d878a5249b3f88397bf66419`
+
+- :ref:`exhale_function_coordinates_8h_1aaa4760f2f9d34194b1dff9c9c8344645`
+
+- :ref:`exhale_function_coordinates_8h_1a232881ad63b2088c445df3a6f53528a9`
+
+- :ref:`exhale_function_coordinates_8h_1ad2a874dfed7de746a83485acb05e06ff`
+
+- :ref:`exhale_function_coordinates_8h_1a20fd314f45d7e2a0c00807a7e3d118cb`
+
+- :ref:`exhale_function_coordinates_8h_1a2797eaf12dcc211c9132cd7bcf20746c`
+
+- :ref:`exhale_function_coordinates_8h_1abe0a8f926d32e6fa1313b23700c21dea`
+
+- :ref:`exhale_function_coordinates_8h_1aea41f7af6a7aa8b405553ae522f727f9`
+
+- :ref:`exhale_function_coordinates_8h_1ac5a019f2684d1d686cf5b6dc456d82ea`
+
+- :ref:`exhale_function_coordinates_8h_1a4871cef15b35b36ffc963c0e7e683f89`
+
+- :ref:`exhale_function_coordinates_8h_1af1c8f7d8ae2b9f490c17eab091f247a3`
+
+- :ref:`exhale_function_coordinates_8h_1a4c9a255e8e14c8fe53847e63b2f202be`
+
+- :ref:`exhale_function_coordinates_8h_1abb72d1c9ef69ef5727f0764c2b35a8eb`
+

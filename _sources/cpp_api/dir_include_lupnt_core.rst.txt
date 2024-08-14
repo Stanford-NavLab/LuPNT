@@ -1,0 +1,27 @@
+.. _dir_include_lupnt_core:
+
+
+Directory core
+==============
+
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt>` (``include/lupnt``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+*Directory path:* ``include/lupnt/core``
+
+
+Files
+-----
+
+- :ref:`file_include_lupnt_core_constants.h`
+- :ref:`file_include_lupnt_core_event.h`
+- :ref:`file_include_lupnt_core_file.h`
+- :ref:`file_include_lupnt_core_plot.h`
+- :ref:`file_include_lupnt_core_progress_bar.h`
+- :ref:`file_include_lupnt_core_scheduler.h`
+- :ref:`file_include_lupnt_core_user_file_path.h`
+
+

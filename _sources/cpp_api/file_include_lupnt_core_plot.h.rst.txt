@@ -1,0 +1,59 @@
+
+.. _file_include_lupnt_core_plot.h:
+
+File plot.h
+===========
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_core>` (``include/lupnt/core``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/core/plot.h``)
+------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_core_plot.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``matplot/matplot.h``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_plot_8h_1a24f754748855570fbd0effba92507c91`
+
+- :ref:`exhale_function_plot_8h_1afe2decfb6d4714bd2f0f6ef97d5c9b05`
+
+- :ref:`exhale_function_plot_8h_1a3d79a39ce1bf61cc827266bb0c6f412c`
+

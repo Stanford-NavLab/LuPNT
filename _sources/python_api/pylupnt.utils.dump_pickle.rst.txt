@@ -1,0 +1,6 @@
+pylupnt.utils.dump_pickle
+-------------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autofunction:: dump_pickle

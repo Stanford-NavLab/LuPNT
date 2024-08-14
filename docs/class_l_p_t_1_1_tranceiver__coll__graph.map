@@ -1,9 +1,0 @@
-<map id="LPT::Tranceiver" name="LPT::Tranceiver">
-<area shape="rect" id="Node000001" title=" " alt="" coords="178,234,282,339"/>
-<area shape="rect" id="Node000002" href="$class_l_p_t_1_1_i_comm_device.html" title=" " alt="" coords="5,35,132,141"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="122,150,190,232,186,235,118,153"/>
-<area shape="rect" id="Node000003" href="$struct_l_p_t_1_1_transmitter_param.html" title=" " alt="" coords="157,55,303,121"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="233,120,233,217,227,217,227,120"/>
-<area shape="rect" id="Node000004" href="$struct_l_p_t_1_1_receiver_param.html" title=" " alt="" coords="327,5,461,171"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="342,172,311,211,296,228,292,224,307,208,338,169"/>
-</map>

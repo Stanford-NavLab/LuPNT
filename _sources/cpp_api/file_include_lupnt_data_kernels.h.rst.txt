@@ -1,0 +1,82 @@
+
+.. _file_include_lupnt_data_kernels.h:
+
+File kernels.h
+==============
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_data>` (``include/lupnt/data``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/data/kernels.h``)
+---------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_data_kernels.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``cassert``
+
+- ``fstream``
+
+- ``iostream``
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``lupnt/physics/spice_interface.h`` (:ref:`file_include_lupnt_physics_spice_interface.h`)
+
+- ``lupnt/physics/time_converter.h`` (:ref:`file_include_lupnt_physics_time_converter.h`)
+
+- ``sstream``
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+- ``unordered_map``
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_kernels_8h_1a5be7073e5d06acb32c05c60cc7a84b59`
+
+- :ref:`exhale_function_kernels_8h_1af5961eb29dccb457c63ed3e5f79a1acb`
+
+- :ref:`exhale_function_kernels_8h_1a8c7f75f688c1db0f7e635645cf0b8290`
+
+
+Defines
+-------
+
+
+- :ref:`exhale_define_kernels_8h_1a79bd2810e131df6189e69ed5662911d1`
+

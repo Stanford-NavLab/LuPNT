@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a31dde03b6efafdf5640623ff70cf9bdf:
+
+Template Function lupnt::unpack
+===============================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::unpack(const Eigen::Matrix<T, Size, 1>&)
+   :project: LuPNT_CPP

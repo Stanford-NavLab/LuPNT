@@ -1,0 +1,14 @@
+.. _exhale_typedef_constants_8h_1ae18ee92c85ae791c222cb1d2979daa85:
+
+Typedef lupnt::Mat10d
+=====================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::Mat10d
+   :project: LuPNT_CPP

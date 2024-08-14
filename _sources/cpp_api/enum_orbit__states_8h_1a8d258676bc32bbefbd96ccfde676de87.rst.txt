@@ -1,0 +1,14 @@
+.. _exhale_enum_orbit__states_8h_1a8d258676bc32bbefbd96ccfde676de87:
+
+Enum OrbitStateRepres
+=====================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_orbit_states.h`
+
+
+Enum Documentation
+------------------
+
+
+.. doxygenenum:: lupnt::OrbitStateRepres
+   :project: LuPNT_CPP

@@ -1,0 +1,9 @@
+pylupnt.EquinoctialOE
+---------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: EquinoctialOE
+    :members:
+    :undoc-members:
+    :inherited-members:

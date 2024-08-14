@@ -1,0 +1,14 @@
+.. _exhale_function_cheby_8h_1a4dcd21ee5d86c69388b7393202d31041:
+
+Function lupnt::cheby_eval
+==========================
+
+- Defined in :ref:`file_include_lupnt_physics_cheby.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::cheby_eval(double, double *, double *, long, double *, double *)
+   :project: LuPNT_CPP

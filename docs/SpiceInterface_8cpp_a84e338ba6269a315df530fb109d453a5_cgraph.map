@@ -1,6 +1,0 @@
-<map id="LPT::SpiceInterface::TAItoStringUTC" name="LPT::SpiceInterface::TAItoStringUTC">
-<area shape="rect" id="node1" title="Convert TAI to string UTC." alt="" coords="5,88,151,129"/>
-<area shape="rect" id="node2" href="$SpiceInterface_8cpp.html#af325f617b7e3d6a65c37b6ca4dfd52b3" title="Convert time from one time system to another." alt="" coords="199,29,344,71"/>
-<area shape="rect" id="node3" href="$SpiceInterface_8cpp.html#a37ef193d9d9c280ca90a4dcfc6c42002" title="load the Spice kernels" alt="" coords="392,88,537,129"/>
-<area shape="rect" id="node4" href="$SpiceInterface_8cpp.html#ac8cf7eb28832a7be8ba1834844c74247" title="Convert string to UTC." alt="" coords="199,171,344,212"/>
-</map>

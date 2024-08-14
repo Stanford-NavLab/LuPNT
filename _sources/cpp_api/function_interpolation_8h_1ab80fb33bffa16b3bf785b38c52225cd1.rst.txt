@@ -1,0 +1,14 @@
+.. _exhale_function_interpolation_8h_1ab80fb33bffa16b3bf785b38c52225cd1:
+
+Function lupnt::LinearInterp2d
+==============================
+
+- Defined in :ref:`file_include_lupnt_numerics_interpolation.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::LinearInterp2d(const VecXd&, const VecXd&, const VecXd&, double, double)
+   :project: LuPNT_CPP

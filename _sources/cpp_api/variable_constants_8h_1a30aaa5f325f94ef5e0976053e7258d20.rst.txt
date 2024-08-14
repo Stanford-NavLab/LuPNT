@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a30aaa5f325f94ef5e0976053e7258d20:
+
+Variable lupnt::TimeSys::JD_TDB
+===============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::TimeSys::JD_TDB
+   :project: LuPNT_CPP

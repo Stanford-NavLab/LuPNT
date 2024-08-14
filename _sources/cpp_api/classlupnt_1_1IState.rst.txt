@@ -1,0 +1,27 @@
+.. _exhale_class_classlupnt_1_1IState:
+
+Class IState
+============
+
+- Defined in :ref:`file_include_lupnt_physics_state.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Derived Types
+*************
+
+- ``public lupnt::ClockState`` (:ref:`exhale_class_classlupnt_1_1ClockState`)
+- ``public lupnt::OrbitState`` (:ref:`exhale_class_classlupnt_1_1OrbitState`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::IState
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a3a7b7d102c1f31dddb273f6f1fceefeb:
+
+Variable lupnt::AU
+==================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::AU
+   :project: LuPNT_CPP

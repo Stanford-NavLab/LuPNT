@@ -1,0 +1,14 @@
+.. _exhale_function_solar__system_8h_1a3e6cd24da4a6c79c012b7de32faf71eb:
+
+Function lupnt::PrecessionMatrix
+================================
+
+- Defined in :ref:`file_include_lupnt_physics_solar_system.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::PrecessionMatrix(Real, Real)
+   :project: LuPNT_CPP

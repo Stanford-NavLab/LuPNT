@@ -1,0 +1,14 @@
+.. _exhale_function_frame__converter__spice_8h_1ad6d9d1b1563694c925187c9149e6046a:
+
+Function lupnt::spice::ConvertFrameSpice(VecX, const Mat<-1, 3>&, Frame, Frame)
+===============================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_converter_spice.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spice::ConvertFrameSpice(VecX, const Mat<-1, 3>&, Frame, Frame)
+   :project: LuPNT_CPP

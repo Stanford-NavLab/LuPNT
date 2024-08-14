@@ -1,0 +1,14 @@
+.. _exhale_function_anomaly_8h_1ae84bc89b183068bc6e8baea20c9e8bf3:
+
+Function lupnt::Mean2TrueAnomaly
+================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_anomaly.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Mean2TrueAnomaly(Real, Real)
+   :project: LuPNT_CPP

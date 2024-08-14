@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a462008840618d78c318fff4ff6b0e4fa:
+
+Template Function lupnt::unpackImpl
+===================================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::unpackImpl(const Vec&, std::index_sequence<Indices...>)
+   :project: LuPNT_CPP

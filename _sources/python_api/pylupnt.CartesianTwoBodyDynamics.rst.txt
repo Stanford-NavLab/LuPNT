@@ -1,0 +1,9 @@
+pylupnt.CartesianTwoBodyDynamics
+--------------------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: CartesianTwoBodyDynamics
+    :members:
+    :undoc-members:
+    :inherited-members:

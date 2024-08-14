@@ -1,0 +1,14 @@
+.. _exhale_define_event_8h_1a12c2040f25d8e3a7b9e1c2024c618cb6:
+
+Define INF
+==========
+
+- Defined in :ref:`file_include_lupnt_core_event.h`
+
+
+Define Documentation
+--------------------
+
+
+.. doxygendefine:: INF
+   :project: LuPNT_CPP

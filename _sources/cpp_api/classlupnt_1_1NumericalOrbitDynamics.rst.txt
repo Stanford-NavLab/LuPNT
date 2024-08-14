@@ -1,0 +1,37 @@
+.. _exhale_class_classlupnt_1_1NumericalOrbitDynamics:
+
+Class NumericalOrbitDynamics
+============================
+
+- Defined in :ref:`file_include_lupnt_dynamics_dynamics.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Base Type
+*********
+
+- ``public lupnt::NumericalDynamics`` (:ref:`exhale_class_classlupnt_1_1NumericalDynamics`)
+
+
+Derived Types
+*************
+
+- ``public lupnt::CartesianTwoBodyDynamics`` (:ref:`exhale_class_classlupnt_1_1CartesianTwoBodyDynamics`)
+- ``public lupnt::J2CartTwoBodyDynamics`` (:ref:`exhale_class_classlupnt_1_1J2CartTwoBodyDynamics`)
+- ``public lupnt::J2KeplerianDynamics`` (:ref:`exhale_class_classlupnt_1_1J2KeplerianDynamics`)
+- ``public lupnt::MoonFixedDynamics`` (:ref:`exhale_class_classlupnt_1_1MoonFixedDynamics`)
+- ``public lupnt::MoonMeanDynamics`` (:ref:`exhale_class_classlupnt_1_1MoonMeanDynamics`)
+- ``public lupnt::NBodyDynamics`` (:ref:`exhale_class_classlupnt_1_1NBodyDynamics`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::NumericalOrbitDynamics
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

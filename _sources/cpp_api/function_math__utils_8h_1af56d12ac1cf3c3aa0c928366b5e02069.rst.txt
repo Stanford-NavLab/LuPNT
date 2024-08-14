@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1af56d12ac1cf3c3aa0c928366b5e02069:
+
+Template Function lupnt::RotY
+=============================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RotY(T)
+   :project: LuPNT_CPP

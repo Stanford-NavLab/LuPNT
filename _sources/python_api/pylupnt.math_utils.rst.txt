@@ -1,0 +1,24 @@
+pylupnt.math_utils
+------------------
+
+.. currentmodule:: pylupnt.math_utils
+
+**Functions**
+
+.. autosummary::
+
+    arr_to_mat_idx
+    cross_norm
+    i_to_arr_idxs
+    mat_to_arr_idx
+    wrap2Pi
+
+
+.. toctree::
+    :hidden:
+
+    arr_to_mat_idx <pylupnt.math_utils.arr_to_mat_idx>
+    cross_norm <pylupnt.math_utils.cross_norm>
+    i_to_arr_idxs <pylupnt.math_utils.i_to_arr_idxs>
+    mat_to_arr_idx <pylupnt.math_utils.mat_to_arr_idx>
+    wrap2Pi <pylupnt.math_utils.wrap2Pi>

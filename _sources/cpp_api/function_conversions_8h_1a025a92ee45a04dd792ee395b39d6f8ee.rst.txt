@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1a025a92ee45a04dd792ee395b39d6f8ee:
+
+Function lupnt::VEC_DEF_VECTOR_VECTOR(Inertial2Synodic, 6)
+==========================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::VEC_DEF_VECTOR_VECTOR(Inertial2Synodic, 6)
+   :project: LuPNT_CPP

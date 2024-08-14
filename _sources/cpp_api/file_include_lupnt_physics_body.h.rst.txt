@@ -1,0 +1,70 @@
+
+.. _file_include_lupnt_physics_body.h:
+
+File body.h
+===========
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/physics/body.h``)
+---------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_body.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``lupnt/physics/frame_converter.h`` (:ref:`file_include_lupnt_physics_frame_converter.h`)
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_dynamics_dynamics.h`
+
+- :ref:`file_include_lupnt_dynamics_forces.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_struct_structlupnt_1_1Body`
+
+- :ref:`exhale_struct_structlupnt_1_1GravityField`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_body_8h_1ada1f1ab052ab733ca9195098a9045b5c`
+

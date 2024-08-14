@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1ad06a4e805685f3e625251b8e2e4f5c5a:
+
+Variable lupnt::D_MOON_EMB
+==========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::D_MOON_EMB
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1a19b06a831b6eb0137a42474f3f892193:
+
+Function lupnt::VEC_DEF_VECTOR_REAL(Classical2Delaunay, 6)
+==========================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::VEC_DEF_VECTOR_REAL(Classical2Delaunay, 6)
+   :project: LuPNT_CPP

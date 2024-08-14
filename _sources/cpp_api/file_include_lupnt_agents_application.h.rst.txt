@@ -1,0 +1,78 @@
+
+.. _file_include_lupnt_agents_application.h:
+
+File application.h
+==================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_agents>` (``include/lupnt/agents``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+Base class for Application. 
+
+
+Definition (``include/lupnt/agents/application.h``)
+---------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_agents_application.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAVLab 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``memory``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_agents_state_estimation_app.h`
+
+- :ref:`file_include_lupnt_agents_state_estimation_app_gnss.h`
+
+- :ref:`file_include_lupnt_core_scheduler.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1Application`
+

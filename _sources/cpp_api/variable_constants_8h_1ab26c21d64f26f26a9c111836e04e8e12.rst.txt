@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1ab26c21d64f26f26a9c111836e04e8e12:
+
+Variable lupnt::DAYS_WEEK
+=========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::DAYS_WEEK
+   :project: LuPNT_CPP

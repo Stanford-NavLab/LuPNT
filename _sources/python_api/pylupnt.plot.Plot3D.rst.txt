@@ -1,0 +1,9 @@
+pylupnt.plot.Plot3D
+-------------------
+
+.. currentmodule:: pylupnt.plot
+
+.. autoclass:: Plot3D
+    :members:
+    :undoc-members:
+    :inherited-members:

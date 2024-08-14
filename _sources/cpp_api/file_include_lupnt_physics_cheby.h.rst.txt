@@ -1,0 +1,92 @@
+
+.. _file_include_lupnt_physics_cheby.h:
+
+File cheby.h
+============
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/physics/cheby.h``)
+----------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_cheby.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``cspice/SpiceUsr.h``
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``math.h``
+
+- ``stdarg.h``
+
+- ``stdio.h``
+
+- ``stdlib.h``
+
+- ``string.h``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_physics_frame_converter.h`
+
+- :ref:`file_include_lupnt_physics_frame_converter_spice.h`
+
+- :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_struct_structlupnt_1_1segment__t`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_cheby_8h_1a4dcd21ee5d86c69388b7393202d31041`
+
+- :ref:`exhale_function_cheby_8h_1af29c85676c1a3bbfabe5262101c6b0cd`
+
+- :ref:`exhale_function_cheby_8h_1a4e1afd43c1d8ca7bd3b9ac8ecc7a8026`
+
+- :ref:`exhale_function_cheby_8h_1ae826d17333b8165c8d8838a9abacd298`
+
+- :ref:`exhale_function_cheby_8h_1a4c99ce396b53a4a85f87759d2a437b70`
+
+- :ref:`exhale_function_cheby_8h_1a0b2f33728e0b427d61e16ed8fe60c355`
+
+- :ref:`exhale_function_cheby_8h_1a91d6c9f4d156e1a7fb4d66e74317989b`
+
+- :ref:`exhale_function_cheby_8h_1a249e1fcbe09db04864b964b85bb4a319`
+

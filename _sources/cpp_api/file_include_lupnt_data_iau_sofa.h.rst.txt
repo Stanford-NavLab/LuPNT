@@ -1,0 +1,70 @@
+
+.. _file_include_lupnt_data_iau_sofa.h:
+
+File iau_sofa.h
+===============
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_data>` (``include/lupnt/data``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/data/iau_sofa.h``)
+----------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_data_iau_sofa.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``memory``
+
+- ``mutex``
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_struct_structlupnt_1_1IauSofaData`
+
+- :ref:`exhale_struct_structlupnt_1_1IauSofaFileData`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_iau__sofa_8h_1aa2a08bf3b505ab9934bcdeaf4a104028`
+
+- :ref:`exhale_function_iau__sofa_8h_1a732a5bdabc23be3a691d324850ffa6b6`
+

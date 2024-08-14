@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1aaeb087daea8c39d3334d161aa1a42d8e:
+
+Function lupnt::VEC_DEF_VECTOR_REAL(Classical2QuasiNonsing, 6)
+==============================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::VEC_DEF_VECTOR_REAL(Classical2QuasiNonsing, 6)
+   :project: LuPNT_CPP

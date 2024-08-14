@@ -1,0 +1,14 @@
+.. _exhale_function_mean__osculating_8h_1a7d6c6a3529a60c0bb65b4d058426d745:
+
+Function lupnt::Mean2Osculating(const ClassicalOE&, Real)
+=========================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_mean_osculating.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Mean2Osculating(const ClassicalOE&, Real)
+   :project: LuPNT_CPP

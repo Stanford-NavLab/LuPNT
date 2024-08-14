@@ -1,0 +1,25 @@
+
+.. _program_listing_file_include_lupnt_numerics_string_utils.h:
+
+Program Listing for File string_utils.h
+=======================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_numerics_string_utils.h>` (``include/lupnt/numerics/string_utils.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   
+   #pragma once
+   
+   #include <filesystem>
+   #include <string>
+   #include <vector>
+   
+   namespace lupnt {
+   
+     std::vector<std::string> SplitString(const std::string& str, char separator);
+     std::vector<std::vector<std::string>> ReadCSV(std::filesystem::path fname);
+   
+   }  // namespace lupnt

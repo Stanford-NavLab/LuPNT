@@ -1,0 +1,14 @@
+.. _exhale_function_anomaly_8h_1ae817f4150aa0955c874d52d5e064da6e:
+
+Function lupnt::VEC_DEF_REAL_REAL(Ecc2TrueAnomaly)
+==================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_anomaly.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::VEC_DEF_REAL_REAL(Ecc2TrueAnomaly)
+   :project: LuPNT_CPP

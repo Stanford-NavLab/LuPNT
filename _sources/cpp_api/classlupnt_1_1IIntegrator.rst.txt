@@ -1,0 +1,28 @@
+.. _exhale_class_classlupnt_1_1IIntegrator:
+
+Class IIntegrator
+=================
+
+- Defined in :ref:`file_include_lupnt_numerics_integrator.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Derived Types
+*************
+
+- ``public lupnt::IRKF`` (:ref:`exhale_class_classlupnt_1_1IRKF`)
+- ``public lupnt::RK4`` (:ref:`exhale_class_classlupnt_1_1RK4`)
+- ``public lupnt::RK8`` (:ref:`exhale_class_classlupnt_1_1RK8`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::IIntegrator
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

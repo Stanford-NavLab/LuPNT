@@ -1,0 +1,26 @@
+
+.. _program_listing_file_include_lupnt_tmp.h:
+
+Program Listing for File tmp.h
+==============================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_tmp.h>` (``include/lupnt/tmp.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <numeric>
+   #include <vector>
+   
+   namespace lupnt {
+   
+     template <typename T> std::vector<T> make_vector(std::size_t size) {
+       std::vector<T> v(size, 0);
+       std::iota(v.begin(), v.end(), 0);
+       return v;
+     }
+   
+   }  // namespace lupnt

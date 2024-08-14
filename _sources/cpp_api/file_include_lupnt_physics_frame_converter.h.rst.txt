@@ -1,0 +1,141 @@
+
+.. _file_include_lupnt_physics_frame_converter.h:
+
+File frame_converter.h
+======================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/physics/frame_converter.h``)
+--------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_frame_converter.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``cheby.h`` (:ref:`file_include_lupnt_physics_cheby.h`)
+
+- ``functional``
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``map``
+
+- ``memory``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_agents_agent.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_measurements_gnss_channel.h`
+
+- :ref:`file_include_lupnt_measurements_gnss_measurement.h`
+
+- :ref:`file_include_lupnt_measurements_occultation.h`
+
+- :ref:`file_include_lupnt_measurements_radio_measurement.h`
+
+- :ref:`file_include_lupnt_physics_body.h`
+
+- :ref:`file_include_lupnt_physics_frame_converter_spice.h`
+
+- :ref:`file_include_lupnt_physics_orbit_state_orbit_states.h`
+
+- :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Enums
+-----
+
+
+- :ref:`exhale_enum_frame__converter_8h_1ab3490cfa260b63428dc146a439d2f1b4`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_frame__converter_8h_1ad70bf6df453bf49d860ef4642775cf44`
+
+- :ref:`exhale_function_frame__converter_8h_1ad05fee70fcd7ac3bb4ff0fed98df72c5`
+
+- :ref:`exhale_function_frame__converter_8h_1a14bc62981fd9cba0ead46494a17c9661`
+
+- :ref:`exhale_function_frame__converter_8h_1ad808775284f932ee2f82277ee1e49605`
+
+- :ref:`exhale_function_frame__converter_8h_1ad3e830757ab3cf013b33740f88f64150`
+
+- :ref:`exhale_function_frame__converter_8h_1af2111e8357bf7c940e0030f2de64dc57`
+
+- :ref:`exhale_function_frame__converter_8h_1af09a11b6110b6dabdf0ab6c2efd1241a`
+
+- :ref:`exhale_function_frame__converter_8h_1a91d26703ff71af98bc13d8892cb7f03b`
+
+- :ref:`exhale_function_frame__converter_8h_1a9b5dacb2a5c3df88dfdd965d33aa9761`
+
+- :ref:`exhale_function_frame__converter_8h_1a6d18ed8abb818a626fa6b4eaf9e14eed`
+
+- :ref:`exhale_function_frame__converter_8h_1abc39e644b0eb1815708fc3a2ef7d1d21`
+
+- :ref:`exhale_function_frame__converter_8h_1ae8b7a3c3bb4b7a0ffcb4317dd4423dfb`
+
+- :ref:`exhale_function_frame__converter_8h_1a4cae011bdc7c79b50f1b6c052310c0b4`
+
+- :ref:`exhale_function_frame__converter_8h_1a822f4794c0095df7bbd3488be4be7ef6`
+
+- :ref:`exhale_function_frame__converter_8h_1a61082bd91d9b9b15231612adb75486a3`
+
+- :ref:`exhale_function_frame__converter_8h_1a526a14f7cf1412f75f734367669ce67b`
+
+- :ref:`exhale_function_frame__converter_8h_1a0e904821818b44928e7a9bcfb446f73c`
+
+- :ref:`exhale_function_frame__converter_8h_1a2d6663f0dc7b00ec0c470d9e88e807bb`
+
+- :ref:`exhale_function_frame__converter_8h_1a71d79fb0a07f6cde82821b8805ecd095`
+
+- :ref:`exhale_function_frame__converter_8h_1a417659824dc305c02c2d9d4ffa68517b`
+
+- :ref:`exhale_function_frame__converter_8h_1af99e39bd2421160aa127b65d31243cb4`
+
+- :ref:`exhale_function_frame__converter_8h_1a2e4d517bb313e051a51076a397c837a2`
+
+- :ref:`exhale_function_frame__converter_8h_1a8a43b0ccca750d20602209d520bea270`
+
+- :ref:`exhale_function_frame__converter_8h_1ab67835c854c38a9d53db9f6d36b5d4ee`
+
+- :ref:`exhale_function_frame__converter_8h_1ad7f62279335e72b8f3b8a8e70196c87a`
+
+
+Variables
+---------
+
+
+- :ref:`exhale_variable_frame__converter_8h_1a9ad9b18067388bb3573d5e025349a722`
+

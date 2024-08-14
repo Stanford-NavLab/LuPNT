@@ -1,0 +1,6 @@
+pylupnt.utils.timer_func
+------------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autofunction:: timer_func

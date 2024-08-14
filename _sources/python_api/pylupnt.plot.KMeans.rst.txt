@@ -1,0 +1,9 @@
+pylupnt.plot.KMeans
+-------------------
+
+.. currentmodule:: pylupnt.plot
+
+.. autoclass:: KMeans
+    :members:
+    :undoc-members:
+    :inherited-members:

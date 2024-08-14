@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1a3b38796badfee29ca606d276d03a4409:
+
+Function lupnt::VEC_DEF_VECTOR_VECTOR(Synodic2Intertial, 6)
+===========================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::VEC_DEF_VECTOR_VECTOR(Synodic2Intertial, 6)
+   :project: LuPNT_CPP

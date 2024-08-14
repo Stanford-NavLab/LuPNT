@@ -1,7 +1,0 @@
-<map id="LPT::Transmitter" name="LPT::Transmitter">
-<area shape="rect" id="Node000001" title=" " alt="" coords="94,174,203,279"/>
-<area shape="rect" id="Node000002" href="$class_l_p_t_1_1_i_comm_device.html" title=" " alt="" coords="5,5,132,111"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="102,122,126,173,122,175,97,125"/>
-<area shape="rect" id="Node000003" href="$struct_l_p_t_1_1_transmitter_param.html" title=" " alt="" coords="157,25,303,91"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="217,92,184,160,179,157,212,89"/>
-</map>

@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1ac17d96f32416fe80de50c3136f926cf7:
+
+Function lupnt::VEC_DEF_VECTOR_VECTOR(RelQuasiNonsing2Classical, 6)
+===================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::VEC_DEF_VECTOR_VECTOR(RelQuasiNonsing2Classical, 6)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1ad1c3f7b22c7688dd88b1ee54c20dba19:
+
+Function lupnt::AngleBetweenVecs
+================================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::AngleBetweenVecs(const VecX&, const VecX&)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_forces_8h_1a05955f36422e8352bf58e2ee9afd3641:
+
+Function lupnt::AccelerationSolarRadiation
+==========================================
+
+- Defined in :ref:`file_include_lupnt_dynamics_forces.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::AccelerationSolarRadiation(const Vec3&, const Vec3&, Real, Real, Real, Real, Real)
+   :project: LuPNT_CPP

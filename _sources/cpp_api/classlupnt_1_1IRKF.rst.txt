@@ -1,0 +1,32 @@
+.. _exhale_class_classlupnt_1_1IRKF:
+
+Class IRKF
+==========
+
+- Defined in :ref:`file_include_lupnt_numerics_integrator.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Base Type
+*********
+
+- ``public lupnt::IIntegrator`` (:ref:`exhale_class_classlupnt_1_1IIntegrator`)
+
+
+Derived Type
+************
+
+- ``public lupnt::RKF45`` (:ref:`exhale_class_classlupnt_1_1RKF45`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::IRKF
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

@@ -1,0 +1,14 @@
+.. _exhale_function_iau__sofa_8h_1aa2a08bf3b505ab9934bcdeaf4a104028:
+
+Function lupnt::GetIauSofaData
+==============================
+
+- Defined in :ref:`file_include_lupnt_data_iau_sofa.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetIauSofaData(Real)
+   :project: LuPNT_CPP

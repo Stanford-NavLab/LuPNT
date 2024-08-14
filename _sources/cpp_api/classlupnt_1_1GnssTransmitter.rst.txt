@@ -1,0 +1,26 @@
+.. _exhale_class_classlupnt_1_1GnssTransmitter:
+
+Class GnssTransmitter
+=====================
+
+- Defined in :ref:`file_include_lupnt_measurements_gnss_transmitter.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Base Type
+*********
+
+- ``public lupnt::Transmitter`` (:ref:`exhale_class_classlupnt_1_1Transmitter`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::GnssTransmitter
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

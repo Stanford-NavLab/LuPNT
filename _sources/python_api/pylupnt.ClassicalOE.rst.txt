@@ -1,0 +1,9 @@
+pylupnt.ClassicalOE
+-------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: ClassicalOE
+    :members:
+    :undoc-members:
+    :inherited-members:

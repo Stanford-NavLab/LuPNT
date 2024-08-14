@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a6349fc722076c37eca972f6ec6d83422:
+
+Variable lupnt::MINS_DAY
+========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::MINS_DAY
+   :project: LuPNT_CPP

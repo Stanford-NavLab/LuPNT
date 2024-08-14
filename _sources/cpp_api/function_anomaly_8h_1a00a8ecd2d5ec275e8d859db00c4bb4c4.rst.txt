@@ -1,0 +1,14 @@
+.. _exhale_function_anomaly_8h_1a00a8ecd2d5ec275e8d859db00c4bb4c4:
+
+Function lupnt::True2EccAnomaly
+===============================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_anomaly.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::True2EccAnomaly(Real, Real)
+   :project: LuPNT_CPP

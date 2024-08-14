@@ -1,0 +1,119 @@
+
+.. _file_include_lupnt_physics_spice_interface.h:
+
+File spice_interface.h
+======================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+SPICE Interface functions. 
+
+
+Definition (``include/lupnt/physics/spice_interface.h``)
+--------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_spice_interface.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``lupnt/physics/cheby.h`` (:ref:`file_include_lupnt_physics_cheby.h`)
+
+- ``lupnt/physics/frame_converter.h`` (:ref:`file_include_lupnt_physics_frame_converter.h`)
+
+- ``map``
+
+- ``string.h``
+
+- ``tuple``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_data_kernels.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+- :ref:`namespace_lupnt__spice`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_spice__interface_8h_1a150f4943faf7783cb2624eff36ba454b`
+
+- :ref:`exhale_function_spice__interface_8h_1abacbf5610689a721d22bb5ab268ddd26`
+
+- :ref:`exhale_function_spice__interface_8h_1a798bd4605b4d53e2abe2b695219c57b8`
+
+- :ref:`exhale_function_spice__interface_8h_1ab68b3f0ecd8894649542c0c1408c4ba6`
+
+- :ref:`exhale_function_spice__interface_8h_1a0dbcc46a13ccefbe04bb494636490b9a`
+
+- :ref:`exhale_function_spice__interface_8h_1a4c13ad0de6a31225ac60ec63269a2bba`
+
+- :ref:`exhale_function_spice__interface_8h_1a0b84cbf0d439aee2f59a21238ca8d399`
+
+- :ref:`exhale_function_spice__interface_8h_1a8f89d476193983dd04654519ee132196`
+
+- :ref:`exhale_function_spice__interface_8h_1af9fc696883489cd19ae8a3115a061868`
+
+- :ref:`exhale_function_spice__interface_8h_1abf22c4e45d4a2c745bde9293142d351c`
+
+- :ref:`exhale_function_spice__interface_8h_1aa72bf1191d174b068311016fcbd3b661`
+
+- :ref:`exhale_function_spice__interface_8h_1a7b173c9636c3484c500574c5eb498761`
+
+
+Variables
+---------
+
+
+- :ref:`exhale_variable_spice__interface_8h_1a3acec19d6130d137a0a48d5c7025ea49`
+
+- :ref:`exhale_variable_spice__interface_8h_1a6f2665fa8690dbc7eb69633e6e8c779c`
+
+- :ref:`exhale_variable_spice__interface_8h_1aba22487f4588c09c906b98174268b4d7`
+

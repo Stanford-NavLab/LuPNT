@@ -1,0 +1,6 @@
+pylupnt.utils.print_aligned
+---------------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autofunction:: print_aligned

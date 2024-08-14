@@ -1,0 +1,84 @@
+
+.. _file_include_lupnt_numerics_vector_macros.h:
+
+File vector_macros.h
+====================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_numerics>` (``include/lupnt/numerics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/numerics/vector_macros.h``)
+-------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_numerics_vector_macros.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``functional``
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``map``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_physics_coordinates.h`
+
+- :ref:`file_include_lupnt_physics_orbit_state_anomaly.h`
+
+- :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+- :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+
+
+Defines
+-------
+
+
+- :ref:`exhale_define_vector__macros_8h_1ad56875614e31dba281543e5130f19d6f`
+
+- :ref:`exhale_define_vector__macros_8h_1aeee1c1802f9e1abc0d8cb0e37b0928a6`
+
+- :ref:`exhale_define_vector__macros_8h_1aaa0bfc555588c1a17972a89b41e4877d`
+
+- :ref:`exhale_define_vector__macros_8h_1a691e9bc25622e3f0afe060dc4c9a9de6`
+
+- :ref:`exhale_define_vector__macros_8h_1acbf1c07fbdbf5604594e506a278475ef`
+
+- :ref:`exhale_define_vector__macros_8h_1a794566dffa2cd23ae0da85e1108d96c0`
+
+- :ref:`exhale_define_vector__macros_8h_1a18b1c21ac2084a3ee8d0d7d7c335e032`
+
+- :ref:`exhale_define_vector__macros_8h_1a6045e34bef9f4c6bbb4465b6420f5f16`
+
+- :ref:`exhale_define_vector__macros_8h_1ad07470cf8e1280ba0aee17ae7927b88d`
+
+- :ref:`exhale_define_vector__macros_8h_1ae1f9057548f69a3bfc75f77912cd8d4c`
+
+- :ref:`exhale_define_vector__macros_8h_1aa5d45c3f0d601b10848b1828f0076f23`
+
+- :ref:`exhale_define_vector__macros_8h_1a61fc40a4f8bd5f56da99b2308fa5e3d2`
+
+- :ref:`exhale_define_vector__macros_8h_1a3c616c6fd27bbf5b86d01b2b514bcd48`
+
+- :ref:`exhale_define_vector__macros_8h_1a432b1bd09c898ccd25c883f56bdef7dd`
+

@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a8385104e23fa49ada93d7eeb949c80b0:
+
+Function lupnt::Wrap2Pi(VecX)
+=============================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Wrap2Pi(VecX)
+   :project: LuPNT_CPP

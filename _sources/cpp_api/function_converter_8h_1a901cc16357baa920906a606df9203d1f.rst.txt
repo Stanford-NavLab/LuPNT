@@ -1,0 +1,14 @@
+.. _exhale_function_converter_8h_1a901cc16357baa920906a606df9203d1f:
+
+Function lupnt::ConvertOrbitState(const Vec6&, OrbitStateRepres, OrbitStateRepres, Real)
+========================================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ConvertOrbitState(const Vec6&, OrbitStateRepres, OrbitStateRepres, Real)
+   :project: LuPNT_CPP

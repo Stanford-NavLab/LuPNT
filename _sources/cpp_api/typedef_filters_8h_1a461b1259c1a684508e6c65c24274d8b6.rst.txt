@@ -1,0 +1,14 @@
+.. _exhale_typedef_filters_8h_1a461b1259c1a684508e6c65c24274d8b6:
+
+Typedef lupnt::FilterDynamicsFunction
+=====================================
+
+- Defined in :ref:`file_include_lupnt_numerics_filters.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::FilterDynamicsFunction
+   :project: LuPNT_CPP

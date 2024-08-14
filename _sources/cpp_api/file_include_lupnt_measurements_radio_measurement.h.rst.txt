@@ -1,0 +1,57 @@
+
+.. _file_include_lupnt_measurements_radio_measurement.h:
+
+File radio_measurement.h
+========================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_measurements>` (``include/lupnt/measurements``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/measurements/radio_measurement.h``)
+---------------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_measurements_radio_measurement.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/numerics/math_utils.h`` (:ref:`file_include_lupnt_numerics_math_utils.h`)
+
+- ``lupnt/physics/frame_converter.h`` (:ref:`file_include_lupnt_physics_frame_converter.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_measurements_intersatellite_link.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1RadioMeasurement`
+

@@ -1,0 +1,32 @@
+.. _exhale_class_classlupnt_1_1Transmitter:
+
+Class Transmitter
+=================
+
+- Defined in :ref:`file_include_lupnt_agents_comm_device.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Base Type
+*********
+
+- ``public lupnt::ICommDevice`` (:ref:`exhale_class_classlupnt_1_1ICommDevice`)
+
+
+Derived Type
+************
+
+- ``public lupnt::GnssTransmitter`` (:ref:`exhale_class_classlupnt_1_1GnssTransmitter`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::Transmitter
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

@@ -1,0 +1,6 @@
+pylupnt.true2eccentric_anomaly
+------------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: true2eccentric_anomaly

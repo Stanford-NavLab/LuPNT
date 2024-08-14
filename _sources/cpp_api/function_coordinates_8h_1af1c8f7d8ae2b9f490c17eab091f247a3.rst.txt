@@ -1,0 +1,14 @@
+.. _exhale_function_coordinates_8h_1af1c8f7d8ae2b9f490c17eab091f247a3:
+
+Function lupnt::VEC_DEF_VECTOR_REAL_REAL
+========================================
+
+- Defined in :ref:`file_include_lupnt_physics_coordinates.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::VEC_DEF_VECTOR_REAL_REAL(LatLonAlt2Cart, 3)
+   :project: LuPNT_CPP

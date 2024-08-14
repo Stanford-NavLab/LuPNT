@@ -1,0 +1,14 @@
+.. _exhale_variable_time__converter_8h_1a13ddec25fae916b3b68a15f55bf783f5:
+
+Variable lupnt::time_conversions
+================================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::time_conversions
+   :project: LuPNT_CPP

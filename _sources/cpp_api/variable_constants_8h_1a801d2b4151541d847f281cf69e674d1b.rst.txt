@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a801d2b4151541d847f281cf69e674d1b:
+
+Variable lupnt::TimeSys::GPS
+============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::TimeSys::GPS
+   :project: LuPNT_CPP

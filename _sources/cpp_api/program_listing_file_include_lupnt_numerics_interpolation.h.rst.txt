@@ -1,0 +1,40 @@
+
+.. _program_listing_file_include_lupnt_numerics_interpolation.h:
+
+Program Listing for File interpolation.h
+========================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_numerics_interpolation.h>` (``include/lupnt/numerics/interpolation.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #include <cassert>
+   #include <iostream>
+   #include <vector>
+   
+   #include "lupnt/core/constants.h"
+   
+   namespace lupnt {
+   
+     double LinearInterp1d(const VecXd& x, const VecXd& data, double ix);
+     double LinearInterp2d(const VecXd& x, const VecXd& y, const VecXd& data, double ix, double iy);
+   
+     class LagrangeInterpolator {
+     public:
+       LagrangeInterpolator(const VecXd& x, double xi, int order);
+       double Interpolate(const VecXd& data);
+   
+     private:
+       VecXd x_;
+       double xi_;
+       int order_;
+       VecXd weights_;
+       int i0_;
+   
+       void ComputeFirstIndex();
+       void ComputeWeights();
+     };
+   
+   }  // namespace lupnt

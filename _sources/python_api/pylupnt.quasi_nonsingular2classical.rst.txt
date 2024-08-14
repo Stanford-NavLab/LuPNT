@@ -1,0 +1,6 @@
+pylupnt.quasi_nonsingular2classical
+-----------------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: quasi_nonsingular2classical

@@ -1,0 +1,14 @@
+.. _exhale_function_cheby_8h_1af29c85676c1a3bbfabe5262101c6b0cd:
+
+Function lupnt::cheby_eval_ad
+=============================
+
+- Defined in :ref:`file_include_lupnt_physics_cheby.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::cheby_eval_ad(Real, double *, double *, long)
+   :project: LuPNT_CPP

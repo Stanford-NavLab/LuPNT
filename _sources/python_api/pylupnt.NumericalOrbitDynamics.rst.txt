@@ -1,0 +1,9 @@
+pylupnt.NumericalOrbitDynamics
+------------------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: NumericalOrbitDynamics
+    :members:
+    :undoc-members:
+    :inherited-members:

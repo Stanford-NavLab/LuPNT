@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a1a5bb64c8d64815d72a81927911c1cac:
+
+Variable lupnt::FRAME_BIAS_DALPHA0
+==================================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::FRAME_BIAS_DALPHA0
+   :project: LuPNT_CPP

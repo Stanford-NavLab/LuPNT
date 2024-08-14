@@ -1,0 +1,79 @@
+
+.. _file_include_lupnt_agents_gnss_constellation.h:
+
+File gnss_constellation.h
+=========================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_agents>` (``include/lupnt/agents``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/agents/gnss_constellation.h``)
+----------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_agents_gnss_constellation.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``agent.h`` (:ref:`file_include_lupnt_agents_agent.h`)
+
+- ``lupnt/dynamics/dynamics.h`` (:ref:`file_include_lupnt_dynamics_dynamics.h`)
+
+- ``lupnt/measurements/gnss_channel.h`` (:ref:`file_include_lupnt_measurements_gnss_channel.h`)
+
+- ``lupnt/measurements/gnss_transmitter.h`` (:ref:`file_include_lupnt_measurements_gnss_transmitter.h`)
+
+- ``lupnt/physics/orbit_state.h`` (:ref:`file_include_lupnt_physics_orbit_state.h`)
+
+- ``memory``
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1GnssConstellation`
+

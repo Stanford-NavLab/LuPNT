@@ -1,0 +1,26 @@
+.. _exhale_class_classlupnt_1_1ClockDynamics:
+
+Class ClockDynamics
+===================
+
+- Defined in :ref:`file_include_lupnt_physics_clock.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Base Type
+*********
+
+- ``public lupnt::IDynamics`` (:ref:`exhale_class_classlupnt_1_1IDynamics`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::ClockDynamics
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

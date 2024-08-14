@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a1b0d8325e2cb30dc49175297de097004:
+
+Variable lupnt::GM_EARTH
+========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::GM_EARTH
+   :project: LuPNT_CPP

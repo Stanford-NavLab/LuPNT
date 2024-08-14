@@ -1,0 +1,14 @@
+.. _exhale_enum_constants_8h_1a1649cc608b11369f5f3e73d79378a82e:
+
+Enum NaifId
+===========
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Enum Documentation
+------------------
+
+
+.. doxygenenum:: lupnt::NaifId
+   :project: LuPNT_CPP

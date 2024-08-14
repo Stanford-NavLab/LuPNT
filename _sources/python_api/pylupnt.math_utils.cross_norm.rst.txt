@@ -1,0 +1,6 @@
+pylupnt.math_utils.cross_norm
+-----------------------------
+
+.. currentmodule:: pylupnt.math_utils
+
+.. autofunction:: cross_norm

@@ -1,0 +1,38 @@
+.. _exhale_class_classlupnt_1_1OrbitState:
+
+Class OrbitState
+================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_orbit_states.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Base Type
+*********
+
+- ``public lupnt::IState`` (:ref:`exhale_class_classlupnt_1_1IState`)
+
+
+Derived Types
+*************
+
+- ``public lupnt::CartesianOrbitState`` (:ref:`exhale_class_classlupnt_1_1CartesianOrbitState`)
+- ``public lupnt::ClassicalOE`` (:ref:`exhale_class_classlupnt_1_1ClassicalOE`)
+- ``public lupnt::DelaunayOE`` (:ref:`exhale_class_classlupnt_1_1DelaunayOE`)
+- ``public lupnt::EquinoctialOE`` (:ref:`exhale_class_classlupnt_1_1EquinoctialOE`)
+- ``public lupnt::QuasiNonsingOE`` (:ref:`exhale_class_classlupnt_1_1QuasiNonsingOE`)
+- ``public lupnt::QuasiNonsingROE`` (:ref:`exhale_class_classlupnt_1_1QuasiNonsingROE`)
+- ``public lupnt::SingularROE`` (:ref:`exhale_class_classlupnt_1_1SingularROE`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::OrbitState
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

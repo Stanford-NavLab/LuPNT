@@ -1,0 +1,82 @@
+
+.. _file_include_lupnt_dynamics_propagator.h:
+
+File propagator.h
+=================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_dynamics>` (``include/lupnt/dynamics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+Numerical Propagator. 
+
+
+Definition (``include/lupnt/dynamics/propagator.h``)
+----------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_dynamics_propagator.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``iostream``
+
+- ``lupnt/numerics/integrator.h`` (:ref:`file_include_lupnt_numerics_integrator.h`)
+
+- ``memory``
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_dynamics_dynamics.h`
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1NumericalPropagator`
+

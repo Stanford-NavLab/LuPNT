@@ -1,0 +1,6 @@
+pylupnt.true2mean_anomaly
+-------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: true2mean_anomaly

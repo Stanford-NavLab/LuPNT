@@ -1,0 +1,9 @@
+pylupnt.render.R
+----------------
+
+.. currentmodule:: pylupnt.render
+
+.. autoclass:: R
+    :members:
+    :undoc-members:
+    :inherited-members:

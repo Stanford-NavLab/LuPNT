@@ -1,0 +1,67 @@
+
+.. _file_include_lupnt_physics_orbit_state_mean_osculating.h:
+
+File mean_osculating.h
+======================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics_orbit_state>` (``include/lupnt/physics/orbit_state``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/physics/orbit_state/mean_osculating.h``)
+--------------------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_orbit_state_mean_osculating.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``orbit_states.h`` (:ref:`file_include_lupnt_physics_orbit_state_orbit_states.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_physics_orbit_state.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_mean__osculating_8h_1add9ea103ade416edee7fd6a1fcd153d2`
+
+- :ref:`exhale_function_mean__osculating_8h_1a41178b416350545546a67da9fe72662d`
+
+- :ref:`exhale_function_mean__osculating_8h_1abc963e3007b67be32d1efc4098c4652d`
+
+- :ref:`exhale_function_mean__osculating_8h_1aef4eaa09653f79a5c3cc08a622d40098`
+
+- :ref:`exhale_function_mean__osculating_8h_1a7d6c6a3529a60c0bb65b4d058426d745`
+
+- :ref:`exhale_function_mean__osculating_8h_1a031ea376c85884f7d2fa5cc878243398`
+
+- :ref:`exhale_function_mean__osculating_8h_1a27b325ce9f156d70eb3028656974542a`
+
+- :ref:`exhale_function_mean__osculating_8h_1a0564a062f02e6332d25cdeb1b0a2e5bb`
+

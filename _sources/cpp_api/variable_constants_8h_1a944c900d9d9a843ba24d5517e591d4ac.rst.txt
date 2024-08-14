@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a944c900d9d9a843ba24d5517e591d4ac:
+
+Variable lupnt::GM_VENUS
+========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::GM_VENUS
+   :project: LuPNT_CPP

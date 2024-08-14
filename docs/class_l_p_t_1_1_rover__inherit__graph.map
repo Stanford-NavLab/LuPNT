@@ -1,5 +1,0 @@
-<map id="LPT::Rover" name="LPT::Rover">
-<area shape="rect" id="Node000001" title="Rover Agent." alt="" coords="81,399,158,464"/>
-<area shape="rect" id="Node000002" href="$class_l_p_t_1_1_agent.html" title="Agent base class." alt="" coords="5,5,233,351"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="122,365,122,399,117,399,117,365"/>
-</map>

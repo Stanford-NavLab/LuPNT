@@ -1,0 +1,17 @@
+.. _exhale_class_classlupnt_1_1JointState:
+
+Class JointState
+================
+
+- Defined in :ref:`file_include_lupnt_agents_state_estimation_app.h`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::JointState
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

@@ -1,0 +1,17 @@
+.. _exhale_struct_structlupnt_1_1ReceiverParam:
+
+Struct ReceiverParam
+====================
+
+- Defined in :ref:`file_include_lupnt_agents_comm_device.h`
+
+
+Struct Documentation
+--------------------
+
+
+.. doxygenstruct:: lupnt::ReceiverParam
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

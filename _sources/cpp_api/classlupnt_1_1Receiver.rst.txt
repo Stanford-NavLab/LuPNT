@@ -1,0 +1,32 @@
+.. _exhale_class_classlupnt_1_1Receiver:
+
+Class Receiver
+==============
+
+- Defined in :ref:`file_include_lupnt_agents_comm_device.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Base Type
+*********
+
+- ``public lupnt::ICommDevice`` (:ref:`exhale_class_classlupnt_1_1ICommDevice`)
+
+
+Derived Type
+************
+
+- ``public lupnt::GnssReceiver`` (:ref:`exhale_class_classlupnt_1_1GnssReceiver`)
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::Receiver
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

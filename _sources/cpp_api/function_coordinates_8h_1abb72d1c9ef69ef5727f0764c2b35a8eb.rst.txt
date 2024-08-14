@@ -1,0 +1,14 @@
+.. _exhale_function_coordinates_8h_1abb72d1c9ef69ef5727f0764c2b35a8eb:
+
+Function lupnt::VEC_DEF_VECTOR_VECTOR(Cart2AzElRange, 3)
+========================================================
+
+- Defined in :ref:`file_include_lupnt_physics_coordinates.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::VEC_DEF_VECTOR_VECTOR(Cart2AzElRange, 3)
+   :project: LuPNT_CPP

@@ -1,0 +1,9 @@
+pylupnt.Body
+------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: Body
+    :members:
+    :undoc-members:
+    :inherited-members:

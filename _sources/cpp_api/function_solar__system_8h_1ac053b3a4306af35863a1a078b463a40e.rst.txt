@@ -1,0 +1,14 @@
+.. _exhale_function_solar__system_8h_1ac053b3a4306af35863a1a078b463a40e:
+
+Function lupnt::RotPosBodyFixedToInertial
+=========================================
+
+- Defined in :ref:`file_include_lupnt_physics_solar_system.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RotPosBodyFixedToInertial(NaifId, Real)
+   :project: LuPNT_CPP

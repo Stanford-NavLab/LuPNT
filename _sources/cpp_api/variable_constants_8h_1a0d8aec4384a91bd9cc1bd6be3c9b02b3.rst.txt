@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a0d8aec4384a91bd9cc1bd6be3c9b02b3:
+
+Variable lupnt::TT_TAI_OFFSET
+=============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::TT_TAI_OFFSET
+   :project: LuPNT_CPP

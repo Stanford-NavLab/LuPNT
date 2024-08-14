@@ -1,0 +1,111 @@
+
+.. _program_listing_file_include_lupnt_numerics_filters.h:
+
+Program Listing for File filters.h
+==================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_numerics_filters.h>` (``include/lupnt/numerics/filters.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   
+   #pragma once
+   
+   #include <Eigen/QR>
+   
+   #include "lupnt/core/constants.h"
+   
+   namespace lupnt {
+   
+     // Dynamics and Measurement Function
+   
+     typedef std::function<VecX(const VecX, Real t_curr, Real t_end, MatXd &)> FilterDynamicsFunction;
+   
+     typedef std::function<VecXd(const VecX, Real t_curr, Real t_end)> FilterProcessNoiseFunction;
+   
+     typedef std::function<VecX(const VecX, MatXd &, MatXd &)> FilterMeasurementFunction;
+   
+     class IFilter {
+     public:
+       virtual ~IFilter() = default;
+       FilterDynamicsFunction dynamics_;
+       FilterProcessNoiseFunction process_noise_;
+       FilterMeasurementFunction measurement_;
+   
+       void SetDynamicsFunction(FilterDynamicsFunction dynamics) { dynamics_ = dynamics; }
+       void SetProcessNoiseFunction(FilterProcessNoiseFunction process_noise) {
+         process_noise_ = process_noise;
+       }
+       void SetMeasurementFunction(FilterMeasurementFunction measurement) {
+         measurement_ = measurement;
+       }
+     };
+   
+     class EKF : public IFilter {
+     public:
+       Real t_curr_;  // Current time
+       VecX x_;       // Updated state
+       VecX xbar_;    // Predicted state
+       VecX dy_;      // Measurement residual
+       VecX dx_;      // State update
+       VecX z_true_;  // Observed measurement
+       VecX z_pred_;  // Predicted measurement
+   
+       MatXd P_;     // Updated state cov
+       MatXd Pbar_;  // Predicted state cov
+       MatXd Q_;     // Process noise cov
+   
+       MatXd H_;  // Measurement matrix
+       MatXd S_;  // Innovation cov
+       MatXd K_;  // Kalman gain
+       MatXd R_;  // Measurement noise cov
+   
+       double outlier_threshold_ = 3.0;
+   
+       EKF() {}
+   
+       EKF(FilterDynamicsFunction dynamics, FilterProcessNoiseFunction process_noise,
+           FilterMeasurementFunction measurement) {
+         dynamics_ = dynamics;
+         process_noise_ = process_noise;
+         measurement_ = measurement;
+       }
+   
+       void Initialize(const VecX &x0, const VecXd &P0) {
+         x_ = x0;
+         P_ = P0;
+       }
+   
+       VecX GetPredictedStateEstimate(VecXd &Pbar) {
+         Pbar = Pbar_;
+         return xbar_;
+       }
+       VecX GetPredictedStateEstimate() { return xbar_; }
+       VecX GetUpdatedStateEstimate(VecXd &Phat) {
+         Phat = P_;
+         return x_;
+       }
+       VecX GetUpdatedStateEstimate() { return x_; }
+       VecX GetMeasurementResidual() { return dy_; }
+       MatX GetKalmanGain() { return K_; }
+       MatX GetMeasurementNoiseCov() { return R_; }
+       MatX GetMeasurementJacobian() { return H_; }
+       int GetMeasurementSize() { return H_.rows(); }
+   
+       void SetOutlierThreshold(double outlier_threshold) {
+         assert(outlier_threshold >= 0 && "Outlier threshold must be positive");
+         outlier_threshold_ = outlier_threshold;
+       }
+   
+       int RemoveOutliers(int m, bool debug = false);
+   
+       void Predict(Real t_end);
+   
+       void Update(VecX z_obs, bool debug = false);
+   
+       void Step(Real t_end, VecX z_obs, bool debug = false);
+     };
+   
+   }  // namespace lupnt

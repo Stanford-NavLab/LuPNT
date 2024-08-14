@@ -1,0 +1,14 @@
+.. _exhale_function_cheby_8h_1a249e1fcbe09db04864b964b85bb4a319:
+
+Function lupnt::spk_free
+========================
+
+- Defined in :ref:`file_include_lupnt_physics_cheby.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spk_free(segment_t *, long)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a78b14fb16ca180073e9fc4901568221e:
+
+Variable lupnt::LBM_TO_KG
+=========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::LBM_TO_KG
+   :project: LuPNT_CPP

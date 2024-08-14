@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1a9f0a66b4258bbcd599ac606870bae980:
+
+Function lupnt::Inertial2Synodic(const CartesianOrbitState&, const CartesianOrbitState&)
+========================================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Inertial2Synodic(const CartesianOrbitState&, const CartesianOrbitState&)
+   :project: LuPNT_CPP

@@ -1,0 +1,17 @@
+.. _exhale_class_classlupnt_1_1GnssMeasurement:
+
+Class GnssMeasurement
+=====================
+
+- Defined in :ref:`file_include_lupnt_measurements_gnss_measurement.h`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::GnssMeasurement
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

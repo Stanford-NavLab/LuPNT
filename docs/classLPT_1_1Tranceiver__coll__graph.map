@@ -1,6 +1,0 @@
-<map id="LPT::Tranceiver" name="LPT::Tranceiver">
-<area shape="rect" id="node1" title=" " alt="" coords="193,219,318,325"/>
-<area shape="rect" id="node2" href="$classLPT_1_1ICommDevice.html" title=" " alt="" coords="5,27,156,134"/>
-<area shape="rect" id="node3" href="$structLPT_1_1ReceiverParam.html" title=" " alt="" coords="180,5,331,156"/>
-<area shape="rect" id="node4" href="$structLPT_1_1TransmitterParam.html" title=" " alt="" coords="355,42,521,119"/>
-</map>

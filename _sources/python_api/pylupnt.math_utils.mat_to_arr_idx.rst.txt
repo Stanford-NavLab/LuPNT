@@ -1,0 +1,6 @@
+pylupnt.math_utils.mat_to_arr_idx
+---------------------------------
+
+.. currentmodule:: pylupnt.math_utils
+
+.. autofunction:: mat_to_arr_idx

@@ -1,0 +1,14 @@
+.. _exhale_function_forces_8h_1a683a4ae386d7efd8032ece31e8869d40:
+
+Function lupnt::AccelerationDrag
+================================
+
+- Defined in :ref:`file_include_lupnt_dynamics_forces.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::AccelerationDrag(Real, const Vec6&, const Mat3&, Real, Real, Real)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_coordinates_8h_1a2797eaf12dcc211c9132cd7bcf20746c:
+
+Function lupnt::EastNorthUp2AzElRange
+=====================================
+
+- Defined in :ref:`file_include_lupnt_physics_coordinates.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::EastNorthUp2AzElRange(const Vec3&)
+   :project: LuPNT_CPP
