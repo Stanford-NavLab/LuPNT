@@ -20,6 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/cache@v3
+        id: cache-cpm-modules
+        with:
+          path: "**/cpm_modules"
+          key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -53,15 +59,8 @@ jobs:
           python -m pip install -r requirements.txt
           python make_docs.py
 
-      - name: Generate GitHub App token
-        uses: actions/create-github-app-token@v1
-        id: token
-        with:
-          app-id: ${{ secrets.WORKFLOW_APP_ID }}
-          private-key: ${{ secrets.WORKFLOW_APP_PRIVATE_KEY }}
-
       - name: Publish
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ steps.token.outputs.token }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/docs

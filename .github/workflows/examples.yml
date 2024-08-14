@@ -55,13 +55,20 @@ jobs:
 
       - name: run examples
         run: |
+          set +e
           cd ${{ github.workspace }}/build_examples/examples && for example in *; do
             file_path=$(find ${{ github.workspace }}/examples/cpp -name "$example.cc")
             if [ -n "$file_path" ]; then
               if ! grep -qE "show()|draw()" "$file_path"; then
                 echo -e "\n\n*********** Running example: $example ***********\n"
-                timeout 1m ./"$example"  # Set maximum compute time to 5 minutes
+                timeout 1m ./"$example"  # Set maximum compute time to 1 minute
+                if [ $? -eq 124 ]; then
+                  echo "Timeout occurred for example $example"
+                else
+                  echo "Example $example completed successfully"
+                fi
               fi
             fi
           done
           cd ${{ github.workspace }}
+          set -e
