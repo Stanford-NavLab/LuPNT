@@ -10,12 +10,6 @@ Functions
 ---------
 
 
-- :ref:`exhale_function_frame__converter__spice_8h_1a06603c06ecbea1535df040e459d61f3b`
-
-- :ref:`exhale_function_frame__converter__spice_8h_1ab734fafd2b020e7d188b69016183e672`
-
-- :ref:`exhale_function_frame__converter__spice_8h_1ae0ffccb9ac062eb7fa293b5dfe97559e`
-
 - :ref:`exhale_function_frame__converter__spice_8h_1a1a55762407088d676279e6d42c0509dd`
 
 - :ref:`exhale_function_frame__converter__spice_8h_1ae1d0623cf7d1e108e554839bea0b5183`
@@ -28,15 +22,21 @@ Functions
 
 - :ref:`exhale_function_frame__converter__spice_8h_1a323ca622f38f2511f76ade5285a406b9`
 
+- :ref:`exhale_function_frame__converter__spice_8h_1ab734fafd2b020e7d188b69016183e672`
+
+- :ref:`exhale_function_frame__converter__spice_8h_1ae0ffccb9ac062eb7fa293b5dfe97559e`
+
+- :ref:`exhale_function_frame__converter__spice_8h_1a06603c06ecbea1535df040e459d61f3b`
+
 - :ref:`exhale_function_spice__interface_8h_1a150f4943faf7783cb2624eff36ba454b`
 
 - :ref:`exhale_function_spice__interface_8h_1abacbf5610689a721d22bb5ab268ddd26`
 
 - :ref:`exhale_function_spice__interface_8h_1a798bd4605b4d53e2abe2b695219c57b8`
 
-- :ref:`exhale_function_spice__interface_8h_1ab68b3f0ecd8894649542c0c1408c4ba6`
-
 - :ref:`exhale_function_spice__interface_8h_1a0dbcc46a13ccefbe04bb494636490b9a`
+
+- :ref:`exhale_function_spice__interface_8h_1ab68b3f0ecd8894649542c0c1408c4ba6`
 
 - :ref:`exhale_function_spice__interface_8h_1a4c13ad0de6a31225ac60ec63269a2bba`
 
