@@ -4,4 +4,4 @@ rm LuPNT_data.zip
 
 export LUPNT_DATA_PATH=$(pwd)/LuPNT_data
 
-pip install -r pyproject.toml
+pip install .
