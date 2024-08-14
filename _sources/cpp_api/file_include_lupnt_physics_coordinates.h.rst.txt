@@ -73,7 +73,7 @@ Functions
 
 - :ref:`exhale_function_coordinates_8h_1af1c8f7d8ae2b9f490c17eab091f247a3`
 
-- :ref:`exhale_function_coordinates_8h_1a4c9a255e8e14c8fe53847e63b2f202be`
-
 - :ref:`exhale_function_coordinates_8h_1abb72d1c9ef69ef5727f0764c2b35a8eb`
+
+- :ref:`exhale_function_coordinates_8h_1a4c9a255e8e14c8fe53847e63b2f202be`
 

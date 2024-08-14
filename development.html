@@ -1014,10 +1014,10 @@ p<span class="w"> </span>body
 <section id="building-the-python-bindings">
 <h2>Building the Python Bindings<a class="headerlink" href="#building-the-python-bindings" title="Link to this heading">¶</a></h2>
 <p>Run the CMake target <code class="docutils literal notranslate"><span class="pre">pylupnt-dev</span></code> to automatically build <code class="docutils literal notranslate"><span class="pre">pylupnt</span></code>, i.e., LuPNT and the python bindings, copy the generated <code class="docutils literal notranslate"><span class="pre">_pylupnt.*.so</span></code> file to <code class="docutils literal notranslate"><span class="pre">source/python/pylupnt</span></code>, and generate stubs for the bindings. The stubs allow IDEs like VSCode to find the contents of a compiled package such us our bindings. Finally, add <code class="docutils literal notranslate"><span class="pre">source/python/pylupnt</span></code> to your python path by adding the environment variable</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span><span class="s2">&quot;YOUR-PATH-TO-LUPNT/LuPNT/source/python:</span><span class="si">${</span><span class="nv">PYTHONPATH</span><span class="si">}</span><span class="s2">&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PYTHONPATH</span><span class="si">}</span><span class="s2">:YOUR-PATH-TO-LUPNT/LuPNT/source/python&quot;</span>
 </pre></div>
 </div>
-<p>You can check whether it was added by restarting your terminal session or VSCode and executing the following command</p>
+<p>You can check whether it was added by fully restarting your terminal session or VSCode and executing the following command</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys; print(sys.path)&quot;</span>
 </pre></div>
 </div>

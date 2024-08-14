@@ -34,9 +34,9 @@ Functions
 
 - :ref:`exhale_function_spice__interface_8h_1a798bd4605b4d53e2abe2b695219c57b8`
 
-- :ref:`exhale_function_spice__interface_8h_1a0dbcc46a13ccefbe04bb494636490b9a`
-
 - :ref:`exhale_function_spice__interface_8h_1ab68b3f0ecd8894649542c0c1408c4ba6`
+
+- :ref:`exhale_function_spice__interface_8h_1a0dbcc46a13ccefbe04bb494636490b9a`
 
 - :ref:`exhale_function_spice__interface_8h_1a4c13ad0de6a31225ac60ec63269a2bba`
 

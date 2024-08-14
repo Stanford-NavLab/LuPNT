@@ -922,11 +922,10 @@
 <a class="reference external image-reference" href="https://github.com/Stanford-NavLab/LuPNT/actions"><img alt="Documentation Status" src="https://github.com/Stanford-NavLab/LuPNT/workflows/Docs/badge.svg" /></a>
 <a class="reference external image-reference" href="https://opensource.org/licenses/MIT"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
 <a class="reference external image-reference" href="https://pypi.org/project/pylupnt"><img alt="PyPI Release" src="https://img.shields.io/pypi/v/pylupnt.svg" /></a>
-<a class="reference external image-reference" href="https://anaconda.org/conda-forge/pylupnt"><img alt="Conda Release" src="https://img.shields.io/conda/v/conda-forge/pylupnt" /></a>
 <a class="reference external image-reference" href="https://pypi.org/project/pylupnt"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/pylupnt" /></a>
 <a class="reference external image-reference" href="https://codecov.io/gh/Stanford-NavLab/LuPNT"><img alt="codecov" src="https://codecov.io/gh/Stanford-NavLab/LuPNT/branch/guillemc/graph/badge.svg" /></a>
-<p align="center">
-  <img src="docs/_static/LuPNT_background.png" width="auto" />
+<!-- [![Conda Release](https://img.shields.io/conda/v/conda-forge/pylupnt)](https://anaconda.org/conda-forge/pylupnt) --><p align="center">
+  <img src="https://github.com/Stanford-NavLab/LuPNT/blob/guillemc/docs/_static/LuPNT_background.png?raw=true" width="auto" />
 </p><p><code class="docutils literal notranslate"><span class="pre">LuPNT</span></code> is an open-source C++/Python library for Lunar Positioning, Navigation, and Timing (PNT) Research. This project is a product of the <a class="reference external" href="https://navlab.stanford.edu/">Stanford NAV Lab</a>.
 If using this project in your own work please cite the following:</p>
 <div class="highlight-bibtex notranslate"><div class="highlight"><pre><span></span><span class="nc">@inproceedings</span><span class="p">{</span><span class="nl">IiyamaCasadesus2023</span><span class="p">,</span>
@@ -965,12 +964,12 @@ The installation scripts for MacOS, Ubuntu, and Windows can be found under <code
 Note that the data directory can be place anywhere as long as its path is correctly set.
 Execute the scripts before building the library.</p>
 </section>
-<section id="build-and-run-the-standalone-target">
-<h4>Build and run the standalone target<a class="headerlink" href="#build-and-run-the-standalone-target" title="Link to this heading">¶</a></h4>
+<section id="build-and-run-the-examples">
+<h4>Build and run the examples<a class="headerlink" href="#build-and-run-the-examples" title="Link to this heading">¶</a></h4>
 <p>Use the following command to build and run the executable target.</p>
-<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">cmake</span> <span class="n">-S</span> <span class="n">standalone</span> <span class="n">-B</span> <span class="n">build</span><span class="p">/</span><span class="n">standalone</span>
-<span class="n">cmake</span> <span class="p">-</span><span class="n">-build</span> <span class="n">build</span><span class="p">/</span><span class="n">standalone</span>
-<span class="p">./</span><span class="n">build</span><span class="p">/</span><span class="n">standalone</span><span class="p">/</span><span class="n">LuPNT</span> <span class="p">-</span><span class="n">-help</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cmake<span class="w"> </span>-S<span class="w"> </span>examples/cpp<span class="w"> </span>-B<span class="w"> </span>build/examples
+cmake<span class="w"> </span>--build<span class="w"> </span>build/examples<span class="w"> </span>-j4
+./build_examples/examples/&lt;example-name&gt;<span class="w"> </span>--help
 </pre></div>
 </div>
 </section>
@@ -978,7 +977,7 @@ Execute the scripts before building the library.</p>
 <h4>Build and run test suite<a class="headerlink" href="#build-and-run-test-suite" title="Link to this heading">¶</a></h4>
 <p>Use the following commands from the project’s root directory to run the test suite.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cmake<span class="w"> </span>-S<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-B<span class="w"> </span>build/test
-cmake<span class="w"> </span>--build<span class="w"> </span>build/test
+cmake<span class="w"> </span>--build<span class="w"> </span>build/test<span class="w"> </span>-j4
 <span class="nv">CTEST_OUTPUT_ON_FAILURE</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </span>build/test<span class="w"> </span>--target<span class="w"> </span><span class="nb">test</span>
 
 <span class="c1"># or simply call the executable:</span>
@@ -1119,7 +1118,7 @@ Additional arguments can be passed to the analyzers by setting the <code class="
 <li><a class="reference internal" href="#features">Features</a></li>
 <li><a class="reference internal" href="#usage">Usage</a><ul>
 <li><a class="reference internal" href="#dependencies">Dependencies</a></li>
-<li><a class="reference internal" href="#build-and-run-the-standalone-target">Build and run the standalone target</a></li>
+<li><a class="reference internal" href="#build-and-run-the-examples">Build and run the examples</a></li>
 <li><a class="reference internal" href="#build-and-run-test-suite">Build and run test suite</a></li>
 <li><a class="reference internal" href="#run-clang-format">Run clang-format</a></li>
 <li><a class="reference internal" href="#build-the-documentation">Build the documentation</a></li>
