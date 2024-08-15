@@ -11,7 +11,7 @@ using namespace std::chrono;
 
 int main() {
   double jd_tdb = 2458832.6;
-  Real t_tdb = JDtoTime(jd_tdb);
+  Real t_tdb = JD2Time(jd_tdb);
   Real t_tai = ConvertTime(t_tdb, "TDB", "TAI");
   NaifId ids[] = {NaifId::SUN,
                   NaifId::MERCURY_BARYCENTER,

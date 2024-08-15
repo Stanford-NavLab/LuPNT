@@ -47,7 +47,7 @@ TEST_CASE("Frame_Converter") {
   Mat<-1, 6> rv_init_mat = CreateTestMatrix6();
   Mat<-1, 3> r_init_mat = CreateTestMatrix3();
 
-  Real t_tai = GregorianToTime(2020, 1, 1);
+  Real t_tai = Gregorian2Time(2020, 1, 1);
   VecX t_tai_vec(2);
   t_tai_vec << t_tai, t_tai + 60;
 

@@ -1,3 +1,9 @@
+#define VEC_BIND_REAL(name, func, arg1)                                                         \
+  m.def(name, [](double x) -> double { return func(x).val(); }, py::arg(arg1));                 \
+  m.def(                                                                                        \
+      name, [](const VecXd &x) -> VecXd { return func(x.cast<Real>().eval()).cast<double>(); }, \
+      py::arg(arg1));
+
 #define VEC_BIND_VECTOR(name, func, size, arg1)            \
   m.def(                                                   \
       name,                                                \

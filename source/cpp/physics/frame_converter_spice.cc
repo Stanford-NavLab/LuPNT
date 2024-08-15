@@ -26,7 +26,7 @@ namespace lupnt {
     CartesianOrbitState ConvertFrameSpice(Real t_tai, const CartesianOrbitState& state_in,
                                           Frame frame_out) {
       Vec6 rv_in = state_in.GetVec();
-      Vec6 rv_out = ConvertFrameSpice(t_tai, rv_in, state_in.GetCoordSystem(), frame_out);
+      Vec6 rv_out = ConvertFrameSpice(t_tai, rv_in, state_in.GetFrame(), frame_out);
       return CartesianOrbitState(rv_out, frame_out);
     }
 

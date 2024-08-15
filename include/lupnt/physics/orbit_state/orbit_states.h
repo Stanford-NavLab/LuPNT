@@ -11,7 +11,10 @@
 
 #pragma once
 
+#include <ostream>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include "lupnt/physics/frame_converter.h"
 #include "lupnt/physics/state.h"
@@ -24,7 +27,7 @@
 
 namespace lupnt {
 
-  enum class OrbitStateRepres {
+  enum OrbitStateRepres {
     CARTESIAN = 0,
     CLASSICAL_OE,
     QUASI_NONSINGULAR_OE,
@@ -37,12 +40,48 @@ namespace lupnt {
     QUASINONSINGULAR_ROE,
   };
 
+  static std::ostream &operator<<(std::ostream &os, const OrbitStateRepres &repres) {
+    switch (repres) {
+      case OrbitStateRepres::CARTESIAN:
+        os << "CARTESIAN";
+        break;
+      case OrbitStateRepres::CLASSICAL_OE:
+        os << "CLASSICAL_OE";
+        break;
+      case OrbitStateRepres::QUASI_NONSINGULAR_OE:
+        os << "QUASI_NONSINGULAR_OE";
+        break;
+      case OrbitStateRepres::SINGULAR_ROE:
+        os << "SINGULAR_ROE";
+        break;
+      case OrbitStateRepres::NONSINGULAR_OE:
+        os << "NONSINGULAR_OE";
+        break;
+      case OrbitStateRepres::EQUINOCTIAL_OE:
+        os << "EQUINOCTIAL_OE";
+        break;
+      case OrbitStateRepres::DELAUNAY_OE:
+        os << "DELAUNAY_OE";
+        break;
+      case OrbitStateRepres::ABSOLUTE_RELATIVE_SEPARATOR:
+        os << "ABSOLUTE_RELATIVE_SEPARATOR";
+        break;
+      case OrbitStateRepres::RTN:
+        os << "RTN";
+        break;
+      case OrbitStateRepres::QUASINONSINGULAR_ROE:
+        os << "QUASINONSINGULAR_ROE";
+        break;
+    }
+    return os;
+  }
+
   // Base class for orbit states
   class OrbitState : public IState {
   private:
     Vec6 x_;
-    OrbitStateRepres repres_;
     Frame frame_;
+    OrbitStateRepres repres_;
     std::vector<std::string> names_;
     std::vector<std::string> units_;
 
@@ -66,7 +105,7 @@ namespace lupnt {
     inline int GetSize() const { return kOrbitStateSize; }
     inline Real GetValue(int i) const { return x_(i); }
     inline OrbitStateRepres GetOrbitStateRepres() const { return repres_; }
-    inline Frame GetCoordSystem() const { return frame_; }
+    inline Frame GetFrame() const { return frame_; }
 
     inline void SetValue(Real val, int idx) { x_(idx) = val; }
     inline void SetVec(const Vec6 &x) { x_ = x; }
@@ -81,9 +120,14 @@ namespace lupnt {
     }
 
     inline void SetOrbitStateRepres(const OrbitStateRepres rep) { repres_ = rep; }
-    inline void SetCoordSystem(Frame sys) { frame_ = sys; }
+    inline void SetCoordSystem(Frame frame) { frame_ = frame; }
 
     inline Real operator()(int idx) const { return x_(idx); }
+
+    std::ostream &operator<<(std::ostream &os) const {
+      os << "<OrbitState(" << x_.transpose() << ", " << frame_ << ", " << repres_ << ")>";
+      return os;
+    }
   };
 
   // Extends OrbitState to represent an orbit in Cartesian coordinates
@@ -102,8 +146,8 @@ namespace lupnt {
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CARTESIAN;
 
   public:
-    CartesianOrbitState(const Vec6 &x, Frame sys = Frame::MOON_CI)
-        : OrbitState(x, sys, repres_, names_, units_) {}
+    CartesianOrbitState(const Vec6 &x, Frame frame = Frame::MOON_CI)
+        : OrbitState(x, frame, repres_, names_, units_) {}
 
     inline Vec3 r() const { return GetVec().head(3); }
     inline Vec3 v() const { return GetVec().tail(3); }
@@ -137,8 +181,8 @@ namespace lupnt {
     }
 
   public:
-    ClassicalOE(const Vec6 &x, const Frame sys = Frame::MOON_CI, bool deg = false)
-        : OrbitState(to_deg(x, deg), sys, repres_, names_, units_) {}
+    ClassicalOE(const Vec6 &x, const Frame frame = Frame::MOON_CI, bool deg = false)
+        : OrbitState(to_deg(x, deg), frame, repres_, names_, units_) {}
 
     GETSET_ELEM(a, 0);
     GETSET_ELEM(e, 1);
@@ -164,8 +208,8 @@ namespace lupnt {
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::QUASI_NONSINGULAR_OE;
 
   public:
-    QuasiNonsingOE(const Vec6 &x, const Frame sys = Frame::MOON_CI)
-        : OrbitState(x, sys, repres_, names_, units_) {}
+    QuasiNonsingOE(const Vec6 &x, const Frame frame = Frame::MOON_CI)
+        : OrbitState(x, frame, repres_, names_, units_) {}
 
     GETSET_ELEM(a, 0);
     GETSET_ELEM(u, 1);
@@ -191,8 +235,8 @@ namespace lupnt {
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::DELAUNAY_OE;
 
   public:
-    DelaunayOE(const Vec6 &x, const Frame sys = Frame::MOON_CI)
-        : OrbitState(x, sys, repres_, names_, units_) {}
+    DelaunayOE(const Vec6 &x, const Frame frame = Frame::MOON_CI)
+        : OrbitState(x, frame, repres_, names_, units_) {}
 
     GETSET_ELEM(l, 0);
     GETSET_ELEM(g, 1);
@@ -217,8 +261,8 @@ namespace lupnt {
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::EQUINOCTIAL_OE;
 
   public:
-    EquinoctialOE(const Vec6 &x, const Frame sys = Frame::MOON_CI)
-        : OrbitState(x, sys, repres_, names_, units_) {}
+    EquinoctialOE(const Vec6 &x, const Frame frame = Frame::MOON_CI)
+        : OrbitState(x, frame, repres_, names_, units_) {}
 
     GETSET_ELEM(a, 0);
     GETSET_ELEM(h, 1);
@@ -244,8 +288,8 @@ namespace lupnt {
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::SINGULAR_ROE;
 
   public:
-    SingularROE(const Vec6 &x, const Frame sys = Frame::MOON_CI)
-        : OrbitState(x, sys, repres_, names_, units_) {}
+    SingularROE(const Vec6 &x, const Frame frame = Frame::MOON_CI)
+        : OrbitState(x, frame, repres_, names_, units_) {}
 
     GETSET_ELEM(ada, 0);
     GETSET_ELEM(adM, 1);
@@ -272,8 +316,8 @@ namespace lupnt {
 
   public:
     // ada, adl, adex, adey, adix, adiy
-    QuasiNonsingROE(const Vec6 &x, const Frame sys = Frame::MOON_CI)
-        : OrbitState(x, sys, repres_, names_, units_) {}
+    QuasiNonsingROE(const Vec6 &x, const Frame frame = Frame::MOON_CI)
+        : OrbitState(x, frame, repres_, names_, units_) {}
 
     GETSET_ELEM(ada, 0);
     GETSET_ELEM(adl, 1);

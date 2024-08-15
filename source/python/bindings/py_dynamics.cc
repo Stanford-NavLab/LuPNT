@@ -2,59 +2,93 @@
 #include <lupnt/dynamics/dynamics.h>
 #include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/body.h>
+
+// pybind11
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 using namespace lupnt;
 
+class PyIDynamics : public IDynamics {
+public:
+  using IDynamics::IDynamics;
+
+  void PropagateX(VecX &x, Real t0, Real tf) override {
+    PYBIND11_OVERRIDE_PURE(void, IDynamics, PropagateX, x, t0, tf);
+  }
+
+  void PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm) override {
+    PYBIND11_OVERRIDE_PURE(void, IDynamics, PropagateWithStmX, x, t0, tf, stm);
+  }
+};
+
+class PyAnalyticalDynamics : public AnalyticalDynamics {
+public:
+  using AnalyticalDynamics::AnalyticalDynamics;
+
+  OrbitState CreateOrbitState(Vec6 &x) override {
+    PYBIND11_OVERRIDE_PURE(OrbitState, AnalyticalDynamics, CreateOrbitState, x);
+  }
+
+  void Propagate(OrbitState &state, Real t0, Real dt) override {
+    PYBIND11_OVERRIDE_PURE(void, AnalyticalDynamics, Propagate, state, t0, dt);
+  }
+
+  void PropagateWithSTM(OrbitState &state, Real t0, Real dt, Mat6d &stm) override {
+    PYBIND11_OVERRIDE_PURE(void, AnalyticalDynamics, PropagateWithSTM, state, t0, dt, stm);
+  }
+};
+
 void init_dynamics(py::module &m) {
-  // KeplerianDynamics
-  py::class_<KeplerianDynamics>(m, "KeplerianDynamics")
-      .def(py::init<const double>())
-      .def(
-          "propagate",
-          [](KeplerianDynamics &dyn, ClassicalOE &state, double dt) -> void {
-            dyn.Propagate(state, dt);
-          },
-          py::arg("state"), py::arg("dt"))
-      .def(
-          "propagate",
-          [](KeplerianDynamics &dyn, QuasiNonsingOE &state, double dt) -> void {
-            dyn.Propagate(state, dt);
-          },
-          py::arg("state"), py::arg("dt"))
-      .def(
-          "propagate",
-          [](KeplerianDynamics &dyn, EquinoctialOE &state, double dt) -> void {
-            dyn.Propagate(state, dt);
-          },
-          py::arg("state"), py::arg("dt"))
-      .def(
-          "propagate_with_stm",
-          [](KeplerianDynamics &dyn, ClassicalOE &state, double dt) {
-            Mat6d stm;
-            dyn.PropagateWithStm(state, dt, stm);
-            return stm;
-          },
-          py::arg("state"), py::arg("dt"), py::return_value_policy::move)
-      .def(
-          "propagate_with_stm",
-          [](KeplerianDynamics &dyn, QuasiNonsingOE &state, double dt) {
-            Mat6d stm;
-            dyn.PropagateWithStm(state, dt, stm);
-            return stm;
-          },
-          py::arg("state"), py::arg("dt"), py::return_value_policy::move)
-      .def(
-          "propagate_with_stm",
-          [](KeplerianDynamics &dyn, EquinoctialOE &state, double dt) {
-            Mat6d stm;
-            dyn.PropagateWithStm(state, dt, stm);
-            return stm;
-          },
-          py::arg("state"), py::arg("dt"), py::return_value_policy::move)
-      .def("__repr__", [](const KeplerianDynamics &dyn) { return "<pylupnt.KeplerianDynamics>"; });
+  py::class_<AnalyticalDynamics>(m, "AnalyticalDynamics")
+      .def("create_orbit_state", &AnalyticalDynamics::CreateOrbitState);
+
+  py::class_<KeplerianDynamics, AnalyticalDynamics>(m, "KeplerianDynamics")
+      .def(py::init<double>(), py::arg("GM"));
+  // .def(
+  //     "propagate",
+  //     [](KeplerianDynamics &dyn, ClassicalOE &state, double dt) -> void {
+  //       dyn.Propagate(state, dt);
+  //     },
+  //     py::arg("state"), py::arg("dt"))
+  // .def(
+  //     "propagate",
+  //     [](KeplerianDynamics &dyn, QuasiNonsingOE &state, double dt) -> void {
+  //       dyn.Propagate(state, dt);
+  //     },
+  //     py::arg("state"), py::arg("dt"))
+  // .def(
+  //     "propagate",
+  //     [](KeplerianDynamics &dyn, EquinoctialOE &state, double dt) -> void {
+  //       dyn.Propagate(state, dt);
+  //     },
+  //     py::arg("state"), py::arg("dt"))
+  // .def(
+  //     "propagate_with_stm",
+  //     [](KeplerianDynamics &dyn, ClassicalOE &state, double dt) {
+  //       Mat6d stm;
+  //       dyn.PropagateWithStm(state, dt, stm);
+  //       return stm;
+  //     },
+  //     py::arg("state"), py::arg("dt"), py::return_value_policy::move)
+  // .def(
+  //     "propagate_with_stm",
+  //     [](KeplerianDynamics &dyn, QuasiNonsingOE &state, double dt) {
+  //       Mat6d stm;
+  //       dyn.PropagateWithStm(state, dt, stm);
+  //       return stm;
+  //     },
+  //     py::arg("state"), py::arg("dt"), py::return_value_policy::move)
+  // .def(
+  //     "propagate_with_stm",
+  //     [](KeplerianDynamics &dyn, EquinoctialOE &state, double dt) {
+  //       Mat6d stm;
+  //       dyn.PropagateWithStm(state, dt, stm);
+  //       return stm;
+  //     },
+  //     py::arg("state"), py::arg("dt"), py::return_value_policy::move)
+  // .def("__repr__", [](const KeplerianDynamics &dyn) { return "<pylupnt.KeplerianDynamics>"; });
 
   // NumericalOrbitDynamics
   py::class_<NumericalOrbitDynamics>(m, "NumericalOrbitDynamics")

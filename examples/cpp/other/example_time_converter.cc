@@ -24,8 +24,8 @@ int main() {
   t_tdb = ConvertTime(t_tt, TimeSys::TT, TimeSys::TDB);
   t_tai = ConvertTime(t_tt, TimeSys::TT, TimeSys::TAI);
   t_gps = ConvertTime(t_tt, TimeSys::TT, TimeSys::GPS);
-  jd_tt = TimeToJD(t_tt);
-  jd_tdb = TimeToJD(t_tdb);
+  jd_tt = Time2JD(t_tt);
+  jd_tdb = Time2JD(t_tdb);
 
   int w = 21;
   cout << fixed << setprecision(14);

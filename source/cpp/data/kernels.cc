@@ -244,7 +244,7 @@ namespace lupnt {
   Vec6 GetBodyPosVelKernel(Real t_tdb, NaifId target) {
     if (!ephemeris_data) LoadEphemerisData();
 
-    Real jd_tdb = TimeToJD(t_tdb);
+    Real jd_tdb = Time2JD(t_tdb);
 
     // Block
     double Dt = ephemeris_data->header.step;
@@ -262,7 +262,7 @@ namespace lupnt {
     int offset = header.coeff_offset[id] + j * n_coeff - 3.;
     double jd_tdb_subint = block.jd_tdb_start + j * Dt_subint;
     double scale[2] = {jd_tdb_subint + Dt_subint / 2., Dt_subint / 2.};  // center and half width
-    scale[0] = JDtoTime(scale[0]).val();
+    scale[0] = JD2Time(scale[0]).val();
     scale[1] *= SECS_DAY;
 
     Vec6 rv;
@@ -335,5 +335,7 @@ namespace lupnt {
     }
     return rv;
   }
+
+  double GetTtTdbDifference(double t_tai) { throw std::runtime_error("Not implemented"); }
 
 }  // namespace lupnt

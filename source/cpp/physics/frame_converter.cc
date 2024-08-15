@@ -47,6 +47,57 @@ namespace lupnt {
       FRAME_CONVERSION(MOON_OP, MOON_ME, MoonOP2MoonME),
   };
 
+  std::ostream& operator<<(std::ostream& os, Frame frame) {
+    switch (frame) {
+      case Frame::ITRF:
+        os << "ITRF";
+        break;
+      case Frame::GCRF:
+        os << "GCRF";
+        break;
+      case Frame::EME:
+        os << "EME";
+        break;
+      case Frame::ICRF:
+        os << "ICRF";
+        break;
+      case Frame::SER:
+        os << "SER";
+        break;
+      case Frame::GSE:
+        os << "GSE";
+        break;
+      case Frame::MOD:
+        os << "MOD";
+        break;
+      case Frame::TOD:
+        os << "TOD";
+        break;
+      case Frame::EMR:
+        os << "EMR";
+        break;
+      case Frame::MOON_CI:
+        os << "MOON_CI";
+        break;
+      case Frame::MOON_PA:
+        os << "MOON_PA";
+        break;
+      case Frame::MOON_ME:
+        os << "MOON_ME";
+        break;
+      case Frame::MOON_OP:
+        os << "MOON_OP";
+        break;
+      case Frame::MARS_FIXED:
+        os << "MARS_FIXED";
+        break;
+      case Frame::VENUS_FIXED:
+        os << "VENUS_FIXED";
+        break;
+    }
+    return os;
+  }
+
   /// @brief Convert the state vector from one coordinate system to another
   /// (with integer ID input)
   /// @param t_tai Epoch of the state vector
@@ -69,7 +120,7 @@ namespace lupnt {
   CartesianOrbitState ConvertFrame(Real t_tai, const CartesianOrbitState& state_in,
                                    Frame frame_out) {
     Vec6 rv_in = state_in.GetVec();
-    Vec6 rv_out = ConvertFrame(t_tai, rv_in, state_in.GetCoordSystem(), frame_out);
+    Vec6 rv_out = ConvertFrame(t_tai, rv_in, state_in.GetFrame(), frame_out);
     return CartesianOrbitState(rv_out, frame_out);
   }
 
@@ -135,7 +186,7 @@ namespace lupnt {
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 34
   Mat3 RotPrecessionNutation(Real t_tai) {
     Real t_tt = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TT);
-    Real jd_tt = TimeToJD(t_tt);
+    Real jd_tt = Time2JD(t_tt);
 
     IauSofaData iau_data = GetIauSofaData(jd_tt);
     Real X = iau_data.X * RAD_ARCSEC;
@@ -164,7 +215,7 @@ namespace lupnt {
     Real theta_era = EarthRotationAngle(t_ut1);
 
     Real t_utc = ConvertTime(t_tai, TimeSys::TAI, TimeSys::UTC);
-    Real mjd_utc = TimeToMJD(t_utc);
+    Real mjd_utc = Time2MJD(t_utc);
     EopData eop = GetEopData(mjd_utc);
     Real lod = eop.lod;
 
@@ -179,7 +230,7 @@ namespace lupnt {
   Mat3 RotPolarMotion(Real t_tai) {
     Real t_utc = ConvertTime(t_tai, TimeSys::TAI, TimeSys::UTC);
     Real t_tt = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TT);
-    Real mjd_utc = TimeToMJD(t_utc);
+    Real mjd_utc = Time2MJD(t_utc);
 
     EopData eop = GetEopData(mjd_utc);
     Real xp = eop.x_pole;

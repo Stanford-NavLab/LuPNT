@@ -11,7 +11,7 @@ using namespace std;
 // doi: 10.1007/978-3-642-58351-3.
 int main() {
   // Time
-  const Real mjd0_utc = GregorianToMJD(1997, 01, 01);
+  const Real mjd0_utc = Gregorian2MJD(1997, 01, 01);
 
   // Ground station
   const Real lon_gs = 11 * RAD;  // [rad]
@@ -49,7 +49,7 @@ int main() {
     Vec3 aer = Cart2AzElRange(r_ecef, r_gs, R_EARTH, WGS84_F);
     auto [az, el, range] = unpack(aer);
 
-    cout << MJDtoGregorianString(mjd_utc, 3);
+    cout << MJD2GregorianString(mjd_utc, 3);
     cout << setw(10) << fixed << setprecision(1);
     cout << setw(10) << az * DEG;
     cout << setw(10) << el * DEG;

@@ -20,14 +20,12 @@ using namespace lupnt;
   [](const class &s) -> type { return s.Get##attribute().cast<double>(); }, \
       [](class &s, type val) { s.Set##attribute(val.cast<real>()); }
 
-#define DEFINE_REPR(class)                                                         \
-  [](const class &s) -> std::string {                                              \
-    std::stringstream ss;                                                          \
-    ss << "<pylupnt." << #class << " ["                                            \
-       << s.GetVec().transpose().format(                                           \
-              Eigen::IOFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ")) \
-       << "]>";                                                                    \
-    return ss.str();                                                               \
+#define DEFINE_REPR(class)                                                                   \
+  [](const class &s) -> std::string {                                                        \
+    std::stringstream ss;                                                                    \
+    ss << "<pylupnt." << #class << "(" << s.GetVec().transpose().format(FMT_COMPACT) << ", " \
+       << s.GetFrame() << ">";                                                               \
+    return ss.str();                                                                         \
   }
 
 void init_orbit_state(py::module &m) {
@@ -51,7 +49,7 @@ void init_orbit_state(py::module &m) {
       .def_property(
           "vector", [](const OrbitState &s) -> Vec6d { return s.GetVec().cast<double>(); },
           [](OrbitState &s, const Vec6d &vec) { s.SetVec(vec.cast<Real>()); })
-      .def_property("frame", &OrbitState::GetCoordSystem, &OrbitState::SetCoordSystem)
+      .def_property("frame", &OrbitState::GetFrame, &OrbitState::SetCoordSystem)
       .def_property("state_repres", &OrbitState::GetOrbitStateRepres,
                     &OrbitState::SetOrbitStateRepres)
       .def_property_readonly("size", &OrbitState::GetSize)
@@ -59,14 +57,15 @@ void init_orbit_state(py::module &m) {
       .def_property_readonly("units", &OrbitState::GetUnits)
       .def("__repr__", [](const OrbitState &s) {
         std::stringstream ss;
-        ss << "<pylupnt.OrbitState [" << s.GetVec().transpose() << "]>";
+        ss << "<pylupnt.OrbitState(" << s.GetVec().transpose() << ", " << s.GetFrame() << ", "
+           << s.GetOrbitStateRepres() << ")>";
         return ss.str();
       });
 
   // ClassicalOE
   py::class_<ClassicalOE, OrbitState>(m, "ClassicalOE")
-      .def(py::init<const Vec6d &, const Frame>(), py::arg("[a, e, i, Omega, w, M]"),
-           py::arg("frame") = Frame::MOON_CI)
+      .def(py::init<const Vec6d &, const Frame, bool>(), py::arg("[a, e, i, Omega, w, M]"),
+           py::arg("frame") = Frame::MOON_CI, py::arg("deg") = false)
       .def_property("a", DEFINE_GETSET_REAL(ClassicalOE, a))
       .def_property("e", DEFINE_GETSET_REAL(ClassicalOE, e))
       .def_property("i", DEFINE_GETSET_REAL(ClassicalOE, i))

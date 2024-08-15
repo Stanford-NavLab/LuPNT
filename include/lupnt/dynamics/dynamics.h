@@ -68,10 +68,10 @@ namespace lupnt {
     virtual void PropagateWithSTM(OrbitState &state, Real t0, Real dt, Mat6d &stm) = 0;
 
     // Using fixed size vectors
-    void Propagate(Vec6 &x, Real t0, Real dt) {
+    Vec6 Propagate(Vec6 &x, Real t0, Real dt) {
       OrbitState state = CreateOrbitState(x);
       Propagate(state, t0, dt);
-      x = state.GetVec();
+      return state.GetVec();
     }
 
     void PropagateWithSTM(Vec6 &x, Real t0, Real dt, Mat6d &stm) {
@@ -97,6 +97,17 @@ namespace lupnt {
       x.head(6) = x6;
       stm.block(0, 0, 6, 6) = stm6;
     }
+
+    Mat<-1, 6> Propagate(Vec6 x0, Real t0, VecX &tf) {
+      Mat<-1, 6> x;
+      Real dt = tf(0) - t0;
+      x.row(0) = Propagate(x0, t0, dt);
+      for (int i = 1; i < tf.size(); i++) {
+        dt = tf(i) - tf(i - 1);
+        x.row(i) = Propagate(x0, tf(i - 1), dt);
+      }
+      return x;
+    }
   };
 
   /**
@@ -104,7 +115,7 @@ namespace lupnt {
    * AnalyticalDynamics)
    *
    */
-  class KeplerianDynamics {
+  class KeplerianDynamics : public AnalyticalDynamics {
   private:
     double mu_;
 

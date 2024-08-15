@@ -14,6 +14,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <ostream>
 
 #include "cheby.h"
 #include "lupnt/core/constants.h"
@@ -41,6 +42,8 @@ namespace lupnt {
     MARS_FIXED,   // Mars fixed frame
     VENUS_FIXED,  // Venus fixed frame
   };
+
+  std::ostream &operator<<(std::ostream &os, Frame frame);
 
   extern std::map<std::pair<Frame, Frame>, std::function<Vec6(Real, const Vec6 &rv)>>
       frame_conversions;

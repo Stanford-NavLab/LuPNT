@@ -30,13 +30,13 @@ void init_orbit_state_utils(py::module &m) {
         });
 
   m.def(
-      "cartesian2classical",
+      "cart2classical",
       [](const CartesianOrbitState &cart, double GM) -> ClassicalOE {
         return Cart2Classical(cart, GM);
       },
       py::arg("cart"), py::arg("GM"));
   m.def(
-      "classical2cartesian",
+      "classical2cart",
       [](const ClassicalOE &coe, double GM) -> CartesianOrbitState {
         return Classical2Cart(coe, GM);
       },
@@ -76,8 +76,8 @@ void init_orbit_state_utils(py::module &m) {
       py::arg("coe"), py::arg("rel_qnsoe"));
 
   // State Conversions
-  VEC_BIND_VECTOR_REAL("cartesian2classical", Cart2Classical, 6, "cart", "GM");
-  VEC_BIND_VECTOR_REAL("classical2cartesian", Classical2Cart, 6, "coe", "GM");
+  VEC_BIND_VECTOR_REAL("cart2classical", Cart2Classical, 6, "cart", "GM");
+  VEC_BIND_VECTOR_REAL("classical2cart", Classical2Cart, 6, "coe", "GM");
   VEC_BIND_VECTOR_REAL("classical2quasi_nonsingular", Classical2QuasiNonsing, 6, "coe", "GM");
   VEC_BIND_VECTOR_REAL("classical2equinoctial", Classical2Equinoctial, 6, "coe", "GM");
   VEC_BIND_VECTOR_REAL("classical2delaunay", Classical2Delaunay, 6, "coe", "GM");

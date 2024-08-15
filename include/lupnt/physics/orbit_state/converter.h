@@ -32,7 +32,7 @@ namespace lupnt {
       const std::shared_ptr<CartesianOrbitState> state_in, const Real epoch,
       const Frame frame_out) {
     auto rv_in = state_in->GetVec();
-    auto frame_in = state_in->GetCoordSystem();
+    auto frame_in = state_in->GetFrame();
     auto rv_out = ConvertFrame(epoch, rv_in, frame_in, frame_out);
     auto state_out = std::make_shared<CartesianOrbitState>(rv_out, frame_out);
     return state_out;

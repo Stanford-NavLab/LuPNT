@@ -1,15 +1,17 @@
 #include <pybind11/pybind11.h>
 
-namespace py = pybind11;
+#include "py_constants.cc"
+#include "py_dynamics.cc"
+#include "py_frame_converter.cc"
+#include "py_kernels.cc"
+#include "py_math_utils.cc"
+#include "py_measurements.cc"
+#include "py_orbit_state.cc"
+#include "py_orbit_state_utils.cc"
+#include "py_spice_interface.cc"
+#include "py_time_converter.cc"
 
-void init_frame_converter(py::module& m);
-void init_constants(py::module& m);
-void init_orbit_state(py::module& m);
-void init_orbit_state_utils(py::module& m);
-void init_math_utils(py::module& m);
-void init_dynamics(py::module& m);
-void init_measurements(py::module& m);
-void init_spice_interface(py::module& m);
+namespace py = pybind11;
 
 PYBIND11_MODULE(_pylupnt, m) {
   init_frame_converter(m);
@@ -20,4 +22,6 @@ PYBIND11_MODULE(_pylupnt, m) {
   init_dynamics(m);
   init_measurements(m);
   init_spice_interface(m);
+  init_time_converter(m);
+  init_kernels(m);
 }

@@ -81,6 +81,12 @@ namespace lupnt {
 
   DEFINE_VECTORS_MATRICES()
 
+  static Eigen::IOFormat FMT_CLEAN(Eigen::StreamPrecision, 0, ", ", ";\n", "", "", "[", "]");
+  static Eigen::IOFormat FMT_COMPACT(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ";\n", "",
+                                     "", "[", "]");
+  static Eigen::IOFormat FMT_OCTAVE(Eigen::StreamPrecision, 0, ", ", ";\n", "", "", "[", "]");
+  static Eigen::IOFormat FMT_HEAVY(Eigen::FullPrecision, 0, ", ", ";\n", "[", "]", "[", "]");
+
   // Math constants
   static constexpr double PI = 3.14159265358979323846264338327950288419716939937511;
   static constexpr double TWO_PI = 6.28318530717958647692528676655900576839433879875022;
@@ -195,7 +201,7 @@ namespace lupnt {
   // NAIF Intefer ID codes
   // Reference:
   // https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/req/naif_ids.html
-  enum class NaifId {
+  enum NaifId {
     SSB = 0,
     SOLAR_SYSTEM_BARYCENTER = SSB,
     MERCURY_BARYCENTER = 1,
@@ -222,55 +228,80 @@ namespace lupnt {
     NEPTUNE = 899,
   };
 
-  static std::string toString(NaifId id) {
+  const static std::ostream& operator<<(std::ostream& os, NaifId id) {
     switch (id) {
       case NaifId::SOLAR_SYSTEM_BARYCENTER:
-        return "SOLAR_SYSTEM_BARYCENTER";
+        os << "SOLAR_SYSTEM_BARYCENTER";
+        break;
       case NaifId::MERCURY_BARYCENTER:
-        return "MERCURY_BARYCENTER";
+        os << "MERCURY_BARYCENTER";
+        break;
       case NaifId::VENUS_BARYCENTER:
-        return "VENUS_BARYCENTER";
+        os << "VENUS_BARYCENTER";
+        break;
       case NaifId::EARTH_MOON_BARYCENTER:
-        return "EARTH_MOON_BARYCENTER";
+        os << "EARTH_MOON_BARYCENTER";
+        break;
       case NaifId::MARS_BARYCENTER:
-        return "MARS_BARYCENTER";
+        os << "MARS_BARYCENTER";
+        break;
       case NaifId::JUPITER_BARYCENTER:
-        return "JUPITER_BARYCENTER";
+        os << "JUPITER_BARYCENTER";
+        break;
       case NaifId::SATURN_BARYCENTER:
-        return "SATURN_BARYCENTER";
+        os << "SATURN_BARYCENTER";
+        break;
       case NaifId::URANUS_BARYCENTER:
-        return "URANUS_BARYCENTER";
+        os << "URANUS_BARYCENTER";
+        break;
       case NaifId::NEPTUNE_BARYCENTER:
-        return "NEPTUNE_BARYCENTER";
+        os << "NEPTUNE_BARYCENTER";
+        break;
       case NaifId::PLUTO_BARYCENTER:
-        return "PLUTO_BARYCENTER";
+        os << "PLUTO_BARYCENTER";
+        break;
       case NaifId::SUN:
-        return "SUN";
+        os << "SUN";
+        break;
       case NaifId::MERCURY:
-        return "MERCURY";
+        os << "MERCURY";
+        break;
       case NaifId::VENUS:
-        return "VENUS";
+        os << "VENUS";
+        break;
       case NaifId::EARTH:
-        return "EARTH";
+        os << "EARTH";
+        break;
       case NaifId::MOON:
-        return "MOON";
+        os << "MOON";
+        break;
       case NaifId::MARS:
-        return "MARS";
+        os << "MARS";
+        break;
       case NaifId::PHOBOS:
-        return "PHOBOS";
+        os << "PHOBOS";
+        break;
       case NaifId::DEIMOS:
-        return "DEIMOS";
+        os << "DEIMOS";
+        break;
       case NaifId::JUPITER:
-        return "JUPITER";
+        os << "JUPITER";
+        break;
       case NaifId::SATURN:
-        return "SATURN";
+        os << "SATURN";
+        break;
       case NaifId::URANUS:
-        return "URANUS";
+        os << "URANUS";
+        break;
       case NaifId::NEPTUNE:
-        return "NEPTUNE";
+        os << "NEPTUNE";
+        break;
       default:
-        return "UNKNOWN";
+        throw std::runtime_error("Unknown NaifId");
+        break;
     }
+
+    return os;
   }
 
   namespace TimeSys {
