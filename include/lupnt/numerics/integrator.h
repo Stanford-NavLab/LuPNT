@@ -17,7 +17,13 @@
 
 namespace lupnt {
 
-  using ODE = std::function<VecX(const Real, const VecX&)>;
+  using ODE = std::function<VecX(Real, const VecX&)>;
+
+  enum class Integrators {
+    kRK4,
+    kRK8,
+    kRKF45,
+  };
 
   class IntegratorParams {
   public:
@@ -35,19 +41,19 @@ namespace lupnt {
 
   class IIntegrator {
   public:
-    virtual VecX Step(const ODE f, const Real t, const VecX x, Real& dt) = 0;
+    virtual VecX Step(const ODE& f, Real t, const VecX& x, Real dt) = 0;
     virtual ~IIntegrator() {};
   };
 
   // Runge-Kutta Integrators
   class RK4 : public IIntegrator {
   public:
-    VecX Step(const ODE f, const Real t, const VecX x, Real& dt);
+    VecX Step(const ODE& f, Real t, const VecX& x, Real dt);
   };
 
   class RK8 : public IIntegrator {
   public:
-    VecX Step(const ODE f, const Real t, const VecX x, Real& dt);
+    VecX Step(const ODE& f, Real t, const VecX& x, Real dt);
   };
 
   // Runge-Kutta-Fehlberg Integrators with adaptive step size
@@ -59,9 +65,9 @@ namespace lupnt {
   public:
     IRKF() = default;
     IRKF(IntegratorParams params, int order) : params_(params), order_(order) {};
-    VecX Step(const ODE f, const Real t, const VecX x, Real& dt) override;
-    bool ComputeRelError(const VecX& x_new_low, const VecX& x_new_high, Real& dt);
-    virtual void Update(const ODE f, const Real t, const VecX x, const Real dt, VecX& x_new_low,
+    VecX Step(const ODE& f, Real t, const VecX& x, Real dt) override;
+    bool ComputeRelError(const VecX& x_new_low, const VecX& x_new_high, Real dt);
+    virtual void Update(const ODE& f, Real t, const VecX& x, Real dt, VecX& x_new_low,
                         VecX& x_new_high)
         = 0;
     virtual ~IRKF() = default;
@@ -70,7 +76,7 @@ namespace lupnt {
   class RKF45 : public IRKF {
   public:
     RKF45(IntegratorParams params) : IRKF(params, 4) {};
-    void Update(const ODE f, const Real t, const VecX x, const Real dt, VecX& x_new_low,
+    void Update(const ODE& f, Real t, const VecX& x, Real dt, VecX& x_new_low,
                 VecX& x_new_high) override;
   };
 

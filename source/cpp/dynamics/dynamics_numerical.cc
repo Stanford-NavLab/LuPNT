@@ -20,7 +20,7 @@ namespace lupnt {
    * **************************************************************************/
 
   // arbitrary state size
-  void NumericalDynamics::PropagateX(VecX &x, Real t0, Real tf) {
+  void NumericalDynamics::Propagate(VecX &x, Real t0, Real tf) {
     Real dt_prop = tf - t0;
     if (dt_ == 0.0) {
       dt_prop = (tf - t0) / 10;
@@ -33,7 +33,7 @@ namespace lupnt {
     x = xf;
   }
 
-  void NumericalDynamics::PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm) {
+  void NumericalDynamics::PropagateWithStm(VecX &x, Real t0, Real tf, MatXd &stm) {
     Real dt_prop = tf - t0;
     if (dt_ == 0.0) {
       dt_prop = (tf - t0) / 10;

@@ -17,7 +17,7 @@
 
 namespace lupnt {
 
-  class Transmission;
+  struct Transmission;
   class ICommDevice;
 
   class SpaceChannel {

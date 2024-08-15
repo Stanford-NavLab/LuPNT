@@ -26,8 +26,8 @@ namespace lupnt {
   public:
     // without dt
     virtual ~IDynamics() = default;
-    virtual void PropagateX(VecX &x, Real t0, Real tf) = 0;
-    virtual void PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm) = 0;
+    virtual void Propagate(VecX &x, Real t0, Real tf) = 0;
+    virtual void PropagateWithStm(VecX &x, Real t0, Real tf, MatXd &stm) = 0;
   };
 
   /**
@@ -39,17 +39,15 @@ namespace lupnt {
     ODE odefunc_;
     NumericalPropagator propagator_;
     double dt_ = 0.0;
+    virtual VecX ComputeRates(Real t, const VecX &x) const = 0;
 
   public:
     NumericalDynamics(ODE odefunc, std::string integrator = "RK4")
         : odefunc_(odefunc), propagator_(integrator) {};
 
     void SetTimeStep(Real dt) { dt_ = dt.val(); };
-    void PropagateX(VecX &x, Real t0, Real tf) override;
-    void PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm) override;
-
-  protected:
-    virtual VecX ComputeRates(Real t, const VecX &x) const = 0;
+    void Propagate(VecX &x, Real t0, Real tf) override;
+    void PropagateWithStm(VecX &x, Real t0, Real tf, MatXd &stm) override;
   };
 
   /********************************************
@@ -63,56 +61,10 @@ namespace lupnt {
   class AnalyticalDynamics : public IDynamics {
   public:
     virtual ~AnalyticalDynamics() {};
-    virtual OrbitState CreateOrbitState(Vec6 &x) = 0;
-    virtual void Propagate(OrbitState &state, Real t0, Real dt) = 0;
-    virtual void PropagateWithSTM(OrbitState &state, Real t0, Real dt, Mat6d &stm) = 0;
-
-    // Using fixed size vectors
-    Vec6 Propagate(Vec6 &x, Real t0, Real dt) {
-      OrbitState state = CreateOrbitState(x);
-      Propagate(state, t0, dt);
-      return state.GetVec();
-    }
-
-    void PropagateWithSTM(Vec6 &x, Real t0, Real dt, Mat6d &stm) {
-      OrbitState state = CreateOrbitState(x);
-      PropagateWithSTM(state, t0, dt, stm);
-      x = state.GetVec();
-    }
-
-    // arbitrary state size
-    void PropagateX(VecX &x, Real t0, Real tf) override {
-      Vec6 x6 = x.head(6);
-      Real dt = tf - t0;
-      Propagate(x6, t0, dt);
-      x.head(6) = x6;
-    }
-
-    void PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm) override {
-      Vec6 x6 = x.head(6);
-      Real dt = tf - t0;
-      Mat6d stm6;
-      stm6 = stm.block(0, 0, 6, 6);
-      PropagateWithSTM(x6, t0, dt, stm6);
-      x.head(6) = x6;
-      stm.block(0, 0, 6, 6) = stm6;
-    }
-
-    MatX6 Propagate(Vec6 x0, Real t0, VecX &tf) {
-      MatX6 x;
-      Real dt = tf(0) - t0;
-      x.row(0) = Propagate(x0, t0, dt);
-      for (int i = 1; i < tf.size(); i++) {
-        dt = tf(i) - tf(i - 1);
-        x.row(i) = Propagate(x0, tf(i - 1), dt);
-      }
-      return x;
-    }
   };
 
   /**
-   * @brief Keplerian Dynamics (Todo: find a way to inherit this from
-   * AnalyticalDynamics)
+   * @brief Keplerian Dynamics
    *
    */
   class KeplerianDynamics : public AnalyticalDynamics {
@@ -123,15 +75,18 @@ namespace lupnt {
     KeplerianDynamics(double GM);
 
     // ClassicalOE
-    void Propagate(ClassicalOE &state, Real dt);
-    void PropagateWithStm(ClassicalOE &state, Real dt, Mat6d &stm);
-    static Vec6 PropagateClassicalOE(Vec6 coe, Real dt, double GM);
+    void PropagateClassicalOE(ClassicalOE &state, Real dt);
+    void PropagateClassicalOEWithStm(ClassicalOE &state, Real dt, Mat6d &stm);
+    Vec6 PropagateClassicalOE(Vec6 coe, Real dt);
+    Vec6 PropagateClassicalOE(Vec6 coe, Real dt, double GM);
+
     // QuasiNonsingOE
-    void Propagate(QuasiNonsingOE &state, Real dt);
-    void PropagateWithStm(QuasiNonsingOE &state, Real dt, Mat6d &stm);
+    void PropagateQuasiNonsingOE(QuasiNonsingOE &state, Real dt);
+    void PropagateQuasiNonsingOEWithStm(QuasiNonsingOE &state, Real dt, Mat6d &stm);
+
     // EquinoctialOE
-    void Propagate(EquinoctialOE &state, Real dt);
-    void PropagateWithStm(EquinoctialOE &state, Real dt, Mat6d &stm);
+    void PropagateEquinoctialOE(EquinoctialOE &state, Real dt);
+    void PropagateEquinoctialOEWithStm(EquinoctialOE &state, Real dt, Mat6d &stm);
   };
 
   class ClohessyWiltshireDynamics : public AnalyticalDynamics {

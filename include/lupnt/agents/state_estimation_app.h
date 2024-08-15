@@ -85,7 +85,7 @@ namespace lupnt {
           for (int j = 0; j < state_size; j++) {
             x_seg(j) = x(start_idx + j);
           }
-          dynamics_vec_[i]->PropagateWithStmX(x_seg, t_curr, t_end, Phi_tmp);
+          dynamics_vec_[i]->PropagateWithStm(x_seg, t_curr, t_end, Phi_tmp);
           Phi.block(start_idx, start_idx, state_size, state_size) = Phi_tmp;
           for (int j = 0; j < state_size; j++) {
             x(start_idx + j) = x_seg(j);

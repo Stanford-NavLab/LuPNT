@@ -212,7 +212,7 @@ namespace lupnt {
     }
 
     // arbitrary state clock
-    void PropagateX(VecX& clk, Real t0, Real tf) {
+    void Propagate(VecX& clk, Real t0, Real tf) {
       if (clk.size() == 2) {
         Vec2 clk2 = clk;
         Propagate(clk2, t0, tf);
@@ -240,7 +240,7 @@ namespace lupnt {
       }
     }
 
-    void PropagateWithStmX(VecX& clk, Real t0, Real tf, MatXd& stm) {
+    void PropagateWithStm(VecX& clk, Real t0, Real tf, MatXd& stm) {
       if (clk.size() == 2) {
         Vec2 clk2 = clk;
         stm.resize(2, 2);
@@ -259,7 +259,7 @@ namespace lupnt {
     // Propagate using clockState
     void Propagate(ClockState& clk, Real t0, Real tf) {
       VecX clk_vec = clk.GetVec();
-      PropagateX(clk_vec, t0, tf);
+      Propagate(clk_vec, t0, tf);
       clk.SetVec(clk_vec);
     }
 
