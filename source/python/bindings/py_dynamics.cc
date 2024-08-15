@@ -10,42 +10,16 @@
 namespace py = pybind11;
 using namespace lupnt;
 
-class PyIDynamics : public IDynamics {
-public:
-  using IDynamics::IDynamics;
-
-  void PropagateX(VecX &x, Real t0, Real tf) override {
-    PYBIND11_OVERRIDE_PURE(void, IDynamics, PropagateX, x, t0, tf);
-  }
-
-  void PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm) override {
-    PYBIND11_OVERRIDE_PURE(void, IDynamics, PropagateWithStmX, x, t0, tf, stm);
-  }
-};
-
-class PyAnalyticalDynamics : public AnalyticalDynamics {
-public:
-  using AnalyticalDynamics::AnalyticalDynamics;
-
-  OrbitState CreateOrbitState(Vec6 &x) override {
-    PYBIND11_OVERRIDE_PURE(OrbitState, AnalyticalDynamics, CreateOrbitState, x);
-  }
-
-  void Propagate(OrbitState &state, Real t0, Real dt) override {
-    PYBIND11_OVERRIDE_PURE(void, AnalyticalDynamics, Propagate, state, t0, dt);
-  }
-
-  void PropagateWithSTM(OrbitState &state, Real t0, Real dt, Mat6d &stm) override {
-    PYBIND11_OVERRIDE_PURE(void, AnalyticalDynamics, PropagateWithSTM, state, t0, dt, stm);
-  }
-};
-
 void init_dynamics(py::module &m) {
-  py::class_<AnalyticalDynamics>(m, "AnalyticalDynamics")
-      .def("create_orbit_state", &AnalyticalDynamics::CreateOrbitState);
+  // KeplerianDynamics dyn(GM_MOON);
 
-  py::class_<KeplerianDynamics, AnalyticalDynamics>(m, "KeplerianDynamics")
-      .def(py::init<double>(), py::arg("GM"));
+  // py::class_<AnalyticalDynamics, PyAnalyticalDynamics>(m, "AnalyticalDynamics")
+  //     .def(py::init<>())
+  //     .def("propagate", &AnalyticalDynamics::Propagate, py::arg("state"), py::arg("t0"),
+  //          py::arg("dt"));
+
+  // py::class_<KeplerianDynamics, PyAnalyticalDynamics>(m, "KeplerianDynamics")
+  //     .def(py::init<double>(), py::arg("GM"));
   // .def(
   //     "propagate",
   //     [](KeplerianDynamics &dyn, ClassicalOE &state, double dt) -> void {

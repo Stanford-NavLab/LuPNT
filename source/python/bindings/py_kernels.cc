@@ -26,7 +26,7 @@ void init_kernels(py::module &m) {
 
   m.def(
       "get_body_pos_vel",
-      [](VecXd t_tai, NaifId center, NaifId target) -> Matd<-1, 6> {
+      [](VecXd t_tai, NaifId center, NaifId target) -> MatX6d {
         return GetBodyPosVel(t_tai, center, target).cast<double>();
       },
       py::arg("t_tai"), py::arg("center"), py::arg("target"));

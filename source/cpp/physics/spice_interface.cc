@@ -372,9 +372,9 @@ namespace lupnt {
       return t_out;
     }
 
-    Mat<-1, 6> GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target) {
+    MatX6 GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target) {
       if (!spice_loaded) LoadSpiceKernel();
-      Mat<-1, 6> retState(t_tai.size(), 6);
+      MatX6 retState(t_tai.size(), 6);
       for (int i = 0; i < t_tai.size(); i++)
         retState.row(i) = GetBodyPosVel(t_tai(i), center, target).transpose();
       return retState;

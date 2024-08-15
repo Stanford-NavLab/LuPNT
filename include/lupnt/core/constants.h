@@ -42,6 +42,10 @@
   using MatX = Matrix<Real, Eigen::Dynamic, Eigen::Dynamic>;    \
   using MatXd = Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; \
   using MatXi = Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;    \
+  using MatX6 = Matrix<Real, Eigen::Dynamic, 6>;                \
+  using MatX6d = Matrix<double, Eigen::Dynamic, 6>;             \
+  using MatX3 = Matrix<Real, Eigen::Dynamic, 3>;                \
+  using MatX3d = Matrix<double, Eigen::Dynamic, 3>;             \
   using RowVecX = Matrix<Real, 1, Eigen::Dynamic>;              \
   using RowVecXd = Matrix<double, 1, Eigen::Dynamic>;           \
   using RowVecXi = Matrix<int, 1, Eigen::Dynamic>;

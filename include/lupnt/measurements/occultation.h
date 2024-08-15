@@ -47,12 +47,12 @@ namespace lupnt {
     static VecX ComputeOccultation(Real epoch, const Vec3& r1, const Vec3& r2, Frame cs1, Frame cs2,
                                    const std::vector<NaifId>& bodies);
 
-    // MatX = func(real, Mat<-1, 3>, Mat<-1, 3>, ...)
-    static MatX ComputeOccultation(Real epoch, const Mat<-1, 3>& r1, const Mat<-1, 3>& r2,
-                                   Frame cs1, Frame cs2, const std::vector<NaifId>& bodies);
+    // MatX = func(real, MatX3, MatX3, ...)
+    static MatX ComputeOccultation(Real epoch, const MatX3& r1, const MatX3& r2, Frame cs1,
+                                   Frame cs2, const std::vector<NaifId>& bodies);
 
-    // MatX = func(VecX, Mat<-1, 3>, Mat<-1, 3>, ...)
-    static MatX ComputeOccultation(const VecX& epoch, const Mat<-1, 3>& r1, const Mat<-1, 3>& r2,
-                                   Frame cs1, Frame cs2, const std::vector<NaifId>& bodies);
+    // MatX = func(VecX, MatX3, MatX3, ...)
+    static MatX ComputeOccultation(const VecX& epoch, const MatX3& r1, const MatX3& r2, Frame cs1,
+                                   Frame cs2, const std::vector<NaifId>& bodies);
   };
 }  // namespace lupnt

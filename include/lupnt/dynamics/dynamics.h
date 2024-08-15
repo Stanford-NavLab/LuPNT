@@ -45,8 +45,8 @@ namespace lupnt {
         : odefunc_(odefunc), propagator_(integrator) {};
 
     void SetTimeStep(Real dt) { dt_ = dt.val(); };
-    void PropagateX(VecX &x, Real t0, Real tf);
-    void PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm);
+    void PropagateX(VecX &x, Real t0, Real tf) override;
+    void PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm) override;
 
   protected:
     virtual VecX ComputeRates(Real t, const VecX &x) const = 0;
@@ -81,14 +81,14 @@ namespace lupnt {
     }
 
     // arbitrary state size
-    void PropagateX(VecX &x, Real t0, Real tf) {
+    void PropagateX(VecX &x, Real t0, Real tf) override {
       Vec6 x6 = x.head(6);
       Real dt = tf - t0;
       Propagate(x6, t0, dt);
       x.head(6) = x6;
     }
 
-    void PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm) {
+    void PropagateWithStmX(VecX &x, Real t0, Real tf, MatXd &stm) override {
       Vec6 x6 = x.head(6);
       Real dt = tf - t0;
       Mat6d stm6;
@@ -98,8 +98,8 @@ namespace lupnt {
       stm.block(0, 0, 6, 6) = stm6;
     }
 
-    Mat<-1, 6> Propagate(Vec6 x0, Real t0, VecX &tf) {
-      Mat<-1, 6> x;
+    MatX6 Propagate(Vec6 x0, Real t0, VecX &tf) {
+      MatX6 x;
       Real dt = tf(0) - t0;
       x.row(0) = Propagate(x0, t0, dt);
       for (int i = 1; i < tf.size(); i++) {

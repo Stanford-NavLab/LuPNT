@@ -328,8 +328,8 @@ namespace lupnt {
     return rv_target - rv_center;
   }
 
-  Mat<-1, 6> GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target) {
-    Mat<-1, 6> rv(t_tai.size(), 6);
+  MatX6 GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target) {
+    MatX6 rv(t_tai.size(), 6);
     for (int i = 0; i < t_tai.size(); i++) {
       rv.row(i) = GetBodyPosVel(t_tai(i), center, target);
     }

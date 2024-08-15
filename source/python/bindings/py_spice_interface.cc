@@ -44,7 +44,7 @@ void init_spice_interface(py::module &m) {
           py::arg("t_tai"), py::arg("center"), py::arg("target"))
       .def_static(
           "get_body_pos_vel",
-          [](lupnt::VecXd t_tai, lupnt::NaifId center, lupnt::NaifId target) -> lupnt::Matd<-1, 6> {
+          [](lupnt::VecXd t_tai, lupnt::NaifId center, lupnt::NaifId target) -> lupnt::MatX6d {
             return lupnt::spice::GetBodyPosVel(t_tai, center, target).cast<double>();
           },
           py::arg("t_tai"), py::arg("center"), py::arg("target"))

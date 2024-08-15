@@ -112,9 +112,9 @@ namespace lupnt {
     return distances;
   }
 
-  // MatX = func(real, Mat<-1, 3>, Mat<-1, 3>)
-  MatX Occultation::ComputeOccultation(Real epoch, const Mat<-1, 3>& r1, const Mat<-1, 3>& r2,
-                                       Frame cs1, Frame cs2, const std::vector<NaifId>& bodies) {
+  // MatX = func(real, MatX3, MatX3)
+  MatX Occultation::ComputeOccultation(Real epoch, const MatX3& r1, const MatX3& r2, Frame cs1,
+                                       Frame cs2, const std::vector<NaifId>& bodies) {
     assert((r1.rows() == r2.rows() || r1.rows() == 1 || r2.rows() == 1) &&
     "r1 and r2 must have the same number of rows or one of them must have "
     "only one row");
@@ -127,10 +127,9 @@ namespace lupnt {
     return distances;
   }
 
-  // MatX = func(VecX, Mat<-1, 3>, Mat<-1, 3>)
-  MatX Occultation::ComputeOccultation(const VecX& epoch, const Mat<-1, 3>& r1,
-                                       const Mat<-1, 3>& r2, Frame cs1, Frame cs2,
-                                       const std::vector<NaifId>& bodies) {
+  // MatX = func(VecX, MatX3, MatX3)
+  MatX Occultation::ComputeOccultation(const VecX& epoch, const MatX3& r1, const MatX3& r2,
+                                       Frame cs1, Frame cs2, const std::vector<NaifId>& bodies) {
     assert((epoch.size() == r1.rows() || r1.rows() == 1)
            && "epoch and r1 must have the same size or r1 must have only one row");
     assert((epoch.size() == r2.rows() || r2.rows() == 1)

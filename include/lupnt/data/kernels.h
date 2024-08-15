@@ -50,6 +50,6 @@ namespace lupnt {
 
   double GetTtTdbDifference(double t_tai);
   Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target);
-  Mat<-1, 6> GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target);
+  MatX6 GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target);
 
 }  // namespace lupnt

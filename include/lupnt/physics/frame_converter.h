@@ -53,16 +53,16 @@ namespace lupnt {
   Vec3 ConvertFrame(Real t_tai, const Vec3 &r_in, Frame frame_in, Frame frame_out);
 
   // Mat = func(real, Mat)
-  Mat<-1, 6> ConvertFrame(Real t_tai, const Mat<-1, 6> &rv_in, Frame frame_in, Frame frame_out);
-  Mat<-1, 3> ConvertFrame(Real t_tai, const Mat<-1, 3> &r_in, Frame frame_in, Frame frame_out);
+  MatX6 ConvertFrame(Real t_tai, const MatX6 &rv_in, Frame frame_in, Frame frame_out);
+  MatX3 ConvertFrame(Real t_tai, const MatX3 &r_in, Frame frame_in, Frame frame_out);
 
   // Mat = func(Vec, Vec)
-  Mat<-1, 6> ConvertFrame(VecX t_tai, const Vec6 &rv_in, Frame frame_in, Frame frame_out);
-  Mat<-1, 3> ConvertFrame(VecX t_tai, const Vec3 &r_in, Frame frame_in, Frame frame_out);
+  MatX6 ConvertFrame(VecX t_tai, const Vec6 &rv_in, Frame frame_in, Frame frame_out);
+  MatX3 ConvertFrame(VecX t_tai, const Vec3 &r_in, Frame frame_in, Frame frame_out);
 
   // Mat = func(Vec, Mat)
-  Mat<-1, 6> ConvertFrame(VecX t_tai, const Mat<-1, 6> &rv_in, Frame frame_in, Frame frame_out);
-  Mat<-1, 3> ConvertFrame(VecX t_tai, const Mat<-1, 3> &r_in, Frame frame_in, Frame frame_out);
+  MatX6 ConvertFrame(VecX t_tai, const MatX6 &rv_in, Frame frame_in, Frame frame_out);
+  MatX3 ConvertFrame(VecX t_tai, const MatX3 &r_in, Frame frame_in, Frame frame_out);
 
   CartesianOrbitState ConvertFrame(Real t_tai, const CartesianOrbitState &state_in,
                                    Frame frame_out);
