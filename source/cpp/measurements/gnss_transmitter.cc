@@ -142,13 +142,13 @@ namespace lupnt {
    * @return Transmission
    */
   Transmission GnssTransmitter::GenerateTransmission(double t) {
-    auto cart_state = agent->GetCartesianGCRFStateAtEpoch(t);
+    CartesianOrbitState cart_state = agent->GetCartesianGCRFStateAtEpoch(t);
     ConvertOrbitStateFrame(cart_state, t, Frame::GCRF);
 
     Transmission trans;
     trans.dt_tx = 0.0;
-    trans.r_tx = cart_state->r().cast<double>();
-    trans.v_tx = cart_state->v().cast<double>();
+    trans.r_tx = cart_state.r().cast<double>();
+    trans.v_tx = cart_state.v().cast<double>();
     return trans;
   }
 

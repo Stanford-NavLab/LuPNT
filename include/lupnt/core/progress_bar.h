@@ -13,11 +13,11 @@ namespace lupnt {
         : total_(total),
           barWidth_(barWidth),
           maxUpdateFrequency_(maxUpdateFrequency),
+          currentValue_(0),
           currentProgress_(-1),
-          startTime_(std::chrono::system_clock::now()),
-          lastUpdate_(startTime_),
           valueAtLastUpdate_(0),
-          currentValue_(0) {}
+          startTime_(std::chrono::system_clock::now()),
+          lastUpdate_(startTime_) {}
 
     void Update() { Update(currentValue_ + 1); }
     void Update(int value) {
@@ -40,11 +40,11 @@ namespace lupnt {
       }
 
       if (value == total_) {
-        Done();
+        Finish();
       }
     }
 
-    void Done() {
+    void Finish() {
       auto now = std::chrono::system_clock::now();
       std::chrono::duration<double> elapsedSinceStart = now - startTime_;
       double totalItersPerSecond = total_ / elapsedSinceStart.count();
@@ -74,7 +74,7 @@ namespace lupnt {
         else
           std::cout << " ";
       }
-      std::cout << "] " << currentProgress_ << "%, ";
+      std::cout << "] " << value << "/" << total_ << ", " << currentProgress_ << "%, ";
       std::cout << std::fixed << std::setprecision(2) << speed << " it/s, ";
       std::cout << FormatTime(remainingTime) << " remaining\r";
       std::cout.flush();

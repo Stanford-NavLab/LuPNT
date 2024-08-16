@@ -16,40 +16,41 @@ namespace lupnt {
 
   NumericalPropagator::NumericalPropagator() { integrator = std::make_unique<RK4>(); };
 
-  NumericalPropagator::NumericalPropagator(std::string integratorType) {
+  NumericalPropagator::NumericalPropagator(IntegratorType integ) {
     IntegratorParams params = IntegratorParams();  // default params
-    if (integratorType == "RK4")
+    if (integ == IntegratorType::RK4)
       integrator = std::make_unique<RK4>();
-    else if (integratorType == "RK8")
+    else if (integ == IntegratorType::RK8)
       integrator = std::make_unique<RK8>();
-    else if (integratorType == "RKF45")
+    else if (integ == IntegratorType::RKF45)
       integrator = std::make_unique<RKF45>(params);
     else
       throw std::invalid_argument("Invalid Integrator Type");
   };
 
-  NumericalPropagator::NumericalPropagator(std::string integratorType, IntegratorParams params) {
-    if (integratorType == "RK4")
+  NumericalPropagator::NumericalPropagator(IntegratorType integ, IntegratorParams params) {
+    if (integ == IntegratorType::RK4)
       integrator = std::make_unique<RK4>();
-    else if (integratorType == "RK8")
+    else if (integ == IntegratorType::RK8)
       integrator = std::make_unique<RK8>();
-    else if (integratorType == "RKF45")
+    else if (integ == IntegratorType::RKF45)
       integrator = std::make_unique<RKF45>(params);
     else
       throw std::invalid_argument("Invalid Integrator Type");
   };
 
-  VecX NumericalPropagator::Propagate(ODE odefunc, Real t0, Real tf, VecX x0, Real dt) {
-    assert(dt > 0 && "dt must be greater than 0");
+  VecX NumericalPropagator::Propagate(const ODE &odefunc, Real t0, Real tf, const VecX &x0,
+                                      Real dt) {
+    if (dt <= 0) throw std::invalid_argument("Invalid time step");
+
     VecX x = x0;
     Real t = t0;
-    Real step = dt;
     while (t < tf) {
-      step = std::min(step, tf - t);
+      dt = std::min(dt, tf - t);
       // store the previous step (deep copy)
-      Real prev_step = step;
-      x = integrator->Step(odefunc, t, x, step);  // update x and step
-      t += prev_step;
+      Real prev_dt = dt;
+      x = integrator->Step(odefunc, t, x, dt);  // update x and step
+      t += prev_dt;
       // std::cout << "t: " << t << std::endl;
       if (log_history_) {
         t_history_.push_back(t);
@@ -59,16 +60,18 @@ namespace lupnt {
     return x;
   };
 
-  VecX NumericalPropagator::PropagateWithStm(ODE odefunc, Real t0, Real tf, VecX x0, Real dt,
-                                             MatXd &J) {
-    auto func = [=, this](VecX &x) { return Propagate(odefunc, t0, tf, x, dt); };
+  VecX NumericalPropagator::Propagate(const ODE &odefunc, Real t0, Real tf, const VecX &x0, Real dt,
+                                      MatXd *J) {
+    auto func = [=, this](const VecX &x) { return Propagate(odefunc, t0, tf, x, dt); };
 
-    // decouple x0 from previous relations by reinitializing it
-    for (int i = 0; i < x0.size(); i++) {
-      x0(i) = double(x0(i));
-    }
     VecX xf;
-    J = jacobian(func, wrt(x0), at(x0), xf);
+    if (J != nullptr) {
+      // decouple x0 from previous relations by reinitializing it
+      VecX x0_tmp = x0.cast<double>();
+      *J = jacobian(func, wrt(x0_tmp), at(x0_tmp), xf);
+    } else {
+      xf = func(x0);
+    }
     return xf;
   };
 

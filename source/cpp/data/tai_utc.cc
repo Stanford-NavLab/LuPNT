@@ -16,7 +16,7 @@
 namespace lupnt {
 
   std::mutex tai_utc_mutex;
-  std::shared_ptr<TaiUtcFileData> tai_utc_data;
+  Ptr<TaiUtcFileData> tai_utc_data;
 
   void LoadTaiUtcFileData(const std::filesystem::path& filepath) {
     std::lock_guard<std::mutex> lock(tai_utc_mutex);
@@ -27,7 +27,7 @@ namespace lupnt {
     assert(file.is_open() && "Unable to open file");
 
     // Initialize TaiUtcFileData struct
-    tai_utc_data = std::make_shared<TaiUtcFileData>();
+    tai_utc_data = Ptr<TaiUtcFileData>();
     tai_utc_data->jd.resize(n_lines);
     tai_utc_data->tai_utc.resize(n_lines);
     tai_utc_data->mjd0.resize(n_lines);

@@ -64,16 +64,17 @@ void init_dynamics(py::module &m) {
   //     py::arg("state"), py::arg("dt"), py::return_value_policy::move)
   // .def("__repr__", [](const KeplerianDynamics &dyn) { return "<pylupnt.KeplerianDynamics>"; });
 
-  // NumericalOrbitDynamics
-  py::class_<NumericalOrbitDynamics>(m, "NumericalOrbitDynamics")
+  // IDynamics
+  py::class_<IDynamics>(m, "IDynamics")
       .def(
           "propagate",
-          [](NumericalOrbitDynamics &dyn, OrbitState &state, double t0, double tf,
-             double dt) -> void { dyn.Propagate(state, t0, tf, dt); },
+          [](IDynamics &dyn, OrbitState &state, double t0, double tf, double dt) -> void {
+            dyn.Propagate(state, t0, tf, dt);
+          },
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt") = 0.0)
       .def(
           "propagate",
-          [](NumericalOrbitDynamics &dyn, Vec6d &x, double t0, double tf, double dt) -> Vec6d {
+          [](IDynamics &dyn, Vec6d &x, double t0, double tf, double dt) -> Vec6d {
             Vec6 x_real = x.cast<Real>();
             dyn.Propagate(x_real, t0, tf, dt);
             return x_real.cast<double>();
@@ -81,8 +82,7 @@ void init_dynamics(py::module &m) {
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt") = 0.0)
       .def(
           "propagate",
-          [](NumericalOrbitDynamics &dyn, Vec6d &x, double t0, VecXd &tfs, double dt,
-             bool progress) -> MatXd {
+          [](IDynamics &dyn, Vec6d &x, double t0, VecXd &tfs, double dt, bool progress) -> MatXd {
             Vec6 x_real = x.cast<Real>();
             VecX tfs_real = tfs.cast<Real>();
             return dyn.Propagate(x_real, t0, tfs_real, progress).cast<double>();
@@ -91,8 +91,7 @@ void init_dynamics(py::module &m) {
           py::arg("progress") = false)
       .def(
           "propagate_with_stm",
-          [](NumericalOrbitDynamics &dyn, CartesianOrbitState &state, double t0, double tf,
-             double dt) {
+          [](IDynamics &dyn, CartesianOrbitState &state, double t0, double tf, double dt) {
             Mat6d stm;
             dyn.PropagateWithStm(state, t0, tf, dt, stm);
             return stm;
@@ -101,7 +100,7 @@ void init_dynamics(py::module &m) {
           py::return_value_policy::move)
       .def(
           "propagate_with_stm",
-          [](NumericalOrbitDynamics &dyn, Vec6d &state, double t0, double tf,
+          [](IDynamics &dyn, Vec6d &state, double t0, double tf,
              double dt) -> std::tuple<Vec6d, Mat6d> {
             Mat6d stm;
             Vec6 state_real = state.cast<Real>();
@@ -109,10 +108,10 @@ void init_dynamics(py::module &m) {
             return std::make_tuple(state_real.cast<double>(), stm);
           },
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
-      .def("set_time_step", [](NumericalOrbitDynamics &dyn, double dt) { dyn.SetTimeStep(dt); });
+      .def("set_time_step", [](IDynamics &dyn, double dt) { dyn.SetTimeStep(dt); });
   // .def(
   //     "propagate_with_stm",
-  //     [](NumericalOrbitDynamics &dyn, RowVec6d &state, double t0,
+  //     [](IDynamics &dyn, RowVec6d &state, double t0,
   //        double tf, double dt) -> std::tuple<Vec6d, Mat6d> {
   //       Mat6d stm;
   //       Vec6 state_real = state.cast<real>();
@@ -122,14 +121,14 @@ void init_dynamics(py::module &m) {
   //     py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"));
 
   // CartesianTwoBodyDynamics
-  py::class_<CartesianTwoBodyDynamics, NumericalOrbitDynamics>(m, "CartesianTwoBodyDynamics")
+  py::class_<CartesianTwoBodyDynamics, IDynamics>(m, "CartesianTwoBodyDynamics")
       .def(py::init<double, std::string>(), py::arg("GM"), py::arg("integrator") = "RK4")
       .def("__repr__", [](const CartesianTwoBodyDynamics &dyn) {
         return "<pylupnt.CartesianTwoBodyDynamics>";
       });
 
   // NBodyDynamics
-  py::class_<NBodyDynamics, NumericalOrbitDynamics>(m, "NBodyDynamics")
+  py::class_<NBodyDynamics, IDynamics>(m, "NBodyDynamics")
       .def(py::init<>())
       .def("set_primary_body", &NBodyDynamics::SetPrimaryBody, py::arg("body"))
       .def("add_body", &NBodyDynamics::AddBody, py::arg("body"))

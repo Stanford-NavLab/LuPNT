@@ -14,7 +14,7 @@
 namespace lupnt {
 
   void GnssStateEstimationApp::Setup() {
-    Vec6 rv = agent->GetOrbitState()->GetVec();
+    Vec6 rv = agent->GetState()->GetVec();
     Vec2 clk = Vec2::Zero();
 
     // Initial covariance
@@ -48,7 +48,7 @@ namespace lupnt {
       Q_rv(i, i + 3) = pow(Dt, 2) / 2.0 * pow(sigma_acc, 2);
       Q_rv(i + 3, i) = pow(Dt, 2) / 2.0 * pow(sigma_acc, 2);
     }
-    Q_clk = GetClockProcessNoise(ClockModel::kMicrosemiCsac, Dt);
+    Q_clk = ClockDynamics::TwoStateNoise(ClockModel::kMicrosemiCsac, Dt).cast<double>();
 
     P = VecXd::Zero(n_state, n_state);
     P.setZero();
@@ -69,13 +69,15 @@ namespace lupnt {
   void GnssStateEstimationApp::Step(double t) {
     epoch = epoch0 + t;
 
-    auto rv_pred = rv_est;
-    auto clk_pred = clk_est;
-    dyn->PropagateWithStm(rv_pred, t - Dt, t, dt, Phi_rv);
-    dyn->PropagateWithStm(rv_pred_only, t - Dt, t, dt, Phi_rv_pred_only);
+    MatXd Phi_6(6, 6);
+    Vec6 rv_pred = dyn->Propagate(rv_est, t - Dt, t, &Phi_6);
+    Phi_rv = Phi_6;
+    rv_pred_only = dyn->Propagate(rv_pred_only, t - Dt, t, &Phi_6);
+    Phi_rv_pred_only = Phi_6;
+
     Phi_clk << 1.0, Dt, 0.0, 1.0;
     Phi_clk_pred_only << 1.0, Dt, 0.0, 1.0;
-    clk_pred = Phi_clk * clk_pred;
+    Vec2 clk_pred = Phi_clk * clk_est;
     clk_pred_only = Phi_clk * clk_pred_only;
 
     // State and covariance
@@ -149,7 +151,7 @@ namespace lupnt {
     data_history->AddData("vis_antenna", t, meas.GetMoonOccultation());
     data_history->AddData("vis_ionos", t, meas.GetMoonOccultation());
 
-    data_history->AddData("rv", t, agent->GetOrbitState()->GetVec());
+    data_history->AddData("rv", t, agent->GetState()->GetVec());
     data_history->AddData("rv_pred", t, rv_pred);
     data_history->AddData("rv_pred_only", t, rv_pred_only);
     data_history->AddData("rv_est", t, rv_est);

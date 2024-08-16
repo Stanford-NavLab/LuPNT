@@ -44,16 +44,16 @@ namespace lupnt {
 
     // Generate Measurement
     GnssMeasurement GetMeasurement(double t);
-    void SetChannel(std::shared_ptr<GnssChannel> ch) { channel = ch; };
+    void SetChannel(Ptr<GnssChannel> ch) { channel = ch; };
 
     // Getters and Setters
-    inline std::shared_ptr<Agent> GetAgent() const override { return agent; };
-    inline void SetAgent(const std::shared_ptr<Agent>& agent) override { this->agent = agent; };
+    inline Ptr<Agent> GetAgent() const override { return agent; };
+    inline void SetAgent(const Ptr<Agent>& agent) override { this->agent = agent; };
     double GetAntennaGain(Vec3d direction) { return antenna_.GetAntennaGain(direction); };
     double GetAntennaGain(double theta, double phi) { return antenna_.GetAntennaGain(theta, phi); };
 
   private:
-    std::shared_ptr<Agent> agent;
-    std::shared_ptr<GnssChannel> channel;
+    Ptr<Agent> agent;
+    Ptr<GnssChannel> channel;
   };
 }  // namespace lupnt

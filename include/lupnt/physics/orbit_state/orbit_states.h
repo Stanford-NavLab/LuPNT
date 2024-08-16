@@ -21,14 +21,14 @@
 
 #define kOrbitStateSize 6
 
-#define GETSET_ELEM(name, idx)                       \
-  inline Real name() const { return GetVec()(idx); } \
-  inline void Set_##name(Real val) { SetValue(val, idx); }
+#define GETSET_ELEM(name, idx)                \
+  Real name() const { return GetVec()(idx); } \
+  void Set_##name(Real val) { SetValue(idx, val); }
 
 namespace lupnt {
 
-  enum OrbitStateRepres {
-    CARTESIAN = 0,
+  enum class OrbitStateRepres {
+    CARTESIAN,
     CLASSICAL_OE,
     QUASI_NONSINGULAR_OE,
     SINGULAR_ROE,
@@ -40,41 +40,7 @@ namespace lupnt {
     QUASINONSINGULAR_ROE,
   };
 
-  static std::ostream &operator<<(std::ostream &os, const OrbitStateRepres &repres) {
-    switch (repres) {
-      case OrbitStateRepres::CARTESIAN:
-        os << "CARTESIAN";
-        break;
-      case OrbitStateRepres::CLASSICAL_OE:
-        os << "CLASSICAL_OE";
-        break;
-      case OrbitStateRepres::QUASI_NONSINGULAR_OE:
-        os << "QUASI_NONSINGULAR_OE";
-        break;
-      case OrbitStateRepres::SINGULAR_ROE:
-        os << "SINGULAR_ROE";
-        break;
-      case OrbitStateRepres::NONSINGULAR_OE:
-        os << "NONSINGULAR_OE";
-        break;
-      case OrbitStateRepres::EQUINOCTIAL_OE:
-        os << "EQUINOCTIAL_OE";
-        break;
-      case OrbitStateRepres::DELAUNAY_OE:
-        os << "DELAUNAY_OE";
-        break;
-      case OrbitStateRepres::ABSOLUTE_RELATIVE_SEPARATOR:
-        os << "ABSOLUTE_RELATIVE_SEPARATOR";
-        break;
-      case OrbitStateRepres::RTN:
-        os << "RTN";
-        break;
-      case OrbitStateRepres::QUASINONSINGULAR_ROE:
-        os << "QUASINONSINGULAR_ROE";
-        break;
-    }
-    return os;
-  }
+  std::ostream &operator<<(std::ostream &os, const OrbitStateRepres &repres);
 
   // Base class for orbit states
   class OrbitState : public IState {
@@ -82,52 +48,32 @@ namespace lupnt {
     Vec6 x_;
     Frame frame_;
     OrbitStateRepres repres_;
-    std::vector<std::string> names_;
-    std::vector<std::string> units_;
+    std::array<const char *, 6> names_;
+    std::array<const char *, 6> units_;
 
   public:
     OrbitState(const Vec6 &x, Frame coord, OrbitStateRepres repres,
-               const std::vector<std::string> &names, const std::vector<std::string> &units)
-        : x_(x), frame_(coord), repres_(repres), names_(names), units_(units) {}
+               const std::array<const char *, 6> &names, const std::array<const char *, 6> &units);
 
-    Vec6 GetVec() const { return x_; }
+    // Overrides
+    int GetSize() const override;
+    VecX GetVec() const override;
+    void SetVec(const VecX &x) override;
+    Real GetValue(int idx) const override;
+    void SetValue(int idx, Real val) override;
 
-    VecX GetVecX() const {
-      VecX x(kOrbitStateSize);
-      for (int i = 0; i < kOrbitStateSize; i++) {
-        x(i) = x_(i);
-      }
-      return x;
-    }
+    Vec6 GetVec6() const;
+    Frame GetFrame() const;
+    std::array<const char *, 6> GetNames() const;
+    std::array<const char *, 6> GetUnits() const;
+    StateType GetStateType() const override;
+    OrbitStateRepres GetOrbitStateRepres() const;
 
-    inline std::vector<std::string> GetNames() const { return names_; }
-    inline std::vector<std::string> GetUnits() const { return units_; }
-    inline int GetSize() const { return kOrbitStateSize; }
-    inline Real GetValue(int i) const { return x_(i); }
-    inline OrbitStateRepres GetOrbitStateRepres() const { return repres_; }
-    inline Frame GetFrame() const { return frame_; }
+    void SetOrbitStateRepres(const OrbitStateRepres rep);
+    void SetCoordSystem(Frame frame);
 
-    inline void SetValue(Real val, int idx) { x_(idx) = val; }
-    inline void SetVec(const Vec6 &x) { x_ = x; }
-
-    inline void SetVecX(const VecX &x) {
-      if (x.size() != kOrbitStateSize) {
-        throw std::invalid_argument("Vec size does not match");
-      }
-      for (int i = 0; i < kOrbitStateSize; i++) {
-        x_(i) = x(i);
-      }
-    }
-
-    inline void SetOrbitStateRepres(const OrbitStateRepres rep) { repres_ = rep; }
-    inline void SetCoordSystem(Frame frame) { frame_ = frame; }
-
-    inline Real operator()(int idx) const { return x_(idx); }
-
-    std::ostream &operator<<(std::ostream &os) const {
-      os << "<OrbitState(" << x_.transpose() << ", " << frame_ << ", " << repres_ << ")>";
-      return os;
-    }
+    Real operator()(int idx) const;
+    std::ostream &operator<<(std::ostream &os) const;
   };
 
   // Extends OrbitState to represent an orbit in Cartesian coordinates
@@ -140,8 +86,8 @@ namespace lupnt {
   // - $v_z$ [km/s]
   class CartesianOrbitState : public OrbitState {
   private:
-    inline static const std::vector<std::string> names_ = {"rx", "ry", "rz", "vx", "vy", "vz"};
-    inline static const std::vector<std::string> units_
+    static constexpr std::array<const char *, 6> names_ = {"rx", "ry", "rz", "vx", "vy", "vz"};
+    static constexpr std::array<const char *, 6> units_
         = {"km", "km", "km", "km/s", "km/s", "km/s"};
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CARTESIAN;
 
@@ -149,13 +95,13 @@ namespace lupnt {
     CartesianOrbitState(const Vec6 &x, Frame frame = Frame::MOON_CI)
         : OrbitState(x, frame, repres_, names_, units_) {}
 
-    inline Vec3 r() const { return GetVec().head(3); }
-    inline Vec3 v() const { return GetVec().tail(3); }
-    inline void Set_r(const Vec3 &r) {
-      for (int i = 0; i < 3; i++) SetValue(r(i), i);
+    Vec3 r() const { return GetVec().head(3); }
+    Vec3 v() const { return GetVec().tail(3); }
+    void Set_r(const Vec3 &r) {
+      for (int i = 0; i < 3; i++) SetValue(i, r(i));
     }
-    inline void Set_v(const Vec3 &v) {
-      for (int i = 0; i < 3; i++) SetValue(v(i), i + 3);
+    void Set_v(const Vec3 &v) {
+      for (int i = 0; i < 3; i++) SetValue(i + 3, v(i));
     }
   };
 
@@ -170,8 +116,8 @@ namespace lupnt {
   // Singular at $e \in {0,1}$, and $i \in {0, \pi}$
   class ClassicalOE : public OrbitState {
   private:
-    inline static const std::vector<std::string> names_ = {"a", "e", "i", "Omega", "w", "M"};
-    inline static const std::vector<std::string> units_ = {"km", "-", "rad", "rad", "rad", "rad"};
+    static constexpr std::array<const char *, 6> names_ = {"a", "e", "i", "Omega", "w", "M"};
+    static constexpr std::array<const char *, 6> units_ = {"km", "-", "rad", "rad", "rad", "rad"};
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CLASSICAL_OE;
     static Vec6 to_deg(const Vec6 &x, bool deg) {
       if (!deg) return x;
@@ -203,8 +149,8 @@ namespace lupnt {
   // - $\Omega$ [rad] (right ascension of the ascending node)
   class QuasiNonsingOE : public OrbitState {
   private:
-    inline static const std::vector<std::string> names_ = {"a", "u", "ex", "ey", "i", "Omega"};
-    inline static const std::vector<std::string> units_ = {"km", "-", "-", "-", "rad", "rad"};
+    static constexpr std::array<const char *, 6> names_ = {"a", "u", "ex", "ey", "i", "Omega"};
+    static constexpr std::array<const char *, 6> units_ = {"km", "-", "-", "-", "rad", "rad"};
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::QUASI_NONSINGULAR_OE;
 
   public:
@@ -229,8 +175,8 @@ namespace lupnt {
   // - $H$ [rad]
   class DelaunayOE : public OrbitState {
   private:
-    inline static const std::vector<std::string> names_ = {"l", "g", "h", "L", "G", "H"};
-    inline static const std::vector<std::string> units_
+    static constexpr std::array<const char *, 6> names_ = {"l", "g", "h", "L", "G", "H"};
+    static constexpr std::array<const char *, 6> units_
         = {"rad", "rad", "rad", "rad", "rad", "rad"};
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::DELAUNAY_OE;
 
@@ -256,8 +202,8 @@ namespace lupnt {
   // - $\lambda$ [rad]
   class EquinoctialOE : public OrbitState {
   private:
-    inline static const std::vector<std::string> names_ = {"a", "h", "k", "p", "q", "lambda"};
-    inline static const std::vector<std::string> units_ = {"km", "-", "-", "-", "-", "rad"};
+    static constexpr std::array<const char *, 6> names_ = {"a", "h", "k", "p", "q", "lambda"};
+    static constexpr std::array<const char *, 6> units_ = {"km", "-", "-", "-", "-", "rad"};
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::EQUINOCTIAL_OE;
 
   public:
@@ -282,9 +228,9 @@ namespace lupnt {
   // - $a\delta \Omega$ [m] (right ascension of the ascending node)
   class SingularROE : public OrbitState {
   private:
-    inline static const std::vector<std::string> names_
+    static constexpr std::array<const char *, 6> names_
         = {"ada", "adM", "ade", "adw", "adi", "adOmega"};
-    inline static const std::vector<std::string> units_ = {"m", "m", "m", "m", "m", "m"};
+    static constexpr std::array<const char *, 6> units_ = {"m", "m", "m", "m", "m", "m"};
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::SINGULAR_ROE;
 
   public:
@@ -309,9 +255,9 @@ namespace lupnt {
   // - $a\delta i_y$ [m] (inclination y-component)
   class QuasiNonsingROE : public OrbitState {
   private:
-    inline static const std::vector<std::string> names_
+    static constexpr std::array<const char *, 6> names_
         = {"ada", "adl", "adex", "adey", "adix", "adiy"};
-    inline static const std::vector<std::string> units_ = {"m", "m", "m", "m", "m", "m"};
+    static constexpr std::array<const char *, 6> units_ = {"m", "m", "m", "m", "m", "m"};
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::QUASINONSINGULAR_ROE;
 
   public:

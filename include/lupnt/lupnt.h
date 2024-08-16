@@ -38,7 +38,6 @@
 #include "lupnt/measurements/intersatellite_link.h"
 #include "lupnt/measurements/occultation.h"
 #include "lupnt/measurements/radio_measurement.h"
-#include "lupnt/measurements/space_channel.h"
 #include "lupnt/measurements/transmission.h"
 
 // numerics

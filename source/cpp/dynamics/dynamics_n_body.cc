@@ -19,12 +19,12 @@
 
 namespace lupnt {
 
-  NBodyDynamics::NBodyDynamics(std::string integratorType)
+  NBodyDynamics::NBodyDynamics(IntegratorType integ)
       : NumericalOrbitDynamics(std::bind(&NBodyDynamics::ComputeRates, this, std::placeholders::_1,
                                          std::placeholders::_2),
-                               OrbitStateRepres::CARTESIAN, integratorType) {};
+                               integ) {};
 
-  VecX NBodyDynamics::ComputeRates(Real t_tai, const VecX& rv) const {
+  Vec6 NBodyDynamics::ComputeRates(Real t_tai, const Vec6& rv) const {
     assert(rv.size() == 6);
     // Position, velocity, and acceleration [km, km/s, km/s^2]
     // w.r.t. to the inertial frame origin

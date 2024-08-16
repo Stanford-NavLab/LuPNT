@@ -26,8 +26,8 @@ namespace lupnt {
   public:
     virtual ~ICommDevice() = default;
     std::string txrx = "none";
-    virtual inline std::shared_ptr<Agent> GetAgent() const = 0;
-    virtual inline void SetAgent(const std::shared_ptr<Agent> &agent) = 0;
+    virtual inline Ptr<Agent> GetAgent() const = 0;
+    virtual inline void SetAgent(const Ptr<Agent> &agent) = 0;
   };
 
   struct TransmitterParam {
@@ -39,8 +39,8 @@ namespace lupnt {
     virtual ~Transmitter() = default;
     std::string txrx = "tx";
     TransmitterParam tx_param_;
-    virtual inline std::shared_ptr<Agent> GetAgent() const = 0;
-    virtual inline void SetAgent(const std::shared_ptr<Agent> &agent) = 0;
+    virtual inline Ptr<Agent> GetAgent() const = 0;
+    virtual inline void SetAgent(const Ptr<Agent> &agent) = 0;
   };
 
   struct ReceiverParam {
@@ -57,8 +57,8 @@ namespace lupnt {
     virtual ~Receiver() = default;
     std::string txrx = "rx";
     ReceiverParam rx_param_;
-    virtual inline std::shared_ptr<Agent> GetAgent() const = 0;
-    virtual inline void SetAgent(const std::shared_ptr<Agent> &agent) = 0;
+    virtual inline Ptr<Agent> GetAgent() const = 0;
+    virtual inline void SetAgent(const Ptr<Agent> &agent) = 0;
   };
 
   class Tranceiver : public ICommDevice {
@@ -67,8 +67,8 @@ namespace lupnt {
     std::string txrx = "txrx";
     TransmitterParam tx_param_;
     ReceiverParam rx_param_;
-    virtual inline std::shared_ptr<Agent> GetAgent() const = 0;
-    virtual inline void SetAgent(const std::shared_ptr<Agent> &agent) = 0;
+    virtual inline Ptr<Agent> GetAgent() const = 0;
+    virtual inline void SetAgent(const Ptr<Agent> &agent) = 0;
   };
 
 }  // namespace lupnt

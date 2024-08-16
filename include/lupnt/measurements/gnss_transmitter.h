@@ -64,17 +64,17 @@ namespace lupnt {
     Transmission GenerateTransmission(double t);
 
     // Getters and Setters
-    void SetChannel(std::shared_ptr<GnssChannel> ch) { channel = ch; };
+    void SetChannel(Ptr<GnssChannel> ch) { channel = ch; };
     int GetPRN() { return prn_; };
     void SetFreq(double freq) { freq_tx = freq; };
     std::string GetGnssType() { return gnss_type_; };
-    inline std::shared_ptr<Agent> GetAgent() const override { return agent; };
-    inline void SetAgent(const std::shared_ptr<Agent>& agent) override { this->agent = agent; };
+    inline Ptr<Agent> GetAgent() const override { return agent; };
+    inline void SetAgent(const Ptr<Agent>& agent) override { this->agent = agent; };
     double GetAntennaGain(Vec3d direction) { return antenna_.GetAntennaGain(direction); };
     double GetAntennaGain(double theta, double phi) { return antenna_.GetAntennaGain(theta, phi); };
 
   private:
-    std::shared_ptr<Agent> agent;          // Agent that owns the device
-    std::shared_ptr<GnssChannel> channel;  // Channel that the device is connected to
+    Ptr<Agent> agent;          // Agent that owns the device
+    Ptr<GnssChannel> channel;  // Channel that the device is connected to
   };
 }  // namespace lupnt

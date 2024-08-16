@@ -19,10 +19,10 @@ namespace lupnt {
 
   using ODE = std::function<VecX(Real, const VecX&)>;
 
-  enum class Integrators {
-    kRK4,
-    kRK8,
-    kRKF45,
+  enum class IntegratorType {
+    RK4,
+    RK8,
+    RKF45,
   };
 
   class IntegratorParams {

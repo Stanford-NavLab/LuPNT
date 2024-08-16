@@ -14,6 +14,12 @@
 #include <Eigen/Dense>
 #include <autodiff/forward/real.hpp>
 #include <autodiff/forward/real/eigen.hpp>
+#include <filesystem>
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <vector>
 
 #include "user_file_path.h"
 
@@ -64,6 +70,11 @@
   DEFINE_DYNAMIC_VECTORS_MATRICES()
 
 namespace lupnt {
+
+  template <typename T> using Ptr = std::shared_ptr<T>;
+  template <typename T, typename... Args> Ptr<T> MakePtr(Args&&... args) {
+    return std::make_shared<T>(std::forward<Args>(args)...);
+  }
 
   using Eigen::Dynamic;
   using Eigen::Matrix;

@@ -15,7 +15,7 @@
 
 namespace lupnt {
 
-  std::shared_ptr<EopFileData> eop;
+  Ptr<EopFileData> eop;
   std::mutex eop_mutex;
 
   void LoadEopFileData(const std::filesystem::path& filepath) {
@@ -34,7 +34,7 @@ namespace lupnt {
     }
 
     // Initialize EopFileData struct
-    eop = std::make_shared<EopFileData>();
+    eop = Ptr<EopFileData>();
     eop->years.resize(n_lines);
     eop->months.resize(n_lines);
     eop->days.resize(n_lines);

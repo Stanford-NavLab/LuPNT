@@ -59,24 +59,22 @@ namespace lupnt {
     Mat2d Phi_clk;
     Mat2d Phi_clk_pred_only;
 
-    std::shared_ptr<Agent> agent;
-    std::shared_ptr<NumericalOrbitDynamics> dyn;
-    std::shared_ptr<GnssReceiver> receiver;
-    std::shared_ptr<IFilter> filter;
+    Ptr<Agent> agent;
+    Ptr<IDynamics> dyn;
+    Ptr<GnssReceiver> receiver;
+    Ptr<IFilter> filter;
     FilterMeasurementFunction meas_func;
 
     VecX x_est;
     VecX P_est;
 
-    std::shared_ptr<DataHistory> data_history;
+    Ptr<DataHistory> data_history;
 
   public:
-    void SetAgent(std::shared_ptr<Agent> agent) { this->agent = agent; }
-    void SetDynamics(std::shared_ptr<NumericalOrbitDynamics> dyn) { this->dyn = dyn; }
-    void SetReceiver(std::shared_ptr<GnssReceiver> receiver) { this->receiver = receiver; }
-    void SetDataHistory(std::shared_ptr<DataHistory> data_history) {
-      this->data_history = data_history;
-    }
+    void SetAgent(Ptr<Agent> agent) { this->agent = agent; }
+    void SetDynamics(Ptr<IDynamics> dyn) { this->dyn = dyn; }
+    void SetReceiver(Ptr<GnssReceiver> receiver) { this->receiver = receiver; }
+    void SetDataHistory(Ptr<DataHistory> data_history) { this->data_history = data_history; }
 
     void SetFrequency(double frequency) { this->frequency = frequency; }
     double GetFrequency() { return frequency; }

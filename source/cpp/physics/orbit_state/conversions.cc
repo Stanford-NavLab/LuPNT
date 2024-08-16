@@ -14,7 +14,7 @@ namespace lupnt {
   /// @param GM Gravitational parameter [km^3/s^2]
   /// @return Classical orbital elements [km, –, rad, rad, rad, rad]
   ClassicalOE Cart2Classical(const CartesianOrbitState &rv, Real GM) {
-    return ClassicalOE(Cart2Classical(rv.GetVec(), GM), rv.GetFrame());
+    return ClassicalOE(Cart2Classical(rv.GetVec6(), GM), rv.GetFrame());
   }
 
   /// @brief Convert Cartesian state to classical orbital elements
@@ -122,7 +122,7 @@ namespace lupnt {
   /// @return Relative RTN state [km, km/s]
   CartesianOrbitState Inertial2Synodic(const CartesianOrbitState &rv_c,
                                        const CartesianOrbitState &rv_d) {
-    return CartesianOrbitState(Inertial2Synodic(rv_c.GetVec(), rv_d.GetVec()), rv_c.GetFrame());
+    return CartesianOrbitState(Inertial2Synodic(rv_c.GetVec6(), rv_d.GetVec6()), rv_c.GetFrame());
   }
 
   Vec6 Inertial2Synodic(const Vec6 &rv_c, const Vec6 &rv_d) {
@@ -149,7 +149,7 @@ namespace lupnt {
 
   CartesianOrbitState Synodic2Intertial(const CartesianOrbitState &rv_c,
                                         const CartesianOrbitState &rv_syn_d) {
-    return CartesianOrbitState(Synodic2Intertial(rv_c.GetVec(), rv_syn_d.GetVec()),
+    return CartesianOrbitState(Synodic2Intertial(rv_c.GetVec6(), rv_syn_d.GetVec6()),
                                rv_c.GetFrame());
   }
 
@@ -177,7 +177,7 @@ namespace lupnt {
   // From ClassicalOE
   // - To CartesianOrbitState
   CartesianOrbitState Classical2Cart(const ClassicalOE &coe, Real GM) {
-    return CartesianOrbitState(Classical2Cart(coe.GetVec(), GM), coe.GetFrame());
+    return CartesianOrbitState(Classical2Cart(coe.GetVec6(), GM), coe.GetFrame());
   }
 
   /// @brief Convert classical orbital elements to Cartesian state
@@ -212,7 +212,7 @@ namespace lupnt {
 
   // - To QuasiNonsingOE
   QuasiNonsingOE Classical2QuasiNonsing(const ClassicalOE &coe, Real GM) {
-    return QuasiNonsingOE(Classical2QuasiNonsing(coe.GetVec(), GM), coe.GetFrame());
+    return QuasiNonsingOE(Classical2QuasiNonsing(coe.GetVec6(), GM), coe.GetFrame());
   }
 
   Vec6 Classical2QuasiNonsing(const Vec6 &coe, Real GM) {
@@ -227,7 +227,7 @@ namespace lupnt {
 
   // - To EquinoctialOE
   EquinoctialOE Classical2Equinoctial(const ClassicalOE &coe, Real GM) {
-    return EquinoctialOE(Classical2Equinoctial(coe.GetVec(), GM), coe.GetFrame());
+    return EquinoctialOE(Classical2Equinoctial(coe.GetVec6(), GM), coe.GetFrame());
   }
 
   Vec6 Classical2Equinoctial(const Vec6 &coe, Real GM) {
@@ -251,7 +251,7 @@ namespace lupnt {
 
   // - To DelaunayOE
   DelaunayOE Classical2Delaunay(const ClassicalOE &coe, Real GM) {
-    return DelaunayOE(Classical2Delaunay(coe.GetVec(), GM), coe.GetFrame());
+    return DelaunayOE(Classical2Delaunay(coe.GetVec6(), GM), coe.GetFrame());
   }
 
   Vec6 Classical2Delaunay(const Vec6 &coe, Real GM) {
@@ -273,7 +273,7 @@ namespace lupnt {
   // From QuasiNonsingOE
   // - To ClassicalOE
   ClassicalOE QuasiNonsing2Classical(const QuasiNonsingOE &qnsoe, Real GM) {
-    return ClassicalOE(QuasiNonsing2Classical(qnsoe.GetVec(), GM), qnsoe.GetFrame());
+    return ClassicalOE(QuasiNonsing2Classical(qnsoe.GetVec6(), GM), qnsoe.GetFrame());
   }
 
   Vec6 QuasiNonsing2Classical(const Vec6 &qnsoeVec, Real GM) {
@@ -290,7 +290,7 @@ namespace lupnt {
   // From EquinoctialOE
   // - To ClassicalOE
   ClassicalOE Equinoctial2Classical(const EquinoctialOE &eqoe, Real GM) {
-    return ClassicalOE(Equinoctial2Classical(eqoe.GetVec(), GM), eqoe.GetFrame());
+    return ClassicalOE(Equinoctial2Classical(eqoe.GetVec6(), GM), eqoe.GetFrame());
   }
 
   Vec6 Equinoctial2Classical(const Vec6 &equioe, Real GM) {
@@ -320,7 +320,7 @@ namespace lupnt {
   // From DelaunayOE
   // - To ClassicalOE
   ClassicalOE Delaunay2Classical(const DelaunayOE &deloe, Real GM) {
-    return ClassicalOE(Delaunay2Classical(deloe.GetVec(), GM), deloe.GetFrame());
+    return ClassicalOE(Delaunay2Classical(deloe.GetVec6(), GM), deloe.GetFrame());
   }
 
   Vec6 Delaunay2Classical(const Vec6 &delaunay, Real GM) {
@@ -344,7 +344,7 @@ namespace lupnt {
   // - To ClassicalOE
   ClassicalOE RelQuasiNonsing2Classical(const ClassicalOE &coe_c,
                                         const QuasiNonsingROE &RelQuasiNonsing) {
-    return ClassicalOE(RelQuasiNonsing2Classical(coe_c.GetVec(), RelQuasiNonsing.GetVec()),
+    return ClassicalOE(RelQuasiNonsing2Classical(coe_c.GetVec6(), RelQuasiNonsing.GetVec6()),
                        coe_c.GetFrame());
   }
 

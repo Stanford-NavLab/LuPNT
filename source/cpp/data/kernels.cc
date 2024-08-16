@@ -67,7 +67,7 @@ namespace lupnt {
     std::vector<EphemerisBlock> blocks;
   };
 
-  std::shared_ptr<EphemerisData> ephemeris_data;
+  Ptr<EphemerisData> ephemeris_data;
   std::mutex kernels_mutex;
 
   double ParseDouble(const std::string& str) {
@@ -182,7 +182,7 @@ namespace lupnt {
 
   void ReadEphemerisCoefficientsFile(const std::filesystem::path& filepath,
                                      EphemerisHeaderData& data) {
-    ephemeris_data = std::make_shared<EphemerisData>();
+    ephemeris_data = Ptr<EphemerisData>();
     ephemeris_data->header = data;
     ephemeris_data->blocks.clear();
 
