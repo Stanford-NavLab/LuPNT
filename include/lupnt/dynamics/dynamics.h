@@ -35,9 +35,9 @@ namespace lupnt {
   };
 
   // Orbit Dynamics Interface
-  class OrbitDynamics : public IDynamics {
+  class IOrbitDynamics : public IDynamics {
   public:
-    ~OrbitDynamics() = default;
+    ~IOrbitDynamics() = default;
 
     // Overrides
     Ptr<IState> PropagateState(const Ptr<IState> &state, Real t0, Real tf,
@@ -55,22 +55,21 @@ namespace lupnt {
     MatX6 Propagate(const MatX6 &x0, Real t0, Real tf);
   };
 
-  // Analytical Orbit Dynamics
-  class AnalyticalOrbitDynamics : public OrbitDynamics {
+  // Analytical Orbit Dynamics Interface
+  class IAnalyticalOrbitDynamics : public IOrbitDynamics {
   public:
-    ~AnalyticalOrbitDynamics() = default;
+    ~IAnalyticalOrbitDynamics() = default;
 
     // Overrides
-    using OrbitDynamics::Propagate;
+    using IOrbitDynamics::Propagate;
     MatX6 Propagate(const Vec6 &x0, Real t0, const VecX &tf, bool progress = false) override;
   };
 
-  // Numerical Orbit Dynamics
-  class NumericalOrbitDynamics : public OrbitDynamics {
+  class NumericalOrbitDynamics : public IOrbitDynamics {
   private:
     ODE odefunc_;
     NumericalPropagator propagator_;
-    double dt_ = 0.0;
+    Real dt_ = 0.0;
 
   public:
     NumericalOrbitDynamics(ODE odefunc, IntegratorType integrator = IntegratorType::RK4);
@@ -78,33 +77,36 @@ namespace lupnt {
     virtual Vec6 ComputeRates(Real t, const Vec6 &x) const = 0;
 
     // Overrides
-    using OrbitDynamics::Propagate;
+    using IOrbitDynamics::Propagate;
     Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override;
     MatX6 Propagate(const Vec6 &x0, Real t0, const VecX &tf, bool progress = false) override;
+    OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
+                              Mat6d *stm = nullptr) override;
   };
 
   // ****************************************************************************
-  // Analytical Dynamics
+  // Analytical Dynamics Classes
   // ****************************************************************************
 
   // Keplerian Dynamics
-  class KeplerianDynamics : public AnalyticalOrbitDynamics {
+  class KeplerianDynamics : public IAnalyticalOrbitDynamics {
   private:
-    const double GM_;
+    const Real GM_;
 
   public:
-    KeplerianDynamics(double GM);
+    KeplerianDynamics(Real GM);
     Vec6 PropagateClassicalOE(const Vec6 &coe, Real t0, Real tf, Mat6d *stm = nullptr);
     Vec6 PropagateQuasiNonsingOE(const Vec6 &qnsoe, Real t0, Real tf, Mat6d *stm = nullptr);
     Vec6 PropagateEquinoctialOE(const Vec6 &eqoe, Real t0, Real tf, Mat6d *stm = nullptr);
 
+    using IAnalyticalOrbitDynamics::Propagate;
     Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override;
     OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                               Mat6d *stm = nullptr) override;
   };
 
   // Clohessy-Wiltshire Dynamics
-  class ClohessyWiltshireDynamics : public AnalyticalOrbitDynamics {
+  class ClohessyWiltshireDynamics : public IAnalyticalOrbitDynamics {
   private:
     Real a_, n_;
     Vec6 K_;
@@ -114,14 +116,14 @@ namespace lupnt {
     ClohessyWiltshireDynamics(Real a, Real n);
     Mat6 ComputeMat(Real tf);
 
-    using AnalyticalOrbitDynamics::Propagate;
+    using IAnalyticalOrbitDynamics::Propagate;
     Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override;
     OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                               Mat6d *stm = nullptr) override;
   };
 
   // Yamanaka-Ankersen Dynamics
-  class YamanakaAnkersenDynamics : public AnalyticalOrbitDynamics {
+  class YamanakaAnkersenDynamics : public IAnalyticalOrbitDynamics {
   private:
     Real a_, n_, e_, M0_;
     Vec6 K_;
@@ -133,14 +135,14 @@ namespace lupnt {
     MatX ComputeMat(Real t);
     MatX ComputeInverseMat(Real t);
 
-    using AnalyticalOrbitDynamics::Propagate;
+    using IAnalyticalOrbitDynamics::Propagate;
     Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override;
     OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                               Mat6d *stm = nullptr) override;
   };
 
   // Roe Geometric Mapping Dynamics
-  class RoeGeometricMappingDynamics : public AnalyticalOrbitDynamics {
+  class RoeGeometricMappingDynamics : public IAnalyticalOrbitDynamics {
   private:
     Real a_, e_, i_, w_, M0_;
     Real ex_, ey_, n_;
@@ -151,20 +153,20 @@ namespace lupnt {
     RoeGeometricMappingDynamics(const ClassicalOE coe_c, const QuasiNonsingROE &roe, Real GM);
     MatX ComputeMat(Real t);
 
-    using AnalyticalOrbitDynamics::Propagate;
+    using IAnalyticalOrbitDynamics::Propagate;
     Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override;
     OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                               Mat6d *stm = nullptr) override;
   };
 
   // ****************************************************************************
-  // Numerical Dynamics
+  // Numerical Dynamics Classes
   // ****************************************************************************
 
   // Cartesian Two-Body Dynamics
   class CartesianTwoBodyDynamics : public NumericalOrbitDynamics {
   private:
-    Real GM_;
+    const Real GM_;
 
   public:
     CartesianTwoBodyDynamics(Real GM, IntegratorType integ = IntegratorType::RK4);
@@ -174,7 +176,7 @@ namespace lupnt {
   // J2 Cartesian Two-Body Dynamics
   class J2CartTwoBodyDynamics : public NumericalOrbitDynamics {
   private:
-    Real GM_, J2_, R_body_;
+    const Real GM_, J2_, R_body_;
 
   public:
     J2CartTwoBodyDynamics(Real GM, Real J2, Real R_body,
@@ -184,7 +186,7 @@ namespace lupnt {
 
   class J2KeplerianDynamics : public NumericalOrbitDynamics {
   private:
-    Real GM_, J2_, R_body_;
+    const Real GM_, J2_, R_body_;
 
   public:
     J2KeplerianDynamics(Real GM, Real J2, Real R_body, IntegratorType integ = IntegratorType::RK4);
@@ -193,9 +195,9 @@ namespace lupnt {
 
   class MoonMeanDynamics : public NumericalOrbitDynamics {
   private:
-    double n3_ = 2.66e-6;
-    double J2_ = 2.03e-4;
-    double k_ = 0.98785;
+    const double n3_ = 2.66e-6;
+    const double J2_ = 2.03e-4;
+    const double k_ = 0.98785;
 
   public:
     MoonMeanDynamics(IntegratorType integ = IntegratorType::RK4);

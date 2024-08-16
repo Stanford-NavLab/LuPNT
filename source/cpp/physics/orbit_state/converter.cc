@@ -100,4 +100,12 @@ namespace lupnt {
                                state_in->GetUnits());
   }
 
+  CartesianOrbitState ConvertOrbitStateFrame(const CartesianOrbitState state, const Real epoch,
+                                             const Frame frame_out) {
+    Vec6 rv_in = state.GetVec();
+    Frame frame_in = state.GetFrame();
+    Vec6 rv_out = ConvertFrame(epoch, rv_in, frame_in, frame_out);
+    CartesianOrbitState state_out = CartesianOrbitState(rv_out, frame_out);
+    return state_out;
+  }
 }  // namespace lupnt

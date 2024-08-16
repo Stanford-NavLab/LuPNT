@@ -28,13 +28,7 @@ namespace lupnt {
   Ptr<OrbitState> ConvertOrbitStateRepresentation(const Ptr<OrbitState> &state_in,
                                                   OrbitStateRepres repres_out, Real GM);
 
-  static CartesianOrbitState ConvertOrbitStateFrame(const CartesianOrbitState state,
-                                                    const Real epoch, const Frame frame_out) {
-    Vec6 rv_in = state.GetVec();
-    Frame frame_in = state.GetFrame();
-    Vec6 rv_out = ConvertFrame(epoch, rv_in, frame_in, frame_out);
-    CartesianOrbitState state_out = CartesianOrbitState(rv_out, frame_out);
-    return state_out;
-  }
+  CartesianOrbitState ConvertOrbitStateFrame(const CartesianOrbitState state, const Real epoch,
+                                             const Frame frame_out);
 
 }  // namespace lupnt

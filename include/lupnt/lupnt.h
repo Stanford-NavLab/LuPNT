@@ -10,6 +10,7 @@
 
 // core
 #include "lupnt/core/constants.h"
+#include "lupnt/core/definitions.h"
 #include "lupnt/core/event.h"
 #include "lupnt/core/file.h"
 #include "lupnt/core/plot.h"

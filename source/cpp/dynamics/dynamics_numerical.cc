@@ -15,30 +15,6 @@
 
 namespace lupnt {
 
-  // MatX IDynamics::Propagate(const MatX &x0, Real t0, Real tf) {
-  //   MatX xf = MatX::Zero(x0.rows(), x0.cols());
-  //   for (int i = 0; i < x0.cols(); i++) {
-  //     Vec6 x0_col = x0.col(i);
-  //     Vec6 xf_col = Propagate(x0_col, t0, tf);
-  //     xf.col(i) = xf_col;
-  //   }
-  //   return xf;
-  // }
-
-  // MatX IDynamics::Propagate(const Vec6 &x0, Real t0, const Vec6 &tf, bool progress) {
-  //   MatX xf = MatX::Zero(x0.rows(), tf.size());
-  //   ProgressBar pbar(tf.size());
-  //   for (int i = 0; i < tf.size(); i++) {
-  //     Vec6 x0_col = x0;
-  //     Real tf_i = tf(i);
-  //     Vec6 xf_col = Propagate(x0_col, t0, tf_i);
-  //     xf.col(i) = xf_col;
-  //     if (progress) pbar.Update(i);
-  //   }
-  //   if (progress) pbar.Finish();
-  //   return xf;
-  // }
-
   NumericalOrbitDynamics::NumericalOrbitDynamics(ODE odefunc, IntegratorType integrator)
       : odefunc_(odefunc), propagator_(integrator) {}
 
@@ -70,6 +46,14 @@ namespace lupnt {
     }
     if (progress) pbar.Finish();
     return xf;
+  }
+
+  OrbitState NumericalOrbitDynamics::PropagateState(const OrbitState &state, Real t0, Real tf,
+                                                    Mat6d *stm) {
+    assert(state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN
+           && "OrbitState type not supported");
+    Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);
+    return CartesianOrbitState(xf, state.GetFrame());
   }
 
   // ****************************************************************************

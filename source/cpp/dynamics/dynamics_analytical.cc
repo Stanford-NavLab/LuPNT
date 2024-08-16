@@ -18,7 +18,8 @@
 
 namespace lupnt {
 
-  MatX6 AnalyticalOrbitDynamics::Propagate(const Vec6 &x0, Real t0, const VecX &tf, bool progress) {
+  MatX6 IAnalyticalOrbitDynamics::Propagate(const Vec6 &x0, Real t0, const VecX &tf,
+                                            bool progress) {
     MatX6 xf = MatX6::Zero(x0.rows(), tf.size());
     ProgressBar pbar(tf.size());
     for (int i = 0; i < tf.size(); i++) {
@@ -35,7 +36,7 @@ namespace lupnt {
   // KeplerianDynamics
   // ****************************************************************************
 
-  KeplerianDynamics::KeplerianDynamics(double GM) : GM_(GM) {};
+  KeplerianDynamics::KeplerianDynamics(Real GM) : GM_(GM) {};
 
   OrbitState KeplerianDynamics::PropagateState(const OrbitState &state, Real t0, Real tf,
                                                Mat6d *stm) {

@@ -317,6 +317,7 @@ namespace lupnt {
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 39
   Vec6 GCRF2EME(Real t_tai, const Vec6& rv_gcrf) {
+    (void)t_tai;
     Mat3d B_e = EarthFrameBiasMatrix();
     Vec3 r_gcrf = rv_gcrf.head(3);
     Vec3 v_gcrf = rv_gcrf.tail(3);
@@ -331,6 +332,7 @@ namespace lupnt {
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 39
   Vec6 EME2GCRF(Real t_tai, const Vec6& rv_eme) {
+    (void)t_tai;
     Mat3d B_e = EarthFrameBiasMatrix();
     Vec3 r_eme = rv_eme.head(3);
     Vec3 v_eme = rv_eme.tail(3);
@@ -374,6 +376,7 @@ namespace lupnt {
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
   Mat3d RotMItoPA(Real t_tai) {
+    (void)t_tai;
     double psi = 0;
     double theta = 0;
     double phi = 0;
@@ -383,6 +386,7 @@ namespace lupnt {
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
   Mat3d RotMItoPAdot(Real t_tai) {
+    (void)t_tai;
     double phi = 0;
     double theta = 0;
     double psi = 0;
@@ -438,6 +442,7 @@ namespace lupnt {
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 43
   Vec6 MoonPA2MoonME(Real t_tai, const Vec6& rv_pa) {
+    (void)t_tai;
     Mat3d B_moon = MoonFrameBiasMatrix();
     Vec3 r_pa = rv_pa.head(3);
     Vec3 v_pa = rv_pa.tail(3);
@@ -452,6 +457,7 @@ namespace lupnt {
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 43
   Vec6 MoonME2MoonPA(Real t_tai, const Vec6& rv_me) {
+    (void)t_tai;
     Mat3d B_moon = MoonFrameBiasMatrix();
     Vec3 r_me = rv_me.head(3);
     Vec3 v_me = rv_me.tail(3);
@@ -526,7 +532,6 @@ namespace lupnt {
 
     Mat3 R_op2me;
     R_op2me << x_op, y_op, z_op;
-    Mat3 R_me2op = R_op2me.transpose();
 
     Vec3 r_me = R_op2me * rv_op.head(3);
     Vec3 v_me = R_op2me * rv_op.tail(3);

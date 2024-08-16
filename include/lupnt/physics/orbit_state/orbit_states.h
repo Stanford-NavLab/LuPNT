@@ -119,16 +119,10 @@ namespace lupnt {
     static constexpr std::array<const char *, 6> names_ = {"a", "e", "i", "Omega", "w", "M"};
     static constexpr std::array<const char *, 6> units_ = {"km", "-", "rad", "rad", "rad", "rad"};
     static constexpr OrbitStateRepres repres_ = OrbitStateRepres::CLASSICAL_OE;
-    static Vec6 to_deg(const Vec6 &x, bool deg) {
-      if (!deg) return x;
-      Vec6 x_deg = x;
-      x_deg.segment(2, 4) *= RAD;
-      return x_deg;
-    }
 
   public:
-    ClassicalOE(const Vec6 &x, const Frame frame = Frame::MOON_CI, bool deg = false)
-        : OrbitState(to_deg(x, deg), frame, repres_, names_, units_) {}
+    ClassicalOE(const Vec6 &x, const Frame frame = Frame::MOON_CI)
+        : OrbitState(x, frame, repres_, names_, units_) {}
 
     GETSET_ELEM(a, 0);
     GETSET_ELEM(e, 1);
