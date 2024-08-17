@@ -76,4 +76,11 @@ namespace lupnt {
     return rv_dot;
   }
 
+  OrbitState NBodyDynamics::PropagateState(const OrbitState& state, Real t0, Real tf, Mat6d* stm) {
+    assert(state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN
+           && "OrbitState type not supported");
+    Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);
+    return CartesianOrbitState(xf, state.GetFrame());
+  }
+
 }  // namespace lupnt

@@ -18,9 +18,11 @@ namespace lupnt {
   NumericalOrbitDynamics::NumericalOrbitDynamics(ODE odefunc, IntegratorType integrator)
       : odefunc_(odefunc), propagator_(integrator) {}
 
-  void NumericalOrbitDynamics::SetTimeStep(Real dt) { dt_ = dt.val(); };
+  void NumericalOrbitDynamics::SetTimeStep(Real dt) { dt_ = dt; };
+  Real NumericalOrbitDynamics::GetTimeStep() const { return dt_; };
 
   Vec6 NumericalOrbitDynamics::Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm) {
+    if (abs(tf - t0) < EPS) return x0;
     Real dt_prop = (abs(dt_) < EPS) ? (tf - t0) / 10 : dt_;
     if (stm == nullptr) {
       Vec6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt_prop);
@@ -34,26 +36,19 @@ namespace lupnt {
   }
 
   MatX6 NumericalOrbitDynamics::Propagate(const Vec6 &x0, Real t0, const VecX &tf, bool progress) {
-    MatX6 xf = MatX6::Zero(x0.rows(), tf.size());
+    MatX6 xf = MatX6::Zero(tf.size(), 6);
     ProgressBar pbar(tf.size());
     xf.row(0) = Propagate(x0, t0, tf(0));
     for (int i = 1; i < tf.size(); i++) {
       Real t0_i = tf(i - 1);
       Real tf_i = tf(i);
-      Vec6 xf_i = Propagate(x0, t0_i, tf_i);
+      Vec6 x0_i = xf.row(i - 1);
+      Vec6 xf_i = Propagate(x0_i, t0_i, tf_i);
       xf.row(i) = xf_i;
       if (progress) pbar.Update(i);
     }
     if (progress) pbar.Finish();
     return xf;
-  }
-
-  OrbitState NumericalOrbitDynamics::PropagateState(const OrbitState &state, Real t0, Real tf,
-                                                    Mat6d *stm) {
-    assert(state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN
-           && "OrbitState type not supported");
-    Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);
-    return CartesianOrbitState(xf, state.GetFrame());
   }
 
   // ****************************************************************************
@@ -77,6 +72,14 @@ namespace lupnt {
     rv_dot.tail(3) = -GM_ * r / pow(r_norm, 3);
 
     return rv_dot;
+  }
+
+  OrbitState CartesianTwoBodyDynamics::PropagateState(const OrbitState &state, Real t0, Real tf,
+                                                      Mat6d *stm) {
+    assert(state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN
+           && "OrbitState type not supported");
+    Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);
+    return CartesianOrbitState(xf, state.GetFrame());
   }
 
   // ****************************************************************************
@@ -113,6 +116,14 @@ namespace lupnt {
     return rv_dot;
   }
 
+  OrbitState J2CartTwoBodyDynamics::PropagateState(const OrbitState &state, Real t0, Real tf,
+                                                   Mat6d *stm) {
+    assert(state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN
+           && "OrbitState type not supported");
+    Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);
+    return CartesianOrbitState(xf, state.GetFrame());
+  }
+
   // ****************************************************************************
   // J2KeplerianDynamics
   // ****************************************************************************
@@ -140,6 +151,14 @@ namespace lupnt {
     coe_dot(5)
         = n + 3.0 / 4.0 * J2_ * pow(R_body_ / p, 2.0) * n * eta * (3.0 * pow(cos(x(2)), 2.0) - 1.0);
     return coe_dot;
+  }
+
+  OrbitState J2KeplerianDynamics::PropagateState(const OrbitState &state, Real t0, Real tf,
+                                                 Mat6d *stm) {
+    assert(state.GetOrbitStateRepres() == OrbitStateRepres::CLASSICAL_OE
+           && "OrbitState type not supported");
+    Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);
+    return CartesianOrbitState(xf, state.GetFrame());
   }
 
   // ****************************************************************************
@@ -183,5 +202,13 @@ namespace lupnt {
                        * ((3 * pow(e, 2) + 7) * (3 * pow(cos(i), 2) - 1)
                           + 15 * (1 + pow(e, 2)) * pow(sin(i), 2) * cos(2 * w));
     return coe_dot;
+  }
+
+  OrbitState MoonMeanDynamics::PropagateState(const OrbitState &state, Real t0, Real tf,
+                                              Mat6d *stm) {
+    assert(state.GetOrbitStateRepres() == OrbitStateRepres::CLASSICAL_OE
+           && "OrbitState type not supported");
+    Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);
+    return CartesianOrbitState(xf, state.GetFrame());
   }
 };  // namespace lupnt

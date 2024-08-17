@@ -74,14 +74,13 @@ namespace lupnt {
   public:
     NumericalOrbitDynamics(ODE odefunc, IntegratorType integrator = IntegratorType::RK4);
     void SetTimeStep(Real dt);
+    Real GetTimeStep() const;
     virtual Vec6 ComputeRates(Real t, const Vec6 &x) const = 0;
 
     // Overrides
     using IOrbitDynamics::Propagate;
     Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override;
     MatX6 Propagate(const Vec6 &x0, Real t0, const VecX &tf, bool progress = false) override;
-    OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
-                              Mat6d *stm = nullptr) override;
   };
 
   // ****************************************************************************
@@ -171,6 +170,8 @@ namespace lupnt {
   public:
     CartesianTwoBodyDynamics(Real GM, IntegratorType integ = IntegratorType::RK4);
     Vec6 ComputeRates(Real t, const Vec6 &x) const override;
+    OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
+                              Mat6d *stm = nullptr) override;
   };
 
   // J2 Cartesian Two-Body Dynamics
@@ -182,6 +183,8 @@ namespace lupnt {
     J2CartTwoBodyDynamics(Real GM, Real J2, Real R_body,
                           IntegratorType integ = IntegratorType::RK4);
     Vec6 ComputeRates(Real t, const Vec6 &x) const override;
+    OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
+                              Mat6d *stm = nullptr) override;
   };
 
   class J2KeplerianDynamics : public NumericalOrbitDynamics {
@@ -191,6 +194,8 @@ namespace lupnt {
   public:
     J2KeplerianDynamics(Real GM, Real J2, Real R_body, IntegratorType integ = IntegratorType::RK4);
     Vec6 ComputeRates(Real t, const Vec6 &x) const override;
+    OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
+                              Mat6d *stm = nullptr) override;
   };
 
   class MoonMeanDynamics : public NumericalOrbitDynamics {
@@ -202,6 +207,8 @@ namespace lupnt {
   public:
     MoonMeanDynamics(IntegratorType integ = IntegratorType::RK4);
     Vec6 ComputeRates(Real t, const Vec6 &x) const override;
+    OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
+                              Mat6d *stm = nullptr) override;
   };
 
   struct NBodyDynamicsParams {
@@ -230,6 +237,8 @@ namespace lupnt {
   public:
     NBodyDynamics(IntegratorType integ = IntegratorType::RK4);
     Vec6 ComputeRates(Real epoch, const Vec6 &x) const override;
+    OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
+                              Mat6d *stm = nullptr) override;
 
     void AddBody(const Body &body) {
       for (auto &b : bodies_) {

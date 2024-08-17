@@ -20,7 +20,7 @@ namespace lupnt {
 
   MatX6 IAnalyticalOrbitDynamics::Propagate(const Vec6 &x0, Real t0, const VecX &tf,
                                             bool progress) {
-    MatX6 xf = MatX6::Zero(x0.rows(), tf.size());
+    MatX6 xf = MatX6::Zero(tf.size(), 6);
     ProgressBar pbar(tf.size());
     for (int i = 0; i < tf.size(); i++) {
       Real tf_i = tf(i);
@@ -59,6 +59,10 @@ namespace lupnt {
   }
 
   Vec6 KeplerianDynamics::Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm) {
+    if (abs(tf - t0) < EPS) {
+      if (stm != nullptr) *stm = Mat6d::Identity(6, 6);
+      return x0;
+    }
     return PropagateClassicalOE(x0, t0, tf, stm);
   }
 
@@ -66,7 +70,7 @@ namespace lupnt {
   Vec6 KeplerianDynamics::PropagateClassicalOE(const Vec6 &coe, Real t0, Real tf, Mat6d *stm) {
     Real dt = tf - t0;
     Real n = sqrt(GM_ / pow(coe[0], 3));
-    Real M = Wrap2Pi(coe[5] + n * dt);
+    Real M = coe[5] + n * dt;
 
     Vec6 coe_new = coe;
     coe_new[5] = M;
@@ -75,7 +79,7 @@ namespace lupnt {
       *stm = Mat6d::Identity(6, 6);
       (*stm)(5, 0) = -3. / 2. * (n / coe[0] * dt).val();
     }
-    return coe;
+    return coe_new;
   }
 
   // QuasiNonsingOE
@@ -111,6 +115,10 @@ namespace lupnt {
   ClohessyWiltshireDynamics::ClohessyWiltshireDynamics(Real a, Real n) : a_(a), n_(n) {};
 
   Vec6 ClohessyWiltshireDynamics::Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm) {
+    if (abs(tf - t0) < EPS) {
+      if (stm != nullptr) *stm = Mat6d::Identity(6, 6);
+      return x0;
+    }
     if (t0 != t0_) {
       MatX Phi = ComputeMat(t0);
       K_ = Phi.colPivHouseholderQr().solve(x0);
@@ -178,7 +186,12 @@ namespace lupnt {
   }
 
   Vec6 YamanakaAnkersenDynamics::Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm) {
-    (void)x0;
+    if (abs(tf - t0) < EPS) {
+      if (stm != nullptr) *stm = Mat6d::Identity(6, 6);
+      return x0;
+    }
+    throw std::runtime_error("Not implemented");
+
     if (t0 != t0_) {
       MatX Phi = ComputeMat(t0);
       K_ = ComputeInverseMat(t0) * rv_rtn_;
@@ -306,7 +319,12 @@ namespace lupnt {
   }
 
   Vec6 RoeGeometricMappingDynamics::Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm) {
-    (void)x0;
+    if (abs(tf - t0) < EPS) {
+      if (stm != nullptr) *stm = Mat6d::Identity(6, 6);
+      return x0;
+    }
+    throw std::runtime_error("Not implemented");
+
     if (t0 != t0_) {
       throw std::runtime_error("Not implemented");
     }

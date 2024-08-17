@@ -175,7 +175,7 @@ namespace lupnt {
 
     for (size_t i = 0; i < n; ++i) {
       error = std::abs(x_new_high(i).val() - x_new_low(i).val());
-      tol = std::max(params_.reltol * std::abs(x_new_high(i).val()), params_.abstol);
+      tol = std::max<double>(params_.reltol * std::abs(x_new_high(i).val()), params_.abstol);
       max_error = std::max(max_error, error / tol);
       if ((error / tol) > accept_thresh) {
         within_tolerance = false;
