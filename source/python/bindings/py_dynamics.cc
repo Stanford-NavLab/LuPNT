@@ -10,129 +10,77 @@
 namespace py = pybind11;
 using namespace lupnt;
 
+// IDynamics
+class PyIDynamics : public IDynamics {
+public:
+  using IDynamics::IDynamics;
+  Ptr<IState> PropagateState(const Ptr<IState> &state, Real t0, Real tf,
+                             MatXd *stm = nullptr) override {
+    PYBIND11_OVERRIDE_PURE(Ptr<IState>, IDynamics, PropagateState, state, t0, tf, stm);
+  }
+  VecX Propagate(const VecX &x0, Real t0, Real tf, MatXd *stm = nullptr) override {
+    PYBIND11_OVERRIDE_PURE(VecX, IDynamics, Propagate, x0, t0, tf, stm);
+  }
+};
+
+class PyAnalyticalOrbitDynamics : public IAnalyticalOrbitDynamics {
+  using IAnalyticalOrbitDynamics::IAnalyticalOrbitDynamics;
+  Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override {
+    PYBIND11_OVERRIDE_PURE(Vec6, IAnalyticalOrbitDynamics, Propagate, x0, t0, tf, stm);
+  }
+  OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
+                            Mat6d *stm = nullptr) override {
+    PYBIND11_OVERRIDE_PURE(OrbitState, IAnalyticalOrbitDynamics, PropagateState, state, t0, tf,
+                           stm);
+  }
+};
+
 void init_dynamics(py::module &m) {
-  // KeplerianDynamics dyn(GM_MOON);
-
-  // py::class_<AnalyticalDynamics, PyAnalyticalDynamics>(m, "AnalyticalDynamics")
-  //     .def(py::init<>())
-  //     .def("propagate", &AnalyticalDynamics::Propagate, py::arg("state"), py::arg("t0"),
-  //          py::arg("dt"));
-
-  // py::class_<KeplerianDynamics, PyAnalyticalDynamics>(m, "KeplerianDynamics")
-  //     .def(py::init<double>(), py::arg("GM"));
-  // .def(
-  //     "propagate",
-  //     [](KeplerianDynamics &dyn, ClassicalOE &state, double dt) -> void {
-  //       dyn.Propagate(state, dt);
-  //     },
-  //     py::arg("state"), py::arg("dt"))
-  // .def(
-  //     "propagate",
-  //     [](KeplerianDynamics &dyn, QuasiNonsingOE &state, double dt) -> void {
-  //       dyn.Propagate(state, dt);
-  //     },
-  //     py::arg("state"), py::arg("dt"))
-  // .def(
-  //     "propagate",
-  //     [](KeplerianDynamics &dyn, EquinoctialOE &state, double dt) -> void {
-  //       dyn.Propagate(state, dt);
-  //     },
-  //     py::arg("state"), py::arg("dt"))
-  // .def(
-  //     "propagate_with_stm",
-  //     [](KeplerianDynamics &dyn, ClassicalOE &state, double dt) {
-  //       Mat6d stm;
-  //       dyn.PropagateWithStm(state, dt, stm);
-  //       return stm;
-  //     },
-  //     py::arg("state"), py::arg("dt"), py::return_value_policy::move)
-  // .def(
-  //     "propagate_with_stm",
-  //     [](KeplerianDynamics &dyn, QuasiNonsingOE &state, double dt) {
-  //       Mat6d stm;
-  //       dyn.PropagateWithStm(state, dt, stm);
-  //       return stm;
-  //     },
-  //     py::arg("state"), py::arg("dt"), py::return_value_policy::move)
-  // .def(
-  //     "propagate_with_stm",
-  //     [](KeplerianDynamics &dyn, EquinoctialOE &state, double dt) {
-  //       Mat6d stm;
-  //       dyn.PropagateWithStm(state, dt, stm);
-  //       return stm;
-  //     },
-  //     py::arg("state"), py::arg("dt"), py::return_value_policy::move)
-  // .def("__repr__", [](const KeplerianDynamics &dyn) { return "<pylupnt.KeplerianDynamics>"; });
-
   // IDynamics
-  py::class_<IDynamics>(m, "IDynamics")
+  // py::class_<IDynamics, PyIDynamics>(m, "IDynamics")
+  //     .def(py::init<>())
+  //     .def(
+  //         "propagate",
+  //         [](IDynamics &dyn, const VecXd &x0, double t0, double tf, MatXd *stm) -> VecXd {
+  //           return dyn.Propagate(x0, t0, tf, stm).cast<double>();
+  //         },
+  //         py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr);
+
+  // IAnalyticalOrbitDynamics
+  py::class_<IAnalyticalOrbitDynamics, PyAnalyticalOrbitDynamics>(m, "IAnalyticalOrbitDynamics")
+      .def(py::init<>());
+
+  // NumericalOrbitDynamics
+  py::class_<NumericalOrbitDynamics, IOrbitDynamics>(m, "NumericalOrbitDynamics")
+      .def(py::init<ODE, IntegratorType>(), py::arg("odefunc"), py::arg("integrator"))
+      .def("set_time_step", [](NumericalOrbitDynamics &dyn, double dt) { dyn.SetTimeStep(dt); })
+      .def("get_time_step",
+           [](const NumericalOrbitDynamics &dyn) { return dyn.GetTimeStep().val(); })
       .def(
           "propagate",
-          [](IDynamics &dyn, OrbitState &state, double t0, double tf, double dt) -> void {
-            dyn.Propagate(state, t0, tf, dt);
-          },
-          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt") = 0.0)
+          [](NumericalOrbitDynamics &dyn, const Vec6 &x0, double t0, double tf,
+             MatXd *stm) -> Vec6 { return dyn.Propagate(x0, t0, tf, stm).cast<double>(); },
+          py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr)
       .def(
           "propagate",
-          [](IDynamics &dyn, Vec6d &x, double t0, double tf, double dt) -> Vec6d {
-            Vec6 x_real = x.cast<Real>();
-            dyn.Propagate(x_real, t0, tf, dt);
-            return x_real.cast<double>();
-          },
-          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt") = 0.0)
-      .def(
-          "propagate",
-          [](IDynamics &dyn, Vec6d &x, double t0, VecXd &tfs, double dt, bool progress) -> MatXd {
-            Vec6 x_real = x.cast<Real>();
-            VecX tfs_real = tfs.cast<Real>();
-            return dyn.Propagate(x_real, t0, tfs_real, progress).cast<double>();
-          },
-          py::arg("state"), py::arg("t0"), py::arg("tfs"), py::arg("dt") = 0.0,
-          py::arg("progress") = false)
-      .def(
-          "propagate_with_stm",
-          [](IDynamics &dyn, CartesianOrbitState &state, double t0, double tf, double dt) {
-            Mat6d stm;
-            dyn.PropagateWithStm(state, t0, tf, dt, stm);
-            return stm;
-          },
-          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"),
-          py::return_value_policy::move)
-      .def(
-          "propagate_with_stm",
-          [](IDynamics &dyn, Vec6d &state, double t0, double tf,
-             double dt) -> std::tuple<Vec6d, Mat6d> {
-            Mat6d stm;
-            Vec6 state_real = state.cast<Real>();
-            dyn.PropagateWithStm(state_real, t0, tf, dt, stm);
-            return std::make_tuple(state_real.cast<double>(), stm);
-          },
-          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"))
-      .def("set_time_step", [](IDynamics &dyn, double dt) { dyn.SetTimeStep(dt); });
-  // .def(
-  //     "propagate_with_stm",
-  //     [](IDynamics &dyn, RowVec6d &state, double t0,
-  //        double tf, double dt) -> std::tuple<Vec6d, Mat6d> {
-  //       Mat6d stm;
-  //       Vec6 state_real = state.cast<real>();
-  //       dyn.PropagateWithStm(state_real, t0, tf, dt, stm);
-  //       return std::make_tuple(state_real.cast<double>(), stm);
-  //     },
-  //     py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("dt"));
+          [](NumericalOrbitDynamics &dyn, const Vec6 &x0, double t0, const VecXd &tf, bool progress)
+              -> MatX6d { return dyn.Propagate(x0, t0, tf.cast<Real>(), progress).cast<double>(); },
+          py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("progress") = false);
+
+  // KeplerianDynamics
+  py::class_<KeplerianDynamics, IAnalyticalOrbitDynamics>(m, "KeplerianDynamics")
+      .def(py::init<double>(), py::arg("GM"));
 
   // CartesianTwoBodyDynamics
-  py::class_<CartesianTwoBodyDynamics, IDynamics>(m, "CartesianTwoBodyDynamics")
-      .def(py::init<double, std::string>(), py::arg("GM"), py::arg("integrator") = "RK4")
-      .def("__repr__", [](const CartesianTwoBodyDynamics &dyn) {
-        return "<pylupnt.CartesianTwoBodyDynamics>";
-      });
+  py::class_<CartesianTwoBodyDynamics, NumericalOrbitDynamics>(m, "CartesianTwoBodyDynamics")
+      .def(py::init<double, IntegratorType>(), py::arg("GM"),
+           py::arg("integ") = default_integrator);
 
   // NBodyDynamics
-  py::class_<NBodyDynamics, IDynamics>(m, "NBodyDynamics")
+  py::class_<NBodyDynamics, NumericalOrbitDynamics>(m, "NBodyDynamics")
       .def(py::init<>())
       .def("set_primary_body", &NBodyDynamics::SetPrimaryBody, py::arg("body"))
-      .def("add_body", &NBodyDynamics::AddBody, py::arg("body"))
-      .def("__repr__", [](const NBodyDynamics &dyn) { return "<pylupnt.NBodyDynamics>"; });
+      .def("add_body", &NBodyDynamics::AddBody, py::arg("body"));
 
   // Body
   py::class_<Body>(m, "Body")

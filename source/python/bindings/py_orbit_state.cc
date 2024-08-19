@@ -42,8 +42,8 @@ void init_orbit_state(py::module &m) {
 
   // OrbitState
   py::class_<OrbitState>(m, "OrbitState")
-      .def(py::init<const Vec6d &, const Frame, const OrbitStateRepres,
-                    const std::vector<std::string> &, const std::vector<std::string> &>(),
+      .def(py::init<const Vec6d &, Frame, OrbitStateRepres, const std::array<const char *, 6> &,
+                    const std::array<const char *, 6> &>(),
            py::arg("vector"), py::arg("frame"), py::arg("state_repres"), py::arg("names"),
            py::arg("units"))
       .def_property(
@@ -64,8 +64,8 @@ void init_orbit_state(py::module &m) {
 
   // ClassicalOE
   py::class_<ClassicalOE, OrbitState>(m, "ClassicalOE")
-      .def(py::init<const Vec6d &, const Frame, bool>(), py::arg("[a, e, i, Omega, w, M]"),
-           py::arg("frame") = Frame::MOON_CI, py::arg("deg") = false)
+      .def(py::init<const Vec6d &, const Frame>(), py::arg("[a, e, i, Omega, w, M]"),
+           py::arg("frame") = Frame::MOON_CI)
       .def_property("a", DEFINE_GETSET_REAL(ClassicalOE, a))
       .def_property("e", DEFINE_GETSET_REAL(ClassicalOE, e))
       .def_property("i", DEFINE_GETSET_REAL(ClassicalOE, i))

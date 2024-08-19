@@ -24,6 +24,7 @@ namespace lupnt {
     RK8,
     RKF45,
   };
+  constexpr IntegratorType default_integrator = IntegratorType::RK4;
 
   class IntegratorParams {
   public:

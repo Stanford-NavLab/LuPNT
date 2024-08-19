@@ -27,7 +27,7 @@ namespace lupnt {
   public:
     Ptr<IIntegrator> integrator;  // integrator type
 
-    NumericalPropagator(IntegratorType integ = IntegratorType::RK4,
+    NumericalPropagator(IntegratorType integ = default_integrator,
                         IntegratorParams params = IntegratorParams());
 
     VecX Propagate(const ODE &odefunc, Real t0, Real tf, const VecX &x0, Real dt);

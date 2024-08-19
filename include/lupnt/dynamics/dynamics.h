@@ -25,7 +25,7 @@ namespace lupnt {
   // Dynamics Interface
   class IDynamics {
   public:
-    ~IDynamics() = default;
+    virtual ~IDynamics() = default;
 
     // Interface
     virtual Ptr<IState> PropagateState(const Ptr<IState> &state, Real t0, Real tf,
@@ -37,7 +37,7 @@ namespace lupnt {
   // Orbit Dynamics Interface
   class IOrbitDynamics : public IDynamics {
   public:
-    ~IOrbitDynamics() = default;
+    virtual ~IOrbitDynamics() = default;
 
     // Overrides
     Ptr<IState> PropagateState(const Ptr<IState> &state, Real t0, Real tf,
@@ -58,7 +58,7 @@ namespace lupnt {
   // Analytical Orbit Dynamics Interface
   class IAnalyticalOrbitDynamics : public IOrbitDynamics {
   public:
-    ~IAnalyticalOrbitDynamics() = default;
+    virtual ~IAnalyticalOrbitDynamics() = default;
 
     // Overrides
     using IOrbitDynamics::Propagate;
@@ -72,8 +72,7 @@ namespace lupnt {
     Real dt_ = 0.0;
 
   public:
-    NumericalOrbitDynamics(ODE odefunc, IntegratorType integrator = IntegratorType::RK4);
-    NumericalOrbitDynamics(const NumericalOrbitDynamics &other);
+    NumericalOrbitDynamics(ODE odefunc, IntegratorType integ = default_integrator);
     void SetTimeStep(Real dt);
     Real GetTimeStep() const;
     virtual Vec6 ComputeRates(Real t, const Vec6 &x) const = 0;
@@ -169,7 +168,7 @@ namespace lupnt {
     Real GM_;
 
   public:
-    CartesianTwoBodyDynamics(Real GM, IntegratorType integ = IntegratorType::RK4);
+    CartesianTwoBodyDynamics(Real GM, IntegratorType integ = default_integrator);
     Vec6 ComputeRates(Real t, const Vec6 &x) const override;
     OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                               Mat6d *stm = nullptr) override;
@@ -181,8 +180,7 @@ namespace lupnt {
     Real GM_, J2_, R_body_;
 
   public:
-    J2CartTwoBodyDynamics(Real GM, Real J2, Real R_body,
-                          IntegratorType integ = IntegratorType::RK4);
+    J2CartTwoBodyDynamics(Real GM, Real J2, Real R_body, IntegratorType integ = default_integrator);
     Vec6 ComputeRates(Real t, const Vec6 &x) const override;
     OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                               Mat6d *stm = nullptr) override;
@@ -193,7 +191,7 @@ namespace lupnt {
     Real GM_, J2_, R_body_;
 
   public:
-    J2KeplerianDynamics(Real GM, Real J2, Real R_body, IntegratorType integ = IntegratorType::RK4);
+    J2KeplerianDynamics(Real GM, Real J2, Real R_body, IntegratorType integ = default_integrator);
     Vec6 ComputeRates(Real t, const Vec6 &x) const override;
     OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                               Mat6d *stm = nullptr) override;
@@ -206,7 +204,7 @@ namespace lupnt {
     const double k_ = 0.98785;
 
   public:
-    MoonMeanDynamics(IntegratorType integ = IntegratorType::RK4);
+    MoonMeanDynamics(IntegratorType integ = default_integrator);
     Vec6 ComputeRates(Real t, const Vec6 &x) const override;
     OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                               Mat6d *stm = nullptr) override;
@@ -236,7 +234,7 @@ namespace lupnt {
     Real CD_;    // [-] Drag coefficient
 
   public:
-    NBodyDynamics(IntegratorType integ = IntegratorType::RK4);
+    NBodyDynamics(IntegratorType integ = default_integrator);
     Vec6 ComputeRates(Real epoch, const Vec6 &x) const override;
     OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                               Mat6d *stm = nullptr) override;

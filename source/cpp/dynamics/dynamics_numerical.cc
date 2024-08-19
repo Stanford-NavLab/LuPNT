@@ -18,9 +18,6 @@ namespace lupnt {
   NumericalOrbitDynamics::NumericalOrbitDynamics(ODE odefunc, IntegratorType integrator)
       : odefunc_(odefunc), propagator_(integrator) {}
 
-  NumericalOrbitDynamics::NumericalOrbitDynamics(const NumericalOrbitDynamics &other)
-      : odefunc_(other.odefunc_), propagator_(other.propagator_), dt_(other.dt_) {}
-
   void NumericalOrbitDynamics::SetTimeStep(Real dt) { dt_ = dt; };
   Real NumericalOrbitDynamics::GetTimeStep() const { return dt_; };
 

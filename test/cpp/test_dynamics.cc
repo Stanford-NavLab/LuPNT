@@ -41,10 +41,11 @@ TEST_CASE("TestTwoBodyDynamics") {
 
   // Time
   int N_steps = 4;
-  Real dt = 10;                                              // [s]
-  Real t0 = Gregorian2Time(2024, 6, 1, 12, 45, 30);          // [s] TAI
-  VecX tspan = VecX::LinSpaced(N_steps, 0, 24 * SECS_HOUR);  // [s]
-  VecX tfs = t0 + tspan.array();                             // [s] TAI
+  Real dt = 10;                                      // [s] Integration time step
+  Real Dt = 6 * SECS_HOUR;                           // [s] Total integration time
+  Real t0 = Gregorian2Time(2024, 6, 1, 12, 45, 30);  // [s] Start time, TAI
+  VecX tspan = VecX::LinSpaced(N_steps, 0, Dt);      // [s] Time span
+  VecX tfs = t0 + tspan.array();                     // [s] Times, TAI
 
   // Dynamics
   KeplerianDynamics dyn_kep(GM);
