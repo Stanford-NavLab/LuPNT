@@ -2,6 +2,7 @@
 #include <lupnt/core/constants.h>
 #include <lupnt/core/definitions.h>
 #include <lupnt/dynamics/dynamics.h>
+#include <lupnt/numerics/integrator.h>
 #include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/body.h>
 
@@ -83,55 +84,154 @@ public:
   }
 };
 
+template <class T = NumericalOrbitDynamics> class PyINumOrbDyn : public PyIOrbDyn<T> {
+public:
+  using PyIOrbDyn<T>::PyIOrbDyn;
+  // Overrides
+  Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override {
+    PYBIND11_OVERRIDE(Vec6, T, Propagate, x0, t0, tf, stm);
+  }
+  MatX6 Propagate(const Vec6 &x0, Real t0, const VecX &tf, bool progress = false) override {
+    PYBIND11_OVERRIDE(MatX6, T, Propagate, x0, t0, tf, progress);
+  }
+  // Interface
+  OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
+                            Mat6d *stm = nullptr) override {
+    PYBIND11_OVERRIDE_PURE(OrbitState, T, PropagateState, state, t0, tf, stm);
+  }
+};
+
+template <class T> class PyNumOrbDyn : public PyINumOrbDyn<T> {
+public:
+  using PyINumOrbDyn<T>::PyINumOrbDyn;
+  // Overrides
+  OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
+                            Mat6d *stm = nullptr) override {
+    PYBIND11_OVERRIDE(OrbitState, T, PropagateState, state, t0, tf, stm);
+  }
+};
+
+#define I_ORBIT_DYNAMICS_METHODS(class)                                                           \
+  def(                                                                                            \
+      "propagate",                                                                                \
+      [](class &dyn, const Vec6d &x0, double t0, double tf, bool stm) -> py::object {             \
+        Vec6 x0_ = x0.cast<Real>();                                                               \
+        Real t0_ = Real(t0), tf_ = Real(tf);                                                      \
+        if (stm) {                                                                                \
+          Mat6d stm_out;                                                                          \
+          Vec6d xf = dyn.Propagate(x0_, t0_, tf_, &stm_out).cast<double>();                       \
+          return py::make_tuple(xf.cast<double>(), stm_out.cast<double>());                       \
+        } else {                                                                                  \
+          Vec6d xf = dyn.Propagate(x0_, t0_, tf_, nullptr).cast<double>();                        \
+          return py::cast(xf);                                                                    \
+        }                                                                                         \
+      },                                                                                          \
+      py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = false)                        \
+      .def(                                                                                       \
+          "propagate",                                                                            \
+          [](class &dyn, const RowVec6d &x0, double t0, double tf, bool stm) -> py::object {      \
+            Vec6 x0_ = x0.transpose().cast<Real>();                                               \
+            Real t0_ = Real(t0), tf_ = Real(tf);                                                  \
+            if (stm) {                                                                            \
+              Mat6d stm_out;                                                                      \
+              RowVec6d xf = dyn.Propagate(x0_, t0_, tf_, &stm_out).transpose().cast<double>();    \
+              return py::make_tuple(xf.cast<double>(), stm_out.cast<double>());                   \
+            } else {                                                                              \
+              RowVec6d xf = dyn.Propagate(x0_, t0_, tf_, nullptr).transpose().cast<double>();     \
+              return py::cast(xf);                                                                \
+            }                                                                                     \
+          },                                                                                      \
+          py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = false)                    \
+      .def(                                                                                       \
+          "propagate",                                                                            \
+          [](class &dyn, const MatX6d &x0, double t0, double tf) -> MatX6d {                      \
+            MatX6 x0_ = x0.cast<Real>();                                                          \
+            Real t0_ = Real(t0), tf_ = Real(tf);                                                  \
+            return dyn.Propagate(x0_, t0_, tf_).cast<double>();                                   \
+          },                                                                                      \
+          py::arg("x0"), py::arg("t0"), py::arg("tf"))                                            \
+      .def(                                                                                       \
+          "propagate",                                                                            \
+          [](class &dyn, const Vec6d &x0, double t0, VecXd tf) -> MatX6d {                        \
+            Vec6 x0_ = x0.cast<Real>();                                                           \
+            Real t0_ = Real(t0);                                                                  \
+            return dyn.Propagate(x0_, t0_, tf.cast<Real>()).cast<double>();                       \
+          },                                                                                      \
+          py::arg("x0"), py::arg("t0"), py::arg("tf"))                                            \
+      .def(                                                                                       \
+          "propagate",                                                                            \
+          [](class &dyn, const RowVec6d &x0, double t0, VecXd tf) -> MatX6d {                     \
+            Vec6 x0_ = x0.transpose().cast<Real>();                                               \
+            Real t0_ = Real(t0);                                                                  \
+            return dyn.Propagate(x0_, t0_, tf.cast<Real>()).cast<double>();                       \
+          },                                                                                      \
+          py::arg("x0"), py::arg("t0"), py::arg("tf"))                                            \
+      .def(                                                                                       \
+          "propagate_state",                                                                      \
+          [](class &dyn, const OrbitState &state, double t0, double tf, bool stm) -> py::object { \
+            OrbitState state_ = state;                                                            \
+            Real t0_ = Real(t0), tf_ = Real(tf);                                                  \
+            if (stm) {                                                                            \
+              Mat6d stm_out;                                                                      \
+              OrbitState state_out = dyn.PropagateState(state_, t0_, tf_, &stm_out);              \
+              return py::make_tuple(state_out, stm_out);                                          \
+            } else {                                                                              \
+              OrbitState state_out = dyn.PropagateState(state_, t0_, tf_, nullptr);               \
+              return py::cast(state_out);                                                         \
+            }                                                                                     \
+          },                                                                                      \
+          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("stm") = false);
+
 void init_dynamics(py::module &m) {
-  py::class_<IDynamics, PyIDyn<>> i_dynamics(m, "IDynamics");
-  py::class_<IOrbitDynamics, IDynamics, PyIOrbDyn<>> i_orbit_dynamics(m, "IOrbitDynamics");
-  py::class_<IAnalyticalOrbitDynamics, IOrbitDynamics, PyIAnOrbDyn<>> i_analytical_orbit_dynamics(
-      m, "IAnalyticalOrbitDynamics");
-  py::class_<KeplerianDynamics, IAnalyticalOrbitDynamics, PyIAnOrbDyn<KeplerianDynamics>>
-      keplerian_dynamics(m, "KeplerianDynamics");
+  // IntegratorType
+  py::enum_<IntegratorType>(m, "IntegratorType")
+      .value("RK4", IntegratorType::RK4)
+      .value("RK8", IntegratorType::RK8)
+      .value("RKF45", IntegratorType::RKF45)
+      .export_values();
 
-  keplerian_dynamics.def(py::init<double>(), py::arg("GM"))
-      .def(
-          "propagate",
-          [](KeplerianDynamics &dyn, const Vec6d &x0, double t0, double tf,
-             bool compute_stm) -> py::object {
-            Vec6 x0_ = x0.cast<Real>();
-            Real t0_ = Real(t0), tf_ = Real(tf);
+  // IDynamics
+  py::class_<IDynamics, PyIDyn<>>(m, "IDynamics");
 
-            if (compute_stm) {
-              Mat6d stm_out;  // Initialize stm_out for storing the state transition matrix
-              Vec6 xf = dyn.Propagate(x0_, t0_, tf_, &stm_out).cast<double>();
-              return py::make_tuple(xf.cast<double>(), stm_out.cast<double>());
-            } else {
-              Vec6 xf = dyn.Propagate(x0_, t0_, tf_, nullptr).cast<double>();
-              return py::cast(xf);
-            }
-          },
-          py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("compute_stm") = false);
+  // IOrbitDynamics
+  py::class_<IOrbitDynamics, IDynamics, PyIOrbDyn<>>(m, "IOrbitDynamics");
 
-  // py::class_<KeplerianDynamics>(m, "KeplerianDynamics")
-  //     .def(py::init<double>(), py::arg("GM"))
-  //     .def(
-  //         "propagate",
-  //         [](KeplerianDynamics &dyn, const Vec6d &x0, double t0, double tf, Mat6d *stm =
-  //         nullptr)
-  //             -> Vec6d { return dyn.Propagate(x0.cast<Real>(), t0, tf, stm).cast<double>();
-  //             },
-  //         py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr)
-  //     .def(
-  //         "propagate",
-  //         [](KeplerianDynamics &dyn, const RowVec6d &x0, double t0, double tf, Mat6d *stm =
-  //         nullptr)
-  //             -> RowVec6d { return dyn.Propagate(x0.cast<Real>(), t0, tf,
-  //             stm).cast<double>(); },
-  // py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr);
-  // .def(
-  // "propagate",
-  // [](KeplerianDynamics &dyn, const Vec6d &x0, double t0, VecXd tf) -> MatX6 {
-  //   return dyn.Propagate(x0.cast<Real>(), t0, tf.cast<Real>()).cast<double>();
-  // },
-  // py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr);
+  // IAnalyticalOrbitDynamics
+  py::class_<IAnalyticalOrbitDynamics, IOrbitDynamics, PyIAnOrbDyn<>>(m,
+                                                                      "IAnalyticalOrbitDynamics");
+
+  // KeplerianDynamics
+  py::class_<KeplerianDynamics, IAnalyticalOrbitDynamics, PyIAnOrbDyn<KeplerianDynamics>>(
+      m, "KeplerianDynamics")
+      .def(py::init<double>(), py::arg("GM"))
+      .I_ORBIT_DYNAMICS_METHODS(KeplerianDynamics);
+
+  // NumericalOrbitDynamics
+  py::class_<NumericalOrbitDynamics, IOrbitDynamics, PyINumOrbDyn<NumericalOrbitDynamics>>(
+      m, "NumericalOrbitDynamics")
+      .def("get_time_step", [](NumericalOrbitDynamics &dyn) { return dyn.GetTimeStep().val(); })
+      .def("set_time_step", [](NumericalOrbitDynamics &dyn, double dt) { dyn.SetTimeStep(dt); });
+
+  // CartesianTwoBodyDynamics
+  py::class_<CartesianTwoBodyDynamics, NumericalOrbitDynamics,
+             PyNumOrbDyn<CartesianTwoBodyDynamics>>(m, "CartesianTwoBodyDynamics")
+      .def(py::init<double, IntegratorType>(), py::arg("GM"),
+           py::arg("integ_type") = default_integrator)
+      .I_ORBIT_DYNAMICS_METHODS(CartesianTwoBodyDynamics);
+
+  // J2CartTwoBodyDynamics
+  py::class_<J2CartTwoBodyDynamics, NumericalOrbitDynamics, PyNumOrbDyn<J2CartTwoBodyDynamics>>(
+      m, "J2CartTwoBodyDynamics")
+      .def(py::init<double, double, double, IntegratorType>(), py::arg("GM"), py::arg("J2"),
+           py::arg("R_body"), py::arg("integ_type") = default_integrator)
+      .I_ORBIT_DYNAMICS_METHODS(J2CartTwoBodyDynamics);
+
+  // J2KeplerianDynamics
+  py::class_<J2KeplerianDynamics, NumericalOrbitDynamics, PyNumOrbDyn<J2KeplerianDynamics>>(
+      m, "J2KeplerianDynamics")
+      .def(py::init<double, double, double, IntegratorType>(), py::arg("GM"), py::arg("J2"),
+           py::arg("R_body"), py::arg("integ_type") = default_integrator)
+      .I_ORBIT_DYNAMICS_METHODS(J2KeplerianDynamics);
 
   // Body
   py::class_<Body>(m, "Body")
