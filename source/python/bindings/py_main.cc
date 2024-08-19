@@ -8,6 +8,7 @@
 #include "py_measurements.cc"
 #include "py_orbit_state.cc"
 #include "py_orbit_state_utils.cc"
+#include "py_sandbox.cc"
 #include "py_spice_interface.cc"
 #include "py_time_converter.cc"
 
@@ -24,4 +25,5 @@ PYBIND11_MODULE(_pylupnt, m) {
   init_spice_interface(m);
   init_time_converter(m);
   init_kernels(m);
+  init_sandbox(m);
 }

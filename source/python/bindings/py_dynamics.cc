@@ -1,162 +1,137 @@
+// lupnt
 #include <lupnt/core/constants.h>
+#include <lupnt/core/definitions.h>
 #include <lupnt/dynamics/dynamics.h>
 #include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/body.h>
 
 // pybind11
 #include <pybind11/eigen.h>
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 using namespace lupnt;
 
-class PyIDynamics : public IDynamics {
+template <class T = IDynamics> class PyIDyn : public T {
 public:
-  using IDynamics::IDynamics;
-  // Ptr<IState>
+  using T::T;
+  // Interface
   Ptr<IState> PropagateState(const Ptr<IState> &state, Real t0, Real tf,
                              MatXd *stm = nullptr) override {
-    PYBIND11_OVERLOAD_PURE(Ptr<IState>, IDynamics, PropagateState, state, t0, tf, stm);
+    PYBIND11_OVERRIDE_PURE(Ptr<IState>, T, PropagateState, state, t0, tf, stm);
   }
-  // VecX
   VecX Propagate(const VecX &x0, Real t0, Real tf, MatXd *stm = nullptr) override {
-    PYBIND11_OVERLOAD_PURE(VecX, IDynamics, Propagate, x0, t0, tf, stm);
+    PYBIND11_OVERRIDE_PURE(VecX, T, Propagate, x0, t0, tf, stm);
   }
 };
 
-class PyIOrbitDynamics : public IOrbitDynamics {
+template <class T = IOrbitDynamics> class PyIOrbDyn : public PyIDyn<T> {
 public:
-  using IOrbitDynamics::IOrbitDynamics;
-  // OrbitState
+  using PyIDyn<T>::PyIDyn;
+  // Overrides
+  // Ptr<IState> PropagateState(const Ptr<IState> &state, Real t0, Real tf,
+  //                            MatXd *stm = nullptr) override {
+  //   PYBIND11_OVERRIDE(Ptr<IState>, T, PropagateState, state, t0, tf, stm);
+  // }
+  VecX Propagate(const VecX &x0, Real t0, Real tf, MatXd *stm = nullptr) override {
+    PYBIND11_OVERRIDE(VecX, T, Propagate, x0, t0, tf, stm);
+  }
+  // Interface
   OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                             Mat6d *stm = nullptr) override {
-    PYBIND11_OVERLOAD_PURE(OrbitState, IOrbitDynamics, PropagateState, state, t0, tf, stm);
+    PYBIND11_OVERRIDE_PURE(OrbitState, T, PropagateState, state, t0, tf, stm);
   }
-  // Vec6 - Real
   Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override {
-    PYBIND11_OVERLOAD_PURE(Vec6, IOrbitDynamics, Propagate, x0, t0, tf, stm);
+    PYBIND11_OVERRIDE_PURE(Vec6, T, Propagate, x0, t0, tf, stm);
   }
-  // Vec6 - VecX
   MatX6 Propagate(const Vec6 &x0, Real t0, const VecX &tf, bool progress = false) override {
-    PYBIND11_OVERLOAD_PURE(MatX6, IOrbitDynamics, Propagate, x0, t0, tf, progress);
+    PYBIND11_OVERRIDE_PURE(MatX6, T, Propagate, x0, t0, tf, progress);
+  }
+  // Implementations
+  MatX6 Propagate(const MatX6 &x0, Real t0, Real tf) { return T::Propagate(x0, t0, tf); }
+};
+
+template <class T = IAnalyticalOrbitDynamics> class PyIAnOrbDyn : public PyIOrbDyn<T> {
+public:
+  using PyIOrbDyn<T>::PyIOrbDyn;
+  // Overrides
+  MatX6 Propagate(const Vec6 &x0, Real t0, const VecX &tf, bool progress = false) override {
+    PYBIND11_OVERRIDE(MatX6, T, Propagate, x0, t0, tf, progress);
+  }
+  // Interface
+  OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
+                            Mat6d *stm = nullptr) override {
+    PYBIND11_OVERRIDE_PURE(OrbitState, T, PropagateState, state, t0, tf, stm);
+  }
+  Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override {
+    PYBIND11_OVERRIDE_PURE(Vec6, T, Propagate, x0, t0, tf, stm);
   }
 };
 
-class PyIAnalyticalOrbitDynamics : public IAnalyticalOrbitDynamics {
+template <class T> class PyAnOrbDyn : public PyIAnOrbDyn<T> {
 public:
-  using IAnalyticalOrbitDynamics::IAnalyticalOrbitDynamics;
-  // OrbitState
+  using PyIAnOrbDyn<T>::PyIAnOrbDyn;
+  // Overrides
   OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                             Mat6d *stm = nullptr) override {
-    PYBIND11_OVERLOAD_PURE(OrbitState, IAnalyticalOrbitDynamics, PropagateState, state, t0, tf,
-                           stm);
+    PYBIND11_OVERRIDE(OrbitState, T, PropagateState, state, t0, tf, stm);
   }
-  // Vec6 - Real
   Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override {
-    PYBIND11_OVERLOAD_PURE(Vec6, IAnalyticalOrbitDynamics, Propagate, x0, t0, tf, stm);
+    PYBIND11_OVERRIDE(Vec6, T, Propagate, x0, t0, tf, stm);
   }
 };
 
 void init_dynamics(py::module &m) {
-  // IDynamics
-  py::class_<IDynamics, PyIDynamics>(m, "IDynamics")
-      .def(py::init<>())
-      // Ptr<IState>
-      .def(
-          "propagate_state",
-          [](IDynamics &dyn, const Ptr<IState> &state, double t0, double tf, MatXd *stm) {
-            return dyn.PropagateState(state, t0, tf, stm);
-          },
-          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr)
-      // VecX
-      .def(
-          "propagate",
-          [](IDynamics &dyn, const VecXd &x0, double t0, double tf, MatXd *stm) -> VecXd {
-            return dyn.Propagate(x0, t0, tf, stm).cast<double>();
-          },
-          py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr);
+  py::class_<IDynamics, PyIDyn<>> i_dynamics(m, "IDynamics");
+  py::class_<IOrbitDynamics, IDynamics, PyIOrbDyn<>> i_orbit_dynamics(m, "IOrbitDynamics");
+  py::class_<IAnalyticalOrbitDynamics, IOrbitDynamics, PyIAnOrbDyn<>> i_analytical_orbit_dynamics(
+      m, "IAnalyticalOrbitDynamics");
+  py::class_<KeplerianDynamics, IAnalyticalOrbitDynamics, PyIAnOrbDyn<KeplerianDynamics>>
+      keplerian_dynamics(m, "KeplerianDynamics");
 
-  // IOrbitDynamics
-  py::class_<IOrbitDynamics, PyIOrbitDynamics, IDynamics>(m, "IOrbitDynamics")
-      .def(py::init<>())
-      // OrbitState
-      .def(
-          "propagate_state",
-          [](IOrbitDynamics &dyn, const OrbitState &state, double t0, double tf, Mat6d *stm) {
-            return dyn.PropagateState(state, t0, tf, stm);
-          },
-          py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr)
-      // Vec6 - Real
+  keplerian_dynamics.def(py::init<double>(), py::arg("GM"))
       .def(
           "propagate",
-          [](IOrbitDynamics &dyn, const Vec6d &x0, double t0, double tf, Mat6d *stm) -> Vec6d {
-            return dyn.Propagate(x0, t0, tf, stm).cast<double>();
-          },
-          py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr)
-      .def(
-          "propagate",
-          [](IOrbitDynamics &dyn, const RowVec6d &x0, double t0, double tf, Mat6d *stm) -> Vec6d {
-            return dyn.Propagate(x0, t0, tf, stm).cast<double>();
-          },
-          py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr)
-      // MatX6 - Real
-      .def(
-          "propagate",
-          [](IOrbitDynamics &dyn, const Vec6d &x0, double t0, const VecXd &tf, bool progress)
-              -> MatX6d { return dyn.Propagate(x0, t0, tf.cast<Real>(), progress).cast<double>(); },
-          py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("progress") = false)
-      // Vec6 - VecX
-      .def(
-          "propagate",
-          [](IOrbitDynamics &dyn, const Vec6d &x0, double t0, VecXd tf, Mat6d *stm) -> MatX6d {
-            return dyn.Propagate(x0, t0, tf, stm).cast<double>();
-          },
-          py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr);
+          [](KeplerianDynamics &dyn, const Vec6d &x0, double t0, double tf,
+             bool compute_stm) -> py::object {
+            Vec6 x0_ = x0.cast<Real>();
+            Real t0_ = Real(t0), tf_ = Real(tf);
 
-  // IAnalyticalOrbitDynamics
-  py::class_<IAnalyticalOrbitDynamics, PyIAnalyticalOrbitDynamics, IOrbitDynamics>(
-      m, "IAnalyticalOrbitDynamics")
-      .def(py::init<>());
+            if (compute_stm) {
+              Mat6d stm_out;  // Initialize stm_out for storing the state transition matrix
+              Vec6 xf = dyn.Propagate(x0_, t0_, tf_, &stm_out).cast<double>();
+              return py::make_tuple(xf.cast<double>(), stm_out.cast<double>());
+            } else {
+              Vec6 xf = dyn.Propagate(x0_, t0_, tf_, nullptr).cast<double>();
+              return py::cast(xf);
+            }
+          },
+          py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("compute_stm") = false);
 
-  // KeplerianDynamics
-  py::class_<KeplerianDynamics, IAnalyticalOrbitDynamics>(m, "KeplerianDynamics")
-      .def(py::init<double>(), py::arg("GM"));
-
-  // // NumericalOrbitDynamics
-  // py::class_<NumericalOrbitDynamics>(m, "NumericalOrbitDynamics")
-  //     .def(py::init<ODE, IntegratorType>(), py::arg("odefunc"),
-  //     py::arg("integrator")) .def("set_time_step", [](NumericalOrbitDynamics &dyn,
-  //     double dt) { dyn.SetTimeStep(dt); }) .def("get_time_step",
-  //          [](const NumericalOrbitDynamics &dyn) { return dyn.GetTimeStep().val();
-  //          })
+  // py::class_<KeplerianDynamics>(m, "KeplerianDynamics")
+  //     .def(py::init<double>(), py::arg("GM"))
   //     .def(
   //         "propagate",
-  //         [](NumericalOrbitDynamics &dyn, const Vec6 &x0, double t0, double tf,
-  //            MatXd *stm) -> Vec6 { return dyn.Propagate(x0, t0, tf,
-  //            stm).cast<double>(); },
+  //         [](KeplerianDynamics &dyn, const Vec6d &x0, double t0, double tf, Mat6d *stm =
+  //         nullptr)
+  //             -> Vec6d { return dyn.Propagate(x0.cast<Real>(), t0, tf, stm).cast<double>();
+  //             },
   //         py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr)
   //     .def(
   //         "propagate",
-  //         [](NumericalOrbitDynamics &dyn, const Vec6 &x0, double t0, const VecXd
-  //         &tf, bool progress)
-  //             -> MatX6d { return dyn.Propagate(x0, t0, tf.cast<Real>(),
-  //             progress).cast<double>();
-  //             },
-  //         py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("progress") = false)
-  //     .I_ORBIT_DYNAMICS_METHODS;
-
-  // // CartesianTwoBodyDynamics
-  // py::class_<CartesianTwoBodyDynamics, NumericalOrbitDynamics>(m,
-  // "CartesianTwoBodyDynamics")
-  //     .def(py::init<double, IntegratorType>(), py::arg("GM"),
-  //          py::arg("integ") = default_integrator);
-
-  // // NBodyDynamics
-  // py::class_<NBodyDynamics, NumericalOrbitDynamics>(m, "NBodyDynamics")
-  //     .def(py::init<>())
-  //     .def("set_primary_body", &NBodyDynamics::SetPrimaryBody,
-  //     py::arg("body")) .def("add_body", &NBodyDynamics::AddBody,
-  //     py::arg("body"));
+  //         [](KeplerianDynamics &dyn, const RowVec6d &x0, double t0, double tf, Mat6d *stm =
+  //         nullptr)
+  //             -> RowVec6d { return dyn.Propagate(x0.cast<Real>(), t0, tf,
+  //             stm).cast<double>(); },
+  // py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr);
+  // .def(
+  // "propagate",
+  // [](KeplerianDynamics &dyn, const Vec6d &x0, double t0, VecXd tf) -> MatX6 {
+  //   return dyn.Propagate(x0.cast<Real>(), t0, tf.cast<Real>()).cast<double>();
+  // },
+  // py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("stm") = nullptr);
 
   // Body
   py::class_<Body>(m, "Body")
