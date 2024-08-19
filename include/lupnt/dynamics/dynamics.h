@@ -63,6 +63,12 @@ namespace lupnt {
     // Overrides
     using IOrbitDynamics::Propagate;
     MatX6 Propagate(const Vec6 &x0, Real t0, const VecX &tf, bool progress = false) override;
+
+    // Interface
+    virtual OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
+                                      Mat6d *stm = nullptr) override
+        = 0;
+    virtual Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override = 0;
   };
 
   class NumericalOrbitDynamics : public IOrbitDynamics {
@@ -75,12 +81,17 @@ namespace lupnt {
     NumericalOrbitDynamics(ODE odefunc, IntegratorType integ = default_integrator);
     void SetTimeStep(Real dt);
     Real GetTimeStep() const;
-    virtual Vec6 ComputeRates(Real t, const Vec6 &x) const = 0;
 
     // Overrides
     using IOrbitDynamics::Propagate;
     Vec6 Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm = nullptr) override;
     MatX6 Propagate(const Vec6 &x0, Real t0, const VecX &tf, bool progress = false) override;
+
+    // Interface
+    virtual Vec6 ComputeRates(Real t, const Vec6 &x) const = 0;
+    virtual OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
+                                      Mat6d *stm = nullptr) override
+        = 0;
   };
 
   // ****************************************************************************
