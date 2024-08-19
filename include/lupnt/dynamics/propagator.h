@@ -25,11 +25,10 @@ namespace lupnt {
     bool log_history_ = false;
 
   public:
-    std::unique_ptr<IIntegrator> integrator;  // integrator type
+    Ptr<IIntegrator> integrator;  // integrator type
 
-    NumericalPropagator();
-    NumericalPropagator(IntegratorType integ);
-    NumericalPropagator(IntegratorType integ, IntegratorParams params);
+    NumericalPropagator(IntegratorType integ = IntegratorType::RK4,
+                        IntegratorParams params = IntegratorParams());
 
     VecX Propagate(const ODE &odefunc, Real t0, Real tf, const VecX &x0, Real dt);
     VecX Propagate(const ODE &odefunc, Real t0, Real tf, const VecX &x0, Real dt, MatXd *J);

@@ -70,7 +70,7 @@ namespace lupnt {
   Vec6 KeplerianDynamics::PropagateClassicalOE(const Vec6 &coe, Real t0, Real tf, Mat6d *stm) {
     Real dt = tf - t0;
     Real n = sqrt(GM_ / pow(coe[0], 3));
-    Real M = coe[5] + n * dt;
+    Real M = Wrap2Pi(coe[5] + n * dt);
 
     Vec6 coe_new = coe;
     coe_new[5] = M;
@@ -86,10 +86,10 @@ namespace lupnt {
   Vec6 KeplerianDynamics::PropagateQuasiNonsingOE(const Vec6 &qnsoe, Real t0, Real tf, Mat6d *stm) {
     Real dt = tf - t0;
     Real n = sqrt(GM_ / pow(qnsoe[0], 3));
-    Real u = qnsoe[4] + n * dt;
+    Real u = qnsoe[1] + n * dt;
 
     Vec6 qnsoe_new = qnsoe;
-    qnsoe_new[4] = u;
+    qnsoe_new[1] = u;
 
     if (stm != nullptr) throw std::runtime_error("Not implemented");
     return qnsoe_new;
@@ -99,10 +99,10 @@ namespace lupnt {
   Vec6 KeplerianDynamics::PropagateEquinoctialOE(const Vec6 &eqoe, Real t0, Real tf, Mat6d *stm) {
     Real dt = tf - t0;
     Real n = sqrt(GM_ / pow(eqoe[0], 3));
-    Real lon = eqoe[4] + n * dt;
+    Real lon = eqoe[5] + n * dt;
 
     Vec6 eqoe_new = eqoe;
-    eqoe_new[4] = lon;
+    eqoe_new[5] = lon;
 
     if (stm != nullptr) throw std::runtime_error("Not implemented");
     return eqoe_new;

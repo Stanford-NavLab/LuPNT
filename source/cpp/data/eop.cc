@@ -34,7 +34,7 @@ namespace lupnt {
     }
 
     // Initialize EopFileData struct
-    eop = Ptr<EopFileData>();
+    eop = MakePtr<EopFileData>();
     eop->years.resize(n_lines);
     eop->months.resize(n_lines);
     eop->days.resize(n_lines);

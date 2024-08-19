@@ -63,7 +63,7 @@ TEST_CASE("SpiceInterface.GetFrameConversionMat") {
                        0.00224357543019373, 3.04773366301969e-05, 0.999997482717042}};
 
   xform = spice::GetFrameConversionMat(t_tai, Frame::GCRF, Frame::ITRF);
-  REQUIRE_NEAR_REAL_MAT(xform, xform_expected, 1e-6);
+  RequireNear(xform, xform_expected, 1e-6);
 }
 
 TEST_CASE("SpiceInterface.GetBodyPosVel") {
@@ -84,5 +84,5 @@ TEST_CASE("SpiceInterface.GetBodyPosVel") {
                        0.734154922271287, 0.697461344892098, 0.325673181901724};
 
   double abs_error = 1e-6;
-  REQUIRE_NEAR_REAL_VEC(posvel, posvel_expected, abs_error);
+  RequireNear(posvel, posvel_expected, abs_error);
 }

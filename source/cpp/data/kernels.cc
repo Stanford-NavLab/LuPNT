@@ -182,7 +182,7 @@ namespace lupnt {
 
   void ReadEphemerisCoefficientsFile(const std::filesystem::path& filepath,
                                      EphemerisHeaderData& data) {
-    ephemeris_data = Ptr<EphemerisData>();
+    ephemeris_data = MakePtr<EphemerisData>();
     ephemeris_data->header = data;
     ephemeris_data->blocks.clear();
 

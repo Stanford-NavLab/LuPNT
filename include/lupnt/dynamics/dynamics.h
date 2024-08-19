@@ -73,6 +73,7 @@ namespace lupnt {
 
   public:
     NumericalOrbitDynamics(ODE odefunc, IntegratorType integrator = IntegratorType::RK4);
+    NumericalOrbitDynamics(const NumericalOrbitDynamics &other);
     void SetTimeStep(Real dt);
     Real GetTimeStep() const;
     virtual Vec6 ComputeRates(Real t, const Vec6 &x) const = 0;
@@ -90,7 +91,7 @@ namespace lupnt {
   // Keplerian Dynamics
   class KeplerianDynamics : public IAnalyticalOrbitDynamics {
   private:
-    const Real GM_;
+    Real GM_;
 
   public:
     KeplerianDynamics(Real GM);
@@ -165,7 +166,7 @@ namespace lupnt {
   // Cartesian Two-Body Dynamics
   class CartesianTwoBodyDynamics : public NumericalOrbitDynamics {
   private:
-    const Real GM_;
+    Real GM_;
 
   public:
     CartesianTwoBodyDynamics(Real GM, IntegratorType integ = IntegratorType::RK4);
@@ -177,7 +178,7 @@ namespace lupnt {
   // J2 Cartesian Two-Body Dynamics
   class J2CartTwoBodyDynamics : public NumericalOrbitDynamics {
   private:
-    const Real GM_, J2_, R_body_;
+    Real GM_, J2_, R_body_;
 
   public:
     J2CartTwoBodyDynamics(Real GM, Real J2, Real R_body,
@@ -189,7 +190,7 @@ namespace lupnt {
 
   class J2KeplerianDynamics : public NumericalOrbitDynamics {
   private:
-    const Real GM_, J2_, R_body_;
+    Real GM_, J2_, R_body_;
 
   public:
     J2KeplerianDynamics(Real GM, Real J2, Real R_body, IntegratorType integ = IntegratorType::RK4);

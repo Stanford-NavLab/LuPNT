@@ -14,34 +14,20 @@
 
 namespace lupnt {
 
-  NumericalPropagator::NumericalPropagator() { integrator = std::make_unique<RK4>(); };
-
-  NumericalPropagator::NumericalPropagator(IntegratorType integ) {
-    IntegratorParams params = IntegratorParams();  // default params
-    if (integ == IntegratorType::RK4)
-      integrator = std::make_unique<RK4>();
-    else if (integ == IntegratorType::RK8)
-      integrator = std::make_unique<RK8>();
-    else if (integ == IntegratorType::RKF45)
-      integrator = std::make_unique<RKF45>(params);
-    else
-      throw std::invalid_argument("Invalid Integrator Type");
-  };
-
   NumericalPropagator::NumericalPropagator(IntegratorType integ, IntegratorParams params) {
     if (integ == IntegratorType::RK4)
-      integrator = std::make_unique<RK4>();
+      integrator = MakePtr<RK4>();
     else if (integ == IntegratorType::RK8)
-      integrator = std::make_unique<RK8>();
+      integrator = MakePtr<RK8>();
     else if (integ == IntegratorType::RKF45)
-      integrator = std::make_unique<RKF45>(params);
+      integrator = MakePtr<RKF45>(params);
     else
       throw std::invalid_argument("Invalid Integrator Type");
   };
 
   VecX NumericalPropagator::Propagate(const ODE &odefunc, Real t0, Real tf, const VecX &x0,
                                       Real dt) {
-    if (dt <= 0) throw std::invalid_argument("Invalid time step");
+    assert(dt > 0 && "Invalid time step");
 
     VecX x = x0;
     Real t = t0;

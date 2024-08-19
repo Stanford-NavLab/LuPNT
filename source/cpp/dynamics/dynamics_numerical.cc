@@ -18,6 +18,9 @@ namespace lupnt {
   NumericalOrbitDynamics::NumericalOrbitDynamics(ODE odefunc, IntegratorType integrator)
       : odefunc_(odefunc), propagator_(integrator) {}
 
+  NumericalOrbitDynamics::NumericalOrbitDynamics(const NumericalOrbitDynamics &other)
+      : odefunc_(other.odefunc_), propagator_(other.propagator_), dt_(other.dt_) {}
+
   void NumericalOrbitDynamics::SetTimeStep(Real dt) { dt_ = dt; };
   Real NumericalOrbitDynamics::GetTimeStep() const { return dt_; };
 
@@ -56,9 +59,7 @@ namespace lupnt {
   // ****************************************************************************
 
   CartesianTwoBodyDynamics::CartesianTwoBodyDynamics(Real GM, IntegratorType integ)
-      : NumericalOrbitDynamics(std::bind(&CartesianTwoBodyDynamics::ComputeRates, this,
-                                         std::placeholders::_1, std::placeholders::_2),
-                               integ),
+      : NumericalOrbitDynamics([this](Real t, const Vec6 &x) { return ComputeRates(t, x); }, integ),
         GM_(GM) {};
 
   Vec6 CartesianTwoBodyDynamics::ComputeRates(Real t, const Vec6 &x) const {
@@ -87,9 +88,7 @@ namespace lupnt {
   // ****************************************************************************
 
   J2CartTwoBodyDynamics::J2CartTwoBodyDynamics(Real GM, Real J2, Real R_body, IntegratorType integ)
-      : NumericalOrbitDynamics(std::bind(&J2CartTwoBodyDynamics::ComputeRates, this,
-                                         std::placeholders::_1, std::placeholders::_2),
-                               integ),
+      : NumericalOrbitDynamics([this](Real t, const Vec6 &x) { return ComputeRates(t, x); }, integ),
         GM_(GM),
         J2_(J2),
         R_body_(R_body) {};
@@ -129,9 +128,7 @@ namespace lupnt {
   // ****************************************************************************
 
   J2KeplerianDynamics::J2KeplerianDynamics(Real GM, Real J2, Real R_body, IntegratorType integ)
-      : NumericalOrbitDynamics(std::bind(&J2KeplerianDynamics::ComputeRates, this,
-                                         std::placeholders::_1, std::placeholders::_2),
-                               integ),
+      : NumericalOrbitDynamics([this](Real t, const Vec6 &x) { return ComputeRates(t, x); }, integ),
         GM_(GM),
         J2_(J2),
         R_body_(R_body) {};
@@ -166,8 +163,7 @@ namespace lupnt {
   // ****************************************************************************
 
   MoonMeanDynamics::MoonMeanDynamics(IntegratorType integ)
-      : NumericalOrbitDynamics(std::bind(&MoonMeanDynamics::ComputeRates, this,
-                                         std::placeholders::_1, std::placeholders::_2),
+      : NumericalOrbitDynamics([this](Real t, const Vec6 &x) { return ComputeRates(t, x); },
                                integ) {};
 
   Vec6 MoonMeanDynamics::ComputeRates(Real t, const Vec6 &x) const {

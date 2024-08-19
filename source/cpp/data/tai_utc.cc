@@ -27,7 +27,7 @@ namespace lupnt {
     assert(file.is_open() && "Unable to open file");
 
     // Initialize TaiUtcFileData struct
-    tai_utc_data = Ptr<TaiUtcFileData>();
+    tai_utc_data = MakePtr<TaiUtcFileData>();
     tai_utc_data->jd.resize(n_lines);
     tai_utc_data->tai_utc.resize(n_lines);
     tai_utc_data->mjd0.resize(n_lines);

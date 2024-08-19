@@ -10,7 +10,7 @@ namespace lupnt {
   Vec3 EastNorthUp2AzElRange(const Vec3 &enu) {
     auto [e, n, u] = unpack(enu);
     Real range = enu.norm();
-    Real azim = Wrap2TwoPi(atan2(e, n));
+    Real azim = atan2(e, n);
     Real elev = asin(u / range);
     return Vec3(azim, elev, range);
   }

@@ -31,7 +31,7 @@ namespace lupnt {
     Vec3 h = r.cross(v);  // Areal velocity
     Real H = h.norm();    // Angular momentum
 
-    Real Omega = Wrap2TwoPi(atan2(h(0), -h(1)));            // Long. ascend. node
+    Real Omega = atan2(h(0), -h(1));                        // Long. ascend. node
     Real i = atan2(sqrt(h(0) * h(0) + h(1) * h(1)), h(2));  // Inclination
     Real u = atan2(r(2) * H, -r(0) * h(1) + r(1) * h(0));   // Arg. of latitude
     Real R = r.norm();                                      // Distance
@@ -43,9 +43,9 @@ namespace lupnt {
     Real e = sqrt(e2);             // Eccentricity
     Real E = atan2(eSinE, eCosE);  // Eccentric anomaly
 
-    Real M = Wrap2TwoPi(E - eSinE);                       // Mean anomaly
+    Real M = Wrap2Pi(E - eSinE);                          // Mean anomaly
     Real nu = atan2(sqrt(1.0 - e2) * eSinE, eCosE - e2);  // True anomaly
-    Real omega = Wrap2TwoPi(u - nu);                      // Arg. of perihelion
+    Real omega = Wrap2Pi(u - nu);                         // Arg. of perihelion
 
     return Vec6(a, e, i, Omega, omega, M);
   }
@@ -96,7 +96,7 @@ namespace lupnt {
 
     Real e = sqrt(ecos_nu * ecos_nu + esin_nu * esin_nu);
     Real nu = atan2(esin_nu, ecos_nu);
-    Real omega = Wrap2TwoPi(u - nu);
+    Real omega = Wrap2Pi(u - nu);
 
     // Perihelion distance, semimajor axis and mean motion
     Real a = p / (1.0 - e * e);
@@ -106,7 +106,7 @@ namespace lupnt {
     Real M;
     if (e < 1.0) {
       Real E = atan2(sqrt((1.0 - e) * (1.0 + e)) * esin_nu, ecos_nu + e * e);
-      M = Wrap2TwoPi(E - e * sin(E));
+      M = Wrap2Pi(E - e * sin(E));
     } else {
       Real sinhH = sqrt((e - 1.0) * (e + 1.0)) * esin_nu / (e + e * ecos_nu);
       M = e * sinhH - log(sinhH + sqrt(1.0 + sinhH * sinhH));
@@ -277,6 +277,7 @@ namespace lupnt {
   }
 
   Vec6 QuasiNonsing2Classical(const Vec6 &qnsoeVec, Real GM) {
+    (void)GM;
     auto [a, u, ex, ey, i, Omega] = unpack(qnsoeVec);
 
     Real e = sqrt(ex * ex + ey * ey);

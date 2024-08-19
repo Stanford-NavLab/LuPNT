@@ -41,9 +41,9 @@ namespace lupnt {
   }
 
   MatX6 IOrbitDynamics::Propagate(const MatX6 &x0, Real t0, Real tf) {
-    MatX6 xf = MatX6::Zero(x0.rows(), x0.cols());
-    for (int i = 0; i < x0.cols(); i++) {
-      Vec6 x0_i = x0.col(i);
+    MatX6 xf(x0.rows(), 6);
+    for (int i = 0; i < x0.rows(); i++) {
+      Vec6 x0_i = x0.row(i);
       Vec6 xf_i = Propagate(x0_i, t0, tf);
       xf.row(i) = xf_i;
     }

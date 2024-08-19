@@ -25,12 +25,12 @@ TEST_CASE("Anomaly", "[OrbitState]") {
   const Real E_ref = 0.24318719637;
   const Real nu_ref = Mean2TrueAnomaly(M_ref, e_ref);
 
-  REQUIRE_NEAR_REAL(Mean2EccAnomaly(M_ref, e_ref), E_ref, eps);
-  REQUIRE_NEAR_REAL(Ecc2MeanAnomaly(E_ref, e_ref), M_ref, eps);
-  REQUIRE_NEAR_REAL(Ecc2TrueAnomaly(E_ref, e_ref), nu_ref, eps);
-  REQUIRE_NEAR_REAL(True2EccAnomaly(nu_ref, e_ref), E_ref, eps);
-  REQUIRE_NEAR_REAL(Mean2TrueAnomaly(M_ref, e_ref), nu_ref, eps);
-  REQUIRE_NEAR_REAL(True2MeanAnomaly(nu_ref, e_ref), M_ref, eps);
+  RequireNear(Mean2EccAnomaly(M_ref, e_ref), E_ref, eps);
+  RequireNear(Ecc2MeanAnomaly(E_ref, e_ref), M_ref, eps);
+  RequireNear(Ecc2TrueAnomaly(E_ref, e_ref), nu_ref, eps);
+  RequireNear(True2EccAnomaly(nu_ref, e_ref), E_ref, eps);
+  RequireNear(Mean2TrueAnomaly(M_ref, e_ref), nu_ref, eps);
+  RequireNear(True2MeanAnomaly(nu_ref, e_ref), M_ref, eps);
 }
 
 TEST_CASE("Conversions", "[OrbitState]") {
@@ -44,11 +44,11 @@ TEST_CASE("Conversions", "[OrbitState]") {
   // [km, -, rad, rad, rad, rad]
 
   Vec6 rv = Classical2Cart(coe_ref, GM_EARTH);
-  REQUIRE_NEAR_REAL_VEC(rv, rv_ref, eps);
+  RequireNear(rv, rv_ref, eps);
 
   Vec6 coe = Cart2Classical(rv, GM_EARTH);
-  REQUIRE_NEAR_REAL(coe(1), coe_ref(1), eps);
-  REQUIRE_NEAR_REAL_VEC(coe, coe_ref, eps);
+  RequireNear(coe(1), coe_ref(1), eps);
+  RequireNear(coe, coe_ref, eps);
 }
 
 TEST_CASE("OrbitState", "Coordinates") {
@@ -60,17 +60,17 @@ TEST_CASE("OrbitState", "Coordinates") {
   Vec3 r_gs(4881.378514959144923, 184.845393739831565, 4276.423188333580583);
   Vec3 r_sat(6187.826901711936443, 3781.026709647304870, 16479.681332443218707);
 
-  REQUIRE_NEAR_REAL_VEC(aer, EastNorthUp2AzElRange(enu), eps);
-  REQUIRE_NEAR_REAL_VEC(enu, AzElRange2EastNorthUp(aer), eps);
+  RequireNear(aer, EastNorthUp2AzElRange(enu), eps);
+  RequireNear(enu, AzElRange2EastNorthUp(aer), eps);
 
-  REQUIRE_NEAR_REAL_VEC(r_gs, LatLonAlt2Cart(lla, R_EARTH, WGS84_F), eps);
-  REQUIRE_NEAR_REAL_VEC(lla, Cart2LatLonAlt(r_gs, R_EARTH, WGS84_F), eps);
+  RequireNear(r_gs, LatLonAlt2Cart(lla, R_EARTH, WGS84_F), eps);
+  RequireNear(lla, Cart2LatLonAlt(r_gs, R_EARTH, WGS84_F), eps);
 
-  REQUIRE_NEAR_REAL_VEC(r_sat, EastNorthUp2Cart(enu, r_gs, R_EARTH, WGS84_F), eps);
-  REQUIRE_NEAR_REAL_VEC(enu, Cart2EastNorthUp(r_sat, r_gs, R_EARTH, WGS84_F), eps);
+  RequireNear(r_sat, EastNorthUp2Cart(enu, r_gs, R_EARTH, WGS84_F), eps);
+  RequireNear(enu, Cart2EastNorthUp(r_sat, r_gs, R_EARTH, WGS84_F), eps);
 
-  REQUIRE_NEAR_REAL_VEC(aer, Cart2AzElRange(r_sat, r_gs, R_EARTH, WGS84_F), eps);
-  REQUIRE_NEAR_REAL_VEC(r_sat, AzElRange2Cart(aer, r_gs, R_EARTH, WGS84_F), eps);
+  RequireNear(aer, Cart2AzElRange(r_sat, r_gs, R_EARTH, WGS84_F), eps);
+  RequireNear(r_sat, AzElRange2Cart(aer, r_gs, R_EARTH, WGS84_F), eps);
 }
 
 // TEST_CASE("OrbitState", "Utils") {
@@ -81,43 +81,43 @@ TEST_CASE("OrbitState", "Coordinates") {
 
 //   M = 4 * RAD_PER_DEG;
 //   E = Mean2EccAnomaly(M, e);
-//   REQUIRE_NEAR_REAL(E, 0.24318719629, 1e-10);
+//   RequireNear(E, 0.24318719629, 1e-10);
 
 //   M = 50 * RAD_PER_DEG;
 //   E = Mean2EccAnomaly(M, e);
-//   REQUIRE_NEAR_REAL(E, 1.59249513093, 1e-10);
+//   RequireNear(E, 1.59249513093, 1e-10);
 
 //   // Example 2-3 (Osculating Elements)
 //   Vec6 rv(10e3, 40e3, -5e3, -1.5, 1, -0.1);  // [km, km/s]
 //   Vec6 coe = Cart2Classical(rv, GM_EARTH);
-//   REQUIRE_NEAR_REAL(coe[0], 25015.181, 1e-3);
-//   REQUIRE_NEAR_REAL(coe[1], 0.7079772, 1e-7);
-//   REQUIRE_NEAR_REAL(coe[2] * DEG_PER_RAD, 6.971, 1e-3);
-//   REQUIRE_NEAR_REAL(coe[3] * DEG_PER_RAD, 173.290, 1e-3);
-//   REQUIRE_NEAR_REAL(coe[4] * DEG_PER_RAD, 91.553, 1e-3);
-//   REQUIRE_NEAR_REAL(coe[5] * DEG_PER_RAD, 144.225, 1e-3);
+//   RequireNear(coe[0], 25015.181, 1e-3);
+//   RequireNear(coe[1], 0.7079772, 1e-7);
+//   RequireNear(coe[2] * DEG_PER_RAD, 6.971, 1e-3);
+//   RequireNear(coe[3] * DEG_PER_RAD, 173.290, 1e-3);
+//   RequireNear(coe[4] * DEG_PER_RAD, 91.553, 1e-3);
+//   RequireNear(coe[5] * DEG_PER_RAD, 144.225, 1e-3);
 
 //   // Example 2-4 (Topocentric satellite motion)
 //   Ptr<EopFileData> eop_data =
 //       LoadEopFileData(GetFilePath("eopc04_08.62-now"));
 //   // 1962 1 1  37665  -0.012700   0.213000   0.0326338   0.0017230 0.064261
 //   // 0.006067 0.030000   0.030000  0.0020000  0.0014000    0.012000 0.002000
-//   REQUIRE_NEAR_REAL(eop_data->years(0), 1962, eps);
-//   REQUIRE_NEAR_REAL(eop_data->months(0), 1, eps);
-//   REQUIRE_NEAR_REAL(eop_data->days(0), 1, eps);
-//   REQUIRE_NEAR_REAL(eop_data->mjds_utc(0), 37665, eps);
-//   REQUIRE_NEAR_REAL(eop_data->x(0), -0.012700, eps);
-//   REQUIRE_NEAR_REAL(eop_data->y(0), 0.213000, eps);
-//   REQUIRE_NEAR_REAL(eop_data->ut1_utc(0), 0.0326338, eps);
-//   REQUIRE_NEAR_REAL(eop_data->lod(0), 0.0017230, eps);
-//   REQUIRE_NEAR_REAL(eop_data->dpsi(0), 0.064261, eps);
-//   REQUIRE_NEAR_REAL(eop_data->deps(0), 0.006067, eps);
-//   REQUIRE_NEAR_REAL(eop_data->xErr(0), 0.030000, eps);
-//   REQUIRE_NEAR_REAL(eop_data->yErr(0), 0.030000, eps);
-//   REQUIRE_NEAR_REAL(eop_data->ut1_utc_err(0), 0.0020000, eps);
-//   REQUIRE_NEAR_REAL(eop_data->lod_err(0), 0.0014000, eps);
-//   REQUIRE_NEAR_REAL(eop_data->dpsi_err(0), 0.012000, eps);
-//   REQUIRE_NEAR_REAL(eop_data->deps_err(0), 0.002000, eps);
+//   RequireNear(eop_data->years(0), 1962, eps);
+//   RequireNear(eop_data->months(0), 1, eps);
+//   RequireNear(eop_data->days(0), 1, eps);
+//   RequireNear(eop_data->mjds_utc(0), 37665, eps);
+//   RequireNear(eop_data->x(0), -0.012700, eps);
+//   RequireNear(eop_data->y(0), 0.213000, eps);
+//   RequireNear(eop_data->ut1_utc(0), 0.0326338, eps);
+//   RequireNear(eop_data->lod(0), 0.0017230, eps);
+//   RequireNear(eop_data->dpsi(0), 0.064261, eps);
+//   RequireNear(eop_data->deps(0), 0.006067, eps);
+//   RequireNear(eop_data->xErr(0), 0.030000, eps);
+//   RequireNear(eop_data->yErr(0), 0.030000, eps);
+//   RequireNear(eop_data->ut1_utc_err(0), 0.0020000, eps);
+//   RequireNear(eop_data->lod_err(0), 0.0014000, eps);
+//   RequireNear(eop_data->dpsi_err(0), 0.012000, eps);
+//   RequireNear(eop_data->deps_err(0), 0.002000, eps);
 
 //   real mjd_utc_1 = 37665;
 //   real mjd_utc_2 = 37666;
@@ -151,42 +151,42 @@ TEST_CASE("OrbitState", "Coordinates") {
 
 //   auto interp = [](real x0, real x1, real s) { return x0 + (x1 - x0) * s; };
 //   EopData result = GetEopData(eop_data, mjd_utc, true);
-//   REQUIRE_NEAR_REAL(result.x_pole, interp(res1.x_pole, res2.x_pole, s), eps);
-//   REQUIRE_NEAR_REAL(result.y_pole, interp(res1.y_pole, res2.y_pole, s), eps);
-//   REQUIRE_NEAR_REAL(result.ut1_utc, interp(res1.ut1_utc, res2.ut1_utc, s),
-//   eps); REQUIRE_NEAR_REAL(result.lod, interp(res1.lod, res2.lod, s), eps);
-//   REQUIRE_NEAR_REAL(result.dpsi, interp(res1.dpsi, res2.dpsi, s), eps);
-//   REQUIRE_NEAR_REAL(result.deps, interp(res1.deps, res2.deps, s), eps);
-//   REQUIRE_NEAR_REAL(result.dx_pole, interp(res1.dx_pole, res2.dx_pole, s),
-//   eps); REQUIRE_NEAR_REAL(result.dy_pole, interp(res1.dy_pole, res2.dy_pole,
-//   s), eps); REQUIRE_NEAR_REAL(result.tai_utc, interp(res1.tai_utc,
+//   RequireNear(result.x_pole, interp(res1.x_pole, res2.x_pole, s), eps);
+//   RequireNear(result.y_pole, interp(res1.y_pole, res2.y_pole, s), eps);
+//   RequireNear(result.ut1_utc, interp(res1.ut1_utc, res2.ut1_utc, s),
+//   eps); RequireNear(result.lod, interp(res1.lod, res2.lod, s), eps);
+//   RequireNear(result.dpsi, interp(res1.dpsi, res2.dpsi, s), eps);
+//   RequireNear(result.deps, interp(res1.deps, res2.deps, s), eps);
+//   RequireNear(result.dx_pole, interp(res1.dx_pole, res2.dx_pole, s),
+//   eps); RequireNear(result.dy_pole, interp(res1.dy_pole, res2.dy_pole,
+//   s), eps); RequireNear(result.tai_utc, interp(res1.tai_utc,
 //   res2.tai_utc, s), eps);
 
 //   s = 0.2;
 //   mjd_utc = mjd_utc_1 + s * (mjd_utc_2 - mjd_utc_1);
 //   result = GetEopData(eop_data, mjd_utc, false);
-//   REQUIRE_NEAR_REAL(result.x_pole, res1.x_pole, eps);
-//   REQUIRE_NEAR_REAL(result.y_pole, res1.y_pole, eps);
-//   REQUIRE_NEAR_REAL(result.ut1_utc, res1.ut1_utc, eps);
-//   REQUIRE_NEAR_REAL(result.lod, res1.lod, eps);
-//   REQUIRE_NEAR_REAL(result.dpsi, res1.dpsi, eps);
-//   REQUIRE_NEAR_REAL(result.deps, res1.deps, eps);
-//   REQUIRE_NEAR_REAL(result.dx_pole, res1.dx_pole, eps);
-//   REQUIRE_NEAR_REAL(result.dy_pole, res1.dy_pole, eps);
-//   REQUIRE_NEAR_REAL(result.tai_utc, res1.tai_utc, eps);
+//   RequireNear(result.x_pole, res1.x_pole, eps);
+//   RequireNear(result.y_pole, res1.y_pole, eps);
+//   RequireNear(result.ut1_utc, res1.ut1_utc, eps);
+//   RequireNear(result.lod, res1.lod, eps);
+//   RequireNear(result.dpsi, res1.dpsi, eps);
+//   RequireNear(result.deps, res1.deps, eps);
+//   RequireNear(result.dx_pole, res1.dx_pole, eps);
+//   RequireNear(result.dy_pole, res1.dy_pole, eps);
+//   RequireNear(result.tai_utc, res1.tai_utc, eps);
 
 //   s = 0.8;
 //   mjd_utc = mjd_utc_1 + s * (mjd_utc_2 - mjd_utc_1);
 //   result = GetEopData(eop_data, mjd_utc, false);
-//   REQUIRE_NEAR_REAL(result.x_pole, res2.x_pole, eps);
-//   REQUIRE_NEAR_REAL(result.y_pole, res2.y_pole, eps);
-//   REQUIRE_NEAR_REAL(result.ut1_utc, res2.ut1_utc, eps);
-//   REQUIRE_NEAR_REAL(result.lod, res2.lod, eps);
-//   REQUIRE_NEAR_REAL(result.dpsi, res2.dpsi, eps);
-//   REQUIRE_NEAR_REAL(result.deps, res2.deps, eps);
-//   REQUIRE_NEAR_REAL(result.dx_pole, res2.dx_pole, eps);
-//   REQUIRE_NEAR_REAL(result.dy_pole, res2.dy_pole, eps);
-//   REQUIRE_NEAR_REAL(result.tai_utc, res2.tai_utc, eps);
+//   RequireNear(result.x_pole, res2.x_pole, eps);
+//   RequireNear(result.y_pole, res2.y_pole, eps);
+//   RequireNear(result.ut1_utc, res2.ut1_utc, eps);
+//   RequireNear(result.lod, res2.lod, eps);
+//   RequireNear(result.dpsi, res2.dpsi, eps);
+//   RequireNear(result.deps, res2.deps, eps);
+//   RequireNear(result.dx_pole, res2.dx_pole, eps);
+//   RequireNear(result.dy_pole, res2.dy_pole, eps);
+//   RequireNear(result.tai_utc, res2.tai_utc, eps);
 
 //   // Reloading the EOP data points to the same instance
 //   Ptr<EopFileData> eop_data_reloaded =
@@ -195,7 +195,7 @@ TEST_CASE("OrbitState", "Coordinates") {
 
 //   // Time
 //   real mjd0_utc = Date2ModifiedJulianDate(1997, 1, 1, 0, 0, 0);
-//   REQUIRE_NEAR_REAL(mjd0_utc, 50449, eps);
+//   RequireNear(mjd0_utc, 50449, eps);
 
 //   // Ground station
 //   real lon_gs = 11 * RAD_PER_DEG;
@@ -204,10 +204,10 @@ TEST_CASE("OrbitState", "Coordinates") {
 //   Vec3 r_gs = Geodetic2Cart(Vec3(lat_gs, lon_gs, alt_gs), R_EARTH,
 //                             FLATTENING_EARTH_WGS84);
 //   Vec3 r_gs_ref(4197.16082495916, 815.845418656284, 4716.87633011541);
-//   REQUIRE_NEAR_REAL_VEC(r_gs, r_gs_ref, eps);
+//   RequireNear(r_gs, r_gs_ref, eps);
 //   Vec3 r_geod = Cart2Geodetic(r_gs, R_EARTH, FLATTENING_EARTH_WGS84);
 //   Vec3 r_geod_ref(48 * RAD_PER_DEG, 11 * RAD_PER_DEG, 0);
-//   REQUIRE_NEAR_REAL_VEC(r_geod, r_geod_ref, eps);
+//   RequireNear(r_geod, r_geod_ref, eps);
 
 //   // Spacecraft
 //   real a = 960 + R_EARTH;                // Semimajor axis [Km]
@@ -218,7 +218,7 @@ TEST_CASE("OrbitState", "Coordinates") {
 //   real M0 = 0 * RAD_PER_DEG;             // Mean anomaly at epoch [rad]
 //   Vec6 coe0(a, e, i, Omega, omega, M0);  // Classical orbital elements
 //   Vec6 coe0_ref(7338.137, 0, 1.6929693744345, 2.28114533235659, 0, 0);
-//   REQUIRE_NEAR_REAL_VEC(coe0, coe0_ref, eps);
+//   RequireNear(coe0, coe0_ref, eps);
 
 //   // Propagation
 //   real minute = 6;
@@ -240,10 +240,10 @@ TEST_CASE("OrbitState", "Coordinates") {
 //   real az_ref = 2.63651291242072;
 //   real el_ref = -0.00222785822255024;
 //   real rho_ref = 3644.89532925451;
-//   REQUIRE_NEAR_REAL(mjd_ut1, mjd_ut1_ref, eps);
-//   REQUIRE_NEAR_REAL_VEC(rv_eci, rv_eci_ref, eps);
-//   REQUIRE_NEAR_REAL_VEC(r_ecef, r_ecef_ref, eps);
-//   REQUIRE_NEAR_REAL(az, az_ref, eps);
-//   REQUIRE_NEAR_REAL(el, el_ref, eps);
-//   REQUIRE_NEAR_REAL(rho, rho_ref, eps);
+//   RequireNear(mjd_ut1, mjd_ut1_ref, eps);
+//   RequireNear(rv_eci, rv_eci_ref, eps);
+//   RequireNear(r_ecef, r_ecef_ref, eps);
+//   RequireNear(az, az_ref, eps);
+//   RequireNear(el, el_ref, eps);
+//   RequireNear(rho, rho_ref, eps);
 // }

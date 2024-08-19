@@ -62,7 +62,7 @@ TEST_CASE("Frame_Converter") {
     for (auto frame_out : frame_list) {
       Vec6 rv_back = ConvertFrame(t_tai, rv_converted, frame_in, frame_out);
       Vec6 rv_final = ConvertFrame(t_tai, rv_back, frame_out, Frame::ITRF);
-      REQUIRE_NEAR_REAL_VEC(rv_init, rv_final, epsilon);
+      RequireNear(rv_init, rv_final, epsilon);
     }
   }
 
@@ -72,7 +72,7 @@ TEST_CASE("Frame_Converter") {
     for (auto frame_out : frame_list) {
       Vec3 r_back = ConvertFrame(t_tai, r_converted, frame_in, frame_out);
       Vec3 r_final = ConvertFrame(t_tai, r_back, frame_out, Frame::ITRF);
-      REQUIRE_NEAR_REAL_VEC(r_init, r_final, epsilon);
+      RequireNear(r_init, r_final, epsilon);
     }
   }
 
@@ -82,7 +82,7 @@ TEST_CASE("Frame_Converter") {
     for (auto frame_out : frame_list) {
       MatX6 rv_matrix_back = ConvertFrame(t_tai, rv_matrix_converted, frame_in, frame_out);
       MatX6 rv_matrix_final = ConvertFrame(t_tai, rv_matrix_back, frame_out, Frame::ITRF);
-      REQUIRE_NEAR_REAL_MAT(rv_init_mat, rv_matrix_final, epsilon);
+      RequireNear(rv_init_mat, rv_matrix_final, epsilon);
     }
   }
 
@@ -92,7 +92,7 @@ TEST_CASE("Frame_Converter") {
     for (auto frame_out : frame_list) {
       MatX3 r_matrix_back = ConvertFrame(t_tai, r_matrix_converted, frame_in, frame_out);
       MatX3 r_matrix_final = ConvertFrame(t_tai, r_matrix_back, frame_out, Frame::ITRF);
-      REQUIRE_NEAR_REAL_MAT(r_init_mat, r_matrix_final, epsilon);
+      RequireNear(r_init_mat, r_matrix_final, epsilon);
     }
   }
 
@@ -102,7 +102,7 @@ TEST_CASE("Frame_Converter") {
     for (auto frame_out : frame_list) {
       MatX6 rv_matrix_back = ConvertFrame(t_tai_vec, rv_matrix_converted, frame_in, frame_out);
       MatX6 rv_matrix_final = ConvertFrame(t_tai_vec, rv_matrix_back, frame_out, Frame::ITRF);
-      REQUIRE_NEAR_REAL_MAT(rv_init_rep, rv_matrix_final, epsilon);
+      RequireNear(rv_init_rep, rv_matrix_final, epsilon);
     }
   }
 
@@ -112,7 +112,7 @@ TEST_CASE("Frame_Converter") {
     for (auto frame_out : frame_list) {
       MatX3 r_matrix_back = ConvertFrame(t_tai_vec, r_matrix_converted, frame_in, frame_out);
       MatX3 r_matrix_final = ConvertFrame(t_tai_vec, r_matrix_back, frame_out, Frame::ITRF);
-      REQUIRE_NEAR_REAL_MAT(r_init_rep, r_matrix_final, epsilon);
+      RequireNear(r_init_rep, r_matrix_final, epsilon);
     }
   }
 
@@ -122,7 +122,7 @@ TEST_CASE("Frame_Converter") {
     for (auto frame_out : frame_list) {
       MatX6 rv_matrix_back = ConvertFrame(t_tai_vec, rv_matrix_converted, frame_in, frame_out);
       MatX6 rv_matrix_final = ConvertFrame(t_tai_vec, rv_matrix_back, frame_out, Frame::ITRF);
-      REQUIRE_NEAR_REAL_MAT(rv_init_mat, rv_matrix_final, epsilon);
+      RequireNear(rv_init_mat, rv_matrix_final, epsilon);
     }
   }
 
@@ -132,7 +132,7 @@ TEST_CASE("Frame_Converter") {
     for (auto frame_out : frame_list) {
       MatX3 r_matrix_back = ConvertFrame(t_tai_vec, r_matrix_converted, frame_in, frame_out);
       MatX3 r_matrix_final = ConvertFrame(t_tai_vec, r_matrix_back, frame_out, Frame::ITRF);
-      REQUIRE_NEAR_REAL_MAT(r_init_mat, r_matrix_final, epsilon);
+      RequireNear(r_init_mat, r_matrix_final, epsilon);
     }
   }
 }
