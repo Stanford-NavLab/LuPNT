@@ -41,7 +41,7 @@ namespace lupnt {
     std::filesystem::path csvpath(GetDataPath() / "gnss" / "gps_table.csv");
     std::vector<std::vector<std::string>> gps_table = ReadCSV(csvpath.string());
 
-    for (int i = 0; i < gps_table.size(); i++) {
+    for (size_t i = 0; i < gps_table.size(); i++) {
       if (std::stoi(gps_table[i][0]) == prn_) {
         std::string gps_type = gps_table[i][2];  // 'IIA', 'IIR', 'IIR-M', 'IIF'
 

@@ -75,12 +75,13 @@ namespace lupnt {
   private:
     ODE odefunc_;
     NumericalPropagator propagator_;
-    Real dt_ = 0.0;
+    Real dt_ = 10.0;
 
   public:
-    NumericalOrbitDynamics(ODE odefunc, IntegratorType integ = default_integrator);
+    NumericalOrbitDynamics(ODE odefunc = nullptr, IntegratorType integ = default_integrator);
     void SetTimeStep(Real dt);
     Real GetTimeStep() const;
+    void SetODEFunction(ODE odefunc);
 
     // Overrides
     using IOrbitDynamics::Propagate;

@@ -283,7 +283,7 @@ namespace lupnt {
     return rv_earth;
   }
 
-  Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target) {
+  Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target, Frame frame) {
     if (!ephemeris_data) LoadEphemerisData();
 
     Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
@@ -325,13 +325,15 @@ namespace lupnt {
       rv_target = GetBodyPosVelKernel(t_tdb, target);
     }
 
-    return rv_target - rv_center;
+    Vec6 rv_gcrf = rv_target - rv_center;
+    if (frame == Frame::GCRF) return rv_gcrf;
+    return ConvertFrame(t_tai, rv_gcrf, Frame::GCRF, frame);
   }
 
-  MatX6 GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target) {
+  MatX6 GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target, Frame frame) {
     MatX6 rv(t_tai.size(), 6);
     for (int i = 0; i < t_tai.size(); i++) {
-      rv.row(i) = GetBodyPosVel(t_tai(i), center, target);
+      rv.row(i) = GetBodyPosVel(t_tai(i), center, target, frame);
     }
     return rv;
   }

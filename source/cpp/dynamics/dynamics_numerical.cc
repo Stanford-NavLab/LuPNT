@@ -20,16 +20,16 @@ namespace lupnt {
 
   void NumericalOrbitDynamics::SetTimeStep(Real dt) { dt_ = dt; };
   Real NumericalOrbitDynamics::GetTimeStep() const { return dt_; };
+  void NumericalOrbitDynamics::SetODEFunction(ODE odefunc) { odefunc_ = odefunc; };
 
   Vec6 NumericalOrbitDynamics::Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm) {
     if (abs(tf - t0) < EPS) return x0;
-    Real dt_prop = (abs(dt_) < EPS) ? (tf - t0) / 10 : dt_;
     if (stm == nullptr) {
-      Vec6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt_prop);
+      Vec6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt_);
       return xf;
     } else {
       MatXd stm_X(6, 6);
-      Vec6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt_prop, &stm_X);
+      Vec6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt_, &stm_X);
       *stm = stm_X;
       return xf;
     }

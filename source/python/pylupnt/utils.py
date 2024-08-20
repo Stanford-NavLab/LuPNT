@@ -12,6 +12,10 @@ LUPNT_DATA_PATH = os.getenv("LUPNT_DATA_PATH")
 assert LUPNT_DATA_PATH is not None, "Environment variable LUPNT_DATA_PATH not set"
 
 
+def normalize(vec):
+    return vec / np.linalg.norm(vec)
+
+
 def find_file(filename, path=LUPNT_DATA_PATH):
     for root, dirs, files in os.walk(path):
         if filename in files:

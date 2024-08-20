@@ -8,6 +8,7 @@
 
 // pybind11
 #include <pybind11/eigen.h>
+#include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -158,20 +159,20 @@ public:
           py::arg("x0"), py::arg("t0"), py::arg("tf"))                                            \
       .def(                                                                                       \
           "propagate",                                                                            \
-          [](class &dyn, const Vec6d &x0, double t0, VecXd tf) -> MatX6d {                        \
+          [](class &dyn, const Vec6d &x0, double t0, VecXd tf, bool progress) -> MatX6d {         \
             Vec6 x0_ = x0.cast<Real>();                                                           \
             Real t0_ = Real(t0);                                                                  \
             return dyn.Propagate(x0_, t0_, tf.cast<Real>()).cast<double>();                       \
           },                                                                                      \
-          py::arg("x0"), py::arg("t0"), py::arg("tf"))                                            \
+          py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("progress") = false)               \
       .def(                                                                                       \
           "propagate",                                                                            \
-          [](class &dyn, const RowVec6d &x0, double t0, VecXd tf) -> MatX6d {                     \
+          [](class &dyn, const RowVec6d &x0, double t0, VecXd tf, bool progress) -> MatX6d {      \
             Vec6 x0_ = x0.transpose().cast<Real>();                                               \
             Real t0_ = Real(t0);                                                                  \
             return dyn.Propagate(x0_, t0_, tf.cast<Real>()).cast<double>();                       \
           },                                                                                      \
-          py::arg("x0"), py::arg("t0"), py::arg("tf"))                                            \
+          py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("progress") = false)               \
       .def(                                                                                       \
           "propagate_state",                                                                      \
           [](class &dyn, const OrbitState &state, double t0, double tf, bool stm) -> py::object { \
@@ -188,10 +189,12 @@ public:
           },                                                                                      \
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("stm") = false);
 
-// std::function<VecX(Real, const VecX &)> ode_wrapper(
-//     const std::function<VecX(double, const VecXd &)> &f) {
-//   return [f](Real t, const VecX &x) -> VecX { return f(t, x.cast<double>()).cast<Real>(); };
-// }
+template <class T> Vec6d def_compute_rates(T &dyn, double t, const Vec6d &x) {
+  Real t_ = Real(t);
+  Vec6 x_ = x.cast<Real>().array();
+  return dyn.ComputeRates(t_, x_).template cast<double>();
+}
+
 using ODEWrapper = std::function<VecXd(double, const VecXd &)>;
 
 void init_dynamics(py::module &m) {
@@ -221,8 +224,12 @@ void init_dynamics(py::module &m) {
   // NumericalOrbitDynamics
   py::class_<NumericalOrbitDynamics, IOrbitDynamics, PyINumOrbDyn<NumericalOrbitDynamics>>(
       m, "NumericalOrbitDynamics")
-      // .def(py::init<ODEWrapper, IntegratorType>(), py::arg("odefunc"),
-      //      py::arg("integ_type") = default_integrator)
+      .def("set_ode_function",
+           [](NumericalOrbitDynamics &dyn, ODEWrapper odefunc) {
+             dyn.SetODEFunction([odefunc](Real t, const VecX &x) -> VecX {
+               return odefunc(t.val(), x.cast<double>()).cast<Real>();
+             });
+           })
       .def("get_time_step", [](NumericalOrbitDynamics &dyn) { return dyn.GetTimeStep().val(); })
       .def("set_time_step", [](NumericalOrbitDynamics &dyn, double dt) { dyn.SetTimeStep(dt); });
 
@@ -231,6 +238,8 @@ void init_dynamics(py::module &m) {
              PyNumOrbDyn<CartesianTwoBodyDynamics>>(m, "CartesianTwoBodyDynamics")
       .def(py::init<double, IntegratorType>(), py::arg("GM"),
            py::arg("integ_type") = default_integrator)
+      .def("compute_rates", &def_compute_rates<CartesianTwoBodyDynamics>, py::arg("t"),
+           py::arg("x"))
       .I_ORBIT_DYNAMICS_METHODS(CartesianTwoBodyDynamics);
 
   // J2CartTwoBodyDynamics
@@ -238,6 +247,7 @@ void init_dynamics(py::module &m) {
       m, "J2CartTwoBodyDynamics")
       .def(py::init<double, double, double, IntegratorType>(), py::arg("GM"), py::arg("J2"),
            py::arg("R_body"), py::arg("integ_type") = default_integrator)
+      .def("compute_rates", &def_compute_rates<J2CartTwoBodyDynamics>, py::arg("t"), py::arg("x"))
       .I_ORBIT_DYNAMICS_METHODS(J2CartTwoBodyDynamics);
 
   // J2KeplerianDynamics
@@ -245,6 +255,7 @@ void init_dynamics(py::module &m) {
       m, "J2KeplerianDynamics")
       .def(py::init<double, double, double, IntegratorType>(), py::arg("GM"), py::arg("J2"),
            py::arg("R_body"), py::arg("integ_type") = default_integrator)
+      .def("compute_rates", &def_compute_rates<J2KeplerianDynamics>, py::arg("t"), py::arg("x"))
       .I_ORBIT_DYNAMICS_METHODS(J2KeplerianDynamics);
 
   // Body

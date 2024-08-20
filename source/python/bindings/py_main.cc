@@ -2,6 +2,7 @@
 
 #include "py_constants.cc"
 #include "py_dynamics.cc"
+#include "py_forces.cc"
 #include "py_frame_converter.cc"
 #include "py_kernels.cc"
 #include "py_math_utils.cc"
@@ -26,4 +27,5 @@ PYBIND11_MODULE(_pylupnt, m) {
   init_time_converter(m);
   init_kernels(m);
   init_sandbox(m);
+  init_forces(m);
 }

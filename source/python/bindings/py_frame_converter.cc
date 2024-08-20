@@ -6,6 +6,70 @@
 namespace py = pybind11;
 using namespace lupnt;
 
+MatXd def_convert_frame(double t_tai, const MatXd &rv_in, Frame frame_in, Frame frame_out) {
+  Real t_tai_ = t_tai;
+  if (rv_in.rows() == 3 && rv_in.cols() == 1) {  // 3x1
+    Vec3 r_in_ = rv_in.cast<Real>();
+    return ConvertFrame(t_tai_, r_in_, frame_in, frame_out).cast<double>();
+  } else if (rv_in.rows() == 1 && rv_in.cols() == 3) {  // 1x3
+    Vec3 r_in_ = rv_in.transpose().cast<Real>();
+    return ConvertFrame(t_tai_, r_in_, frame_in, frame_out).cast<double>().transpose();
+  } else if (rv_in.rows() == 3 && rv_in.cols() > 1) {  // 3xN
+    MatX3 rv_in_ = rv_in.cast<Real>();
+    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>();
+  } else if (rv_in.rows() > 1 && rv_in.cols() == 3) {  // Nx3
+    MatX3 rv_in_ = rv_in.transpose().cast<Real>();
+    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>().transpose();
+  } else if (rv_in.rows() == 6 && rv_in.cols() == 1) {  // 6x1
+    Vec6 rv_in_ = rv_in.cast<Real>();
+    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>();
+  } else if (rv_in.rows() == 1 && rv_in.cols() == 6) {  // 1x6
+    Vec6 rv_in_ = rv_in.transpose().cast<Real>();
+    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>().transpose();
+  } else if (rv_in.rows() == 6 && rv_in.cols() > 1) {  // 6xN
+    MatX6 rv_in_ = rv_in.cast<Real>();
+    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>();
+  } else if (rv_in.rows() > 1 && rv_in.cols() == 6) {  // Nx6
+    MatX6 rv_in_ = rv_in.transpose().cast<Real>();
+    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>().transpose();
+  }
+  throw std::invalid_argument("Invalid input size for rv_in: " + std::to_string(rv_in.rows()) + "x"
+                              + std::to_string(rv_in.cols()));
+  return MatXd(0, 0);
+}
+
+MatXd def_convert_frame(VecXd t_tai, const MatXd &rv_in, Frame frame_in, Frame frame_out) {
+  int n = t_tai.size();
+  VecX t_tai_ = t_tai.cast<Real>().array();
+  if (rv_in.rows() == 3 && rv_in.cols() == 1) {  // 3x1
+    Vec3 r_in_ = rv_in.cast<Real>();
+    return ConvertFrame(t_tai_, r_in_, frame_in, frame_out).cast<double>();
+  } else if (rv_in.rows() == 1 && rv_in.cols() == 3) {  // 1x3
+    Vec3 r_in_ = rv_in.transpose().cast<Real>();
+    return ConvertFrame(t_tai_, r_in_, frame_in, frame_out).cast<double>().transpose();
+  } else if (rv_in.rows() == 3 && rv_in.cols() == n) {  // 3xN
+    MatX3 rv_in_ = rv_in.cast<Real>();
+    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>();
+  } else if (rv_in.rows() == n && rv_in.cols() == 3) {  // Nx3
+    MatX3 rv_in_ = rv_in.transpose().cast<Real>();
+    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>().transpose();
+  } else if (rv_in.rows() == 6 && rv_in.cols() == 1) {  // 6x1
+    Vec6 rv_in_ = rv_in.cast<Real>();
+    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>();
+  } else if (rv_in.rows() == 1 && rv_in.cols() == 6) {  // 1x6
+    Vec6 rv_in_ = rv_in.transpose().cast<Real>();
+    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>().transpose();
+  } else if (rv_in.rows() == 6 && rv_in.cols() == n) {  // 6xN
+    MatX6 rv_in_ = rv_in.cast<Real>();
+    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>();
+  } else if (rv_in.rows() == n && rv_in.cols() == 6) {  // Nx6
+    MatX6 rv_in_ = rv_in.transpose().cast<Real>();
+    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>().transpose();
+  }
+  throw std::invalid_argument("Invalid input size for rv_in: " + std::to_string(rv_in.rows()) + "x"
+                              + std::to_string(rv_in.cols()));
+}
+
 void init_frame_converter(py::module &m) {
   py::enum_<Frame>(m, "Frame")
       .value("ITRF", Frame::ITRF)
