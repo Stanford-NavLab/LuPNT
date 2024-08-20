@@ -35,8 +35,8 @@ Vec3 Geocentric2CartRef(const Vec3 &r_geo, real radius) {
 
 int main() {
   Vec3 r_geo(6371.0, M_PI / 4,
-             M_PI / 4);  // Example geocentric coordinates (radius, theta, phi)
-  real radius = 6371.0;  // Earth's radius in kilometers
+             M_PI / 4);              // Example geocentric coordinates (radius, theta, phi)
+  real radius = 6371.0;              // Earth's radius in kilometers
   const int iterations = 100000000;  // Number of iterations for timing
 
   // Timing the function with pass-by-value
@@ -46,8 +46,8 @@ int main() {
   }
   auto end_value = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> duration_value = end_value - start_value;
-  std::cout << "Time taken by Geocentric2CartValue: " << duration_value.count()
-            << " seconds" << std::endl;
+  std::cout << "Time taken by Geocentric2CartValue: " << duration_value.count() << " seconds"
+            << std::endl;
 
   // Timing the function with pass-by-const-reference
   auto start_ref = std::chrono::high_resolution_clock::now();
@@ -56,8 +56,8 @@ int main() {
   }
   auto end_ref = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> duration_ref = end_ref - start_ref;
-  std::cout << "Time taken by Geocentric2CartRef: " << duration_ref.count()
-            << " seconds" << std::endl;
+  std::cout << "Time taken by Geocentric2CartRef: " << duration_ref.count() << " seconds"
+            << std::endl;
 
   return 0;
 }

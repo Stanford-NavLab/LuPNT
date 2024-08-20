@@ -66,8 +66,8 @@ Documentation = "https://lupnt.readthedocs.io"
 [project.optional-dependencies]
 test = ["pytest"]
 docs = [
-    "cmake", 
-    "breathe", 
+    "cmake",
+    "breathe",
     "sphinx_rtd_theme",
     "notebook",
     "sphinx",

@@ -13,7 +13,6 @@
 [![Documentation Status](https://readthedocs.org/projects/pylupnt/badge/)](https://pylupnt.readthedocs.io/)
 [![codecov](https://codecov.io/gh/Stanford-NavLab/LuPNT/branch/guillemc/graph/badge.svg)](https://codecov.io/gh/Stanford-NavLab/LuPNT)
 
-
 <p align="center">
   <img src="doc/_static/LuPNT_background.png" width="auto" />
 </p>
@@ -47,19 +46,19 @@ If using this project in your own work please cite the following:
 
 ## Usage
 
-To cleanly separate the library and subproject code, the outer `CMakeList.txt` only defines the library itself while the tests and other subprojects are self-contained in their own directories. 
+To cleanly separate the library and subproject code, the outer `CMakeList.txt` only defines the library itself while the tests and other subprojects are self-contained in their own directories.
 During development it is usually convenient to [build all subprojects at once](#build-everything-at-once).
 
 ### Dependencies
 
-LuPNT requires [OpenMP](https://www.openmp.org) library for multiprocessing and a data directory. 
-The installation scripts for MacOS, Ubuntu, and Windows can be found under `scripts`. 
+LuPNT requires [OpenMP](https://www.openmp.org) library for multiprocessing and a data directory.
+The installation scripts for MacOS, Ubuntu, and Windows can be found under `scripts`.
 Note that the data directory can be place anywhere as long as its path is correctly set.
 Execute the scripts before building the library.
 
 ### Build and run the standalone target
 
-Use the following command to build and run the executable target. 
+Use the following command to build and run the executable target.
 
 ```powershell
 cmake -S standalone -B build/standalone
@@ -76,7 +75,7 @@ cmake -S test -B build/test
 cmake --build build/test
 CTEST_OUTPUT_ON_FAILURE=1 cmake --build build/test --target test
 
-# or simply call the executable: 
+# or simply call the executable:
 ./build/test/LuPNTTests
 ```
 
@@ -155,4 +154,3 @@ Additional arguments can be passed to the analyzers by setting the `CLANG_TIDY_A
 #### Ccache
 
 Ccache can be enabled by configuring with `-DUSE_CCACHE=<ON | OFF>`.
-

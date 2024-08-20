@@ -131,13 +131,13 @@ void init_dynamics(py::module &m) {
   py::class_<Body>(m, "Body")
       .def(py::init<>())
       .def_static("Moon", &Body::Moon, py::arg("n_max") = 0, py::arg("m_max") = 0,
-                  py::arg("gravity_file") = "EGM96.cof")
+                  py::arg("gravity_file") = "EGM96.cof", py::arg("read_gravity_field") = true)
       .def_static("Earth", &Body::Earth, py::arg("n_max") = 0, py::arg("m_max") = 0,
-                  py::arg("gravity_file") = "grgm900c.cof")
+                  py::arg("gravity_file") = "grgm900c.cof", py::arg("read_gravity_field") = true)
       .def_static("Mars", &Body::Mars, py::arg("n_max") = 0, py::arg("m_max") = 0,
-                  py::arg("gravity_file") = "GMM1.cof")
+                  py::arg("gravity_file") = "GMM1.cof", py::arg("read_gravity_field") = true)
       .def_static("Venus", &Body::Venus, py::arg("n_max") = 0, py::arg("m_max") = 0,
-                  py::arg("gravity_file") = "MGN75HSAAP.cof")
+                  py::arg("gravity_file") = "MGN75HSAAP.cof", py::arg("read_gravity_field") = true)
       .def_static("Sun", &Body::Sun)
       .def("__repr__", [](const Body &body) { return "<pylupnt.Body>"; });
 }

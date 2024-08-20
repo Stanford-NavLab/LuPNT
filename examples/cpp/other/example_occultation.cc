@@ -17,8 +17,7 @@
 
 using namespace lupnt;
 
-void printOccultation(Vec6 state_tx_vec, Vec6 state_rx_vec,
-                      std::string seg_planet) {
+void printOccultation(Vec6 state_tx_vec, Vec6 state_rx_vec, std::string seg_planet) {
   Vec6 tmp_ad;
   Vec3d segment_eci, segment_mi, user_eci, user_mi;
   double t = 0.0;
@@ -32,8 +31,8 @@ void printOccultation(Vec6 state_tx_vec, Vec6 state_rx_vec,
   tmp_ad = ConvertFrame(t, state_rx_vec, Frame::MOON_CI, Frame::GCRF);
   user_eci = tmp_ad.segment(0, 3).cast<double>();
 
-  std::map<std::string, bool> occ = Occultation::ComputeOccultationGnss(
-      segment_eci, segment_mi, user_eci, user_mi, seg_planet);
+  std::map<std::string, bool> occ
+      = Occultation::ComputeOccultationGnss(segment_eci, segment_mi, user_eci, user_mi, seg_planet);
 
   for (auto &o : occ) {
     std::cout << o.first << " " << o.second << " ";

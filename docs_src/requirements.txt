@@ -8,7 +8,7 @@ sphinx_rtd_theme
 exhale
 breathe
 m2r
-nbsphinx 
+nbsphinx
 nbsphinx-link
 jinja2
 furo

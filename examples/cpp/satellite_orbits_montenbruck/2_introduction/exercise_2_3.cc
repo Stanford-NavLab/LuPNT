@@ -1,8 +1,7 @@
 #include <lupnt/lupnt.h>
 
 using namespace lupnt;
-using std::cout, std::endl, std::setw, std::fixed, std::setprecision,
-    std::scientific;
+using std::cout, std::endl, std::setw, std::fixed, std::setprecision, std::scientific;
 
 // O. Montenbruck and G. Eberhard, Satellite orbits: models, methods, and
 // applications. Berlin : New York: Springer, 2000.

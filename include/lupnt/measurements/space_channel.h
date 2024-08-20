@@ -17,72 +17,73 @@
 
 namespace lupnt {
 
-struct ITransmission;
+  struct ITransmission;
 
-class ICommDevice;
-class Transmitter;
-class Receiver;
+  class ICommDevice;
+  class Transmitter;
+  class Receiver;
 
-class SpaceChannel {
- private:
-  std::vector<NaifId> occult_bodies_;
-  VecXd occult_alt_;
+  class SpaceChannel {
+  private:
+    std::vector<NaifId> occult_bodies_;
+    VecXd occult_alt_;
 
- public:
-  /**
-   * @brief Construct a new Space Channel object
-   *
-   * @param occult_bodies  occulting bodies
-   * @param occult_alt  occultation altitude
-   */
-  void SetOccultationBodies(std::vector<NaifId> occult_bodies,
-                            VecXd occult_alt) {
-    occult_bodies_ = occult_bodies;
-    occult_alt_ = occult_alt;
-  }
+  public:
+    SpaceChannel() = default;
 
-  /**
-   * @brief Compute the link budget
-   *
-   * @param txDevice  transmitter device
-   * @param rxDevice  receiver device
-   * @param t         time
-   * @param time_fixed  time fixed at transmitter or receiver (tx or rx)
-   * @param transmission  transmission object
-   */
-  ITransmission ComputeLinkBudget(std::shared_ptr<Transmitter> &txDevice,
-                                  std::shared_ptr<Receiver> &rxDevice, double t,
-                                  std::string time_fixed);
+    /**
+     * @brief Construct a new Space Channel object
+     *
+     * @param occult_bodies  occulting bodies
+     * @param occult_alt  occultation altitude
+     */
+    void SetOccultationBodies(std::vector<NaifId> occult_bodies, VecXd occult_alt) {
+      occult_bodies_ = occult_bodies;
+      occult_alt_ = occult_alt;
+    }
 
-  /**
-   * @brief Solve the light time delay at the receiver
-   *
-   * @param tx  transmitter device
-   * @param rx  receiver device
-   * @param t_rx  receiver time
-   * @return double  light time delay
-   */
-  double SolveLightTimeDelayRx(std::shared_ptr<Transmitter> &tx,
-                               std::shared_ptr<Receiver> &rx, double t_rx);
+    /**
+     * @brief Compute the link budget
+     *
+     * @param txDevice  transmitter device
+     * @param rxDevice  receiver device
+     * @param t         epoch of transmission
+     * @param time_fixed  time fixed at transmitter or receiver (tx or rx)
+     * @param transmission  transmission object
+     */
+    ITransmission ComputeLinkBudget(std::shared_ptr<Transmitter> &txDevice,
+                                    std::shared_ptr<Receiver> &rxDevice, Real t,
+                                    std::string time_fixed);
 
-  /**
-   * @brief Solve the light time delay at the transmitter
-   *
-   * @param tx   transmitter device
-   * @param t_tx   transmitter time
-   * @return double   light time delay
-   */
-  double SolveLightTimeDelayTx(std::shared_ptr<Transmitter> &tx,
-                               std::shared_ptr<Receiver> &rx, double t_tx);
+    /**
+     * @brief Solve the light time delay at the receiver
+     *
+     * @param tx  transmitter device
+     * @param rx  receiver device
+     * @param t_rx  receiver time
+     * @return Real light time delay
+     */
+    Real SolveLightTimeDelayRx(std::shared_ptr<Transmitter> &tx, std::shared_ptr<Receiver> &rx,
+                               Real t_rx);
 
-  /**
-   * @brief Compute the free space loss
-   *
-   * @param dist Distance between the transmitter and receiver [km]
-   * @param lambda Wavelength of the signal [km]
-   * @return double Free space loss [dB]
-   */
-  double ComputeFreeSpaceLossdB(double dist, double lambda);
-};
+    /**
+     * @brief Solve the light time delay at the transmitter
+     *
+     * @param tx   transmitter device
+     * @param t_tx   transmitter time
+     * @return double   light time delay
+     */
+    Real SolveLightTimeDelayTx(std::shared_ptr<Transmitter> &tx, std::shared_ptr<Receiver> &rx,
+                               Real t_tx);
+
+    /**
+     * @brief Compute the free space loss
+     *
+     * @param dist Distance between the transmitter and receiver [km]
+     * @param lambda Wavelength of the signal [km]
+     * @return double Free space loss [dB]
+     */
+    double ComputeFreeSpaceLossdB(double dist, double lambda);
+  };
 
 }  // namespace lupnt

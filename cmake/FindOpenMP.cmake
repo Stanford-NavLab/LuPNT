@@ -22,13 +22,12 @@ if(NOT ${OpenMP_FOUND} OR NOT ${OpenMP_CXX_FOUND})
           OUTPUT_STRIP_TRAILING_WHITESPACE
         )
         message(STATUS "Using Homebrew libomp from ${BREW_LIBOMP_PREFIX}")
-        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp=lomp")
-        set(OpenMP_CXX_LIB_NAMES libomp)
-        set(OpenMP_omp_LIBRARY ${BREW_LIBOMP_PREFIX}/lib/libomp.dylib)
-        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp=lomp")
-        set(OpenMP_C_LIB_NAMES libomp)
+        set(OpenMP_C_LIB_NAMES "libomp")
+        set(OpenMP_CXX_LIB_NAMES "libomp")
+        set(OpenMP_libomp_LIBRARY ${BREW_LIBOMP_PREFIX}/lib/libomp.dylib)
+        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp ${BREW_LIBOMP_PREFIX}/lib/libomp.dylib")
+        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp ${BREW_LIBOMP_PREFIX}/lib/libomp.dylib")
         set(OpenMP_INCLUDE_DIRS ${BREW_LIBOMP_PREFIX}/include)
-        message(STATUS "Using Homebrew libomp from ${BREW_LIBOMP_PREFIX}")
       endif()
     else()
       message(
@@ -39,23 +38,10 @@ if(NOT ${OpenMP_FOUND} OR NOT ${OpenMP_CXX_FOUND})
   endif()
 endif()
 
-# set cmake options for OpenMP
-execute_process(
-  COMMAND ${BREW} --prefix libomp
-  OUTPUT_VARIABLE BREW_LIBOMP_PREFIX
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-message(STATUS "Using Homebrew libomp from ${BREW_LIBOMP_PREFIX}")
-set(OpenMP_C_LIB_NAMES "libomp")
-set(OpenMP_CXX_LIB_NAMES "libomp")
-set(OpenMP_libomp_LIBRARY ${BREW_LIBOMP_PREFIX}/lib/libomp.dylib)
-set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp ${BREW_LIBOMP_PREFIX}/lib/libomp.dylib -I${BREW_LIBOMP_PREFIX}/include")
-set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp ${BREW_LIBOMP_PREFIX}/lib/libomp.dylib -I${BREW_LIBOMP_PREFIX}/include")
-
-
 find_package(OpenMP REQUIRED)
 
 if(NOT TARGET OpenMP::OpenMP_CXX)
+  message(STATUS "OpenMP not found, building from source")
   add_library(OpenMP_TARGET INTERFACE)
   add_library(OpenMP::OpenMP_CXX ALIAS OpenMP_TARGET)
   target_compile_options(OpenMP_TARGET INTERFACE ${OpenMP_CXX_FLAGS})

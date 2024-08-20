@@ -18,8 +18,8 @@ using namespace lupnt;
 namespace sp = spice;
 
 // Util Functions
-MatXd ConstructInitCovariance(double pos_err, double vel_err,
-                              double clk_bias_err, double clk_drift_err) {
+MatXd ConstructInitCovariance(double pos_err, double vel_err, double clk_bias_err,
+                              double clk_drift_err) {
   Mat6d P_rv = Mat6d::Zero();
   P_rv.block(0, 0, 3, 3) = Mat3d::Identity() * pow(pos_err, 2);
   P_rv.block(3, 3, 3, 3) = Mat3d::Identity() * pow(vel_err, 2);
@@ -35,8 +35,8 @@ MatXd ConstructInitCovariance(double pos_err, double vel_err,
 
 void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
                             const std::shared_ptr<Spacecraft> sat, EKF* ekf,
-                            GnssConstellation* gps_const, GnssMeasurement* meas,
-                            double t, double epoch) {
+                            GnssConstellation* gps_const, GnssMeasurement* meas, double t,
+                            double epoch) {
   // Navigation
   data_history->AddData("z_true", t, ekf->z_true_);
   data_history->AddData("z_pred", t, ekf->z_pred_);
@@ -80,30 +80,24 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
   // Bodies
   Vec6 vz6;
   vz6.setZero();
-  data_history->AddData("earth_mi", t,
-                        ConvertFrame(epoch, vz6, Frame::GCRF, Frame::MOON_CI));
-  data_history->AddData("moon_gcrf", t,
-                        ConvertFrame(epoch, vz6, Frame::MOON_CI, Frame::GCRF));
+  data_history->AddData("earth_mi", t, ConvertFrame(epoch, vz6, Frame::GCRF, Frame::MOON_CI));
+  data_history->AddData("moon_gcrf", t, ConvertFrame(epoch, vz6, Frame::MOON_CI, Frame::GCRF));
 };
 
 void PrintProgressHeader() {
   std::cout << "Run Simulation" << std::endl;
   std::cout << " " << std::endl;
   std::cout << " " << std::endl;
-  std::cout << "Time [min]  | Pos Err [m] | Vel Err [mm/s] | Clk Bias Err [ms]"
-            << std::endl;
-  std::cout << "--------------------------------------------------------------"
-            << std::endl;
+  std::cout << "Time [min]  | Pos Err [m] | Vel Err [mm/s] | Clk Bias Err [ms]" << std::endl;
+  std::cout << "--------------------------------------------------------------" << std::endl;
 }
 
 VecXd ComputeEstimationErrors(const std::shared_ptr<Spacecraft> sat, EKF* ekf) {
   auto x_est = ekf->x_;
   auto x_true = sat->GetStateVec();
 
-  double x_pos_err =
-      1000 * (x_true.segment(0, 3) - x_est.segment(0, 3)).norm().val();
-  double x_vel_err =
-      1e6 * (x_true.segment(3, 3) - x_est.segment(3, 3)).norm().val();
+  double x_pos_err = 1000 * (x_true.segment(0, 3) - x_est.segment(0, 3)).norm().val();
+  double x_vel_err = 1e6 * (x_true.segment(3, 3) - x_est.segment(3, 3)).norm().val();
   double x_clk_bias_err = 1e9 * abs((x_true(6) - x_est(6)).val());
   double x_clk_drift_err = 1e9 * abs((x_true(7) - x_est(7)).val());
 
@@ -113,13 +107,11 @@ VecXd ComputeEstimationErrors(const std::shared_ptr<Spacecraft> sat, EKF* ekf) {
   return est_err;
 }
 
-void PrintProgress(double t, double x_pos_err, double x_vel_err,
-                   double x_clk_bias_err) {
+void PrintProgress(double t, double x_pos_err, double x_vel_err, double x_clk_bias_err) {
   std::cout.precision(5);
-  std::cout << std::left << std::setw(12) << t / 60 << " " << std::left
-            << std::setw(12) << x_pos_err << "  " << std::left << std::setw(14)
-            << x_vel_err << "   " << std::left << std::setw(16)
-            << x_clk_bias_err << std::endl;
+  std::cout << std::left << std::setw(12) << t / 60 << " " << std::left << std::setw(12)
+            << x_pos_err << "  " << std::left << std::setw(14) << x_vel_err << "   " << std::left
+            << std::setw(16) << x_clk_bias_err << std::endl;
 };
 
 void PrintEKFDebugInfo(EKF* ekf) {
@@ -130,8 +122,7 @@ void PrintEKFDebugInfo(EKF* ekf) {
   std::cout << "  R:  " << std::endl << ekf->R_ << std::endl;
   std::cout << "  S:  " << std::endl << ekf->S_ << std::endl;
   std::cout << "  Meas   Residuals: " << ekf->dy_.transpose() << std::endl;
-  std::cout << "  Linear Residuals: "
-            << (ekf->dy_ - ekf->H_ * ekf->dx_).transpose() << std::endl;
+  std::cout << "  Linear Residuals: " << (ekf->dy_ - ekf->H_ * ekf->dx_).transpose() << std::endl;
   std::cout << "  dx: " << ekf->dx_.transpose() << std::endl;
   std::cout << "  Phat: " << ekf->P_.diagonal().transpose() << std::endl;
   std::cout << "  " << std::endl;
@@ -144,14 +135,12 @@ void PrintEKFDebugInfo(EKF* ekf) {
  * @param error_mat (4, n_time)  Error Mat (Position, Velocity, Clock Bias,
  * Clock Drift)
  */
-void PrintEstimationStatistics(VecXd num_meas, MatXd error_mat,
-                               double data_ratio = 1.0) {
+void PrintEstimationStatistics(VecXd num_meas, MatXd error_mat, double data_ratio = 1.0) {
   int n_time = num_meas.size();
   Vec4d rms, means, stds, p68, p95, p99;
 
   if (error_mat.rows() != 4) {
-    std::cout << "Wrong Mat Size, Error Mat size must be (4 x timestep)"
-              << std::endl;
+    std::cout << "Wrong Mat Size, Error Mat size must be (4 x timestep)" << std::endl;
     return;
   }
 
@@ -179,39 +168,32 @@ void PrintEstimationStatistics(VecXd num_meas, MatXd error_mat,
 
   std::cout << " " << std::endl;
   std::cout << " " << std::endl;
-  std::cout << "< Simulation Statistics (Last " << data_ratio * 100 << "%)>"
-            << std::endl;
+  std::cout << "< Simulation Statistics (Last " << data_ratio * 100 << "%)>" << std::endl;
   std::cout << " " << std::endl;
-  std::cout
-      << "Statistics  | Position [m]  | Velocity [mm/s] | Clock Bias [ns] "
-         "| Clk Drift [ns/s] "
-      << std::endl;
+  std::cout << "Statistics  | Position [m]  | Velocity [mm/s] | Clock Bias [ns] "
+               "| Clk Drift [ns/s] "
+            << std::endl;
   std::cout << "---------------------------------------------------------------"
                "-----------------------"
             << std::endl;
 
   std::cout.precision(5);
-  std::cout << "RMS         | " << std::left << std::setw(16) << rms(0) << "  "
-            << std::left << std::setw(16) << rms(1) << "   " << std::left
-            << std::setw(16) << rms(2) << std::left << std::setw(16) << rms(3)
-            << std::endl;
-  std::cout << "Mean+-Std   | " << std::left << means(0) << "+-" << std::left
-            << stds(0) << "  " << std::left << means(1) << "+-" << std::left
-            << stds(1) << "   " << std::left << means(2) << "+-" << std::left
-            << stds(2) << "   " << std::left << means(3) << "+-" << std::left
-            << stds(3) << std::endl;
-  std::cout << "68%         | " << std::left << std::setw(16) << p68(0) << "  "
-            << std::left << std::setw(16) << p68(1) << "   " << std::left
-            << std::setw(16) << p68(2) << std::left << std::setw(16) << p68(3)
-            << std::endl;
-  std::cout << "95%         | " << std::left << std::setw(16) << p95(0) << "  "
-            << std::left << std::setw(16) << p95(1) << "   " << std::left
-            << std::setw(16) << p95(2) << std::left << std::setw(16) << p95(3)
-            << std::endl;
-  std::cout << "99%         | " << std::left << std::setw(16) << p99(0) << "  "
-            << std::left << std::setw(16) << p99(1) << "   " << std::left
-            << std::setw(16) << p99(2) << std::left << std::setw(16) << p99(3)
-            << std::endl;
+  std::cout << "RMS         | " << std::left << std::setw(16) << rms(0) << "  " << std::left
+            << std::setw(16) << rms(1) << "   " << std::left << std::setw(16) << rms(2) << std::left
+            << std::setw(16) << rms(3) << std::endl;
+  std::cout << "Mean+-Std   | " << std::left << means(0) << "+-" << std::left << stds(0) << "  "
+            << std::left << means(1) << "+-" << std::left << stds(1) << "   " << std::left
+            << means(2) << "+-" << std::left << stds(2) << "   " << std::left << means(3) << "+-"
+            << std::left << stds(3) << std::endl;
+  std::cout << "68%         | " << std::left << std::setw(16) << p68(0) << "  " << std::left
+            << std::setw(16) << p68(1) << "   " << std::left << std::setw(16) << p68(2) << std::left
+            << std::setw(16) << p68(3) << std::endl;
+  std::cout << "95%         | " << std::left << std::setw(16) << p95(0) << "  " << std::left
+            << std::setw(16) << p95(1) << "   " << std::left << std::setw(16) << p95(2) << std::left
+            << std::setw(16) << p95(3) << std::endl;
+  std::cout << "99%         | " << std::left << std::setw(16) << p99(0) << "  " << std::left
+            << std::setw(16) << p99(1) << "   " << std::left << std::setw(16) << p99(2) << std::left
+            << std::setw(16) << p99(3) << std::endl;
   std::cout << "  " << std::endl;
 }
 
@@ -253,8 +235,7 @@ void Plot3DTrajectory(const std::shared_ptr<DataHistory> data_history,
   show();
 };
 
-void PlotState(const std::shared_ptr<DataHistory> data_history,
-               std::string state_type = "true") {
+void PlotState(const std::shared_ptr<DataHistory> data_history, std::string state_type = "true") {
   using namespace matplot;
 
   if (state_type != "true" && state_type != "est") {
@@ -392,10 +373,10 @@ int main() {
   bool use_range_rate = true;  // use GPS pseudorange-rate measurement
 
   // Estimation
-  int state_size = 8;          // Pos(3), vel(3), bias, drift [km, km/s, s, s/s]
-  double pos_err = 1.0;        // Initial Position error [km]
-  double vel_err = 1e-3;       // Initial Velocity error [km/s]
-  double clk_bias_err = 1e-6;  // Initial Clock bias error [s]
+  int state_size = 8;           // Pos(3), vel(3), bias, drift [km, km/s, s, s/s]
+  double pos_err = 1.0;         // Initial Position error [km]
+  double vel_err = 1e-3;        // Initial Velocity error [km/s]
+  double clk_bias_err = 1e-6;   // Initial Clock bias error [s]
   double clk_drift_err = 1e-9;  // Initial Clock drift error [s/s]
   double sigma_acc = 1e-10;     // Process noise Acceleration [km/s^2]  <-- tune
                                 // this for optimal performance!
@@ -461,8 +442,7 @@ int main() {
 
   // Moon spacecraft
   ClassicalOE coe_moon({a, e, i, Omega, w, M}, Frame::MOON_CI);
-  auto cart_state_moon =
-      std::make_shared<CartesianOrbitState>(Classical2Cart(coe_moon, GM_MOON));
+  auto cart_state_moon = std::make_shared<CartesianOrbitState>(Classical2Cart(coe_moon, GM_MOON));
 
   Vec2 clock_vec{clk_bias, clk_drift};  // [s, s/s]
   ClockState clock_state(clock_vec);
@@ -483,23 +463,21 @@ int main() {
   channel->AddReceiver(receiver);
 
   // Initial covariance
-  MatXd P0 =
-      ConstructInitCovariance(pos_err, vel_err, clk_bias_err, clk_drift_err);
+  MatXd P0 = ConstructInitCovariance(pos_err, vel_err, clk_bias_err, clk_drift_err);
 
   // Joint state and dynamics
   JointState joint_state;
   joint_state.PushBackStateAndDynamics(cart_state_moon.get(), dyn_est.get());
   joint_state.PushBackStateAndDynamics(&clock_state, &dyn_clk);
 
-  FilterDynamicsFunction joint_dynamics =
-      joint_state.GetFilterDynamicsFunction();
+  FilterDynamicsFunction joint_dynamics = joint_state.GetFilterDynamicsFunction();
 
   /*********************************************
    * Define Measurement function
    * *******************************************/
-  FilterMeasurementFunction meas_func_pos_clk =
-      [moon_sat, receiver, state_size, no_meas, meas_types](
-          const VecX x, MatXd& H, MatXd& R) -> VecX {
+  FilterMeasurementFunction meas_func_pos_clk
+      = [moon_sat, receiver, state_size, no_meas, meas_types](const VecX x, MatXd& H,
+                                                              MatXd& R) -> VecX {
     if (no_meas) {
       return VecXd::Zero(0);
     }
@@ -507,12 +485,10 @@ int main() {
     // Measurements
     std::string freq = "L1";
     double epoch = moon_sat->GetEpoch().val();
-    auto measall =
-        receiver->GetMeasurement(epoch);      // measurements of all frequencies
-    auto meas = measall.ExtractSignal("L1");  // measurements of L1
-    int sat_num =
-        meas.GetTrackedSatelliteNum();       // number of tracked GPS satellites
-    int mtot = sat_num * meas_types.size();  // total number of measurements
+    auto measall = receiver->GetMeasurement(epoch);  // measurements of all frequencies
+    auto meas = measall.ExtractSignal("L1");         // measurements of L1
+    int sat_num = meas.GetTrackedSatelliteNum();     // number of tracked GPS satellites
+    int mtot = sat_num * meas_types.size();          // total number of measurements
 
     // Predict measurements
     H = MatXd::Zero(mtot, x.size());
@@ -520,9 +496,8 @@ int main() {
     VecX x_N = VecX::Zero(mtot);  // a dummy variable for carrier phase
     Frame frame_in = Frame::MOON_CI;
 
-    VecX z = meas.GetPredictedGnssMeasurement(
-        epoch, x.head(6), x.tail(2), x_N, H, meas_types,
-        frame_in);  // Jacobian with autodiff
+    VecX z = meas.GetPredictedGnssMeasurement(epoch, x.head(6), x.tail(2), x_N, H, meas_types,
+                                              frame_in);  // Jacobian with autodiff
 
     // Get the Measurement Noise
     VecXd noise_std_vec = meas.GetGnssNoiseStdVec(meas_types);
@@ -534,27 +509,27 @@ int main() {
   /*********************************************
    * Define Process Noise function
    * *******************************************/
-  FilterProcessNoiseFunction proc_noise_func =
-      [cmodel, state_size, sigma_acc](const VecX& x, Real t_curr, Real t_end) {
-        int clock_index = 6;
-        double dt = (t_end - t_curr).val();
+  FilterProcessNoiseFunction proc_noise_func
+      = [cmodel, state_size, sigma_acc](const VecX& x, Real t_curr, Real t_end) {
+          int clock_index = 6;
+          double dt = (t_end - t_curr).val();
 
-        MatXd Q = MatXd::Zero(state_size, state_size);
+          MatXd Q = MatXd::Zero(state_size, state_size);
 
-        Mat6d Q_rv = Mat6d::Zero();
-        for (int i = 0; i < 3; i++) {
-          Q_rv(i, i) = pow(dt, 3) / 3.0 * pow(sigma_acc, 2);
-          Q_rv(i + 3, i + 3) = dt * pow(sigma_acc, 2);
-          Q_rv(i, i + 3) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
-          Q_rv(i + 3, i) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
-        }
-        Mat2d Q_clk = GetClockProcessNoise(cmodel, dt);
+          Mat6d Q_rv = Mat6d::Zero();
+          for (int i = 0; i < 3; i++) {
+            Q_rv(i, i) = pow(dt, 3) / 3.0 * pow(sigma_acc, 2);
+            Q_rv(i + 3, i + 3) = dt * pow(sigma_acc, 2);
+            Q_rv(i, i + 3) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
+            Q_rv(i + 3, i) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
+          }
+          Mat2d Q_clk = GetClockProcessNoise(cmodel, dt);
 
-        Q.block(0, 0, 6, 6) = Q_rv;
-        Q.block(6, 6, 2, 2) = Q_clk;
+          Q.block(0, 0, 6, 6) = Q_rv;
+          Q.block(6, 6, 2, 2) = Q_clk;
 
-        return Q;
-      };
+          return Q;
+        };
 
   /*************************************
    * EKF Setup
@@ -577,8 +552,7 @@ int main() {
 
   // Print State
   if (print_debug) {
-    std::cout << "Initial true state: " << moon_sat->GetStateVec().transpose()
-              << std::endl;
+    std::cout << "Initial true state: " << moon_sat->GetStateVec().transpose() << std::endl;
     std::cout << "Initial estimated state: " << x_est.transpose() << std::endl;
   }
 
@@ -623,13 +597,11 @@ int main() {
 
     // Add Data
     if (!no_meas) {
-      AddStateEstimationData(data_history, moon_sat, &ekf, &gps_const, &meas,
-                             t.val(), epoch);
+      AddStateEstimationData(data_history, moon_sat, &ekf, &gps_const, &meas, t.val(), epoch);
     }
 
     // Compute Estimation
-    est_err =
-        ComputeEstimationErrors(moon_sat, &ekf);  // pos, vel, clkb, clkd error
+    est_err = ComputeEstimationErrors(moon_sat, &ekf);  // pos, vel, clkb, clkd error
     error_mat.col(time_index) = est_err;
 
     // Print progress

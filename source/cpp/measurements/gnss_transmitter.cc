@@ -142,7 +142,7 @@ namespace lupnt {
    * @return Transmission
    */
   GnssTransmission GnssTransmitter::GenerateTransmission(double t) {
-    auto cart_state = agent->GetCartesianGCRFStateAtEpoch(t);
+    auto cart_state = GetAgent()->GetCartesianGCRFStateAtEpoch(t);
     ConvertOrbitStateFrame(cart_state, t, Frame::GCRF);
 
     GnssTransmission trans;

@@ -11,313 +11,344 @@
 
 #include "lupnt/measurements/radio_measurement.h"
 
+#include "lupnt/numerics/math_utils.h"
+#include "lupnt/physics/frame_converter.h"
+
 namespace lupnt {
-Real RadioMeasurement::ComputeOneWayRange(VecX r_tx, VecX r_rx, Real offset) {
-  Real rho_rx = (r_tx - r_rx).norm();
-  return rho_rx + offset;
-};
+  Real RadioMeasurement::ComputeOneWayRange(VecX r_tx, VecX r_rx, Real offset) {
+    Real rho_rx = (r_tx - r_rx).norm();
+    return rho_rx + offset;
+  };
 
-Real RadioMeasurement::ComputePseudorange(VecX r_tx, VecX r_rx, Real dt_tx,
-                                          Real dt_rx, Real offset) {
-  // P_rx = rho_rx + c*(dt_rx(t_rx) - dt_tx(t_tx)) + I_rx + T_rx + eps_P
-  Real rho_rx = (r_tx - r_rx).norm();
-  Real P_rx = rho_rx + C * (dt_rx - dt_tx) + offset;
-  return P_rx;
-};
+  Real RadioMeasurement::ComputePseudorange(VecX r_tx, VecX r_rx, Real dt_tx, Real dt_rx,
+                                            Real offset) {
+    // P_rx = rho_rx + c*(dt_rx(t_rx) - dt_tx(t_tx)) + I_rx + T_rx + eps_P
+    Real rho_rx = (r_tx - r_rx).norm();
+    Real P_rx = rho_rx + C * (dt_rx - dt_tx) + offset;
+    return P_rx;
+  };
 
-Real RadioMeasurement::ComputePseudorangerate(VecX r_tx, VecX r_rx, VecX v_tx,
-                                              VecX v_rx, Real dt_tx_dot,
-                                              Real dt_rx_dot, Real offset) {
-  VecX e_rx = (r_tx - r_rx).normalized();
-  Real prr = e_rx.dot(v_tx - v_rx) + C * (dt_rx_dot - dt_tx_dot) + offset;
-  return prr;
-};
+  Real RadioMeasurement::ComputePseudorangerate(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx,
+                                                Real dt_tx_dot, Real dt_rx_dot, Real offset) {
+    VecX e_rx = (r_tx - r_rx).normalized();
+    Real prr = e_rx.dot(v_tx - v_rx) + C * (dt_rx_dot - dt_tx_dot) + offset;
+    return prr;
+  };
 
-Real RadioMeasurement::ComputeDopplerShift(VecX r_tx, VecX r_rx, VecX v_tx,
-                                           VecX v_rx, Real dt_tx_dot,
-                                           Real dt_rx_dot, Real f,
-                                           Real offset) {
-  Real f_D = -f / C *
-             ComputePseudorangerate(r_tx, r_rx, v_tx, v_rx, dt_tx_dot,
-                                    dt_rx_dot, offset);
-  return f_D;
-};
+  Real RadioMeasurement::ComputeDopplerShift(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx,
+                                             Real dt_tx_dot, Real dt_rx_dot, Real f, Real offset) {
+    Real f_D
+        = -f / C * ComputePseudorangerate(r_tx, r_rx, v_tx, v_rx, dt_tx_dot, dt_rx_dot, offset);
+    return f_D;
+  };
 
-Real RadioMeasurement::ComputeOneWayRangeLTR(VecX rv_tx, VecX rv_rx, Real dt_tx,
-                                             Real dt_rx, double mu,
-                                             Real hardware_delay) {
-  // transmitter and receiver states
-  VecX xi = rv_tx;
-  VecX x0 = rv_rx;
+  Real RadioMeasurement::ComputeOneWayRangeLTR(Real epoch_rx, Vec6 rv_tx, Vec6 rv_rx, Real dt_tx,
+                                               Real dt_rx, Body *tx_center_body,
+                                               Body *rx_center_body, bool is_bodyfixed_tx,
+                                               bool is_bodyfixed_rx, Real hardware_delay) {
+    // Get the GM of the central body
+    Real mu_tx = tx_center_body->GM;
+    Real mu_rx = rx_center_body->GM;
 
-  // link x0->xi
-  VecX r0 = x0.segment(0, 3);
-  VecX v0 = x0.segment(3, 3);
-  VecX ri = xi.segment(0, 3);
-  VecX vi = xi.segment(3, 3);
+    // transmitter and receiver states
+    Vec6 xi = rv_tx;
+    Vec6 x0 = rv_rx;
 
-  VecX a0_r0 = -mu / pow(r0.norm(), 3) * r0;
-  VecX ai_ri = -mu / pow(ri.norm(), 3) * ri;
+    // link xi->x0
+    Vec3 r0 = x0.segment(0, 3);
+    Vec3 v0 = x0.segment(3, 3);
+    Vec3 ri = xi.segment(0, 3);
+    Vec3 vi = xi.segment(3, 3);
 
-  // hardware delays
-  Real tau_d_rx = hardware_delay;  // receiver delay for downlink (xi->x0)
+    Vec3 a0_r0 = -mu_rx / pow(r0.norm(), 3) * r0;
+    Vec3 ai_ri = -mu_tx / pow(ri.norm(), 3) * ri;
 
-  // solve for tau_d (downlink time)
-  int max_iter = 5;
-  Real tau_d = 0.0;
-  Real tau_d_prev = 0.0;
+    // hardware delays
+    Real tau_d_rx = hardware_delay;  // receiver delay for downlink (xi->x0)
 
-  VecX r0_p(3), rid_p(3), rho_ad(3);
-  Real r0_p_norm, rid_p_norm, rho_ad_norm;
+    // solve for tau_d (downlink time)
+    int max_iter = 5;
+    Real tau_d = 0.0;
+    Real tau_d_prev = 0.0;
 
-  for (int i = 0; i < max_iter; i++) {
-    r0_p = r0 - v0 * tau_d_rx + 1 / 2 * a0_r0 * pow(tau_d_rx, 2);
-    rid_p =
-        ri - vi * (tau_d_rx + tau_d) + 1 / 2 * ai_ri * pow(tau_d_rx + tau_d, 2);
-    rho_ad = rid_p - r0_p;
+    Vec3 r0_p, rid_p, rho_ad;
+    Real r0_p_norm, rid_p_norm, rho_ad_norm;
 
-    // norms
-    r0_p_norm = r0_p.norm();
-    rid_p_norm = rid_p.norm();
-    rho_ad_norm = rho_ad.norm();
+    // Solve for Downlink
+    for (int i = 0; i < max_iter; i++) {
+      Real rx_t = epoch_rx - tau_d_rx;
+      Real tx_t = epoch_rx - tau_d_rx - tau_d;
 
-    // Compoensate for relativistic effects (Shapiro time delay)
-    tau_d = rho_ad.norm() + 2 * mu / C *
-                                log((r0_p_norm + rid_p_norm + rho_ad_norm) /
-                                    (r0_p_norm + rid_p_norm - rho_ad_norm));
-    if (fabs(tau_d.val() - tau_d_prev.val()) <
-        1e-13) {  // goes under pico-second
-      break;
-    } else {
-      tau_d_prev = tau_d;
+      if (!is_bodyfixed_rx) {  // is not ground station
+        r0_p = r0 - v0 * tau_d_rx + 1 / 2 * a0_r0 * pow(tau_d_rx, 2);
+      } else {
+        // Fixed to surface frame -> convert to ITRF frame
+        r0_p = ConvertFrame(rx_t, r0, rx_center_body->fixed_frame, Frame::ITRF);
+      }
+      if (!is_bodyfixed_tx) {  // is not ground station
+        rid_p = ri - vi * (tau_d_rx + tau_d) + 1 / 2 * ai_ri * pow(tau_d_rx + tau_d, 2);
+      } else {
+        // Fixed to surface frame -> convert to ITRF frame
+        rid_p = ConvertFrame(tx_t, ri, tx_center_body->fixed_frame, Frame::ITRF);
+      }
+      rho_ad = rid_p - r0_p;
+
+      // norms
+      r0_p_norm = r0_p.norm();
+      rid_p_norm = rid_p.norm();
+      rho_ad_norm = rho_ad.norm();
+
+      // Compoensate for relativistic effects (Shapiro time delay)
+      // double shapiro = 2 * mu_rx / C *
+      //                  log((r0_p_norm + rid_p_norm + rho_ad_norm) /
+      //                      (r0_p_norm + rid_p_norm - rho_ad_norm));
+
+      tau_d = rho_ad.norm();  // + shapiro;
+
+      if (fabs(tau_d.val() - tau_d_prev.val()) < 1e-13) {  // goes under pico-second
+        break;
+      } else {
+        tau_d_prev = tau_d;
+      }
     }
+
+    Real rho_d = C * tau_d + (dt_rx - dt_tx) * C;
+
+    return rho_d;
+  };
+
+  Real RadioMeasurement::ComputeTwoWayRangeLTR(Real epoch_rx, Vec6 rv_target_tr, Vec6 rv_rx_tr,
+                                               Body *target_center_body, Body *rx_center_body,
+                                               bool is_bodyfixed_target, bool is_bodyfixed_rx,
+                                               Real hardware_delay, Real additional_delay) {
+    // hardware delays
+    Real tau_d_rx = hardware_delay;  // receiver delay for downlink (xi->x0)
+    Real tau_u_rx = hardware_delay;  // receiver delay for uplink (x0->xi)
+    Real tau_d_tx = hardware_delay;  // transmitter delay for downlink (xi->x0)
+
+    // solve for tau_d (downlink time, target->rx)
+    Real rho_d = ComputeOneWayRangeLTR(epoch_rx, rv_target_tr, rv_rx_tr, 0.0, 0.0,
+                                       target_center_body, rx_center_body, is_bodyfixed_target,
+                                       is_bodyfixed_rx, tau_d_rx + additional_delay);
+    Real tau_d = rho_d / C;
+
+    // solve for tau_u (uplink time, rx->target)
+    Real tau_c_pp = tau_u_rx + tau_d_tx + tau_d_rx;  // total hardware delay
+    Real delay_uplink = tau_c_pp + tau_d;            // total delay for uplink w.r.t epoch_rx
+    Real rho_u = ComputeOneWayRangeLTR(epoch_rx, rv_rx_tr, rv_target_tr, 0.0, 0.0, rx_center_body,
+                                       target_center_body, is_bodyfixed_rx, is_bodyfixed_target,
+                                       delay_uplink + additional_delay);
+    Real tau_u = rho_u / C;
+
+    Real rho_ud = C / 2 * (tau_u + tau_d);
+
+    return rho_ud;
+  };
+
+  Real RadioMeasurement::ComputeOneWayRangeRateLTR(Real epoch_rx, Vec6 rv_tx_tr, Vec6 rv_rx_tr,
+                                                   Real dt_dot_tx, Real dt_dot_rx,
+                                                   Body *target_center_body, Body *rx_center_body,
+                                                   bool is_bodyfixed_target, bool is_bodyfixed_rx,
+                                                   Real hardware_delay, double T_I) {
+    Real rho_d = ComputeOneWayRangeLTR(epoch_rx, rv_tx_tr, rv_rx_tr, 0.0, 0.0, target_center_body,
+                                       rx_center_body, is_bodyfixed_target, is_bodyfixed_rx,
+                                       hardware_delay);
+    Real rho_d_past = ComputeOneWayRangeLTR(epoch_rx, rv_tx_tr, rv_rx_tr, 0.0, 0.0,
+                                            target_center_body, rx_center_body, is_bodyfixed_target,
+                                            is_bodyfixed_rx, hardware_delay + T_I);
+
+    Real rho_dot = (rho_d - rho_d_past) / T_I + C * (dt_dot_rx - dt_dot_tx);
+
+    return rho_dot;
   }
 
-  Real rho_d = C * tau_d + (dt_rx - dt_tx) * C;
+  Real RadioMeasurement::ComputeTwoWayRangeRateLTR(Real epoch_rx, Vec6 rv_target_tr, Vec6 rv_rx_tr,
+                                                   Body *target_center_body, Body *rx_center_body,
+                                                   bool is_bodyfixed_target, bool is_bodyfixed_rx,
+                                                   Real hardware_delay, double T_I) {
+    Real rho_ud = ComputeTwoWayRangeLTR(epoch_rx, rv_target_tr, rv_rx_tr, target_center_body,
+                                        rx_center_body, is_bodyfixed_target, is_bodyfixed_rx,
+                                        hardware_delay);
+    Real rho_ud_past = ComputeTwoWayRangeLTR(epoch_rx, rv_target_tr, rv_rx_tr, target_center_body,
+                                             rx_center_body, is_bodyfixed_target, is_bodyfixed_rx,
+                                             hardware_delay, T_I);
 
-  return rho_d;
-};
+    Real rho_dot = (rho_ud - rho_ud_past) / T_I;
 
-Real RadioMeasurement::ComputeTwoWayRangeLTR(VecX rv_target_tr, VecX rv_rx_tr,
-                                             double mu, Real hardware_delay) {
-  // transmitter and receiver states
-  VecX xi = rv_target_tr;
-  VecX x0 = rv_rx_tr;
+    return rho_dot;
+  }
 
-  // link x0->xi
-  VecX r0 = x0.segment(0, 3);
-  VecX v0 = x0.segment(3, 3);
-  VecX ri = xi.segment(0, 3);
-  VecX vi = xi.segment(3, 3);
+  double RadioMeasurement::ComputePnRangeErrorCTL(double PRC_N0, double B_L, double Tc,
+                                                  CarrierType carrier_type) {
+    double sigma = 0.0;
+    double f_RC = 1 / (2 * Tc);
 
-  VecX a0_r0 = -mu / pow(r0.norm(), 3) * r0;
-  VecX ai_ri = -mu / pow(ri.norm(), 3) * ri;
+    // Thermal noise
+    sigma = 1 / sqrt(2) * C / (8 * f_RC) * sqrt(B_L / PRC_N0);
 
-  // hardware delays
-  Real tau_d_rx = hardware_delay;  // receiver delay for downlink (xi->x0)
-  Real tau_u_rx = hardware_delay;  // receiver delay for uplink (x0->xi)
-  Real tau_d_tx = hardware_delay;  // transmitter delay for downlink (xi->x0)
+    // Error degrade for GMSK + PN
 
-  // solve for tau_d (downlink time) -----------------------------------
-  int max_iter = 5;
-  Real tau_d = 0.0;
-  Real tau_d_prev = 0.0;
+    return sigma;
+  }
 
-  VecX r0_p(3), rid_p(3), rho_ad(3);
-  Real r0_p_norm, rid_p_norm, rho_ad_norm;
+  double RadioMeasurement::ComputePnRangeErrorOL(double PRC_N0, double TI, double Tc,
+                                                 CarrierType carrier_type) {
+    double sigma = 0.0;
+    double f_RC = 1 / (2 * Tc);
 
-  for (int i = 0; i < max_iter; i++) {
-    r0_p = r0 - v0 * tau_d_rx + 1 / 2 * a0_r0 * pow(tau_d_rx, 2);
-    rid_p =
-        ri - vi * (tau_d_rx + tau_d) + 1 / 2 * ai_ri * pow(tau_d_rx + tau_d, 2);
-    rho_ad = rid_p - r0_p;
+    // Thermal noise
+    sigma = 1 / sqrt(32 * PI * PI) * (C / f_RC) * sqrt(1 / PRC_N0 / TI);
 
-    // norms
-    r0_p_norm = r0_p.norm();
-    rid_p_norm = rid_p.norm();
-    rho_ad_norm = rho_ad.norm();
+    // Error degrade for GMSK + PN
 
-    // Compoensate for relativistic effects (Shapiro time delay)
-    tau_d = rho_ad.norm() + 2 * mu / C *
-                                log((r0_p_norm + rid_p_norm + rho_ad_norm) /
-                                    (r0_p_norm + rid_p_norm - rho_ad_norm));
-    if (fabs(tau_d.val() - tau_d_prev.val()) <
-        1e-13) {  // goes under pico-second
-      break;
-    } else {
-      tau_d_prev = tau_d;
+    return sigma;
+  }
+
+  double RadioMeasurement::ComputeRangeRateErrorOneWay(double B_L_carrier, double f_C, double T_s,
+                                                       double T_I, double PT_N0, double sigma_y_1s,
+                                                       CarrierType carrier_type, double m_R) {
+    // Thermal noise
+    double rho_L = ComputeCarrierLoopSNR(PT_N0, B_L_carrier, T_s, carrier_type, m_R);
+    double sigma_vn = sqrt(2 / rho_L) * C / (2 * PI * f_C * T_I);
+
+    // phase noise contribution
+    double sigma_y_T = sigma_y_1s / sqrt(T_s);
+    double sigma_vf = C * sigma_y_T;
+
+    // phase scintillation
+    double sigma_vs = 0.0;  // Asssume 0
+
+    // Total Doppler Error
+    double sigma_v = sqrt(pow(sigma_vn, 2) + pow(sigma_vf, 2) + pow(sigma_vs, 2));
+
+    return sigma_v;
+  }
+
+  double RadioMeasurement::ComputeRangeRateErrorTwoWay(double B_L_carrier, double f_C, double T_s,
+                                                       double T_I, double PT_N0, double sigma_y_1s,
+                                                       double G, CarrierType carrier_type,
+                                                       double m_R) {
+    // Thermal noise
+    double rho_L = ComputeCarrierLoopSNR(PT_N0, B_L_carrier, T_s, carrier_type, m_R);
+    double sigma_vnu = sqrt(1 / 2) * (C / (2 * PI * f_C * T_I)) * G / sqrt(rho_L);
+    double sigma_vnd = sqrt(2 / rho_L) * C / (2 * PI * f_C * T_I) / sqrt(rho_L);
+
+    double sigma_vn = sqrt(pow(sigma_vnu, 2) + pow(sigma_vnd, 2));
+
+    // phase noise contribution
+    double sigma_y_T = sigma_y_1s / sqrt(T_s);
+    double sigma_vf = C * sigma_y_T / sqrt(2);
+
+    // phase scintillation
+    double sigma_vs = 0.0;  // Asssume 0
+
+    // Total Doppler Error
+    double sigma_v = sqrt(pow(sigma_vn, 2) + pow(sigma_vf, 2) + pow(sigma_vs, 2));
+
+    // Error degrade for GMSK + PN
+
+    return sigma_v;
+  }
+
+  FrequencyBand RadioMeasurement::GetFrequencyBand(double f_C) {
+    FrequencyBand fbu = FrequencyBand::S;
+
+    // UHF, S, X, Ku, Ka
+    if (f_C >= 300e6 && f_C < 1e9) {
+      fbu = FrequencyBand::UHF;
+    } else if (f_C >= 1.0e9 && f_C < 2.0e9) {
+      fbu = FrequencyBand::L;
+    } else if (f_C >= 2e9 && f_C < 4e9) {
+      fbu = FrequencyBand::S;
+    } else if (f_C >= 2e9 && f_C < 4e9) {
+      fbu = FrequencyBand::Cband;
+    } else if (f_C >= 8e9 && f_C < 12e9) {
+      fbu = FrequencyBand::X;
+    } else if (f_C >= 12e9 && f_C < 18e9) {
+      fbu = FrequencyBand::Ku;
+    } else if (f_C >= 18e9 && f_C < 26e9) {
+      fbu = FrequencyBand::K;
+    } else if (f_C >= 26e9 && f_C < 40e9) {
+      fbu = FrequencyBand::Ka;
     }
+
+    return fbu;
   }
 
-  // solve for tau_u (uplink time) -----------------------------------
-  Real tau_u = 0.0;
-  Real tau_u_prev = 0.0;
-  Real tau_c_pp = tau_u_rx + tau_d_tx + tau_d_rx;
-  max_iter = 5;
-  VecX r0u_pp(3), ri_pp(3), rho_au(3);
-  Real r0u_pp_norm, ri_pp_norm, rho_au_norm;
-
-  for (int i = 0; i < max_iter; i++) {
-    ri_pp =
-        ri - vi * (tau_c_pp + tau_d) + 1 / 2 * ai_ri * pow(tau_c_pp + tau_d, 2);
-    r0u_pp = r0 - v0 * (tau_c_pp + tau_d + tau_u) +
-             1 / 2 * a0_r0 * pow(tau_c_pp + tau_d + tau_u, 2);
-
-    rho_au = ri_pp - r0u_pp;
-
-    // norms
-    ri_pp_norm = ri_pp.norm();
-    r0u_pp_norm = r0u_pp.norm();
-    rho_au_norm = rho_au.norm();
-
-    // Compoensate for relativistic effects (Shapiro time delay)
-    tau_u = rho_au.norm() + 2 * mu / C *
-                                log((ri_pp_norm + r0u_pp_norm + rho_au_norm) /
-                                    (ri_pp_norm + r0u_pp_norm - rho_au_norm));
-
-    if (fabs(tau_u.val() - tau_u_prev.val()) <
-        1e-13) {  // goes under pico-second
-      break;
-    } else {
-      tau_u_prev = tau_u;
+  double RadioMeasurement::GetTransponderTurnAroundRatio(FrequencyBand fbu, FrequencyBand fbd) {
+    // https://deepspace.jpl.nasa.gov/dsndocs/810-005/201/201B.pdf
+    double G = 1.0;
+    // fbu: S, X, Ka,  fbd: fbu: S, X, Ka
+    if (fbu == FrequencyBand::S && fbd == FrequencyBand::S) {
+      G = 240 / 221;
+    } else if (fbu == FrequencyBand::S && fbd == FrequencyBand::X) {
+      G = 880 / 221;
+    } else if (fbu == FrequencyBand::S && fbd == FrequencyBand::Ka) {
+      G = 15.071;
+    } else if (fbu == FrequencyBand::X && fbd == FrequencyBand::S) {
+      G = 240 / 749;
+    } else if (fbu == FrequencyBand::X && fbd == FrequencyBand::X) {
+      G = 880 / 749;
+    } else if (fbu == FrequencyBand::X && fbd == FrequencyBand::Ka) {
+      G = 4.4506;
+    } else if (fbu == FrequencyBand::Ka && fbd == FrequencyBand::S) {
+      G = 0.066959;
+    } else if (fbu == FrequencyBand::Ka && fbd == FrequencyBand::X) {
+      G = 0.24561;
+    } else if (fbu == FrequencyBand::Ka && fbd == FrequencyBand::Ka) {
+      G = 0.92982;
     }
+
+    return G;
   }
 
-  Real rho_ud = C / 2 * (tau_u + tau_d);
+  double RadioMeasurement::ComputeCarrierLoopSNR(double PT_N0, double B_L_carrier, double T_s,
+                                                 CarrierType carrier_type, double m_R) {
+    double S_L = 1.0;
+    double EsN0 = PT_N0 * T_s;
+    double rho_L = PT_N0 / B_L_carrier;
+    double tmp1, tmp2, tmp3;
 
-  return rho_ud;
-};
+    // Compute carier loop signal-to-noise ratio
+    if (carrier_type == CarrierType::Residual) {
+      // carrier nominal power https://public.ccsds.org/Pubs/401x0b17s.pdf
+      double PC_N0 = PT_N0 * cos(m_R) * pow(J0Bessel(m_R), 2);
+      rho_L = PC_N0 / B_L_carrier * EsN0 / (1 + 2 * EsN0);
 
-double RadioMeasurement::ComputePnRangeErrorCTL(double PRC_N0, double B_L,
-                                                double Tc) {
-  double sigma = 0.0;
-  double f_RC = 1 / (2 * Tc);
+    } else {
+      switch (carrier_type) {
+        case CarrierType::BPSK:
+          S_L = 2 * EsN0 / (1 + 2 * EsN0);
+          break;
+        case CarrierType::QPSK:
+          tmp1 = (9 / 4) / EsN0;
+          tmp2 = (3 / 2) / pow(EsN0, 2);
+          tmp3 = (3 / 16) / pow(EsN0, 3);
 
-  sigma = 1 / sqrt(2) * C / (8 * f_RC) * sqrt(B_L / PRC_N0);
+          S_L = 1 / (1 + tmp1 + tmp2 + tmp3);
+          break;
+        case CarrierType::OQPSK:
+        case CarrierType::GMSK:
+        case CarrierType::GMSK_PN:
+          // same as OQPSK
+          // Reference: GMSK CarrierType for Deep Space Application
+          // https://ieeexplore-ieee-org.stanford.idm.oclc.org/stamp/stamp.jsp?tp=&arnumber=6187097
+          tmp1 = (9 / 4) / EsN0;
+          tmp2 = (3 / 2) / pow(EsN0, 2);
+          tmp3 = (3 / 16) / pow(EsN0, 3);
 
-  return sigma;
-}
+          S_L = 1 / 4 / (1 + tmp1 + tmp2 + tmp3);
+          break;
+      }
+      rho_L = PT_N0 * S_L / B_L_carrier;
+    }
 
-double RadioMeasurement::ComputePnRangeErrorOL(double PRC_N0, double TI,
-                                               double Tc) {
-  double sigma = 0.0;
-  double f_RC = 1 / (2 * Tc);
+    // Recommended value to avoid cycle slips
+    // rho_L >= 10 dB for residual carrier
+    // rho_L >= 17 dB for BPSK
+    // rho_L >= 23 dB for QPSK and Offset QPSK
 
-  sigma = 1 / sqrt(32 * PI * PI) * (C / f_RC) * sqrt(1 / PRC_N0 / TI);
-
-  return sigma;
-}
-
-double ComputeRangeRateErrorOneWay(double B_L_carrier, double f_C, double T_s,
-                                   double T_I, double PT_N0, double sigma_y_1s,
-                                   Modulation carrier_type = Modulation::BPSK) {
-  　  // Thermal noise
-      double rho_L =
-          ComputeCarrierLoopSNR(PT_N0, B_L_carrier, T_s, carrier_type);
-  double sigma_vn = sqrt(2 / rho_L) * C / (2 * PI * f_C * T_I);
-
-  // phase noise contribution
-  double sigma_y_T = sigma_y_1s / sqrt(T_s);
-  double sigma_vf = C * sigma_y_T;
-
-  // phase scintillation
-  double sigma_vs = 0.0;  // Asssume 0
-
-  // Total Doppler Error
-  double sigma_v = sqrt(pow(sigma_vn, 2) + pow(sigma_vf, 2) + pow(sigma_vs, 2));
-  return sigma_v;
-}
-
-double ComputeRangeRateErrorTwoWay(double B_L_carrier, double f_C, double T_s,
-                                   double T_I, double PT_N0, double sigma_y_1s,
-                                   double G,
-                                   Modulation carrier_type = Modulation::BPSK) {
-  　  // Thermal noise
-      double rho_L =
-          ComputeCarrierLoopSNR(PT_N0, B_L_carrier, T_s, carrier_type);
-  double sigma_vnu =
-      sqrt(1 / 2) * (C / (2 * PI * f_C * T_I)) * pow(G) / sqrt(rho_L);
-  double sigma_vnd = sqrt(2 / rho_L) * C / (2 * PI * f_C * T_I) / sqrt(rho_L);
-
-  double sigma_vn = sqrt(pow(sigma_vnu, 2) + pow(sigma_vnd, 2));
-
-  // phase noise contribution
-  double sigma_y_T = sigma_y_1s / sqrt(T_s);
-  double sigma_vf = C * sigma_y_T / sqrt(2);
-
-  // phase scintillation
-  double sigma_vs = 0.0;  // Asssume 0
-
-  // Total Doppler Error
-  double sigma_v = sqrt(pow(sigma_vn, 2) + pow(sigma_vf, 2) + pow(sigma_vs, 2));
-  return sigma_v;
-}
-
-double GetTransponderTurnAroundRatio(FrequencyBand fbu, FrequencyBand fbd) {
-  // https://deepspace.jpl.nasa.gov/dsndocs/810-005/201/201B.pdf
-  double G = 1.0;
-  // fbu: S, X, Ka,  fbd: fbu: S, X, Ka
-  if (fbu == FrequencyBand::S && fbd == FrequencyBand::S) {
-    G = 240 / 221;
-  } else if (fbu == FrequencyBand::S && fbd == FrequencyBand::X) {
-    G = 880 / 221;
-  } else if (fbu == FrequencyBand::S && fbd == FrequencyBand::Ka) {
-    G = 15.071;
-  } else if (fbu == FrequencyBand::X && fbd == FrequencyBand::S) {
-    G = 240 / 749;
-  } else if (fbu == FrequencyBand::X && fbd == FrequencyBand::X) {
-    G = 880 / 749;
-  } else if (fbu == FrequencyBand::X && fbd == FrequencyBand::Ka) {
-    G = 4.4506;
-  } else if (fbu == FrequencyBand::Ka && fbd == FrequencyBand::S) {
-    G = 0.066959;
-  } else if (fbu == FrequencyBand::Ka && fbd == FrequencyBand::X) {
-    G = 0.24561;
-  } else if (fbu == FrequencyBand::Ka && fbd == FrequencyBand::Ka) {
-    G = 0.92982;
+    return rho_L;
   }
-
-  return G;
-}
-
-double ComputeCarrierLoopSNR(double PT_N0, double B_L_carrier, double T_s,
-                             Modulation carrier_type) {
-  double S_L = 1.0;
-  double EsN0 = PT_N0 * T_s;
-
-  // Compute carier loop signal-to-noise ratio
-  switch (carrier_type) {
-    case Modulation::BPSK:
-      S_L = 2 * EsN0 / (1 + 2 * EsN0);
-      break;
-    case Modulation::QPSK:
-      double tmp1 = (9 / 4) / EsN0;
-      double tmp2 = (3 / 2) / pow(EsN0, 2);
-      double tmp3 = (3 / 16) / pow(EsN0, st3);
-
-      S_L = 1 / (1 + tmp1 + tmp2 + tmp3);
-      break;
-    case Modulation::OQPSK:
-      double tmp1 = (9 / 4) / EsN0;
-      double tmp2 = (3 / 2) / pow(EsN0, 2);
-      double tmp3 = (3 / 16) / pow(EsN0, 3);
-
-      S_L = 1 / 4 / (1 + tmp1 + tmp2 + tmp3);
-      break;
-    case Modulation::GMSK:
-      // same as OQPSK
-      // Reference: GMSK Modulation for Deep Space Application
-      // https://ieeexplore-ieee-org.stanford.idm.oclc.org/stamp/stamp.jsp?tp=&arnumber=6187097
-      double tmp1 = (9 / 4) / EsN0;
-      double tmp2 = (3 / 2) / pow(EsN0, 2);
-      double tmp3 = (3 / 16) / pow(EsN0, 3);
-
-      S_L = 1 / 4 / (1 + tmp1 + tmp2 + tmp3);
-      break;
-  }
-  double rho_L = PT_N0 * S_L / B_L_carrier;
-
-  return rho_L;
-}
 
 }  // namespace lupnt

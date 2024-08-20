@@ -15,7 +15,7 @@ namespace lupnt {
 
   /// @brief Create a Body object for the Moon
   /// @return Body object for the Moon
-  Body Body::Moon(int n_max, int m_max, std::string gravity_file) {
+  Body Body::Moon(int n_max, int m_max, std::string gravity_file, bool read_gravity_field) {
     Body moon;
     moon.name = "MOON";
     moon.id = NaifId::MOON;
@@ -29,7 +29,7 @@ namespace lupnt {
 
   /// @brief Create a Body object for the Earth
   /// @return Body object for the Earth
-  Body Body::Earth(int n_max, int m_max, std::string gravity_file) {
+  Body Body::Earth(int n_max, int m_max, std::string gravity_file, bool read_gravity_field) {
     Body earth;
     earth.name = "EARTH";
     earth.id = NaifId::EARTH;
@@ -37,7 +37,8 @@ namespace lupnt {
     earth.inertial_frame = Frame::GCRF;
     earth.GM = GM_EARTH;
     earth.R = R_EARTH;
-    earth.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
+    if (read_gravity_field)
+      earth.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
 
     return earth;
   }
@@ -57,28 +58,48 @@ namespace lupnt {
 
   /// @brief Create a Body object for Mars
   /// @return Body object for Mars
-  Body Body::Mars(int n_max, int m_max, std::string gravity_file) {
+  Body Body::Mars(int n_max, int m_max, std::string gravity_file, bool read_gravity_field) {
     Body mars;
     mars.name = "MARS";
     mars.id = NaifId::MARS;
     mars.fixed_frame = Frame::MARS_FIXED;
     mars.GM = 0.4282837566395650E+05;
     mars.R = 0.3396000000000000E+04;
-    mars.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
+    if (read_gravity_field)
+      mars.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
     return mars;
   }
 
   /// @brief Create a Body object for Venus
   /// @return Body object for Venus
-  Body Body::Venus(int n_max, int m_max, std::string gravity_file) {
+  Body Body::Venus(int n_max, int m_max, std::string gravity_file, bool read_gravity_field) {
     Body venus;
     venus.name = "VENUS";
     venus.id = NaifId::VENUS;
     venus.fixed_frame = Frame::VENUS_FIXED;
     venus.GM = 0.3248585920790000E+06;
     venus.R = 0.6051000000000000E+04;
-    venus.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
+    if (read_gravity_field)
+      venus.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
     return venus;
+  }
+
+  Body CreateDefaultBody(NaifId id) {
+    bool read_gravity_field = false;
+    switch (id) {
+      case NaifId::MOON:
+        return Body::Moon(0, 0, "grgm900c.cof", read_gravity_field);
+      case NaifId::EARTH:
+        return Body::Earth(0, 0, "EGM96.cof", read_gravity_field);
+      case NaifId::SUN:
+        return Body::Sun();
+      case NaifId::MARS:
+        return Body::Mars(0, 0, "GMM1.cof", read_gravity_field);
+      case NaifId::VENUS:
+        return Body::Venus(0, 0, "MGN75HSAAP.cof", read_gravity_field);
+      default:
+        assert(false && "Invalid body ID");
+    }
   }
 
   /// @brief Kronecker delta function

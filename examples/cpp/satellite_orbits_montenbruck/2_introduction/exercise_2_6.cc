@@ -8,19 +8,17 @@ using namespace std;
 // doi: 10.1007/978-3-642-58351-3.
 int main() {
   // Ground station
-  const Vec3 r_gs(1344.143, 6068.601, 1429.311);  // (x, y, z) [km]
-  const Vec3 lla =
-      Cart2LatLonAlt(r_gs, R_EARTH, WGS84_F);  // (lat, lon, alt) [rad, rad, km]
+  const Vec3 r_gs(1344.143, 6068.601, 1429.311);            // (x, y, z) [km]
+  const Vec3 lla = Cart2LatLonAlt(r_gs, R_EARTH, WGS84_F);  // (lat, lon, alt) [rad, rad, km]
 
   // Measurements
   struct Measurement {
     Real mjd_utc;
     Real az, el, range;
   };
-  const Measurement meas[2] = {{GregorianToMJD(1999, 04, 02, 00, 30, 00.0),
-                                132.67 * RAD, 32.44 * RAD, 16.945450e3},
-                               {GregorianToMJD(1999, 04, 02, 03, 00, 00.0),
-                                123.08 * RAD, 50.06 * RAD, 37.350340e3}};
+  const Measurement meas[2]
+      = {{GregorianToMJD(1999, 04, 02, 00, 30, 00.0), 132.67 * RAD, 32.44 * RAD, 16.945450e3},
+         {GregorianToMJD(1999, 04, 02, 03, 00, 00.0), 123.08 * RAD, 50.06 * RAD, 37.350340e3}};
 
   // Convert observations
   Vec3 r_sat[2];
@@ -39,8 +37,7 @@ int main() {
   int date_prec = 3;
   cout << "Exercise 2-6: Initial orbit determination" << endl << endl;
   cout << "Inertial positions:" << endl << endl;
-  cout << setw(36) << "[km]" << setw(12) << "[km]" << setw(12) << "[km]"
-       << endl;
+  cout << setw(36) << "[km]" << setw(12) << "[km]" << setw(12) << "[km]" << endl;
   for (int i = 0; i < 2; i++) {
     cout << "  " << MJDtoGregorianString(meas[i].mjd_utc, date_prec) << "  ";
     for (int j = 0; j < 3; j++) {
@@ -51,8 +48,7 @@ int main() {
   cout << endl;
 
   cout << "Orbital elements:" << endl << endl;
-  cout << "  Epoch (1st obs.)  "
-       << MJDtoGregorianString(meas[0].mjd_utc, date_prec) << endl;
+  cout << "  Epoch (1st obs.)  " << MJDtoGregorianString(meas[0].mjd_utc, date_prec) << endl;
   cout << fixed << setprecision(3);
   cout << "  Semimajor axis   " << setw(10) << coe(0) / 1000.0 << " km" << endl;
   cout << setprecision(7);

@@ -14,18 +14,22 @@ CPMAddPackage(NAME LuPNT SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 
 # ---- Create examples executable ----
 
-file(GLOB_RECURSE examples RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cc)
+file(
+  GLOB_RECURSE examples
+  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+  *.cc
+)
 # Remove example_ekf_elfo.cc from the list to compile
 list(REMOVE_ITEM examples "example_ekf_elfo.cc")
 
 find_package(OpenMP REQUIRED)
 
 foreach(example ${examples})
-    get_filename_component(name ${example} NAME_WE)
-    get_filename_component(dir ${example} DIRECTORY)
+  get_filename_component(name ${example} NAME_WE)
+  get_filename_component(dir ${example} DIRECTORY)
 
-    add_executable(${name} ${example})
-    target_link_libraries(${name} PRIVATE LuPNT::LuPNT)
-    set_target_properties(${name} PROPERTIES CXX_STANDARD 20)
-    set_target_properties(${name} PROPERTIES FOLDER "examples/${dir}")
+  add_executable(${name} ${example})
+  target_link_libraries(${name} PRIVATE LuPNT::LuPNT)
+  set_target_properties(${name} PROPERTIES CXX_STANDARD 20)
+  set_target_properties(${name} PROPERTIES FOLDER "examples/${dir}")
 endforeach()

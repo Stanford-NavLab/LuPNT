@@ -3,10 +3,7 @@ set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)
 
 # ---- Project ----
 
-project(
-  LuPNT
-  LANGUAGES CXX
-)
+project(LuPNT LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -68,14 +65,15 @@ process_directory(${CMAKE_CURRENT_SOURCE_DIR}/include/lupnt)
 
 file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/source/version.txt PROJECT_VERSION_READ)
 foreach(ver ${PROJECT_VERSION_READ})
-    if (ver MATCHES "(MAJOR|MINOR|PATCH) +([^ ]+)$")
-        set(PROJECT_VERSION_READ_${CMAKE_MATCH_1} ${CMAKE_MATCH_2} CACHE INTERNAL "")
-    endif()
+  if(ver MATCHES "(MAJOR|MINOR|PATCH) +([^ ]+)$")
+    set(PROJECT_VERSION_READ_${CMAKE_MATCH_1}
+        ${CMAKE_MATCH_2}
+        CACHE INTERNAL ""
+    )
+  endif()
 endforeach()
-string(CONCAT PROJECT_VERSION_CONCAT
-    ${PROJECT_VERSION_READ_MAJOR}
-    .${PROJECT_VERSION_READ_MINOR}
-    .${PROJECT_VERSION_READ_PATCH}
+string(CONCAT PROJECT_VERSION_CONCAT ${PROJECT_VERSION_READ_MAJOR} .${PROJECT_VERSION_READ_MINOR}
+              .${PROJECT_VERSION_READ_PATCH}
 )
 set(PROJECT_VERSION ${PROJECT_VERSION_CONCAT})
 message("Version is ${PROJECT_VERSION}")
@@ -112,14 +110,14 @@ target_include_directories(
                          $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
-# enable compiler warnings 
-if(NOT TEST_INSTALLED_VERSION) 
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wpedantic -Wextra) # -Werror) 
-elseif(MSVC) 
-target_compile_options(${PROJECT_NAME} PRIVATE /W4) # /WX)
-target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS) 
-endif() 
+# enable compiler warnings
+if(NOT TEST_INSTALLED_VERSION)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wpedantic -Wextra) # -Werror)
+  elseif(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4) # /WX)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS)
+  endif()
 endif()
 
 # ---- Create an installable target ----

@@ -40,8 +40,8 @@ int main() {
 
   for (int h : {0, 25, 50, 100}) {
     Body moon = Body::Moon();
-    moon.gravity_field = ReadHarmonicGravityField(
-        "data/gravity_field/moon_gravity_field.shm", h, h, false);
+    moon.gravity_field
+        = ReadHarmonicGravityField("data/gravity_field/moon_gravity_field.shm", h, h, false);
     // moon.sphericalHarmonics = false;
 
     // Dynamics
@@ -52,8 +52,8 @@ int main() {
 
     // State
     VecX rv0(6);
-    rv0 << -1.540113643726188e3, -0.179443941906269e3, 1.128341549807345e3,
-        -0.000291469032495e3, -0.001449961303523e3, -0.000628428693161e3;
+    rv0 << -1.540113643726188e3, -0.179443941906269e3, 1.128341549807345e3, -0.000291469032495e3,
+        -0.001449961303523e3, -0.000628428693161e3;
     CartesianOrbitState cart_state(rv0);
 
     // Time
@@ -89,12 +89,10 @@ int main() {
     }
     double n_double = n;
     double mean = times.sum() / n_double;
-    double std_dev = std::sqrt((times.array() - times.mean()).square().sum() /
-                               (n_double - 1.0));
+    double std_dev = std::sqrt((times.array() - times.mean()).square().sum() / (n_double - 1.0));
 
     std::cout << "NBodyRates: " << h << std::endl;
-    std::cout << "Mean, Std: " << mean / 1e6 << ", " << std_dev / 1e6 << " s"
-              << std::endl;
+    std::cout << "Mean, Std: " << mean / 1e6 << ", " << std_dev / 1e6 << " s" << std::endl;
     std::cout << "Total: " << times.sum() / 1e6 << " s" << std::endl;
     t += dt;
   }

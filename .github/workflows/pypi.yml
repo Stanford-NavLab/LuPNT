@@ -20,13 +20,13 @@ jobs:
         with:
           path: LuPNT_data
           key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
-      
+
       # Ubuntu
       - name: Install OpenMP and download data (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
           echo "LUPNT_DATA_PATH = $LUPNT_DATA_PATH"
-          sudo apt-get update 
+          sudo apt-get update
           sudo apt-get install -y libomp-dev
 
       # MacOS
@@ -41,7 +41,7 @@ jobs:
       # MacOS + Ubuntu
       - name: Download and unzip LuPNT_data (MacOS + Ubuntu)
         if: |
-          (matrix.os == 'macos-latest'   || 
+          (matrix.os == 'macos-latest'   ||
            matrix.os == 'ubuntu-latest') &&
           steps.cache-lupnt-data.outputs.cache-hit != 'true'
         run: |
@@ -51,7 +51,7 @@ jobs:
 
       # Windows
       - name: Download and unzip LuPNT_data (Windows)
-        if:  |
+        if: |
           matrix.os == 'windows-latest' &&
           steps.cache-lupnt-data.outputs.cache-hit != 'true'
         run: |
@@ -59,7 +59,7 @@ jobs:
           Invoke-WebRequest -Uri "https://bit.ly/LuPNT_data" -OutFile "LuPNT_data.zip"
           Expand-Archive -Path "LuPNT_data.zip" -DestinationPath "."
           Remove-Item "LuPNT_data.zip"
-      
+
       # All
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.20

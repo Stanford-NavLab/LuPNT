@@ -22,50 +22,42 @@
 
 namespace lupnt {
 
-class GnssChannel;
+  class GnssChannel;
 
-class GnssReceiver : public Receiver {
- public:
-  GnssReceiverParam gnssr_param_;
-  std::string receiver_name_;           // Name of the receiver system
-  std::string attitude_mode_ = "NONE";  // Attitude mode of the receiver
+  class GnssReceiver : public Receiver {
+  public:
+    GnssReceiverParam gnssr_param_;
+    std::string receiver_name_;           // Name of the receiver system
+    std::string attitude_mode_ = "NONE";  // Attitude mode of the receiver
 
-  GnssReceiver(std::string receiver_name) : receiver_name_(receiver_name) {
-    antenna_ = Antenna(receiver_name_);
-    InitializeReceiverParams();
+    GnssReceiver(std::string receiver_name) : receiver_name_(receiver_name) {
+      antenna_ = Antenna(receiver_name_);
+      InitializeReceiverParams();
+    };
+
+    // Receiver Gain Calculators
+    void SetReceiverAttitudeMode(std::string mode) { attitude_mode_ = mode; };
+
+    std::vector<Vec3d> GetReceiverOrientation(double t, Vec3d& r_rx_gcrf, std::string mode);
+    double GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf) override;
+
+    void InitializeReceiverParams();
+    void SetCN0Threshold(double CN0threshold) { rx_param_.CN0threshold = CN0threshold; };
+
+    // Generate Measurement
+    GnssMeasurement GetMeasurement(double t);
+
+    // Override channel getters and setters
+    inline std::shared_ptr<SpaceChannel> GetChannel() override { return gnss_channel_; };
+    inline void SetChannel(const std::shared_ptr<GnssChannel>& channel) {
+      gnss_channel_ = channel;
+    };
+
+    // Getters and Setters
+    double GetAntennaGain(Vec3d direction) { return antenna_.GetAntennaGain(direction); };
+    double GetAntennaGain(double theta, double phi) { return antenna_.GetAntennaGain(theta, phi); };
+
+  private:
+    std::shared_ptr<GnssChannel> gnss_channel_;
   };
-
-  // Receiver Gain Calculators
-  void SetReceiverAttitudeMode(std::string mode) { attitude_mode_ = mode; };
-
-  std::vector<Vec3d> GetReceiverOrientation(double t, Vec3d& r_rx_gcrf,
-                                            std::string mode);
-  double GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf,
-                                Vec3d r_rx_gcrf) override;
-
-  void InitializeReceiverParams();
-  void SetCN0Threshold(double CN0threshold) {
-    rx_param_.CN0threshold = CN0threshold;
-  };
-
-  // Generate Measurement
-  GnssMeasurement GetMeasurement(double t);
-  void SetChannel(std::shared_ptr<GnssChannel> ch) { channel = ch; };
-
-  // Getters and Setters
-  inline std::shared_ptr<Agent> GetAgent() const override { return agent; };
-  inline void SetAgent(const std::shared_ptr<Agent>& agent) override {
-    this->agent = agent;
-  };
-  double GetAntennaGain(Vec3d direction) {
-    return antenna_.GetAntennaGain(direction);
-  };
-  double GetAntennaGain(double theta, double phi) {
-    return antenna_.GetAntennaGain(theta, phi);
-  };
-
- private:
-  std::shared_ptr<Agent> agent;
-  std::shared_ptr<GnssChannel> channel;
-};
 }  // namespace lupnt

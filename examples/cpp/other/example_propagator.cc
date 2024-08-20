@@ -32,9 +32,8 @@ ODE VanderPolStiff = [](const Real t, const VecX& x) {
 int main() {
   // list of problems
   std::vector<ODE> vec_ode = {HarmonicOscillator, VanderPol, VanderPolStiff};
-  std::vector<std::string> vec_ode_name = {"Harmonic Oscillator",
-                                           "Van der Pol (non-stiff, mu=0.1)",
-                                           "Van der Pol (stiff, mu=10.0)"};
+  std::vector<std::string> vec_ode_name
+      = {"Harmonic Oscillator", "Van der Pol (non-stiff, mu=0.1)", "Van der Pol (stiff, mu=10.0)"};
   std::vector<std::string> vec_method = {"RK4", "RK8", "RKF45"};
   std::vector<std::vector<std::chrono::duration<double>>> vv_elapsed_seconds;
   std::vector<std::vector<VecX>> vv_x;
@@ -42,8 +41,7 @@ int main() {
   int n_problem = vec_ode.size();
 
   for (int p = 0; p < n_problem; p++) {
-    IntegratorParams params =
-        IntegratorParams(20, 1e-8, 1e-8);  // max_iter, abstol, reltol
+    IntegratorParams params = IntegratorParams(20, 1e-8, 1e-8);  // max_iter, abstol, reltol
     NumericalPropagator prop_rk4 = NumericalPropagator("RK4");
     NumericalPropagator prop_rk8 = NumericalPropagator("RK8");
     NumericalPropagator prop_rkf45 = NumericalPropagator("RKF45", params);
@@ -52,8 +50,7 @@ int main() {
     Real t0 = 0.0;   // initial time
     Real tf = 10.0;  // final time
 
-    std::vector<NumericalPropagator*> vec_prop = {&prop_rk4, &prop_rk8,
-                                                  &prop_rkf45};
+    std::vector<NumericalPropagator*> vec_prop = {&prop_rk4, &prop_rk8, &prop_rkf45};
     std::vector<std::chrono::duration<double>> vec_elapsed_seconds(n_methods);
     std::vector<VecX> vec_x(n_methods);
     std::vector<std::vector<Real>> vec_t_history(n_methods);
@@ -71,8 +68,7 @@ int main() {
       vec_x[j] = x;
       vec_prop[j]->GetTimeHistory(vec_t_history[j]);
       vec_prop[j]->GetStateHistory(vec_x_history[j]);
-      cout << "Finished Method: " << vec_method[j] << " - " << vec_ode_name[p]
-           << endl;
+      cout << "Finished Method: " << vec_method[j] << " - " << vec_ode_name[p] << endl;
     }
 
     vv_x.push_back(vec_x);
@@ -122,13 +118,13 @@ int main() {
   for (int p = 0; p < n_problem; p++) {
     cout << "Problem: " << vec_ode_name[p] << endl;
     cout << "----------------------------------------------------" << endl;
-    cout << setw(10) << "Method" << "  Elapsed Time (ms)"
+    cout << setw(10) << "Method"
+         << "  Elapsed Time (ms)"
          << "    Final Position" << endl;
     cout << "----------------------------------------------------" << endl;
     for (int j = 0; j < n_methods; j++) {
-      cout << setw(10) << vec_method[j] << "      "
-           << vv_elapsed_seconds[p][j].count() * 1e3 << "       "
-           << vv_x[p][j].transpose() << endl;
+      cout << setw(10) << vec_method[j] << "      " << vv_elapsed_seconds[p][j].count() * 1e3
+           << "       " << vv_x[p][j].transpose() << endl;
     }
     cout << "----------------------------------------------------" << endl;
     cout << " " << endl;

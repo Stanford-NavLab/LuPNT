@@ -5,4 +5,3 @@ Introducing LuPNT
 
 
 .. mdinclude:: ../README.md
-

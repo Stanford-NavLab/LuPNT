@@ -18,23 +18,19 @@
 
 namespace lupnt {
 
-struct GnssTransmission;
-class GnssTransmitter;
-class GnssReceiver;
+  struct GnssTransmission;
+  class GnssTransmitter;
+  class GnssReceiver;
 
-class GnssChannel : public SpaceChannel {
- public:
-  void AddTransmitter(std::shared_ptr<GnssTransmitter> &dev) {
-    tx_devices.push_back(dev);
-  }
+  class GnssChannel : public SpaceChannel {
+  public:
+    void AddTransmitter(std::shared_ptr<GnssTransmitter> &dev) { tx_devices.push_back(dev); }
 
-  void AddReceiver(std::shared_ptr<GnssReceiver> &dev) {
-    rx_devices.push_back(dev);
-  }
+    void AddReceiver(std::shared_ptr<GnssReceiver> &dev) { rx_devices.push_back(dev); }
 
-  std::vector<GnssTransmission> Receive(GnssReceiver &rx, double t);
+    std::vector<GnssTransmission> Receive(GnssReceiver &rx, double t);
 
-  std::vector<std::shared_ptr<GnssReceiver>> rx_devices;
-  std::vector<std::shared_ptr<GnssTransmitter>> tx_devices;
-};
+    std::vector<std::shared_ptr<GnssReceiver>> rx_devices;
+    std::vector<std::shared_ptr<GnssTransmitter>> tx_devices;
+  };
 }  // namespace lupnt

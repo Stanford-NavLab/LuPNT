@@ -9,11 +9,10 @@ on:
   pull_request:
 
   schedule:
-    - cron: "0 5 * * 1"  # runs at 05:00 UTC on Mondays
+    - cron: "0 5 * * 1" # runs at 05:00 UTC on Mondays
 
 jobs:
   build:
-
     runs-on: macOS-latest
 
     env:

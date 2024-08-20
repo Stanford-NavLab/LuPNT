@@ -17,8 +17,8 @@ dependencies:
   - onnx
   - openvino
   - pandas
-  - pytorch 
-  - torchvision 
+  - pytorch
+  - torchvision
   - torchaudio
   - Pillow
   - plotly

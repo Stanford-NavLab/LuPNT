@@ -51,6 +51,14 @@ namespace lupnt {
                const std::vector<std::string> &names, const std::vector<std::string> &units)
         : x_(x), frame_(coord), repres_(repres), names_(names), units_(units) {}
 
+    // deep copy constructor
+    OrbitState(const OrbitState &state)
+        : x_(state.GetVec()),
+          frame_(state.GetCoordSystem()),
+          repres_(state.GetOrbitStateRepres()),
+          names_(state.GetNames()),
+          units_(state.GetUnits()) {}
+
     Vec6 GetVec() const { return x_; }
 
     VecX GetVecX() const {

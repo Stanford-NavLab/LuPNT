@@ -18,8 +18,7 @@ int main() {
   const Real lat_gs = 48 * RAD;  // [rad]
   const Real alt_gs = 0;         // [km]
 
-  const Vec3 r_gs =
-      LatLonAlt2Cart(Vec3(lat_gs, lon_gs, alt_gs), R_EARTH, WGS84_F);
+  const Vec3 r_gs = LatLonAlt2Cart(Vec3(lat_gs, lon_gs, alt_gs), R_EARTH, WGS84_F);
 
   // Spacecraft
   const Real a = 960 + R_EARTH;    // Semimajor axis [m]

@@ -12,8 +12,8 @@ int main() {
   auto cart3 = Classical2Cart(coe3, GM_MOON);
 
   // Formatter
-  auto fmt = Eigen::IOFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, " ",
-                             " ", "", "", "", "");
+  auto fmt
+      = Eigen::IOFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, " ", " ", "", "", "", "");
 
   std::cout << coe.transpose().format(fmt) << std::endl;
   std::cout << coe2.transpose().format(fmt) << std::endl;

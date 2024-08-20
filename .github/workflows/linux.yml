@@ -9,11 +9,10 @@ on:
   pull_request:
 
   schedule:
-    - cron: "0 5 * * 1"  # runs at 05:00 UTC on Mondays
+    - cron: "0 5 * * 1" # runs at 05:00 UTC on Mondays
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     env:
@@ -43,7 +42,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.ccache
-          key: ${{ runner.os }}-ccache-${{ hashFiles('hashFile.txt') }}  # https://github.community/t/caching-for-c-builds/124529/2
+          key: ${{ runner.os }}-ccache-${{ hashFiles('hashFile.txt') }} # https://github.community/t/caching-for-c-builds/124529/2
           restore-keys: ${{ runner.os }}-ccache-
       - name: Build
         shell: bash -l {0}

@@ -16,7 +16,8 @@ int main() {
   Vec4 angles = PlanetOrientation(id, t_tdb);
 
   std::cout << "Planet: " << body << std::endl;
-  std::cout << "Epoch:  " << "TDB=" << t_tdb << " TAI=" << t_tai << std::endl;
+  std::cout << "Epoch:  "
+            << "TDB=" << t_tdb << " TAI=" << t_tai << std::endl;
 
   std::cout << "Orientation at t_tdb = " << t_tdb << " s" << std::endl;
   std::cout << "  alpha0 = " << DEG * angles(0) << std::endl;
@@ -26,8 +27,7 @@ int main() {
   std::cout << " " << std::endl;
 
   // Body to Inertial
-  Mat6d b2i_spice =
-      spice::GetFrameConversionMat(t_tai, fixed_frame, Frame::GCRF);
+  Mat6d b2i_spice = spice::GetFrameConversionMat(t_tai, fixed_frame, Frame::GCRF);
   std::cout << "PLANET FIXED to GCRF (SPICE)" << std::endl;
   // Print with clean formatting
   std::cout << b2i_spice.format(
@@ -37,16 +37,14 @@ int main() {
   std::cout << " " << std::endl;
   Mat6 b2i = RotPosVelBodyFixedToInertial(id, t_tdb);
   std::cout << "PLANET FIXED to GCRF (lupnt)" << std::endl;
-  std::cout << b2i.format(
-      Eigen::IOFormat(Eigen::StreamPrecision, 0, " ", "\n", "", "", "", ""));
+  std::cout << b2i.format(Eigen::IOFormat(Eigen::StreamPrecision, 0, " ", "\n", "", "", "", ""));
 
   std::cout << " " << std::endl;
   std::cout << " --------------------------------------------" << std::endl;
   std::cout << " " << std::endl;
 
   // Inertial to Body
-  Mat6d i2b_spice =
-      spice::GetFrameConversionMat(t_tai, Frame::GCRF, fixed_frame);
+  Mat6d i2b_spice = spice::GetFrameConversionMat(t_tai, Frame::GCRF, fixed_frame);
   std::cout << "GCRF to PLANET FIXED (SPICE)" << std::endl;
   // Print with clean formatting
   std::cout << i2b_spice.format(
@@ -56,8 +54,7 @@ int main() {
   std::cout << " " << std::endl;
   Mat6 i2b = RotPosVelInertialToBodyFixed(id, t_tdb);
   std::cout << "GCRF to PLANET FIXED (lupnt)" << std::endl;
-  std::cout << i2b.format(
-      Eigen::IOFormat(Eigen::StreamPrecision, 0, " ", "\n", "", "", "", ""));
+  std::cout << i2b.format(Eigen::IOFormat(Eigen::StreamPrecision, 0, " ", "\n", "", "", "", ""));
 
   return 0;
 }
