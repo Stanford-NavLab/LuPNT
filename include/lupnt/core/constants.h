@@ -103,7 +103,7 @@ namespace lupnt {
   static constexpr double D_EARTH_EMB = 4671.0;                     // [km]
   static constexpr double R_EARTH = 6378.137;                       // [km]
   static constexpr double R_MOON = 1737.4;                          // [km]
-  static constexpr double OMEGA_E_M = 2.6617e-6;                    // [rad/s]
+  static constexpr double OMEGA_EARTH_MOON = 2.6617e-6;             // [rad/s]
   static constexpr double D_MOON_EMB = D_EARTH_MOON - D_EARTH_EMB;  // [km]
 
   static constexpr double WGS84_A = 6378.137;             // [km]

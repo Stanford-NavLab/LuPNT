@@ -99,6 +99,9 @@ public:
                             Mat6d *stm = nullptr) override {
     PYBIND11_OVERRIDE_PURE(OrbitState, T, PropagateState, state, t0, tf, stm);
   }
+  Vec6 ComputeRates(Real t, const Vec6 &x) const override {
+    PYBIND11_OVERRIDE_PURE(Vec6, T, ComputeRates, t, x);
+  }
 };
 
 template <class T> class PyNumOrbDyn : public PyINumOrbDyn<T> {
@@ -108,6 +111,9 @@ public:
   OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                             Mat6d *stm = nullptr) override {
     PYBIND11_OVERRIDE(OrbitState, T, PropagateState, state, t0, tf, stm);
+  }
+  Vec6 ComputeRates(Real t, const Vec6 &x) const override {
+    PYBIND11_OVERRIDE(Vec6, T, ComputeRates, t, x);
   }
 };
 
@@ -182,6 +188,12 @@ public:
           },                                                                                      \
           py::arg("state"), py::arg("t0"), py::arg("tf"), py::arg("stm") = false);
 
+// std::function<VecX(Real, const VecX &)> ode_wrapper(
+//     const std::function<VecX(double, const VecXd &)> &f) {
+//   return [f](Real t, const VecX &x) -> VecX { return f(t, x.cast<double>()).cast<Real>(); };
+// }
+using ODEWrapper = std::function<VecXd(double, const VecXd &)>;
+
 void init_dynamics(py::module &m) {
   // IntegratorType
   py::enum_<IntegratorType>(m, "IntegratorType")
@@ -209,6 +221,8 @@ void init_dynamics(py::module &m) {
   // NumericalOrbitDynamics
   py::class_<NumericalOrbitDynamics, IOrbitDynamics, PyINumOrbDyn<NumericalOrbitDynamics>>(
       m, "NumericalOrbitDynamics")
+      // .def(py::init<ODEWrapper, IntegratorType>(), py::arg("odefunc"),
+      //      py::arg("integ_type") = default_integrator)
       .def("get_time_step", [](NumericalOrbitDynamics &dyn) { return dyn.GetTimeStep().val(); })
       .def("set_time_step", [](NumericalOrbitDynamics &dyn, double dt) { dyn.SetTimeStep(dt); });
 

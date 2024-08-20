@@ -14,6 +14,9 @@ DEG: float
 DEG_ARCSEC: float
 DEIMOS: NaifId
 DELAUNAY_OE: OrbitStateRepres
+D_EARTH_EMB: float
+D_EARTH_MOON: float
+D_MOON_EMB: float
 E: float
 EARTH: NaifId
 EARTH_MOON_BARYCENTER: NaifId
@@ -26,11 +29,19 @@ EPS: float
 EQUINOTICAL_OE: OrbitStateRepres
 FOOT_M: float
 GCRF: Frame
+GM_CERES: float
 GM_EARTH: float
+GM_JUPITER_SYSTEM: float
+GM_MARS_SYSTEM: float
 GM_MERCURY: float
 GM_MOON: float
+GM_NEPTUNE_SYSTEM: float
+GM_PLUTO_SYSTEM: float
+GM_SATURN_SYSTEM: float
 GM_SUN: float
+GM_URANUS_SYSTEM: float
 GM_VENUS: float
+GM_VESTA: float
 GPS: str
 GSE: Frame
 HOURS_DAY: float
@@ -69,6 +80,7 @@ MOON_PA: Frame
 M_KM: float
 NEPTUNE_BARYCENTER: NaifId
 NUM_SECS: float
+OMEGA_EARTH_MOON: float
 PHOBOS: NaifId
 PI: float
 PI_OVER_TWO: float
