@@ -233,7 +233,7 @@ namespace lupnt {
 
   class NBodyDynamics : public NumericalOrbitDynamics {
   private:
-    Body central_body_;
+    Frame frame_ = Frame::GCRF;
     std::vector<Body> bodies_;
     NumericalPropagator propagator;
     ODE odefunc;
@@ -253,10 +253,11 @@ namespace lupnt {
 
     void AddBody(const Body &body) {
       for (auto &b : bodies_) {
-        assert(b.id != body.id && "Body already added");
+        if (b.id == body.id) throw std::runtime_error("Body already added");
       }
       bodies_.push_back(body);
     }
+    void GetBodies(std::vector<Body> &bodies) { bodies = bodies_; }
 
     void RemoveBody(const Body &body) {
       for (auto it = bodies_.begin(); it != bodies_.end(); ++it) {
@@ -267,10 +268,9 @@ namespace lupnt {
       }
     }
 
-    void SetPrimaryBody(const Body &body) {
-      central_body_ = body;
-      bodies_.push_back(body);
-    }
+    void SetFrame(Frame frame) { frame_ = frame; }
+    void GetFrame(Frame &frame) { frame = frame_; }
+
     void SetMass(Real mass) { mass_ = mass; }
     void SetArea(Real area) { area_ = area; }
     void SetSrpCoeff(Real CR) { CR_ = CR; }

@@ -170,12 +170,12 @@ def plot_frame(
     tip_scale: float = 1,
     width: float = 2,
 ) -> None:
-    plot_3d_arrow(fig, origin, rotation[0], length_scale, tip_scale, "red", width)
-    plot_3d_arrow(fig, origin, rotation[1], length_scale, tip_scale, "green", width)
-    plot_3d_arrow(fig, origin, rotation[2], length_scale, tip_scale, "blue", width)
+    plot_arrow3(fig, origin, rotation[0], length_scale, tip_scale, "red", width)
+    plot_arrow3(fig, origin, rotation[1], length_scale, tip_scale, "green", width)
+    plot_arrow3(fig, origin, rotation[2], length_scale, tip_scale, "blue", width)
 
 
-def plot_3d_arrow(
+def plot_arrow3(
     fig: go.Figure,
     origin: np.ndarray = np.zeros(3),
     direction: np.ndarray = np.array([1, 0, 0]),
@@ -263,20 +263,14 @@ def plot_orbits(
         fig.add_scatter3d(
             **dict(x=rv[:, t, 0], y=rv[:, t, 1], z=rv[:, t, 2]),
             mode="markers",
-            marker=dict(color=color, size=4, line=dict(color=color, width=0.5)),
+            marker=dict(
+                color=color, size=marker_size, line=dict(color=color, width=0.5)
+            ),
             name="sat_markers",
             showlegend=False,
         )
 
     # Dummy trace
-    fig.add_scatter3d(
-        **dict(x=None, y=None, z=None),
-        mode="markers+lines",
-        marker=dict(color=color, size=marker_size, line=dict(color=color, width=0.5)),
-        line=dict(color=color, width=3),
-        name="Satellite",
-    )
-
     c = 220
     axis_dict = dict(
         linecolor=f"rgb({c},{c},{c})",

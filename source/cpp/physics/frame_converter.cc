@@ -28,6 +28,23 @@
 
 namespace lupnt {
 
+  std::map<Frame, NaifId> frame_centers = {
+      // Earth
+      {Frame::ITRF, NaifId::EARTH},
+      {Frame::ECEF, NaifId::EARTH},
+      {Frame::GCRF, NaifId::EARTH},
+      {Frame::EME, NaifId::EARTH},
+      {Frame::ECI, NaifId::EARTH},
+      {Frame::ICRF, NaifId::SOLAR_SYSTEM_BARYCENTER},
+      // Moon
+      {Frame::MOON_ME, NaifId::MOON},
+      {Frame::MOON_CI, NaifId::MOON},
+      {Frame::MOON_PA, NaifId::MOON},
+      // Solar System
+      {Frame::MARS_FIXED, NaifId::MARS},
+      {Frame::VENUS_FIXED, NaifId::VENUS},
+  };
+
   std::map<std::pair<Frame, Frame>, std::function<Vec6(Real, const Vec6& rv)>> frame_conversions = {
       FRAME_CONVERSION(GCRF, ITRF, GCRF2ITRF),
       FRAME_CONVERSION(ITRF, GCRF, ITRF2GCRF),
@@ -124,7 +141,21 @@ namespace lupnt {
     return CartesianOrbitState(rv_out, frame_out);
   }
 
-  Vec3 ConvertFrame(Real t_tai, const Vec3& r_in, Frame frame_in, Frame frame_out) {
+  Vec3 ConvertFrame(Real t_tai, const Vec3& r_in, Frame frame_in, Frame frame_out,
+                    bool rotate_only) {
+    if (rotate_only) {
+      Vec6 zeros = Vec6::Zero();
+      Vec3 translation = ConvertFrame(t_tai, zeros, frame_in, frame_out).head(3);
+
+      MatX6 rv_in(3, 6);
+      rv_in.block(0, 0, 3, 3) = Mat3::Identity();
+      MatX6 rv_out = ConvertFrame(t_tai, rv_in, frame_in, frame_out);
+
+      // Rot contains the basis vectors of frame_in (row-stacked) expressed in frame_out
+      Mat3 Rot = rv_out.block(0, 0, 3, 3).rowwise() - translation.transpose();
+      Vec3 r_out = Rot.transpose() * r_in;
+      return r_out;
+    }
     Vec6 rv_in;
     rv_in << r_in, Vec3::Zero();
     Vec6 rv_out_6 = ConvertFrame(t_tai, rv_in, frame_in, frame_out);
@@ -139,12 +170,12 @@ namespace lupnt {
     return rv_out;
   }
 
-  MatX3 ConvertFrame(Real t_tai, const MatX3& r_in, Frame frame_in, Frame frame_out) {
+  MatX3 ConvertFrame(Real t_tai, const MatX3& r_in, Frame frame_in, Frame frame_out,
+                     bool rotate_only) {
     MatX3 r_out(r_in.rows(), 3);
     for (int i = 0; i < r_in.rows(); i++) {
-      Vec6 rv_in;
-      rv_in << r_in.row(i).transpose(), Vec3::Zero();
-      r_out.row(i) = ConvertFrame(t_tai, rv_in, frame_in, frame_out).head(3);
+      Vec3 r_in_ = r_in.row(i).transpose();
+      r_out.row(i) = ConvertFrame(t_tai, r_in_, frame_in, frame_out, rotate_only).head(3);
     }
     return r_out;
   }
@@ -157,12 +188,11 @@ namespace lupnt {
     return rv_out;
   }
 
-  MatX3 ConvertFrame(VecX t_tai, const Vec3& r_in, Frame frame_in, Frame frame_out) {
+  MatX3 ConvertFrame(VecX t_tai, const Vec3& r_in, Frame frame_in, Frame frame_out,
+                     bool rotate_only) {
     MatX3 r_out(t_tai.size(), 3);
-    Vec6 rv_in;
-    rv_in << r_in, Vec3::Zero();
     for (int i = 0; i < t_tai.size(); i++)
-      r_out.row(i) = ConvertFrame(t_tai(i), rv_in, frame_in, frame_out).head(3);
+      r_out.row(i) = ConvertFrame(t_tai(i), r_in, frame_in, frame_out, rotate_only).head(3);
     return r_out;
   }
 
@@ -175,12 +205,15 @@ namespace lupnt {
     return rv_out;
   }
 
-  MatX3 ConvertFrame(VecX t_tai, const MatX3& r_in, Frame frame_in, Frame frame_out) {
+  MatX3 ConvertFrame(VecX t_tai, const MatX3& r_in, Frame frame_in, Frame frame_out,
+                     bool rotate_only) {
     assert(t_tai.size() == r_in.rows() && "Epoch and r_in must have same size");
-    MatX6 rv_in(t_tai.size(), 6);
-    rv_in << r_in, MatX3::Zero(t_tai.size(), 3);
-    MatX6 rv_out = ConvertFrame(t_tai, rv_in, frame_in, frame_out);
-    return rv_out.leftCols(3);
+    MatX3 r_out(t_tai.size(), 3);
+    for (int i = 0; i < t_tai.size(); i++) {
+      Vec3 r_in_ = r_in.row(i).transpose();
+      r_out.row(i) = ConvertFrame(t_tai(i), r_in_, frame_in, frame_out, rotate_only);
+    }
+    return r_out;
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 34

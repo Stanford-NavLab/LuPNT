@@ -267,6 +267,13 @@ void init_dynamics(py::module &m) {
       .def("compute_rates", &def_compute_rates<J2KeplerianDynamics>, py::arg("t"), py::arg("x"))
       .I_ORBIT_DYNAMICS_METHODS(J2KeplerianDynamics);
 
+  // NBodyDynamics
+  py::class_<NBodyDynamics, NumericalOrbitDynamics, PyNumOrbDyn<NBodyDynamics>>(m, "NBodyDynamics")
+      .def(py::init<IntegratorType>(), py::arg("integ_type") = default_integrator)
+      .def("add_body", &NBodyDynamics::AddBody, py::arg("body"))
+      .def("get_bodies", &NBodyDynamics::GetBodies)
+      .def("set_frame", &NBodyDynamics::SetFrame, py::arg("frame"));
+
   // Body
   py::class_<Body>(m, "Body")
       .def(py::init<>())

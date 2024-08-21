@@ -54,8 +54,9 @@ namespace lupnt {
         return EquinoctialOE(xf, state.GetFrame());
       }
       default:
-        assert(false && "OrbitState type not supported");
+        break;
     }
+    throw std::runtime_error("OrbitState type not supported");
   }
 
   Vec6 KeplerianDynamics::Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm) {

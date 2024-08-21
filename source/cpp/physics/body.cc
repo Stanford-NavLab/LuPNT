@@ -23,7 +23,9 @@ namespace lupnt {
     moon.inertial_frame = Frame::MOON_CI;
     moon.GM = GM_MOON;
     moon.R = R_MOON;
-    moon.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
+    moon.use_gravity_field = (n_max > 1 && m_max > 1);
+    if (moon.use_gravity_field)
+      moon.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
     return moon;
   }
 
@@ -37,7 +39,9 @@ namespace lupnt {
     earth.inertial_frame = Frame::GCRF;
     earth.GM = GM_EARTH;
     earth.R = R_EARTH;
-    earth.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
+    earth.use_gravity_field = (n_max > 1 && m_max > 1);
+    if (earth.use_gravity_field)
+      earth.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
 
     return earth;
   }

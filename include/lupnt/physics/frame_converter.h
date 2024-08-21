@@ -24,6 +24,7 @@ namespace lupnt {
   class CartesianOrbitState;
 
   enum Frame {
+    // Earth
     ITRF,         // International Terrestrial Reference Frame
     ECEF = ITRF,  // Earth-Centered Earth-Fixed
     GCRF,         // Geocentric Reference System
@@ -35,34 +36,41 @@ namespace lupnt {
     MOD,          // Mean of date equatorial system
     TOD,          // True of date equatorial system
     EMR,          // Earth-Moon Rotating Frame
-    MOON_CI,      // Moon-centered Inertial Frame (Axis aligened with ICRF)
-    MOON_PA,      // Moon-Fixed with principal axes
-    MOON_ME,      // Moon-Fixed with mean-Earth / polar axes
-    MOON_OP,      // Earth Orbit Frame
+    // Moon
+    MOON_CI,  // Moon-centered Inertial Frame (Axis aligened with ICRF)
+    MOON_PA,  // Moon-Fixed with principal axes
+    MOON_ME,  // Moon-Fixed with mean-Earth / polar axes
+    MOON_OP,  // Earth Orbit Frame
+    // Solar System
     MARS_FIXED,   // Mars fixed frame
     VENUS_FIXED,  // Venus fixed frame
   };
 
   std::ostream &operator<<(std::ostream &os, Frame frame);
 
+  extern std::map<Frame, NaifId> frame_centers;
   extern std::map<std::pair<Frame, Frame>, std::function<Vec6(Real, const Vec6 &rv)>>
       frame_conversions;
 
   // Vec = func(real, Vec)
   Vec6 ConvertFrame(Real t_tai, const Vec6 &rv_in, Frame frame_in, Frame frame_out);
-  Vec3 ConvertFrame(Real t_tai, const Vec3 &r_in, Frame frame_in, Frame frame_out);
+  Vec3 ConvertFrame(Real t_tai, const Vec3 &r_in, Frame frame_in, Frame frame_out,
+                    bool rotate_only = false);
 
   // Mat = func(real, Mat)
   MatX6 ConvertFrame(Real t_tai, const MatX6 &rv_in, Frame frame_in, Frame frame_out);
-  MatX3 ConvertFrame(Real t_tai, const MatX3 &r_in, Frame frame_in, Frame frame_out);
+  MatX3 ConvertFrame(Real t_tai, const MatX3 &r_in, Frame frame_in, Frame frame_out,
+                     bool rotate_only = false);
 
   // Mat = func(Vec, Vec)
   MatX6 ConvertFrame(VecX t_tai, const Vec6 &rv_in, Frame frame_in, Frame frame_out);
-  MatX3 ConvertFrame(VecX t_tai, const Vec3 &r_in, Frame frame_in, Frame frame_out);
+  MatX3 ConvertFrame(VecX t_tai, const Vec3 &r_in, Frame frame_in, Frame frame_out,
+                     bool rotate_only = false);
 
   // Mat = func(Vec, Mat)
   MatX6 ConvertFrame(VecX t_tai, const MatX6 &rv_in, Frame frame_in, Frame frame_out);
-  MatX3 ConvertFrame(VecX t_tai, const MatX3 &r_in, Frame frame_in, Frame frame_out);
+  MatX3 ConvertFrame(VecX t_tai, const MatX3 &r_in, Frame frame_in, Frame frame_out,
+                     bool rotate_only = false);
 
   CartesianOrbitState ConvertFrame(Real t_tai, const CartesianOrbitState &state_in,
                                    Frame frame_out);

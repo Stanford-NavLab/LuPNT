@@ -5,6 +5,9 @@
 #include <mutex>
 #include <string>
 
+#include "lupnt/data/kernels.h"
+#include "lupnt/physics/frame_converter.h"
+
 namespace lupnt {
 
   namespace EphemID {
@@ -281,6 +284,10 @@ namespace lupnt {
     double emr = ephemeris_data->header.constants["EMRAT"];
     Vec6 rv_earth = rv_emb - rv_moon / (1. + emr);
     return rv_earth;
+  }
+
+  Vec6 GetBodyPosVel(Real t_tai, NaifId target, Frame frame) {
+    return GetBodyPosVel(t_tai, frame_centers.at(frame), target, frame);
   }
 
   Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target, Frame frame) {
