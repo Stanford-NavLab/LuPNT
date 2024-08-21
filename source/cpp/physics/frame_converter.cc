@@ -381,28 +381,28 @@ namespace lupnt {
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 39
   Vec6 GCRF2ICRF(Real t_tai, const Vec6& rv_gcrf) {
-    Vec6 rv_earth2ssb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::SSB);
+    Vec6 rv_earth2ssb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::SSB, Frame::GCRF);
     Vec6 rv_icrf = rv_gcrf + rv_earth2ssb;
     return rv_icrf;
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 40
   Vec6 ICRF2GCRF(Real t_tai, const Vec6& rv_icrf) {
-    Vec6 rv_ssb2earth = GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH);
+    Vec6 rv_ssb2earth = GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH, Frame::GCRF);
     Vec6 rv_gcrf = rv_icrf + rv_ssb2earth;
     return rv_gcrf;
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 40
   Vec6 GCRF2MoonCI(Real t_tai, const Vec6& rv_gcrf) {
-    Vec6 rv_earth2moon = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON);
+    Vec6 rv_earth2moon = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::GCRF);
     Vec6 rv_mi = rv_gcrf + rv_earth2moon;
     return rv_mi;
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 40
   Vec6 MoonMI2GCRF(Real t_tai, const Vec6& rv_mi) {
-    Vec6 rv_earth2moon = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON);
+    Vec6 rv_earth2moon = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::GCRF);
     Vec6 rv_gcrf = rv_mi - rv_earth2moon;
     return rv_gcrf;
   }
@@ -506,14 +506,14 @@ namespace lupnt {
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 48
   Vec6 GCRF2EMR(Real t_tai, const Vec6& rv_gcrf) {
-    Vec6 rv_earth2emb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::EMB);
+    Vec6 rv_earth2emb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::EMB, Frame::GCRF);
     Vec6 rv_emr = Inertial2Synodic(rv_earth2emb, rv_gcrf);
     return rv_emr;
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 48
   Vec6 EMR2GCRF(Real t_tai, const Vec6& rv_emr) {
-    Vec6 rv_earth2emb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::EMB);
+    Vec6 rv_earth2emb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::EMB, Frame::GCRF);
     Vec6 rv_gcrf = Synodic2Intertial(rv_earth2emb, rv_emr);
     return rv_gcrf;
   }
@@ -554,7 +554,7 @@ namespace lupnt {
   /// T. A. Ely, ‘Stable Constellations of Frozen Elliptical Inclined Lunar Orbits’, J of
   /// Astronaut Sci, vol. 53, no. 3, pp. 301–316, Sep. 2005, doi: 10.1007/BF03546355.
   Vec6 MoonOP2MoonME(Real t_tai, const Vec6& rv_op) {
-    Vec6 rv_m2e = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH);
+    Vec6 rv_m2e = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH, MOON_ME);
     Vec3 r = rv_m2e.head(3);
     Vec3 v = rv_m2e.tail(3);
 

@@ -52,7 +52,7 @@ namespace lupnt {
 
       // Solar radiation pressure
       if (use_srp_ && body.id != SUN) {
-        Vec3 r_sun = GetBodyPosVel(t_tai, body.id, NaifId::SUN).head(3);
+        Vec3 r_sun = GetBodyPosVel(t_tai, body.id, NaifId::SUN, frame_).head(3);
         Vec3 a_srp = Illumination(r, r_sun, body.R)
                      * AccelerationSolarRadiation(r, r_sun, area_, mass_, CR_, P_SUN, AU);
         a += a_srp;
