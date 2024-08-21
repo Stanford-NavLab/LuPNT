@@ -60,15 +60,16 @@ int main() {
   dyn0.SetTimeStep(dt_prop);
   MatX6 rv_case0_ci = dyn0.Propagate(rv0_ci, t0, tfs);
 
-  Vec6 rv0_earth2moon_ci = GetBodyPosVel(t0, EARTH, MOON, MOON_CI);
-  Vec3 e_earth2moon_ci = rv0_earth2moon_ci.head(3).normalized();
+  Vec6 rv0_moon2earth_ci = GetBodyPosVel(t0, MOON, EARTH, MOON_CI);
+  Vec6 rv0_moon2earth_op = GetBodyPosVel(t0, MOON, EARTH, MOON_OP);
+  Vec3 e_moon2earth_ci = rv0_moon2earth_ci.head(3).normalized();
 
   // Plot
   auto fig0 = plt::figure(true);
   plt::hold(true);
   plot_body(MOON);
   plot3(rv_case0_ci.col(0), rv_case0_ci.col(1), rv_case0_ci.col(2));
-  plot3(e_earth2moon_ci * 2 * R_MOON, "r");
+  plot3(e_moon2earth_ci * 2 * R_MOON, "r");
   set_lim(12e3);
   fig0->draw();
 
@@ -80,15 +81,16 @@ int main() {
   cout << "Moon period: " << moon_period / SECS_DAY << " days" << endl;
 
   // Time
-  dt_total = 1.25 * DAYS_YEAR * SECS_DAY;  // [s] Total propagation time
-  dt_step = 60 * SECS_MINUTE;              // [s] Time step
-  dt_prop = 180;                           // [s] Propagation time step
+  dt_total = 2 * DAYS_YEAR * SECS_DAY;  // [s] Total propagation time
+  dt_step = 60 * SECS_MINUTE;           // [s] Time step
+  dt_prop = 180;                        // [s] Propagation time step
 
   tspan = arange(0, dt_total, dt_step);  // [s] Time span
   tfs = t0 + tspan.array();              // [s] Final times
 
   // Moon
   KeplerianDynamics dyn_moon(GM_EARTH);
+  Vec6 rv0_earth2moon_ci = -rv0_moon2earth_ci;
   Vec6 coe0_moon_ci = Cart2Classical(rv0_earth2moon_ci, GM_EARTH);
   MatX6 coe_moon_ci = dyn_moon.Propagate(coe0_moon_ci, t0, tfs);
   MatX6 rv_moon_ci = Classical2Cart(coe_moon_ci, GM_EARTH);
@@ -97,7 +99,7 @@ int main() {
   auto fig11 = plt::figure(true);
   plt::hold(true);
   plot_body(EARTH);
-  plot_body(MOON, rv0_earth2moon_ci.head(3));
+  plot_body(MOON, -rv0_moon2earth_ci.head(3));
   plot3(rv_moon_ci.col(0), rv_moon_ci.col(1), rv_moon_ci.col(2));
   set_lim(D_EARTH_MOON * 1.1);
   fig11->draw();

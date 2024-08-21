@@ -294,40 +294,45 @@ namespace lupnt {
     double emr = ephemeris_data->header.constants["EMRAT"];
 
     // Earth-Moon system
-    if (center == NaifId::EARTH && target == NaifId::MOON)
-      return GetBodyPosVelKernel(t_tdb, NaifId::MOON);
-    if (center == NaifId::MOON && target == NaifId::EARTH)
-      return -GetBodyPosVelKernel(t_tdb, NaifId::MOON);
+    if (center == NaifId::EARTH && target == NaifId::MOON) {
+      rv_target = GetBodyPosVelKernel(t_tdb, NaifId::MOON);
+    } else if (center == NaifId::MOON && target == NaifId::EARTH) {
+      rv_center = GetBodyPosVelKernel(t_tdb, NaifId::MOON);
 
-    if (center == NaifId::EMB && target == NaifId::MOON)
-      return GetBodyPosVelKernel(t_tdb, NaifId::MOON) * emr / (1. + emr);
-    if (center == NaifId::MOON && target == NaifId::EMB)
-      return -GetBodyPosVelKernel(t_tdb, NaifId::MOON) * emr / (1. + emr);
+    } else if (center == NaifId::EMB && target == NaifId::MOON) {
+      rv_target = GetBodyPosVelKernel(t_tdb, NaifId::MOON);
+      rv_center = rv_target / (1. + emr);
+    } else if (center == NaifId::MOON && target == NaifId::EMB) {
+      rv_center = GetBodyPosVelKernel(t_tdb, NaifId::MOON);
+      rv_target = rv_center * (1. + emr);
 
-    if (center == NaifId::EMB && target == NaifId::EARTH)
-      return -GetBodyPosVelKernel(t_tdb, NaifId::MOON) / (1. + emr);
-    if (center == NaifId::EARTH && target == NaifId::EMB)
-      return GetBodyPosVelKernel(t_tdb, NaifId::MOON) / (1. + emr);
+    } else if (center == NaifId::EMB && target == NaifId::EARTH) {
+      rv_center = GetBodyPosVelKernel(t_tdb, NaifId::MOON) / (1. + emr);
+    } else if (center == NaifId::EARTH && target == NaifId::EMB) {
+      rv_target = GetBodyPosVelKernel(t_tdb, NaifId::MOON) / (1. + emr);
+    } else {
+      // Others
+      if (center == NaifId::EARTH) {
+        rv_center = GetEarthPosVel(t_tdb);
+      } else if (center == NaifId::MOON) {
+        rv_center = GetEarthPosVel(t_tdb) + GetBodyPosVelKernel(t_tdb, NaifId::MOON);
+      } else if (center != NaifId::SSB) {
+        rv_center = GetBodyPosVelKernel(t_tdb, center);
+      }
 
-    if (center == NaifId::EARTH) {
-      rv_center = GetEarthPosVel(t_tdb);
-    } else if (center == NaifId::MOON) {
-      rv_center = GetEarthPosVel(t_tdb) + GetBodyPosVelKernel(t_tdb, NaifId::MOON);
-    } else if (center != NaifId::SSB) {
-      rv_center = GetBodyPosVelKernel(t_tdb, center);
+      if (target == NaifId::EARTH) {
+        rv_target = GetEarthPosVel(t_tdb);
+      } else if (target == NaifId::MOON) {
+        rv_target = GetEarthPosVel(t_tdb) + GetBodyPosVelKernel(t_tdb, NaifId::MOON);
+      } else if (target != NaifId::SSB) {
+        rv_target = GetBodyPosVelKernel(t_tdb, target);
+      }
     }
 
-    if (target == NaifId::EARTH) {
-      rv_target = GetEarthPosVel(t_tdb);
-    } else if (target == NaifId::MOON) {
-      rv_target = GetEarthPosVel(t_tdb) + GetBodyPosVelKernel(t_tdb, NaifId::MOON);
-    } else if (target != NaifId::SSB) {
-      rv_target = GetBodyPosVelKernel(t_tdb, target);
-    }
-
-    Vec6 rv_gcrf = rv_target - rv_center;
-    if (frame == Frame::GCRF) return rv_gcrf;
-    return ConvertFrame(t_tai, rv_gcrf, Frame::GCRF, frame);
+    if (frame == Frame::GCRF) return rv_target - rv_center;
+    rv_target = ConvertFrame(t_tai, rv_target, Frame::GCRF, frame);
+    rv_center = ConvertFrame(t_tai, rv_center, Frame::GCRF, frame);
+    return rv_target - rv_center;
   }
 
   MatX6 GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target, Frame frame) {

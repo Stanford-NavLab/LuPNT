@@ -493,7 +493,7 @@ namespace lupnt {
   /// T. A. Ely, ‘Stable Constellations of Frozen Elliptical Inclined Lunar Orbits’, J of
   /// Astronaut Sci, vol. 53, no. 3, pp. 301–316, Sep. 2005, doi: 10.1007/BF03546355.
   Vec6 MoonME2MoonOP(Real t_tai, const Vec6& rv_me) {
-    Vec6 rv_m2e = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH);
+    Vec6 rv_m2e = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH, MOON_ME);
     Vec3 r = rv_m2e.head(3);
     Vec3 v = rv_m2e.tail(3);
 
