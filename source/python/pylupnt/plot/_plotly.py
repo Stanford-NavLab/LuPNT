@@ -5,6 +5,7 @@ from sklearn.cluster import KMeans
 from sklearn.utils import shuffle
 from typing import Union
 import plotly.graph_objs as go
+from plotly.express.colors import sample_colorscale
 import plotly.express as px
 import plotly.io as pio
 import pylupnt as pnt
@@ -26,7 +27,7 @@ pio.templates["lupnt"] = go.layout.Template(
         margin=dict(l=100, r=10, t=10, b=10),
     )
 )
-PLOTLY_COLORS = px.colors.qualitative.D3
+plotly_colors = px.colors.qualitative.D3
 pio.templates.default = "plotly_white+lupnt"
 MOON_SURFACE = Image.open(
     os.path.join(utils.LUPNT_DATA_PATH, "topo", "moon_surface.jpeg")
@@ -234,7 +235,13 @@ def plot_3d_arrow(
 
 
 def plot_orbits(
-    fig: go.Figure, rv: np.ndarray, t: int = 0, marker_size=4, scale=3, **kwargs
+    fig: go.Figure,
+    rv: np.ndarray,
+    t: int = None,
+    marker_size: float = 4,
+    scale: float = 3,
+    color: Union[str, list[str]] = plotly_colors,
+    **kwargs,
 ) -> go.Figure:
     rv = rv / 10**scale
 
@@ -246,7 +253,9 @@ def plot_orbits(
         fig.add_scatter3d(
             **dict(x=rv[i, :, 0], y=rv[i, :, 1], z=rv[i, :, 2]),
             mode="lines",
-            line=dict(color="black", width=3),
+            line=dict(
+                color=color[i % len(color)] if type(color) == list else color, width=3
+            ),
             name="sat_lines",
             showlegend=False,
         )
@@ -254,7 +263,7 @@ def plot_orbits(
         fig.add_scatter3d(
             **dict(x=rv[:, t, 0], y=rv[:, t, 1], z=rv[:, t, 2]),
             mode="markers",
-            marker=dict(color="black", size=4, line=dict(color="black", width=0.5)),
+            marker=dict(color=color, size=4, line=dict(color=color, width=0.5)),
             name="sat_markers",
             showlegend=False,
         )
@@ -263,10 +272,8 @@ def plot_orbits(
     fig.add_scatter3d(
         **dict(x=None, y=None, z=None),
         mode="markers+lines",
-        marker=dict(
-            color="black", size=marker_size, line=dict(color="black", width=0.5)
-        ),
-        line=dict(color="black", width=3),
+        marker=dict(color=color, size=marker_size, line=dict(color=color, width=0.5)),
+        line=dict(color=color, width=3),
         name="Satellite",
     )
 

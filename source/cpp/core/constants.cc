@@ -1,6 +1,19 @@
 #include "lupnt/core/constants.h"
 
 namespace lupnt {
+  double GetBodyRadius(NaifId body) {
+    switch (body) {
+      case NaifId::MOON:
+        return R_MOON;
+      case NaifId::EARTH:
+        return R_EARTH;
+      default:
+        break;
+    }
+    throw std::runtime_error("Body radius not defined");
+    return -1;
+  }
+
   const std::ostream& operator<<(std::ostream& os, NaifId id) {
     switch (id) {
       case NaifId::SOLAR_SYSTEM_BARYCENTER:

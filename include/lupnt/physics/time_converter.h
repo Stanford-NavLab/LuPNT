@@ -50,8 +50,8 @@ namespace lupnt {
 
   std::tuple<int, int, int, int, int, Real> MJD2Gregorian(Real mjd);
 
-  std::string MJD2GregorianString(Real mjd, int precision);
-  std::string Time2GregorianString(Real t, int precision);
+  std::string MJD2GregorianString(Real mjd, int precision = 3);
+  std::string Time2GregorianString(Real t, int precision = 3);
 
   VEC_DEF_REAL(UTC2UT1)
   VEC_DEF_REAL(UT12UTC)

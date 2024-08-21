@@ -39,7 +39,8 @@ int main() {
     Real mjd_utc = mjd0_utc + minute / MINS_DAY;  // [days]
     Real dt = (mjd_utc - mjd0_utc) * SECS_DAY;    // [s]
 
-    Vec6 coe = KeplerianDynamics::PropagateClassicalOE(coe0, dt, GM_EARTH);
+    KeplerianDynamics dyn(GM_EARTH);
+    Vec6 coe = dyn.PropagateClassicalOE(coe0, 0, dt);
     Vec6 rv_eci = Classical2Cart(coe, GM_EARTH);
 
     // Note: it should be UT1

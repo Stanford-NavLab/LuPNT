@@ -100,7 +100,6 @@ namespace lupnt {
 
     // Perihelion distance, semimajor axis and mean motion
     Real a = p / (1.0 - e * e);
-    Real n = sqrt(GM / abs(a * a * a));
 
     // Mean anomaly and time of perihelion passage
     Real M;
@@ -216,6 +215,7 @@ namespace lupnt {
   }
 
   Vec6 Classical2QuasiNonsing(const Vec6 &coe, Real GM) {
+    (void)GM;
     auto [a, e, i, Omega, w, M] = unpack(coe);
 
     Real u = w + M;
@@ -231,6 +231,7 @@ namespace lupnt {
   }
 
   Vec6 Classical2Equinoctial(const Vec6 &coe, Real GM) {
+    (void)GM;
     auto [a, e, i, Omega, w, M] = unpack(coe);
 
     Real f = Mean2TrueAnomaly(M, e);
@@ -295,6 +296,7 @@ namespace lupnt {
   }
 
   Vec6 Equinoctial2Classical(const Vec6 &equioe, Real GM) {
+    (void)GM;
     auto [a, Psi, tq1, tq2, p1, p2] = unpack(equioe);
 
     Real Omega = atan2(p2, p1);

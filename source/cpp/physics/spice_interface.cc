@@ -212,7 +212,6 @@ namespace lupnt {
 
       Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
 
-      SpiceInt bodyname;
       SpiceDouble et_spice = (SpiceDouble)t_tdb.val();
       double xform[6][6];
       Mat6d M_rot;

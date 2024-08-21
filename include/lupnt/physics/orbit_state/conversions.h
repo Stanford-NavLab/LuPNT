@@ -24,12 +24,12 @@ namespace lupnt {
   Vec6 Classical2Cart(const Vec6 &coe, Real GM);
 
   // - 2 QuasiNonsingOE
-  QuasiNonsingOE Classical2QuasiNonsing(const ClassicalOE &coe, Real GM);
-  Vec6 Classical2QuasiNonsing(const Vec6 &coe, Real GM);
+  QuasiNonsingOE Classical2QuasiNonsing(const ClassicalOE &coe, Real GM = 0);
+  Vec6 Classical2QuasiNonsing(const Vec6 &coe, Real GM = 0);
 
   // - 2 EquinoctialOE
-  EquinoctialOE Classical2Equinoctial(const ClassicalOE &coe, Real GM);
-  Vec6 Classical2Equinoctial(const Vec6 &coe, Real GM);
+  EquinoctialOE Classical2Equinoctial(const ClassicalOE &coe, Real GM = 0);
+  Vec6 Classical2Equinoctial(const Vec6 &coe, Real GM = 0);
 
   // - 2 DelaunayOE
   DelaunayOE Classical2Delaunay(const ClassicalOE &coe, Real GM);
@@ -37,13 +37,13 @@ namespace lupnt {
 
   // From QuasiNonsingOE
   // - 2 ClassicalOE
-  ClassicalOE QuasiNonsing2Classical(const QuasiNonsingOE &qnsoe, Real GM);
-  Vec6 QuasiNonsing2Classical(const Vec6 &qnsoeVec, Real GM);
+  ClassicalOE QuasiNonsing2Classical(const QuasiNonsingOE &qnsoe, Real GM = 0);
+  Vec6 QuasiNonsing2Classical(const Vec6 &qnsoeVec, Real GM = 0);
 
   // From EquinoctialOE
   // - 2 ClassicalOE
-  ClassicalOE Equinoctial2Classical(const EquinoctialOE &eqoe, Real GM);
-  Vec6 Equinoctial2Classical(const Vec6 &eqoe, Real GM);
+  ClassicalOE Equinoctial2Classical(const EquinoctialOE &eqoe, Real GM = 0);
+  Vec6 Equinoctial2Classical(const Vec6 &eqoe, Real GM = 0);
 
   // From DelaunayOE
   // - 2 ClassicalOE

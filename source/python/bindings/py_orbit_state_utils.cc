@@ -105,4 +105,6 @@ void init_orbit_state_utils(py::module &m) {
   VEC_BIND_VECTOR_VECTOR("cart2east_north_up", Cart2EastNorthUp, 3, "xzy", "xyz_ref");
   VEC_BIND_VECTOR_VECTOR("cart2az_el_range", Cart2AzElRange, 3, "xzy", "xyz_ref");
   VEC_BIND_VECTOR_VECTOR("az_el_range2cart", AzElRange2Cart, 3, "aer", "xyz_ref");
+  VEC_BIND_VECTOR_VECTOR("synodic2intertial", Synodic2Intertial, 6, "rv_c", "rv_d");
+  VEC_BIND_VECTOR_VECTOR("inertial2synodic", Inertial2Synodic, 6, "rv_c", "rv_d");
 }

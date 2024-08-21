@@ -451,4 +451,14 @@ namespace lupnt {
     return eta2;
   }
 
+  /// @brief Create a vector of evenly spaced values
+  VecX arange(Real start, Real stop, Real step) {
+    int n = static_cast<int>((stop - start) / step);
+    VecX v(n);
+    for (int i = 0; i < n; i++) {
+      v(i) = start + i * step;
+    }
+    return v;
+  }
+
 }  // namespace lupnt

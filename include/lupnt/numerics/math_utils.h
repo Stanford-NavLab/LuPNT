@@ -81,4 +81,6 @@ namespace lupnt {
 
   Real RatioOfSectorToTriangleArea(Vec3 r1, Vec3 r2, Real tau);
 
+  VecX arange(Real start, Real stop, Real step);
+
 }  // namespace lupnt

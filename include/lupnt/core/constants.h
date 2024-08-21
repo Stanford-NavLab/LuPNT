@@ -163,6 +163,7 @@ namespace lupnt {
     NEPTUNE = 899,
   };
 
+  double GetBodyRadius(NaifId body);
   const std::ostream& operator<<(std::ostream& os, NaifId id);
 
   namespace TimeSys {

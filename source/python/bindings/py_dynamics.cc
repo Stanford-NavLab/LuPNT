@@ -9,9 +9,16 @@
 // pybind11
 #include <pybind11/eigen.h>
 #include <pybind11/functional.h>
+#include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
+#include <atomic>
+#include <iostream>
+#include <mutex>
+#include <string>
+#include <thread>
 
 namespace py = pybind11;
 using namespace lupnt;
@@ -164,6 +171,7 @@ public:
             Real t0_ = Real(t0);                                                                  \
             return dyn.Propagate(x0_, t0_, tf.cast<Real>()).cast<double>();                       \
           },                                                                                      \
+          py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(),             \
           py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("progress") = false)               \
       .def(                                                                                       \
           "propagate",                                                                            \
@@ -172,6 +180,7 @@ public:
             Real t0_ = Real(t0);                                                                  \
             return dyn.Propagate(x0_, t0_, tf.cast<Real>()).cast<double>();                       \
           },                                                                                      \
+          py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(),             \
           py::arg("x0"), py::arg("t0"), py::arg("tf"), py::arg("progress") = false)               \
       .def(                                                                                       \
           "propagate_state",                                                                      \

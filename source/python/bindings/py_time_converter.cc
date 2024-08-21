@@ -58,6 +58,15 @@ void init_time_converter(py::module &m) {
       },
       py::arg("mjd"));
 
+  m.def(
+      "mjd2gregorian_string",
+      [](double mjd, int precision) -> std::string { return MJD2GregorianString(mjd, precision); },
+      py::arg("mjd"), py::arg("precision") = 3);
+  m.def(
+      "time2gregorian_string",
+      [](double t, int precision) -> std::string { return Time2GregorianString(t, precision); },
+      py::arg("t"), py::arg("precision") = 3);
+
   VEC_BIND_REAL("utc2ut1", UTC2UT1, "t_utc")
   VEC_BIND_REAL("ut12utc", UT12UTC, "t_ut1")
   VEC_BIND_REAL("tai2utc", TAI2UTC, "t_tai")
