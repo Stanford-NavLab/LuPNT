@@ -19,65 +19,65 @@
 
 namespace lupnt {
 
-  struct ITransmission {
-    // Clock time [s]
-    double t_tx;
-    double t_rx;
+struct ITransmission {
+  // Clock time [s]
+  double t_tx;
+  double t_rx;
 
-    // frequency [Hz]
-    double freq;
-    std::string freq_label;
+  // frequency [Hz]
+  double freq;
+  std::string freq_label;
 
-    // Position and velocity
-    Vec3d r_tx, v_tx;
-    Vec3d r_rx, v_rx;
+  // Position and velocity
+  Vec3d r_tx, v_tx;
+  Vec3d r_rx, v_rx;
 
-    // Clock offset [s]
-    double dt_tx, dt_rx;
-    double dt_tx_dot, dt_rx_dot;
+  // Clock offset [s]
+  double dt_tx, dt_rx;
+  double dt_tx_dot, dt_rx_dot;
 
-    // link budget
-    double EIRP;        // Equivalent isotropic radiated power [dBW]
-    double G_T;         // Transmit antenna gain / Noise temperature [dB/K]
-    double CN0;         // Carrier-to-noise density [dB-Hz]
-    double CN0_linear;  // Carrier-to-noise density [dB-Hz]
+  // link budget
+  double EIRP;        // Equivalent isotropic radiated power [dBW]
+  double G_T;         // Transmit antenna gain / Noise temperature [dB/K]
+  double CN0;         // Carrier-to-noise density [dB-Hz]
+  double CN0_linear;  // Carrier-to-noise density [dB-Hz]
 
-    // Signal power [W]
-    double AP;
-    double RP;
+  // Signal power [W]
+  double AP;
+  double RP;
 
-    // occultation parameters
-    std::map<std::string, bool> vis_occult;
+  // occultation parameters
+  std::map<std::string, bool> vis_occult;
 
-    // Transmitter and receiver
-    std::shared_ptr<Transmitter> tx;
-    std::shared_ptr<Receiver> rx;
+  // Transmitter and receiver
+  std::shared_ptr<Transmitter> tx;
+  std::shared_ptr<Receiver> rx;
 
-    // Agents
-    bool is_tx_gs;
-    bool is_rx_gs;
-    bool is_tx_bodyfixed;
-    bool is_rx_bodyfixed;
+  // Agents
+  bool is_tx_gs;
+  bool is_rx_gs;
+  bool is_tx_bodyfixed;
+  bool is_rx_bodyfixed;
 
-    int ID_tx;
-  };
+  int ID_tx;
+};
 
-  struct GnssTransmission : ITransmission {
-    // TX
-    int ID_tx;
+struct GnssTransmission : ITransmission {
+  // TX
+  int ID_tx;
 
-    // Channel
-    double I_rx;  // ionospheric delay [s]
-    double T_rx;  // tropospheric delay [s]
-    bool vis_atmos;
-    bool vis_ionos;
-    bool vis_earth;
-    bool vis_moon;
-    bool vis_antenna;
+  // Channel
+  double I_rx;  // ionospheric delay [s]
+  double T_rx;  // tropospheric delay [s]
+  bool vis_atmos;
+  bool vis_ionos;
+  bool vis_earth;
+  bool vis_moon;
+  bool vis_antenna;
 
-    // receiver chip param
-    double chip_rate;  // receiver chip rate [Hz]
-    GnssReceiverParam gnssr_param;
-  };
+  // receiver chip param
+  double chip_rate;  // receiver chip rate [Hz]
+  GnssReceiverParam gnssr_param;
+};
 
 }  // namespace lupnt
