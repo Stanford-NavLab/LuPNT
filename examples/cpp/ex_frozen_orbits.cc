@@ -1,8 +1,11 @@
 #include <lupnt/lupnt.h>
 #include <matplot/matplot.h>
 
+#include <highfive/highfive.hpp>
+
 using namespace lupnt;
 using namespace std;
+using namespace HighFive;
 namespace plt = matplot;
 
 class Case1Dynamics : public CartesianTwoBodyDynamics {
@@ -31,8 +34,22 @@ private:
 };
 
 int main() {
+  // Options
+  File file("ex_frozen_orbits.h5", File::OpenOrCreate);
+  // Get the root group
+  Group root = file.getGroup("/");
+  // Iterate over the groups in the root group
+  for (const auto &group : root.listObjectNames()) {
+    std::cout << "Group: " << group << std::endl;
+  }
+
+  bool recompute_case1 = false;
+  bool recompute_case2 = false;
+
+  // Time
   Real t0 = Gregorian2Time(2009, 7, 1, 1, 0, 0);  // [s] Start time (TAI)
 
+  // Orbital elements
   Real a = 6541.4;      // [km] Semi-major axis
   Real e = 0.60;        // [-] Eccentricity
   Real i = 56.2 * RAD;  // [deg] Inclination
@@ -130,11 +147,20 @@ int main() {
   // Propagate
   Case1Dynamics dyn_case1(t0, coe0_moon_op, IntegratorType::RK4);
   dyn_case1.SetTimeStep(dt_prop);
-  cout << endl << "Propagating Case 1..." << endl;
-  MatX6 rv_case1_op = dyn_case1.Propagate(rv0_op, t0, tfs, true);
+  MatX6 rv_case1_op;
+  if (recompute_case1 || !file.exist("/case1/rv_case1_op")) {
+    cout << endl << "Propagating" << endl;
+    rv_case1_op = dyn_case1.Propagate(rv0_op, t0, tfs, true);
+    dump(file, "/case1/rv_case1_op", rv_case1_op.cast<double>());
+  } else {
+    rv_case1_op = load<MatX6d>(file, "/case1/rv_case1_op");
+    cout << "Loaded from file" << endl;
+  }
   MatX6 coe_case1_op = Cart2Classical(rv_case1_op, GM_MOON);
 
-  // Plot the 6 orbital elements in 3 by 2 grid
+  // Plo
+
+  // Plot orbital elements
   auto fig12 = plt::figure(true);
   plt::hold(true);
   vector<string> labels = {"a [km]", "e [-]", "i [deg]", "O [deg]", "w [deg]", "M [deg]"};
@@ -191,15 +217,39 @@ int main() {
   dyn_case2.SetFrame(MOON_CI);
 
   // Propagate
-  cout << endl << "Propagating Case 2..." << endl;
-  MatX6 rv_case2_ci = dyn_case2.Propagate(rv0_ci, t0, tfs, true);
+  MatX6 rv_case2_ci;
+  if (recompute_case2 || !file.exist("/case2/rv_case2_ci")) {
+    cout << endl << "Propagating" << endl;
+    rv_case2_ci = dyn_case2.Propagate(rv0_ci, t0, tfs, true);
+    dump(file, "/case2/rv_case2_ci", rv_case2_ci.cast<double>());
+  } else {
+    rv_case2_ci = load<MatX6d>(file, "/case2/rv_case2_ci");
+    cout << "Loaded from file" << endl;
+  }
+  MatX6 rv_case2_op = ConvertFrame(tfs, rv_case2_ci, Frame::MOON_CI, Frame::MOON_OP);
+  MatX6 coe_case2_op = Cart2Classical(rv_case2_op, GM_MOON);
 
-  // Plot
+  // Plot orbital elements
   auto fig21 = plt::figure(true);
   plt::hold(true);
-  PlotBody(MOON);
-  Plot3(rv_case2_ci.col(0), rv_case2_ci.col(1), rv_case2_ci.col(2));
-  SetLim(12e3);
+  for (int i = 0; i < 6; i++) {
+    plt::subplot(3, 2, i);
+    VecX x = tspan / SECS_DAY;
+    VecX y;
+    if (i < 2)
+      y = coe_case2_op.col(i);
+    else
+      y = coe_case2_op.col(i) * DEG;
+
+    Plot(x, y);
+    plt::xlabel("Days past " + Time2GregorianString(t0) + " TAI");
+    plt::ylabel(labels[i]);
+    if (i == 5)
+      plt::xlim({0, 10});
+    else
+      plt::xlim({0, dt_total.val() / SECS_DAY});
+    plt::grid(true);
+  }
   fig21->draw();
 
   plt::show();

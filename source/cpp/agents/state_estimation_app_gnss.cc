@@ -139,31 +139,5 @@ namespace lupnt {
       rv_est = rv_pred;
       clk_est = clk_pred;
     }
-
-    // Save data
-    data_history->AddData("z_pr", t, z_pr);
-    data_history->AddData("z_pr_pred", t, z_pr_pred);
-    data_history->AddData("z_pr_st", t, z_pr_pred);
-    data_history->AddData("CN0", t, meas.GetCN0());
-
-    data_history->AddData("vis_earth", t, meas.GetEarthOccultation());
-    data_history->AddData("vis_moon", t, meas.GetMoonOccultation());
-    data_history->AddData("vis_antenna", t, meas.GetMoonOccultation());
-    data_history->AddData("vis_ionos", t, meas.GetMoonOccultation());
-
-    data_history->AddData("rv", t, agent->GetState()->GetVec());
-    data_history->AddData("rv_pred", t, rv_pred);
-    data_history->AddData("rv_pred_only", t, rv_pred_only);
-    data_history->AddData("rv_est", t, rv_est);
-
-    data_history->AddData("clk", t, agent->GetClockState().GetVec());
-    data_history->AddData("clk_pred", t, clk_pred);
-    data_history->AddData("clk_est", t, clk_est);
-    data_history->AddData("clk_pred_only", t, clk_pred_only);
-
-    data_history->AddData("P_rv", t, P.diagonal().segment(0, 6));
-    data_history->AddData("P_rv_pred_only", t, P_pred_only.diagonal().segment(0, 6));
-    data_history->AddData("P_clk", t, P.diagonal().segment(6, 2));
-    data_history->AddData("P_clk_pred_only", t, P_pred_only.diagonal().segment(6, 2));
   }
 }  // namespace lupnt

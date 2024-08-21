@@ -113,11 +113,8 @@ namespace lupnt {
     FilterMeasurementFunction meas_func_;
     JointState state_vec_;
 
-    Ptr<DataHistory> data_history_;
-
   public:
     void SetAgent(Ptr<Agent> agent) { this->agent_ = agent; }
-    void SetDataHistory(Ptr<DataHistory> data_history) { this->data_history_ = data_history; };
 
     double GetInitialEpoch() { return epoch0_; };
     double GetCurrentEpoch() { return epoch_; };

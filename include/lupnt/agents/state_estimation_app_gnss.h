@@ -68,13 +68,10 @@ namespace lupnt {
     VecX x_est;
     VecX P_est;
 
-    Ptr<DataHistory> data_history;
-
   public:
     void SetAgent(Ptr<Agent> agent) { this->agent = agent; }
     void SetDynamics(Ptr<IDynamics> dyn) { this->dyn = dyn; }
     void SetReceiver(Ptr<GnssReceiver> receiver) { this->receiver = receiver; }
-    void SetDataHistory(Ptr<DataHistory> data_history) { this->data_history = data_history; }
 
     void SetFrequency(double frequency) { this->frequency = frequency; }
     double GetFrequency() { return frequency; }

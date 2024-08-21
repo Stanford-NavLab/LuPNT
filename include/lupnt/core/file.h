@@ -12,59 +12,22 @@
 
 #include <filesystem>
 #include <fstream>
+#include <highfive/H5Easy.hpp>
 #include <iostream>
 #include <map>
 #include <string>
 #include <vector>
 
+#include "lupnt/core/definitions.h"
 #include "lupnt/numerics/math_utils.h"
 
 namespace lupnt {
-
-  class File {
-  public:
-    File(const std::string& filepath);
-    ~File();
-    template <typename T> File& operator<<(const T& data);
-
-  private:
-    std::ofstream file;
-  };
-
-  template <typename T> class Timestamped {
-  public:
-    Timestamped(double timestamp, const T& data);
-    double GetTimestamp() const;
-    const T& GetData() const;
-
-  private:
-    double timestamp;
-    T data;
-  };
-
-  class DataHistory {
-  public:
-    template <typename VecType>
-    void AddData(const std::string& key, double timestamp, const VecType& data);
-    const std::vector<Timestamped<VecXd>>& GetData(const std::string& key) const;
-    void AddHeader(const std::string& key, const std::string& header);
-    const std::map<std::string, std::vector<Timestamped<VecXd>>>& GetData() const;
-    const std::map<std::string, std::vector<std::string>>& GetHeaders() const;
-
-  private:
-    std::map<std::string, std::vector<Timestamped<VecXd>>> historyData;
-    std::map<std::string, std::vector<std::string>> headers;
-  };
-
-  class FileWriter {
-  public:
-    FileWriter(const std::filesystem::path& basePath, const bool make_dirs = false);
-    void WriteData(const DataHistory& dataHistory);
-
-  private:
-    std::filesystem::path basePath;
-    Eigen::IOFormat fmt;
-  };
+  using H5Easy::DataSet;
+  using H5Easy::dump;
+  using H5Easy::DumpMode;
+  using H5Easy::DumpOptions;
+  using H5Easy::File;
+  using H5Easy::load;
 
   size_t CountLines(const std::filesystem::path& filepath);
 
