@@ -408,34 +408,23 @@ namespace lupnt {
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
-  Mat3d RotMItoPA(Real t_tai) {
+  std::pair<Mat3, Mat3> RotMItoPA(Real t_tai) {
     (void)t_tai;
-    double psi = 0;
-    double theta = 0;
-    double phi = 0;
-    Mat3d Rot_mi2pa = RotZ(psi) * RotX(theta) * RotZ(phi);
-    return Rot_mi2pa;
-  }
+    Vec6 lunar_mantle = GetLunarMantleData(t_tai);
+    auto [phi, theta, psi, phi_dot, theta_dot, psi_dot] = unpack(lunar_mantle);
 
-  /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
-  Mat3d RotMItoPAdot(Real t_tai) {
-    (void)t_tai;
-    double phi = 0;
-    double theta = 0;
-    double psi = 0;
-    double psi_dot = 0;
-    double spsi = sin(psi);
-    double cpsi = cos(psi);
-    Mat3d mat{
+    Real spsi = sin(psi);
+    Real cpsi = cos(psi);
+    Mat3 mat{
         {-psi_dot * spsi, psi_dot * cpsi, 0}, {-psi_dot * cpsi, -psi_dot * spsi, 0}, {0, 0, 0}};
-    Mat3d Rot_mi2pa_dot = mat * RotX(theta) * RotZ(phi);
-    return Rot_mi2pa_dot;
+    Mat3 Rot_mi2pa = RotZ(psi) * RotX(theta) * RotZ(phi);
+    Mat3 Rot_mi2pa_dot = mat * RotX(theta) * RotZ(phi);
+    return {Rot_mi2pa, Rot_mi2pa_dot};
   }
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
   Vec6 MoonMI2MoonPA(Real t_tai, const Vec6& rv_mi) {
-    Mat3d Rot_mi2pa = RotMItoPA(t_tai);
-    Mat3d Rot_mi2pa_dot = RotMItoPAdot(t_tai);
+    auto [Rot_mi2pa, Rot_mi2pa_dot] = RotMItoPA(t_tai);
 
     Vec3 r_mi = rv_mi.head(3);
     Vec3 v_mi = rv_mi.tail(3);
@@ -450,11 +439,9 @@ namespace lupnt {
 
   /// @ref Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
   Vec6 MoonPA2MoonCI(Real t_tai, const Vec6& rv_pa) {
-    Mat3d Rot_mi2pa = RotMItoPA(t_tai);
-    Mat3d Rot_mi2pa_dot = RotMItoPAdot(t_tai);
-
-    Mat3d Rot_pa2mi = Rot_mi2pa.transpose();
-    Mat3d Rot_pa2mi_dot = Rot_mi2pa_dot.transpose();
+    auto [Rot_mi2pa, Rot_mi2pa_dot] = RotMItoPA(t_tai);
+    Mat3 Rot_pa2mi = Rot_mi2pa.transpose();
+    Mat3 Rot_pa2mi_dot = Rot_mi2pa_dot.transpose();
 
     Vec3 r_pa = rv_pa.head(3);
     Vec3 v_pa = rv_pa.tail(3);

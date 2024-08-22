@@ -49,6 +49,8 @@ Console.WriteLine(de.getPlanet(1, de.getHeader().jdStart)[0]);
 namespace lupnt {
 
   double GetTtTdbDifference(double t_tai);
+  Vec6 GetLunarMantleData(Real t_tai);
+  MatX6 GetLunarMantleData(VecX t_tai);
   Vec6 GetBodyPosVel(Real t_tai, NaifId target, Frame frame);
   Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target, Frame frame);
   MatX6 GetBodyPosVel(const VecX& t_tai, NaifId target, Frame frame);
