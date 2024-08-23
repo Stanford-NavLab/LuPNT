@@ -32,4 +32,20 @@ void init_kernels(py::module &m) {
         return GetBodyPosVel(t_tai_, center, target, frame).cast<double>();
       },
       py::arg("t_tai"), py::arg("center"), py::arg("target"), py::arg("frame"));
+
+  m.def(
+      "get_body_pos_vel",
+      [](double t_tai, NaifId target, Frame frame) -> Vec6d {
+        Real t_tai_ = t_tai;
+        return GetBodyPosVel(t_tai_, target, frame).cast<double>();
+      },
+      py::arg("t_tai"), py::arg("target"), py::arg("frame"));
+
+  m.def(
+      "get_body_pos_vel",
+      [](VecXd t_tai, NaifId target, Frame frame) -> MatX6d {
+        VecX t_tai_ = t_tai.cast<Real>().array();
+        return GetBodyPosVel(t_tai_, target, frame).cast<double>();
+      },
+      py::arg("t_tai"), py::arg("target"), py::arg("frame"));
 }

@@ -7,8 +7,9 @@ namespace lupnt {
   Ptr<IState> IOrbitDynamics::PropagateState(const Ptr<IState> &state, Real t0, Real tf,
                                              MatXd *stm) {
     int repres = (int)state->GetStateType();
-    assert(repres >= (int)OrbitStateRepres::CARTESIAN && repres <= (int)OrbitStateRepres::RTN
-           && "Invalid OrbitState representation");
+    if (repres < (int)OrbitStateRepres::CARTESIAN || repres > (int)OrbitStateRepres::RTN) {
+      throw std::runtime_error("Invalid OrbitState representation");
+    }
 
     OrbitState orbit_state = *std::static_pointer_cast<OrbitState>(state).get();
     Ptr<IState> state_new;

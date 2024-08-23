@@ -10,7 +10,8 @@
 namespace lupnt {
 
   std::filesystem::path GetDataPath();
-  std::optional<std::filesystem::path> FindFileInDir(const std::filesystem::path& basePath,
+  std::filesystem::path GetOutputPath(std::string output_dir);
+  std::optional<std::filesystem::path> FindFileInDir(const std::filesystem::path& base_path,
                                                      const std::string& filename);
   std::filesystem::path GetFilePath(const std::string& filename);
   std::filesystem::path GetCspiceKernelDir();

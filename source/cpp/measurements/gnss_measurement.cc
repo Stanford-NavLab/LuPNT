@@ -17,13 +17,13 @@ namespace lupnt {
 
   GnssMeasurement::GnssMeasurement(const std::vector<Transmission> trans)
       : trans_store(trans),
-        f(trans.size()),
         dt_tx(trans.size()),
         dt_tx_dot(trans.size()),
         I_rx(trans.size()),
         T_rx(trans.size()),
         N_rx(trans.size()),
         eps_P(trans.size()),
+        f(trans.size()),
         r_tx(3, trans.size()),
         v_tx(3, trans.size()),
         r_rx(3),

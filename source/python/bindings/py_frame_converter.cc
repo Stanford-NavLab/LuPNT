@@ -6,70 +6,6 @@
 namespace py = pybind11;
 using namespace lupnt;
 
-MatXd def_convert_frame(double t_tai, const MatXd &rv_in, Frame frame_in, Frame frame_out) {
-  Real t_tai_ = t_tai;
-  if (rv_in.rows() == 3 && rv_in.cols() == 1) {  // 3x1
-    Vec3 r_in_ = rv_in.cast<Real>();
-    return ConvertFrame(t_tai_, r_in_, frame_in, frame_out).cast<double>();
-  } else if (rv_in.rows() == 1 && rv_in.cols() == 3) {  // 1x3
-    Vec3 r_in_ = rv_in.transpose().cast<Real>();
-    return ConvertFrame(t_tai_, r_in_, frame_in, frame_out).cast<double>().transpose();
-  } else if (rv_in.rows() == 3 && rv_in.cols() > 1) {  // 3xN
-    MatX3 rv_in_ = rv_in.cast<Real>();
-    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>();
-  } else if (rv_in.rows() > 1 && rv_in.cols() == 3) {  // Nx3
-    MatX3 rv_in_ = rv_in.transpose().cast<Real>();
-    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>().transpose();
-  } else if (rv_in.rows() == 6 && rv_in.cols() == 1) {  // 6x1
-    Vec6 rv_in_ = rv_in.cast<Real>();
-    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>();
-  } else if (rv_in.rows() == 1 && rv_in.cols() == 6) {  // 1x6
-    Vec6 rv_in_ = rv_in.transpose().cast<Real>();
-    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>().transpose();
-  } else if (rv_in.rows() == 6 && rv_in.cols() > 1) {  // 6xN
-    MatX6 rv_in_ = rv_in.cast<Real>();
-    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>();
-  } else if (rv_in.rows() > 1 && rv_in.cols() == 6) {  // Nx6
-    MatX6 rv_in_ = rv_in.transpose().cast<Real>();
-    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>().transpose();
-  }
-  throw std::invalid_argument("Invalid input size for rv_in: " + std::to_string(rv_in.rows()) + "x"
-                              + std::to_string(rv_in.cols()));
-  return MatXd(0, 0);
-}
-
-MatXd def_convert_frame(VecXd t_tai, const MatXd &rv_in, Frame frame_in, Frame frame_out) {
-  int n = t_tai.size();
-  VecX t_tai_ = t_tai.cast<Real>().array();
-  if (rv_in.rows() == 3 && rv_in.cols() == 1) {  // 3x1
-    Vec3 r_in_ = rv_in.cast<Real>();
-    return ConvertFrame(t_tai_, r_in_, frame_in, frame_out).cast<double>();
-  } else if (rv_in.rows() == 1 && rv_in.cols() == 3) {  // 1x3
-    Vec3 r_in_ = rv_in.transpose().cast<Real>();
-    return ConvertFrame(t_tai_, r_in_, frame_in, frame_out).cast<double>().transpose();
-  } else if (rv_in.rows() == 3 && rv_in.cols() == n) {  // 3xN
-    MatX3 rv_in_ = rv_in.cast<Real>();
-    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>();
-  } else if (rv_in.rows() == n && rv_in.cols() == 3) {  // Nx3
-    MatX3 rv_in_ = rv_in.transpose().cast<Real>();
-    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>().transpose();
-  } else if (rv_in.rows() == 6 && rv_in.cols() == 1) {  // 6x1
-    Vec6 rv_in_ = rv_in.cast<Real>();
-    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>();
-  } else if (rv_in.rows() == 1 && rv_in.cols() == 6) {  // 1x6
-    Vec6 rv_in_ = rv_in.transpose().cast<Real>();
-    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>().transpose();
-  } else if (rv_in.rows() == 6 && rv_in.cols() == n) {  // 6xN
-    MatX6 rv_in_ = rv_in.cast<Real>();
-    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>();
-  } else if (rv_in.rows() == n && rv_in.cols() == 6) {  // Nx6
-    MatX6 rv_in_ = rv_in.transpose().cast<Real>();
-    return ConvertFrame(t_tai_, rv_in_, frame_in, frame_out).cast<double>().transpose();
-  }
-  throw std::invalid_argument("Invalid input size for rv_in: " + std::to_string(rv_in.rows()) + "x"
-                              + std::to_string(rv_in.cols()));
-}
-
 void init_frame_converter(py::module &m) {
   py::enum_<Frame>(m, "Frame")
       .value("ITRF", Frame::ITRF)
@@ -94,75 +30,88 @@ void init_frame_converter(py::module &m) {
   // Vec6 = func(real, Vec6)
   m.def(
       "convert_frame",
-      [](double t_tai, const Vec6d &rv_in, Frame frame_in, Frame frame_out) -> Vec6d {
+      [](double t_tai, const Vec6d &rv_in, Frame frame_in, Frame frame_out,
+         bool rotate_only) -> Vec6d {
         Vec6 rv_in_real = rv_in.cast<Real>();
-        return ConvertFrame(t_tai, rv_in_real, frame_in, frame_out).cast<double>();
+        return ConvertFrame(t_tai, rv_in_real, frame_in, frame_out, rotate_only).cast<double>();
       },
       "Convert frame", py::arg("t_tai"), py::arg("rv_in"), py::arg("frame_in"),
-      py::arg("frame_out"));
+      py::arg("frame_out"), py::arg("rotate_only") = false);
   // Vec3 = func(real, Vec3)
   m.def(
       "convert_frame",
-      [](double t_tai, const Vec3d &r_in, Frame frame_in, Frame frame_out) -> Vec3d {
+      [](double t_tai, const Vec3d &r_in, Frame frame_in, Frame frame_out,
+         bool rotate_only) -> Vec3d {
         Vec3 r_in_real = r_in.cast<Real>();
-        return ConvertFrame(t_tai, r_in_real, frame_in, frame_out).cast<double>();
+        return ConvertFrame(t_tai, r_in_real, frame_in, frame_out, rotate_only).cast<double>();
       },
-      "Convert frame", py::arg("t_tai"), py::arg("r_in"), py::arg("frame_in"),
-      py::arg("frame_out"));
+      "Convert frame", py::arg("t_tai"), py::arg("r_in"), py::arg("frame_in"), py::arg("frame_out"),
+      py::arg("rotate_only") = false);
   // CartesianOrbitState = func(real, CartesianOrbitState)
   m.def(
       "convert_frame",
-      [](double t_tai, const CartesianOrbitState &state_in, Frame frame_out)
-          -> CartesianOrbitState { return ConvertFrame(t_tai, state_in, frame_out); },
-      "Convert frame", py::arg("t_tai"), py::arg("state_in"), py::arg("frame_out"));
+      [](double t_tai, const CartesianOrbitState &state_in, Frame frame_out, bool rotate_only)
+          -> CartesianOrbitState { return ConvertFrame(t_tai, state_in, frame_out, rotate_only); },
+      "Convert frame", py::arg("t_tai"), py::arg("state_in"), py::arg("frame_out"),
+      py::arg("rotate_only") = false);
   // Mat<-1,6> = func(VecX, Vec6)
   m.def(
       "convert_frame",
-      [](const VecXd &t_tai, const Vec6d &rv_in, Frame frame_in, Frame frame_out) -> MatX6d {
+      [](const VecXd &t_tai, const Vec6d &rv_in, Frame frame_in, Frame frame_out,
+         bool rotate_only) -> MatX6d {
         Vec6 rv_in_real = rv_in.cast<Real>();
-        return ConvertFrame(t_tai, rv_in_real, frame_in, frame_out).cast<double>();
+        return ConvertFrame(t_tai, rv_in_real, frame_in, frame_out, rotate_only).cast<double>();
       },
       "Convert frame", py::arg("t_tai"), py::arg("rv_in"), py::arg("frame_in"),
-      py::arg("frame_out"));
+      py::arg("frame_out"), py::arg("rotate_only") = false);
   // Mat<-1,3> = func(VecX, Vec3)
   m.def(
       "convert_frame",
-      [](const VecXd &t_tai, const Vec3d &r_in, Frame frame_in, Frame frame_out) -> MatX3d {
+      [](const VecXd &t_tai, const Vec3d &r_in, Frame frame_in, Frame frame_out,
+         bool rotate_only) -> MatX3d {
         Vec3 r_in_real = r_in.cast<Real>();
-        return ConvertFrame(t_tai, r_in_real, frame_in, frame_out).cast<double>();
+        return ConvertFrame(t_tai, r_in_real, frame_in, frame_out, rotate_only).cast<double>();
       },
-      "Convert frame", py::arg("t_tai"), py::arg("r_in"), py::arg("frame_in"),
-      py::arg("frame_out"));
+      "Convert frame", py::arg("t_tai"), py::arg("r_in"), py::arg("frame_in"), py::arg("frame_out"),
+      py::arg("rotate_only") = false);
   // Mat<-1,6> = func(real, Mat<-1,6>)
   m.def(
       "convert_frame",
-      [](double t_tai, const MatX6d &rv_in, Frame frame_in, Frame frame_out) -> MatX6d {
-        return ConvertFrame(t_tai, rv_in.cast<Real>().eval(), frame_in, frame_out).cast<double>();
+      [](double t_tai, const MatX6d &rv_in, Frame frame_in, Frame frame_out,
+         bool rotate_only) -> MatX6d {
+        return ConvertFrame(t_tai, rv_in.cast<Real>().eval(), frame_in, frame_out, rotate_only)
+            .cast<double>();
       },
       "Convert frame", py::arg("t_tai"), py::arg("rv_in"), py::arg("frame_in"),
-      py::arg("frame_out"));
+      py::arg("frame_out"), py::arg("rotate_only") = false);
   // Mat<-1,3> = func(real, Mat<-1,3>)
   m.def(
       "convert_frame",
-      [](double t_tai, const MatX3d &r_in, Frame frame_in, Frame frame_out) -> MatX3d {
-        return ConvertFrame(t_tai, r_in.cast<Real>().eval(), frame_in, frame_out).cast<double>();
+      [](double t_tai, const MatX3d &r_in, Frame frame_in, Frame frame_out,
+         bool rotate_only) -> MatX3d {
+        return ConvertFrame(t_tai, r_in.cast<Real>().eval(), frame_in, frame_out, rotate_only)
+            .cast<double>();
       },
-      "Convert frame", py::arg("t_tai"), py::arg("r_in"), py::arg("frame_in"),
-      py::arg("frame_out"));
+      "Convert frame", py::arg("t_tai"), py::arg("r_in"), py::arg("frame_in"), py::arg("frame_out"),
+      py::arg("rotate_only") = false);
   // Mat<-1,6> = func(VecX, Mat<-1,6>)
   m.def(
       "convert_frame",
-      [](const VecXd &t_tai, const MatX6d &rv_in, Frame frame_in, Frame frame_out) -> MatX6d {
-        return ConvertFrame(t_tai, rv_in.cast<Real>().eval(), frame_in, frame_out).cast<double>();
+      [](const VecXd &t_tai, const MatX6d &rv_in, Frame frame_in, Frame frame_out,
+         bool rotate_only) -> MatX6d {
+        return ConvertFrame(t_tai, rv_in.cast<Real>().eval(), frame_in, frame_out, rotate_only)
+            .cast<double>();
       },
       "Convert frame", py::arg("t_tai"), py::arg("rv_in"), py::arg("frame_in"),
-      py::arg("frame_out"));
+      py::arg("frame_out"), py::arg("rotate_only") = false);
   // Mat<-1,3> = func(VecX, Mat<-1,3>)
   m.def(
       "convert_frame",
-      [](const VecXd &t_tai, const MatX3d &r_in, Frame frame_in, Frame frame_out) -> MatX3d {
-        return ConvertFrame(t_tai, r_in.cast<Real>().eval(), frame_in, frame_out).cast<double>();
+      [](const VecXd &t_tai, const MatX3d &r_in, Frame frame_in, Frame frame_out,
+         bool rotate_only) -> MatX3d {
+        return ConvertFrame(t_tai, r_in.cast<Real>().eval(), frame_in, frame_out, rotate_only)
+            .cast<double>();
       },
-      "Convert frame", py::arg("t_tai"), py::arg("r_in"), py::arg("frame_in"),
-      py::arg("frame_out"));
+      "Convert frame", py::arg("t_tai"), py::arg("r_in"), py::arg("frame_in"), py::arg("frame_out"),
+      py::arg("rotate_only") = false);
 }

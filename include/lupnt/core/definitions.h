@@ -95,9 +95,8 @@ namespace lupnt {
   DEFINE_VECTORS_MATRICES()
 
   static Eigen::IOFormat FMT_CLEAN(Eigen::StreamPrecision, 0, ", ", ";\n", "", "", "[", "]");
-  static Eigen::IOFormat FMT_COMPACT(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ";\n", "",
+  static Eigen::IOFormat FMT_HEAVY(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]");
+  static Eigen::IOFormat FMT_COMPACT(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ";\n ", "",
                                      "", "[", "]");
-  static Eigen::IOFormat FMT_OCTAVE(Eigen::StreamPrecision, 0, ", ", ";\n", "", "", "[", "]");
-  static Eigen::IOFormat FMT_HEAVY(Eigen::FullPrecision, 0, ", ", ";\n", "[", "]", "[", "]");
 
 }  // namespace lupnt

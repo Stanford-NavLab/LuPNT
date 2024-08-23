@@ -107,7 +107,7 @@ namespace lupnt {
 
       // Create the pattern
       antenna_pattern_ = VecXd(2, angles.size());
-      for (int i = 0; i < angles.size(); i++) {
+      for (size_t i = 0; i < angles.size(); i++) {
         antenna_pattern_(0, i) = angles[i];
         antenna_pattern_(1, i) = gains[i];
       }
@@ -119,7 +119,7 @@ namespace lupnt {
       std::vector<double> phis;
       std::vector<std::vector<double>> gains;
 
-      for (int i = 1; i < tokens.size(); i++) {
+      for (size_t i = 1; i < tokens.size(); i++) {
         phis.push_back(tokens[i]);
       }
       // Add the first phi again for 0-360 deg
@@ -138,14 +138,14 @@ namespace lupnt {
       // Create the pattern
       antenna_pattern_ = VecXd(thetas.size() + 1, phis.size() + 2);
       antenna_pattern_(0, 0) = -50;
-      for (int i = 0; i < phis.size(); i++) {
+      for (size_t i = 0; i < phis.size(); i++) {
         antenna_pattern_(0, i + 1) = phis[i];
       }
       // Add the first phi again for 0-360 deg
       antenna_pattern_(0, phis.size() + 1) = phis[0];
-      for (int i = 0; i < thetas.size(); i++) {
+      for (size_t i = 0; i < thetas.size(); i++) {
         antenna_pattern_(i + 1, 0) = thetas[i];
-        for (int j = 0; j < phis.size(); j++) {
+        for (size_t j = 0; j < phis.size(); j++) {
           antenna_pattern_(i + 1, j + 1) = gains[i][j];
         }
         // Add the first phi again for 0-360 deg
@@ -163,10 +163,10 @@ namespace lupnt {
    * @return double   antenna gain [dB]
    */
   double Antenna::GetAntennaGain(double theta, double phi) {
-    double gain;
+    double gain = 0.0;
 
     // Check omni-directional antennas
-    if (antenna_pattern_.size() == 0) return 0.0;
+    if (antenna_pattern_.size() == 0) return gain;
 
     // The anglemask is the max theta angle for which gain will be evaluated. It
     // is the minimum of the max defined angle for the antenna antenna_pattern_.

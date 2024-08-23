@@ -2,14 +2,32 @@
 
 namespace lupnt {
   std::filesystem::path GetDataPath() {
-    const char* dataPathEnv = std::getenv("LUPNT_DATA_PATH");
-    assert(dataPathEnv != nullptr && "Environment variable LUPNT_DATA_PATH is not set.");
-    return std::filesystem::path(dataPathEnv);
+    const char* data_path_env = std::getenv("LUPNT_DATA_PATH");
+    assert(data_path_env != nullptr && "Environment variable LUPNT_DATA_PATH is not set.");
+    return std::filesystem::path(data_path_env);
   }
 
-  std::optional<std::filesystem::path> FindFileInDir(const std::filesystem::path& basePath,
+  std::filesystem::path GetOutputPath(std::string output_dir) {
+    const char* output_path_env = std::getenv("LUPNT_OUTPUT_PATH");
+    std::filesystem::path output_path;
+    if (output_path_env == nullptr) {
+      output_path = std::filesystem::current_path();
+    } else {
+      output_path = std::filesystem::path(output_path_env);
+    }
+    if (!output_dir.empty()) {
+      output_path /= output_dir;
+    }
+
+    if (!std::filesystem::exists(output_path)) {
+      std::filesystem::create_directories(output_path);
+    }
+    return output_path;
+  }
+
+  std::optional<std::filesystem::path> FindFileInDir(const std::filesystem::path& base_path,
                                                      const std::string& filename) {
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(basePath)) {
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(base_path)) {
       if (entry.path().filename().string() == filename) {
         return entry.path();
       }

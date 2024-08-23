@@ -58,7 +58,7 @@ int main() {
   fig->draw();
 
   fig = figure(true);
-  title("Lunar Mantle Angles");
+  title("Lunar Mantle Angular Velocity");
   hold(true);
   grid(true);
   Plot(tspan / SECS_DAY, rv.col(3) * DEG, "-");

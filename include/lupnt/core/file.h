@@ -31,6 +31,4 @@ namespace lupnt {
 
   size_t CountLines(const std::filesystem::path& filepath);
 
-  void PrintFileGroups(const File& file);
-
 }  // namespace lupnt

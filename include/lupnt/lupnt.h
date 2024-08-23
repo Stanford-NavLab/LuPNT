@@ -55,6 +55,7 @@
 #include "lupnt/physics/cheby.h"
 #include "lupnt/physics/clock.h"
 #include "lupnt/physics/coordinates.h"
+#include "lupnt/physics/frame_conversions.h"
 #include "lupnt/physics/frame_converter.h"
 #include "lupnt/physics/frame_converter_spice.h"
 #include "lupnt/physics/gravity.h"
