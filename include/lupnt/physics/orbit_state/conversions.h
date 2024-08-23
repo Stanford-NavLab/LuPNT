@@ -3,6 +3,7 @@
 #include "orbit_states.h"
 
 namespace lupnt {
+
   // From CartesianOrbitState
   // - 2 ClassicalOE
   ClassicalOE Cart2Classical(const CartesianOrbitState &rv, Real GM);

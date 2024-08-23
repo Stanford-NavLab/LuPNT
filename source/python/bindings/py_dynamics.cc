@@ -167,7 +167,6 @@ public:
       .def(                                                                                       \
           "propagate",                                                                            \
           [](class &dyn, const Vec6d &x0, double t0, VecXd tf, bool progress) -> MatX6d {         \
-            std::cout << "Propagating 1..." << std::endl;                                         \
             Vec6 x0_ = x0.cast<Real>();                                                           \
             Real t0_ = Real(t0);                                                                  \
             return dyn.Propagate(x0_, t0_, tf.cast<Real>()).cast<double>();                       \
@@ -177,7 +176,6 @@ public:
       .def(                                                                                       \
           "propagate",                                                                            \
           [](class &dyn, const RowVec6d &x0, double t0, VecXd tf, bool progress) -> MatX6d {      \
-            std::cout << "Propagating 2..." << std::endl;                                         \
             Vec6 x0_ = x0.transpose().cast<Real>();                                               \
             Real t0_ = Real(t0);                                                                  \
             return dyn.Propagate(x0_, t0_, tf.cast<Real>()).cast<double>();                       \
@@ -274,7 +272,8 @@ void init_dynamics(py::module &m) {
       .def(py::init<IntegratorType>(), py::arg("integ_type") = default_integrator)
       .def("add_body", &NBodyDynamics::AddBody, py::arg("body"))
       .def("get_bodies", &NBodyDynamics::GetBodies)
-      .def("set_frame", &NBodyDynamics::SetFrame, py::arg("frame"));
+      .def("set_frame", &NBodyDynamics::SetFrame, py::arg("frame"))
+      .I_ORBIT_DYNAMICS_METHODS(NBodyDynamics);
 
   // Body
   py::class_<Body>(m, "Body")

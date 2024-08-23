@@ -3,6 +3,7 @@
 #include <lupnt/numerics/math_utils.h>
 #include <lupnt/physics/coordinates.h>
 #include <lupnt/physics/orbit_state.h>
+#include <lupnt/physics/orbit_state/anomaly.h>
 
 // pybind11
 #include <pybind11/eigen.h>
@@ -74,6 +75,8 @@ void init_orbit_state_utils(py::module &m) {
         return RelQuasiNonsing2Classical(coe, rel_qnsoe);
       },
       py::arg("coe"), py::arg("rel_qnsoe"));
+
+  VEC_BIND_REAL_REAL("get_orbital_period", GetOrbitalPeriod, "a", "GM");
 
   // State Conversions
   VEC_BIND_VECTOR_REAL("cart2classical", Cart2Classical, 6, "cart", "GM");
