@@ -37,6 +37,8 @@ namespace lupnt {
         // Position (body-fixed) [km]
         Vec3 r_bf = ConvertFrame(t_tai, r, frame_, body.fixed_frame);
         // Acceleration (body-fixed) [km/s^2]
+        // Vec3 a_bf
+        //     = AccelarationGravityField(r_bf, grav.GM, grav.R, grav.CS, grav.n_max, grav.m_max);
         Vec3 a_bf
             = AccelarationGravityField(r_bf, grav.GM, grav.R, grav.CS, grav.n_max, grav.m_max);
         // Acceleration (inertial) [km/s^2]

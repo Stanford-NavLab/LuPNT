@@ -35,20 +35,21 @@ private:
 };
 
 struct {
-  bool recompute = false;
-  bool plot_case0 = true;
-  bool plot_case1 = true;
-  bool plot_case2 = true;
-  bool plot_case3 = true;
-  bool plot_case4 = true;
+  bool recompute_part1 = true;
+  bool recompute_part2 = true;
+  bool plot_case0 = false;
+  bool plot_case1 = false;
+  bool plot_case2 = false;
+  bool plot_case3 = false;
+  bool plot_case4 = false;
 } config;
 
 int main() {
   auto output_path = GetOutputPath("ex_frozen_orbits");
   cout << "Output path: " << output_path << endl;
 
-  auto open_mode = (config.recompute) ? File::Truncate : File::OpenOrCreate;
-  File file(output_path / "data.h5", open_mode);
+  auto open_mode_part1 = (config.recompute_part1) ? File::Truncate : File::OpenOrCreate;
+  File file_part1(output_path / "data_part1.h5", open_mode_part1);
 
   // Time
   Real t0 = Gregorian2Time(2009, 7, 1, 1, 0, 0);  // [s] Start time (TAI)
@@ -69,7 +70,7 @@ int main() {
   // **************************************************************************
   // Case 0
   // **************************************************************************
-  cout << endl << endl << "*********** Case 0 ***********" << endl << endl;
+  cout << endl << endl << "*********** Case 0 ***********" << endl;
 
   // Time
   Real dt_total = sat_period;                           // [s] Total propagation time
@@ -114,17 +115,17 @@ int main() {
   // **************************************************************************
   // Case 1
   // **************************************************************************
-  cout << endl << endl << "*********** Case 1 ***********" << endl << endl;
+  cout << endl << endl << "*********** Case 1 ***********" << endl;
 
   Real moon_period = GetOrbitalPeriod(D_EARTH_MOON, GM_EARTH);  // [s] Moon period
-  cout << "Moon period: " << moon_period / SECS_DAY << " days" << endl << endl;
+  cout << "Moon period: " << moon_period / SECS_DAY << " days" << endl;
 
   // Time
-  dt_total = 2 * DAYS_YEAR * SECS_DAY;   // [s] Total propagation time
-  dt_step = 60 * SECS_MINUTE;            // [s] Time step
-  dt_prop = 2 * SECS_MINUTE;             // [s] Propagation time step
-  tspan = arange(0, dt_total, dt_step);  // [s] Time span
-  tfs = t0 + tspan.array();              // [s] Final times
+  dt_total = 2 * DAYS_YEAR * SECS_DAY;             // [s] Total propagation time
+  dt_step = 60 * SECS_MINUTE;                      // [s] Time step
+  dt_prop = 2 * SECS_MINUTE;                       // [s] Propagation time step
+  tspan = arange(0, dt_total + dt_step, dt_step);  // [s] Time span
+  tfs = t0 + tspan.array();                        // [s] Final times
   n_steps = tspan.size();
   cout << "Total duration   " << dt_total / SECS_DAY << " days" << endl;
   cout << "Time step        " << dt_step / SECS_MINUTE << " minutes" << endl;
@@ -164,12 +165,12 @@ int main() {
 
   // Propagate
   MatX6 rv_case1_op;
-  if (config.recompute || !file.exist("/rv_case1_op")) {
+  if (config.recompute_part1 || !file_part1.exist("/rv_case1_op")) {
     cout << endl << "Propagating" << endl;
     rv_case1_op = dyn_3body_circ.Propagate(rv0_op, t0, tfs, true);
-    dump(file, "/rv_case1_op", rv_case1_op.cast<double>(), DumpMode::Overwrite);
+    dump(file_part1, "/rv_case1_op", rv_case1_op.cast<double>(), DumpMode::Overwrite);
   } else {
-    rv_case1_op = load<MatX6d>(file, "/rv_case1_op");
+    rv_case1_op = load<MatX6d>(file_part1, "/rv_case1_op");
     cout << endl << "Loaded from file" << endl;
   }
   MatX6 coe_case1_op = Cart2Classical(rv_case1_op, GM_MOON);
@@ -224,7 +225,7 @@ int main() {
   // **************************************************************************
   // Case 2
   // **************************************************************************
-  cout << endl << endl << "*********** Case 2 ***********" << endl << endl;
+  cout << endl << endl << "*********** Case 2 ***********" << endl;
 
   // Dynamics
   NBodyDynamics dyn_3body(IntegratorType::RK4);
@@ -235,12 +236,12 @@ int main() {
 
   // Propagate
   MatX6 rv_case2_ci;
-  if (config.recompute || !file.exist("/rv_case2_ci")) {
+  if (config.recompute_part1 || !file_part1.exist("/rv_case2_ci")) {
     cout << endl << "Propagating" << endl;
     rv_case2_ci = dyn_3body.Propagate(rv0_ci, t0, tfs, true);
-    dump(file, "/rv_case2_ci", rv_case2_ci.cast<double>(), DumpMode::Overwrite);
+    dump(file_part1, "/rv_case2_ci", rv_case2_ci.cast<double>(), DumpMode::Overwrite);
   } else {
-    rv_case2_ci = load<MatX6d>(file, "/rv_case2_ci");
+    rv_case2_ci = load<MatX6d>(file_part1, "/rv_case2_ci");
     cout << endl << "Loaded from file" << endl;
   }
   MatX6 rv_case2_op = ConvertFrame(tfs, rv_case2_ci, Frame::MOON_CI, Frame::MOON_OP);
@@ -249,7 +250,7 @@ int main() {
   // **************************************************************************
   // Case 3
   // **************************************************************************
-  cout << endl << endl << "*********** Case 3 ***********" << endl << endl;
+  cout << endl << endl << "*********** Case 3 ***********" << endl;
 
   NBodyDynamics dyn_nbody(IntegratorType::RK4);
   dyn_nbody.AddBody(Body::Moon(7, 1));
@@ -260,12 +261,12 @@ int main() {
 
   // Propagate
   MatX6 rv_case3_ci;
-  if (config.recompute || !file.exist("/rv_case3_ci")) {
+  if (config.recompute_part1 || !file_part1.exist("/rv_case3_ci")) {
     cout << endl << "Propagating" << endl;
     rv_case3_ci = dyn_nbody.Propagate(rv0_ci, t0, tfs, true);
-    dump(file, "/rv_case3_ci", rv_case3_ci.cast<double>(), DumpMode::Overwrite);
+    dump(file_part1, "/rv_case3_ci", rv_case3_ci.cast<double>(), DumpMode::Overwrite);
   } else {
-    rv_case3_ci = load<MatX6d>(file, "/rv_case3_ci");
+    rv_case3_ci = load<MatX6d>(file_part1, "/rv_case3_ci");
     cout << endl << "Loaded from file" << endl;
   }
   MatX6 rv_case3_op = ConvertFrame(tfs, rv_case3_ci, Frame::MOON_CI, Frame::MOON_OP);
@@ -274,7 +275,7 @@ int main() {
   // **************************************************************************
   // Case 4
   // **************************************************************************
-  cout << endl << endl << "*********** Case 4 ***********" << endl << endl;
+  cout << endl << endl << "*********** Case 4 ***********" << endl;
   MatX6 rv_case4_me = ConvertFrame(tfs, rv_case3_ci, Frame::MOON_CI, Frame::MOON_ME, true);
   MatX6 coe_case4_me = Cart2Classical(rv_case4_me, GM_MOON);
 
@@ -282,63 +283,66 @@ int main() {
   // Case 5
   // **************************************************************************
 
-  // NBodyDynamics dyn_nbody50(IntegratorType::RK4);
-  // dyn_nbody50.AddBody(Body::Moon(50, 50));
-  // dyn_nbody50.AddBody(Body::Earth());
-  // dyn_nbody50.AddBody(Body::Sun());
-  // dyn_nbody50.SetTimeStep(dt_prop);
-  // dyn_nbody50.SetFrame(MOON_CI);
+  NBodyDynamics dyn_nbody50(IntegratorType::RK4);
+  dyn_nbody50.AddBody(Body::Moon(10, 10));
+  dyn_nbody50.AddBody(Body::Earth());
+  dyn_nbody50.AddBody(Body::Sun());
+  dyn_nbody50.SetTimeStep(dt_prop);
+  dyn_nbody50.SetFrame(MOON_CI);
 
-  // // Propagate
-  // MatX6 rv_case5_ci;
-  // if (config.recompute || !file.exist("/rv_case5_ci")) {
-  //   cout << endl << "Propagating" << endl;
-  //   rv_case5_ci = dyn_nbody50.Propagate(rv0_ci, t0, tfs, true);
-  //   dump(file, "/rv_case5_ci", rv_case5_ci.cast<double>(), DumpMode::Overwrite);
-  // } else {
-  //   rv_case5_ci = load<MatX6d>(file, "/rv_case5_ci");
-  //   cout << endl << "Loaded from file" << endl;
-  // }
+  // Propagate
+  MatX6 rv_case5_ci;
+  if (config.recompute_part1 || !file_part1.exist("/rv_case5_ci")) {
+    cout << endl << "Propagating" << endl;
+    rv_case5_ci = dyn_nbody50.Propagate(rv0_ci, t0, tfs, true);
+    dump(file_part1, "/rv_case5_ci", rv_case5_ci.cast<double>(), DumpMode::Overwrite);
+  } else {
+    rv_case5_ci = load<MatX6d>(file_part1, "/rv_case5_ci");
+    cout << endl << "Loaded from file" << endl;
+  }
+  MatX6 rv_case5_op = ConvertFrame(tfs, rv_case5_ci, Frame::MOON_CI, Frame::MOON_OP, true);
+  MatX6 coe_case5_op = Cart2Classical(rv_case5_op, GM_MOON);
 
   // **************************************************************************
   // Case 6
   // **************************************************************************
 
-  // // Time
-  // dt_total = 10 * DAYS_YEAR * SECS_DAY;  // [s] Total propagation time
-  // dt_step = 60 * SECS_MINUTE;            // [s] Time step
-  // dt_prop = 60;                          // [s] Propagation time step
-  // tspan = arange(0, dt_total, dt_step);  // [s] Time span
-  // tfs = t0 + tspan.array();              // [s] Final times
-  // n_steps = tspan.size();
-  // cout << "Total duration   " << dt_total / SECS_DAY << " days" << endl;
-  // cout << "Time step        " << dt_step / SECS_MINUTE << " minutes" << endl;
-  // cout << "Propagation step " << dt_prop << " seconds" << endl;
-  // cout << "Start epoch      " << Time2GregorianString(t0) << endl;
-  // cout << "End epoch        " << Time2GregorianString(t0 + dt_total) << endl;
-  // cout << "Number of steps  " << n_steps << endl;
+  // Time
+  dt_total = 10 * DAYS_YEAR * SECS_DAY;            // [s] Total propagation time
+  tspan = arange(0, dt_total + dt_step, dt_step);  // [s] Time span
+  tfs = t0 + tspan.array();                        // [s] Final times
+  n_steps = tspan.size();
+  cout << "Total duration   " << dt_total / SECS_DAY << " days" << endl;
+  cout << "Time step        " << dt_step / SECS_MINUTE << " minutes" << endl;
+  cout << "Propagation step " << dt_prop << " seconds" << endl;
+  cout << "Start epoch      " << Time2GregorianString(t0) << endl;
+  cout << "End epoch        " << Time2GregorianString(t0 + dt_total) << endl;
+  cout << "Number of steps  " << n_steps << endl;
 
-  // // Propagate
-  // MatX6 rv_case6_ci;
-  // if (config.recompute || !file.exist("/rv_case6_ci")) {
-  //   cout << endl << "Propagating" << endl;
-  //   rv_case6_ci = dyn_nbody.Propagate(rv0_ci, t0, tfs, true);
-  //   dump(file, "/rv_case6_ci", rv_case6_ci.cast<double>(), DumpMode::Overwrite);
-  // } else {
-  //   rv_case6_ci = load<MatX6d>(file, "/rv_case6_ci");
-  //   cout << endl << "Loaded from file" << endl;
-  // }
+  // Propagate
+  MatX6 rv_case6_ci;
+  if (config.recompute_part1 || !file_part1.exist("/rv_case6_ci")) {
+    cout << endl << "Propagating" << endl;
+    rv_case6_ci = dyn_nbody.Propagate(rv0_ci, t0, tfs, true);
+    dump(file_part1, "/rv_case6_ci", rv_case6_ci.cast<double>(), DumpMode::Overwrite);
+  } else {
+    rv_case6_ci = load<MatX6d>(file_part1, "/rv_case6_ci");
+    cout << endl << "Loaded from file" << endl;
+  }
+  MatX6 rv_case6_op = ConvertFrame(tfs, rv_case6_ci, Frame::MOON_CI, Frame::MOON_OP, true);
+  MatX6 coe_case6_op = Cart2Classical(rv_case6_op, GM_MOON);
 
   // **************************************************************************
   // e-w plots
   // **************************************************************************
 
-  std::vector<MatX6> coe_cases = {coe_case1_op, coe_case2_op, coe_case3_op, coe_case4_me};
+  std::vector<MatX6> coe_cases
+      = {coe_case1_op, coe_case2_op, coe_case3_op, coe_case4_me, coe_case5_op, coe_case6_op};
 
   // Plot
   fig = figure(true);
   title("e-w plots");
-  for (int i = 0; i < 4; i++) {
+  for (size_t i = 0; i < coe_cases.size(); i++) {
     fig->add_subplot(2, 2, i);
     hold(true);
     VecX e_vec = coe_cases[i].col(1);
@@ -350,13 +354,16 @@ int main() {
     xlim({70, 110});
     ylim({0.5, 0.75});
     title("Case " + std::to_string(i + 1));
-    fig->draw();
   }
+  fig->draw();
 
   // **************************************************************************
   // Constellation stability
   // **************************************************************************
-  cout << endl << endl << "*********** Constellation stability ***********" << endl << endl;
+  cout << endl << endl << "*********** Constellation stability ***********" << endl;
+
+  auto open_mode_part2 = (config.recompute_part2) ? File::Truncate : File::OpenOrCreate;
+  File file_part2(output_path / "data_part2.h5", open_mode_part1);
 
   array<Vec6, 3> coes0_op = {
       Vec6(6541.4, 0.6, 56.2 * DEG, 0, 90 * DEG, 0),
@@ -365,27 +372,40 @@ int main() {
   };
   array<MatX6, 3> rvs_ci;
   array<MatX6, 3> coes_ci;
-
   for (int i = 0; i < 3; i++) {
-    // Initial state
-    Vec6 coe0_op_ = coes0_op[i];
-    Vec6 rv0_op_ = Classical2Cart(coe0_op_, GM_MOON);
-    Vec6 rv0_ci_ = ConvertFrame(t0, rv0_op_, MOON_OP, MOON_CI);
+    if (config.recompute_part1 || !file_part2.exist("/rvs_ci" + std::to_string(i))
+        || !file_part2.exist("/coes_ci" + std::to_string(i))) {
+      cout << endl << "Propagating" << endl;
 
-    NBodyDynamics dyn_nbody_(IntegratorType::RK4);
-    dyn_nbody_.AddBody(Body::Moon(7, 1));
-    dyn_nbody_.AddBody(Body::Earth());
-    dyn_nbody_.AddBody(Body::Sun());
-    dyn_nbody_.SetTimeStep(dt_prop);
-    dyn_nbody_.SetFrame(MOON_CI);
+      // Initial state
+      Vec6 coe0_op_ = coes0_op[i];
+      Vec6 rv0_op_ = Classical2Cart(coe0_op_, GM_MOON);
+      Vec6 rv0_ci_ = ConvertFrame(t0, rv0_op_, MOON_OP, MOON_CI);
 
-    // Propagate
-    VecX tfs_ = tfs.head(1000);
-    MatX6 rv_ci_ = dyn_nbody_.Propagate(rv0_ci_, t0, tfs, true);
-    MatX6 coe_ci_ = Cart2Classical(rv_ci_, GM_MOON);
+      NBodyDynamics dyn_nbody_(IntegratorType::RK4);
+      dyn_nbody_.AddBody(Body::Moon(7, 1));
+      dyn_nbody_.AddBody(Body::Earth());
+      dyn_nbody_.AddBody(Body::Sun());
+      dyn_nbody_.SetTimeStep(dt_prop);
+      dyn_nbody_.SetFrame(MOON_CI);
 
-    rvs_ci[i] = rv_ci_;
-    coes_ci[i] = coe_ci_;
+      // Propagate
+      VecX tfs_ = tfs.head(1000);
+      MatX6 rv_ci_ = dyn_nbody_.Propagate(rv0_ci_, t0, tfs, true);
+      MatX6 coe_ci_ = Cart2Classical(rv_ci_, GM_MOON);
+
+      rvs_ci[i] = rv_ci_;
+      coes_ci[i] = coe_ci_;
+
+      dump(file_part2, "/rvs_ci" + std::to_string(i), rvs_ci[i].cast<double>(),
+           DumpMode::Overwrite);
+      dump(file_part2, "/coes_ci" + std::to_string(i), coes_ci[i].cast<double>(),
+           DumpMode::Overwrite);
+    } else {
+      rvs_ci[i] = load<MatX6d>(file_part2, "/rvs_ci" + std::to_string(i));
+      coes_ci[i] = load<MatX6d>(file_part2, "/coes_ci" + std::to_string(i));
+      cout << endl << "Loaded from file" << endl;
+    }
   }
 
   show();

@@ -231,7 +231,7 @@ namespace lupnt {
     bool use_drag = false;
   };
 
-  class NBodyDynamics : public NumericalOrbitDynamics {
+  class NBodyDynamics : public NumericalOrbitDynamics<T> {
   private:
     Frame frame_ = Frame::GCRF;
     std::vector<Body> bodies_;

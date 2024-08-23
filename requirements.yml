@@ -21,6 +21,7 @@ dependencies:
   - torchaudio
   - Pillow
   - plotly
+  - plotly-orca
   - scikit-learn
   - scipy
   - setuptools
