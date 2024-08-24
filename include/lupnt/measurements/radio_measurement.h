@@ -174,7 +174,7 @@ class RadioMeasurement {
    */
   static double ComputePnRangeErrorCTL(
       double PRC_N0, double B_L_CTL, double T_c,
-      CarrierType carrier_type = CarrierType::BPSK);
+      Modulation modulation_type = Modulation::BPSK);
 
   /**
    *
@@ -189,7 +189,7 @@ class RadioMeasurement {
    */
   static double ComputePnRangeErrorOL(
       double PRC_N0, double T_I, double T_c,
-      CarrierType carrier_type = CarrierType::BPSK);
+      Modulation modulation_type = Modulation::BPSK);
 
   /**
    * @brief Compute range rate error
@@ -205,7 +205,7 @@ class RadioMeasurement {
    */
   static double ComputeRangeRateErrorOneWay(
       double B_L_carrier, double f_C, double T_s, double T_I, double PT_N0,
-      double sigma_y_1s, CarrierType carrier_type = CarrierType::BPSK,
+      double sigma_y_1s, Modulation modulation_type = Modulation::BPSK,
       double m_R = 0.0);
 
   /**
@@ -224,42 +224,10 @@ class RadioMeasurement {
    */
   static double ComputeRangeRateErrorTwoWay(
       double B_L_carrier, double f_C, double T_s, double T_I, double PT_N0,
-      double sigma_y_1s, double G, CarrierType carrier_type = CarrierType::BPSK,
+      double sigma_y_1s, double G, Modulation modulation_type = Modulation::BPSK,
       double m_R = 0.0);
 
-  /**
-   * @brief Get the Frequency Band object
-   *
-   * @param f   frequency [Hz]
-   * @return FrequencyBand
-   */
-  static FrequencyBand GetFrequencyBand(double f);
 
-  /**
-   * @brief Get the (recommended) Transponder Turn Around Ratio for spacecraft
-   *  // https://deepspace.jpl.nasa.gov/dsndocs/810-005/201/201B.pdf
-   *
-   * @param fbu  uplink frequency band
-   * @param fbd  downlink frequency band
-   * @return double  Turn around ratio
-   */
-  static double GetTransponderTurnAroundRatio(FrequencyBand fbu,
-                                              FrequencyBand fbd);
-
-  /**
-   * @brief Compute the carrier loop signal-to-noise ratio
-   *
-   * @param PT_N0  downlink total signal power to noise spectral density ratio
-   * [Hz]
-   * @param B_L_carrier  carrier loop noise bandwidth [Hz]
-   * @param T_s           period of the binary symbol [s]
-   * @param carrier_type  modulation type
-   * @param m_R           modulation index (only for residual carrier)
-   *
-   */
-  static double ComputeCarrierLoopSNR(double PT_N0, double B_L_carrier,
-                                      double T_s, CarrierType carrier_type,
-                                      double m_R);
 };
 
 }  // namespace lupnt

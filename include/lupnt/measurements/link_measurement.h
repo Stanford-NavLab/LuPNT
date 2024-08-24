@@ -25,7 +25,7 @@ enum class LinkMeasurementType { Range, RangeRate, Bearing };
 struct LinkParams {
   // Receiver Parameters
   double freq;               // carrier frequency [Hz]
-  CarrierType carrier_type;  // carrier type
+  Modulation modulation_type;  // carrier type
   double B_L_chip;           // tracking loop noise bandwidth
   double Tc;                 // chip duration
   double B_L_carrier;        // carrier loop noise bandwidth
@@ -33,7 +33,7 @@ struct LinkParams {
   double m_R;                // modulation index
   double T_I_doppler;        // Doppler integration time
   double T_I_range;          // range integration time (for open loop)
-  double G;                  // Transponder turnaround ratio
+  double turnaround_ratio;   // Transponder turnaround ratio
 
   // Agent Parameters
   std::shared_ptr<Body>
@@ -171,24 +171,24 @@ class LinkMeasurement {
    * @brief Generate Two way link (receiver->target->receiver)
    *
    * @param epoch       epoch of the receiver or transmitter
-   * @param tr_receiver    transceiver (receiver)
-   * @param tr_target      transceiver (target)
+   * @param tr_receiver    Transponder (receiver)
+   * @param tr_target      Transponder (target)
    * @param txrx_fixed     fixed time of transmitter or receiver (tx or rx)
    * @return std::vector<ITransmission>
    */
-  void GenerateTwoWayLink(Real epoch, std::shared_ptr<Transceiver> &tr_receiver,
-                          std::shared_ptr<Transceiver> &tr_target,
+  void GenerateTwoWayLink(Real epoch, std::shared_ptr<Transponder> &tr_receiver,
+                          std::shared_ptr<Transponder> &tr_target,
                           std::string txrx_fixed);
 
   void GenerateTwoWayLinkAtRxEpoch(Real epoch,
-                                   std::shared_ptr<Transceiver> &tr_receiver,
-                                   std::shared_ptr<Transceiver> &tr_target) {
+                                   std::shared_ptr<Transponder> &tr_receiver,
+                                   std::shared_ptr<Transponder> &tr_target) {
     GenerateTwoWayLink(epoch, tr_receiver, tr_target, "rx");
   };
 
   void GenerateTwoWayLinkAtTxEpoch(Real epoch,
-                                   std::shared_ptr<Transceiver> &tr_receiver,
-                                   std::shared_ptr<Transceiver> &tr_target) {
+                                   std::shared_ptr<Transponder> &tr_receiver,
+                                   std::shared_ptr<Transponder> &tr_target) {
     GenerateTwoWayLink(epoch, tr_receiver, tr_target, "tx");
   };
 

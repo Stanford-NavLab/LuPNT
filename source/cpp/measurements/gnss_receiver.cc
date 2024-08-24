@@ -72,7 +72,7 @@ namespace lupnt {
   }
 
   /**
-   * @brief Get the Anttena Gain of the Receiver
+   * @brief Get the Antenna Gain of the Receiver
    *
    * @param t   epoch (TAI) [s]
    * @param r_tx_gcrf  position of the transmitter in GCRF [km]

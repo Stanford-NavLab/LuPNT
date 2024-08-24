@@ -12,6 +12,7 @@
 #include "lupnt/measurements/radio_measurement.h"
 
 #include "lupnt/numerics/math_utils.h"
+#include "lupnt/measurements/comm_utils.h"
 #include "lupnt/physics/frame_converter.h"
 
 namespace lupnt {
@@ -192,7 +193,7 @@ Real RadioMeasurement::ComputeTwoWayRangeRateLTR(
 
 double RadioMeasurement::ComputePnRangeErrorCTL(double PRC_N0, double B_L,
                                                 double Tc,
-                                                CarrierType carrier_type) {
+                                                Modulation modulation_type) {
   double sigma = 0.0;
   double f_RC = 1 / (2 * Tc);
 
@@ -206,7 +207,7 @@ double RadioMeasurement::ComputePnRangeErrorCTL(double PRC_N0, double B_L,
 
 double RadioMeasurement::ComputePnRangeErrorOL(double PRC_N0, double TI,
                                                double Tc,
-                                               CarrierType carrier_type) {
+                                               Modulation modulation_type) {
   double sigma = 0.0;
   double f_RC = 1 / (2 * Tc);
 
@@ -220,14 +221,14 @@ double RadioMeasurement::ComputePnRangeErrorOL(double PRC_N0, double TI,
 
 double RadioMeasurement::ComputeRangeRateErrorOneWay(
     double B_L_carrier, double f_C, double T_s, double T_I, double PT_N0,
-    double sigma_y_1s, CarrierType carrier_type, double m_R) {
+    double sigma_y_1s, Modulation modulation_type, double m_R) {
   // Thermal noise
   double rho_L =
-      ComputeCarrierLoopSNR(PT_N0, B_L_carrier, T_s, carrier_type, m_R);
+      ComputeCarrierLoopSNR(PT_N0, B_L_carrier, T_s, modulation_type, m_R);
   double sigma_vn = sqrt(2 / rho_L) * C / (2 * PI * f_C * T_I);
 
   // phase noise contribution
-  double sigma_y_T = sigma_y_1s / sqrt(T_s);
+  double sigma_y_T = sigma_y_1s / sqrt(T_I);
   double sigma_vf = C * sigma_y_T;
 
   // phase scintillation
@@ -241,17 +242,17 @@ double RadioMeasurement::ComputeRangeRateErrorOneWay(
 
 double RadioMeasurement::ComputeRangeRateErrorTwoWay(
     double B_L_carrier, double f_C, double T_s, double T_I, double PT_N0,
-    double sigma_y_1s, double G, CarrierType carrier_type, double m_R) {
+    double sigma_y_1s, double G, Modulation modulation_type, double m_R) {
   // Thermal noise
   double rho_L =
-      ComputeCarrierLoopSNR(PT_N0, B_L_carrier, T_s, carrier_type, m_R);
+      ComputeCarrierLoopSNR(PT_N0, B_L_carrier, T_s, modulation_type, m_R);
   double sigma_vnu = sqrt(1 / 2) * (C / (2 * PI * f_C * T_I)) * G / sqrt(rho_L);
   double sigma_vnd = sqrt(2 / rho_L) * C / (2 * PI * f_C * T_I) / sqrt(rho_L);
 
   double sigma_vn = sqrt(pow(sigma_vnu, 2) + pow(sigma_vnd, 2));
 
   // phase noise contribution
-  double sigma_y_T = sigma_y_1s / sqrt(T_s);
+  double sigma_y_T = sigma_y_1s / sqrt(T_I);
   double sigma_vf = C * sigma_y_T / sqrt(2);
 
   // phase scintillation
@@ -265,108 +266,7 @@ double RadioMeasurement::ComputeRangeRateErrorTwoWay(
   return sigma_v;
 }
 
-FrequencyBand RadioMeasurement::GetFrequencyBand(double f_C) {
-  FrequencyBand fbu = FrequencyBand::S;
 
-  // UHF, S, X, Ku, Ka
-  if (f_C >= 300e6 && f_C < 1e9) {
-    fbu = FrequencyBand::UHF;
-  } else if (f_C >= 1.0e9 && f_C < 2.0e9) {
-    fbu = FrequencyBand::L;
-  } else if (f_C >= 2e9 && f_C < 4e9) {
-    fbu = FrequencyBand::S;
-  } else if (f_C >= 2e9 && f_C < 4e9) {
-    fbu = FrequencyBand::Cband;
-  } else if (f_C >= 8e9 && f_C < 12e9) {
-    fbu = FrequencyBand::X;
-  } else if (f_C >= 12e9 && f_C < 18e9) {
-    fbu = FrequencyBand::Ku;
-  } else if (f_C >= 18e9 && f_C < 26e9) {
-    fbu = FrequencyBand::K;
-  } else if (f_C >= 26e9 && f_C < 40e9) {
-    fbu = FrequencyBand::Ka;
-  }
 
-  return fbu;
-}
-
-double RadioMeasurement::GetTransponderTurnAroundRatio(FrequencyBand fbu,
-                                                       FrequencyBand fbd) {
-  // https://deepspace.jpl.nasa.gov/dsndocs/810-005/201/201B.pdf
-  double G = 1.0;
-  // fbu: S, X, Ka,  fbd: fbu: S, X, Ka
-  if (fbu == FrequencyBand::S && fbd == FrequencyBand::S) {
-    G = 240 / 221;
-  } else if (fbu == FrequencyBand::S && fbd == FrequencyBand::X) {
-    G = 880 / 221;
-  } else if (fbu == FrequencyBand::S && fbd == FrequencyBand::Ka) {
-    G = 15.071;
-  } else if (fbu == FrequencyBand::X && fbd == FrequencyBand::S) {
-    G = 240 / 749;
-  } else if (fbu == FrequencyBand::X && fbd == FrequencyBand::X) {
-    G = 880 / 749;
-  } else if (fbu == FrequencyBand::X && fbd == FrequencyBand::Ka) {
-    G = 4.4506;
-  } else if (fbu == FrequencyBand::Ka && fbd == FrequencyBand::S) {
-    G = 0.066959;
-  } else if (fbu == FrequencyBand::Ka && fbd == FrequencyBand::X) {
-    G = 0.24561;
-  } else if (fbu == FrequencyBand::Ka && fbd == FrequencyBand::Ka) {
-    G = 0.92982;
-  }
-
-  return G;
-}
-
-double RadioMeasurement::ComputeCarrierLoopSNR(double PT_N0, double B_L_carrier,
-                                               double T_s,
-                                               CarrierType carrier_type,
-                                               double m_R) {
-  double S_L = 1.0;
-  double EsN0 = PT_N0 * T_s;
-  double rho_L = PT_N0 / B_L_carrier;
-  double tmp1, tmp2, tmp3;
-
-  // Compute carier loop signal-to-noise ratio
-  if (carrier_type == CarrierType::Residual) {
-    // carrier nominal power https://public.ccsds.org/Pubs/401x0b17s.pdf
-    double PC_N0 = PT_N0 * cos(m_R) * pow(J0Bessel(m_R), 2);
-    rho_L = PC_N0 / B_L_carrier * EsN0 / (1 + 2 * EsN0);
-
-  } else {
-    switch (carrier_type) {
-      case CarrierType::BPSK:
-        S_L = 2 * EsN0 / (1 + 2 * EsN0);
-        break;
-      case CarrierType::QPSK:
-        tmp1 = (9 / 4) / EsN0;
-        tmp2 = (3 / 2) / pow(EsN0, 2);
-        tmp3 = (3 / 16) / pow(EsN0, 3);
-
-        S_L = 1 / (1 + tmp1 + tmp2 + tmp3);
-        break;
-      case CarrierType::OQPSK:
-      case CarrierType::GMSK:
-      case CarrierType::GMSK_PN:
-        // same as OQPSK
-        // Reference: GMSK CarrierType for Deep Space Application
-        // https://ieeexplore-ieee-org.stanford.idm.oclc.org/stamp/stamp.jsp?tp=&arnumber=6187097
-        tmp1 = (9 / 4) / EsN0;
-        tmp2 = (3 / 2) / pow(EsN0, 2);
-        tmp3 = (3 / 16) / pow(EsN0, 3);
-
-        S_L = 1 / 4 / (1 + tmp1 + tmp2 + tmp3);
-        break;
-    }
-    rho_L = PT_N0 * S_L / B_L_carrier;
-  }
-
-  // Recommended value to avoid cycle slips
-  // rho_L >= 10 dB for residual carrier
-  // rho_L >= 17 dB for BPSK
-  // rho_L >= 23 dB for QPSK and Offset QPSK
-
-  return rho_L;
-}
 
 }  // namespace lupnt

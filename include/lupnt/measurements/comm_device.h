@@ -17,21 +17,12 @@
 #include "lupnt/measurements/space_channel.h"
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/orbit_state.h"
+#include "lupnt/measurements/comm_utils.h"
 
 namespace lupnt {
 
 class Agent;
 
-enum CarrierType {
-  Residual,  // Residual carrier
-  BPSK,      // Binary Phase Shift Keying
-  QPSK,      // Quadrature Phase Shift Keying
-  OQPSK,     // Offset Quadrature Phase Shift Keying
-  GMSK,      // Gaussian Minimum Shift Keying
-  GMSK_PN,   // GMSK with PN modulation
-};
-
-enum FrequencyBand { UHF, L, S, Cband, X, Ku, K, Ka };
 
 class ICommDevice {
  public:
@@ -54,21 +45,24 @@ class ICommDevice {
   std::shared_ptr<SpaceChannel> channel_;
 };
 
-struct TransmitterParam {
-  double P_tx = 0.0;              // Transmit power [dBW]
-  double turnaround_ratio = 1.0;  // Turnaround ratio
-};
-
 class Transmitter : public ICommDevice {
  public:
   Antenna antenna_;
+  double P_tx;       // Transmit power [dBW]
   double freq_tx;    // Transmit frequency [Hz]
   double bandwidth;  // Bandwidth of the signal [Hz]
-  virtual ~Transmitter() = default;
   std::string txrx = "tx";
-  TransmitterParam tx_param_;
-  virtual inline double GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf,
-                                                   Vec3d r_rx_gcrf) = 0;
+  Vec3 antenna_orientation_body = Vec3::Zero();
+
+  inline void SetAntennaOrientation(Vec3 orientation) {
+    antenna_orientation_body = orientation;
+  };
+
+  double GetTransmittionAntennaGain(double epoch) {
+    // The los in body frame
+    agent
+
+  }
 };
 
 struct ReceiverParam {
@@ -80,31 +74,51 @@ struct ReceiverParam {
   double CN0threshold = 20.0;  // CN0 threshold for receiving signals [dB-Hz]
 
   // PN Code Parameters
-  CarrierType carrier_type = CarrierType::BPSK;  // carrier type
+  Modulation modulation_type = Modulation::BPSK;  // carrier type
   double B_L_chip = 0.1;      // tracking loop noise bandwidth [Hz]
   double Tc = 1 / 2.068e6;    // chip duration
   double B_L_carrier = 0.1;   // carrier loop noise bandwidth [Hz]
   double m_R = 0.0;           // modulation index
   double T_I_doppler = 10.0;  // Doppler integration time [s]
   double T_I_range = 0.5;     // range integration time [s] (for open loop)
+  std::string pn_ranging_code = "none";  //  "T2B", "T4B"
+  double SER_threshold = 0.1;            // Symbol error rate threshold
+  double BTs = 0.5;                      // For GMSK modulation (B: 3dB point of gaussian filter, )
+  double coding_rate = 1 / 2;            // Coding rate
 };
 
 class Receiver : public ICommDevice {
  public:
   Antenna antenna_;
-  virtual ~Receiver() = default;
   std::string txrx = "rx";
   ReceiverParam rx_param_;
-  virtual inline double GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf,
+  Vec3 antenna_orientation_body = Vec3::Zero();
+  double GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf,
                                                Vec3d r_rx_gcrf) = 0;
+
+  inline void SetAntennaOrientation(Vec3 orientation) {
+    antenna_orientation_body = orientation;
+  };
+
 };
 
-class Transceiver : public ICommDevice {
+class Transponder : public ICommDevice {
  public:
   Antenna antenna_;
-  double freq_tx;  // Transmit frequency [Hz]
-  virtual ~Transceiver() = default;
+
+  // transmitte params
+  double freq_tx;                 // Transmit frequency [Hz]
+  double turnaround_ratio = 1.0;  // Turnaround ratio
   std::string txrx = "txrx";
+
+  Vec3 antenna_orientation_body = Vec3::Zero();
+
+  Transponder(const std::shared_ptr<Transmitter> &tx,
+              const std::shared_ptr<Receiver> &rx) {
+    tx_ = tx;
+    rx_ = rx;
+  };
+  virtual ~Transponder() = default;
   inline void SetTransmitter(const std::shared_ptr<Transmitter> &tx) {
     tx_ = tx;
   };
@@ -114,6 +128,11 @@ class Transceiver : public ICommDevice {
     tx_->SetAgent(agent);
     rx_->SetAgent(agent);
   };
+  inline void SetAntennaOrientation(Vec3 orientation) {
+    antenna_orientation_body = orientation;
+    tx_->SetAntennaOrientation(orientation);
+    rx_->SetAntennaOrientation(orientation);
+  };
 
   inline std::shared_ptr<Transmitter> GetTransmitter() { return tx_; };
   inline std::shared_ptr<Receiver> GetReceiver() { return rx_; };
@@ -122,5 +141,6 @@ class Transceiver : public ICommDevice {
   std::shared_ptr<Transmitter> tx_;
   std::shared_ptr<Receiver> rx_;
 };
+
 
 }  // namespace lupnt

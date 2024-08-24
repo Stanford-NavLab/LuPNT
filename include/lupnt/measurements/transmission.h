@@ -46,9 +46,6 @@ struct ITransmission {
   double AP;
   double RP;
 
-  // occultation parameters
-  std::map<std::string, bool> vis_occult;
-
   // Transmitter and receiver
   std::shared_ptr<Transmitter> tx;
   std::shared_ptr<Receiver> rx;
@@ -58,6 +55,10 @@ struct ITransmission {
   bool is_rx_gs;
   bool is_tx_bodyfixed;
   bool is_rx_bodyfixed;
+
+  // visibility
+  bool vis_all;
+  std::map<std::string, bool> vis_occult;
 
   int ID_tx;
 };

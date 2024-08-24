@@ -31,6 +31,7 @@
 // measurements
 #include "lupnt/measurements/antenna.h"
 #include "lupnt/measurements/comm_device.h"
+#include "lupnt/measurements/comm_utils.h"
 #include "lupnt/measurements/gnss_channel.h"
 #include "lupnt/measurements/gnss_measurement.h"
 #include "lupnt/measurements/gnss_receiver.h"

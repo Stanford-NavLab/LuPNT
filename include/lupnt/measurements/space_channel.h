@@ -56,6 +56,19 @@ namespace lupnt {
                                     std::string time_fixed);
 
     /**
+     * @brief
+     *
+     * @param txDevice
+     * @param rxDevice
+     * @param t
+     * @param time_fixed
+     * @return ITransmission
+     */
+    ITransmission ComputeLinkBudgetDR(std::shared_ptr<Transmitter> &txDevice,
+                                    std::shared_ptr<Receiver> &rxDevice, Real t,
+                                    std::string time_fixed, double data_rate);
+
+    /**
      * @brief Solve the light time delay at the receiver
      *
      * @param tx  transmitter device

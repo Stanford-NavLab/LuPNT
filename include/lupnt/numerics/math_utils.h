@@ -71,6 +71,9 @@ namespace lupnt {
   double PercentileD(VecXd x, double p);
   double StdD(VecXd x);
 
+  double erfc(double x);
+  double qfunc(double x);
+
   MatX SampleMVN(const VecX mean, const MatX cov, int nn, int seed = 0);
   double SampleRandNormal(double mean, double std, int seed = 0);
 

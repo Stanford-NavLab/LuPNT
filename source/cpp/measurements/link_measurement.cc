@@ -48,10 +48,9 @@ void LinkMeasurement::SetLinkParams() {
   linkparams_.freq = trans.tx->freq_tx;
   linkparams_.B_L_chip = rx_param.B_L_chip;
   linkparams_.B_L_carrier = rx_param.B_L_carrier;
-  linkparams_.Tc = rx_param.carrier_type;
+  linkparams_.Tc = rx_param.modulation_type;
   linkparams_.T_I_doppler = rx_param.T_I_doppler;
   linkparams_.T_I_range = rx_param.T_I_range;
-  linkparams_.G = trans.tx->tx_param_.turnaround_ratio;
 
   // Singals
   linkparams_.CN0_linear = trans.CN0_linear;
@@ -207,11 +206,11 @@ Real LinkMeasurement::GetOneWayRangeMeasurement(
     if (linkparams_.is_groundstation_rx) {
       sigma_ow = 2 * RadioMeasurement::ComputePnRangeErrorCTL(
                          linkparams_.CN0_linear, linkparams_.B_L_chip,
-                         linkparams_.Tc, linkparams_.carrier_type);
+                         linkparams_.Tc, linkparams_.modulation_type);
     } else {
       sigma_ow = 2 * RadioMeasurement::ComputePnRangeErrorOL(
                          linkparams_.CN0_linear, linkparams_.T_I_range,
-                         linkparams_.Tc, linkparams_.carrier_type);
+                         linkparams_.Tc, linkparams_.modulation_type);
     }
 
     rho_ow += SampleRandNormal(0.0, sigma_ow, seed_);
@@ -257,7 +256,7 @@ Real LinkMeasurement::GetOneWayRangeRateMeasurement(
     double sigma_ow_rate = RadioMeasurement::ComputeRangeRateErrorOneWay(
         linkparams_.B_L_carrier, linkparams_.freq, linkparams_.Tc,
         linkparams_.T_I_doppler, trans_ow_.CN0_linear, linkparams_.sigma_y_1s,
-        linkparams_.carrier_type, linkparams_.m_R);
+        linkparams_.modulation_type, linkparams_.m_R);
 
     rho_ow_rate += SampleRandNormal(0.0, sigma_ow_rate, seed_);
   }
@@ -268,8 +267,8 @@ Real LinkMeasurement::GetOneWayRangeRateMeasurement(
 /********************** Two way Link ***************************/
 
 void LinkMeasurement::GenerateTwoWayLink(
-    Real epoch, std::shared_ptr<Transceiver> &tr_receiver,
-    std::shared_ptr<Transceiver> &tr_target, std::string txrx) {
+    Real epoch, std::shared_ptr<Transponder> &tr_receiver,
+    std::shared_ptr<Transponder> &tr_target, std::string txrx) {
   SpaceChannel sc = SpaceChannel();
   sc.SetOccultationBodies(occult_bodies_, occult_alt_);
 
@@ -321,6 +320,8 @@ void LinkMeasurement::GenerateTwoWayLink(
   agents_.push_back(tr_target->GetAgent());
 
   // Link Parameters -------------------------------------------------
+  linkparams_.turnaround_ratio = tr_target->turnaround_ratio;
+
   SetLinkParams();
 
   two_way_generated_ = true;
@@ -425,11 +426,11 @@ Real LinkMeasurement::GetTwoWayRangeMeasurement(
     if (linkparams_.is_groundstation_rx) {
       sigma_tw = RadioMeasurement::ComputePnRangeErrorCTL(
           linkparams_.CN0_linear, linkparams_.B_L_chip, linkparams_.Tc,
-          linkparams_.carrier_type);
+          linkparams_.modulation_type);
     } else {
       sigma_tw = RadioMeasurement::ComputePnRangeErrorOL(
           linkparams_.CN0_linear, linkparams_.T_I_range, linkparams_.Tc,
-          linkparams_.carrier_type);
+          linkparams_.modulation_type);
     }
 
     rho_tw += SampleRandNormal(0.0, sigma_tw, seed_);
@@ -471,7 +472,8 @@ Real LinkMeasurement::GetTwoWayRangeRateMeasurement(
     double sigma_tw_rate = RadioMeasurement::ComputeRangeRateErrorTwoWay(
         linkparams_.B_L_carrier, linkparams_.freq, linkparams_.Tc,
         linkparams_.T_I_doppler, linkparams_.CN0_linear, linkparams_.sigma_y_1s,
-        linkparams_.G, linkparams_.carrier_type, linkparams_.m_R);
+        linkparams_.turnaround_ratio, linkparams_.modulation_type,
+        linkparams_.m_R);
 
     rho_tw_rate += SampleRandNormal(0.0, sigma_tw_rate, seed_);
   }
