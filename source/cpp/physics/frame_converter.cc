@@ -93,15 +93,15 @@ namespace lupnt {
   /// @param frame_out Coordinate system of the converted state vector
   /// @return Vec6  State vector in the converted coordinate system
   /// @note
-  //     ITRF  TOD
-  //      |     |
-  //     TIRS  MOD   ME
-  //      |     |    |
-  //     CIRS  EME   PA
-  //        \  /     |
-  // ICRF -- GCRF -- MI -- OP
-  //       /  |  \  /
-  //     SER GSE EMR
+  ///     ITRF  TOD
+  ///      |     |
+  ///     TIRS  MOD   ME
+  ///      |     |    |
+  ///     CIRS  EME   PA
+  ///        \  /     |
+  /// ICRF -- GCRF -- MI -- OP
+  ///       /  |  \  /
+  ///     SER GSE EMR
   Vec6 ConvertFrameBase(Real t_tai, const Vec6& rv_in, Frame frame_in, Frame frame_out) {
     if (frame_in == frame_out) return rv_in;
     switch (frame_in) {

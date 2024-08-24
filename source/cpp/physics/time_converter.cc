@@ -16,21 +16,28 @@
 #define TIME_CONVERSION(from, to, func) \
   {{Time::from, Time::to}, [](Real t) -> Real { return func(t); }}
 
-/// @ref
+/// @note
 /// D. Folta, N. Bosanac, I. Elliott, L. Mann, R. Mesarch, and J. Rosales,
 /// ‘Astrodynamics Convention and Modeling Reference for Lunar, Cislunar, and
 /// Libration Point Orbits’, Jan. 2022.
-/// @ref
-// O. Montenbruck and G. Eberhard, “Satellite Orbits: Models, Methods, and
-// Applications,” Berlin : New York: Springer, 2000.
-// doi: 10.1007/978-3-642-58351-3.
+///
+/// O. Montenbruck and G. Eberhard, “Satellite Orbits: Models, Methods, and
+/// Applications,” Berlin : New York: Springer, 2000.
+/// doi: 10.1007/978-3-642-58351-3.
 
 namespace lupnt {
-  //                     TCG
-  //                      |
-  // UT1 -- UTC -- TAI -- TT -> TCB
-  //                |     |      |
-  //               GPS   TDB <---+
+
+  /// @brief Convert time from one time system to another
+  /// @param t Time in the original time system
+  /// @param from Original time system
+  /// @param to Converted time system
+  /// @return Real Time in the converted time system
+  /// @note
+  ///                     TCG
+  ///                      |
+  /// UT1 -- UTC -- TAI -- TT -> TCB
+  ///                |     |      |
+  ///               GPS   TDB <---+
   Real ConvertTime(Real t, Time from, Time to) {
     if (from == to) return t;
     switch (from) {
