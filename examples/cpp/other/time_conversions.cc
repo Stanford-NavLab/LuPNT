@@ -8,8 +8,8 @@ int main() {
   Real t_tai = TT2TAI(t_tt);
   Real t_utc = TAI2UTC(t_tai);
   Real t_tdb = TT2TDB(t_tt);
-  Real t_tai_spice = ConvertTime(t_tt, TimeSys::TT, TimeSys::TAI);
-  Real t_tdb_spice = ConvertTime(t_tt, TimeSys::TT, TimeSys::TDB);
+  Real t_tai_spice = ConvertTime(t_tt, Time::TT, Time::TAI);
+  Real t_tdb_spice = ConvertTime(t_tt, Time::TT, Time::TDB);
   Real mjd_tt = t_tt / SECS_DAY + MJD_J2000;
   Real mjd_tai = t_tai / SECS_DAY + MJD_J2000;
   Real mjd_utc = t_utc / SECS_DAY + MJD_J2000;

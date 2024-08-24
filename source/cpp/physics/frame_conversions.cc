@@ -30,7 +30,7 @@ namespace lupnt {
 
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 34
   Mat3 RotPrecessionNutation(Real t_tai) {
-    Real t_tt = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TT);
+    Real t_tt = ConvertTime(t_tai, Time::TAI, Time::TT);
     Real jd_tt = Time2JD(t_tt);
 
     IauSofaData iau_data = GetIauSofaData(jd_tt);
@@ -48,7 +48,7 @@ namespace lupnt {
 
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 35
   Mat3 RotSideralMotion(Real t_tai) {
-    Real t_ut1 = ConvertTime(t_tai, TimeSys::TAI, TimeSys::UT1);
+    Real t_ut1 = ConvertTime(t_tai, Time::TAI, Time::UT1);
     Real theta_era = EarthRotationAngle(t_ut1);
     Mat3 R_s = RotZ(theta_era);
     return R_s;
@@ -56,10 +56,10 @@ namespace lupnt {
 
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 36
   Mat3 RotSideralMotionDot(Real t_tai) {
-    Real t_ut1 = ConvertTime(t_tai, TimeSys::TAI, TimeSys::UT1);
+    Real t_ut1 = ConvertTime(t_tai, Time::TAI, Time::UT1);
     Real theta_era = EarthRotationAngle(t_ut1);
 
-    Real t_utc = ConvertTime(t_tai, TimeSys::TAI, TimeSys::UTC);
+    Real t_utc = ConvertTime(t_tai, Time::TAI, Time::UTC);
     Real mjd_utc = Time2MJD(t_utc);
     EopData eop = GetEopData(mjd_utc);
     Real lod = eop.lod;
@@ -73,8 +73,8 @@ namespace lupnt {
 
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 36
   Mat3 RotPolarMotion(Real t_tai) {
-    Real t_utc = ConvertTime(t_tai, TimeSys::TAI, TimeSys::UTC);
-    Real t_tt = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TT);
+    Real t_utc = ConvertTime(t_tai, Time::TAI, Time::UTC);
+    Real t_tt = ConvertTime(t_tai, Time::TAI, Time::TT);
     Real mjd_utc = Time2MJD(t_utc);
 
     EopData eop = GetEopData(mjd_utc);
@@ -317,7 +317,7 @@ namespace lupnt {
   /// T. A. Ely, ‘Stable Constellations of Frozen Elliptical Inclined Lunar Orbits’, J of
   /// Astronaut Sci, vol. 53, no. 3, pp. 301–316, Sep. 2005, doi: 10.1007/BF03546355.
   Mat3 RotOP2CI(Real t_tai) {
-    Vec6 rv_m2e = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH, Frame::MOON_CI);
+    Vec6 rv_m2e = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH, Frame::GCRF);
     Vec3 r = rv_m2e.head(3);
     Vec3 v = rv_m2e.tail(3);
 

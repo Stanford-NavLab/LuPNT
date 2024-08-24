@@ -234,7 +234,7 @@ namespace lupnt {
   template <typename T = double> class NBodyDynamics : public NumericalOrbitDynamics {
   private:
     Frame frame_ = Frame::GCRF;
-    std::vector<BodyT<Real>> bodies_;
+    std::vector<BodyT<T>> bodies_;
     NumericalPropagator propagator;
     ODE odefunc;
     bool use_srp_ = false;
@@ -251,15 +251,15 @@ namespace lupnt {
     OrbitState PropagateState(const OrbitState &state, Real t0, Real tf,
                               Mat6d *stm = nullptr) override;
 
-    void AddBody(const BodyT<Real> &body) {
+    void AddBody(const BodyT<T> &body) {
       for (auto &b : bodies_) {
         if (b.id == body.id) throw std::runtime_error("Body already added");
       }
       bodies_.push_back(body);
     }
-    void GetBodies(std::vector<BodyT<Real>> &bodies) { bodies = bodies_; }
+    void GetBodies(std::vector<BodyT<T>> &bodies) { bodies = bodies_; }
 
-    void RemoveBody(const BodyT<Real> &body) {
+    void RemoveBody(const BodyT<T> &body) {
       for (auto it = bodies_.begin(); it != bodies_.end(); ++it) {
         if (it->id == body.id) {
           bodies_.erase(it);

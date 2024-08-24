@@ -103,14 +103,14 @@ void init_constants(py::module& m) {
       .value("JUPITER", NaifId::JUPITER)
       .export_values();
 
-  m.attr("UT1") = py::str(TimeSys::UT1);
-  m.attr("UTC") = py::str(TimeSys::UTC);
-  m.attr("TAI") = py::str(TimeSys::TAI);
-  m.attr("TDB") = py::str(TimeSys::TDB);
-  m.attr("TT") = py::str(TimeSys::TT);
-  m.attr("TCG") = py::str(TimeSys::TCG);
-  m.attr("TCB") = py::str(TimeSys::TCB);
-  m.attr("GPS") = py::str(TimeSys::GPS);
-  m.attr("JD_TT") = py::str(TimeSys::JD_TT);
-  m.attr("JD_TDB") = py::str(TimeSys::JD_TDB);
+  m.attr("UT1") = py::str(Time::UT1);
+  m.attr("UTC") = py::str(Time::UTC);
+  m.attr("TAI") = py::str(Time::TAI);
+  m.attr("TDB") = py::str(Time::TDB);
+  m.attr("TT") = py::str(Time::TT);
+  m.attr("TCG") = py::str(Time::TCG);
+  m.attr("TCB") = py::str(Time::TCB);
+  m.attr("GPS") = py::str(Time::GPS);
+  m.attr("JD_TT") = py::str(Time::JD_TT);
+  m.attr("JD_TDB") = py::str(Time::JD_TDB);
 }
