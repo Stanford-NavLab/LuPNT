@@ -25,7 +25,7 @@ int main() {
   hold(true);
   grid(true);
   for (auto body : bodies) {
-    MatX6 rv = GetBodyPosVel(tfs, body, Frame::ICRF);
+    MatX6 rv = GetBodyPosVel(tfs, body, Frame::GCRF);
     Plot3(rv.col(0), rv.col(1), rv.col(2), "-", 9);
   }
   matplot::legend({"Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"});

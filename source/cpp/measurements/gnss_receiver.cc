@@ -108,6 +108,9 @@ namespace lupnt {
     std::vector<GnssTransmission> transmissions = gnss_channel_->Receive(*this, t);
 
     // Generate a measurement from the Gnss transmissions
+    if (transmissions.size() == 0) {
+      return GnssMeasurement(transmissions);
+    }
     GnssMeasurement measurement = GnssMeasurement(transmissions);
     return measurement;
   }

@@ -85,6 +85,7 @@ namespace lupnt {
     x_ = VecX::Zero(state_size_);
   }
   ClockState::ClockState(VecX clock_vec) {
+    x_.resize(clock_vec.size());
     x_ = clock_vec;
     state_size_ = clock_vec.size();
   }
@@ -150,12 +151,25 @@ namespace lupnt {
   }
 
   VecX ClockDynamics::Propagate(const VecX& x0, Real t0, Real tf, MatXd* stm) {
-    if (x0.size() == 2) {
-      Vec2 clk0 = x0.head(2);
-      return Propagate(clk0, t0, tf, stm);
-    } else if (x0.size() == 3) {
-      Vec3 clk0 = x0.head(3);
-      return Propagate(clk0, t0, tf, stm);
+    int state_size = x0.size();
+    if (state_size == 2) {
+      Vec2 clk0 = ClockState(x0).GetVec();
+      Mat2 stm_dum;
+      Propagate(clk0, t0, tf, &stm_dum);
+      if (stm != nullptr) {
+        stm->resize(2, 2);
+        *stm = stm_dum.cast<double>();
+      }
+      return clk0;
+    } else if (state_size == 3) {
+      Vec3 clk0 = ClockState(x0).GetVec();
+      Mat3 stm_dum;
+      Propagate(clk0, t0, tf, &stm_dum);
+      if (stm != nullptr) {
+        stm->resize(3, 3);
+        *stm = stm_dum.cast<double>();
+      }
+      return clk0;
     } else {
       throw std::runtime_error("Invalid clock state size");
     }

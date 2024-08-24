@@ -42,7 +42,7 @@ namespace lupnt {
 
     Real GM;
     Real R;
-    int n, m;
+    // int n, m;
 
     Frame fixed_frame;
     Frame inertial_frame;

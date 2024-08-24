@@ -35,7 +35,7 @@ int main() {
     mjd_tt = mjd0 + i * dt;
     Real tt = (mjd_tt - MJD_J2000) * SECS_DAY;
     Real t_tai = ConvertTime(tt, TimeSys::TT, TimeSys::TAI);
-    r = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::ITRF).head(3);
+    r = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::GCRF).head(3);
     cout << " " << MJD2GregorianString(mjd_tt, 1) << "      " << r.transpose().format(fmt) << endl;
   };
 

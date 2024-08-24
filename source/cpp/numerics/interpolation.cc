@@ -30,7 +30,7 @@ namespace lupnt {
   /// @param y Vector of y values
   /// @param data Matrix of data values
   /// @param xi x interpolation point
-  double LinearInterp2d(const VecXd& x, const VecXd& y, const VecXd& data, double xi, double yi) {
+  double LinearInterp2d(const VecXd& x, const VecXd& y, const MatXd& data, double xi, double yi) {
     assert(x.size() * y.size() == data.size());
     assert(x.size() > 1);
     assert(y.size() > 1);

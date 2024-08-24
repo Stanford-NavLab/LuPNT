@@ -628,27 +628,27 @@ int main() {
    * Define Process Noise function
    * *******************************************/
   FilterProcessNoiseFunction proc_noise_func
-      = [cmodel, state_size, sigma_acc](const VecX& x, Real t_curr, Real t_end) {
-          int clock_index = 6;
-          double dt = (t_end - t_curr).val();
+      = [cmodel, state_size, sigma_acc](const VecX x, Real t_curr, Real t_end) -> MatXd {
+    int clock_index = 6;
+    double dt = (t_end - t_curr).val();
 
-          MatXd Q = MatXd::Zero(state_size, state_size);
+    MatXd Q = MatXd::Zero(state_size, state_size);
 
-          Mat6d Q_rv = Mat6d::Zero();
-          for (int i = 0; i < 3; i++) {
-            Q_rv(i, i) = pow(dt, 3) / 3.0 * pow(sigma_acc, 2);
-            Q_rv(i + 3, i + 3) = dt * pow(sigma_acc, 2);
-            Q_rv(i, i + 3) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
-            Q_rv(i + 3, i) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
-          }
+    Mat6d Q_rv = Mat6d::Zero();
+    for (int i = 0; i < 3; i++) {
+      Q_rv(i, i) = pow(dt, 3) / 3.0 * pow(sigma_acc, 2);
+      Q_rv(i + 3, i + 3) = dt * pow(sigma_acc, 2);
+      Q_rv(i, i + 3) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
+      Q_rv(i + 3, i) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
+    }
 
-          Mat2d Q_clk = ClockDynamics::TwoStateNoise(cmodel, dt).cast<double>();
+    Mat2d Q_clk = ClockDynamics::TwoStateNoise(cmodel, dt).cast<double>();
 
-          Q.block(0, 0, 6, 6) = Q_rv;
-          Q.block(6, 6, 2, 2) = Q_clk;
+    Q.block(0, 0, 6, 6) = Q_rv;
+    Q.block(6, 6, 2, 2) = Q_clk;
 
-          return Q;
-        };
+    return Q;
+  };
 
   /*************************************
    * EKF Setup

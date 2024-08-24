@@ -33,7 +33,7 @@ namespace lupnt {
     inline virtual Ptr<SpaceChannel> GetChannel() { return channel_; };
     inline virtual void SetChannel(const Ptr<SpaceChannel> &channel) { channel_ = channel; };
 
-  private:
+  protected:
     Ptr<Agent> agent_;
     Ptr<SpaceChannel> channel_;
   };

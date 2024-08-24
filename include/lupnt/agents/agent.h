@@ -12,6 +12,7 @@
 
 // C++ includes
 #include <memory>
+#include <typeinfo>
 
 // lupnt includes
 #include "lupnt/core/constants.h"
@@ -31,7 +32,7 @@ namespace lupnt {
    *
    */
   class Agent {
-  private:
+  protected:
     static int id_counter_;
     const int id_;
     std::string name_;
@@ -39,10 +40,10 @@ namespace lupnt {
 
     NaifId bodyId_;
     Real epoch_;
-    std::shared_ptr<IState> rv_;
-    std::shared_ptr<IDynamics> dynamics_;
-    std::shared_ptr<AttitudeState> attitude_;
-    std::vector<std::shared_ptr<ICommDevice>> devices_;
+    Ptr<IState> rv_;
+    Ptr<IDynamics> dynamics_;
+    Ptr<AttitudeState> attitude_;
+    std::vector<Ptr<ICommDevice>> devices_;
 
     ClockState clock_;
     std::unique_ptr<ClockDynamics> clock_dynamics_;
@@ -54,15 +55,15 @@ namespace lupnt {
     Real GetEpoch() const { return epoch_; }
     NaifId GetBodyId() const { return bodyId_; }
     bool IsBodyFixed() const { return is_bodyfixed_; }
-    std::shared_ptr<IState> GetRvState() const { return rv_; }
-    std::shared_ptr<IDynamics> GetDynamics() const { return dynamics_; }
-    std::shared_ptr<AttitudeState> GetAttitudeState() const { return attitude_; }
+    Ptr<IState> GetRvState() const { return rv_; }
+    Ptr<IDynamics> GetDynamics() const { return dynamics_; }
+    Ptr<AttitudeState> GetAttitudeState() const { return attitude_; }
     ClockState GetClockState() const { return clock_; }
 
     // Setters
     void SetIsBodyFixed(bool is_bodyfixed) { is_bodyfixed_ = is_bodyfixed; }
-    void SetRvState(std::shared_ptr<IState> rv) { rv_ = rv; }
-    void SetDynamics(std::shared_ptr<IDynamics> dyn) { dynamics_ = dyn; }
+    virtual void SetRvState(Ptr<IState> rv) { rv_ = rv; }
+    void SetDynamics(Ptr<IDynamics> dyn) { dynamics_ = dyn; }
     void SetEpoch(Real epoch) { epoch_ = epoch; }
     void SetBodyId(NaifId bodyId) { bodyId_ = bodyId; }
     void SetClock(ClockState clk) { clock_ = clk; }
@@ -71,8 +72,8 @@ namespace lupnt {
     }
 
     // Comm Device
-    void AddDevice(std::shared_ptr<ICommDevice> device) { devices_.push_back(device); }
-    std::shared_ptr<Transmitter> GetTransmitter() {
+    void AddDevice(Ptr<ICommDevice> device) { devices_.push_back(device); }
+    Ptr<Transmitter> GetTransmitter() {
       for (auto device : devices_) {
         if (device->txrx == "tx") {
           return std::dynamic_pointer_cast<Transmitter>(device);
@@ -81,7 +82,7 @@ namespace lupnt {
       return nullptr;
     }
 
-    std::shared_ptr<Receiver> GetReceiver() {
+    Ptr<Receiver> GetReceiver() {
       for (auto device : devices_) {
         if (device->txrx == "rx") {
           return std::dynamic_pointer_cast<Receiver>(device);
@@ -132,37 +133,33 @@ namespace lupnt {
    *
    */
   class Spacecraft : public Agent {
+  protected:
+    Ptr<OrbitState> orbit_state_;
+    bool orbit_state_set_ = false;
+
   public:
     Spacecraft() : Agent() { SetIsBodyFixed(false); };
 
-    // Override SetRv (input has to be OrbitState, otherwise throw error)
-    void SetRvState(std::shared_ptr<IState> rv) {
-      std::shared_ptr<OrbitState> orbit_state = std::dynamic_pointer_cast<OrbitState>(rv);
-      if (orbit_state == nullptr) {
-        throw std::invalid_argument("Input state is not an OrbitState");
-      }
-      SetOrbitState(orbit_state);
+    void SetOrbitState(Ptr<OrbitState> orbit_state) {
+      orbit_state_ = orbit_state;
+      std::shared_ptr<IState> state = std::static_pointer_cast<OrbitState>(orbit_state);
+      Agent::SetRvState(state);
+      orbit_state_set_ = true;
     }
 
-    // Override GetRv (output has to be OrbitState, otherwise throw error)
-    std::shared_ptr<IState> GetRvState() {
-      std::shared_ptr<OrbitState> orbit_state = GetOrbitState();
-      if (orbit_state == nullptr) {
-        throw std::invalid_argument("Output state is not an OrbitState");
+    Ptr<OrbitState> GetOrbitState() const {
+      // First Update the orbit state vector using state_ vector
+      if (!orbit_state_set_) {
+        std::cerr << "Orbit State is not set: Call SetOrbitState(Ptr<OrbitState>)" << std::endl;
       }
-      return orbit_state;
-    }
-
-    void SetOrbitState(std::shared_ptr<OrbitState> rv) { SetRvState(rv); }
-
-    std::shared_ptr<OrbitState> GetOrbitState() {
-      return std::static_pointer_cast<OrbitState>(GetRvState());
+      orbit_state_->SetVec(rv_->GetVec());
+      return orbit_state_;
     }
 
     CartesianOrbitState GetCartesianGCRFStateAtEpoch(Real epoch);
 
     VecX GetStateVec() {
-      Vec6 rv = GetOrbitState()->GetVec();
+      Vec6 rv = rv_->GetVec();
       Vec2 clk = GetClockState().GetVec();
       VecX state(8);
       state << rv, clk;

@@ -51,6 +51,8 @@ namespace lupnt {
 
     // Getters and Setters
     // Override channel getters and setters
+    inline Ptr<Agent> GetAgent() const override { return agent; };
+    inline void SetAgent(const Ptr<Agent>& agent) override { this->agent = agent; };
     inline Ptr<GnssChannel> GetGnssChannel() { return gnss_channel_; };
     inline void SetChannel(const Ptr<GnssChannel>& channel) { gnss_channel_ = channel; };
 
@@ -58,7 +60,7 @@ namespace lupnt {
     double GetAntennaGain(double theta, double phi) { return antenna_.GetAntennaGain(theta, phi); };
 
   private:
-    Ptr<Agent> agent;
+    Ptr<Agent> agent;  // Agent that owns the device
     Ptr<GnssChannel> gnss_channel_;
   };
 }  // namespace lupnt

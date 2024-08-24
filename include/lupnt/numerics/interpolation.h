@@ -7,7 +7,7 @@
 namespace lupnt {
 
   double LinearInterp1d(const VecXd& x, const VecXd& data, double ix);
-  double LinearInterp2d(const VecXd& x, const VecXd& y, const VecXd& data, double ix, double iy);
+  double LinearInterp2d(const VecXd& x, const VecXd& y, const MatXd& data, double ix, double iy);
 
   class LagrangeInterpolator {
   public:

@@ -29,7 +29,8 @@ namespace lupnt {
     // Update clock state
     if (clock_dynamics_ != nullptr) {
       clock_dynamics_->SetNoise(false);
-      clock_dynamics_->PropagateState(clock_, epoch_, epoch);
+      MatXd stm;
+      clock_dynamics_->PropagateState(clock_, epoch_, epoch, &stm);
     }
 
     // TBD: Update attitude state
@@ -53,12 +54,13 @@ namespace lupnt {
     // Get the state at epoch without changing the agent's epoch and clock state
     // Create a deep copy of the clock state
     ClockState clk = clock_;
+    MatXd stm;
     if (clock_dynamics_ != nullptr && with_noise) {
       clock_dynamics_->SetNoise(true);
-      clock_dynamics_->PropagateState(clk, epoch_, epoch);
+      clock_dynamics_->PropagateState(clk, epoch_, epoch, &stm);
     } else {
       clock_dynamics_->SetNoise(false);
-      clock_dynamics_->PropagateState(clk, epoch_, epoch);
+      clock_dynamics_->PropagateState(clk, epoch_, epoch, &stm);
     }
     return clk;
   }
