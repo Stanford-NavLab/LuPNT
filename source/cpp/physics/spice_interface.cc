@@ -58,6 +58,9 @@ namespace lupnt {
       furnsh_c("earth_200101_990825_predict.bpc");  // long
       furnsh_c("earth_000101_241014_240722.bpc");   // short
 
+      // Mars
+      furnsh_c("mar097.bsp");
+
       // Load Chebyshev coefficients
       cheby_s = spk_extract("de440.bsp", &cheby_n);
       assert(cheby_s != nullptr &&
@@ -218,6 +221,9 @@ namespace lupnt {
 
       std::string from_frame_str(frame2string.at(from_frame));
       std::string to_frame_str(frame2string.at(to_frame));
+
+      std::cout << "from_frame_str: " << from_frame_str << std::endl;
+      std::cout << "to_frame_str: " << to_frame_str << std::endl;
 
       const char* from_frame_char
           = strcpy(new char[from_frame_str.length() + 1], from_frame_str.c_str());

@@ -61,12 +61,24 @@ namespace lupnt {
   Real safe_acos(Real x);
   Real safe_asin(Real x);
 
+  double J0Bessel(double x);
+  double J1Bessel(double x);
+
   Real RootMeanSquare(VecX x);
   Real Percentile(VecX x, double p);
   Real Std(VecX x);
+  double RootMeanSquareD(VecXd x);
+  double PercentileD(VecXd x, double p);
+  double StdD(VecXd x);
+
+  double erfc(double x);
+  double qfunc(double x);
 
   MatX SampleMVN(const VecX mean, const MatX cov, int nn, int seed = 0);
-  MatX blkdiag(const MatX& A, const MatX& B);
+  double SampleRandNormal(double mean, double std, int seed = 0);
+
+  MatX BlkDiag(const MatX& A, const MatX& B);
+  MatXd BlkDiagD(const MatXd& A, const MatXd& B);
 
   template <typename T> Matrix<T, 3, 3> RotX(T angle);
   template <typename T> Matrix<T, 3, 3> RotY(T angle);

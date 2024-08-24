@@ -4,6 +4,7 @@
 
 #include "lupnt/core/constants.h"
 #include "lupnt/numerics/math_utils.h"
+#include "lupnt/physics/body.h"
 
 namespace lupnt {
   /// @brief Plot a 3D line

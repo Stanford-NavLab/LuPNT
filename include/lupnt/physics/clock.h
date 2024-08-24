@@ -51,6 +51,8 @@ namespace lupnt {
     ClockDynamics();
     ClockDynamics(ClockModel clk_model);
 
+    inline void SetNoise(bool noise) { noise_ = noise; }
+
     static Mat2 TwoStatePhi(Real dt);
     static Mat3 ThreeStatePhi(Real dt);
 

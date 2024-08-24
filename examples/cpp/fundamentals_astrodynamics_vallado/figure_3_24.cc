@@ -36,14 +36,14 @@ int main() {
   hold(on);
   line_handle p;
   double lw = 2;
-  lupnt::plot(years_plot, t_tai - t_tai)->line_width(lw).display_name("TAI");
-  lupnt::plot(years_plot, t_utc - t_tai)->line_width(lw).display_name("UTC");
-  lupnt::plot(years_plot, t_ut1 - t_tai)->line_width(lw).display_name("UT1");
-  lupnt::plot(years_plot, t_gps - t_tai)->line_width(lw).display_name("GPS");
-  lupnt::plot(years_plot, t_tt - t_tai)->line_width(lw).display_name("TT");
-  lupnt::plot(years_plot, t_tdb - t_tai)->line_width(lw).display_name("TDB");
-  lupnt::plot(years_plot, t_tcg - t_tai)->line_width(lw).display_name("TCG");
-  lupnt::plot(years_plot, t_tcb - t_tai)->line_width(lw).display_name("TCB");
+  lupnt::Plot(years_plot, t_tai - t_tai)->line_width(lw).display_name("TAI");
+  lupnt::Plot(years_plot, t_utc - t_tai)->line_width(lw).display_name("UTC");
+  lupnt::Plot(years_plot, t_ut1 - t_tai)->line_width(lw).display_name("UT1");
+  lupnt::Plot(years_plot, t_gps - t_tai)->line_width(lw).display_name("GPS");
+  lupnt::Plot(years_plot, t_tt - t_tai)->line_width(lw).display_name("TT");
+  lupnt::Plot(years_plot, t_tdb - t_tai)->line_width(lw).display_name("TDB");
+  lupnt::Plot(years_plot, t_tcg - t_tai)->line_width(lw).display_name("TCG");
+  lupnt::Plot(years_plot, t_tcb - t_tai)->line_width(lw).display_name("TCB");
 
   ylabel("Difference in Time to TAI [s]");
   xticks(years_xticks);

@@ -25,6 +25,7 @@ namespace lupnt {
 
   enum Frame {
     // Earth
+    NONE,         // No frame
     ITRF,         // International Terrestrial Reference Frame
     ECEF = ITRF,  // Earth-Centered Earth-Fixed
     GCRF,         // Geocentric Reference System
@@ -42,8 +43,21 @@ namespace lupnt {
     MOON_ME,  // Moon-Fixed with mean-Earth / polar axes
     MOON_OP,  // Earth Orbit Frame
     // Solar System
-    MARS_FIXED,   // Mars fixed frame
-    VENUS_FIXED,  // Venus fixed frame
+    MERCURY_FIXED,  // Mercury fixed frame
+    VENUS_FIXED,    // Venus fixed frame
+    MARS_FIXED,     // Mars fixed frame
+    JUPITER_FIXED,  // Jupiter fixed frame
+    SATURN_FIXED,   // Saturn fixed frame
+    URANUS_FIXED,   // Uranus fixed frame
+    NEPTUNE_FIXED,  // Neptune fixed frame
+    // Inertial
+    MERCURY_CI,  // Mercury-centered Inertial Frame
+    VENUS_CI,    // Venus-centered Inertial Frame
+    MARS_CI,     // Mars-centered Inertial Frame
+    JUPITER_CI,  // Jupiter-centered Inertial Frame
+    SATURN_CI,   // Saturn-centered Inertial Frame
+    URANUS_CI,   // Uranus-centered Inertial Frame
+    NEPTUNE_CI,  // Neptune-centered Inertial Frame
   };
 
   std::ostream &operator<<(std::ostream &os, Frame frame);

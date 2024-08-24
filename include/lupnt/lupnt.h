@@ -3,10 +3,8 @@
 // agents
 #include "lupnt/agents/agent.h"
 #include "lupnt/agents/application.h"
-#include "lupnt/agents/comm_device.h"
 #include "lupnt/agents/gnss_constellation.h"
 #include "lupnt/agents/state_estimation_app.h"
-#include "lupnt/agents/state_estimation_app_gnss.h"
 
 // core
 #include "lupnt/core/constants.h"
@@ -19,6 +17,7 @@
 #include "lupnt/core/user_file_path.h"
 
 // data
+#include "lupnt/data/crater_data.h"
 #include "lupnt/data/eop.h"
 #include "lupnt/data/iau_sofa.h"
 #include "lupnt/data/kernels.h"
@@ -31,14 +30,16 @@
 
 // measurements
 #include "lupnt/measurements/antenna.h"
+#include "lupnt/measurements/comm_device.h"
+#include "lupnt/measurements/comm_utils.h"
 #include "lupnt/measurements/gnss_channel.h"
 #include "lupnt/measurements/gnss_measurement.h"
 #include "lupnt/measurements/gnss_receiver.h"
 #include "lupnt/measurements/gnss_receiver_param.h"
 #include "lupnt/measurements/gnss_transmitter.h"
-#include "lupnt/measurements/intersatellite_link.h"
-#include "lupnt/measurements/occultation.h"
+#include "lupnt/measurements/link_measurement.h"
 #include "lupnt/measurements/radio_measurement.h"
+#include "lupnt/measurements/space_channel.h"
 #include "lupnt/measurements/transmission.h"
 
 // numerics
@@ -51,6 +52,8 @@
 #include "lupnt/numerics/vector_macros.h"
 
 // physics
+#include "lupnt/physics/attitude_conversions.h"
+#include "lupnt/physics/attitude_state.h"
 #include "lupnt/physics/body.h"
 #include "lupnt/physics/cheby.h"
 #include "lupnt/physics/clock.h"
@@ -59,6 +62,7 @@
 #include "lupnt/physics/frame_converter.h"
 #include "lupnt/physics/frame_converter_spice.h"
 #include "lupnt/physics/gravity.h"
+#include "lupnt/physics/occultation.h"
 #include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/solar_system.h"
 #include "lupnt/physics/spice_interface.h"

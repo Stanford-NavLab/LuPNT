@@ -12,8 +12,9 @@
 
 #include <vector>
 
-#include "lupnt/measurements/occultation.h"
+#include "lupnt/measurements/transmission.h"
 #include "lupnt/physics/frame_converter.h"
+#include "lupnt/physics/occultation.h"
 
 namespace lupnt {
 
@@ -27,7 +28,7 @@ namespace lupnt {
 
     void AddReceiver(Ptr<GnssReceiver> &dev) { rx_devices.push_back(dev); }
 
-    std::vector<Transmission> Receive(GnssReceiver &rx, double t);
+    std::vector<GnssTransmission> Receive(GnssReceiver &rx, double t);
 
     std::vector<Ptr<GnssReceiver>> rx_devices;
     std::vector<Ptr<GnssTransmitter>> tx_devices;

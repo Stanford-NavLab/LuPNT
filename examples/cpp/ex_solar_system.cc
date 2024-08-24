@@ -28,7 +28,7 @@ int main() {
     MatX6 rv = GetBodyPosVel(tfs, body, Frame::ICRF);
     Plot3(rv.col(0), rv.col(1), rv.col(2), "-", 9);
   }
-  legend({"Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"});
+  matplot::legend({"Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"});
   SetLim(1.5e9, 9);
   xlabel("X [10^9 km]");
   ylabel("Y [10^9 km]");
@@ -52,7 +52,7 @@ int main() {
   Plot(tspan / SECS_DAY, Wrap2Pi(rv.col(1)) * DEG, "-");
   Plot(tspan / SECS_DAY, Wrap2Pi(rv.col(2)), "-");
   // legend({"phi", "theta", "psi"});
-  legend({"phi", "theta", "psi"});
+  matplot::legend({"phi", "theta", "psi"});
   xlabel("Time [days]");
   ylabel("Angle [deg]");
   fig->draw();
@@ -66,7 +66,7 @@ int main() {
   Plot(tspan / SECS_DAY, rv.col(5) * DEG, "-");
   // Plot(tspan / SECS_DAY, rv.col(2), "-");
   // legend({"phi", "theta", "psi"});
-  legend({"phi dot", "theta dot", "psi dot"});
+  matplot::legend({"phi dot", "theta dot", "psi dot"});
   xlabel("Time [days]");
   ylabel("Angle [deg]]");
   fig->draw();

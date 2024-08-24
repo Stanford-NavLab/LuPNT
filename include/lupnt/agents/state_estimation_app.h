@@ -13,8 +13,8 @@
 
 #include "lupnt/agents/agent.h"
 #include "lupnt/agents/application.h"
-#include "lupnt/agents/comm_device.h"
 #include "lupnt/core/file.h"
+#include "lupnt/measurements/comm_device.h"
 #include "lupnt/measurements/gnss_measurement.h"
 #include "lupnt/measurements/gnss_receiver.h"
 #include "lupnt/numerics/filters.h"

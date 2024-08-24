@@ -41,30 +41,30 @@ namespace lupnt {
     std::filesystem::path csvpath(GetDataPath() / "gnss" / "gps_table.csv");
     std::vector<std::vector<std::string>> gps_table = ReadCSV(csvpath.string());
 
-    for (size_t i = 0; i < gps_table.size(); i++) {
+    for (int i = 0; i < gps_table.size(); i++) {
       if (std::stoi(gps_table[i][0]) == prn_) {
         std::string gps_type = gps_table[i][2];  // 'IIA', 'IIR', 'IIR-M', 'IIF'
 
         // set transmittion power and antenna pattern, depending on the gps type
         std::string ant_name;
         if (gps_type == "IIA") {
-          tx_param_.P_tx = 14.3;       // dB-W
+          P_tx = 14.3;                 // dB-W
           ant_name = gps_table[i][4];  // ACE Pattern
           freq_list = {"L1", "L2"};
         } else if (gps_type == "IIR") {
-          tx_param_.P_tx = 15.0;       // dB_W
+          P_tx = 15.0;                 // dB_W
           ant_name = gps_table[i][3];  // LM Pattern
           freq_list = {"L1", "L2"};
         } else if (gps_type == "IIR-M") {
-          tx_param_.P_tx = 15.0;       // dB_W
+          P_tx = 15.0;                 // dB_W
           ant_name = gps_table[i][3];  // LM Pattern
           freq_list = {"L1", "L2"};
         } else if (gps_type == "IIF") {
-          tx_param_.P_tx = 14.3;       // dB_W
+          P_tx = 14.3;                 // dB_W
           ant_name = gps_table[i][4];  // ACE Pattern
           freq_list = {"L1", "L2", "L5"};
         } else if (gps_type == "III") {
-          tx_param_.P_tx = 14.3;       // dB_W
+          P_tx = 14.3;                 // dB_W
           ant_name = gps_table[i][4];  // ACE Pattern
           freq_list = {"L1", "L2", "L5"};
         } else {
@@ -142,11 +142,11 @@ namespace lupnt {
    * @param t
    * @return Transmission
    */
-  Transmission GnssTransmitter::GenerateTransmission(double t) {
-    CartesianOrbitState cart_state = agent->GetCartesianGCRFStateAtEpoch(t);
+  GnssTransmission GnssTransmitter::GenerateTransmission(double t) {
+    CartesianOrbitState cart_state = GetAgent()->GetCartesianGCRFStateAtEpoch(t);
     ConvertOrbitStateFrame(cart_state, t, Frame::GCRF);
 
-    Transmission trans;
+    GnssTransmission trans;
     trans.dt_tx = 0.0;
     trans.r_tx = cart_state.r().cast<double>();
     trans.v_tx = cart_state.v().cast<double>();

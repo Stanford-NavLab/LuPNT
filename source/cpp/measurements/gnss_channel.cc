@@ -25,20 +25,21 @@ namespace lupnt {
    *
    * @param rx
    * @param t
-   * @return std::vector<Transmission>
+   * @return std::vector<GnssTransmission>
    */
-  std::vector<Transmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
-    std::vector<Transmission> received_transs;  // create an empty vector
+  std::vector<GnssTransmission> GnssChannel::Receive(GnssReceiver &rx, double t) {
+    std::vector<GnssTransmission> received_transs;  // create an empty vector
 
     // Messages from other comms systems that can generate Gnss messages
     for (auto &tx : tx_devices) {
-      // Transmitter and receiver positions and velocities
+      // Solve light time delay
       double tau = 0.0;  // light time delay
       CartesianOrbitState rv_rx_gcrf = rx.GetAgent()->GetCartesianGCRFStateAtEpoch(t);
       CartesianOrbitState rv_tx_gcrf = tx->GetAgent()->GetCartesianGCRFStateAtEpoch(t - tau);
 
       // Compute Light time delay
       double tau_prev = 0.0;  // propagation time
+      int n_iter = 0;
       int max_iter = 100;
 
       for (int n_iter = 0; n_iter < max_iter; n_iter++) {
@@ -62,21 +63,20 @@ namespace lupnt {
 
       // Occultation
       std::string tx_planet = "";
-      std::map<std::string, bool> vis = Occultation::ComputeOccultation(
+      std::map<std::string, bool> vis = Occultation::ComputeOccultationGnss(
           rv_tx_gcrf.r().cast<double>(), rv_tx_mi.r().cast<double>(), rv_rx_gcrf.r().cast<double>(),
           rv_rx_mi.r().cast<double>(), tx_planet);
 
       if (vis["EARTH"] || vis["MOON"]) continue;  // quit if occulted
 
       // Transmitter and Receiver Antenna gain
-      std::string receiver_orientation = "PZ_EarthPoint";
       double At = tx->GetTransmittionAntennaGain(t_tx, rv_tx_gcrf.r().cast<double>(),
                                                  rv_rx_gcrf.r().cast<double>());
       double Ar = rx.GetReceiverAntennaGain(t_rx, rv_tx_gcrf.r().cast<double>(),
-                                            rv_rx_gcrf.r().cast<double>(), receiver_orientation);
+                                            rv_rx_gcrf.r().cast<double>());
 
       // Generate transmission
-      Transmission trans = tx->GenerateTransmission(t_tx);
+      GnssTransmission trans = tx->GenerateTransmission(t_tx);
       double d = (rv_tx_gcrf.r() - rv_rx_gcrf.r()).norm().val();
 
       // Link budget
@@ -84,9 +84,8 @@ namespace lupnt {
         std::string freq_name = tx->freq_list[freq_idx];
         double freq = tx->freq_map[freq_name];
         double Ad = 20.0 * log10((C / freq) / (4.0 * PI * d));
-        double scalars = tx->tx_param_.P_tx + rx.rx_param_.Ae + rx.rx_param_.As
-                         - (10.0 * log10(rx.rx_param_.Ts)) + 228.6 + rx.rx_param_.Nf
-                         + rx.rx_param_.L;
+        double scalars = tx->P_tx + rx.rx_param_.Ae + rx.rx_param_.As
+                         - (10.0 * log10(rx.rx_param_.Tsys)) + 228.6 + rx.rx_param_.L;
         trans.CN0 = At + Ar + Ad + scalars;
 
         if (At <= -499.0 || vis["earth"] || vis["moon"] || trans.CN0 < rx.rx_param_.CN0threshold) {
@@ -97,7 +96,7 @@ namespace lupnt {
           trans.RP = NAN;
           trans.vis_antenna = true;
         } else {
-          trans.AP = tx->tx_param_.P_tx + At + Ad + rx.rx_param_.Ae;
+          trans.AP = tx->P_tx + At + Ad + rx.rx_param_.Ae;
           trans.RP = trans.AP + Ar + rx.rx_param_.As;
           trans.vis_antenna = false;
         }

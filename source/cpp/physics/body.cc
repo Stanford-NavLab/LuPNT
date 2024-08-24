@@ -60,7 +60,7 @@ namespace lupnt {
     sun.id = NaifId::SUN;
     sun.inertial_frame = Frame::ICRF;
     sun.GM = GM_SUN;
-    sun.R = 696342.0;
+    sun.R = R_SUN;
     sun.use_gravity_field = false;
     return sun;
   }
@@ -74,9 +74,9 @@ namespace lupnt {
     mars.name = "MARS";
     mars.id = NaifId::MARS;
     mars.fixed_frame = Frame::MARS_FIXED;
-    mars.GM = 0.4282837566395650E+05;
-    mars.R = 0.3396000000000000E+04;
-    mars.gravity_field = ReadHarmonicGravityField<T>(gravity_file, n_max, m_max, true);
+    mars.GM = GM_MARS;
+    mars.R = R_MARS;
+    mars.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
     return mars;
   }
   template BodyT<double> BodyT<double>::Mars(int n_max, int m_max, std::string gravity_file);
@@ -89,13 +89,63 @@ namespace lupnt {
     venus.name = "VENUS";
     venus.id = NaifId::VENUS;
     venus.fixed_frame = Frame::VENUS_FIXED;
-    venus.GM = 0.3248585920790000E+06;
-    venus.R = 0.6051000000000000E+04;
-    venus.gravity_field = ReadHarmonicGravityField<T>(gravity_file, n_max, m_max, true);
+    venus.GM = GM_MARS;
+    venus.R = R_VENUS;
+    venus.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
     return venus;
   }
   template BodyT<double> BodyT<double>::Venus(int n_max, int m_max, std::string gravity_file);
   template BodyT<Real> BodyT<Real>::Venus(int n_max, int m_max, std::string gravity_file);
+
+  BodyData GetBodyData(NaifId id) {
+    switch (id) {
+      case NaifId::SUN: return {NaifId::SUN, "SUN", GM_SUN, 696342.0, Frame::ICRF, Frame::ICRF};
+      case NaifId::MERCURY:
+        return {NaifId::MERCURY,      "MERCURY",        GM_MERCURY, R_MERCURY,
+                Frame::MERCURY_FIXED, Frame::MERCURY_CI};
+      case NaifId::VENUS:
+        return {NaifId::VENUS, "VENUS", GM_VENUS, R_VENUS, Frame::VENUS_FIXED, Frame::VENUS_CI};
+      case NaifId::EARTH:
+        return {NaifId::EARTH, "EARTH", GM_EARTH, R_EARTH, Frame::ITRF, Frame::GCRF};
+      case NaifId::MOON:
+        return {NaifId::MOON, "MOON", GM_MOON, R_MOON, Frame::MOON_PA, Frame::MOON_CI};
+      case NaifId::MARS:
+        return {NaifId::MARS, "MARS", GM_MARS, R_MARS, Frame::MARS_FIXED, Frame::MARS_CI};
+      case NaifId::JUPITER:
+        return {NaifId::JUPITER,      "JUPITER",        GM_JUPITER, R_JUPITER,
+                Frame::JUPITER_FIXED, Frame::JUPITER_CI};
+      case NaifId::SATURN:
+        return {NaifId::SATURN,      "SATURN",        GM_SATURN, R_SATURN,
+                Frame::SATURN_FIXED, Frame::SATURN_CI};
+      case NaifId::URANUS:
+        return {NaifId::URANUS,      "URANUS",        GM_URANUS, R_URANUS,
+                Frame::URANUS_FIXED, Frame::URANUS_CI};
+      case NaifId::NEPTUNE:
+        return {NaifId::NEPTUNE,      "NEPTUNE",        GM_NEPTUNE, R_NEPTUNE,
+                Frame::NEPTUNE_FIXED, Frame::NEPTUNE_CI};
+      default: std::cerr << "Body not found" << std::endl;
+    }
+  }
+
+  double GetBodyRadius(NaifId body) {
+    BodyData data = GetBodyData(body);
+    return data.R.val();
+  }
+
+  std::string GetBodyName(NaifId body) {
+    BodyData data = GetBodyData(body);
+    return data.name;
+  }
+
+  Frame GetInertialFrameName(NaifId body) {
+    BodyData data = GetBodyData(body);
+    return data.inertial_frame;
+  }
+
+  Frame GetBodyFixedFrameName(NaifId body) {
+    BodyData data = GetBodyData(body);
+    return data.fixed_frame;
+  }
 
   /// @brief Kronecker delta function
   /// @param i

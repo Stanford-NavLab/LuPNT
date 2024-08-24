@@ -15,6 +15,7 @@
 #include <Eigen/Eigenvalues>
 #include <Eigen/SVD>
 #include <autodiff/forward/real.hpp>
+#include <cmath>
 
 #include "lupnt/core/constants.h"
 
@@ -194,10 +195,39 @@ namespace lupnt {
     }
   }
 
+  double J0Bessel(double x) {
+    // Bessel function of the first kind of order 0
+    // Reference: https://en.wikipedia.org/wiki/Bessel_function
+    double J0 = 0.0;
+    double y = 1.0;
+    double sum = 1.0;
+    for (int i = 1; i < 10; i++) {
+      y = y * x * x / (4 * i * i);
+      sum += y;
+    }
+
+    return sum;
+  }
+
+  double J1Bessel(double x) {
+    // Bessel function of the first kind of order 1
+    // Reference: https://en.wikipedia.org/wiki/Bessel_function
+    double J1 = 0.0;
+    double y = 1.0;
+    double sum = 1.0;
+    for (int i = 1; i < 10; i++) {
+      y = y * x / (2 * i * (2 * i + 1));
+      sum += y;
+    }
+
+    return sum;
+  }
+
   /// @brief Compute the root mean square of a vector
   /// @param x Input vector
   /// @return Root mean square of the vector
   Real RootMeanSquare(VecX x) { return sqrt(x.array().pow(2).sum() / x.size()); }
+  double RootMeanSquareD(VecXd x) { return sqrt(x.array().pow(2).sum() / x.size()); }
 
   /// @brief Compute the pth percentile of a vector
   /// @param x Input vector
@@ -205,6 +235,17 @@ namespace lupnt {
   Real Percentile(VecX x, double p) {
     Real* start = x.data();
     Real* end = x.data() + x.size();
+    std::sort(start, end);
+    int index = std::ceil(p * x.size());
+    if (index > (x.size() - 1)) {
+      index = x.size() - 1;
+    }
+    return x(index);
+  }
+
+  double PercentileD(VecXd x, double p) {
+    double* start = x.data();
+    double* end = x.data() + x.size();
     std::sort(start, end);
     int index = std::ceil(p * x.size());
     if (index > (x.size() - 1)) {
@@ -224,6 +265,19 @@ namespace lupnt {
     }
     return sqrt(sq_sum / x.size());
   }
+
+  double StdD(VecXd x) {
+    double mean = x.sum() / x.size();
+    double sq_sum = 0.0;
+    for (int i = 0; i < x.size(); i++) {
+      sq_sum += (x(i) - mean) * (x(i) - mean);
+    }
+    return sqrt(sq_sum / x.size());
+  }
+
+  double erfc(double x) { return 1 - erf(x); }
+
+  double qfunc(double x) { return 0.5 * erfc(x / sqrt(2)); }
 
   /// @brief Sample from a multivariate normal distribution
   /// @param mean Mean vector
@@ -260,13 +314,29 @@ namespace lupnt {
     return samples;
   };
 
+  double SampleRandNormal(double mean, double std, int seed) {
+    auto generator = std::mt19937(seed);
+    auto dist = std::bind(std::normal_distribution<double>{mean, std}, generator);
+    return dist();
+  }
+
   /// @brief Create a block diagonal matrix from two matrices
   /// @param A First matrix
   /// @param B Second matrix
   /// @return Block diagonal matrix
-  MatX blkdiag(const MatX& A, const MatX& B) {
+  MatX BlkDiag(const MatX& A, const MatX& B) {
     MatX C(A.rows() + B.rows(), A.cols() + B.cols());
     C << A, MatX::Zero(A.rows(), B.cols()), MatX::Zero(B.rows(), A.cols()), B;
+    return C;
+  }
+
+  MatXd BlkDiagD(const MatXd& A, const MatXd& B) {
+    int rows = A.rows() + B.rows();
+
+    MatXd C(rows, rows);
+    C = MatXd::Zero(rows, rows);
+    C.block(0, 0, A.rows(), A.cols()) = A;
+    C.block(A.rows(), A.cols(), B.rows(), B.cols()) = B;
     return C;
   }
 

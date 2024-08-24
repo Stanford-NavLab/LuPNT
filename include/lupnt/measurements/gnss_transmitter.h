@@ -16,7 +16,7 @@
 
 #include "antenna.h"
 #include "gnss_measurement.h"
-#include "lupnt/agents/comm_device.h"
+#include "lupnt/measurements/comm_device.h"
 #include "lupnt/measurements/transmission.h"
 
 namespace lupnt {
@@ -58,10 +58,10 @@ namespace lupnt {
 
     // Get transmitter orientatiion
     std::vector<Vec3d> GetTransmitterOrientation(double t, Vec3d& rv_tx_gcrf);
-    double GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf);
+    double GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf) override;
 
     // Get the Transmittion Information
-    Transmission GenerateTransmission(double t);
+    GnssTransmission GenerateTransmission(double t);
 
     // Getters and Setters
     void SetChannel(Ptr<GnssChannel> ch) { channel = ch; };

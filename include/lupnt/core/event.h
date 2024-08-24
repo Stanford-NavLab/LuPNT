@@ -25,7 +25,7 @@ namespace lupnt {
     std::function<void(double)> action;
 
     Event(double time, std::function<void(double)> func, double freq = INF)
-        : time_(time), action(func), frequency_(freq) {}
+        : time_(time), frequency_(freq), action(func) {}
 
     // Comparator for priority queue
     bool operator<(const Event& e) const {

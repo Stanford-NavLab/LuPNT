@@ -51,7 +51,7 @@ int main() {
   dyn.SetMass(mass);
   dyn.SetSrpCoeff(CR);
   dyn.SetDragCoeff(CD);
-  dyn.SetPrimaryBody(earth);
+  dyn.SetFrame(Frame::ITRF);
   dyn.AddBody(sun);
   dyn.AddBody(moon);
 

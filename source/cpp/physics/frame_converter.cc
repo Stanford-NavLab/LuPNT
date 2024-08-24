@@ -19,6 +19,7 @@
 #include "lupnt/data/kernels.h"
 #include "lupnt/numerics/math_utils.h"
 #include "lupnt/physics/cheby.h"
+#include "lupnt/physics/frame_conversions.h"
 #include "lupnt/physics/frame_converter_spice.h"
 #include "lupnt/physics/orbit_state.h"
 #include "lupnt/physics/time_converter.h"
@@ -171,7 +172,8 @@ namespace lupnt {
         rv_out_tmp.row(i) = ConvertFrameBase(t_tai, rv_in_tmp, frame_in, frame_out).transpose();
       }
 
-      // Rot contains the basis vectors of frame_in (row-stacked) expressed in frame_out
+      // Rot contains the basis vectors of frame_in (row-stacked) expressed in
+      // frame_out
       Mat3 Rot = rv_out_tmp.block(0, 0, 3, 3).rowwise() - translation.transpose();
       Vec3 r_out = Rot.transpose() * rv_in.head(3);
       Vec3 v_out = Rot.transpose() * rv_in.tail(3);

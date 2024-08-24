@@ -15,7 +15,7 @@
 
 namespace lupnt {
 
-  GnssMeasurement::GnssMeasurement(const std::vector<Transmission> trans)
+  GnssMeasurement::GnssMeasurement(const std::vector<GnssTransmission> trans)
       : trans_store(trans),
         dt_tx(trans.size()),
         dt_tx_dot(trans.size()),
@@ -95,7 +95,7 @@ namespace lupnt {
    * @return GnssMeasurement
    */
   GnssMeasurement GnssMeasurement::ExtractSignal(std::string freq_label) {
-    std::vector<Transmission> transmissions_freq;
+    std::vector<GnssTransmission> transmissions_freq;
     for (auto &tx : trans_store) {
       if (tx.freq_label == freq_label) {
         transmissions_freq.push_back(tx);
@@ -109,7 +109,7 @@ namespace lupnt {
    * General Methods for computing Measurements
    ***********************************************************/
 
-  VecX GnssMeasurement::ComputePseudorange(VecX r_rx, Real dt_rx, bool with_noise, int seed) {
+  VecX GnssMeasurement::ComputeGnssPseudorange(VecX r_rx, Real dt_rx, bool with_noise, int seed) {
     // P_rx = rho_rx + c*(dt_rx(t_rx) - dt_tx(t_tx)) + I_rx + T_rx + eps_P
     VecX P_rx(r_tx.cols());
 
@@ -118,18 +118,17 @@ namespace lupnt {
     std::normal_distribution<double> distribution(0.0, 1.0);
 
     for (int i = 0; i < r_tx.cols(); i++) {
-      P_rx(i) = RadioMeasurement::ComputePseudorange(r_rx, r_tx.col(i), dt_tx[i], dt_rx,
-                                                     I_rx(i) + T_rx(i));
+      P_rx(i) = ComputePseudorange(r_rx, r_tx.col(i), dt_tx[i], dt_rx, I_rx(i) + T_rx(i));
       if (with_noise) {
-        double sigma = ComputePseudorangeNoise(CN0(i));
+        double sigma = ComputeGnssPseudorangeNoise(CN0(i));
         P_rx(i) += sigma * distribution(generator);
       }
     }
     return P_rx;
   }
 
-  VecX GnssMeasurement::ComputePseudorangerate(VecX r_rx, VecX v_rx, Real dt_rx_dot,
-                                               bool with_noise, int seed) {
+  VecX GnssMeasurement::ComputeGnssPseudorangerate(VecX r_rx, VecX v_rx, Real dt_rx_dot,
+                                                   bool with_noise, int seed) {
     VecX P_rrx(r_tx.cols());
 
     std::default_random_engine generator;
@@ -139,10 +138,10 @@ namespace lupnt {
     Real offset = 0;  // set pseudorange rate offset to zero
 
     for (int i = 0; i < r_tx.cols(); i++) {
-      P_rrx(i) = RadioMeasurement::ComputePseudorangerate(r_tx.col(i), r_rx, v_tx.col(i), v_rx,
-                                                          dt_tx_dot[i], dt_rx_dot, offset);
+      P_rrx(i) = ComputePseudorangerate(r_tx.col(i), r_rx, v_tx.col(i), v_rx, dt_tx_dot[i],
+                                        dt_rx_dot, offset);
       if (with_noise) {
-        double sigma = ComputePseudorangeRateNoise(CN0(i), lambda_(i));
+        double sigma = ComputeGnssPseudorangerateNoise(CN0(i), lambda_(i));
         P_rrx(i) += sigma * distribution(generator);
       }
     }
@@ -150,8 +149,8 @@ namespace lupnt {
     return P_rrx;
   }
 
-  VecX GnssMeasurement::ComputeCarrierPhase(VecX r_rx, Real dt_rx, VecX N_rx, bool with_noise,
-                                            int seed) {
+  VecX GnssMeasurement::ComputeGnssCarrierPhase(VecX r_rx, Real dt_rx, VecX N_rx, bool with_noise,
+                                                int seed) {
     // phi_rx = c / lambda_ * (t_rx - t_tx) + c / lambda_ * (dt_rx(t_rx) -
     // dt_tx(t_tx)) + phi_rx_0 - phi_0 + N_rx + eps_phi
     VecX phi_rx(r_tx.cols());
@@ -169,13 +168,12 @@ namespace lupnt {
     Real pr, phase;
 
     for (int i = 0; i < r_tx.cols(); i++) {
-      pr = RadioMeasurement::ComputePseudorange(
-          r_rx, r_tx.col(i), dt_tx[i], dt_rx,
-          -I_rx(i) + T_rx(i));            // Ionosphere acts negative on phase
-      phase = pr / lambda_(i) + N_rx(i);  // phase = pr/lambda + N (N=integer ambiguity)
+      pr = ComputePseudorange(r_rx, r_tx.col(i), dt_tx[i], dt_rx,
+                              -I_rx(i) + T_rx(i));  // Ionosphere acts negative on phase
+      phase = pr / lambda_(i) + N_rx(i);            // phase = pr/lambda + N (N=integer ambiguity)
 
       if (with_noise) {
-        double sigma = ComputeCarrierPhaseNoise(CN0(i), lambda_(i));
+        double sigma = ComputeGnssCarrierPhaseNoise(CN0(i), lambda_(i));
         phi_rx(i) += sigma * distribution(generator);
       }
     }
@@ -211,22 +209,22 @@ namespace lupnt {
   }
 
   VecX GnssMeasurement::GetPseudorange(bool with_noise, int seed) {
-    return ComputePseudorange(r_rx, dt_rx, with_noise, seed);
+    return ComputeGnssPseudorange(r_rx, dt_rx, with_noise, seed);
   }
 
   VecX GnssMeasurement::GetPseudorangerate(bool with_noise, int seed) {
-    return ComputePseudorangerate(r_rx, v_rx, dt_rx_dot, with_noise, seed);
+    return ComputeGnssPseudorangerate(r_rx, v_rx, dt_rx_dot, with_noise, seed);
   }
 
   VecX GnssMeasurement::GetCarrierPhase(bool with_noise, int seed) {
-    return ComputeCarrierPhase(r_rx, dt_rx, N_rx, with_noise, seed);
+    return ComputeGnssCarrierPhase(r_rx, dt_rx, N_rx, with_noise, seed);
   }
 
   /***********************************************************
    *  Methods for predicted measurement generation
    ***********************************************************/
   VecX GnssMeasurement::GetPredictedGnssMeasurement(double epoch, Vec6 rv_pred, Vec2 clk_pred,
-                                                    VecX N_pred, VecXd &H_gnss,
+                                                    VecX N_pred, MatXd &H_gnss,
                                                     std::vector<GnssMeasurementType> meas_type,
                                                     Frame frame_in) {
     // number of measurements
@@ -241,27 +239,27 @@ namespace lupnt {
 
     VecX z(n_meas_all);
     H_gnss.resize(n_meas_all, state_size);
-    H_gnss = VecXd::Zero(n_meas_all, state_size);
-    VecXd H_pr(n_meas, state_size), H_prr(n_meas, state_size), H_cp(n_meas, state_size);
+    H_gnss = MatXd::Zero(n_meas_all, state_size);
+    MatXd H_pr(n_meas, state_size), H_prr(n_meas, state_size), H_cp(n_meas, state_size);
 
     int i = 0;
 
     for (auto type : meas_type) {
       switch (type) {
         case GnssMeasurementType::PR:
-          H_pr = VecXd::Zero(n_meas, state_size);
+          H_pr = MatXd::Zero(n_meas, state_size);
           z.segment(i * n_meas, n_meas)
               = GetPredictedPseudorange(epoch, rv_pred, clk_pred, H_pr, frame_in);
           H_gnss.block(i * n_meas, 0, n_meas, 8) = H_pr;
           break;
         case GnssMeasurementType::PRR:
-          H_prr = VecXd::Zero(n_meas, state_size);
+          H_prr = MatXd::Zero(n_meas, state_size);
           z.segment(i * n_meas, n_meas)
               = GetPredictedPseudorangerate(epoch, rv_pred, clk_pred, H_prr, frame_in);
           H_gnss.block(i * n_meas, 0, n_meas, 8) = H_prr;
           break;
         case GnssMeasurementType::CP:
-          H_cp = VecXd::Zero(n_meas, state_size);
+          H_cp = MatXd::Zero(n_meas, state_size);
           z.segment(i * n_meas, n_meas)
               = GetPredictedCarrierPhase(epoch, rv_pred, clk_pred, N_pred, H_cp, frame_in);
           H_gnss.block(i * n_meas, 0, n_meas, 9) = H_cp;
@@ -276,12 +274,12 @@ namespace lupnt {
   }
 
   VecX GnssMeasurement::GetPredictedPseudorange(double epoch, Vec6 rv_pred, Vec2 clk_pred,
-                                                VecXd &H_pr, Frame frame_in) {
+                                                MatXd &H_pr, Frame frame_in) {
     auto func = [epoch, frame_in, this](const Vec6 rv_in, const Vec2 clk) {
       Vec6 rv_gcrf = ConvertFrame(epoch, rv_in, frame_in, Frame::GCRF);
       Vec3 r_rx = rv_gcrf.head(3);
       Real dt_rx = clk(0);
-      return ComputePseudorange(r_rx, dt_rx);
+      return ComputeGnssPseudorange(r_rx, dt_rx);
     };
 
     VecX z_pr_pred(n_meas);
@@ -295,7 +293,7 @@ namespace lupnt {
   }
 
   VecX GnssMeasurement::GetPredictedPseudorangeAnalyticalJacobian(double epoch, Vec6 rv_pred,
-                                                                  Vec2 clk_pred, VecXd &H_pr,
+                                                                  Vec2 clk_pred, MatXd &H_pr,
                                                                   Frame frame_in) {
     auto rv_gcrf = ConvertFrame(epoch, rv_pred, frame_in, Frame::GCRF);
     Vec3 r_rx = rv_gcrf.head(3);
@@ -323,13 +321,13 @@ namespace lupnt {
   }
 
   VecX GnssMeasurement::GetPredictedPseudorangerate(double epoch, Vec6 rv_pred, Vec2 clk_pred,
-                                                    VecXd &H_prr, Frame frame_in) {
+                                                    MatXd &H_prr, Frame frame_in) {
     auto func = [epoch, frame_in, this](const Vec6 rv_in, const Vec2 clk) {
       Vec6 rv_gcrf = ConvertFrame(epoch, rv_in, frame_in, Frame::GCRF);
       Vec3 r_rx = rv_gcrf.head(3);
       Vec3 v_rx = rv_gcrf.tail(3);
       Real dt_rx_dot = clk(1);
-      return ComputePseudorangerate(r_rx, v_rx, dt_rx_dot);
+      return ComputeGnssPseudorangerate(r_rx, v_rx, dt_rx_dot);
     };
 
     VecX z_prr_pred(n_meas);
@@ -343,12 +341,12 @@ namespace lupnt {
   }
 
   VecX GnssMeasurement::GetPredictedCarrierPhase(double epoch, Vec6 rv_pred, Vec2 clk_pred,
-                                                 VecX N_pred, VecXd &H_cp, Frame frame_in) {
+                                                 VecX N_pred, MatXd &H_cp, Frame frame_in) {
     auto func = [epoch, frame_in, this](const Vec6 rv_in, const Vec2 clk, const VecX N_pred) {
       Vec6 rv_gcrf = ConvertFrame(epoch, rv_in, frame_in, Frame::GCRF);
       Vec3 r_rx = rv_gcrf.head(3);
       Real dt_rx = clk(0);
-      return ComputeCarrierPhase(r_rx, dt_rx, N_pred);
+      return ComputeGnssCarrierPhase(r_rx, dt_rx, N_pred);
     };
 
     VecX z_cp_pred(n_meas);
@@ -394,7 +392,7 @@ namespace lupnt {
     VecXd noise(n_meas);
 
     for (int i = 0; i < n_meas; i++) {
-      noise(i) = ComputePseudorangeNoise(CN0(i));
+      noise(i) = ComputeGnssPseudorangeNoise(CN0(i));
     }
     return noise;
   }
@@ -404,7 +402,7 @@ namespace lupnt {
     VecXd noise(n_meas);
 
     for (int i = 0; i < n_meas; i++) {
-      noise(i) = ComputePseudorangeRateNoise(CN0(i), lambda_(i));
+      noise(i) = ComputeGnssPseudorangerateNoise(CN0(i), lambda_(i));
     }
     return noise;
   }
@@ -414,12 +412,12 @@ namespace lupnt {
     VecXd noise(n_meas);
 
     for (int i = 0; i < n_meas; i++) {
-      noise(i) = ComputeCarrierPhaseNoise(CN0(i), lambda_(i));
+      noise(i) = ComputeGnssCarrierPhaseNoise(CN0(i), lambda_(i));
     }
     return noise;
   }
 
-  double GnssMeasurement::ComputePseudorangeNoise(double CN0_dB) {
+  double GnssMeasurement::ComputeGnssPseudorangeNoise(double CN0_dB) {
     // thermal noise in DLL
     double sigma = 0.0;
     double CN0 = pow(10, CN0_dB / 10);
@@ -449,7 +447,7 @@ namespace lupnt {
     return sigma;
   }
 
-  double GnssMeasurement::ComputePseudorangeRateNoise(double CN0_dB, double lambda) {
+  double GnssMeasurement::ComputeGnssPseudorangerateNoise(double CN0_dB, double lambda) {
     double F = 2;  // F=1 at high CN0, F=2 at low CN0
     double CN0 = pow(10, CN0_dB / 10);
 
@@ -463,7 +461,7 @@ namespace lupnt {
     return sigma;
   }
 
-  double GnssMeasurement::ComputeCarrierPhaseNoise(double CN0_dB, double lambda) {
+  double GnssMeasurement::ComputeGnssCarrierPhaseNoise(double CN0_dB, double lambda) {
     // thermal noise in PLL
     double CN0 = pow(10, CN0_dB / 10);
 

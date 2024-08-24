@@ -47,7 +47,7 @@ int main() {
     NBodyDynamics dynamics;
     dynamics.AddBody(moon);
     // dynamics.AddBody(earth);
-    dynamics.SetPrimaryBody(moon);
+    // dynamics.SetPrimaryBody(moon);
 
     // State
     VecX rv0(6);

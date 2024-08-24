@@ -16,7 +16,8 @@ int main() {
   Vec4 angles = PlanetOrientation(id, t_tdb);
 
   std::cout << "Planet: " << body << std::endl;
-  std::cout << "Epoch:  " << "TDB=" << t_tdb << " TAI=" << t_tai << std::endl;
+  std::cout << "Epoch:  "
+            << "TDB=" << t_tdb << " TAI=" << t_tai << std::endl;
 
   std::cout << "Orientation at t_tdb = " << t_tdb << " s" << std::endl;
   std::cout << "  alpha0 = " << DEG * angles(0) << std::endl;

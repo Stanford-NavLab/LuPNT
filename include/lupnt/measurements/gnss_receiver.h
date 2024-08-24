@@ -17,7 +17,7 @@
 
 #include "gnss_channel.h"
 #include "gnss_measurement.h"
-#include "lupnt/agents/comm_device.h"
+#include "lupnt/measurements/comm_device.h"
 #include "lupnt/measurements/transmission.h"
 
 namespace lupnt {
@@ -28,7 +28,8 @@ namespace lupnt {
   public:
     Antenna antenna_;
     GnssReceiverParam gnssr_param_;
-    std::string receiver_name_;  // Name of the receiver system
+    std::string receiver_name_;           // Name of the receiver system
+    std::string attitude_mode_ = "NONE";  // Attitude mode of the receiver
 
     GnssReceiver(std::string receiver_name) : receiver_name_(receiver_name) {
       antenna_ = Antenna(receiver_name_);
@@ -36,24 +37,28 @@ namespace lupnt {
     };
 
     // Receiver Gain Calculators
+    void SetReceiverAttitudeMode(std::string mode) { attitude_mode_ = mode; };
+
+    // Receiver Gain Calculators
     std::vector<Vec3d> GetReceiverOrientation(double t, Vec3d& r_rx_gcrf, std::string mode);
-    double GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf, std::string mode);
+    double GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf);
 
     void InitializeReceiverParams();
     void SetCN0Threshold(double CN0threshold) { rx_param_.CN0threshold = CN0threshold; };
 
     // Generate Measurement
     GnssMeasurement GetMeasurement(double t);
-    void SetChannel(Ptr<GnssChannel> ch) { channel = ch; };
 
     // Getters and Setters
-    inline Ptr<Agent> GetAgent() const override { return agent; };
-    inline void SetAgent(const Ptr<Agent>& agent) override { this->agent = agent; };
+    // Override channel getters and setters
+    inline Ptr<GnssChannel> GetGnssChannel() { return gnss_channel_; };
+    inline void SetChannel(const Ptr<GnssChannel>& channel) { gnss_channel_ = channel; };
+
     double GetAntennaGain(Vec3d direction) { return antenna_.GetAntennaGain(direction); };
     double GetAntennaGain(double theta, double phi) { return antenna_.GetAntennaGain(theta, phi); };
 
   private:
     Ptr<Agent> agent;
-    Ptr<GnssChannel> channel;
+    Ptr<GnssChannel> gnss_channel_;
   };
 }  // namespace lupnt

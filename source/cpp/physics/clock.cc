@@ -13,7 +13,6 @@ namespace lupnt {
 
     switch (clk_model) {
       case ClockModel::kMicrosemiCsac:
-        // file:///Users/keidaiiiyama/Downloads/Microchip_CSAC_Space_Datasheet_900-00744-007C%20(1).pdf
         sigma1 = 3e-10;
         sigma2 = 3e-12;
         sigma3 = 0;
@@ -109,6 +108,21 @@ namespace lupnt {
   Mat3 ClockDynamics::ThreeStatePhi(Real dt) {
     Mat3 Phi_clk{{1, dt, dt * dt / 2}, {0, 1, dt}, {0, 0, 1}};
     return Phi_clk;
+  }
+
+  ClockState ClockDynamics::PropagateState(const ClockState state, Real t0, Real tf, MatXd* stm) {
+    VecX x0 = state.GetVec();
+    VecX xf = Propagate(x0, t0, tf, stm);
+    return ClockState(xf);
+  }
+
+  Ptr<IState> ClockDynamics::PropagateState(const Ptr<IState>& state, Real t0, Real tf,
+                                            MatXd* stm) {
+    ClockState* clk_state = dynamic_cast<ClockState*>(state.get());
+    if (clk_state == nullptr) {
+      throw std::runtime_error("Invalid state type");
+    }
+    return std::make_shared<ClockState>(PropagateState(*clk_state, t0, tf, stm));
   }
 
   Vec2 ClockDynamics::Propagate(const Vec2& x0, Real t0, Real tf, Mat2* stm) {

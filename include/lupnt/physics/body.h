@@ -18,6 +18,15 @@
 
 namespace lupnt {
 
+  struct BodyData {
+    NaifId id;
+    std::string name;
+    Real GM;
+    Real R;
+    Frame fixed_frame;
+    Frame inertial_frame;
+  };
+
   template <typename T = double> struct GravityField {
     int n_max, m_max;  // Maximum degree and order
     int n, m;          // Degree and order
