@@ -44,4 +44,23 @@ namespace lupnt {
   std::filesystem::path GetCspiceKernelDir() { return GetDataPath() / "ephemeris"; }
   std::filesystem::path GetAsciiKernelDir() { return GetDataPath() / "ephemeris" / "ascii"; }
 
+  std::chrono::time_point<std::chrono::high_resolution_clock> GetSystemTime() {
+    return std::chrono::high_resolution_clock::now();
+  }
+  // print duration between start_time and end_time
+  std::string PrintDuration(const std::chrono::duration<double>& duration) {
+    auto total_seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
+    auto hours = total_seconds / 3600;
+    auto minutes = (total_seconds % 3600) / 60;
+    auto seconds = total_seconds % 60;
+    auto milliseconds
+        = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() % 1000;
+
+    std::string str;
+    if (hours > 0) str += std::to_string(hours) + "h ";
+    if (minutes > 0) str += std::to_string(minutes) + "m ";
+    str += std::to_string(seconds) + "s ";
+    str += std::to_string(milliseconds) + "ms";
+    return str;
+  }
 }  // namespace lupnt

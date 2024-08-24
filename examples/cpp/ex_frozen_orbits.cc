@@ -45,6 +45,8 @@ struct {
 } config;
 
 int main() {
+  auto begin = GetSystemTime();
+
   auto output_path = GetOutputPath("ex_frozen_orbits");
   cout << "Output path: " << output_path << endl;
 
@@ -409,6 +411,9 @@ int main() {
       cout << endl << "Loaded from file" << endl;
     }
   }
+
+  auto end = GetSystemTime();
+  cout << "Total elapsed time: " << PrintDuration(end - begin) << endl;
 
   show();
   return 0;

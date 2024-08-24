@@ -2,6 +2,7 @@
 
 #include <assert.h>
 
+#include <chrono>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -17,5 +18,8 @@ namespace lupnt {
   std::filesystem::path GetFilePath(std::string_view filename);
   std::filesystem::path GetCspiceKernelDir();
   std::filesystem::path GetAsciiKernelDir();
+
+  std::chrono::time_point<std::chrono::high_resolution_clock> GetSystemTime();
+  std::string PrintDuration(const std::chrono::duration<double>& duration);
 
 }  // namespace lupnt

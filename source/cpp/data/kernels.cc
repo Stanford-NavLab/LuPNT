@@ -201,7 +201,7 @@ namespace lupnt {
     while (std::getline(infile, line)) {
       std::istringstream iss(line);
       iss >> block_in >> tmp;
-      assert(block_in == block && "Block number mismatch");
+      if (block_in != block) throw std::runtime_error("Block number mismatch");
       EphemerisBlock block_data;
       infile >> value_str;
       block_data.jd_tdb_start = ParseDouble(value_str);

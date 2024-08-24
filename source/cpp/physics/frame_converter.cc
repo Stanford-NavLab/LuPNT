@@ -46,25 +46,6 @@ namespace lupnt {
       {Frame::VENUS_FIXED, NaifId::VENUS},
   };
 
-  std::map<std::pair<Frame, Frame>, std::function<Vec6(Real, const Vec6& rv)>> frame_conversions = {
-      FRAME_CONVERSION(GCRF, ITRF, GCRF2ITRF),
-      FRAME_CONVERSION(ITRF, GCRF, ITRF2GCRF),
-      FRAME_CONVERSION(GCRF, EME, GCRF2EME),
-      FRAME_CONVERSION(EME, GCRF, EME2GCRF),
-      FRAME_CONVERSION(GCRF, ICRF, GCRF2ICRF),
-      FRAME_CONVERSION(ICRF, GCRF, ICRF2GCRF),
-      FRAME_CONVERSION(GCRF, MOON_CI, GCRF2MoonCI),
-      FRAME_CONVERSION(MOON_CI, GCRF, MoonMI2GCRF),
-      FRAME_CONVERSION(MOON_CI, MOON_PA, MoonMI2MoonPA),
-      FRAME_CONVERSION(MOON_PA, MOON_CI, MoonPA2MoonCI),
-      FRAME_CONVERSION(MOON_PA, MOON_ME, MoonPA2MoonME),
-      FRAME_CONVERSION(MOON_ME, MOON_PA, MoonME2MoonPA),
-      FRAME_CONVERSION(GCRF, EMR, GCRF2EMR),
-      FRAME_CONVERSION(EMR, GCRF, EMR2GCRF),
-      FRAME_CONVERSION(MOON_CI, MOON_OP, MoonCI2MoonOP),
-      FRAME_CONVERSION(MOON_OP, MOON_CI, MoonOP2MoonCI),
-  };
-
   std::ostream& operator<<(std::ostream& os, Frame frame) {
     switch (frame) {
       case Frame::ITRF: os << "ITRF"; break;
