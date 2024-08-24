@@ -9,15 +9,15 @@ namespace lupnt {
 
   class ProgressBar {
   public:
-    ProgressBar(int total, int barWidth = 50, double maxUpdateFrequency = 0.1)
+    ProgressBar(int total, int barWidth = 50, double maxUpdateFrequency = 0.2)
         : total_(total),
           barWidth_(barWidth),
           maxUpdateFrequency_(maxUpdateFrequency),
+          currentValue_(0),
           currentProgress_(-1),
-          startTime_(std::chrono::system_clock::now()),
-          lastUpdate_(startTime_),
           valueAtLastUpdate_(0),
-          currentValue_(0) {}
+          startTime_(std::chrono::system_clock::now()),
+          lastUpdate_(startTime_) {}
 
     void Update() { Update(currentValue_ + 1); }
     void Update(int value) {
@@ -40,18 +40,21 @@ namespace lupnt {
       }
 
       if (value == total_) {
-        Done();
+        Finish();
       }
     }
 
-    void Done() {
+    void Finish() {
       auto now = std::chrono::system_clock::now();
+      currentValue_ = total_;
+      currentProgress_ = 100;
       std::chrono::duration<double> elapsedSinceStart = now - startTime_;
       double totalItersPerSecond = total_ / elapsedSinceStart.count();
       Display(total_, totalItersPerSecond, 0);
       std::cout << std::endl;
       std::chrono::duration<double> elapsed = now - startTime_;
-      std::cout << "Elapsed time: " << FormatTime(static_cast<int>(elapsed.count())) << std::endl;
+      std::cout << "Elapsed time: " << FormatTime(static_cast<int>(elapsed.count())) << std::endl
+                << std::flush;
     }
 
   private:
@@ -65,7 +68,7 @@ namespace lupnt {
 
     void Display(int value, double speed, int remainingTime) {
       std::cout << "[";
-      int pos = barWidth_ * currentProgress_ / 100;
+      int pos = barWidth_ * currentProgress_ / 100 + 1;
       for (int i = 0; i < barWidth_; ++i) {
         if (i < pos)
           std::cout << "=";
@@ -74,10 +77,10 @@ namespace lupnt {
         else
           std::cout << " ";
       }
-      std::cout << "] " << currentProgress_ << "%, ";
+      std::cout << "] " << value << "/" << total_ << ", " << currentProgress_ << "%, ";
       std::cout << std::fixed << std::setprecision(2) << speed << " it/s, ";
       std::cout << FormatTime(remainingTime) << " remaining\r";
-      std::cout.flush();
+      std::cout << std::flush;
     }
 
     std::string FormatTime(int seconds) {

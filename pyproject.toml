@@ -9,14 +9,12 @@ description = "Lunar Positioning, Navigation, and Timing (PNT) library"
 readme = "README.md"
 license = {text = "MIT"}
 authors=[
-    {name="Guillem Casadesus Vila", email="guillemc@stanford.edu"},
-    {name="Keidai Iiyama",          email="kiiyama@stanford.edu"},
+    {name="Guillem Casadesus Vila, Keidai Iiyama", email="guillemc@stanford.edu;kiiyama@stanford.edu"},
 ]
 maintainers=[
-    {name="Guillem Casadesus Vila", email="guillemc@stanford.edu"},
-    {name="Keidai Iiyama",          email="kiiyama@stanford.edu"},
+    {name="Guillem Casadesus Vila, Keidai Iiyama", email="guillemc@stanford.edu;kiiyama@stanford.edu"},
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "numpy",
     "astropy",
@@ -31,7 +29,6 @@ dependencies = [
     "networkx",
     "numba",
     "onnx",
-    "openvino",
     "pandas",
     "Pillow",
     "plotly",
@@ -49,7 +46,6 @@ keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "examp
 classifiers=[
     "Programming Language :: C++",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",

@@ -56,7 +56,7 @@ namespace lupnt {
                                     std::string time_fixed);
 
     /**
-     * @brief
+     * @brief  Compute the link budget for a given data rate
      *
      * @param txDevice
      * @param rxDevice
@@ -65,8 +65,8 @@ namespace lupnt {
      * @return ITransmission
      */
     ITransmission ComputeLinkBudgetDR(std::shared_ptr<Transmitter> &txDevice,
-                                    std::shared_ptr<Receiver> &rxDevice, Real t,
-                                    std::string time_fixed, double data_rate);
+                                      std::shared_ptr<Receiver> &rxDevice, Real t,
+                                      std::string time_fixed, double data_rate);
 
     /**
      * @brief Solve the light time delay at the receiver

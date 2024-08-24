@@ -3,6 +3,8 @@
 #include "lupnt/numerics/math_utils.h"
 
 namespace lupnt {
+  Real GetOrbitalPeriod(Real a, Real GM) { return 2 * M_PI * sqrt(pow(a, 3) / GM); }
+  VEC_IMP_REAL_REAL(GetOrbitalPeriod);
 
   Real Ecc2TrueAnomaly(Real E, Real e) { return atan2(sqrt(1 - pow(e, 2)) * sin(E), cos(E) - e); }
 

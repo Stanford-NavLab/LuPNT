@@ -5,10 +5,10 @@
 #include "lupnt/agents/application.h"
 #include "lupnt/agents/gnss_constellation.h"
 #include "lupnt/agents/state_estimation_app.h"
-#include "lupnt/agents/task_scheduling.h"
 
 // core
 #include "lupnt/core/constants.h"
+#include "lupnt/core/definitions.h"
 #include "lupnt/core/event.h"
 #include "lupnt/core/file.h"
 #include "lupnt/core/plot.h"
@@ -58,6 +58,7 @@
 #include "lupnt/physics/cheby.h"
 #include "lupnt/physics/clock.h"
 #include "lupnt/physics/coordinates.h"
+#include "lupnt/physics/frame_conversions.h"
 #include "lupnt/physics/frame_converter.h"
 #include "lupnt/physics/frame_converter_spice.h"
 #include "lupnt/physics/gravity.h"

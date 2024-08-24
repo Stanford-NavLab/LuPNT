@@ -85,7 +85,7 @@ namespace lupnt {
           for (int j = 0; j < state_size; j++) {
             x_seg(j) = x(start_idx + j);
           }
-          dynamics_vec_[i]->PropagateWithStmX(x_seg, t_curr, t_end, Phi_tmp);
+          dynamics_vec_[i]->Propagate(x_seg, t_curr, t_end, &Phi_tmp);
           Phi.block(start_idx, start_idx, state_size, state_size) = Phi_tmp;
           for (int j = 0; j < state_size; j++) {
             x(start_idx + j) = x_seg(j);
@@ -107,19 +107,14 @@ namespace lupnt {
     double epoch_;   // curent epoch
     double t_;       // Current time [s]
 
-    std::shared_ptr<Agent> agent_;
-    std::shared_ptr<IFilter> filter_;
+    Ptr<Agent> agent_;
+    Ptr<IFilter> filter_;
     FilterDynamicsFunction dynamics_func_;
     FilterMeasurementFunction meas_func_;
     JointState state_vec_;
 
-    std::shared_ptr<DataHistory> data_history_;
-
   public:
-    void SetAgent(std::shared_ptr<Agent> agent) { this->agent_ = agent; }
-    void SetDataHistory(std::shared_ptr<DataHistory> data_history) {
-      this->data_history_ = data_history;
-    };
+    void SetAgent(Ptr<Agent> agent) { this->agent_ = agent; }
 
     double GetInitialEpoch() { return epoch0_; };
     double GetCurrentEpoch() { return epoch_; };

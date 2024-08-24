@@ -25,9 +25,11 @@ namespace lupnt {
 
   class GnssTransmitter : public Transmitter {
   public:
+    Antenna antenna_;                        // Antenna gain pattern [deg & dB]
     std::string gnss_type_;                  // Name of the atenna system
     std::string txrx = "TX";                 // Type of comms system
     int prn_;                                // PRN of the transmitter satellite
+    double freq_tx;                          // Transmit frequency [Hz]
     double Rc;                               // Ranging chip rate [Hz]
     std::vector<std::string> freq_list;      // List of frequencies (by signal names)
     std::map<std::string, double> freq_map;  // map string to frequencies
@@ -62,10 +64,17 @@ namespace lupnt {
     GnssTransmission GenerateTransmission(double t);
 
     // Getters and Setters
+    void SetChannel(Ptr<GnssChannel> ch) { channel = ch; };
     int GetPRN() { return prn_; };
     void SetFreq(double freq) { freq_tx = freq; };
     std::string GetGnssType() { return gnss_type_; };
+    inline Ptr<Agent> GetAgent() const override { return agent; };
+    inline void SetAgent(const Ptr<Agent>& agent) override { this->agent = agent; };
     double GetAntennaGain(Vec3d direction) { return antenna_.GetAntennaGain(direction); };
     double GetAntennaGain(double theta, double phi) { return antenna_.GetAntennaGain(theta, phi); };
+
+  private:
+    Ptr<Agent> agent;          // Agent that owns the device
+    Ptr<GnssChannel> channel;  // Channel that the device is connected to
   };
 }  // namespace lupnt

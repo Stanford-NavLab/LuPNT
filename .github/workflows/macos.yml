@@ -3,13 +3,12 @@ name: MacOS
 on:
   push:
     branches:
-      - master
       - main
-      - guillemc
+      - development
   pull_request:
     branches:
-      - master
       - main
+      - development
 
 env:
   CTEST_OUTPUT_ON_FAILURE: 1
@@ -17,16 +16,16 @@ env:
   LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
 
 jobs:
-  build:
+  build-macos:
     runs-on: macos-latest
 
     steps:
       - name: install OpenMP
         run: brew install libomp
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         id: cache-cpm-modules
         with:
           path: "**/cpm_modules"
@@ -34,7 +33,7 @@ jobs:
 
       - name: cache LuPNT_data
         id: cache-lupnt
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: data
           key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}

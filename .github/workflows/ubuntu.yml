@@ -3,13 +3,12 @@ name: Ubuntu
 on:
   push:
     branches:
-      - master
       - main
-      - guillemc
+      - development
   pull_request:
     branches:
-      - master
       - main
+      - development
 
 env:
   CTEST_OUTPUT_ON_FAILURE: 1
@@ -18,19 +17,19 @@ env:
   LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
 
 jobs:
-  build:
+  build-ubuntu:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         id: cache-cpm-modules
         with:
           path: "**/cpm_modules"
           key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         id: cache-lupnt-data
         with:
           path: data

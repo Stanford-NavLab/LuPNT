@@ -62,9 +62,22 @@ void init_constants(py::module& m) {
   m.attr("GM_VENUS") = py::float_(GM_VENUS);
   m.attr("GM_EARTH") = py::float_(GM_EARTH);
   m.attr("GM_MOON") = py::float_(GM_MOON);
+  m.attr("GM_MARS_SYSTEM") = py::float_(GM_MARS_SYSTEM);
+  m.attr("GM_JUPITER_SYSTEM") = py::float_(GM_JUPITER_SYSTEM);
+  m.attr("GM_SATURN_SYSTEM") = py::float_(GM_SATURN_SYSTEM);
+  m.attr("GM_URANUS_SYSTEM") = py::float_(GM_URANUS_SYSTEM);
+  m.attr("GM_NEPTUNE_SYSTEM") = py::float_(GM_NEPTUNE_SYSTEM);
+  m.attr("GM_PLUTO_SYSTEM") = py::float_(GM_PLUTO_SYSTEM);
+  m.attr("GM_CERES") = py::float_(GM_CERES);
+  m.attr("GM_VESTA") = py::float_(GM_VESTA);
 
+  // Distance
+  m.attr("D_EARTH_MOON") = py::float_(D_EARTH_MOON);
+  m.attr("D_EARTH_EMB") = py::float_(D_EARTH_EMB);
   m.attr("R_MOON") = py::float_(R_MOON);
   m.attr("R_EARTH") = py::float_(R_EARTH);
+  m.attr("OMEGA_EARTH_MOON") = py::float_(OMEGA_EARTH_MOON);
+  m.attr("D_MOON_EMB") = py::float_(D_MOON_EMB);
 
   py::enum_<NaifId>(m, "NaifId")
       .value("SOLAR_SYSTEM_BARYCENTER", NaifId::SOLAR_SYSTEM_BARYCENTER)

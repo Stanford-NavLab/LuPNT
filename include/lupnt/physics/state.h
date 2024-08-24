@@ -11,22 +11,19 @@
 
 #pragma once
 
-#include "lupnt/core/constants.h"
-
 namespace lupnt {
 
-  /**
-   * @brief Interface for States
-   *
-   */
+  enum class StateType : int;
+
   class IState {
   public:
     virtual ~IState() = default;
-    virtual inline int GetSize() const = 0;
-    virtual inline Real GetValue(int idx) const = 0;
-    virtual inline void SetValue(Real val, int idx) = 0;
-    virtual inline VecX GetVecX() const = 0;
-    virtual inline void SetVecX(const VecX &x) = 0;
+    virtual int GetSize() const = 0;
+    virtual VecX GetVec() const = 0;
+    virtual void SetVec(const VecX &x) = 0;
+    virtual Real GetValue(int idx) const = 0;
+    virtual void SetValue(int idx, Real val) = 0;
+    virtual StateType GetStateType() const = 0;
   };
 
 }  // namespace lupnt

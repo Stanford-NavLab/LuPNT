@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14...3.22)
+cmake_minimum_required(VERSION 3.15)
 set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)
 
 project(LuPNTTests LANGUAGES CXX)
@@ -44,9 +44,10 @@ endif()
 
 # ---- Create binary ----
 
+set(ENV{CATCH_VERBOSITY} 2)
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/cpp/*.cc)
 add_executable(${PROJECT_NAME} ${sources})
-target_link_libraries(${PROJECT_NAME} Catch2::Catch2WithMain LuPNT::LuPNT)
+target_link_libraries(${PROJECT_NAME} Catch2::Catch2 LuPNT::LuPNT)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 
 # ---- Add LuPNTTests ----

@@ -17,6 +17,125 @@
 using namespace lupnt;
 namespace sp = spice;
 
+class MyFile {
+private:
+  std::ofstream file;
+
+public:
+  MyFile(const std::string& filepath) {
+    file.open(filepath);
+    if (!file.is_open()) {
+      throw std::runtime_error("Could not open file: " + filepath);
+    }
+  }
+
+  ~MyFile() {
+    if (file.is_open()) {
+      file.close();
+    }
+  }
+
+  // Operator <<
+  template <typename T> MyFile& operator<<(const T& data) {
+    file << data;
+    return *this;
+  }
+};
+
+template <typename T> class Timestamped {
+public:
+  Timestamped(double timestamp, const T& data) : timestamp(timestamp), data(data) {}
+
+  double GetTimestamp() const { return timestamp; }
+  const T& GetData() const { return data; }
+
+private:
+  double timestamp;
+  T data;
+};
+
+class DataHistory {
+public:
+  template <typename VectorType>
+  void AddData(const std::string& key, double timestamp, const VectorType& data) {
+    if (historyData.find(key) == historyData.end()) {
+      historyData[key] = {};
+    }
+    historyData[key].push_back(Timestamped<VecXd>(timestamp, data.template cast<double>()));
+  }
+
+  const std::vector<Timestamped<VecXd>>& GetData(const std::string& key) const {
+    auto it = historyData.find(key);
+    if (it != historyData.end()) {
+      return it->second;
+    }
+    throw std::runtime_error("No data found for the given key.");
+  }
+
+  void AddHeader(const std::string& key, const std::string& header) {
+    headers[key].push_back(header);
+  }
+
+  const std::map<std::string, std::vector<Timestamped<VecXd>>>& GetData() const {
+    return historyData;
+  }
+
+  const std::map<std::string, std::vector<std::string>>& GetHeaders() const { return headers; }
+
+private:
+  std::map<std::string, std::vector<Timestamped<VecXd>>> historyData;
+  std::map<std::string, std::vector<std::string>> headers;
+};
+
+class FileWriter {
+public:
+  FileWriter(const std::filesystem::path& basePath, const bool make_dirs = false)
+      : basePath(basePath) {
+    // Create the base path if it does not exist
+    if (make_dirs) {
+      std::filesystem::create_directories(basePath);
+    }
+    // Check if the base path exists
+    if (!std::filesystem::exists(basePath)) {
+      throw std::runtime_error("Base path does not exist: " + basePath.string());
+    }
+    // Remove all csv files in the directory
+    for (const auto& entry : std::filesystem::directory_iterator(basePath)) {
+      if (entry.path().extension() == ".csv") {
+        std::filesystem::remove(entry.path());
+      }
+    }
+  }
+
+  void WriteData(const DataHistory& dataHistory) {
+    for (const auto& [key, data] : dataHistory.GetData()) {
+      std::filesystem::path filepath = basePath / (key + ".csv");
+
+      MyFile file(filepath.string());
+      // Check headers
+      auto it = dataHistory.GetHeaders().find(key);
+      if (it != dataHistory.GetHeaders().end()) {
+        file << "t";
+        for (const auto& header : it->second) {
+          file << "," << header;
+        }
+        file << "\n";
+      }
+      for (const auto& timestampedData : data) {
+        file << timestampedData.GetTimestamp();
+        if (timestampedData.GetData().size() > 0) {
+          file << "," << timestampedData.GetData().transpose().format(fmt);
+        }
+        file << "\n";
+      }
+    }
+  }
+
+private:
+  std::filesystem::path basePath;
+  Eigen::IOFormat fmt{Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n"};
+};
+
 // Util Functions
 MatXd ConstructInitCovariance(double pos_err, double vel_err, double clk_bias_err,
                               double clk_drift_err) {
@@ -48,11 +167,11 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
   data_history->AddData("vis_ionos", t, meas->GetMoonOccultation());
 
   // Moon spacecraft
-  auto state = sat->GetCartesianGCRFStateAtEpoch(epoch);
-  auto state_mi = ConvertOrbitStateFrame(state, epoch, Frame::MOON_CI);
-  auto state_gcrf = ConvertOrbitStateFrame(state, epoch, Frame::GCRF);
-  data_history->AddData("rv_moon_mi", t, state_mi->GetVec());
-  data_history->AddData("rv_moon_gcrf", t, state_gcrf->GetVec());
+  CartesianOrbitState state = sat->GetCartesianGCRFStateAtEpoch(epoch);
+  CartesianOrbitState state_mi = ConvertOrbitStateFrame(state, epoch, Frame::MOON_CI);
+  CartesianOrbitState state_gcrf = ConvertOrbitStateFrame(state, epoch, Frame::GCRF);
+  data_history->AddData("rv_moon_mi", t, state_mi.GetVec());
+  data_history->AddData("rv_moon_gcrf", t, state_gcrf.GetVec());
 
   // Estimation
   data_history->AddData("rv", t, sat->GetOrbitState()->GetVec());
@@ -68,13 +187,13 @@ void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
 
   // GPS constellation
   for (int i = 0; i < gps_const->GetNumSatellites(); i++) {
-    auto sate = gps_const->GetSatellite(i)->GetCartesianGCRFStateAtEpoch(epoch);
-    auto sate_mi = ConvertOrbitStateFrame(sate, epoch, Frame::MOON_CI);
-    auto state_gcrf = ConvertOrbitStateFrame(sate, epoch, Frame::GCRF);
+    CartesianOrbitState sate = gps_const->GetSatellite(i)->GetCartesianGCRFStateAtEpoch(epoch);
+    CartesianOrbitState sate_mi = ConvertOrbitStateFrame(sate, epoch, Frame::MOON_CI);
+    CartesianOrbitState state_gcrf = ConvertOrbitStateFrame(sate, epoch, Frame::GCRF);
 
     std::string name = "sat" + std::to_string(i);
-    data_history->AddData(name + "_mi", t, sate->GetVec());
-    data_history->AddData(name + "_gcrf", t, state_gcrf->GetVec());
+    data_history->AddData(name + "_mi", t, state.GetVec());
+    data_history->AddData(name + "_gcrf", t, state_gcrf.GetVec());
   }
 
   // Bodies
@@ -411,11 +530,10 @@ int main() {
   auto moon_true = Body::Moon(moon_sph_true, moon_sph_true);
   auto moon_est = Body::Moon(moon_sph_est, moon_sph_est);
 
+  dyn_true->SetFrame(Frame::MOON_CI);
+  dyn_est->SetFrame(Frame::MOON_CI);
   dyn_true->AddBody(moon_true);
-  dyn_true->SetPrimaryBody(moon_true);
-
   dyn_est->AddBody(moon_est);
-  dyn_est->SetPrimaryBody(moon_est);
 
   if (add_earth) {
     dyn_true->AddBody(earth);
@@ -523,7 +641,8 @@ int main() {
             Q_rv(i, i + 3) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
             Q_rv(i + 3, i) = pow(dt, 2) / 2.0 * pow(sigma_acc, 2);
           }
-          Mat2d Q_clk = GetClockProcessNoise(cmodel, dt);
+
+          Mat2d Q_clk = ClockDynamics::TwoStateNoise(cmodel, dt).cast<double>();
 
           Q.block(0, 0, 6, 6) = Q_rv;
           Q.block(6, 6, 2, 2) = Q_clk;

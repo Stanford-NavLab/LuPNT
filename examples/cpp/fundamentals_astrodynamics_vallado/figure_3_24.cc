@@ -10,16 +10,16 @@ int main() {
   int N_points = 100;
   int dyears = 4;
 
-  Real t0_tai = GregorianToTime(year0, 1, 1, 0, 0, 0);
-  Real tf_tai = GregorianToTime(yearf, 1, 1, 0, 0, 0);
+  Real t0_tai = Gregorian2Time(year0, 1, 1, 0, 0, 0);
+  Real tf_tai = Gregorian2Time(yearf, 1, 1, 0, 0, 0);
   VecX t_tai = VecX::LinSpaced(N_points, t0_tai, tf_tai);
-  VecX t_utc = TAItoUTC(t_tai);
-  VecX t_ut1 = UTCtoUT1(t_utc);
-  VecX t_gps = TAItoGPS(t_tai);
-  VecX t_tt = TAItoTT(t_tai);
-  VecX t_tdb = TTtoTDB(t_tt);
-  VecX t_tcg = TTtoTCG(t_tt);
-  VecX t_tcb = TTtoTCB(t_tt);
+  VecX t_utc = TAI2UTC(t_tai);
+  VecX t_ut1 = UTC2UT1(t_utc);
+  VecX t_gps = TAI2GPS(t_tai);
+  VecX t_tt = TAI2TT(t_tai);
+  VecX t_tdb = TT2TDB(t_tt);
+  VecX t_tcg = TT2TCG(t_tt);
+  VecX t_tcb = TT2TCB(t_tt);
 
   VecX years_plot = VecX::LinSpaced(N_points, year0, yearf);
 
@@ -36,14 +36,14 @@ int main() {
   hold(on);
   line_handle p;
   double lw = 2;
-  lupnt::plot(years_plot, t_tai - t_tai)->line_width(lw).display_name("TAI");
-  lupnt::plot(years_plot, t_utc - t_tai)->line_width(lw).display_name("UTC");
-  lupnt::plot(years_plot, t_ut1 - t_tai)->line_width(lw).display_name("UT1");
-  lupnt::plot(years_plot, t_gps - t_tai)->line_width(lw).display_name("GPS");
-  lupnt::plot(years_plot, t_tt - t_tai)->line_width(lw).display_name("TT");
-  lupnt::plot(years_plot, t_tdb - t_tai)->line_width(lw).display_name("TDB");
-  lupnt::plot(years_plot, t_tcg - t_tai)->line_width(lw).display_name("TCG");
-  lupnt::plot(years_plot, t_tcb - t_tai)->line_width(lw).display_name("TCB");
+  lupnt::Plot(years_plot, t_tai - t_tai)->line_width(lw).display_name("TAI");
+  lupnt::Plot(years_plot, t_utc - t_tai)->line_width(lw).display_name("UTC");
+  lupnt::Plot(years_plot, t_ut1 - t_tai)->line_width(lw).display_name("UT1");
+  lupnt::Plot(years_plot, t_gps - t_tai)->line_width(lw).display_name("GPS");
+  lupnt::Plot(years_plot, t_tt - t_tai)->line_width(lw).display_name("TT");
+  lupnt::Plot(years_plot, t_tdb - t_tai)->line_width(lw).display_name("TDB");
+  lupnt::Plot(years_plot, t_tcg - t_tai)->line_width(lw).display_name("TCG");
+  lupnt::Plot(years_plot, t_tcb - t_tai)->line_width(lw).display_name("TCB");
 
   ylabel("Difference in Time to TAI [s]");
   xticks(years_xticks);

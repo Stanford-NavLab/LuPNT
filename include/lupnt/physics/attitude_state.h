@@ -62,7 +62,7 @@ namespace lupnt {
       is_attached_to_frame_ = true;
     }
 
-    VecX GetVecX() const { return x_; }
+    VecX GetVec() const { return x_; }
     inline int GetSize() const { return x_.size(); }
     inline Real GetValue(int i) const { return x_(i); }
     inline void SetValue(Real val, int i) { x_(i) = val; }

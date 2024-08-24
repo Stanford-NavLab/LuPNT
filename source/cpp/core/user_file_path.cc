@@ -1,0 +1,47 @@
+#include "lupnt/core/user_file_path.h"
+
+namespace lupnt {
+  std::filesystem::path GetDataPath() {
+    const char* data_path_env = std::getenv("LUPNT_DATA_PATH");
+    assert(data_path_env != nullptr && "Environment variable LUPNT_DATA_PATH is not set.");
+    return std::filesystem::path(data_path_env);
+  }
+
+  std::filesystem::path GetOutputPath(std::string output_dir) {
+    const char* output_path_env = std::getenv("LUPNT_OUTPUT_PATH");
+    std::filesystem::path output_path;
+    if (output_path_env == nullptr) {
+      output_path = std::filesystem::current_path();
+    } else {
+      output_path = std::filesystem::path(output_path_env);
+    }
+    if (!output_dir.empty()) {
+      output_path /= output_dir;
+    }
+
+    if (!std::filesystem::exists(output_path)) {
+      std::filesystem::create_directories(output_path);
+    }
+    return output_path;
+  }
+
+  std::optional<std::filesystem::path> FindFileInDir(const std::filesystem::path& base_path,
+                                                     const std::string& filename) {
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(base_path)) {
+      if (entry.path().filename().string() == filename) {
+        return entry.path();
+      }
+    }
+    return std::nullopt;
+  };
+
+  std::filesystem::path GetFilePath(const std::string& filename) {
+    auto filepath = FindFileInDir(GetDataPath(), filename);
+    assert(filepath.has_value() && "File not found.");
+    return filepath.value();
+  }
+
+  std::filesystem::path GetCspiceKernelDir() { return GetDataPath() / "ephemeris"; }
+  std::filesystem::path GetAsciiKernelDir() { return GetDataPath() / "ephemeris" / "ascii"; }
+
+}  // namespace lupnt

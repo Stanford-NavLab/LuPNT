@@ -151,11 +151,11 @@ namespace lupnt {
      * @param seed   random seed
      * @return VecX
      */
-    VecX ComputePseudorange(VecX r_rx, Real dt_rx, bool with_noise = false, int seed = 0);
-    VecX ComputePseudorangerate(VecX r_rx, VecX v_rx, Real dt_rx_dot, bool with_noise = false,
-                                int seed = 0);
-    VecX ComputeCarrierPhase(VecX r_rx, Real dt_rx, VecX N_rx, bool with_noise = false,
-                             int seed = 0);
+    VecX ComputeGnssPseudorange(VecX r_rx, Real dt_rx, bool with_noise = false, int seed = 0);
+    VecX ComputeGnssPseudorangerate(VecX r_rx, VecX v_rx, Real dt_rx_dot, bool with_noise = false,
+                                    int seed = 0);
+    VecX ComputeGnssCarrierPhase(VecX r_rx, Real dt_rx, VecX N_rx, bool with_noise = false,
+                                 int seed = 0);
 
     /***********************************************************
      *  Methods for true measurement generation
@@ -285,7 +285,7 @@ namespace lupnt {
      * @param CN0  Carrier‐to‐noise density [dB‐Hz]
      * @return double  Pseudorange noise [km]
      */
-    double ComputePseudorangeNoise(double CN0);
+    double ComputeGnssPseudorangeNoise(double CN0);
 
     /**
      * @brief Compute the pseudorange rate noise using thermal noise in FLL
@@ -294,7 +294,7 @@ namespace lupnt {
      * @param CN0  Carrier‐to‐noise density [dB‐Hz]
      * @return double  Pseudorange rate noise [km/s]
      */
-    double ComputePseudorangeRateNoise(double CN0, double lambda);
+    double ComputeGnssPseudorangerateNoise(double CN0, double lambda);
 
     /**
      * @brief Compute the carrier phase noise using thermal noise in PLL
@@ -303,6 +303,6 @@ namespace lupnt {
      * @param CN0  Carrier‐to‐noise density [dB‐Hz]
      * @return double  Carrier phase noise [cycles]
      */
-    double ComputeCarrierPhaseNoise(double CN0, double lambda);
+    double ComputeGnssCarrierPhaseNoise(double CN0, double lambda);
   };
 }  // namespace lupnt

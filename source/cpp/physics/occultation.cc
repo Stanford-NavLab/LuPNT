@@ -13,6 +13,7 @@
 
 #include "lupnt/core/constants.h"
 #include "lupnt/data/kernels.h"
+#include "lupnt/physics/body.h"
 #include "lupnt/physics/frame_converter.h"
 
 namespace lupnt {
@@ -88,9 +89,12 @@ namespace lupnt {
     std::map<std::string, bool> vis;
 
     for (size_t i = 0; i < bodies.size(); i++) {
+      BodyData bodydata = GetBodyData(bodies[i]);
+
       // Vec6 GetBodyPosVel(const real t_tai, NaifId center, NaifId target);
-      Vec3d rb
-          = GetBodyPosVel(epoch, NaifId::SOLAR_SYSTEM_BARYCENTER, bodies[i]).head(3).cast<double>();
+      Vec3d rb = GetBodyPosVel(epoch, NaifId::SOLAR_SYSTEM_BARYCENTER, bodies[i], Frame::ICRF)
+                     .head(3)
+                     .cast<double>();
       Vec3d r12 = (r2_icrf - r1_icrf).cast<double>();  // 1->2
       Vec3d r1b = (rb - r1_icrf).cast<double>();       // 1->body
       Vec3d r2b = (rb - r2_icrf).cast<double>();       // 2->body
@@ -98,7 +102,7 @@ namespace lupnt {
       // If the transmitter or receiver is inside the atmosphere, ignore
       // ocuultation computation (Likely they are ground users)
       if ((r1b.norm() < atm_h(i)) || (r2b.norm() < atm_h(i))) {
-        vis[toString(bodies[i])] = true;
+        vis[bodydata.name] = true;
         continue;
       }
 
@@ -109,14 +113,14 @@ namespace lupnt {
       double alpha_body = acos(r12.dot(r1b) / (r1b_norm * r12_norm));
 
       // Compute angle between (tx>Body center) and (tx->horizon)
-      double R_body = BodyRadius(bodies[i]) + atm_h(i);
+      double R_body = GetBodyRadius(bodies[i]) + atm_h(i);
       double beta_body = asin(R_body / r1b_norm);
 
       // Compute occultation (alpha_body < beta and r12_norm > r1b_norm *
       // cos(beta))
       bool is_vis = (alpha_body < beta_body) && (r12_norm > r1b_norm * cos(beta_body));
 
-      vis[toString(bodies[i])] = is_vis;
+      vis[bodydata.name] = is_vis;
     }
 
     vis["all"] = std::all_of(vis.begin(), vis.end(),

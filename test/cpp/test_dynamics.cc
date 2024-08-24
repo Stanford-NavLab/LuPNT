@@ -1,6 +1,7 @@
 #include <lupnt/core/constants.h>
 #include <lupnt/dynamics/dynamics.h>
 #include <lupnt/physics/orbit_state.h>
+#include <lupnt/physics/time_converter.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
@@ -9,170 +10,208 @@
 
 using namespace lupnt;
 
-// Keplerian Dynamics with Classical Orbital Elements
-TEST_CASE("Test_KeplerianDynamics_ClassicalOE") {
-  // Classical orbital elements
-  Real a = 6541.4;          // [km]
-  Real e = 0.6;             // [-]
-  Real i = 65.5 * RAD;      // [rad]
-  Real Omega = 90.0 * RAD;  // [rad]
-  Real w = 0.0 * RAD;       // [rad]
-  Real M = 0.0 * RAD;       // [rad]
+Vec6 GetClassicalOE() {
+  Real a = 5740;        // [km] Semi-major axis
+  Real e = 0.58;        // [-] Eccentricity
+  Real i = 54.9 * RAD;  // [rad] Inclination
+  Real O = 0;           // [rad] Right Ascension of Ascending Node
+  Real w = 86.3 * RAD;  // [rad] Argument of Perigee
+  Real M = 0;           // [rad] True Anomaly
 
-  double GM = GM_MOON;
-  ClassicalOE coe_state({a, e, i, Omega, w, M}, Frame::MOON_CI);
-  Vec6 coe_analytical = coe_state.GetVec();
-
-  // Keplerian dynamics
-  auto kep_dyn = KeplerianDynamics(GM);
-
-  // Propagation
-  Real dt = 10.0;                   // [s]
-  Real n = sqrt(GM / pow(a, 3.0));  // [rad/s]
-  for (int i = 0; i < 100; i++) {
-    kep_dyn.Propagate(coe_state, dt);
-    coe_analytical(5) = Wrap2Pi(coe_analytical(5) + n * dt);
-
-    RequireNearRealVec(coe_state.GetVec(), coe_analytical, 1e-6);
-    dt += 2.0;
-  }
-
-  // Propagation with STM
-  auto propagate_function = [&](VecX &vec, Real dt) {
-    ClassicalOE state(vec, Frame::MOON_CI);
-    kep_dyn.Propagate(state, dt);
-    vec = state.GetVec();
-  };
-
-  // Propagation with STM
-  Mat6d stm;
-  Mat6d stm_numerical;
-  for (int i = 0; i < 100; i++) {
-    NumericalJacobian(propagate_function, coe_state.GetVec(), dt, stm_numerical, 1e-6);
-    kep_dyn.PropagateWithStm(coe_state, dt, stm);
-
-    RequireNearDoubleMat(stm, stm_numerical, 1e-6);
-    dt += 2.0;
-  }
+  Vec6 coe = {a, e, i, O, w, M};
+  return coe;
 }
 
-// CartesianTwoBodyDynamics
-TEST_CASE("Test_CartesianTwoBodyDynamics") {
-  // Classical orbital elements
-  Real a = 6541.4;          // [km]
-  Real e = 0.6;             // [-]
-  Real i = 65.5 * RAD;      // [rad]
-  Real Omega = 90.0 * RAD;  // [rad]
-  Real w = 0.0 * RAD;       // [rad]
-  Real M = 0.0 * RAD;       // [rad]
-
-  double GM = GM_MOON;
-  ClassicalOE coe_state({a, e, i, Omega, w, M}, Frame::MOON_CI);
-  CartesianOrbitState cart_state = Classical2Cart(coe_state, GM);
-  Vec6 cart_vector = cart_state.GetVec();
-  VecX cart_vector_kep;
-
-  // Two body dynamics
-  auto kep_dyn = KeplerianDynamics(GM);
-  auto tb_dyn = CartesianTwoBodyDynamics(GM);
-
-  // Propagation
-  Real dt = 10.0;  // [s]
-  for (int i = 0; i < 5; i++) {
-    kep_dyn.Propagate(coe_state, dt);
-    tb_dyn.Propagate(cart_state, 0.0, dt, 1.0);
-    tb_dyn.Propagate(cart_vector, 0.0, dt, 1.0);
-
-    cart_vector_kep = Classical2Cart(coe_state.GetVec(), GM);
-    RequireNearRealVec(cart_vector_kep, cart_state.GetVec(), 1e-6);
-    RequireNearRealVec(cart_vector_kep, cart_vector, 1e-6);
-  }
-
-  // Propagation with STM
-  auto propagate_function = [&](VecX &vec, Real dt) {
-    CartesianOrbitState state(vec, Frame::MOON_CI);
-    tb_dyn.Propagate(state, 0.0, dt, 0.1);
-    vec = state.GetVec();
-  };
-
-  // Propagation with STM
-  Mat6d stm_state, stm_vector, stm_numerical;
-  Vec6 cart_numerical = cart_vector;
-
-  for (int i = 0; i < 5; i++) {
-    NumericalJacobian(propagate_function, cart_numerical, dt, stm_numerical);
-
-    tb_dyn.Propagate(cart_numerical, 0.0, dt, 0.1);
-    tb_dyn.PropagateWithStm(cart_state, 0.0, dt, 0.1, stm_state);
-    tb_dyn.PropagateWithStm(cart_vector, 0.0, dt, 0.1, stm_vector);
-
-    RequireNearRealVec(cart_numerical, cart_state.GetVec(), 1e-6);
-    RequireNearRealVec(cart_numerical, cart_vector, 1e-6);
-
-    RequireNearDoubleMat(stm_numerical, stm_state, 1e-5);
-    RequireNearDoubleMat(stm_numerical, stm_vector, 1e-5);
-  }
+MatX6 GetClassicalOEMat(int n) {
+  Vec6 coe = GetClassicalOE();
+  MatX6 coe_mat = coe.transpose().replicate(n, 1);
+  coe_mat.col(5) = VecX::LinSpaced(n, 0, TWO_PI);
+  return coe_mat;
 }
 
-/**
-// J2 Cartesian dynamics
-TEST_CASE("Test_CartesianJ2Dynamics") {
-  // Classical orbital elements
-  real a = 6541.4;                  // [km]
-  real e = 0.6;                     // [-]
-  real i = 65.5 * RAD_PER_DEG;      // [rad]
-  real Omega = 90.0 * RAD_PER_DEG;  // [rad]
-  real w = 0.0 * RAD_PER_DEG;       // [rad]
-  real M = 0.0 * RAD_PER_DEG;       // [rad]
+const double ABS_TOL = 1e-6;
+const double REL_TOL = 1e-6;
 
-  double GM = GM_MOON;
-  double J2 = J2_MOON;
-  double Rbody = R_MOON;
-  real dt = 10.0;
+TEST_CASE("TestTwoBodyDynamics") {
+  // Constants
+  int N_sat = 3;         // Number of satellites
+  Real J2 = 0;           // [-] J2 coefficient
+  Real GM = GM_MOON;     // [km^3/s^2] Gravitational parameter
+  Real R_body = R_MOON;  // [km] Radius of the central body
 
-  ClassicalOE coe_state({a, e, i, Omega, w, M}, Frame::MOON_CI);
-  CartesianOrbitState cart_state = Classical2Cart(coe_state, GM);
-  Vec6 cart_vector = cart_state.GetVec();
-  VecX cart_vector_kep;
+  // Time
+  int N_steps = 4;
+  Real dt = 10;                                      // [s] Integration time step
+  Real Dt = 6 * SECS_HOUR;                           // [s] Total integration time
+  Real t0 = Gregorian2Time(2024, 6, 1, 12, 45, 30);  // [s] Start time, TAI
+  VecX tspan = VecX::LinSpaced(N_steps, 0, Dt);      // [s] Time span
+  VecX tfs = t0 + tspan.array();                     // [s] Times, TAI
 
-  // Two body dynamics
-  auto j2_dyn = J2CartTwoBodyDynamics(GM, J2, Rbody, "RK4");
-  auto j2_kep_dyn = J2KeplerianDynamics(GM, J2, Rbody, "RK4");
+  // Dynamics
+  KeplerianDynamics dyn_kep(GM);
+  CartesianTwoBodyDynamics dyn_cart(GM, IntegratorType::RK4);
+  J2CartTwoBodyDynamics dyn_cart_j2(GM, J2, R_body, IntegratorType::RK4);
+  J2KeplerianDynamics dyn_kep_j2(GM, J2, R_body, IntegratorType::RK4);
 
-  // comparison
-  for (int i = 0; i < 5; i++) {
-    j2_kep_dyn.Propagate(coe_state, 0.0, dt, 1.0);
-    j2_dyn.Propagate(cart_state, 0.0, dt, 1.0);
-    j2_dyn.Propagate(cart_vector, 0.0, dt, 1.0);
+  // Time step
+  dyn_cart.SetTimeStep(dt);
+  dyn_cart_j2.SetTimeStep(dt);
+  dyn_kep_j2.SetTimeStep(dt);
 
-    cart_vector_kep = Classical2Cart(coe_state.GetVec(), GM);
-    EXPECT_NEAR_ADVEC(cart_vector_kep, cart_state.GetVec(), 1e-6);
-    EXPECT_NEAR_ADVEC(cart_vector_kep, cart_vector, 1e-6);
+  // IDynamics
+  Ptr<IDynamics> dyn_kep_ptr = MakePtr<KeplerianDynamics>(dyn_kep);
+  Ptr<IDynamics> dyn_cart_ptr = MakePtr<CartesianTwoBodyDynamics>(dyn_cart);
+  Ptr<IDynamics> dyn_cart_j2_ptr = MakePtr<J2CartTwoBodyDynamics>(dyn_cart_j2);
+  Ptr<IDynamics> dyn_kep_j2_ptr = MakePtr<J2KeplerianDynamics>(dyn_kep_j2);
+
+  // Check time step
+  RequireNear(std::static_pointer_cast<CartesianTwoBodyDynamics>(dyn_cart_ptr)->GetTimeStep(), dt,
+              ABS_TOL);
+  RequireNear(std::static_pointer_cast<J2CartTwoBodyDynamics>(dyn_cart_j2_ptr)->GetTimeStep(), dt,
+              ABS_TOL);
+  RequireNear(std::static_pointer_cast<J2KeplerianDynamics>(dyn_kep_j2_ptr)->GetTimeStep(), dt,
+              ABS_TOL);
+
+  // Vec6
+  Vec6 coe_vec = GetClassicalOE();
+  Vec6 rv_vec = Classical2Cart(coe_vec, GM);
+  Vec6 coe_j2_vec = coe_vec;
+  Vec6 rv_j2_vec = rv_vec;
+
+  // ************************************************************************************************
+  // Multple times
+  // ************************************************************************************************
+
+  // (N_steps x 6)
+  MatX6 coe_prop = dyn_kep.Propagate(coe_vec, t0, tfs);
+  MatX6 coe_j2_prop = dyn_kep_j2.Propagate(coe_j2_vec, t0, tfs);
+  MatX6 rv_prop = dyn_cart.Propagate(rv_vec, t0, tfs);
+  MatX6 rv_j2_prop = dyn_cart_j2.Propagate(rv_j2_vec, t0, tfs);
+
+  coe_j2_prop.col(5) = Wrap2Pi(coe_j2_prop.col(5));
+
+  // Check rows
+  REQUIRE(coe_prop.rows() == N_steps);
+  REQUIRE(coe_j2_prop.rows() == N_steps);
+  REQUIRE(rv_prop.rows() == N_steps);
+  REQUIRE(rv_j2_prop.rows() == N_steps);
+
+  // Check values
+  RequireNear(coe_prop, coe_j2_prop, ABS_TOL);
+  RequireNear(coe_prop, Cart2Classical(rv_prop, GM), ABS_TOL);
+  RequireNear(coe_prop, Cart2Classical(rv_j2_prop, GM), ABS_TOL);
+
+  // ************************************************************************************************
+  // Multple vectors
+  // ************************************************************************************************
+
+  // (N_sat x 6)
+  MatX6 coe_prop_sat = GetClassicalOEMat(N_sat);
+  MatX6 coe_j2_prop_sat = coe_prop_sat;
+  MatX6 rv_matx6 = Classical2Cart(coe_prop_sat, GM);
+  MatX6 rv_j2_prop_sat = Classical2Cart(coe_prop_sat, GM);
+
+  // Check times
+  RequireNear(t0, tfs(0), ABS_TOL);
+
+  // Propagate loop
+  for (int i = 1; i < N_steps; i++) {
+    coe_prop_sat = dyn_kep.Propagate(coe_prop_sat, tfs(i - 1), tfs(i));
+    coe_j2_prop_sat = dyn_kep_j2.Propagate(coe_j2_prop_sat, tfs(i - 1), tfs(i));
+    rv_matx6 = dyn_cart.Propagate(rv_matx6, tfs(i - 1), tfs(i));
+    rv_j2_prop_sat = dyn_cart_j2.Propagate(rv_j2_prop_sat, tfs(i - 1), tfs(i));
+
+    coe_j2_prop_sat.col(5) = Wrap2Pi(coe_j2_prop_sat.col(5));
+
+    // Check values
+    RequireNear(coe_prop_sat.row(0), coe_prop.row(i), ABS_TOL);
+    RequireNear(coe_prop_sat, coe_j2_prop_sat, ABS_TOL);
+    RequireNear(coe_prop_sat, Cart2Classical(rv_matx6, GM), ABS_TOL);
+    RequireNear(coe_prop_sat, Cart2Classical(rv_j2_prop_sat, GM), ABS_TOL);
   }
 
-  // Propagation with STM
-  auto propagate_function = [&](VecX &vec, real dt) {
-    CartesianOrbitState state(vec, Frame::MOON_CI);
-    j2_dyn.Propagate(state, 0.0, dt, 0.1);
-    vec = state.GetVec();
-  };
+  // ************************************************************************************************
+  // Vectors and states
+  // ************************************************************************************************
 
-  // Propagation with STM
-  Mat6d stm_state, stm_vector, stm_numerical;
-  Vec6 cart_numerical = cart_vector;
+  // VecX
+  VecX coe_vecx = coe_vec;
+  VecX coe_j2_vecx = coe_j2_vec;
+  VecX rv_vecx = rv_vec;
+  VecX rv_j2_vecx = rv_j2_vec;
 
-  for (int i = 0; i < 5; i++) {
-    NumericalJacobian(propagate_function, cart_numerical, dt, stm_numerical);
+  // Mat6
+  Mat6d coe_stm;
+  Mat6d coe_j2_stm;
+  Mat6d rv_stm;
+  Mat6d rv_j2_stm;
 
-    j2_dyn.Propagate(cart_numerical, 0.0, dt, 0.1);
-    j2_dyn.PropagateWithStm(cart_state, 0.0, dt, 0.1, stm_state);
-    j2_dyn.PropagateWithStm(cart_vector, 0.0, dt, 0.1, stm_vector);
+  // MatX
+  MatXd coe_stmx(6, 6);
+  MatXd coe_j2_stmx(6, 6);
+  MatXd rv_stmx(6, 6);
+  MatXd rv_j2_stmx(6, 6);
 
-    EXPECT_NEAR_ADVEC(cart_numerical, cart_state.GetVec(), 1e-6);
-    EXPECT_NEAR_ADVEC(cart_numerical, cart_vector, 1e-6);
+  // State
+  ClassicalOE coe_state(coe_vec, Frame::MOON_CI);
+  ClassicalOE coe_j2_state(coe_j2_vec, Frame::MOON_CI);
+  CartesianOrbitState rv_state(rv_vec, Frame::MOON_CI);
+  CartesianOrbitState rv_j2_state(rv_j2_vec, Frame::MOON_CI);
 
-    EXPECT_NEAR_EIGENMAT(stm_numerical, stm_state, 1e-5);
-    EXPECT_NEAR_EIGENMAT(stm_numerical, stm_vector, 1e-5);
+  // Ptr<IState>
+  Ptr<IState> coe_ptr = MakePtr<ClassicalOE>(coe_state);
+  Ptr<IState> coe_j2_ptr = MakePtr<ClassicalOE>(coe_j2_state);
+  Ptr<IState> rv_ptr = MakePtr<CartesianOrbitState>(rv_state);
+  Ptr<IState> rv_j2_ptr = MakePtr<CartesianOrbitState>(rv_j2_state);
+
+  // Propagate loop
+  for (int i = 1; i < N_steps; i++) {
+    // Vec6
+    coe_vec = dyn_kep.Propagate(coe_vec, tfs(i - 1), tfs(i), &coe_stm);
+    coe_j2_vec = dyn_kep_j2.Propagate(coe_j2_vec, tfs(i - 1), tfs(i), &coe_j2_stm);
+    rv_vec = dyn_cart.Propagate(rv_vec, tfs(i - 1), tfs(i), &rv_stm);
+    rv_j2_vec = dyn_cart_j2.Propagate(rv_j2_vec, tfs(i - 1), tfs(i), &rv_j2_stm);
+
+    coe_j2_vec(5) = Wrap2Pi(coe_j2_vec(5));
+
+    RequireNear(coe_vec, coe_j2_vec, ABS_TOL);
+    RequireNear(coe_vec, Cart2Classical(rv_vec, GM), ABS_TOL);
+    RequireNear(coe_vec, Cart2Classical(rv_j2_vec, GM), ABS_TOL);
+
+    // VecX
+    coe_vecx = dyn_kep.Propagate(coe_vecx, tfs(i - 1), tfs(i), &coe_stmx);
+    coe_j2_vecx = dyn_kep_j2.Propagate(coe_j2_vecx, tfs(i - 1), tfs(i), &coe_j2_stmx);
+    rv_vecx = dyn_cart.Propagate(rv_vecx, tfs(i - 1), tfs(i), &rv_stmx);
+    rv_j2_vecx = dyn_cart_j2.Propagate(rv_j2_vecx, tfs(i - 1), tfs(i), &rv_j2_stmx);
+
+    coe_j2_vecx(5) = Wrap2Pi(coe_j2_vecx(5));
+
+    RequireNear(coe_vecx, coe_vec, ABS_TOL);
+    RequireNear(coe_j2_vecx, coe_j2_vec, ABS_TOL);
+    RequireNear(rv_vecx, rv_vec, ABS_TOL);
+    RequireNear(rv_j2_vecx, rv_j2_vec, ABS_TOL);
+
+    RequireNear(coe_stmx, coe_stm, ABS_TOL);
+    RequireNear(coe_j2_stmx, coe_j2_stm, ABS_TOL);
+    RequireNear(rv_stmx, rv_stm, ABS_TOL);
+    RequireNear(rv_j2_stmx, rv_j2_stm, ABS_TOL);
+
+    // OrbitState
+    coe_ptr = dyn_kep_ptr->PropagateState(coe_ptr, tfs(i - 1), tfs(i), &coe_stmx);
+    coe_j2_ptr = dyn_kep_ptr->PropagateState(coe_j2_ptr, tfs(i - 1), tfs(i), &coe_j2_stmx);
+    rv_ptr = dyn_cart_ptr->PropagateState(rv_ptr, tfs(i - 1), tfs(i), &rv_stmx);
+    rv_j2_ptr = dyn_cart_j2_ptr->PropagateState(rv_j2_ptr, tfs(i - 1), tfs(i), &rv_j2_stmx);
+
+    coe_j2_ptr->SetValue(5, Wrap2Pi(coe_j2_ptr->GetValue(5)));
+
+    RequireNear(coe_ptr->GetVec(), coe_vec, ABS_TOL);
+    RequireNear(coe_j2_ptr->GetVec(), coe_j2_vec, ABS_TOL);
+    RequireNear(rv_ptr->GetVec(), rv_vec, ABS_TOL);
+    RequireNear(rv_j2_ptr->GetVec(), rv_j2_vec, ABS_TOL);
+
+    RequireNear(coe_stmx, coe_stm, ABS_TOL);
+    RequireNear(coe_j2_stmx, coe_j2_stm, ABS_TOL);
+    RequireNear(rv_stmx, rv_stm, ABS_TOL);
+    RequireNear(rv_j2_stmx, rv_j2_stm, ABS_TOL);
   }
 }
-**/

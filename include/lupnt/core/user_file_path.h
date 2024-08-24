@@ -1,14 +1,3 @@
-/**
- * @file user_file_path.h
- * @author Stanford NAV LAB
- * @brief File access utils
- * @version 0.1
- * @date 2023-09-14
- *
- * @copyright Copyright (c) 2023
- *
- */
-
 #pragma once
 
 #include <assert.h>
@@ -20,26 +9,12 @@
 
 namespace lupnt {
 
-  static std::filesystem::path GetDataPath() {
-    const char* dataPathEnv = std::getenv("LUPNT_DATA_PATH");
-    assert(dataPathEnv != nullptr && "Environment variable LUPNT_DATA_PATH is not set.");
-    return std::filesystem::path(dataPathEnv);
-  }
-
-  static std::optional<std::filesystem::path> FindFileInDir(const std::filesystem::path& basePath,
-                                                            const std::string& filename) {
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(basePath)) {
-      if (entry.path().filename().string() == filename) {
-        return entry.path();
-      }
-    }
-    return std::nullopt;
-  };
-
-  static std::filesystem::path GetFilePath(const std::string& filename) {
-    auto filepath = FindFileInDir(GetDataPath(), filename);
-    assert(filepath.has_value() && "File not found.");
-    return filepath.value();
-  }
+  std::filesystem::path GetDataPath();
+  std::filesystem::path GetOutputPath(std::string output_dir);
+  std::optional<std::filesystem::path> FindFileInDir(const std::filesystem::path& base_path,
+                                                     const std::string& filename);
+  std::filesystem::path GetFilePath(const std::string& filename);
+  std::filesystem::path GetCspiceKernelDir();
+  std::filesystem::path GetAsciiKernelDir();
 
 }  // namespace lupnt

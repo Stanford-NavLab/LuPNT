@@ -48,7 +48,7 @@ namespace lupnt {
     std::unique_ptr<ClockDynamics> clock_dynamics_;
 
   public:
-    Agent() : id_(id_counter_++), clock_(ClockState(Vec2d::Zero())) {};
+    Agent() : id_(id_counter_++), clock_(ClockState(2)) {};
 
     // Getters
     Real GetEpoch() const { return epoch_; }
@@ -91,7 +91,7 @@ namespace lupnt {
     }
 
     // Cartesian OrbitState at epoch in GCRF frame
-    virtual std::shared_ptr<CartesianOrbitState> GetCartesianGCRFStateAtEpoch(Real epoch) = 0;
+    virtual CartesianOrbitState GetCartesianGCRFStateAtEpoch(Real epoch) = 0;
 
     /**
      * @brief Propagate the agent's state to the given epoch
@@ -159,7 +159,7 @@ namespace lupnt {
       return std::static_pointer_cast<OrbitState>(GetRvState());
     }
 
-    std::shared_ptr<CartesianOrbitState> GetCartesianGCRFStateAtEpoch(Real epoch);
+    CartesianOrbitState GetCartesianGCRFStateAtEpoch(Real epoch);
 
     VecX GetStateVec() {
       Vec6 rv = GetOrbitState()->GetVec();

@@ -18,8 +18,6 @@
 
 namespace lupnt {
 
-class RadioMeasurement {
- public:
   /**
    * @brief Compute the one-way range between two points
    *
@@ -28,7 +26,7 @@ class RadioMeasurement {
    * @param offset  Measurement offset
    * @return Real   One-way range
    */
-  static Real ComputeOneWayRange(VecX r_tx, VecX r_rx, Real offset);
+  Real ComputeOneWayRange(VecX r_tx, VecX r_rx, Real offset);
 
   /**
    * @brief Compute the pseudorange between two points
@@ -40,8 +38,7 @@ class RadioMeasurement {
    * @param offset  Measurement offset
    * @return Real  Pseudorange
    */
-  static Real ComputePseudorange(VecX r_tx, VecX r_rx, Real dt_tx, Real dt_rx,
-                                 Real offset);
+  Real ComputePseudorange(VecX r_tx, VecX r_rx, Real dt_tx, Real dt_rx, Real offset);
 
   /**
    * @brief Compute the pseudorangerate between two points
@@ -55,9 +52,8 @@ class RadioMeasurement {
    * @param offset  Measurement offset
    * @return Real   Pseudorangerate
    */
-  static Real ComputePseudorangerate(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx,
-                                     Real dt_tx_dot, Real dt_rx_dot,
-                                     Real offset);
+  Real ComputePseudorangerate(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx, Real dt_tx_dot,
+                              Real dt_rx_dot, Real offset);
 
   /**
    * @brief Compute the Doppler shift between two points
@@ -71,9 +67,8 @@ class RadioMeasurement {
    * @param offset  Measurement offset
    * @return Real  Doppler shift [Hz]
    */
-  static Real ComputeDopplerShift(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx,
-                                  Real dt_tx_dot, Real dt_rx_dot, Real f,
-                                  Real offset);
+  Real ComputeDopplerShift(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx, Real dt_tx_dot,
+                           Real dt_rx_dot, Real f, Real offset);
 
   /**
    * @brief Compute the one-way range between two points considering light time
@@ -96,12 +91,9 @@ class RadioMeasurement {
    * @param hardware_delay  Hardware delay
    * @return Real      One-way pseudorange at t_R (clock offset error included)
    */
-  static Real ComputeOneWayRangeLTR(Real epoch_rx, Vec6 rv_tx, Vec6 rv_rx,
-                                    Real dt_tx, Real dt_rx,
-                                    std::shared_ptr<Body> tx_center_body,
-                                    std::shared_ptr<Body> rx_center_body,
-                                    bool is_bodyfixed_tx, bool is_bodyfixed_rx,
-                                    Real hardware_delay);
+  Real ComputeOneWayRangeLTR(Real epoch_rx, Vec6 rv_tx, Vec6 rv_rx, Real dt_tx, Real dt_rx,
+                             BodyData, BodyData rx_center_body, bool is_bodyfixed_tx,
+                             bool is_bodyfixed_rx, Real hardware_delay);
 
   /**
    * @brief Compute the two-way range between two points considering light time
@@ -122,13 +114,10 @@ class RadioMeasurement {
    * @param hardware_delay  Hardware delay
    * @return Real      One-way pseudorange at t_R (clock offset error included)
    */
-  static Real ComputeTwoWayRangeLTR(Real epoch_rx, Vec6 rv_target_tr,
-                                    Vec6 rv_rx_tr,
-                                    std::shared_ptr<Body> target_center_body,
-                                    std::shared_ptr<Body> rx_center_body,
-                                    bool is_bodyfixed_target,
-                                    bool is_bodyfixed_rx, Real hardware_delay,
-                                    Real additional_delay = 0.0);
+  Real ComputeTwoWayRangeLTR(Real epoch_rx, Vec6 rv_target_tr, Vec6 rv_rx_tr,
+                             BodyData target_center_body, BodyData rx_center_body,
+                             bool is_bodyfixed_target, bool is_bodyfixed_rx, Real hardware_delay,
+                             Real additional_delay = 0.0);
 
   /**
    * @brief Compute the one-way range rate between two points considering light
@@ -149,17 +138,15 @@ class RadioMeasurement {
    * @param T_I  Integration time [s]
    * @return Real
    */
-  static Real ComputeOneWayRangeRateLTR(
-      Real epoch_rx, Vec6 rv_tx_tr, Vec6 rv_rx_tr, Real dt_dot_tx,
-      Real dt_dot_rx, std::shared_ptr<Body> target_center_body,
-      std::shared_ptr<Body> rx_center_body, bool is_bodyfixed_target,
-      bool is_bodyfixed_rx, Real hardware_delay, double T_I);
+  Real ComputeOneWayRangeRateLTR(Real epoch_rx, Vec6 rv_tx_tr, Vec6 rv_rx_tr, Real dt_dot_tx,
+                                 Real dt_dot_rx, BodyData target_center_body,
+                                 BodyData rx_center_body, bool is_bodyfixed_target,
+                                 bool is_bodyfixed_rx, Real hardware_delay, double T_I);
 
-  static Real ComputeTwoWayRangeRateLTR(
-      Real epoch_rx, Vec6 rv_target_tr, Vec6 rv_rx_tr,
-      std::shared_ptr<Body> target_center_body,
-      std::shared_ptr<Body> rx_center_body, bool is_bodyfixed_target,
-      bool is_bodyfixed_rx, Real hardware_delay, double T_I);
+  Real ComputeTwoWayRangeRateLTR(Real epoch_rx, Vec6 rv_target_tr, Vec6 rv_rx_tr,
+                                 BodyData target_center_body, BodyData rx_center_body,
+                                 bool is_bodyfixed_target, bool is_bodyfixed_rx,
+                                 Real hardware_delay, double T_I);
 
   /**
    * @brief Compute the PN regenerative range error for chip tracking loop
@@ -172,9 +159,8 @@ class RadioMeasurement {
    * @param T_c       Chip period [s] = = 1/ (2 f_RC)
    * @return double range error [m]
    */
-  static double ComputePnRangeErrorCTL(
-      double PRC_N0, double B_L_CTL, double T_c,
-      Modulation modulation_type = Modulation::BPSK);
+  double ComputePnRangeErrorCTL(double PRC_N0, double B_L_CTL, double T_c,
+                                Modulation modulation_type = Modulation::BPSK);
 
   /**
    *
@@ -187,9 +173,8 @@ class RadioMeasurement {
    * @param T_c Chip period [s] = 1/ (2 f_RC)
    * @return double   range error [m]
    */
-  static double ComputePnRangeErrorOL(
-      double PRC_N0, double T_I, double T_c,
-      Modulation modulation_type = Modulation::BPSK);
+  double ComputePnRangeErrorOL(double PRC_N0, double T_I, double T_c,
+                               Modulation modulation_type = Modulation::BPSK);
 
   /**
    * @brief Compute range rate error
@@ -203,10 +188,10 @@ class RadioMeasurement {
    * @param PT_N0  [Hz]
    * @return double  range rate error [m/s]
    */
-  static double ComputeRangeRateErrorOneWay(
-      double B_L_carrier, double f_C, double T_s, double T_I, double PT_N0,
-      double sigma_y_1s, Modulation modulation_type = Modulation::BPSK,
-      double m_R = 0.0);
+  double ComputeRangeRateErrorOneWay(double B_L_carrier, double f_C, double T_s, double T_I,
+                                     double PT_N0, double sigma_y_1s,
+                                     Modulation modulation_type = Modulation::BPSK,
+                                     double m_R = 0.0);
 
   /**
    * @brief Compute range rate error for two-way ranging
@@ -222,12 +207,9 @@ class RadioMeasurement {
    * [Hz]
    * @return double  range rate error [m/s]
    */
-  static double ComputeRangeRateErrorTwoWay(
-      double B_L_carrier, double f_C, double T_s, double T_I, double PT_N0,
-      double sigma_y_1s, double G, Modulation modulation_type = Modulation::BPSK,
-      double m_R = 0.0);
-
-
-};
+  double ComputeRangeRateErrorTwoWay(double B_L_carrier, double f_C, double T_s, double T_I,
+                                     double PT_N0, double sigma_y_1s, double G,
+                                     Modulation modulation_type = Modulation::BPSK,
+                                     double m_R = 0.0);
 
 }  // namespace lupnt

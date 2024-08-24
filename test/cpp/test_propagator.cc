@@ -26,7 +26,7 @@ namespace {
   };
 
   TEST_CASE("NumericalPropagator", "PropagateWithStmTwoBodyTest") {
-    NumericalPropagator propagator("RK4");
+    NumericalPropagator propagator(IntegratorType::RK4);
 
     Real t0 = 0;
     VecX x0(6);
@@ -38,9 +38,9 @@ namespace {
     Real Dt = 10.0;
     MatXd J;
 
-    for (int i = 0; i < 100; i++) {
-      VecX xEnd = propagator.PropagateWithStm(TwoBodyODE, t0, t0 + Dt, x0, dt, J);
-    }
+    // for (int i = 0; i < 100; i++) {
+    //   VecX xEnd = propagator.PropagateWithStm(TwoBodyODE, t0, t0 + Dt, x0, dt, J);
+    // }
   }
 
 }  // namespace

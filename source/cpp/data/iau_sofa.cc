@@ -13,7 +13,7 @@
 
 namespace lupnt {
 
-  std::shared_ptr<IauSofaFileData> iau_sofa;
+  Ptr<IauSofaFileData> iau_sofa;
   std::mutex iau_sofa_mutex;
 
   void LoadIauSofaFileData(const std::filesystem::path& filepath) {
@@ -24,7 +24,7 @@ namespace lupnt {
     std::ifstream file(filepath);
     assert(file.is_open() && "Unable to open file");
 
-    iau_sofa = std::make_shared<IauSofaFileData>();
+    iau_sofa = MakePtr<IauSofaFileData>();
     iau_sofa->jd_tt.resize(n_lines);
     iau_sofa->X.resize(n_lines);
     iau_sofa->Y.resize(n_lines);
@@ -38,6 +38,9 @@ namespace lupnt {
       std::istringstream iss(line);
       iss >> jd_tt >> X >> Y >> s;
       iau_sofa->jd_tt(row) = jd_tt;
+      iau_sofa->X(row) = X;
+      iau_sofa->Y(row) = Y;
+      iau_sofa->s(row) = s;
       ++row;
     }
     file.close();

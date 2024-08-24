@@ -27,6 +27,15 @@ namespace lupnt {
     MatX CS;  // Unnormalized coefficients
   };
 
+  struct BodyData {
+    NaifId id;
+    std::string name;
+    Real GM;
+    Real R;
+    Frame fixed_frame;
+    Frame inertial_frame;
+  };
+
   struct Body {
     NaifId id;
     std::string name;
@@ -42,17 +51,17 @@ namespace lupnt {
     GravityField gravity_field;
 
     static Body Sun();
-    static Body Earth(int n_max = 0, int m_max = 0, std::string gravity_file = "EGM96.cof",
-                      bool read_gravity_field = true);
-    static Body Moon(int n_max = 0, int m_max = 0, std::string gravity_file = "grgm900c.cof",
-                     bool read_gravity_field = true);
-    static Body Venus(int n_max = 0, int m_max = 0, std::string gravity_file = "MGN75HSAAP.cof",
-                      bool read_gravity_field = true);
-    static Body Mars(int n_max = 0, int m_max = 0, std::string gravity_file = "GMM1.cof",
-                     bool read_gravity_field = true);
+    static Body Earth(int n_max = 0, int m_max = 0, std::string gravity_file = "EGM96.cof");
+    static Body Moon(int n_max = 0, int m_max = 0, std::string gravity_file = "grgm900c.cof");
+    static Body Venus(int n_max = 0, int m_max = 0, std::string gravity_file = "MGN75HSAAP.cof");
+    static Body Mars(int n_max = 0, int m_max = 0, std::string gravity_file = "GMM1.cof");
   };
 
-  Body CreateDefaultBody(NaifId id);
+  BodyData GetBodyData(NaifId id);
+  double GetBodyRadius(NaifId body);
+  std::string GetBodyName(NaifId body);
+  Frame GetInertialFrameName(NaifId body);
+  Frame GetBodyFixedFrameName(NaifId body);
 
   GravityField ReadHarmonicGravityField(const std::string& filename, int n, int m, bool normalized);
 }  // namespace lupnt

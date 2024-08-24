@@ -20,7 +20,7 @@ namespace lupnt {
   }
 
   ClassicalOE Mean2Osculating(const ClassicalOE &coe_m, Real GM, Real J2) {
-    return ClassicalOE(Mean2Osculating(coe_m.GetVec(), GM, J2), coe_m.GetCoordSystem());
+    return ClassicalOE(Mean2Osculating(coe_m.GetVec(), GM, J2), coe_m.GetFrame());
   }
 
   Vec6 osc2mean_NRiterator(const Vec6 &osc_equi_elem, double tol) {
@@ -63,7 +63,7 @@ namespace lupnt {
   }
 
   ClassicalOE Osculating2Mean(const ClassicalOE &coe_o, Real GM, Real J2) {
-    return ClassicalOE(Osculating2Mean(coe_o.GetVec(), GM, J2), coe_o.GetCoordSystem());
+    return ClassicalOE(Osculating2Mean(coe_o.GetVec(), GM, J2), coe_o.GetFrame());
   }
 
 }  // namespace lupnt

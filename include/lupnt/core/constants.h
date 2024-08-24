@@ -14,72 +14,17 @@
 #include <Eigen/Dense>
 #include <autodiff/forward/real.hpp>
 #include <autodiff/forward/real/eigen.hpp>
+#include <filesystem>
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <vector>
 
-#include "user_file_path.h"
-
-#define ASSERT_WITH_MESSAGE(condition, message) \
-  if (!(condition)) {                           \
-    std::ostringstream oss;                     \
-    oss << message;                             \
-    throw std::runtime_error(oss.str());        \
-  }
-
-#define DEFINE_STATIC_VECTORS_MATRICES(size)       \
-  using Vec##size = Matrix<Real, size, 1>;         \
-  using Vec##size##d = Matrix<double, size, 1>;    \
-  using Vec##size##i = Matrix<int, size, 1>;       \
-  using Mat##size = Matrix<Real, size, size>;      \
-  using Mat##size##d = Matrix<double, size, size>; \
-  using Mat##size##i = Matrix<int, size, size>;    \
-  using RowVec##size##d = Matrix<double, 1, size>; \
-  using RowVec##size##i = Matrix<int, 1, size>;    \
-  using RowVec##size = Matrix<Real, 1, size>;
-
-#define DEFINE_DYNAMIC_VECTORS_MATRICES()                       \
-  using VecX = Matrix<Real, Eigen::Dynamic, 1>;                 \
-  using VecXd = Matrix<double, Eigen::Dynamic, 1>;              \
-  using VecXi = Matrix<int, Eigen::Dynamic, 1>;                 \
-  using MatX = Matrix<Real, Eigen::Dynamic, Eigen::Dynamic>;    \
-  using MatXd = Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; \
-  using MatXi = Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;    \
-  using RowVecX = Matrix<Real, 1, Eigen::Dynamic>;              \
-  using RowVecXd = Matrix<double, 1, Eigen::Dynamic>;           \
-  using RowVecXi = Matrix<int, 1, Eigen::Dynamic>;
-
-#define DEFINE_VECTORS_MATRICES()    \
-  DEFINE_STATIC_VECTORS_MATRICES(1)  \
-  DEFINE_STATIC_VECTORS_MATRICES(2)  \
-  DEFINE_STATIC_VECTORS_MATRICES(3)  \
-  DEFINE_STATIC_VECTORS_MATRICES(4)  \
-  DEFINE_STATIC_VECTORS_MATRICES(5)  \
-  DEFINE_STATIC_VECTORS_MATRICES(6)  \
-  DEFINE_STATIC_VECTORS_MATRICES(7)  \
-  DEFINE_STATIC_VECTORS_MATRICES(8)  \
-  DEFINE_STATIC_VECTORS_MATRICES(9)  \
-  DEFINE_STATIC_VECTORS_MATRICES(10) \
-  DEFINE_DYNAMIC_VECTORS_MATRICES()
+#include "lupnt/core/definitions.h"
+#include "lupnt/core/user_file_path.h"
 
 namespace lupnt {
-
-  using Eigen::Dynamic;
-  using Eigen::Matrix;
-  using Eigen::MatrixX;
-  using Eigen::Vector;
-  using Eigen::VectorX;
-
-  using Real = autodiff::real;
-  template <int rows, int cols> using Mat = Matrix<Real, rows, cols>;
-  template <int rows, int cols> using Matd = Matrix<double, rows, cols>;
-  template <int size> using Vec = Matrix<Real, size, 1>;
-  template <int size> using Vecd = Matrix<double, size, 1>;
-  template <int size> using RowVecd = Matrix<double, 1, size>;
-  using RowVecXd = Matrix<double, 1, Eigen::Dynamic>;
-  using Quat = Eigen::Quaternion<Real>;
-  using Quatd = Eigen::Quaternion<double>;
-  using AngleAxis = Eigen::AngleAxis<Real>;
-  using AngleAxisd = Eigen::AngleAxis<double>;
-
-  DEFINE_VECTORS_MATRICES()
 
   // Math constants
   static constexpr double PI = 3.14159265358979323846264338327950288419716939937511;
@@ -150,15 +95,31 @@ namespace lupnt {
   static constexpr double GM_SATURN_SYSTEM = 37940584.841800;    // [km^3/s^2]
   static constexpr double GM_URANUS_SYSTEM = 5794556.400000;     // [km^3/s^2]
   static constexpr double GM_NEPTUNE_SYSTEM = 6836527.100580;    // [km^3/s^2]
-  static constexpr double GM_PLUTO_SYSTEM = 975.500000;          // [km^3/s^2]
-  static constexpr double GM_CERES = 62.62890;                   // [km^3/s^2]
-  static constexpr double GM_VESTA = 17.288245;                  // [km^3/s^2]
+  static constexpr double GM_PLUTO_SYSTEM = 977.000000;          // [km^3/s^2]
+  static constexpr double GM_MARS = 0.4282837566395650E+05;      // [km^3/s^2]
+  static constexpr double GM_JUPITER = 0.1267127646799999E+08;   // [km^3/s^2]
+  static constexpr double GM_SATURN = 0.3794058480000000E+07;    // [km^3/s^2]
+  static constexpr double GM_URANUS = 0.5794556400000000E+06;    // [km^3/s^2]
+  static constexpr double GM_NEPTUNE = 0.6836527100580000E+06;   // [km^3/s^2]
 
-  static constexpr double D_EARTH_MOON = 384400.0;                  // [km]
-  static constexpr double D_EARTH_EMB = 4671.0;                     // [km]
-  static constexpr double R_EARTH = 6378.137;                       // [km]
-  static constexpr double R_MOON = 1737.4;                          // [km]
-  static constexpr double OMEGA_E_M = 2.6617e-6;                    // [rad/s]
+  static constexpr double GM_CERES = 62.62890;   // [km^3/s^2]
+  static constexpr double GM_VESTA = 17.288245;  // [km^3/s^2]
+
+  static constexpr double D_EARTH_MOON = 384400.0;  // [km]
+  static constexpr double D_EARTH_EMB = 4671.0;     // [km]
+  static constexpr double R_EARTH = 6378.137;       // [km]
+  static constexpr double R_MOON = 1737.4;          // [km]
+  static constexpr double R_SUN = 696342.0;         // [km]
+  static constexpr double R_MERCURY = 2439.7;       // [km]
+  static constexpr double R_VENUS = 6051.8;         // [km]
+  static constexpr double R_MARS = 3396.0;          // [km]
+  static constexpr double R_JUPITER = 71492.0;      // [km]
+  static constexpr double R_SATURN = 60268.0;       // [km]
+  static constexpr double R_URANUS = 25559.0;       // [km]
+  static constexpr double R_NEPTUNE = 24764.0;      // [km]
+  static constexpr double R_PLUTO = 1188.3;         // [km]
+
+  static constexpr double OMEGA_EARTH_MOON = 2.6617e-6;             // [rad/s]
   static constexpr double D_MOON_EMB = D_EARTH_MOON - D_EARTH_EMB;  // [km]
 
   static constexpr double WGS84_A = 6378.137;             // [km]
@@ -184,18 +145,14 @@ namespace lupnt {
       = S_AU / C;  // Solar radiation pressure at 1 AU [N/km^2] = 4.56e-6 N/m^2
 
   // File Path *******************************************************************
-  constexpr const char* TAI_UTC_FILENAME = "tai-utc.dat";
-  constexpr const char* EOP_FILENAME = "eopc04_08.62-now";
-  constexpr const char* IAU_SOFA_FILENAME = "IAU_SOFA.DAT";
-  static std::filesystem::path GetCspiceKernelDir() { return GetDataPath() / "ephemeris"; }
-  static std::filesystem::path GetAsciiKernelDir() { return GetDataPath() / "ephemeris" / "ascii"; }
-
-  // Moon mean elements
+  static constexpr const char* TAI_UTC_FILENAME = "tai-utc.dat";
+  static constexpr const char* EOP_FILENAME = "eopc04_08.62-now";
+  static constexpr const char* IAU_SOFA_FILENAME = "IAU_SOFA.DAT";
 
   // NAIF Intefer ID codes
   // Reference:
   // https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/req/naif_ids.html
-  enum class NaifId {
+  enum NaifId {
     SSB = 0,
     SOLAR_SYSTEM_BARYCENTER = SSB,
     MERCURY_BARYCENTER = 1,
@@ -221,88 +178,6 @@ namespace lupnt {
     URANUS = 799,
     NEPTUNE = 899,
   };
-
-  static double BodyRadius(NaifId id) {
-    switch (id) {
-      case NaifId::SUN:
-        return 696342.0;
-      case NaifId::MERCURY:
-        return 2439.7;
-      case NaifId::VENUS:
-        return 6051.8;
-      case NaifId::EARTH:
-        return 6378.137;
-      case NaifId::MOON:
-        return 1737.4;
-      case NaifId::MARS:
-        return 3396.2;
-      case NaifId::PHOBOS:
-        return 11.1;
-      case NaifId::DEIMOS:
-        return 6.2;
-      case NaifId::JUPITER:
-        return 71492.0;
-      case NaifId::SATURN:
-        return 60268.0;
-      case NaifId::URANUS:
-        return 25559.0;
-      case NaifId::NEPTUNE:
-        return 24764.0;
-      default:
-        return 0.0;
-    }
-  }
-
-  static std::string toString(NaifId id) {
-    switch (id) {
-      case NaifId::SOLAR_SYSTEM_BARYCENTER:
-        return "SOLAR_SYSTEM_BARYCENTER";
-      case NaifId::MERCURY_BARYCENTER:
-        return "MERCURY_BARYCENTER";
-      case NaifId::VENUS_BARYCENTER:
-        return "VENUS_BARYCENTER";
-      case NaifId::EARTH_MOON_BARYCENTER:
-        return "EARTH_MOON_BARYCENTER";
-      case NaifId::MARS_BARYCENTER:
-        return "MARS_BARYCENTER";
-      case NaifId::JUPITER_BARYCENTER:
-        return "JUPITER_BARYCENTER";
-      case NaifId::SATURN_BARYCENTER:
-        return "SATURN_BARYCENTER";
-      case NaifId::URANUS_BARYCENTER:
-        return "URANUS_BARYCENTER";
-      case NaifId::NEPTUNE_BARYCENTER:
-        return "NEPTUNE_BARYCENTER";
-      case NaifId::PLUTO_BARYCENTER:
-        return "PLUTO_BARYCENTER";
-      case NaifId::SUN:
-        return "SUN";
-      case NaifId::MERCURY:
-        return "MERCURY";
-      case NaifId::VENUS:
-        return "VENUS";
-      case NaifId::EARTH:
-        return "EARTH";
-      case NaifId::MOON:
-        return "MOON";
-      case NaifId::MARS:
-        return "MARS";
-      case NaifId::PHOBOS:
-        return "PHOBOS";
-      case NaifId::DEIMOS:
-        return "DEIMOS";
-      case NaifId::JUPITER:
-        return "JUPITER";
-      case NaifId::SATURN:
-        return "SATURN";
-      case NaifId::URANUS:
-        return "URANUS";
-      case NaifId::NEPTUNE:
-        return "NEPTUNE";
-      default:
-        return "UNKNOWN";
-    }
-  }
 
   namespace TimeSys {
     constexpr const char* UT1 = "UT1";  // Universal Time 1

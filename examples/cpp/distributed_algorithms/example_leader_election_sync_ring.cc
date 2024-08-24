@@ -20,96 +20,81 @@ class Transponder;
 
 // Channel class
 class Channel {
- private:
+private:
   int id_;
   double delay_ = 0.5;
-  vector<shared_ptr<Transponder>> Transponders_;
+  vector<shared_ptr<Transponder>> transponders_;
 
- public:
+public:
   void Send(double t, const Transmission &transm, const Transponder &sender);
-  void Add(shared_ptr<Transponder> Transponder) {
-    Transponders_.push_back(Transponder);
-  }
-  vector<shared_ptr<Transponder>> GetTransponders() { return Transponders_; }
+  void Add(shared_ptr<Transponder> Transponder) { transponders_.push_back(Transponder); }
+  vector<shared_ptr<Transponder>> GetTransponders() { return transponders_; }
 };
 
 // Transponder class
 class Transponder {
- private:
+private:
   shared_ptr<Channel> channel_;
   function<void(double, const Transmission &)> receive_callback_;
 
- public:
+public:
   Transponder(shared_ptr<Channel> channel) : channel_(channel) {}
-  void SetReceiveCallback(
-      function<void(double, const Transmission &)> callback) {
+  void SetReceiveCallback(function<void(double, const Transmission &)> callback) {
     receive_callback_ = callback;
   }
 
-  void Send(double t, const Transmission &transm) {
-    channel_->Send(t, transm, *this);
-  }
+  void Send(double t, const Transmission &transm) { channel_->Send(t, transm, *this); }
 
-  void Receive(double t, const Transmission &transm) {
-    receive_callback_(t, transm);
-  }
+  void Receive(double t, const Transmission &transm) { receive_callback_(t, transm); }
 };
 
-void Channel::Send(double t, const Transmission &transm,
-                   const Transponder &sender) {
-  for (const auto &Transponder : Transponders_) {
+void Channel::Send(double t, const Transmission &transm, const Transponder &sender) {
+  for (const auto &Transponder : transponders_) {
     if (Transponder.get() != &sender) {
-      Scheduler::Schedule(t + delay_, [Transponder, transm](double t) {
-        Transponder->Receive(t, transm);
-      });
+      Scheduler::Schedule(t + delay_,
+                          [Transponder, transm](double t) { Transponder->Receive(t, transm); });
     }
   }
 }
 
 // Agent class
 class RingAgent {
- private:
+private:
   static int id_counter_;
   const int id_;
-  vector<shared_ptr<Transponder>> Transponders_;
+  vector<shared_ptr<Transponder>> transponders_;
 
- public:
-  RingAgent()
-      : id_(id_counter_++), Transponders_(vector<shared_ptr<Transponder>>()) {}
+public:
+  RingAgent() : id_(id_counter_++), transponders_(vector<shared_ptr<Transponder>>()) {}
   int GetId() { return id_; }
 
-  void Add(shared_ptr<Transponder> Transponder) {
-    Transponders_.push_back(Transponder);
-  }
-  vector<shared_ptr<Transponder>> GetTransponders() { return Transponders_; }
+  void Add(shared_ptr<Transponder> Transponder) { transponders_.push_back(Transponder); }
+  vector<shared_ptr<Transponder>> GetTransponders() { return transponders_; }
 };
 
 int RingAgent::id_counter_ = 0;
 
 // Application class
 class LeaderElectionSyncRingApp : public Application {
- private:
+private:
   shared_ptr<RingAgent> agent_;
   int id_;
   int id_received_ = -1;
   bool is_leader_ = false;
 
- public:
-  LeaderElectionSyncRingApp(shared_ptr<RingAgent> agent)
-      : agent_(agent), id_(agent->GetId()) {}
+public:
+  LeaderElectionSyncRingApp(shared_ptr<RingAgent> agent) : agent_(agent), id_(agent->GetId()) {}
   double GetFrequency() override { return 1.0; }
   void Setup() override {}
   void Step(double t) override {
     if (id_received_ == -1) {
-      cout << "[Agent " << id_ << "] Sending " << id_ << " at t = " << t
-           << endl;
+      cout << "[Agent " << id_ << "] Sending " << id_ << " at t = " << t << endl;
       for (const auto &Transponder : agent_->GetTransponders()) {
         // transmittion instance with _id
         Transponder->Send(t, Transmission{id_});
       }
     } else if (id_received_ > id_) {
-      cout << "[Agent " << id_ << "] Sending " << id_received_
-           << " at t = " << t << endl;
+      cout << "[Agent " << id_ << "] Sending " << id_received_ << " at t = " << t << endl;
       for (const auto &Transponder : agent_->GetTransponders()) {
         Transponder->Send(t, Transmission{id_received_});
       }
@@ -123,8 +108,7 @@ class LeaderElectionSyncRingApp : public Application {
     }
   }
   void TransmissionReceived(double t, const Transmission &transm) {
-    cout << "[Agent " << id_ << "] Received " << transm.id_ << " at t = " << t
-         << endl;
+    cout << "[Agent " << id_ << "] Received " << transm.id_ << " at t = " << t << endl;
     id_received_ = max(id_received_, transm.id_);
   }
 };
@@ -148,12 +132,10 @@ int main() {
     auto ch2 = channels[(i + 1) % n];
     auto transc1 = make_shared<Transponder>(ch1);
     auto transc2 = make_shared<Transponder>(ch2);
-    transc1->SetReceiveCallback(
-        bind(&LeaderElectionSyncRingApp::TransmissionReceived, apps[i].get(),
-             placeholders::_1, placeholders::_2));
-    transc2->SetReceiveCallback(
-        bind(&LeaderElectionSyncRingApp::TransmissionReceived, apps[i].get(),
-             placeholders::_1, placeholders::_2));
+    transc1->SetReceiveCallback(bind(&LeaderElectionSyncRingApp::TransmissionReceived,
+                                     apps[i].get(), placeholders::_1, placeholders::_2));
+    transc2->SetReceiveCallback(bind(&LeaderElectionSyncRingApp::TransmissionReceived,
+                                     apps[i].get(), placeholders::_1, placeholders::_2));
     agents[i]->Add(transc1);
     agents[i]->Add(transc2);
     ch1->Add(transc1);

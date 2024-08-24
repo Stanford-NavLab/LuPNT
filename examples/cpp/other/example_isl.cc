@@ -14,18 +14,11 @@
 using namespace lupnt;
 
 int main() {
-    // Transmitter
+  // Transmitter
 
+  // Receiver
 
+  // Satellite 1
 
-    // Receiver
-
-
-
-    // Satellite 1
-
-
-
-    // Satellite 2
-
+  // Satellite 2
 }

@@ -92,12 +92,20 @@ namespace lupnt {
     return Vec6::Zero();
   }
 
-  std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
-      const std::shared_ptr<OrbitState>& state_in, OrbitStateRepres repres_out, Real GM) {
+  Ptr<OrbitState> ConvertOrbitStateRepresentation(const Ptr<OrbitState>& state_in,
+                                                  OrbitStateRepres repres_out, Real GM) {
     Vec6 state_out
         = ConvertOrbitState(state_in->GetVec(), state_in->GetOrbitStateRepres(), repres_out, GM);
-    return std::make_shared<OrbitState>(state_out, state_in->GetCoordSystem(), repres_out,
-                                        state_in->GetNames(), state_in->GetUnits());
+    return MakePtr<OrbitState>(state_out, state_in->GetFrame(), repres_out, state_in->GetNames(),
+                               state_in->GetUnits());
   }
 
+  CartesianOrbitState ConvertOrbitStateFrame(const CartesianOrbitState state, const Real epoch,
+                                             const Frame frame_out) {
+    Vec6 rv_in = state.GetVec();
+    Frame frame_in = state.GetFrame();
+    Vec6 rv_out = ConvertFrame(epoch, rv_in, frame_in, frame_out);
+    CartesianOrbitState state_out = CartesianOrbitState(rv_out, frame_out);
+    return state_out;
+  }
 }  // namespace lupnt

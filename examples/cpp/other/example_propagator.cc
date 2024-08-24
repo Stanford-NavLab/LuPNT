@@ -5,7 +5,7 @@ using namespace lupnt;
 using namespace matplot;
 using namespace std;
 
-double OMEGA = 2.0 * M_PI;  // angular frequency
+double OMEGA = 2.0 * PI;  // angular frequency
 
 ODE HarmonicOscillator = [](const Real t, const VecX& x) {
   VecX dxdt(2);
@@ -42,9 +42,9 @@ int main() {
 
   for (int p = 0; p < n_problem; p++) {
     IntegratorParams params = IntegratorParams(20, 1e-8, 1e-8);  // max_iter, abstol, reltol
-    NumericalPropagator prop_rk4 = NumericalPropagator("RK4");
-    NumericalPropagator prop_rk8 = NumericalPropagator("RK8");
-    NumericalPropagator prop_rkf45 = NumericalPropagator("RKF45", params);
+    NumericalPropagator prop_rk4 = NumericalPropagator(IntegratorType::RK4);
+    NumericalPropagator prop_rk8 = NumericalPropagator(IntegratorType::RK8);
+    NumericalPropagator prop_rkf45 = NumericalPropagator(IntegratorType::RKF45, params);
 
     Real dt = 0.01;  // time step
     Real t0 = 0.0;   // initial time

@@ -23,17 +23,17 @@ Vec6 CreateTestVector6() { return Vec6(7000.0, 0.0, 1300.0, 0.0, 7.8, 0.0); }
 
 Vec3 CreateTestVector3() { return Vec3(7000.0, 1300.0, 0.0); }
 
-// Utility function to create a test matrix for Mat<-1, 6>
-Mat<-1, 6> CreateTestMatrix6() {
-  Mat<-1, 6> rv(2, 6);
+// Utility function to create a test matrix for MatX6
+MatX6 CreateTestMatrix6() {
+  MatX6 rv(2, 6);
   rv.row(0) = CreateTestVector6();
   rv.row(1) = CreateTestVector6() * 2.5;
   return rv;
 }
 
-// Utility function to create a test matrix for Mat<-1, 3>
-Mat<-1, 3> CreateTestMatrix3() {
-  Mat<-1, 3> r(2, 3);
+// Utility function to create a test matrix for MatX3
+MatX3 CreateTestMatrix3() {
+  MatX3 r(2, 3);
   r.row(0) = CreateTestVector3();
   r.row(1) = CreateTestVector3() * 2.5;
   return r;
@@ -44,16 +44,16 @@ TEST_CASE("Frame_Converter") {
   Vec6 rv_init = CreateTestVector6();
   Vec3 r_init = CreateTestVector3();
 
-  Mat<-1, 6> rv_init_mat = CreateTestMatrix6();
-  Mat<-1, 3> r_init_mat = CreateTestMatrix3();
+  MatX6 rv_init_mat = CreateTestMatrix6();
+  MatX3 r_init_mat = CreateTestMatrix3();
 
-  Real t_tai = GregorianToTime(2020, 1, 1);
+  Real t_tai = Gregorian2Time(2020, 1, 1);
   VecX t_tai_vec(2);
   t_tai_vec << t_tai, t_tai + 60;
 
-  Mat<-1, 6> rv_init_rep(2, 6);
+  MatX6 rv_init_rep(2, 6);
   rv_init_rep << rv_init.transpose(), rv_init.transpose();
-  Mat<-1, 3> r_init_rep(2, 3);
+  MatX3 r_init_rep(2, 3);
   r_init_rep << r_init.transpose(), r_init.transpose();
 
   // Vec6 = func(real, Vec6)
@@ -62,7 +62,7 @@ TEST_CASE("Frame_Converter") {
     for (auto frame_out : frame_list) {
       Vec6 rv_back = ConvertFrame(t_tai, rv_converted, frame_in, frame_out);
       Vec6 rv_final = ConvertFrame(t_tai, rv_back, frame_out, Frame::ITRF);
-      RequireNearRealVec(rv_init, rv_final, epsilon);
+      RequireNear(rv_init, rv_final, epsilon);
     }
   }
 
@@ -72,67 +72,67 @@ TEST_CASE("Frame_Converter") {
     for (auto frame_out : frame_list) {
       Vec3 r_back = ConvertFrame(t_tai, r_converted, frame_in, frame_out);
       Vec3 r_final = ConvertFrame(t_tai, r_back, frame_out, Frame::ITRF);
-      RequireNearRealVec(r_init, r_final, epsilon);
+      RequireNear(r_init, r_final, epsilon);
     }
   }
 
-  // Mat<-1, 6> = func(real, Mat<-1, 6>)
+  // MatX6 = func(real, MatX6)
   for (auto frame_in : frame_list) {
-    Mat<-1, 6> rv_matrix_converted = ConvertFrame(t_tai, rv_init_mat, Frame::ITRF, frame_in);
+    MatX6 rv_matrix_converted = ConvertFrame(t_tai, rv_init_mat, Frame::ITRF, frame_in);
     for (auto frame_out : frame_list) {
-      Mat<-1, 6> rv_matrix_back = ConvertFrame(t_tai, rv_matrix_converted, frame_in, frame_out);
-      Mat<-1, 6> rv_matrix_final = ConvertFrame(t_tai, rv_matrix_back, frame_out, Frame::ITRF);
-      RequireNearRealMat(rv_init_mat, rv_matrix_final, epsilon);
+      MatX6 rv_matrix_back = ConvertFrame(t_tai, rv_matrix_converted, frame_in, frame_out);
+      MatX6 rv_matrix_final = ConvertFrame(t_tai, rv_matrix_back, frame_out, Frame::ITRF);
+      RequireNear(rv_init_mat, rv_matrix_final, epsilon);
     }
   }
 
-  // Mat<-1, 3> = func(real, Mat<-1, 3>)
+  // MatX3 = func(real, MatX3)
   for (auto frame_in : frame_list) {
-    Mat<-1, 3> r_matrix_converted = ConvertFrame(t_tai, r_init_mat, Frame::ITRF, frame_in);
+    MatX3 r_matrix_converted = ConvertFrame(t_tai, r_init_mat, Frame::ITRF, frame_in);
     for (auto frame_out : frame_list) {
-      Mat<-1, 3> r_matrix_back = ConvertFrame(t_tai, r_matrix_converted, frame_in, frame_out);
-      Mat<-1, 3> r_matrix_final = ConvertFrame(t_tai, r_matrix_back, frame_out, Frame::ITRF);
-      RequireNearRealMat(r_init_mat, r_matrix_final, epsilon);
+      MatX3 r_matrix_back = ConvertFrame(t_tai, r_matrix_converted, frame_in, frame_out);
+      MatX3 r_matrix_final = ConvertFrame(t_tai, r_matrix_back, frame_out, Frame::ITRF);
+      RequireNear(r_init_mat, r_matrix_final, epsilon);
     }
   }
 
-  // Mat<-1, 6> = func(VecX, Vec6)
+  // MatX6 = func(VecX, Vec6)
   for (auto frame_in : frame_list) {
-    Mat<-1, 6> rv_matrix_converted = ConvertFrame(t_tai_vec, rv_init, Frame::ITRF, frame_in);
+    MatX6 rv_matrix_converted = ConvertFrame(t_tai_vec, rv_init, Frame::ITRF, frame_in);
     for (auto frame_out : frame_list) {
-      Mat<-1, 6> rv_matrix_back = ConvertFrame(t_tai_vec, rv_matrix_converted, frame_in, frame_out);
-      Mat<-1, 6> rv_matrix_final = ConvertFrame(t_tai_vec, rv_matrix_back, frame_out, Frame::ITRF);
-      RequireNearRealMat(rv_init_rep, rv_matrix_final, epsilon);
+      MatX6 rv_matrix_back = ConvertFrame(t_tai_vec, rv_matrix_converted, frame_in, frame_out);
+      MatX6 rv_matrix_final = ConvertFrame(t_tai_vec, rv_matrix_back, frame_out, Frame::ITRF);
+      RequireNear(rv_init_rep, rv_matrix_final, epsilon);
     }
   }
 
-  // Mat<-1, 3> = func(VecX, Vec3)
+  // MatX3 = func(VecX, Vec3)
   for (auto frame_in : frame_list) {
-    Mat<-1, 3> r_matrix_converted = ConvertFrame(t_tai_vec, r_init, Frame::ITRF, frame_in);
+    MatX3 r_matrix_converted = ConvertFrame(t_tai_vec, r_init, Frame::ITRF, frame_in);
     for (auto frame_out : frame_list) {
-      Mat<-1, 3> r_matrix_back = ConvertFrame(t_tai_vec, r_matrix_converted, frame_in, frame_out);
-      Mat<-1, 3> r_matrix_final = ConvertFrame(t_tai_vec, r_matrix_back, frame_out, Frame::ITRF);
-      RequireNearRealMat(r_init_rep, r_matrix_final, epsilon);
+      MatX3 r_matrix_back = ConvertFrame(t_tai_vec, r_matrix_converted, frame_in, frame_out);
+      MatX3 r_matrix_final = ConvertFrame(t_tai_vec, r_matrix_back, frame_out, Frame::ITRF);
+      RequireNear(r_init_rep, r_matrix_final, epsilon);
     }
   }
 
-  // Mat<-1, 6> = func(VecX, Mat<-1, 6>)
+  // MatX6 = func(VecX, MatX6)
   for (auto frame_in : frame_list) {
-    Mat<-1, 6> rv_matrix_converted = ConvertFrame(t_tai_vec, rv_init_mat, Frame::ITRF, frame_in);
+    MatX6 rv_matrix_converted = ConvertFrame(t_tai_vec, rv_init_mat, Frame::ITRF, frame_in);
     for (auto frame_out : frame_list) {
-      Mat<-1, 6> rv_matrix_back = ConvertFrame(t_tai_vec, rv_matrix_converted, frame_in, frame_out);
-      Mat<-1, 6> rv_matrix_final = ConvertFrame(t_tai_vec, rv_matrix_back, frame_out, Frame::ITRF);
-      RequireNearRealMat(rv_init_mat, rv_matrix_final, epsilon);
+      MatX6 rv_matrix_back = ConvertFrame(t_tai_vec, rv_matrix_converted, frame_in, frame_out);
+      MatX6 rv_matrix_final = ConvertFrame(t_tai_vec, rv_matrix_back, frame_out, Frame::ITRF);
+      RequireNear(rv_init_mat, rv_matrix_final, epsilon);
     }
   }
 
-  // Mat<-1, 3> = func(VecX, Mat<-1, 3>)
+  // MatX3 = func(VecX, MatX3)
   for (auto frame_in : frame_list) {
-    Mat<-1, 3> r_matrix_converted = ConvertFrame(t_tai_vec, r_init_mat, Frame::ITRF, frame_in);
+    MatX3 r_matrix_converted = ConvertFrame(t_tai_vec, r_init_mat, Frame::ITRF, frame_in);
     for (auto frame_out : frame_list) {
-      Mat<-1, 3> r_matrix_back = ConvertFrame(t_tai_vec, r_matrix_converted, frame_in, frame_out);
-      Mat<-1, 3> r_matrix_final = ConvertFrame(t_tai_vec, r_matrix_back, frame_out, Frame::ITRF);
-      RequireNearRealMat(r_init_mat, r_matrix_final, epsilon);
+      MatX3 r_matrix_back = ConvertFrame(t_tai_vec, r_matrix_converted, frame_in, frame_out);
+      MatX3 r_matrix_final = ConvertFrame(t_tai_vec, r_matrix_back, frame_out, Frame::ITRF);
+      RequireNear(r_init_mat, r_matrix_final, epsilon);
     }
   }
 }

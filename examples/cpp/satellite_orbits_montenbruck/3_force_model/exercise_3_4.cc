@@ -11,8 +11,8 @@ using namespace std;
 // doi: 10.1007/978-3-642-58351-3.
 int main() {
   // Time
-  Real mjd0_utc = GregorianToMJD(1999, 03, 01, 00, 00, 0.0);  // [days]
-  Real t_tai0 = MJDtoTime(mjd0_utc);                          // [s]
+  Real mjd0_utc = Gregorian2MJD(1999, 03, 01, 00, 00, 0.0);  // [days]
+  Real t_tai0 = MJD2Time(mjd0_utc);                          // [s]
 
   // Real t_tai0 = ConvertTime(mjd0_utc, TimeSys::MJD_UTC, TimeSys::TAI);  //
   // [s]
@@ -51,7 +51,7 @@ int main() {
   dyn.SetMass(mass);
   dyn.SetSrpCoeff(CR);
   dyn.SetDragCoeff(CD);
-  dyn.SetPrimaryBody(earth);
+  dyn.SetFrame(Frame::ITRF);
   dyn.AddBody(sun);
   dyn.AddBody(moon);
 
