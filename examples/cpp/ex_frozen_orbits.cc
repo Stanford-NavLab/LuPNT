@@ -292,20 +292,22 @@ int main() {
 
   // Propagate
   MatX6 rv_case5_ci;
+  VecX tfs_ = tfs.head(1000);
   if (config.recompute_part1 || !file_part1.exist("/rv_case5_ci")) {
     cout << endl << "Propagating" << endl;
-    rv_case5_ci = dyn_nbody50.Propagate(rv0_ci, t0, tfs, true);
+    rv_case5_ci = dyn_nbody50.Propagate(rv0_ci, t0, tfs_, true);
     dump(file_part1, "/rv_case5_ci", rv_case5_ci.cast<double>(), DumpMode::Overwrite);
   } else {
     rv_case5_ci = load<MatX6d>(file_part1, "/rv_case5_ci");
     cout << endl << "Loaded from file" << endl;
   }
-  MatX6 rv_case5_op = ConvertFrame(tfs, rv_case5_ci, Frame::MOON_CI, Frame::MOON_OP, true);
+  MatX6 rv_case5_op = ConvertFrame(tfs_, rv_case5_ci, Frame::MOON_CI, Frame::MOON_OP, true);
   MatX6 coe_case5_op = Cart2Classical(rv_case5_op, GM_MOON);
 
   // **************************************************************************
   // Case 6
   // **************************************************************************
+  cout << endl << endl << "*********** Case 6 ***********" << endl;
 
   // Time
   dt_total = 10 * DAYS_YEAR * SECS_DAY;            // [s] Total propagation time

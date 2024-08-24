@@ -40,15 +40,15 @@ int main() {
 
   // Double
   cout << endl << " Order   CPU Time [s]" << endl << endl;
-  Vec3d r_d = r.cast<double>();
-  double GM_d = grav.GM.val();
-  double R_d = grav.R.val();
-  MatXd CS_d = grav.CS.cast<double>();
 
   for (int n = 2; n <= n_max; n += 2) {
     double start = omp_get_wtime();
 #pragma omp parallel for
     for (int i = 0; i < N_Step; i++) {
+      Vec3d r_d = r.cast<double>();
+      double GM_d = grav.GM.val();
+      double R_d = grav.R.val();
+      MatXd CS_d = grav.CS.cast<double>();
       Vec3d a = AccelarationGravityField(r_d, GM_d, R_d, CS_d, n, n);
     }
     double end = omp_get_wtime();

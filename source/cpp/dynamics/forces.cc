@@ -284,7 +284,7 @@ namespace lupnt {
   /// applications. Berlin : New York: Springer, 2000.
   /// doi: 10.1007/978-3-642-58351-3.
   Vec3 AccelerationEarthSpacecraft(Real mjd_tt, const Vec6& rv, Real area, Real mass, Real CR,
-                                   Real CD, GravityField grav) {
+                                   Real CD, GravityField<Real> grav) {
     Vec3 r = rv.head(3);
 
     // Acceleration due to harmonic gravity field

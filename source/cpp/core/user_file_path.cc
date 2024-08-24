@@ -11,7 +11,7 @@ namespace lupnt {
     const char* output_path_env = std::getenv("LUPNT_OUTPUT_PATH");
     std::filesystem::path output_path;
     if (output_path_env == nullptr) {
-      output_path = std::filesystem::current_path();
+      output_path = GetDataPath() / "output";
     } else {
       output_path = std::filesystem::path(output_path_env);
     }
