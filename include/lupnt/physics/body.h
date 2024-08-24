@@ -61,4 +61,11 @@ namespace lupnt {
 
   template <typename T> GravityField<T> ReadHarmonicGravityField(const std::string& filename, int n,
                                                                  int m, bool normalized);
+
+  BodyData GetBodyData(NaifId id);
+  double GetBodyRadius(NaifId body);
+  std::string GetBodyName(NaifId body);
+  Frame GetInertialFrameName(NaifId body);
+  Frame GetBodyFixedFrameName(NaifId body);
+
 }  // namespace lupnt

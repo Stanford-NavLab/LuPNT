@@ -76,7 +76,7 @@ namespace lupnt {
     mars.fixed_frame = Frame::MARS_FIXED;
     mars.GM = GM_MARS;
     mars.R = R_MARS;
-    mars.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
+    mars.gravity_field = ReadHarmonicGravityField<T>(gravity_file, n_max, m_max, true);
     return mars;
   }
   template BodyT<double> BodyT<double>::Mars(int n_max, int m_max, std::string gravity_file);
@@ -91,7 +91,7 @@ namespace lupnt {
     venus.fixed_frame = Frame::VENUS_FIXED;
     venus.GM = GM_MARS;
     venus.R = R_VENUS;
-    venus.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
+    venus.gravity_field = ReadHarmonicGravityField<T>(gravity_file, n_max, m_max, true);
     return venus;
   }
   template BodyT<double> BodyT<double>::Venus(int n_max, int m_max, std::string gravity_file);
