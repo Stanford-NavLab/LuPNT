@@ -143,10 +143,10 @@ namespace lupnt {
 
       std::string targ_str = std::to_string((int)target);
       std::string obs_str = std::to_string((int)obs);
-      std::string frame_str = frametem_string.at(refFrame);
+      std::string frame_str(frame2string.at(refFrame));
 
       // TODO: this cuts the relatonship between t_tdb and matrix
-      Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
+      Real t_tdb = ConvertTime(t_tai, Time::TAI, Time::TDB);
       SpiceDouble ptarg[3];
       SpiceDouble et = t_tdb.val();
       const char* targ = strcpy(new char[targ_str.length() + 1], targ_str.c_str());
@@ -175,10 +175,10 @@ namespace lupnt {
 
       std::string targ_str = std::to_string((int)target);
       std::string obs_str = std::to_string((int)obs);
-      std::string frame_str = frametem_string.at(refFrame);
+      std::string frame_str(frame2string.at(refFrame));
 
       // TODO: this cuts the relatonship between t_tdb and matrix
-      Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
+      Real t_tdb = ConvertTime(t_tai, Time::TAI, Time::TDB);
       SpiceDouble et = t_tdb.val();
       const char* targ = strcpy(new char[targ_str.length() + 1], targ_str.c_str());
       const char* ref = strcpy(new char[frame_str.length() + 1], frame_str.c_str());
@@ -210,14 +210,14 @@ namespace lupnt {
     Mat6d GetFrameConversionMat(Real t_tai, Frame from_frame, Frame to_frame) {
       if (!spice_loaded) LoadSpiceKernel();
 
-      Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
+      Real t_tdb = ConvertTime(t_tai, Time::TAI, Time::TDB);
 
       SpiceDouble et_spice = (SpiceDouble)t_tdb.val();
       double xform[6][6];
       Mat6d M_rot;
 
-      std::string from_frame_str = frametem_string.at(from_frame);
-      std::string to_frame_str = frametem_string.at(to_frame);
+      std::string from_frame_str(frame2string.at(from_frame));
+      std::string to_frame_str(frame2string.at(to_frame));
 
       const char* from_frame_char
           = strcpy(new char[from_frame_str.length() + 1], from_frame_str.c_str());
@@ -306,7 +306,7 @@ namespace lupnt {
     Real String2TAI(std::string str) {
       if (!spice_loaded) LoadSpiceKernel();
       Real t_tdb = String2TDB(str);
-      Real t_tai = ConvertTime(t_tdb, TimeSys::TDB, TimeSys::TAI);
+      Real t_tai = ConvertTime(t_tdb, Time::TDB, Time::TAI);
       return t_tai;
     }
 
@@ -334,7 +334,7 @@ namespace lupnt {
      */
     std::string TAItoStringUTC(Real t_tai, int prec = 3) {
       if (!spice_loaded) LoadSpiceKernel();
-      Real et_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
+      Real et_tdb = ConvertTime(t_tai, Time::TAI, Time::TDB);
       std::string str = TDBtoStringUTC(et_tdb, prec);
       return str;
     }
@@ -391,7 +391,7 @@ namespace lupnt {
       if (!spice_loaded) LoadSpiceKernel();
       if (center == target) return Vec6::Zero();
 
-      Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
+      Real t_tdb = ConvertTime(t_tai, Time::TAI, Time::TDB);
       bool found_center = center == NaifId::SSB;
       bool found_target = target == NaifId::SSB;
       Vec6 rv_center = Vec6::Zero();

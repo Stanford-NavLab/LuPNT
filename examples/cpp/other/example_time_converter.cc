@@ -14,16 +14,16 @@ int main() {
 
   // J2000
   t_tt_sp = 1.23456789e12;
-  t_tdb_sp = spice::ConvertTime(t_tt_sp, TimeSys::TT, TimeSys::TDB);
-  t_tai_sp = spice::ConvertTime(t_tt_sp, TimeSys::TT, TimeSys::TAI);
-  t_gps_sp = spice::ConvertTime(t_tt_sp, TimeSys::TT, TimeSys::GPS);
-  jd_tt_sp = spice::ConvertTime(t_tt_sp, TimeSys::TT, TimeSys::JD_TT);
-  jd_tdb_sp = spice::ConvertTime(t_tt_sp, TimeSys::TT, TimeSys::JD_TDB);
+  t_tdb_sp = spice::ConvertTime(t_tt_sp, Time::TT, Time::TDB);
+  t_tai_sp = spice::ConvertTime(t_tt_sp, Time::TT, Time::TAI);
+  t_gps_sp = spice::ConvertTime(t_tt_sp, Time::TT, Time::GPS);
+  jd_tt_sp = spice::ConvertTime(t_tt_sp, Time::TT, Time::JD_TT);
+  jd_tdb_sp = spice::ConvertTime(t_tt_sp, Time::TT, Time::JD_TDB);
 
   t_tt = t_tt_sp;
-  t_tdb = ConvertTime(t_tt, TimeSys::TT, TimeSys::TDB);
-  t_tai = ConvertTime(t_tt, TimeSys::TT, TimeSys::TAI);
-  t_gps = ConvertTime(t_tt, TimeSys::TT, TimeSys::GPS);
+  t_tdb = ConvertTime(t_tt, Time::TT, Time::TDB);
+  t_tai = ConvertTime(t_tt, Time::TT, Time::TAI);
+  t_gps = ConvertTime(t_tt, Time::TT, Time::GPS);
   jd_tt = Time2JD(t_tt);
   jd_tdb = Time2JD(t_tdb);
 

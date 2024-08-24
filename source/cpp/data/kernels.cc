@@ -283,7 +283,7 @@ namespace lupnt {
   }
 
   Vec6 GetLunarMantleData(Real t_tai) {
-    Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
+    Real t_tdb = ConvertTime(t_tai, Time::TAI, Time::TDB);
     return GetBodyPosVelKernel(t_tdb, EphemID::MOON_MANTLE_LIBRATIONS);
   }
 
@@ -310,7 +310,7 @@ namespace lupnt {
   Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target, Frame frame) {
     if (!ephemeris_data) LoadEphemerisData();
 
-    Real t_tdb = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TDB);
+    Real t_tdb = ConvertTime(t_tai, Time::TAI, Time::TDB);
 
     if (center == target) return Vec6::Zero();
     Vec6 rv_center = Vec6::Zero();

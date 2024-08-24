@@ -63,7 +63,7 @@ namespace lupnt {
       // Atmospheric drag
       if (use_drag_ && body.id == NaifId::EARTH) {
         // TODO: Currently only works for Earth
-        Real tt = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TT);
+        Real tt = ConvertTime(t_tai, Time::TAI, Time::TT);
         Real mjd_tt = (tt + MJD_J2000) / SECS_DAY;
         MatX3 Rot = NutationMatrix(mjd_tt) * PrecessionMatrix(MJD_J2000, mjd_tt);
         Vec3 a_drag = AccelerationDrag(mjd_tt, rv, Rot, area_, mass_, CD_);

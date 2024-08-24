@@ -14,7 +14,7 @@
 #include "lupnt/physics/solar_system.h"
 
 #define TIME_CONVERSION(from, to, func) \
-  {{TimeSys::from, TimeSys::to}, [](Real t) -> Real { return func(t); }}
+  {{Time::from, Time::to}, [](Real t) -> Real { return func(t); }}
 
 /// @ref
 /// D. Folta, N. Bosanac, I. Elliott, L. Mann, R. Mesarch, and J. Rosales,
@@ -26,28 +26,70 @@
 // doi: 10.1007/978-3-642-58351-3.
 
 namespace lupnt {
-
-  std::map<std::pair<std::string, std::string>, std::function<Real(Real)>> time_conversions
-      = {TIME_CONVERSION(UTC, UT1, UTC2UT1), TIME_CONVERSION(UT1, UTC, UT12UTC),
-         TIME_CONVERSION(TAI, UTC, TAI2UTC), TIME_CONVERSION(UTC, TAI, UTC2TAI),
-         TIME_CONVERSION(TAI, TT, TAI2TT),   TIME_CONVERSION(TT, TAI, TT2TAI),
-         TIME_CONVERSION(TCG, TT, TCG2TT),   TIME_CONVERSION(TT, TCG, TT2TCG),
-         TIME_CONVERSION(TT, TDB, TT2TDB),   TIME_CONVERSION(TDB, TT, TDB2TT),
-         TIME_CONVERSION(TAI, GPS, TAI2GPS), TIME_CONVERSION(GPS, TAI, GPS2TAI),
-         TIME_CONVERSION(TCB, TDB, TCB2TDB), TIME_CONVERSION(TT, TCB, TT2TCB)};
-
-  Real ConvertTime(Real t, const std::string& from, const std::string& to) {
+  //                     TCG
+  //                      |
+  // UT1 -- UTC -- TAI -- TT -> TCB
+  //                |     |      |
+  //               GPS   TDB <---+
+  Real ConvertTime(Real t, Time from, Time to) {
     if (from == to) return t;
-    std::vector<std::string> path = FindShortestPath(from, to, time_conversions);
-    Real t_out = t;
-    for (size_t i = 0; i < path.size() - 1; i++) {
-      std::function<Real(Real)> f = time_conversions[{path[i], path[i + 1]}];
-      t_out = f(t_out);
+    switch (from) {
+      case Time::UT1: return ConvertTime(UT12UTC(t), Time::UTC, to);
+      case Time::UTC: {
+        if (to == Time::UT1) return UTC2UT1(t);
+        return ConvertTime(UTC2TAI(t), Time::TAI, to);
+      }
+      case Time::TAI: {
+        switch (to) {
+          case Time::TAI: return t;
+          case Time::GPS: return TAI2GPS(t);
+          case Time::UTC: return TAI2UTC(t);
+          case Time::UT1: return UTC2UT1(TAI2UTC(t));
+          case Time::TT: return TAI2TT(t);
+          case Time::TCG: return TT2TCG(TAI2TT(t));
+          case Time::TDB: return TT2TDB(TAI2TT(t));
+          case Time::TCB: return TT2TCB(TAI2TT(t));
+          case Time::JD_TT: return Time2JD(TAI2TT(t));
+          case Time::JD_TDB: return Time2JD(TT2TDB(TAI2TT(t)));
+          default: break;
+        }
+      }
+      case Time::TDB: {
+        switch (to) {
+          case Time::TT: return TDB2TT(t);
+          case Time::TCB: return TT2TCB(TDB2TT(t));
+          case Time::TCG: return TT2TCG(TDB2TT(t));
+          case Time::TAI: return TT2TAI(TDB2TT(t));
+          case Time::JD_TDB: return Time2JD(t);
+          case Time::JD_TT: return Time2JD(TDB2TT(t));
+          default: return ConvertTime(TT2TAI(TDB2TT(t)), Time::TAI, to);
+        }
+      }
+      case Time::TT: {
+        switch (to) {
+          case Time::TAI: return TT2TAI(t);
+          case Time::TDB: return TT2TDB(t);
+          case Time::TCG: return TT2TCG(t);
+          case Time::TCB: return TT2TCB(t);
+          case Time::UTC: return TAI2UTC(TT2TAI(t));
+          case Time::UT1: return UTC2UT1(TAI2UTC(TT2TAI(t)));
+          case Time::GPS: return TAI2GPS(TT2TAI(t));
+          case Time::JD_TT: return Time2JD(t);
+          case Time::JD_TDB: return Time2JD(TT2TDB(t));
+          default: break;
+        }
+      }
+      case Time::TCG: return ConvertTime(TCG2TT(t), Time::TT, to);
+      case Time::TCB: return ConvertTime(TCB2TDB(t), Time::TDB, to);
+      case Time::GPS: return ConvertTime(GPS2TAI(t), Time::TAI, to);
+      default: break;
     }
-    return t_out;
+    throw std::invalid_argument("Invalid time conversion from " + std::to_string(from) + " to "
+                                + std::to_string(to));
+    return 0;
   }
 
-  VecX ConvertTime(VecX t, const std::string& from, const std::string& to) {
+  VecX ConvertTime(VecX t, Time from, Time to) {
     VecX t_out(t.size());
     for (int i = 0; i < t.size(); i++) {
       t_out(i) = ConvertTime(t(i), from, to);

@@ -26,7 +26,7 @@ namespace lupnt {
   }
 
   std::optional<std::filesystem::path> FindFileInDir(const std::filesystem::path& base_path,
-                                                     const std::string& filename) {
+                                                     std::string_view filename) {
     for (const auto& entry : std::filesystem::recursive_directory_iterator(base_path)) {
       if (entry.path().filename().string() == filename) {
         return entry.path();
@@ -35,7 +35,7 @@ namespace lupnt {
     return std::nullopt;
   };
 
-  std::filesystem::path GetFilePath(const std::string& filename) {
+  std::filesystem::path GetFilePath(std::string_view filename) {
     auto filepath = FindFileInDir(GetDataPath(), filename);
     assert(filepath.has_value() && "File not found.");
     return filepath.value();
