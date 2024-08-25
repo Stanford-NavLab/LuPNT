@@ -211,14 +211,14 @@ void PrintProgressHeader() {
   std::cout << "--------------------------------------------------------------" << std::endl;
 }
 
-VecXd ComputeEstimationErrors(const std::shared_ptr<Spacecraft> sat, EKF* ekf) {
+VecXd ComputeEstimationErrors(const Ptr<Spacecraft> sat, EKF* ekf) {
   auto x_est = ekf->x_;
   auto x_true = sat->GetStateVec();
 
   double x_pos_err = 1000 * (x_true.segment(0, 3) - x_est.segment(0, 3)).norm().val();
   double x_vel_err = 1e6 * (x_true.segment(3, 3) - x_est.segment(3, 3)).norm().val();
-  double x_clk_bias_err = 1e9 * abs((x_true(6) - x_est(6)).val());
-  double x_clk_drift_err = 1e9 * abs((x_true(7) - x_est(7)).val());
+  double x_clk_bias_err = 3e8 * abs((x_true(6) - x_est(6)).val());
+  double x_clk_drift_err = 3e8 * abs((x_true(7) - x_est(7)).val());
 
   VecXd est_err(4);
   est_err << x_pos_err, x_vel_err, x_clk_bias_err, x_clk_drift_err;
@@ -233,17 +233,48 @@ void PrintProgress(double t, double x_pos_err, double x_vel_err, double x_clk_bi
             << std::setw(16) << x_clk_bias_err << std::endl;
 };
 
-void PrintEKFDebugInfo(EKF* ekf) {
-  std::cout << "  Pbar : " << ekf->Pbar_.diagonal().transpose() << std::endl;
-  std::cout << "  Q:  " << std::endl << ekf->Q_ << std::endl;
-  std::cout << "  Kalman Gain: " << std::endl << ekf->K_ << std::endl;
-  std::cout << "  H:  " << std::endl << ekf->H_ << std::endl;
-  std::cout << "  R:  " << std::endl << ekf->R_ << std::endl;
-  std::cout << "  S:  " << std::endl << ekf->S_ << std::endl;
-  std::cout << "  Meas   Residuals: " << ekf->dy_.transpose() << std::endl;
-  std::cout << "  Linear Residuals: " << (ekf->dy_ - ekf->H_ * ekf->dx_).transpose() << std::endl;
+void PrintEKFDebugInfo(int tidx, const Ptr<Spacecraft> sat, EKF* ekf, bool error_only = false) {
+  auto x_bar = ekf->xbar_;
+  auto x_est = ekf->x_;
+  auto x_true = sat->GetStateVec();
+
+  double x_pos_err_bar = 1000 * (x_true.segment(0, 3) - x_bar.segment(0, 3)).norm().val();
+  double x_vel_err_bar = 1e6 * (x_true.segment(3, 3) - x_bar.segment(3, 3)).norm().val();
+  double x_clk_bias_err_bar = 3e8 * abs((x_true(6) - x_bar(6)).val());
+
+  double x_pos_err = 1000 * (x_true.segment(0, 3) - x_est.segment(0, 3)).norm().val();
+  double x_vel_err = 1e6 * (x_true.segment(3, 3) - x_est.segment(3, 3)).norm().val();
+  double x_clk_bias_err = 3e8 * abs((x_true(6) - x_est(6)).val());
+
+  std::cout << " ------------------- " << std::endl;
+  std::cout << "  Time: " << tidx << std::endl;
+  if (!error_only) {
+    std::cout << "  Q:  " << std::endl << ekf->Q_ << std::endl;
+    std::cout << "  Kalman Gain: " << std::endl << ekf->K_ << std::endl;
+    std::cout << "  H:  " << std::endl << ekf->H_ << std::endl;
+    std::cout << "  R:  " << std::endl << ekf->R_.diagonal().transpose() << std::endl;
+    std::cout << "  S:  " << std::endl << ekf->S_.diagonal().transpose() << std::endl;
+    std::cout << " " << std::endl;
+  }
+  std::cout << "  Meas   Residuals: " << 1000 * ekf->dy_.transpose() << std::endl;
+  std::cout << "  Linear Residuals: " << 1000 * (ekf->H_ * ekf->dx_).transpose() << std::endl;
   std::cout << "  dx: " << ekf->dx_.transpose() << std::endl;
-  std::cout << "  Phat: " << ekf->P_.diagonal().transpose() << std::endl;
+  std::cout << "  Pos Err (Bar): " << x_pos_err_bar
+            << "  (3sigma : " << 3 * 1000 * sqrt(ekf->Pbar_.block(0, 0, 3, 3).diagonal().trace())
+            << " )    Pos Err (Est): " << x_pos_err
+            << "  (3sigma: " << 3 * 1000 * sqrt(ekf->P_.block(0, 0, 3, 3).diagonal().trace())
+            << " )" << std::endl;
+  std::cout << "  Vel Err (Bar): " << x_vel_err_bar
+            << "  (3sigma : " << 3 * 1e6 * sqrt(ekf->Pbar_.block(3, 3, 3, 3).diagonal().trace())
+            << "  )   Vel Err (Est): " << x_vel_err
+            << "  (3sigma: " << 3 * 1e6 * sqrt(ekf->P_.block(3, 3, 3, 3).diagonal().trace()) << " )"
+            << std::endl;
+  std::cout << "  Clk Err (Bar): " << x_clk_bias_err_bar
+            << "  (3sigma : " << 3 * 3e8 * sqrt(ekf->Pbar_.block(6, 6, 1, 1).diagonal().trace())
+            << "  )   Clk Err (Est): " << x_clk_bias_err
+            << "  (3sigma: " << 3 * 3e8 * sqrt(ekf->P_.block(6, 6, 1, 1).diagonal().trace()) << " )"
+            << std::endl;
+  std::cout << " ------------------- " << std::endl;
   std::cout << "  " << std::endl;
 }
 
@@ -453,13 +484,13 @@ int main() {
 
   // Time
   double t0 = epoch0;
-  double dt = 1.0;   // Integration time step [s]
-  double Dt = 10.0;  // Propagation time step [s]  (= Measurement time step)
+  double dt = 1.0;  // Integration time step [s]
+  double Dt = 5.0;  // Propagation time step [s]  (= Measurement time step)
   double print_every = 600;
   double save_every = Dt;
 
   // Simulation seed
-  int seed = 0;
+  int seed = 1;
   std::srand(seed);
 
   // Initial State
@@ -473,14 +504,14 @@ int main() {
   Real clk_drift = 0.1;
 
   // Set simulation to 1 orbit
-  int n_orbit = 1;  // number of orbits to simulate
+  int n_orbit = 2;  // number of orbits to simulate
   Real period = 2.0 * M_PI * sqrt(pow(a, 3) / GM_MOON);
   double tf = t0 + n_orbit * period.val();
   int time_step_num = int((tf - t0) / Dt) + 1;
   tf = t0 + (time_step_num - 1) * Dt;
 
   // Dynamics Model   Todo: Refine this to a more high fidelity model
-  int moon_sph_true = 5;  // moon spherical harmonics order in true dynamics
+  int moon_sph_true = 8;  // moon spherical harmonics order in true dynamics
   int moon_sph_est = 5;   // moon spherical harmonics order in filter dynamics
   bool add_earth = true;  // add earth to true and filter dynamics
 
@@ -497,14 +528,16 @@ int main() {
   double vel_err = 1e-3;        // Initial Velocity error [km/s]
   double clk_bias_err = 1e-6;   // Initial Clock bias error [s]
   double clk_drift_err = 1e-9;  // Initial Clock drift error [s/s]
-  double sigma_acc = 1e-10;     // Process noise Acceleration [km/s^2]  <-- tune
+  double sigma_acc = 1e-12;     // Process noise Acceleration [km/s^2]  <-- tune
                                 // this for optimal performance!
 
   // Debug mode
   bool plot_results = false;
   bool debug_jacobian = false;
   bool print_debug = false;
-  bool no_meas = false;  // set to true to turn off measurements
+  bool debug_ekf = false;
+  bool debug_ekf_error_only = true;  // Print only error for EKF debugging
+  bool no_meas = false;              // set to true to turn off measurements
 
   /**********************************************
    * Setup
@@ -541,7 +574,10 @@ int main() {
   }
 
   // clock dynamics
-  auto dyn_clk = ClockDynamics(cmodel);
+  auto dyn_clk_true = ClockDynamics(cmodel);
+  auto dyn_clk_est = ClockDynamics(cmodel);
+  dyn_clk_true.SetNoise(true);
+  dyn_clk_est.SetNoise(false);
 
   // GPS constellation
   auto channel = std::make_shared<GnssChannel>();
@@ -574,9 +610,10 @@ int main() {
   moon_sat->SetOrbitState(cart_state_moon);
   moon_sat->SetEpoch(epoch0);
   moon_sat->SetBodyId(NaifId::MOON);
-  moon_sat->SetClockDynamics(dyn_clk);
+  moon_sat->SetClockDynamics(dyn_clk_true);
 
   receiver->SetAgent(moon_sat);
+  receiver->SetReceiverAttitudeMode("PZ_EarthPoint");
   receiver->SetChannel(channel);
   channel->AddReceiver(receiver);
 
@@ -586,7 +623,7 @@ int main() {
   // Joint state and dynamics
   JointState joint_state;
   joint_state.PushBackStateAndDynamics(cart_state_moon.get(), dyn_est.get());
-  joint_state.PushBackStateAndDynamics(&clock_state, &dyn_clk);
+  joint_state.PushBackStateAndDynamics(&clock_state, &dyn_clk_est);
 
   FilterDynamicsFunction joint_dynamics = joint_state.GetFilterDynamicsFunction();
 
@@ -594,8 +631,8 @@ int main() {
    * Define Measurement function
    * *******************************************/
   FilterMeasurementFunction meas_func_pos_clk
-      = [moon_sat, receiver, state_size, no_meas, meas_types](const VecX x, MatXd& H,
-                                                              MatXd& R) -> VecX {
+      = [moon_sat, receiver, state_size, no_meas, meas_types, debug_jacobian](
+            const VecX x, MatXd& H, MatXd& R) -> VecX {
     if (no_meas) {
       return VecXd::Zero(0);
     }
@@ -616,6 +653,33 @@ int main() {
 
     VecX z = meas.GetPredictedGnssMeasurement(epoch, x.head(6), x.tail(2), x_N, H, meas_types,
                                               frame_in);  // Jacobian with autodiff
+
+    if (debug_jacobian) {
+      // Compute Numerical Jacobian
+      MatXd H_num = MatXd::Zero(mtot, x.size());
+      MatXd H_dum = MatXd::Zero(mtot, x.size());
+
+      for (int i = 0; i < x.size(); i++) {
+        Real eps = x(i) * 1e-6;
+        VecX x_p = x;
+        VecX x_m = x;
+        x_p(i) += eps;
+        x_m(i) -= eps;
+        VecX z_p = meas.GetPredictedGnssMeasurement(epoch, x_p.head(6), x_p.tail(2), x_N, H_dum,
+                                                    meas_types,
+                                                    frame_in);  // Jacobian with autodiff
+        VecX z_m = meas.GetPredictedGnssMeasurement(epoch, x_m.head(6), x_m.tail(2), x_N, H_dum,
+                                                    meas_types,
+                                                    frame_in);  // Jacobian with autodiff
+        H_num.col(i) = ((z_p - z_m) / (2 * eps)).cast<double>();
+      }
+
+      std::cout << " " << std::endl;
+      std::cout << "AutoDiff Jacobian: " << std::endl << H << std::endl;
+      std::cout << "Numerical Jacobian: " << std::endl << H_num << std::endl;
+      std::cout << "Jacobian Error: " << (H - H_num).norm() << std::endl;
+      std::cout << " " << std::endl;
+    }
 
     // Get the Measurement Noise
     VecXd noise_std_vec = meas.GetGnssNoiseStdVec(meas_types);
@@ -671,8 +735,15 @@ int main() {
 
   // Print State
   if (print_debug) {
+    VecX x_init_true = moon_sat->GetStateVec();
+
     std::cout << "Initial true state: " << moon_sat->GetStateVec().transpose() << std::endl;
     std::cout << "Initial estimated state: " << x_est.transpose() << std::endl;
+    VecX err_std = x_est - x_init_true;
+    for (int i = 0; i < 8; i++) {
+      err_std(i) = err_std(i) / sqrt(P0(i, i));
+    }
+    std::cout << "Initial error / std: " << err_std << std::endl;
   }
 
   // Output
@@ -684,10 +755,16 @@ int main() {
    * Main loop
    **********************************************/
   Real t = t0;
+
   double epoch = epoch0;
   PrintProgressHeader();
 
   int time_index = 0;
+  // tf = 50 * Dt;
+
+  // Compute Estimation
+  est_err = ComputeEstimationErrors(moon_sat, &ekf);  // pos, vel, clkb, clkd error
+  PrintProgress(t.val(), est_err(0), est_err(1), est_err(2));
 
   for (t = t0; t < tf; t += Dt) {
     time_index += 1;
@@ -712,7 +789,11 @@ int main() {
     }
 
     // Update EKF
-    ekf.Step(t + Dt, z_true);
+    ekf.Predict(t + Dt);
+    // print Phi
+    // std::cout << "Phi:" << std::endl << ekf.Phi_ << std::endl;
+
+    ekf.Update(z_true, debug_ekf);
 
     // Add Data
     if (!no_meas) {
@@ -726,11 +807,12 @@ int main() {
     // Print progress
     if (fmod(t.val(), print_every) < 1e-3) {
       PrintProgress(t.val(), est_err(0), est_err(1), est_err(2));
+      PrintEKFDebugInfo(time_index, moon_sat, &ekf, true);
     }
 
     // print measurement residuals
     if ((print_debug) && (!no_meas)) {
-      PrintEKFDebugInfo(&ekf);
+      PrintEKFDebugInfo(time_index, moon_sat, &ekf, debug_ekf_error_only);
     }
   }
 

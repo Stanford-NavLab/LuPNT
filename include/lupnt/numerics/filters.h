@@ -75,6 +75,7 @@ namespace lupnt {
     Real t_curr_;  // Current time
     VecX x_;       // Updated state
     VecX xbar_;    // Predicted state
+    MatXd Phi_;    // State transition matrix
     VecX dy_;      // Measurement residual
     VecX dx_;      // State update
     VecX z_true_;  // Observed measurement

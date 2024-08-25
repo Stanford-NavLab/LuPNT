@@ -155,21 +155,21 @@ namespace lupnt {
     if (state_size == 2) {
       Vec2 clk0 = ClockState(x0).GetVec();
       Mat2 stm_dum;
-      Propagate(clk0, t0, tf, &stm_dum);
+      Vec2 clkf = Propagate(clk0, t0, tf, &stm_dum);
       if (stm != nullptr) {
         stm->resize(2, 2);
         *stm = stm_dum.cast<double>();
       }
-      return clk0;
+      return clkf;
     } else if (state_size == 3) {
       Vec3 clk0 = ClockState(x0).GetVec();
       Mat3 stm_dum;
-      Propagate(clk0, t0, tf, &stm_dum);
+      Vec3 clkf = Propagate(clk0, t0, tf, &stm_dum);
       if (stm != nullptr) {
         stm->resize(3, 3);
         *stm = stm_dum.cast<double>();
       }
-      return clk0;
+      return clkf;
     } else {
       throw std::runtime_error("Invalid clock state size");
     }

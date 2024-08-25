@@ -82,13 +82,14 @@ namespace lupnt {
           int state_size = state_vec[i]->GetSize();
           MatXd Phi_tmp(state_size, state_size);
           VecX x_seg(state_size);
+          VecX x_seg_next(state_size);
           for (int j = 0; j < state_size; j++) {
             x_seg(j) = x(start_idx + j);
           }
-          dynamics_vec_[i]->Propagate(x_seg, t_curr, t_end, &Phi_tmp);
+          x_seg_next = dynamics_vec_[i]->Propagate(x_seg, t_curr, t_end, &Phi_tmp);
           Phi.block(start_idx, start_idx, state_size, state_size) = Phi_tmp;
           for (int j = 0; j < state_size; j++) {
-            x(start_idx + j) = x_seg(j);
+            x(start_idx + j) = x_seg_next(j);
           }
           // Add states
           start_idx += state_size;
@@ -119,6 +120,8 @@ namespace lupnt {
     double GetInitialEpoch() { return epoch0_; };
     double GetCurrentEpoch() { return epoch_; };
     double GetCurrrentTime() { return t_; };
+
+    void SimulateTruth(double t_end);
 
     void Setup();
     void Step(double t_end);  // execute to step t

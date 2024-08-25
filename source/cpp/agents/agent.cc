@@ -28,13 +28,14 @@ namespace lupnt {
 
     // Update clock state
     if (clock_dynamics_ != nullptr) {
-      clock_dynamics_->SetNoise(false);
-      MatXd stm;
-      clock_dynamics_->PropagateState(clock_, epoch_, epoch, &stm);
+      ClockState clkf = GetClockStateAtEpoch(epoch, true);
+      VecX clk0_vec = clock_.GetVec();
+      VecX clkf_vec = clkf.GetVec();
+      VecX dclk = clkf_vec - clk0_vec;
+      clock_ = clkf;
     }
 
     // TBD: Update attitude state
-
     epoch_ = epoch;
   }
 
