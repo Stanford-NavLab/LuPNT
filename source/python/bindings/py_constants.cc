@@ -103,14 +103,16 @@ void init_constants(py::module& m) {
       .value("JUPITER", NaifId::JUPITER)
       .export_values();
 
-  m.attr("UT1") = py::str(Time::UT1);
-  m.attr("UTC") = py::str(Time::UTC);
-  m.attr("TAI") = py::str(Time::TAI);
-  m.attr("TDB") = py::str(Time::TDB);
-  m.attr("TT") = py::str(Time::TT);
-  m.attr("TCG") = py::str(Time::TCG);
-  m.attr("TCB") = py::str(Time::TCB);
-  m.attr("GPS") = py::str(Time::GPS);
-  m.attr("JD_TT") = py::str(Time::JD_TT);
-  m.attr("JD_TDB") = py::str(Time::JD_TDB);
+  py::enum_<Time>(m, "Time")
+      .value("UT1", Time::UT1)
+      .value("UTC", Time::UTC)
+      .value("TAI", Time::TAI)
+      .value("TDB", Time::TDB)
+      .value("TT", Time::TT)
+      .value("TCG", Time::TCG)
+      .value("TCB", Time::TCB)
+      .value("GPS", Time::GPS)
+      .value("JD_TT", Time::JD_TT)
+      .value("JD_TDB", Time::JD_TDB)
+      .export_values();
 }

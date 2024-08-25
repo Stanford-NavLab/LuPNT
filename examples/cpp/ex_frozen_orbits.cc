@@ -286,19 +286,19 @@ int main() {
   // **************************************************************************
   cout << endl << endl << "*********** Case 5 ***********" << endl;
 
-  NBodyDynamics dyn_nbody50(IntegratorType::RK4);
-  dyn_nbody50.AddBody(Body::Moon(10, 10));
+  NBodyDynamics dyn_nbody50(IntegratorType::RKF45);
+  dyn_nbody50.AddBody(Body::Moon(50, 50));
   dyn_nbody50.AddBody(Body::Earth());
   dyn_nbody50.AddBody(Body::Sun());
-  dyn_nbody50.SetTimeStep(dt_prop);
+  // dyn_nbody50.SetTimeStep(dt_prop);
   dyn_nbody50.SetFrame(MOON_CI);
 
   // Propagate
   MatX6 rv_case5_ci;
-  VecX tfs_ = tfs.head(100);
+  // VecX tfs_ = tfs.head(5000);
   if (config.recompute_part1 || !file_part1.exist("/rv_case5_ci")) {
     cout << endl << "Propagating" << endl;
-    rv_case5_ci = dyn_nbody50.Propagate(rv0_ci, t0, tfs_, true);
+    rv_case5_ci = dyn_nbody50.Propagate(rv0_ci, t0, tfs, true);
     dump(file_part1, "/rv_case5_ci", rv_case5_ci.cast<double>(), DumpMode::Overwrite);
   } else {
     rv_case5_ci = load<MatX6d>(file_part1, "/rv_case5_ci");
