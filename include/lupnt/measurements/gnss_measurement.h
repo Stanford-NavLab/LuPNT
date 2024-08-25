@@ -90,9 +90,9 @@ namespace lupnt {
                       // local coordinates [km] (n_meas * n_bands x 3)
     VecXd d_tx_pcv;   // Transmitter’s antenna phase center variation
                       // [km] (n_meas * n_bands)
-    VecXd e_rx_enu;   // LOS vector from receiver antenna to satellite in
+    MatXd e_rx_enu;   // LOS vector from receiver antenna to satellite in
                       // local coordinates [km] (n_meas x 3)
-    VecXd e_rx;       // LOS vector from receiver antenna to satellite in
+    MatXd e_rx;       // LOS vector from receiver antenna to satellite in
                       // ECEF coordinates [km] (n_meas x 3)
     VecXd E;          // Coordinates transformation matrix from the satellite
                       // body‐fixed coordinates to ECEF coordinates
@@ -103,9 +103,9 @@ namespace lupnt {
     // Doppler shift measurement
     VecXd D_rx;   // Doppler shift measurement [Hz] (n_meas * n_bands)
     VecX r_rx;    // Position of the receiver at time t_rx [km] (3)
-    VecXd r_tx;   // Position of the transmitter at time t_rx [km] (n_meas x 3)
+    MatXd r_tx;   // Position of the transmitter at time t_rx [km] (n_meas x 3)
     VecXd v_rx;   // Velocity of the receiver at time t_rx [m/s] (3)
-    VecXd v_tx;   // Velocity of the transmitter at time t_tx [m/s] (n_meas x 3)
+    MatXd v_tx;   // Velocity of the transmitter at time t_tx [m/s] (n_meas x 3)
     VecXd eps_D;  // Doppler shift measurement noise [Hz] (n_meas * n_bands)
 
     // Pseudorange rate measurement

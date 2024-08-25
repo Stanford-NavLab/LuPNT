@@ -188,8 +188,8 @@ namespace lupnt {
         int m_max = std::stoi(line.substr(11, 3));
 
         std::istringstream iss(line.substr(14));
-        double GM, r, dummyFactor;
-        iss >> GM >> r >> dummyFactor;
+        double dummy1, GM, r, dummy2;
+        iss >> dummy1 >> GM >> r >> dummy2;
         gravity_field.n_max = n_max;
         gravity_field.m_max = m_max;
         gravity_field.GM = GM * pow(KM_M, 3);
@@ -200,6 +200,8 @@ namespace lupnt {
 
     // Initialize Eigen matrices with the specified maxN and maxM
     assert(n_max <= gravity_field.n_max && m_max <= gravity_field.m_max);
+    gravity_field.n_max = n_max;
+    gravity_field.m_max = m_max;
     gravity_field.CS = Eigen::MatrixXd::Zero(n_max + 1, m_max + 1);
     gravity_field.CS(0, 0) = 1.0;  // C00 = 1.0
     // Read coefficient lines

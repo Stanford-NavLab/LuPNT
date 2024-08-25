@@ -161,9 +161,10 @@ namespace lupnt {
       Vec6 rv_out;
       rv_out << r_out, v_out;
       return rv_out;
+    } else {
+      Vec6 rv_out_6 = ConvertFrameBase(t_tai, rv_in, frame_in, frame_out);
+      return rv_out_6;
     }
-    Vec6 rv_out_6 = ConvertFrameBase(t_tai, rv_in, frame_in, frame_out);
-    return rv_out_6.head(3);
   }
 
   Vec3 ConvertFrame(Real t_tai, const Vec3& r_in, Frame frame_in, Frame frame_out,

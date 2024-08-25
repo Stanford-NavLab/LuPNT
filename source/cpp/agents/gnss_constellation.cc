@@ -51,7 +51,7 @@ namespace lupnt {
       // Create the spacecraft
       auto sat = MakePtr<Spacecraft>();
       sat->SetDynamics(dynamics_);
-      sat->SetRvState(state);
+      sat->SetOrbitState(state);
       sat->SetEpoch(epoch_);
       sat->SetBodyId(NaifId::EARTH);
 

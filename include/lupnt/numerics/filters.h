@@ -38,7 +38,7 @@ namespace lupnt {
    * @return VecXd Process noise covariance
    *
    */
-  typedef std::function<VecXd(const VecX, Real t_curr, Real t_end)> FilterProcessNoiseFunction;
+  typedef std::function<MatXd(const VecX, Real t_curr, Real t_end)> FilterProcessNoiseFunction;
 
   /**
    * @brief Measurement function for the filter
@@ -100,17 +100,17 @@ namespace lupnt {
       measurement_ = measurement;
     }
 
-    void Initialize(const VecX &x0, const VecXd &P0) {
+    void Initialize(const VecX &x0, const MatXd &P0) {
       x_ = x0;
       P_ = P0;
     }
 
-    VecX GetPredictedStateEstimate(VecXd &Pbar) {
+    VecX GetPredictedStateEstimate(MatXd &Pbar) {
       Pbar = Pbar_;
       return xbar_;
     }
     VecX GetPredictedStateEstimate() { return xbar_; }
-    VecX GetUpdatedStateEstimate(VecXd &Phat) {
+    VecX GetUpdatedStateEstimate(MatXd &Phat) {
       Phat = P_;
       return x_;
     }

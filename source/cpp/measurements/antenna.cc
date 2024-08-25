@@ -106,7 +106,7 @@ namespace lupnt {
       }
 
       // Create the pattern
-      antenna_pattern_ = VecXd(2, angles.size());
+      antenna_pattern_.resize(2, angles.size());
       for (size_t i = 0; i < angles.size(); i++) {
         antenna_pattern_(0, i) = angles[i];
         antenna_pattern_(1, i) = gains[i];
@@ -136,20 +136,21 @@ namespace lupnt {
       }
 
       // Create the pattern
-      antenna_pattern_ = VecXd(thetas.size() + 1, phis.size() + 2);
+      antenna_pattern_.resize(int(thetas.size()) + 1, int(phis.size()) + 1);
       antenna_pattern_(0, 0) = -50;
       for (size_t i = 0; i < phis.size(); i++) {
         antenna_pattern_(0, i + 1) = phis[i];
       }
       // Add the first phi again for 0-360 deg
-      antenna_pattern_(0, phis.size() + 1) = phis[0];
+      // antenna_pattern_(0, phis.size() + 1) = phis[0];
+
       for (size_t i = 0; i < thetas.size(); i++) {
         antenna_pattern_(i + 1, 0) = thetas[i];
-        for (size_t j = 0; j < phis.size(); j++) {
+        for (size_t j = 0; j < phis.size() - 1; j++) {
           antenna_pattern_(i + 1, j + 1) = gains[i][j];
         }
-        // Add the first phi again for 0-360 deg
-        antenna_pattern_(i + 1, phis.size() + 1) = gains[i][0];
+        // Add the first phi again for 360 deg
+        antenna_pattern_(i + 1, phis.size()) = gains[i][0];
       }
       file.close();
     }
@@ -180,7 +181,7 @@ namespace lupnt {
       // antenna model
       VecXd x = antenna_pattern_.col(0).segment(1, antenna_pattern_.rows() - 1);
       VecXd y = antenna_pattern_.row(0).segment(1, antenna_pattern_.cols() - 1);
-      VecXd z
+      MatXd z
           = antenna_pattern_.block(1, 1, antenna_pattern_.rows() - 1, antenna_pattern_.cols() - 1);
       double res = LinearInterp2d(x, y, z, theta, phi + 180.0);
       gain = res;
