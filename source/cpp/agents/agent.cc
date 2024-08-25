@@ -22,9 +22,9 @@ namespace lupnt {
     if (epoch == epoch_) return;
 
     // Update orbit state
-    VecX x = rv_->GetVec();
-    dynamics_->Propagate(x, epoch_, epoch);
-    rv_->SetVec(x);
+    VecX x0 = rv_->GetVec();
+    VecX xf = dynamics_->Propagate(x0, epoch_, epoch);
+    rv_->SetVec(xf);
 
     // Update clock state
     if (clock_dynamics_ != nullptr) {
@@ -43,9 +43,9 @@ namespace lupnt {
 
     // Get the state at epoch without changing the agent's epoch and state
     VecX x = rv_->GetVec();
-    dynamics_->Propagate(x, epoch_, epoch);
+    VecX xf = dynamics_->Propagate(x, epoch_, epoch);
 
-    return x;
+    return xf;
   }
 
   ClockState Agent::GetClockStateAtEpoch(const Real epoch, bool with_noise) {
@@ -54,15 +54,16 @@ namespace lupnt {
     // Get the state at epoch without changing the agent's epoch and clock state
     // Create a deep copy of the clock state
     ClockState clk = clock_;
+    ClockState clk_new = ClockState(clk.GetVec());
     MatXd stm;
     if (clock_dynamics_ != nullptr && with_noise) {
       clock_dynamics_->SetNoise(true);
-      clock_dynamics_->PropagateState(clk, epoch_, epoch, &stm);
+      clk_new = clock_dynamics_->PropagateState(clk, epoch_, epoch, &stm);
     } else {
       clock_dynamics_->SetNoise(false);
-      clock_dynamics_->PropagateState(clk, epoch_, epoch, &stm);
+      clk_new = clock_dynamics_->PropagateState(clk, epoch_, epoch, &stm);
     }
-    return clk;
+    return clk_new;
   }
 
   VecX Agent::GetClockStateVecAtEpoch(const Real epoch, bool with_noise) {

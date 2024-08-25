@@ -42,13 +42,13 @@ namespace lupnt {
     start = x.data();
     end = x.data() + x.size();
     auto it = std::lower_bound(start, end, xi);
-    size_t i0 = it - start;
+    size_t i0 = it - start - 1;
     size_t i1 = i0 + 1;
 
     start = y.data();
     end = y.data() + y.size();
     it = std::lower_bound(start, end, yi);
-    size_t j0 = it - start;
+    size_t j0 = it - start - 1;
     size_t j1 = j0 + 1;
 
     double dx0 = (xi - x[i0]) / (x[i1] - x[i0]);
