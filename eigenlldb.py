@@ -39,6 +39,12 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand(
         "type summary add -x lupnt::(Vec|Mat)* --python-function eigenlldb.summary"
     )
+    debugger.HandleCommand(
+        "type synthetic add -x Eigen::(Vector|Matrix)* --python-class eigenlldb.MatChildProvider"
+    )
+    debugger.HandleCommand(
+        "type summary add -x Eigen::(Vector|Matrix)* --python-function eigenlldb.summary"
+    )
 
 
 def summary(valobj, internalr_dict, options):

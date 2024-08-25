@@ -284,6 +284,7 @@ int main() {
   // **************************************************************************
   // Case 5
   // **************************************************************************
+  cout << endl << endl << "*********** Case 5 ***********" << endl;
 
   NBodyDynamics dyn_nbody50(IntegratorType::RK4);
   dyn_nbody50.AddBody(Body::Moon(10, 10));
@@ -294,7 +295,7 @@ int main() {
 
   // Propagate
   MatX6 rv_case5_ci;
-  VecX tfs_ = tfs.head(1000);
+  VecX tfs_ = tfs.head(100);
   if (config.recompute_part1 || !file_part1.exist("/rv_case5_ci")) {
     cout << endl << "Propagating" << endl;
     rv_case5_ci = dyn_nbody50.Propagate(rv0_ci, t0, tfs_, true);
@@ -303,8 +304,7 @@ int main() {
     rv_case5_ci = load<MatX6d>(file_part1, "/rv_case5_ci");
     cout << endl << "Loaded from file" << endl;
   }
-  MatX6 rv_case5_op = ConvertFrame(tfs_, rv_case5_ci, Frame::MOON_CI, Frame::MOON_OP, true);
-  MatX6 coe_case5_op = Cart2Classical(rv_case5_op, GM_MOON);
+  MatX6 coe_case5_ci = Cart2Classical(rv_case5_ci, GM_MOON);
 
   // **************************************************************************
   // Case 6
@@ -333,21 +333,20 @@ int main() {
     rv_case6_ci = load<MatX6d>(file_part1, "/rv_case6_ci");
     cout << endl << "Loaded from file" << endl;
   }
-  MatX6 rv_case6_op = ConvertFrame(tfs, rv_case6_ci, Frame::MOON_CI, Frame::MOON_OP, true);
-  MatX6 coe_case6_op = Cart2Classical(rv_case6_op, GM_MOON);
+  MatX6 coe_case6_ci = Cart2Classical(rv_case6_ci, GM_MOON);
 
   // **************************************************************************
   // e-w plots
   // **************************************************************************
 
   std::vector<MatX6> coe_cases
-      = {coe_case1_op, coe_case2_op, coe_case3_op, coe_case4_me, coe_case5_op, coe_case6_op};
+      = {coe_case1_op, coe_case2_op, coe_case3_op, coe_case4_me, coe_case5_ci, coe_case6_ci};
 
   // Plot
   fig = figure(true);
   title("e-w plots");
   for (size_t i = 0; i < coe_cases.size(); i++) {
-    fig->add_subplot(2, 2, i);
+    fig->add_subplot(3, 2, i);
     hold(true);
     VecX e_vec = coe_cases[i].col(1);
     VecX w_vec = coe_cases[i].col(4) * DEG;
@@ -355,12 +354,13 @@ int main() {
     xlabel("w [deg]");
     ylabel("e [-]");
     grid(true);
-    xlim({70, 110});
-    ylim({0.5, 0.75});
+    // xlim({70, 110});
+    // ylim({0.5, 0.75});
     title("Case " + std::to_string(i + 1));
   }
   fig->draw();
-
+  show();
+  return 0;
   // **************************************************************************
   // Constellation stability
   // **************************************************************************
