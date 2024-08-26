@@ -85,6 +85,7 @@ namespace lupnt {
     if (attitude_mode_ == "NONE") {
       std::runtime_error("Receiver attitude mode not set");
     }
+
     auto e_sat = GnssReceiver::GetReceiverOrientation(t, r_rx_gcrf, attitude_mode_);
     auto e_x = e_sat[0];
     auto e_y = e_sat[1];

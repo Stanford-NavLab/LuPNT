@@ -38,12 +38,14 @@ int main() {
   std::string grav_file = "JGM3.cof";
   int n_max = 20, m_max = 20;
   bool normalized = true;
-  GravityField grav = ReadHarmonicGravityField(grav_file, n_max, m_max, normalized);
-  Body earth = Body::Earth();
+  GravityField grav = ReadHarmonicGravityField<double>(grav_file, n_max, m_max, normalized);
+
+  Body earth = BodyT<double>::Earth();
   earth.use_gravity_field = true;
   earth.gravity_field = grav;
-  Body moon = Body::Moon();
-  Body sun = Body::Sun();
+
+  Body moon = BodyT<double>::Moon();
+  Body sun = BodyT<double>::Sun();
 
   // Dynamics
   NBodyDynamics dyn;

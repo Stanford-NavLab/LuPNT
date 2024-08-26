@@ -476,9 +476,7 @@ namespace lupnt {
         break;
 
       // otherwise throw error
-      default:
-        throw std::invalid_argument("Invalid planet ID");
-        break;
+      default: throw std::invalid_argument("Invalid planet ID"); break;
     }
 
     // Return the three angles

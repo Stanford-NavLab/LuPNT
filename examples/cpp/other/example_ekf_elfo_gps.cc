@@ -554,14 +554,22 @@ int main() {
   int meas_type_num = meas_types.size();
 
   // Orbit Dynamics
+  IntegratorParams iparams;
+  iparams.abstol = 1e-12;
+  iparams.reltol = 1e-12;
+
   auto dyn_earth_tb = std::make_shared<CartesianTwoBodyDynamics>(
       GM_EARTH);  // use 2d earth dynamics to propagate GPS constellation
-  auto dyn_est = std::make_shared<NBodyDynamics>();   // Filter Dynamics
-  auto dyn_true = std::make_shared<NBodyDynamics>();  // true dynamics
+  auto dyn_est = MakePtr<NBodyDynamics<Real>>(IntegratorType::RKF45);     // Filter Dynamics
+  auto dyn_true = MakePtr<NBodyDynamics<double>>(IntegratorType::RKF45);  // true dynamics
 
-  auto earth = Body::Earth();
-  auto moon_true = Body::Moon(moon_sph_true, moon_sph_true);
-  auto moon_est = Body::Moon(moon_sph_est, moon_sph_est);
+  dyn_true->SetIntegratorParams(iparams);
+  dyn_est->SetIntegratorParams(iparams);
+
+  auto earth_true = BodyT<double>::Earth();
+  auto earth_est = BodyT<Real>::Earth();
+  auto moon_true = BodyT<double>::Moon(moon_sph_true, moon_sph_true);
+  auto moon_est = BodyT<Real>::Moon(moon_sph_est, moon_sph_est);
 
   dyn_true->SetFrame(Frame::MOON_CI);
   dyn_est->SetFrame(Frame::MOON_CI);
@@ -569,8 +577,8 @@ int main() {
   dyn_est->AddBody(moon_est);
 
   if (add_earth) {
-    dyn_true->AddBody(earth);
-    dyn_est->AddBody(earth);
+    dyn_true->AddBody(earth_true);
+    dyn_est->AddBody(earth_est);
   }
 
   // clock dynamics
@@ -765,7 +773,6 @@ int main() {
   // Compute Estimation
   est_err = ComputeEstimationErrors(moon_sat, &ekf);  // pos, vel, clkb, clkd error
   PrintProgress(t.val(), est_err(0), est_err(1), est_err(2));
-
   for (t = t0; t < tf; t += Dt) {
     time_index += 1;
     epoch += Dt;  // first propagate to the next epoch

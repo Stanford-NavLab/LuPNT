@@ -68,8 +68,8 @@ namespace lupnt {
     }
 
     // Link Budget
-    double At = tx->GetTransmittionAntennaGain(t_tx.val(), rv_tx_gcrf.r().cast<double>(),
-                                               rv_rx_gcrf.r().cast<double>());
+    double At = tx->GetTransmitterAntennaGain(t_tx.val(), rv_tx_gcrf.r().cast<double>(),
+                                              rv_rx_gcrf.r().cast<double>());
     double Ar = rx->GetReceiverAntennaGain(t_rx.val(), rv_tx_gcrf.r().cast<double>(),
                                            rv_rx_gcrf.r().cast<double>());
 

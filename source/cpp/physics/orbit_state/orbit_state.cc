@@ -4,36 +4,18 @@ namespace lupnt {
 
   std::ostream &operator<<(std::ostream &os, const OrbitStateRepres &repres) {
     switch (repres) {
-      case OrbitStateRepres::CARTESIAN:
-        os << "CARTESIAN";
-        break;
-      case OrbitStateRepres::CLASSICAL_OE:
-        os << "CLASSICAL_OE";
-        break;
-      case OrbitStateRepres::QUASI_NONSINGULAR_OE:
-        os << "QUASI_NONSINGULAR_OE";
-        break;
-      case OrbitStateRepres::SINGULAR_ROE:
-        os << "SINGULAR_ROE";
-        break;
-      case OrbitStateRepres::NONSINGULAR_OE:
-        os << "NONSINGULAR_OE";
-        break;
-      case OrbitStateRepres::EQUINOCTIAL_OE:
-        os << "EQUINOCTIAL_OE";
-        break;
-      case OrbitStateRepres::DELAUNAY_OE:
-        os << "DELAUNAY_OE";
-        break;
+      case OrbitStateRepres::CARTESIAN: os << "CARTESIAN"; break;
+      case OrbitStateRepres::CLASSICAL_OE: os << "CLASSICAL_OE"; break;
+      case OrbitStateRepres::QUASI_NONSINGULAR_OE: os << "QUASI_NONSINGULAR_OE"; break;
+      case OrbitStateRepres::SINGULAR_ROE: os << "SINGULAR_ROE"; break;
+      case OrbitStateRepres::NONSINGULAR_OE: os << "NONSINGULAR_OE"; break;
+      case OrbitStateRepres::EQUINOCTIAL_OE: os << "EQUINOCTIAL_OE"; break;
+      case OrbitStateRepres::DELAUNAY_OE: os << "DELAUNAY_OE"; break;
       case OrbitStateRepres::ABSOLUTE_RELATIVE_SEPARATOR:
         os << "ABSOLUTE_RELATIVE_SEPARATOR";
         break;
-      case OrbitStateRepres::RTN:
-        os << "RTN";
-        break;
-      case OrbitStateRepres::QUASINONSINGULAR_ROE:
-        os << "QUASINONSINGULAR_ROE";
-        break;
+      case OrbitStateRepres::RTN: os << "RTN"; break;
+      case OrbitStateRepres::QUASINONSINGULAR_ROE: os << "QUASINONSINGULAR_ROE"; break;
     }
     return os;
   }

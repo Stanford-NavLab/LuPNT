@@ -145,8 +145,7 @@ namespace lupnt {
           H_ow_rx.row(idx) = H_ow_rangerate;
           idx++;
 
-        default:
-          break;
+        default: break;
       }
     }
 
@@ -370,8 +369,7 @@ namespace lupnt {
           H_tw_rx.row(idx) = H_tw_rangerate;
           idx++;
 
-        default:
-          break;
+        default: break;
       }
     }
 

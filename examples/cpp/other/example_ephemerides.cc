@@ -12,7 +12,7 @@ using namespace std::chrono;
 int main() {
   double jd_tdb = 2458832.6;
   Real t_tdb = JD2Time(jd_tdb);
-  Real t_tai = ConvertTime(t_tdb, "TDB", "TAI");
+  Real t_tai = ConvertTime(t_tdb, Time::TDB, Time::TAI);
   NaifId ids[] = {NaifId::SUN,
                   NaifId::MERCURY_BARYCENTER,
                   NaifId::VENUS_BARYCENTER,
@@ -33,7 +33,7 @@ int main() {
     Vec6 rv_spi = spice::GetBodyPosVelSpice(t_tai, center, id);
     Vec6 rv_new = GetBodyPosVel(t_tai, center, id, frame);
     auto fmt = Eigen::IOFormat(16, Eigen::AutoAlign, ", ", ", ", "", "", "[", "]");
-    cout << (center) << " -> " << id << endl;
+    cout << int(center) << " -> " << int(id) << endl;
     cout << "LuPNT       " << rv_new.transpose().format(fmt) << endl;
     cout << "LuPNT+Spice " << rv_old.transpose().format(fmt) << endl;
     cout << "Spice       " << rv_spi.transpose().format(fmt) << endl;

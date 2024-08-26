@@ -82,6 +82,9 @@ namespace lupnt {
     void SetTimeStep(Real dt);
     Real GetTimeStep() const;
     void SetODEFunction(ODE odefunc);
+    void SetIntegratorParams(IntegratorParams params) {
+      propagator_.integrator->SetIntegratorParams(params);
+    }
 
     // Overrides
     using IOrbitDynamics::Propagate;

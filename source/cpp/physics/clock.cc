@@ -35,9 +35,7 @@ namespace lupnt {
         sigma1 = 1.0e-11;
         sigma2 = 1.1e-15;
         break;
-      default:
-        throw std::runtime_error("Unknown clock model");
-        break;
+      default: throw std::runtime_error("Unknown clock model"); break;
     }
     return std::make_tuple(sigma1, sigma2, sigma3);
   }
