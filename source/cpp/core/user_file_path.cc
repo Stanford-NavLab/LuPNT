@@ -11,7 +11,7 @@ namespace lupnt {
     const char* output_path_env = std::getenv("LUPNT_OUTPUT_PATH");
     std::filesystem::path output_path;
     if (output_path_env == nullptr) {
-      output_path = std::filesystem::current_path();
+      output_path = GetDataPath() / "output";
     } else {
       output_path = std::filesystem::path(output_path_env);
     }
@@ -26,7 +26,7 @@ namespace lupnt {
   }
 
   std::optional<std::filesystem::path> FindFileInDir(const std::filesystem::path& base_path,
-                                                     const std::string& filename) {
+                                                     std::string_view filename) {
     for (const auto& entry : std::filesystem::recursive_directory_iterator(base_path)) {
       if (entry.path().filename().string() == filename) {
         return entry.path();
@@ -35,7 +35,7 @@ namespace lupnt {
     return std::nullopt;
   };
 
-  std::filesystem::path GetFilePath(const std::string& filename) {
+  std::filesystem::path GetFilePath(std::string_view filename) {
     auto filepath = FindFileInDir(GetDataPath(), filename);
     assert(filepath.has_value() && "File not found.");
     return filepath.value();
@@ -44,4 +44,23 @@ namespace lupnt {
   std::filesystem::path GetCspiceKernelDir() { return GetDataPath() / "ephemeris"; }
   std::filesystem::path GetAsciiKernelDir() { return GetDataPath() / "ephemeris" / "ascii"; }
 
+  std::chrono::time_point<std::chrono::high_resolution_clock> GetSystemTime() {
+    return std::chrono::high_resolution_clock::now();
+  }
+  // print duration between start_time and end_time
+  std::string PrintDuration(const std::chrono::duration<double>& duration) {
+    auto total_seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
+    auto hours = total_seconds / 3600;
+    auto minutes = (total_seconds % 3600) / 60;
+    auto seconds = total_seconds % 60;
+    auto milliseconds
+        = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() % 1000;
+
+    std::string str;
+    if (hours > 0) str += std::to_string(hours) + "h ";
+    if (minutes > 0) str += std::to_string(minutes) + "m ";
+    str += std::to_string(seconds) + "s ";
+    str += std::to_string(milliseconds) + "ms";
+    return str;
+  }
 }  // namespace lupnt

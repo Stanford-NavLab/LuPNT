@@ -46,72 +46,23 @@ namespace lupnt {
       {Frame::VENUS_FIXED, NaifId::VENUS},
   };
 
-  std::map<std::pair<Frame, Frame>, std::function<Vec6(Real, const Vec6& rv)>> frame_conversions = {
-      FRAME_CONVERSION(GCRF, ITRF, GCRF2ITRF),
-      FRAME_CONVERSION(ITRF, GCRF, ITRF2GCRF),
-      FRAME_CONVERSION(GCRF, EME, GCRF2EME),
-      FRAME_CONVERSION(EME, GCRF, EME2GCRF),
-      FRAME_CONVERSION(GCRF, ICRF, GCRF2ICRF),
-      FRAME_CONVERSION(ICRF, GCRF, ICRF2GCRF),
-      FRAME_CONVERSION(GCRF, MOON_CI, GCRF2MoonCI),
-      FRAME_CONVERSION(MOON_CI, GCRF, MoonMI2GCRF),
-      FRAME_CONVERSION(MOON_CI, MOON_PA, MoonMI2MoonPA),
-      FRAME_CONVERSION(MOON_PA, MOON_CI, MoonPA2MoonCI),
-      FRAME_CONVERSION(MOON_PA, MOON_ME, MoonPA2MoonME),
-      FRAME_CONVERSION(MOON_ME, MOON_PA, MoonME2MoonPA),
-      FRAME_CONVERSION(GCRF, EMR, GCRF2EMR),
-      FRAME_CONVERSION(EMR, GCRF, EMR2GCRF),
-      FRAME_CONVERSION(MOON_CI, MOON_OP, MoonCI2MoonOP),
-      FRAME_CONVERSION(MOON_OP, MOON_CI, MoonOP2MoonCI),
-  };
-
   std::ostream& operator<<(std::ostream& os, Frame frame) {
     switch (frame) {
-      case Frame::ITRF:
-        os << "ITRF";
-        break;
-      case Frame::GCRF:
-        os << "GCRF";
-        break;
-      case Frame::EME:
-        os << "EME";
-        break;
-      case Frame::ICRF:
-        os << "ICRF";
-        break;
-      case Frame::SER:
-        os << "SER";
-        break;
-      case Frame::GSE:
-        os << "GSE";
-        break;
-      case Frame::MOD:
-        os << "MOD";
-        break;
-      case Frame::TOD:
-        os << "TOD";
-        break;
-      case Frame::EMR:
-        os << "EMR";
-        break;
-      case Frame::MOON_CI:
-        os << "MOON_CI";
-        break;
-      case Frame::MOON_PA:
-        os << "MOON_PA";
-        break;
-      case Frame::MOON_ME:
-        os << "MOON_ME";
-        break;
-      case Frame::MOON_OP:
-        os << "MOON_OP";
-        break;
-      case Frame::MARS_FIXED:
-        os << "MARS_FIXED";
-        break;
-      case Frame::VENUS_FIXED:
-        os << "VENUS_FIXED";
-        break;
+      case Frame::ITRF: os << "ITRF"; break;
+      case Frame::GCRF: os << "GCRF"; break;
+      case Frame::EME: os << "EME"; break;
+      case Frame::ICRF: os << "ICRF"; break;
+      case Frame::SER: os << "SER"; break;
+      case Frame::GSE: os << "GSE"; break;
+      case Frame::MOD: os << "MOD"; break;
+      case Frame::TOD: os << "TOD"; break;
+      case Frame::EMR: os << "EMR"; break;
+      case Frame::MOON_CI: os << "MOON_CI"; break;
+      case Frame::MOON_PA: os << "MOON_PA"; break;
+      case Frame::MOON_ME: os << "MOON_ME"; break;
+      case Frame::MOON_OP: os << "MOON_OP"; break;
+      case Frame::MARS_FIXED: os << "MARS_FIXED"; break;
+      case Frame::VENUS_FIXED: os << "VENUS_FIXED"; break;
     }
     return os;
   }
@@ -123,16 +74,63 @@ namespace lupnt {
   /// @param frame_in Coordinate system of the original state vector
   /// @param frame_out Coordinate system of the converted state vector
   /// @return Vec6  State vector in the converted coordinate system
-  ///
+  /// @note
+  ///     ITRF  TOD
+  ///      |     |
+  ///     TIRS  MOD   ME
+  ///      |     |    |
+  ///     CIRS  EME   PA
+  ///        \  /     |
+  /// ICRF -- GCRF -- MI -- OP
+  ///       /  |  \  /
+  ///     SER GSE EMR
   Vec6 ConvertFrameBase(Real t_tai, const Vec6& rv_in, Frame frame_in, Frame frame_out) {
     if (frame_in == frame_out) return rv_in;
-    std::vector<Frame> path = FindShortestPath(frame_in, frame_out, frame_conversions);
-    Vec6 rv_out = rv_in;
-    for (size_t i = 0; i < path.size() - 1; i++) {
-      std::function<Vec6(Real, const Vec6& rv)> f = frame_conversions[{path[i], path[i + 1]}];
-      rv_out = f(t_tai, rv_out);
+    switch (frame_in) {
+      case Frame::ICRF: return ConvertFrameBase(t_tai, ITRF2GCRF(t_tai, rv_in), ITRF, frame_out);
+      case Frame::ITRF: return ConvertFrameBase(t_tai, GCRF2ITRF(t_tai, rv_in), GCRF, frame_out);
+      case Frame::GCRF:
+        switch (frame_out) {
+          case Frame::ICRF: return GCRF2ICRF(t_tai, rv_in);
+          case Frame::ITRF: return GCRF2ITRF(t_tai, rv_in);
+          case Frame::SER: throw std::runtime_error("Not implemented");
+          case Frame::GSE: throw std::runtime_error("Not implemented");
+          case Frame::EMR: return GCRF2EMR(t_tai, rv_in);
+          case Frame::EME: return GCRF2EME(t_tai, rv_in);
+          case Frame::MOD: throw std::runtime_error("Not implemented");
+          case Frame::TOD: throw std::runtime_error("Not implemented");
+          case Frame::MOON_CI:
+          case Frame::MOON_PA:
+          case Frame::MOON_ME:
+          case Frame::MOON_OP:
+            return ConvertFrameBase(t_tai, GCRF2MoonCI(t_tai, rv_in), Frame::MOON_CI, frame_out);
+          default: break;
+        }
+      case Frame::SER: throw std::runtime_error("Not implemented");
+      case Frame::GSE: throw std::runtime_error("Not implemented");
+      case Frame::EME:
+        return ConvertFrameBase(t_tai, EME2GCRF(t_tai, rv_in), Frame::GCRF, frame_out);
+      case Frame::MOD: throw std::runtime_error("Not implemented");
+      case Frame::TOD: throw std::runtime_error("Not implemented");
+      case Frame::MOON_CI:
+        switch (frame_out) {
+          case Frame::MOON_OP: return MoonCI2MoonOP(t_tai, rv_in);
+          case Frame::MOON_PA: return MoonMI2MoonPA(t_tai, rv_in);
+          case Frame::MOON_ME: return MoonPA2MoonME(t_tai, MoonMI2MoonPA(t_tai, rv_in));
+          default:
+            return ConvertFrameBase(t_tai, MoonMI2GCRF(t_tai, rv_in), Frame::GCRF, frame_out);
+        }
+      case Frame::MOON_ME:
+        return ConvertFrameBase(t_tai, MoonME2MoonPA(t_tai, rv_in), Frame::MOON_PA, frame_out);
+      case Frame::MOON_PA: {
+        if (frame_out == Frame::MOON_ME) return MoonPA2MoonME(t_tai, rv_in);
+        return ConvertFrameBase(t_tai, MoonPA2MoonCI(t_tai, rv_in), Frame::MOON_CI, frame_out);
+      }
+      case Frame::MOON_OP:
+        return ConvertFrameBase(t_tai, MoonOP2MoonCI(t_tai, rv_in), Frame::MOON_CI, frame_out);
     }
-    return rv_out;
+    throw std::runtime_error("Conversion not implemented");
+    return Vec6::Zero();
   }
 
   CartesianOrbitState ConvertFrame(Real t_tai, const CartesianOrbitState& state_in, Frame frame_out,

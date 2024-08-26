@@ -19,12 +19,14 @@
 
 namespace lupnt {
 
-  NBodyDynamics::NBodyDynamics(IntegratorType integ)
+  template <typename T> NBodyDynamics<T>::NBodyDynamics(IntegratorType integ)
       : NumericalOrbitDynamics(std::bind(&NBodyDynamics::ComputeRates, this, std::placeholders::_1,
                                          std::placeholders::_2),
-                               integ) {};
+                               integ){};
+  template class NBodyDynamics<double>;
+  template class NBodyDynamics<Real>;
 
-  Vec6 NBodyDynamics::ComputeRates(Real t_tai, const Vec6& rv) const {
+  template <typename T> Vec6 NBodyDynamics<T>::ComputeRates(Real t_tai, const Vec6& rv) const {
     // Position, velocity, and acceleration [km, km/s, km/s^2]
     // w.r.t. to the inertial frame origin
     Vec3 r = rv.head(3);
@@ -35,10 +37,10 @@ namespace lupnt {
       if (body.use_gravity_field) {
         auto& grav = body.gravity_field;
         // Position (body-fixed) [km]
-        Vec3 r_bf = ConvertFrame(t_tai, r, frame_, body.fixed_frame);
+        Vector<T, 3> r_bf = ConvertFrame(t_tai, r, frame_, body.fixed_frame).template cast<T>();
         // Acceleration (body-fixed) [km/s^2]
         Vec3 a_bf
-            = AccelarationGravityField(r_bf, grav.GM, grav.R, grav.CS, grav.n_max, grav.m_max);
+            = AccelarationGravityField<T>(r_bf, grav.GM, grav.R, grav.CS, grav.n_max, grav.m_max);
         // Acceleration (inertial) [km/s^2]
         Vec3 ai = ConvertFrame(t_tai, a_bf, body.fixed_frame, frame_, true);
         a += ai;
@@ -61,10 +63,10 @@ namespace lupnt {
       // Atmospheric drag
       if (use_drag_ && body.id == NaifId::EARTH) {
         // TODO: Currently only works for Earth
-        Real tt = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TT);
+        Real tt = ConvertTime(t_tai, Time::TAI, Time::TT);
         Real mjd_tt = (tt + MJD_J2000) / SECS_DAY;
-        Mat3 T = NutationMatrix(mjd_tt) * PrecessionMatrix(MJD_J2000, mjd_tt);
-        Vec3 a_drag = AccelerationDrag(mjd_tt, rv, T, area_, mass_, CD_);
+        MatX3 Rot = NutationMatrix(mjd_tt) * PrecessionMatrix(MJD_J2000, mjd_tt);
+        Vec3 a_drag = AccelerationDrag(mjd_tt, rv, Rot, area_, mass_, CD_);
         a += a_drag;
       }
     }
@@ -74,7 +76,8 @@ namespace lupnt {
     return rv_dot;
   }
 
-  OrbitState NBodyDynamics::PropagateState(const OrbitState& state, Real t0, Real tf, Mat6d* stm) {
+  template <typename T> OrbitState NBodyDynamics<T>::PropagateState(const OrbitState& state,
+                                                                    Real t0, Real tf, Mat6d* stm) {
     assert(state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN
            && "OrbitState type not supported");
     Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);

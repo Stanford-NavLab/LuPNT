@@ -12,7 +12,7 @@ int main() {
   //   Frame fixed_frame = Frame::VENUS_FIXED;
 
   Real t_tdb = 20 * DAYS_YEAR * SECS_DAY;
-  Real t_tai = ConvertTime(t_tdb, TimeSys::TDB, TimeSys::TAI);
+  Real t_tai = ConvertTime(t_tdb, Time::TDB, Time::TAI);
   Vec4 angles = PlanetOrientation(id, t_tdb);
 
   std::cout << "Planet: " << body << std::endl;

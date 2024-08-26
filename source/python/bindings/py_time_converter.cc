@@ -20,13 +20,13 @@ void init_time_converter(py::module &m) {
   // ConvertTime
   m.def(
       "convert_time",
-      [](double t, const std::string &from, const std::string &to) -> double {
+      [](double t, const Time &from, const Time &to) -> double {
         return ConvertTime(t, from, to).val();
       },
       py::arg("t"), py::arg("from"), py::arg("to"));
   m.def(
       "convert_time",
-      [](const VecXd &t, const std::string &from, const std::string &to) -> VecXd {
+      [](const VecXd &t, const Time &from, const Time &to) -> VecXd {
         return ConvertTime(t.cast<Real>().eval(), from, to).cast<double>();
       },
       py::arg("t"), py::arg("from"), py::arg("to"));

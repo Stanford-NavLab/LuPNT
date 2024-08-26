@@ -17,15 +17,10 @@ namespace lupnt {
       case Modulation::Residual:
       case Modulation::BPSK:
       case Modulation::GMSK:
-      case Modulation::GMSK_PN:
-        M = 1;
-        break;
+      case Modulation::GMSK_PN: M = 1; break;
       case Modulation::QPSK:
-      case Modulation::OQPSK:
-        M = 2;
-        break;
-      default:
-        std::cerr << "Modulation type not supported" << std::endl;
+      case Modulation::OQPSK: M = 2; break;
+      default: std::cerr << "Modulation type not supported" << std::endl;
     }
     return M;
   }
@@ -38,12 +33,9 @@ namespace lupnt {
       case Modulation::QPSK:
       case Modulation::OQPSK:
       case Modulation::GMSK:
-      case Modulation::GMSK_PN:
-        BER = 0.5 * erfc(sqrt(EbN0));
-        break;
+      case Modulation::GMSK_PN: BER = 0.5 * erfc(sqrt(EbN0)); break;
 
-      default:
-        std::cerr << "Modulation type not supported" << std::endl;
+      default: std::cerr << "Modulation type not supported" << std::endl;
     }
 
     return BER;
@@ -116,9 +108,7 @@ namespace lupnt {
 
     } else {
       switch (modulation_type) {
-        case Modulation::BPSK:
-          S_L = 2 * EsN0 / (1 + 2 * EsN0);
-          break;
+        case Modulation::BPSK: S_L = 2 * EsN0 / (1 + 2 * EsN0); break;
         case Modulation::QPSK:
           tmp1 = (9 / 4) / EsN0;
           tmp2 = (3 / 2) / pow(EsN0, 2);
@@ -138,6 +128,7 @@ namespace lupnt {
 
           S_L = 1 / 4 / (1 + tmp1 + tmp2 + tmp3);
           break;
+        case Modulation::Residual: throw std::runtime_error("Not implemented");
       }
       rho_L = PT_N0 * S_L / B_L_carrier;
     }

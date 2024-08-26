@@ -1,6 +1,6 @@
 case0_0_text = """
 <b>Satellite orbit</b><br>
-Frame: Moon CI<br>
+Frame: Moon OP<br>
 Dynamics: Two body<br>
 Propagation time: {:.2f} hours
 """

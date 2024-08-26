@@ -32,7 +32,7 @@ void init_spice_interface(py::module &m) {
           py::arg("t_tdb"), py::arg("precision"))
       .def_static(
           "convert_time",
-          [](double t_tai, std::string from, std::string to) {
+          [](double t_tai, Time from, Time to) {
             return lupnt::spice::ConvertTime(t_tai, from, to).val();
           },
           py::arg("t_tai"), py::arg("from"), py::arg("to"))

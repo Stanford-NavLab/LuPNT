@@ -56,7 +56,7 @@ namespace lupnt {
 
     auto [x, y, z] = unpack(cart);
     Real e2 = flattening * (2 - flattening);
-    int max_iterations = 1000;
+    const int max_iterations = 1000;
 
     Real delta_z = e2 * z;  // Initial guess for Δz
     Real delta_z_ant = delta_z + 1e3 * EPS;

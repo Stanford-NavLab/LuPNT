@@ -9,3 +9,4 @@ projects/*
 !projects/CMakeLists.txt
 /local
 /output
+/profiling

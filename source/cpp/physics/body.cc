@@ -12,11 +12,13 @@
 #include "lupnt/physics/frame_converter.h"
 
 namespace lupnt {
+  template struct BodyT<double>;
+  template struct BodyT<Real>;
 
   /// @brief Create a Body object for the Moon
   /// @return Body object for the Moon
-  Body Body::Moon(int n_max, int m_max, std::string gravity_file) {
-    Body moon;
+  template <typename T> BodyT<T> BodyT<T>::Moon(int n_max, int m_max, std::string gravity_file) {
+    BodyT<T> moon;
     moon.name = "MOON";
     moon.id = NaifId::MOON;
     moon.fixed_frame = Frame::MOON_PA;
@@ -25,14 +27,16 @@ namespace lupnt {
     moon.R = R_MOON;
     moon.use_gravity_field = (n_max > 1 && m_max > 1);
     if (moon.use_gravity_field)
-      moon.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
+      moon.gravity_field = ReadHarmonicGravityField<T>(gravity_file, n_max, m_max, true);
     return moon;
   }
+  template BodyT<double> BodyT<double>::Moon(int n_max, int m_max, std::string gravity_file);
+  template BodyT<Real> BodyT<Real>::Moon(int n_max, int m_max, std::string gravity_file);
 
   /// @brief Create a Body object for the Earth
   /// @return Body object for the Earth
-  Body Body::Earth(int n_max, int m_max, std::string gravity_file) {
-    Body earth;
+  template <typename T> BodyT<T> BodyT<T>::Earth(int n_max, int m_max, std::string gravity_file) {
+    BodyT<T> earth;
     earth.name = "EARTH";
     earth.id = NaifId::EARTH;
     earth.fixed_frame = Frame::ITRF;
@@ -41,15 +45,17 @@ namespace lupnt {
     earth.R = R_EARTH;
     earth.use_gravity_field = (n_max > 1 && m_max > 1);
     if (earth.use_gravity_field)
-      earth.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
+      earth.gravity_field = ReadHarmonicGravityField<T>(gravity_file, n_max, m_max, true);
 
     return earth;
   }
+  template BodyT<double> BodyT<double>::Earth(int n_max, int m_max, std::string gravity_file);
+  template BodyT<Real> BodyT<Real>::Earth(int n_max, int m_max, std::string gravity_file);
 
   /// @brief Create a Body object for the Sun
   /// @return Body object for the Sun
-  Body Body::Sun() {
-    Body sun;
+  template <typename T> BodyT<T> BodyT<T>::Sun() {
+    BodyT<T> sun;
     sun.name = "SUN";
     sun.id = NaifId::SUN;
     sun.inertial_frame = Frame::ICRF;
@@ -58,37 +64,42 @@ namespace lupnt {
     sun.use_gravity_field = false;
     return sun;
   }
+  template BodyT<double> BodyT<double>::Sun();
+  template BodyT<Real> BodyT<Real>::Sun();
 
   /// @brief Create a Body object for Mars
   /// @return Body object for Mars
-  Body Body::Mars(int n_max, int m_max, std::string gravity_file) {
-    Body mars;
+  template <typename T> BodyT<T> BodyT<T>::Mars(int n_max, int m_max, std::string gravity_file) {
+    BodyT<T> mars;
     mars.name = "MARS";
     mars.id = NaifId::MARS;
     mars.fixed_frame = Frame::MARS_FIXED;
     mars.GM = GM_MARS;
     mars.R = R_MARS;
-    mars.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
+    mars.gravity_field = ReadHarmonicGravityField<T>(gravity_file, n_max, m_max, true);
     return mars;
   }
+  template BodyT<double> BodyT<double>::Mars(int n_max, int m_max, std::string gravity_file);
+  template BodyT<Real> BodyT<Real>::Mars(int n_max, int m_max, std::string gravity_file);
 
   /// @brief Create a Body object for Venus
   /// @return Body object for Venus
-  Body Body::Venus(int n_max, int m_max, std::string gravity_file) {
-    Body venus;
+  template <typename T> BodyT<T> BodyT<T>::Venus(int n_max, int m_max, std::string gravity_file) {
+    BodyT<T> venus;
     venus.name = "VENUS";
     venus.id = NaifId::VENUS;
     venus.fixed_frame = Frame::VENUS_FIXED;
     venus.GM = GM_MARS;
     venus.R = R_VENUS;
-    venus.gravity_field = ReadHarmonicGravityField(gravity_file, n_max, m_max, true);
+    venus.gravity_field = ReadHarmonicGravityField<T>(gravity_file, n_max, m_max, true);
     return venus;
   }
+  template BodyT<double> BodyT<double>::Venus(int n_max, int m_max, std::string gravity_file);
+  template BodyT<Real> BodyT<Real>::Venus(int n_max, int m_max, std::string gravity_file);
 
   BodyData GetBodyData(NaifId id) {
     switch (id) {
-      case NaifId::SUN:
-        return {NaifId::SUN, "SUN", GM_SUN, 696342.0, Frame::ICRF, Frame::ICRF};
+      case NaifId::SUN: return {NaifId::SUN, "SUN", GM_SUN, 696342.0, Frame::ICRF, Frame::ICRF};
       case NaifId::MERCURY:
         return {NaifId::MERCURY,      "MERCURY",        GM_MERCURY, R_MERCURY,
                 Frame::MERCURY_FIXED, Frame::MERCURY_CI};
@@ -112,8 +123,7 @@ namespace lupnt {
       case NaifId::NEPTUNE:
         return {NaifId::NEPTUNE,      "NEPTUNE",        GM_NEPTUNE, R_NEPTUNE,
                 Frame::NEPTUNE_FIXED, Frame::NEPTUNE_CI};
-      default:
-        std::cerr << "Body not found" << std::endl;
+      default: std::cerr << "Body not found" << std::endl;
     }
   }
 
@@ -161,9 +171,10 @@ namespace lupnt {
   /// @param m Order of the spherical harmonics expansion
   /// @param normalized Whether the coefficients are normalized
   /// @return Gravity field object
-  GravityField ReadHarmonicGravityField(const std::string& filename, int n_max, int m_max,
-                                        bool normalized) {
-    GravityField gravity_field;
+  template <typename T> GravityField<T> ReadHarmonicGravityField(const std::string& filename,
+                                                                 int n_max, int m_max,
+                                                                 bool normalized) {
+    GravityField<T> gravity_field;
     std::filesystem::path filepath = GetFilePath(filename);
     std::ifstream file(filepath);
     assert(file.is_open() && "Unable to open file");

@@ -19,6 +19,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "lupnt/core/definitions.h"
@@ -145,9 +146,9 @@ namespace lupnt {
       = S_AU / C;  // Solar radiation pressure at 1 AU [N/km^2] = 4.56e-6 N/m^2
 
   // File Path *******************************************************************
-  static constexpr const char* TAI_UTC_FILENAME = "tai-utc.dat";
-  static constexpr const char* EOP_FILENAME = "eopc04_08.62-now";
-  static constexpr const char* IAU_SOFA_FILENAME = "IAU_SOFA.DAT";
+  static constexpr std::string_view TAI_UTC_FILENAME = "tai-utc.dat";
+  static constexpr std::string_view EOP_FILENAME = "eopc04_08.62-now";
+  static constexpr std::string_view IAU_SOFA_FILENAME = "IAU_SOFA.DAT";
 
   // NAIF Intefer ID codes
   // Reference:
@@ -179,17 +180,20 @@ namespace lupnt {
     NEPTUNE = 899,
   };
 
-  namespace TimeSys {
-    constexpr const char* UT1 = "UT1";  // Universal Time 1
-    constexpr const char* UTC = "UTC";  // Coordinated Universal Time
-    constexpr const char* TAI = "TAI";  // International Atomic Time
-    constexpr const char* TDB = "TDB";  // Barycentric Dynamical Time
-    constexpr const char* TT = "TT";    // Terrestrial Time
-    constexpr const char* TCG = "TCG";  // Geocentric Coordinate Time
-    constexpr const char* TCB = "TCB";  // Barycentric Coordinate Time
-    constexpr const char* GPS = "GPS";  // Global Positioning System Time
-    constexpr const char* JD_TT = "JDTDT";
-    constexpr const char* JD_TDB = "JDTDB";
-  }  // namespace TimeSys
+  double GetBodyRadius(NaifId body);
+  const std::ostream& operator<<(std::ostream& os, NaifId id);
+
+  enum Time {
+    UT1,    // Universal Time 1
+    UTC,    // Coordinated Universal Time
+    TAI,    // International Atomic Time
+    TDB,    // Barycentric Dynamical Time
+    TT,     // Terrestrial Time
+    TCG,    // Geocentric Coordinate Time
+    TCB,    // Barycentric Coordinate Time
+    GPS,    // Global Positioning System Time
+    JD_TT,  // Julian Date relative to TT
+    JD_TDB  // Julian Date relative to TDB
+  };
 
 }  // namespace lupnt

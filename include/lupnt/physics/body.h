@@ -18,15 +18,6 @@
 
 namespace lupnt {
 
-  struct GravityField {
-    int n_max, m_max;  // Maximum degree and order
-    int n, m;          // Degree and order
-
-    Real GM;  // Gravitational constant [km^3/s^2]
-    Real R;   // Reference radius [km]
-    MatX CS;  // Unnormalized coefficients
-  };
-
   struct BodyData {
     NaifId id;
     std::string name;
@@ -36,26 +27,40 @@ namespace lupnt {
     Frame inertial_frame;
   };
 
-  struct Body {
+  template <typename T = double> struct GravityField {
+    int n_max, m_max;  // Maximum degree and order
+    int n, m;          // Degree and order
+
+    T GM;                            // Gravitational constant [km^3/s^2]
+    T R;                             // Reference radius [km]
+    Matrix<T, Dynamic, Dynamic> CS;  // Unnormalized coefficients
+  };
+
+  template <typename T = double> struct BodyT {
     NaifId id;
     std::string name;
 
-    Real GM;
-    Real R;
-    // int n, m;
+    T GM;
+    T R;
+    int n, m;
 
     Frame fixed_frame;
     Frame inertial_frame;
 
     bool use_gravity_field;
-    GravityField gravity_field;
+    GravityField<T> gravity_field;
 
-    static Body Sun();
-    static Body Earth(int n_max = 0, int m_max = 0, std::string gravity_file = "EGM96.cof");
-    static Body Moon(int n_max = 0, int m_max = 0, std::string gravity_file = "grgm900c.cof");
-    static Body Venus(int n_max = 0, int m_max = 0, std::string gravity_file = "MGN75HSAAP.cof");
-    static Body Mars(int n_max = 0, int m_max = 0, std::string gravity_file = "GMM1.cof");
+    static BodyT Sun();
+    static BodyT Earth(int n_max = 0, int m_max = 0, std::string gravity_file = "EGM96.cof");
+    static BodyT Moon(int n_max = 0, int m_max = 0, std::string gravity_file = "grgm900c.cof");
+    static BodyT Venus(int n_max = 0, int m_max = 0, std::string gravity_file = "MGN75HSAAP.cof");
+    static BodyT Mars(int n_max = 0, int m_max = 0, std::string gravity_file = "GMM1.cof");
   };
+
+  using Body = BodyT<double>;
+
+  template <typename T> GravityField<T> ReadHarmonicGravityField(const std::string& filename, int n,
+                                                                 int m, bool normalized);
 
   BodyData GetBodyData(NaifId id);
   double GetBodyRadius(NaifId body);
@@ -63,5 +68,4 @@ namespace lupnt {
   Frame GetInertialFrameName(NaifId body);
   Frame GetBodyFixedFrameName(NaifId body);
 
-  GravityField ReadHarmonicGravityField(const std::string& filename, int n, int m, bool normalized);
 }  // namespace lupnt

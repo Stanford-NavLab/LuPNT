@@ -14,7 +14,7 @@ int main() {
   Real mjd0_utc = Gregorian2MJD(1999, 03, 01, 00, 00, 0.0);  // [days]
   Real t_tai0 = MJD2Time(mjd0_utc);                          // [s]
 
-  // Real t_tai0 = ConvertTime(mjd0_utc, TimeSys::MJD_UTC, TimeSys::TAI);  //
+  // Real t_tai0 = ConvertTime(mjd0_utc, Time::MJD_UTC, Time::TAI);  //
   // [s]
 
   // Propagation

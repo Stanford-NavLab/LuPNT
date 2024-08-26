@@ -65,7 +65,7 @@ namespace lupnt {
     VecX GetVec() const { return x_; }
     inline int GetSize() const { return x_.size(); }
     inline Real GetValue(int i) const { return x_(i); }
-    inline void SetValue(Real val, int i) { x_(i) = val; }
+    inline void SetValue(int i, Real val) { x_(i) = val; }
     inline void SetVecX(const VecX &x) { x_ = x; }
 
     // Angular Velocity
