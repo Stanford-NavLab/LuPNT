@@ -70,8 +70,8 @@ namespace lupnt {
       if (vis["EARTH"] || vis["MOON"]) continue;  // quit if occulted
 
       // Transmitter and Receiver Antenna gain
-      double At = tx->GetTransmittionAntennaGain(t_tx, rv_tx_gcrf.r().cast<double>(),
-                                                 rv_rx_gcrf.r().cast<double>());
+      double At = tx->GetTransmitterAntennaGain(t_tx, rv_tx_gcrf.r().cast<double>(),
+                                                rv_rx_gcrf.r().cast<double>());
       double Ar = rx.GetReceiverAntennaGain(t_rx, rv_tx_gcrf.r().cast<double>(),
                                             rv_rx_gcrf.r().cast<double>());
 

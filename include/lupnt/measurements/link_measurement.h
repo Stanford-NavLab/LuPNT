@@ -116,6 +116,16 @@ namespace lupnt {
     inline Real GetTxEpoch() const { return epoch_tx_true_; }
     inline Real GetRxEpoch() const { return epoch_rx_true_; }
 
+    void Reset() {
+      one_way_generated_ = false;
+      two_way_generated_ = false;
+      dual_one_way_generated_ = false;
+      // reset transmission (one-way)
+      trans_ow_ = ITransmission();
+      trans_tw_.clear();
+      trans_dow_.clear();
+    }
+
     /********************** One way Link ***************************/
 
     /**

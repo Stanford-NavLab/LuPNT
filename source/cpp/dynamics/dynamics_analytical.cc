@@ -53,8 +53,7 @@ namespace lupnt {
         Vec6 xf = PropagateEquinoctialOE(state.GetVec(), t0, tf, stm);
         return EquinoctialOE(xf, state.GetFrame());
       }
-      default:
-        break;
+      default: break;
     }
     throw std::runtime_error("OrbitState type not supported");
   }

@@ -16,12 +16,12 @@ int main() {
   int N_Step = 2'000'000;  // Recommended for 0.01 sec timer (Linux)
   int n_max = 20;
   int N_threads = 4;
-  Vec3 r(6525.919, 1710.416, 2508.886);  // Position [km]
+  Vec3d r(6525.919, 1710.416, 2508.886);  // Position [km]
 
   bool normalized = true;
   std::string filename = "JGM3.cof";
   auto fmt = Eigen::IOFormat(10, 0, ", ", "\n", "[", "]");
-  GravityField grav = ReadHarmonicGravityField(filename, n_max, n_max, normalized);
+  GravityField grav = ReadHarmonicGravityField<double>(filename, n_max, n_max, normalized);
 
   cout << "Exercise 3-1: Gravity Field Computation " << endl << endl;
   cout << " Order   CPU Time [s]" << endl << endl;
@@ -32,7 +32,7 @@ int main() {
     double start = omp_get_wtime();
 #pragma omp parallel for
     for (int i = 0; i < N_Step; i++) {
-      Vec3 a = AccelarationGravityField(r, grav.GM, grav.R, grav.CS, n, n);
+      Vec3d a = AccelarationGravityField<double>(r, grav.GM, grav.R, grav.CS, n, n);
     }
     double end = omp_get_wtime();
     cout << setw(4) << n << setprecision(2) << fixed << setw(13) << (end - start) << endl;
@@ -45,10 +45,10 @@ int main() {
     double start = omp_get_wtime();
 #pragma omp parallel for
     for (int i = 0; i < N_Step; i++) {
-      Vec3d r_d = r.cast<double>();
-      double GM_d = grav.GM.val();
-      double R_d = grav.R.val();
-      MatXd CS_d = grav.CS.cast<double>();
+      Vec3d r_d = r;
+      double GM_d = grav.GM;
+      double R_d = grav.R;
+      MatXd CS_d = grav.CS;
       Vec3d a = AccelarationGravityField(r_d, GM_d, R_d, CS_d, n, n);
     }
     double end = omp_get_wtime();

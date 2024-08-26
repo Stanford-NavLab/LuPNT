@@ -199,9 +199,7 @@ namespace lupnt {
         case GnssMeasurementType::CP:
           z.segment(i * n_meas, n_meas) = GetCarrierPhase(with_noise, seed);
           break;
-        default:
-          std::cout << "Measurement type: " << type << " not supported" << std::endl;
-          break;
+        default: std::cout << "Measurement type: " << type << " not supported" << std::endl; break;
       }
       i++;
     }
@@ -264,9 +262,7 @@ namespace lupnt {
               = GetPredictedCarrierPhase(epoch, rv_pred, clk_pred, N_pred, H_cp, frame_in);
           H_gnss.block(i * n_meas, 0, n_meas, 9) = H_cp;
           break;
-        default:
-          std::cout << "Measurement type: " << type << " not supported" << std::endl;
-          break;
+        default: std::cout << "Measurement type: " << type << " not supported" << std::endl; break;
       }
       i++;
     }
@@ -378,9 +374,7 @@ namespace lupnt {
         case GnssMeasurementType::CP:
           noise.segment(i * n_meas, n_meas) = GetCarrierPhaseNoiseStdVec();
           break;
-        default:
-          std::cout << "Measurement type: " << type << " not supported" << std::endl;
-          break;
+        default: std::cout << "Measurement type: " << type << " not supported" << std::endl; break;
       }
       i++;
     }

@@ -124,12 +124,12 @@ namespace lupnt {
     return e_gnss;
   }
 
-  double GnssTransmitter::GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf) {
+  double GnssTransmitter::GetTransmitterAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf) {
     auto e_gnss = GnssTransmitter::GetTransmitterOrientation(t, r_tx_gcrf);
     Vec3d e_x_gnss = e_gnss[0];
     Vec3d e_y_gnss = e_gnss[1];
     Vec3d e_z_gnss = e_gnss[2];
-    auto u_tx_rx = (r_rx_gcrf - r_tx_gcrf).normalized();
+    Vec3d u_tx_rx = (r_rx_gcrf - r_tx_gcrf).normalized();
     double theta_tx = acos(u_tx_rx.dot(e_z_gnss));
     double phi_tx = atan2(u_tx_rx.dot(e_y_gnss), u_tx_rx.dot(e_x_gnss));
     double At = GnssTransmitter::GetAntennaGain(theta_tx * DEG, phi_tx * DEG);

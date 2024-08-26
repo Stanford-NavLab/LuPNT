@@ -41,6 +41,18 @@ namespace lupnt {
 
     // Receiver Gain Calculators
     std::vector<Vec3d> GetReceiverOrientation(double t, Vec3d& r_rx_gcrf, std::string mode);
+
+    /**
+     * @brief Get the Receiver Antenna Gain object
+     *
+     * @param t   epoch (TAI) [s]
+     * @param r_tx_gcrf  position of the transmitter in GCRF [km]
+     * @param r_rx_gcrf  position of the receiver in GCRF [km]
+     * @param frame_tx   frame of the transmitter
+     * @param frame_rx   frame of the receiver
+     *
+     * @return double
+     */
     double GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf) override;
 
     void InitializeReceiverParams();

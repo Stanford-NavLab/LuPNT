@@ -229,8 +229,7 @@ namespace lupnt {
               Vec6 rv_out = ConvertFrameSpice(t_tai, rv_mi, MOON_CI, frame_out);
               return rv_out;
             }
-            default:
-              assert(false && "Conversion not found");
+            default: assert(false && "Conversion not found");
           }
         }
 

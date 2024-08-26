@@ -47,7 +47,7 @@ namespace lupnt {
     std::string txrx = "tx";
     Vec3 antenna_orientation_body = Vec3::Zero();
 
-    virtual double GetTransmittionAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf) = 0;
+    virtual double GetTransmitterAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf) = 0;
 
     inline void SetAntennaOrientation(Vec3 orientation) { antenna_orientation_body = orientation; };
   };

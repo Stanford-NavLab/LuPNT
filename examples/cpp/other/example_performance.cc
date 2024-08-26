@@ -40,11 +40,11 @@ int main() {
 
   for (int h : {0, 25, 50, 100}) {
     Body moon = Body::Moon();
-    moon.gravity_field = ReadHarmonicGravityField("grgm900c.cof", h, h, false);
+    moon.gravity_field = ReadHarmonicGravityField<double>("grgm900c.cof", h, h, false);
     // moon.sphericalHarmonics = false;
 
     // Dynamics
-    NBodyDynamics dynamics;
+    NBodyDynamics<double> dynamics;
     dynamics.AddBody(moon);
     // dynamics.AddBody(earth);
     // dynamics.SetPrimaryBody(moon);
