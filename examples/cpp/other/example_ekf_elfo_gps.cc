@@ -554,10 +554,17 @@ int main() {
   int meas_type_num = meas_types.size();
 
   // Orbit Dynamics
+  IntegratorParams iparams;
+  iparams.abstol = 1e-12;
+  iparams.reltol = 1e-12;
+
   auto dyn_earth_tb = std::make_shared<CartesianTwoBodyDynamics>(
       GM_EARTH);  // use 2d earth dynamics to propagate GPS constellation
-  auto dyn_est = std::make_shared<NBodyDynamics>();   // Filter Dynamics
-  auto dyn_true = std::make_shared<NBodyDynamics>();  // true dynamics
+  auto dyn_est = std::make_shared<NBodyDynamics>(IntegratorType::RKF45);   // Filter Dynamics
+  auto dyn_true = std::make_shared<NBodyDynamics>(IntegratorType::RKF45);  // true dynamics
+
+  dyn_true->SetIntegratorParams(iparams);
+  dyn_est->SetIntegratorParams(iparams);
 
   auto earth = Body::Earth();
   auto moon_true = Body::Moon(moon_sph_true, moon_sph_true);

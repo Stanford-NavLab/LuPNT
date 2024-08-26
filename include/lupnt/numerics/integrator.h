@@ -41,8 +41,12 @@ namespace lupnt {
   };
 
   class IIntegrator {
+  protected:
+    IntegratorParams params_;
+
   public:
     virtual VecX Step(const ODE& f, Real t, const VecX& x, Real dt) = 0;
+    void SetIntegratorParams(IntegratorParams params) { params_ = params; };
     virtual ~IIntegrator() {};
   };
 
@@ -60,12 +64,11 @@ namespace lupnt {
   // Runge-Kutta-Fehlberg Integrators with adaptive step size
   class IRKF : public IIntegrator {
   private:
-    IntegratorParams params_;
     int order_;
 
   public:
     IRKF() = default;
-    IRKF(IntegratorParams params, int order) : params_(params), order_(order) {};
+    IRKF(IntegratorParams params, int order) : order_(order) { SetIntegratorParams(params); };
     VecX Step(const ODE& f, Real t, const VecX& x, Real dt) override;
     bool ComputeRelError(const VecX& x_new_low, const VecX& x_new_high, Real dt);
     virtual void Update(const ODE& f, Real t, const VecX& x, Real dt, VecX& x_new_low,
