@@ -31,9 +31,9 @@ namespace lupnt {
   Vec6 ICRF2GCRF(Real t_tai, const Vec6 &rv_icrf);
 
   Vec6 GCRF2MoonCI(Real t_tai, const Vec6 &rv_gcrf);
-  Vec6 MoonMI2GCRF(Real t_tai, const Vec6 &rv_mi);
+  Vec6 MoonCI2GCRF(Real t_tai, const Vec6 &rv_mi);
 
-  Vec6 MoonMI2MoonPA(Real t_tai, const Vec6 &rv_mi);
+  Vec6 MoonCI2MoonPA(Real t_tai, const Vec6 &rv_mi);
   Vec6 MoonPA2MoonCI(Real t_tai, const Vec6 &rv_pa);
 
   Vec6 MoonPA2MoonME(Real t_tai, const Vec6 &rv_pa);
@@ -55,7 +55,7 @@ namespace lupnt {
   Mat3d RotGCRF2EMEFirstOrder();
   Mat3d RotGCRF2EMESecondOrder();
 
-  std::pair<Mat3, Mat3> RotMoonMI2MoonPA(Real t_tai);
+  std::pair<Mat3, Mat3> RotMoonCI2MoonPA(Real t_tai);
   Mat3d RotMoonPA2MoonME();
   Mat3 RotOP2CI(Real t_tai);
 

@@ -155,3 +155,41 @@ To test the pre-commit hook, run the following command in the root directory of 
 .. code-block:: bash
 
         pre-commit run --all-files
+
+Python Version
+--------------
+
+You can specify the python version to use in the ``.vscode/settings.json`` file.
+
+.. code-block:: python
+
+        "cmake.configureArgs": [
+            # ***** CHANGE THIS *****
+            "-DPYTHON_EXECUTABLE=YOUR-PATH-TO-PYTHON/bin/python"
+            # ***** CHANGE THIS *****
+        ],
+
+The path to the python executable can be found by running the following command in the terminal.
+
+.. code-block:: bash
+
+        which python
+
+Make sure you use `Clean Reconfigure All Projects` in the CMake extension to apply the changes.
+You should see the following message in the CMake output.
+
+.. code-block:: bash
+
+        [cmake] -- pybind11 v2.13.1
+        [cmake] -- Found PythonInterp: YOUR-PATH-TO-PYTHON/bin/python (found suitable version "3.9.19", minimum required is "3.7")
+        [cmake] -- Found PythonLibs: YOUR-PATH-TO-PYTHON/lib/libpython3.X.dylib
+
+It is ok to see other versions of python in the output of other libraries like Format.cmake or autodiff, as long as pybind11 finds the correct version.
+
+
+Python Environment
+------------------
+
+We recommend using `micromamba <https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html>`_  to create a new environment for the project.
+
+Conda and mamba can be used for package management, but mamba is generally preferred due to its faster performance. Mamba is a partial re-implementation of conda in C++, utilizing multi-threading and libsolv for improved speed. It still relies on some conda code and has a dependency on Python. Alternatively, micromamba is a pure C++ re-implementation with no Python dependency, making it a better choice for creating lightweight images from scratch. It is possible to `use mamba's solver from within conda <https://conda.github.io/conda-libmamba-solver/user-guide/>`_.

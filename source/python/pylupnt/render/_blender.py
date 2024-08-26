@@ -3,8 +3,7 @@ import logging
 try:
     import bpy
 except ImportError:
-    # raise warning
-    logging.warning("Blender is not installed")
+    pass
 import os
 import mathutils
 import numpy as np

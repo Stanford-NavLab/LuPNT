@@ -115,10 +115,10 @@ namespace lupnt {
       case Frame::MOON_CI:
         switch (frame_out) {
           case Frame::MOON_OP: return MoonCI2MoonOP(t_tai, rv_in);
-          case Frame::MOON_PA: return MoonMI2MoonPA(t_tai, rv_in);
-          case Frame::MOON_ME: return MoonPA2MoonME(t_tai, MoonMI2MoonPA(t_tai, rv_in));
+          case Frame::MOON_PA: return MoonCI2MoonPA(t_tai, rv_in);
+          case Frame::MOON_ME: return MoonPA2MoonME(t_tai, MoonCI2MoonPA(t_tai, rv_in));
           default:
-            return ConvertFrameBase(t_tai, MoonMI2GCRF(t_tai, rv_in), Frame::GCRF, frame_out);
+            return ConvertFrameBase(t_tai, MoonCI2GCRF(t_tai, rv_in), Frame::GCRF, frame_out);
         }
       case Frame::MOON_ME:
         return ConvertFrameBase(t_tai, MoonME2MoonPA(t_tai, rv_in), Frame::MOON_PA, frame_out);

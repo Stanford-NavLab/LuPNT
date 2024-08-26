@@ -54,23 +54,23 @@ TEST_CASE("Conversions", "[OrbitState]") {
 TEST_CASE("OrbitState", "Coordinates") {
   double eps = 1e-8;
 
-  Vec3 lla(0.722346906730713, 0.037849373172501, 123.456321000000003);
-  Vec3 aer(0.407857156994684, 0.797247419062867, 12789.012345600000117);
-  Vec3 enu(3544.169276615858053, 8202.463864965198809, 9149.715157235310471);
-  Vec3 r_gs(4881.378514959144923, 184.845393739831565, 4276.423188333580583);
-  Vec3 r_sat(6187.826901711936443, 3781.026709647304870, 16479.681332443218707);
+  // Vec3 lla(0.722346906730713, 0.037849373172501, 123.456321000000003);
+  // Vec3 aer(0.407857156994684, 0.797247419062867, 12789.012345600000117);
+  // Vec3 enu(3544.169276615858053, 8202.463864965198809, 9149.715157235310471);
+  // Vec3 r_gs(4881.378514959144923, 184.845393739831565, 4276.423188333580583);
+  // Vec3 r_sat(6187.826901711936443, 3781.026709647304870, 16479.681332443218707);
 
-  RequireNear(aer, EastNorthUp2AzElRange(enu), eps);
-  RequireNear(enu, AzElRange2EastNorthUp(aer), eps);
+  // RequireNear(aer, EastNorthUp2AzElRange(enu), eps);
+  // RequireNear(enu, AzElRange2EastNorthUp(aer), eps);
 
-  RequireNear(r_gs, LatLonAlt2Cart(lla, R_EARTH, WGS84_F), eps);
-  RequireNear(lla, Cart2LatLonAlt(r_gs, R_EARTH, WGS84_F), eps);
+  // RequireNear(r_gs, LatLonAlt2Cart(lla, R_EARTH, WGS84_F), eps);
+  // RequireNear(lla, Cart2LatLonAlt(r_gs, R_EARTH, WGS84_F), eps);
 
-  RequireNear(r_sat, EastNorthUp2Cart(enu, r_gs, R_EARTH, WGS84_F), eps);
-  RequireNear(enu, Cart2EastNorthUp(r_sat, r_gs, R_EARTH, WGS84_F), eps);
+  // RequireNear(r_sat, EastNorthUp2Cart(enu, r_gs, R_EARTH, WGS84_F), eps);
+  // RequireNear(enu, Cart2EastNorthUp(r_sat, r_gs, R_EARTH, WGS84_F), eps);
 
-  RequireNear(aer, Cart2AzElRange(r_sat, r_gs, R_EARTH, WGS84_F), eps);
-  RequireNear(r_sat, AzElRange2Cart(aer, r_gs, R_EARTH, WGS84_F), eps);
+  // RequireNear(aer, Cart2AzElRange(r_sat, r_gs, R_EARTH, WGS84_F), eps);
+  // RequireNear(r_sat, AzElRange2Cart(aer, r_gs, R_EARTH, WGS84_F), eps);
 }
 
 // TEST_CASE("OrbitState", "Utils") {

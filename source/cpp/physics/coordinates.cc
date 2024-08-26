@@ -85,9 +85,8 @@ namespace lupnt {
   Vec3 EastNorthUp2Cart(const Vec3 &enu, const Vec3 &xyz_ref, Real R_body, Real flattening) {
     Vec3 lla = Cart2LatLonAlt(xyz_ref, R_body, flattening);
     auto [lat, lon, alt] = unpack(lla);
-    Mat3 R = RotY(-lat) * RotZ(lon);
-    Vec3 uen(enu(2), enu(0), enu(1));
-    Vec3 xyz = R.transpose() * uen + xyz_ref;
+    Mat3 R = RotX(PI_OVER_TWO - lat) * RotZ(PI_OVER_TWO + lon);
+    Vec3 xyz = R.transpose() * enu + xyz_ref;
     return xyz;
   }
 
@@ -100,9 +99,8 @@ namespace lupnt {
   Vec3 Cart2EastNorthUp(const Vec3 &xyz, const Vec3 &xyz_ref, Real R_body, Real flattening) {
     Vec3 lla = Cart2LatLonAlt(xyz_ref, R_body, flattening);
     auto [lat, lon, alt] = unpack(lla);
-    Mat3 R = RotY(-lat) * RotZ(lon);
-    Vec3 uen = R * (xyz - xyz_ref);
-    Vec3 enu(uen(1), uen(2), uen(0));
+    Mat3 R = RotX(PI_OVER_TWO - lat) * RotZ(PI_OVER_TWO + lon);
+    Vec3 enu = R * (xyz - xyz_ref);
     return enu;
   }
 

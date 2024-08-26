@@ -207,19 +207,19 @@ namespace lupnt {
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 40
   Vec6 GCRF2MoonCI(Real t_tai, const Vec6& rv_gcrf) {
     Vec6 rv_earth2moon = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::GCRF);
-    Vec6 rv_mi = rv_gcrf + rv_earth2moon;
+    Vec6 rv_mi = rv_gcrf - rv_earth2moon;
     return rv_mi;
   }
 
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 40
-  Vec6 MoonMI2GCRF(Real t_tai, const Vec6& rv_mi) {
+  Vec6 MoonCI2GCRF(Real t_tai, const Vec6& rv_mi) {
     Vec6 rv_earth2moon = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::GCRF);
-    Vec6 rv_gcrf = rv_mi - rv_earth2moon;
+    Vec6 rv_gcrf = rv_mi + rv_earth2moon;
     return rv_gcrf;
   }
 
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
-  std::pair<Mat3, Mat3> RotMoonMI2MoonPA(Real t_tai) {
+  std::pair<Mat3, Mat3> RotMoonCI2MoonPA(Real t_tai) {
     (void)t_tai;
     Vec6 lunar_mantle = GetLunarMantleData(t_tai);
     auto [phi, theta, psi, phi_dot, theta_dot, psi_dot] = unpack(lunar_mantle);
@@ -234,8 +234,8 @@ namespace lupnt {
   }
 
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
-  Vec6 MoonMI2MoonPA(Real t_tai, const Vec6& rv_mi) {
-    auto [R_mi2pa, R_mi2pa_dot] = RotMoonMI2MoonPA(t_tai);
+  Vec6 MoonCI2MoonPA(Real t_tai, const Vec6& rv_mi) {
+    auto [R_mi2pa, R_mi2pa_dot] = RotMoonCI2MoonPA(t_tai);
 
     Vec3 r_mi = rv_mi.head(3);
     Vec3 v_mi = rv_mi.tail(3);
@@ -250,7 +250,7 @@ namespace lupnt {
 
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 42
   Vec6 MoonPA2MoonCI(Real t_tai, const Vec6& rv_pa) {
-    auto [R_mi2pa, R_mi2pa_dot] = RotMoonMI2MoonPA(t_tai);
+    auto [R_mi2pa, R_mi2pa_dot] = RotMoonCI2MoonPA(t_tai);
 
     Vec3 r_pa = rv_pa.head(3);
     Vec3 v_pa = rv_pa.tail(3);

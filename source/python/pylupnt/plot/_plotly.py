@@ -393,3 +393,40 @@ def mesh_data(img, n_colors=32, n_training_pixels=800):
         [zc[k][2] if k % 2 else zc[k][1] for k in range(len(zc))]
     )
     return I, J, K, tri_color_intensity, pl_colorscale
+
+
+def scatter(
+    fig: go.Figure,
+    xyz: np.ndarray,
+    mode: str = "markers",
+    marker_size: float = 4,
+    color: Union[str, list[str]] = plotly_colors,
+    scale: float = 3,
+    **kwargs,
+) -> go.Figure:
+    """
+    Create a 3D scatter plot
+
+    Args:
+        x (np.ndarray): x coordinates
+        y (np.ndarray): y coordinates
+        z (np.ndarray): z coordinates
+        mode (str): plot mode
+        marker_size (float): marker size
+        color (str): marker color
+    """
+    if xyz.ndim == 2:
+        xyz = xyz[np.newaxis, :, :]
+    xyz = xyz / 10**scale
+    N = xyz.shape[0]
+    for i in range(N):
+        fig.add_scatter3d(
+            **dict(x=xyz[i, :, 0], y=xyz[i, :, 1], z=xyz[i, :, 2]),
+            mode=mode,
+            marker=dict(
+                color=color[i % len(color)] if type(color) == list else color,
+                size=marker_size,
+            ),
+            showlegend=False,
+        )
+    return fig

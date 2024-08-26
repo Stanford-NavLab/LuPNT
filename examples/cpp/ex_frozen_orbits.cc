@@ -35,13 +35,15 @@ private:
 };
 
 struct {
-  bool recompute_part1 = true;
+  bool recompute_part1 = false;
   bool recompute_part2 = true;
   bool plot_case0 = false;
   bool plot_case1 = false;
   bool plot_case2 = false;
   bool plot_case3 = false;
   bool plot_case4 = false;
+  bool plot_ew = false;
+  bool plot_delta_M = true;
 } config;
 
 int main() {
@@ -90,14 +92,14 @@ int main() {
 
   // Initial state
   Vec6 rv0_op = Classical2Cart(coe0_op, GM_MOON);
-  Vec6 rv0_ci = ConvertFrame(t0, rv0_op, MOON_OP, MOON_CI);
+  Vec6 rv0_mi = ConvertFrame(t0, rv0_op, MOON_OP, MOON_CI);
 
   // Dynamics
   CartesianTwoBodyDynamics dyn0(GM_MOON);
   dyn0.SetTimeStep(dt_prop);
 
   // Propagate
-  MatX6 rv_case0_ci = dyn0.Propagate(rv0_ci, t0, tfs);
+  MatX6 rv_case0_mi = dyn0.Propagate(rv0_mi, t0, tfs);
 
   // Plot
   line_handle p;
@@ -107,7 +109,7 @@ int main() {
     title("Case 0: Moon orbit in CI frame");
     hold(true);
     PlotBody(MOON);
-    p = Plot3(rv_case0_ci.col(0), rv_case0_ci.col(1), rv_case0_ci.col(2), "b-");
+    p = Plot3(rv_case0_mi.col(0), rv_case0_mi.col(1), rv_case0_mi.col(2), "b-");
     p->line_width(2);
     p->marker_indices({0});
     SetLim(12e3);
@@ -162,14 +164,14 @@ int main() {
   }
 
   // Dynamics
-  Case1Dynamics dyn_3body_circ(t0, coe0_moon_op, IntegratorType::RK4);
-  dyn_3body_circ.SetTimeStep(dt_prop);
+  Case1Dynamics dyn_3body_mirc(t0, coe0_moon_op, IntegratorType::RK4);
+  dyn_3body_mirc.SetTimeStep(dt_prop);
 
   // Propagate
   MatX6 rv_case1_op;
   if (config.recompute_part1 || !file_part1.exist("/rv_case1_op")) {
     cout << endl << "Propagating" << endl;
-    rv_case1_op = dyn_3body_circ.Propagate(rv0_op, t0, tfs, true);
+    rv_case1_op = dyn_3body_mirc.Propagate(rv0_op, t0, tfs, true);
     dump(file_part1, "/rv_case1_op", rv_case1_op.cast<double>(), DumpMode::Overwrite);
   } else {
     rv_case1_op = load<MatX6d>(file_part1, "/rv_case1_op");
@@ -210,7 +212,7 @@ int main() {
       int j = i * n_steps / n_plot;
       VecX tfs_plot = tfs[j] + tspan_plot.array();
       Vec6 rv0_plot = rv_case1_op.row(j);
-      rv_plot_op.push_back(dyn_3body_circ.Propagate(rv0_plot, tfs[j], tfs_plot));
+      rv_plot_op.push_back(dyn_3body_mirc.Propagate(rv0_plot, tfs[j], tfs_plot));
     }
     fig = figure(true);
     title("Case 1: Satellite orbit in OP frame");
@@ -237,16 +239,16 @@ int main() {
   dyn_3body.SetFrame(MOON_CI);
 
   // Propagate
-  MatX6 rv_case2_ci;
-  if (config.recompute_part1 || !file_part1.exist("/rv_case2_ci")) {
+  MatX6 rv_case2_mi;
+  if (config.recompute_part1 || !file_part1.exist("/rv_case2_mi")) {
     cout << endl << "Propagating" << endl;
-    rv_case2_ci = dyn_3body.Propagate(rv0_ci, t0, tfs, true);
-    dump(file_part1, "/rv_case2_ci", rv_case2_ci.cast<double>(), DumpMode::Overwrite);
+    rv_case2_mi = dyn_3body.Propagate(rv0_mi, t0, tfs, true);
+    dump(file_part1, "/rv_case2_mi", rv_case2_mi.cast<double>(), DumpMode::Overwrite);
   } else {
-    rv_case2_ci = load<MatX6d>(file_part1, "/rv_case2_ci");
+    rv_case2_mi = load<MatX6d>(file_part1, "/rv_case2_mi");
     cout << endl << "Loaded from file" << endl;
   }
-  MatX6 rv_case2_op = ConvertFrame(tfs, rv_case2_ci, Frame::MOON_CI, Frame::MOON_OP);
+  MatX6 rv_case2_op = ConvertFrame(tfs, rv_case2_mi, Frame::MOON_CI, Frame::MOON_OP);
   MatX6 coe_case2_op = Cart2Classical(rv_case2_op, GM_MOON);
 
   // **************************************************************************
@@ -262,23 +264,23 @@ int main() {
   dyn_nbody.SetFrame(MOON_CI);
 
   // Propagate
-  MatX6 rv_case3_ci;
-  if (config.recompute_part1 || !file_part1.exist("/rv_case3_ci")) {
+  MatX6 rv_case3_mi;
+  if (config.recompute_part1 || !file_part1.exist("/rv_case3_mi")) {
     cout << endl << "Propagating" << endl;
-    rv_case3_ci = dyn_nbody.Propagate(rv0_ci, t0, tfs, true);
-    dump(file_part1, "/rv_case3_ci", rv_case3_ci.cast<double>(), DumpMode::Overwrite);
+    rv_case3_mi = dyn_nbody.Propagate(rv0_mi, t0, tfs, true);
+    dump(file_part1, "/rv_case3_mi", rv_case3_mi.cast<double>(), DumpMode::Overwrite);
   } else {
-    rv_case3_ci = load<MatX6d>(file_part1, "/rv_case3_ci");
+    rv_case3_mi = load<MatX6d>(file_part1, "/rv_case3_mi");
     cout << endl << "Loaded from file" << endl;
   }
-  MatX6 rv_case3_op = ConvertFrame(tfs, rv_case3_ci, Frame::MOON_CI, Frame::MOON_OP);
+  MatX6 rv_case3_op = ConvertFrame(tfs, rv_case3_mi, Frame::MOON_CI, Frame::MOON_OP);
   MatX6 coe_case3_op = Cart2Classical(rv_case3_op, GM_MOON);
 
   // **************************************************************************
   // Case 4
   // **************************************************************************
   cout << endl << endl << "*********** Case 4 ***********" << endl;
-  MatX6 rv_case4_me = ConvertFrame(tfs, rv_case3_ci, Frame::MOON_CI, Frame::MOON_ME, true);
+  MatX6 rv_case4_me = ConvertFrame(tfs, rv_case3_mi, Frame::MOON_CI, Frame::MOON_ME, true);
   MatX6 coe_case4_me = Cart2Classical(rv_case4_me, GM_MOON);
 
   // **************************************************************************
@@ -286,25 +288,24 @@ int main() {
   // **************************************************************************
   cout << endl << endl << "*********** Case 5 ***********" << endl;
 
-  NBodyDynamics dyn_nbody50(IntegratorType::RKF45);
-  dyn_nbody50.AddBody(Body::Moon(50, 50));
+  NBodyDynamics dyn_nbody50(IntegratorType::RK4);
+  dyn_nbody50.AddBody(Body::Moon(5, 5));
   dyn_nbody50.AddBody(Body::Earth());
   dyn_nbody50.AddBody(Body::Sun());
-  // dyn_nbody50.SetTimeStep(dt_prop);
+  dyn_nbody50.SetTimeStep(dt_prop);
   dyn_nbody50.SetFrame(MOON_CI);
 
   // Propagate
-  MatX6 rv_case5_ci;
-  // VecX tfs_ = tfs.head(5000);
-  if (config.recompute_part1 || !file_part1.exist("/rv_case5_ci")) {
+  MatX6 rv_case5_mi;
+  if (config.recompute_part1 || !file_part1.exist("/rv_case5_mi")) {
     cout << endl << "Propagating" << endl;
-    rv_case5_ci = dyn_nbody50.Propagate(rv0_ci, t0, tfs, true);
-    dump(file_part1, "/rv_case5_ci", rv_case5_ci.cast<double>(), DumpMode::Overwrite);
+    rv_case5_mi = dyn_nbody50.Propagate(rv0_mi, t0, tfs, true);
+    dump(file_part1, "/rv_case5_mi", rv_case5_mi.cast<double>(), DumpMode::Overwrite);
   } else {
-    rv_case5_ci = load<MatX6d>(file_part1, "/rv_case5_ci");
+    rv_case5_mi = load<MatX6d>(file_part1, "/rv_case5_mi");
     cout << endl << "Loaded from file" << endl;
   }
-  MatX6 coe_case5_ci = Cart2Classical(rv_case5_ci, GM_MOON);
+  MatX6 coe_case5_mi = Cart2Classical(rv_case5_mi, GM_MOON);
 
   // **************************************************************************
   // Case 6
@@ -312,7 +313,7 @@ int main() {
   cout << endl << endl << "*********** Case 6 ***********" << endl;
 
   // Time
-  dt_total = 10 * DAYS_YEAR * SECS_DAY;            // [s] Total propagation time
+  dt_total = 2 * DAYS_YEAR * SECS_DAY;             // [s] Total propagation time
   tspan = arange(0, dt_total + dt_step, dt_step);  // [s] Time span
   tfs = t0 + tspan.array();                        // [s] Final times
   n_steps = tspan.size();
@@ -324,43 +325,44 @@ int main() {
   cout << "Number of steps  " << n_steps << endl;
 
   // Propagate
-  MatX6 rv_case6_ci;
-  if (config.recompute_part1 || !file_part1.exist("/rv_case6_ci")) {
+  MatX6 rv_case6_mi;
+  if (config.recompute_part1 || !file_part1.exist("/rv_case6_mi")) {
     cout << endl << "Propagating" << endl;
-    rv_case6_ci = dyn_nbody.Propagate(rv0_ci, t0, tfs, true);
-    dump(file_part1, "/rv_case6_ci", rv_case6_ci.cast<double>(), DumpMode::Overwrite);
+    rv_case6_mi = dyn_nbody.Propagate(rv0_mi, t0, tfs, true);
+    dump(file_part1, "/rv_case6_mi", rv_case6_mi.cast<double>(), DumpMode::Overwrite);
   } else {
-    rv_case6_ci = load<MatX6d>(file_part1, "/rv_case6_ci");
+    rv_case6_mi = load<MatX6d>(file_part1, "/rv_case6_mi");
     cout << endl << "Loaded from file" << endl;
   }
-  MatX6 coe_case6_ci = Cart2Classical(rv_case6_ci, GM_MOON);
+  MatX6 coe_case6_mi = Cart2Classical(rv_case6_mi, GM_MOON);
 
   // **************************************************************************
   // e-w plots
   // **************************************************************************
 
   std::vector<MatX6> coe_cases
-      = {coe_case1_op, coe_case2_op, coe_case3_op, coe_case4_me, coe_case5_ci, coe_case6_ci};
+      = {coe_case1_op, coe_case2_op, coe_case3_op, coe_case4_me, coe_case5_mi, coe_case6_mi};
 
-  // Plot
-  fig = figure(true);
-  title("e-w plots");
-  for (size_t i = 0; i < coe_cases.size(); i++) {
-    fig->add_subplot(3, 2, i);
-    hold(true);
-    VecX e_vec = coe_cases[i].col(1);
-    VecX w_vec = coe_cases[i].col(4) * DEG;
-    Plot(w_vec, e_vec, "b");
-    xlabel("w [deg]");
-    ylabel("e [-]");
-    grid(true);
-    // xlim({70, 110});
-    // ylim({0.5, 0.75});
-    title("Case " + std::to_string(i + 1));
+  if (config.plot_ew) {
+    // Plot
+    fig = figure(true);
+    title("e-w plots");
+    for (size_t i = 0; i < coe_cases.size(); i++) {
+      fig->add_subplot(3, 2, i);
+      hold(true);
+      VecX e_vec = coe_cases[i].col(1);
+      VecX w_vec = coe_cases[i].col(4) * DEG;
+      Plot(w_vec, e_vec, "b");
+      xlabel("w [deg]");
+      ylabel("e [-]");
+      grid(true);
+      // xlim({70, 110});
+      // ylim({0.5, 0.75});
+      title("Case " + to_string(i + 1));
+    }
+    fig->draw();
   }
-  fig->draw();
-  show();
-  return 0;
+
   // **************************************************************************
   // Constellation stability
   // **************************************************************************
@@ -370,46 +372,95 @@ int main() {
   File file_part2(output_path / "data_part2.h5", open_mode_part1);
 
   array<Vec6, 3> coes0_op = {
-      Vec6(6541.4, 0.6, 56.2 * DEG, 0, 90 * DEG, 0),
-      Vec6(6541.4, 0.6, 56.2 * DEG, 0, 90 * DEG, 120 * DEG),
-      Vec6(6541.4, 0.6, 56.2 * DEG, 0, 90 * DEG, 240 * DEG),
+      Vec6(6541.4, 0.6, 56.2 * RAD, 0, 90 * RAD, 0),
+      Vec6(6541.4, 0.6, 56.2 * RAD, 0, 90 * RAD, 120 * RAD),
+      Vec6(6541.4, 0.6, 56.2 * RAD, 0, 90 * RAD, 240 * RAD),
   };
-  array<MatX6, 3> rvs_ci;
-  array<MatX6, 3> coes_ci;
-  for (int i = 0; i < 3; i++) {
-    if (config.recompute_part1 || !file_part2.exist("/rvs_ci" + std::to_string(i))
-        || !file_part2.exist("/coes_ci" + std::to_string(i))) {
-      cout << endl << "Propagating" << endl;
 
-      // Initial state
+  array<MatX6, 3> rvs_mi;
+  for (int i = 0; i < 3; i++) {
+    if (config.recompute_part2 || !file_part2.exist("/rvs_mi" + to_string(i))) {
       Vec6 coe0_op_ = coes0_op[i];
       Vec6 rv0_op_ = Classical2Cart(coe0_op_, GM_MOON);
-      Vec6 rv0_ci_ = ConvertFrame(t0, rv0_op_, MOON_OP, MOON_CI);
-
-      NBodyDynamics dyn_nbody_(IntegratorType::RK4);
-      dyn_nbody_.AddBody(Body::Moon(7, 1));
-      dyn_nbody_.AddBody(Body::Earth());
-      dyn_nbody_.AddBody(Body::Sun());
-      dyn_nbody_.SetTimeStep(dt_prop);
-      dyn_nbody_.SetFrame(MOON_CI);
-
-      // Propagate
-      VecX tfs_ = tfs.head(1000);
-      MatX6 rv_ci_ = dyn_nbody_.Propagate(rv0_ci_, t0, tfs, true);
-      MatX6 coe_ci_ = Cart2Classical(rv_ci_, GM_MOON);
-
-      rvs_ci[i] = rv_ci_;
-      coes_ci[i] = coe_ci_;
-
-      dump(file_part2, "/rvs_ci" + std::to_string(i), rvs_ci[i].cast<double>(),
-           DumpMode::Overwrite);
-      dump(file_part2, "/coes_ci" + std::to_string(i), coes_ci[i].cast<double>(),
-           DumpMode::Overwrite);
+      Vec6 rv0_mi_ = ConvertFrame(t0, rv0_op_, MOON_OP, MOON_CI);
+      rvs_mi[i] = dyn_nbody.Propagate(rv0_mi_, t0, tfs, true);
+      dump(file_part2, "/rvs_mi" + to_string(i), rvs_mi[i].cast<double>(), DumpMode::Overwrite);
     } else {
-      rvs_ci[i] = load<MatX6d>(file_part2, "/rvs_ci" + std::to_string(i));
-      coes_ci[i] = load<MatX6d>(file_part2, "/coes_ci" + std::to_string(i));
+      rvs_mi[i] = load<MatX6d>(file_part2, "/rvs_mi" + to_string(i));
       cout << endl << "Loaded from file" << endl;
     }
+  }
+
+  array<MatX6, 3> coes_mi;
+  for (int i = 0; i < 3; i++) coes_mi[i] = Cart2Classical(rvs_mi[i], GM_MOON);
+
+  if (config.plot_delta_M) {
+    fig = figure(true);
+    title("Constellation stability");
+    for (int i = 0; i < 2; i++) {
+      fig->add_subplot(1, 2, i);
+      hold(true);
+      VecX delta_M = Wrap2Pi(coes_mi[i + 1].col(5) - coes_mi[0].col(5)) * DEG;
+      if (i == 1) {
+        for (int j = 0; j < delta_M.size(); j++) {
+          if (delta_M[j] > 0) delta_M[j] -= 360;
+        }
+      }
+      Plot(tspan / SECS_DAY, delta_M);
+      xlabel("Time [days]");
+      ylabel("\\DeltaM [deg]");
+      xlim({0, dt_total.val() / SECS_DAY});
+      grid(true);
+    }
+    fig->draw();
+  }
+
+  // **************************************************************************
+  // Constellation stability
+  // **************************************************************************
+  array<Vec6, 3> coes0_op_adjusted = {
+      Vec6(6541.4, 0.6, 56.2 * RAD, 0, 90 * RAD, 0),
+      Vec6(6541.623458, 0.6, 56.2 * RAD, 0, 90 * RAD, 120 * RAD),
+      Vec6(6539.069348, 0.6, 56.2 * RAD, 0, 90 * RAD, 240 * RAD),
+  };
+
+  array<MatX6, 3> rvs_mi_adjusted;
+  for (int i = 0; i < 3; i++) {
+    if (config.recompute_part2 || !file_part2.exist("/rvs_mi_adjusted" + to_string(i))) {
+      Vec6 coe0_op_ = coes0_op_adjusted[i];
+      Vec6 rv0_op_ = Classical2Cart(coe0_op_, GM_MOON);
+      Vec6 rv0_mi_ = ConvertFrame(t0, rv0_op_, MOON_OP, MOON_CI);
+      rvs_mi_adjusted[i] = dyn_nbody.Propagate(rv0_mi_, t0, tfs, true);
+      dump(file_part2, "/rvs_mi_adjusted" + to_string(i), rvs_mi_adjusted[i].cast<double>(),
+           DumpMode::Overwrite);
+    } else {
+      rvs_mi_adjusted[i] = load<MatX6d>(file_part2, "/rvs_mi_adjusted" + to_string(i));
+      cout << endl << "Loaded from file" << endl;
+    }
+  }
+
+  array<MatX6, 3> coes_mi_adjusted;
+  for (int i = 0; i < 3; i++) coes_mi_adjusted[i] = Cart2Classical(rvs_mi_adjusted[i], GM_MOON);
+
+  if (config.plot_delta_M) {
+    fig = figure(true);
+    title("Constellation stability (adjusted)");
+    for (int i = 0; i < 2; i++) {
+      fig->add_subplot(1, 2, i);
+      hold(true);
+      VecX delta_M = Wrap2Pi(coes_mi_adjusted[i + 1].col(5) - coes_mi_adjusted[0].col(5)) * DEG;
+      if (i == 1) {
+        for (int j = 0; j < delta_M.size(); j++) {
+          if (delta_M[j] > 0) delta_M[j] -= 360;
+        }
+      }
+      Plot(tspan / SECS_DAY, delta_M);
+      xlabel("Time [days]");
+      ylabel("\\DeltaM [deg]");
+      xlim({0, dt_total.val() / SECS_DAY});
+      grid(true);
+    }
+    fig->draw();
   }
 
   auto end = GetSystemTime();
