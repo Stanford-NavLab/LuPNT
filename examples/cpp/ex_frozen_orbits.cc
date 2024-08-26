@@ -36,14 +36,14 @@ private:
 
 struct {
   bool recompute_part1 = false;
-  bool recompute_part2 = true;
+  bool recompute_part2 = false;
   bool plot_case0 = false;
   bool plot_case1 = false;
   bool plot_case2 = false;
   bool plot_case3 = false;
   bool plot_case4 = false;
   bool plot_ew = false;
-  bool plot_delta_M = true;
+  bool plot_delta_M = false;
 } config;
 
 int main() {
@@ -208,7 +208,7 @@ int main() {
 
     // Plot orbits
     vector<MatX6> rv_plot_op;
-    for (int i = 0; i < n_plot; i++) {
+    for (int i = 0; i < n_plot; ++i) {
       int j = i * n_steps / n_plot;
       VecX tfs_plot = tfs[j] + tspan_plot.array();
       Vec6 rv0_plot = rv_case1_op.row(j);
@@ -218,7 +218,7 @@ int main() {
     title("Case 1: Satellite orbit in OP frame");
     hold(true);
     PlotBody(MOON);
-    for (int i = 0; i < n_plot; i++) {
+    for (int i = 0; i < n_plot; ++i) {
       p = Plot3(rv_plot_op[i].col(0), rv_plot_op[i].col(1), rv_plot_op[i].col(2), "b-");
       p->line_width(2);
     }
@@ -241,7 +241,6 @@ int main() {
   // Propagate
   MatX6 rv_case2_mi;
   if (config.recompute_part1 || !file_part1.exist("/rv_case2_mi")) {
-    cout << endl << "Propagating" << endl;
     rv_case2_mi = dyn_3body.Propagate(rv0_mi, t0, tfs, true);
     dump(file_part1, "/rv_case2_mi", rv_case2_mi.cast<double>(), DumpMode::Overwrite);
   } else {
@@ -266,7 +265,6 @@ int main() {
   // Propagate
   MatX6 rv_case3_mi;
   if (config.recompute_part1 || !file_part1.exist("/rv_case3_mi")) {
-    cout << endl << "Propagating" << endl;
     rv_case3_mi = dyn_nbody.Propagate(rv0_mi, t0, tfs, true);
     dump(file_part1, "/rv_case3_mi", rv_case3_mi.cast<double>(), DumpMode::Overwrite);
   } else {
@@ -298,7 +296,6 @@ int main() {
   // Propagate
   MatX6 rv_case5_mi;
   if (config.recompute_part1 || !file_part1.exist("/rv_case5_mi")) {
-    cout << endl << "Propagating" << endl;
     rv_case5_mi = dyn_nbody50.Propagate(rv0_mi, t0, tfs, true);
     dump(file_part1, "/rv_case5_mi", rv_case5_mi.cast<double>(), DumpMode::Overwrite);
   } else {
@@ -327,7 +324,6 @@ int main() {
   // Propagate
   MatX6 rv_case6_mi;
   if (config.recompute_part1 || !file_part1.exist("/rv_case6_mi")) {
-    cout << endl << "Propagating" << endl;
     rv_case6_mi = dyn_nbody.Propagate(rv0_mi, t0, tfs, true);
     dump(file_part1, "/rv_case6_mi", rv_case6_mi.cast<double>(), DumpMode::Overwrite);
   } else {
@@ -347,7 +343,7 @@ int main() {
     // Plot
     fig = figure(true);
     title("e-w plots");
-    for (size_t i = 0; i < coe_cases.size(); i++) {
+    for (size_t i = 0; i < coe_cases.size(); ++i) {
       fig->add_subplot(3, 2, i);
       hold(true);
       VecX e_vec = coe_cases[i].col(1);
@@ -368,89 +364,95 @@ int main() {
   // **************************************************************************
   cout << endl << endl << "*********** Constellation stability ***********" << endl;
 
+  const int n_sat = 3;
   auto open_mode_part2 = (config.recompute_part2) ? File::Truncate : File::OpenOrCreate;
   File file_part2(output_path / "data_part2.h5", open_mode_part1);
 
-  array<Vec6, 3> coes0_op = {
+  vector<Vec6> coes0_op = {
       Vec6(6541.4, 0.6, 56.2 * RAD, 0, 90 * RAD, 0),
       Vec6(6541.4, 0.6, 56.2 * RAD, 0, 90 * RAD, 120 * RAD),
       Vec6(6541.4, 0.6, 56.2 * RAD, 0, 90 * RAD, 240 * RAD),
   };
 
-  array<MatX6, 3> rvs_mi;
-  for (int i = 0; i < 3; i++) {
-    if (config.recompute_part2 || !file_part2.exist("/rvs_mi" + to_string(i))) {
-      Vec6 coe0_op_ = coes0_op[i];
-      Vec6 rv0_op_ = Classical2Cart(coe0_op_, GM_MOON);
-      Vec6 rv0_mi_ = ConvertFrame(t0, rv0_op_, MOON_OP, MOON_CI);
-      rvs_mi[i] = dyn_nbody.Propagate(rv0_mi_, t0, tfs, true);
-      dump(file_part2, "/rvs_mi" + to_string(i), rvs_mi[i].cast<double>(), DumpMode::Overwrite);
-    } else {
-      rvs_mi[i] = load<MatX6d>(file_part2, "/rvs_mi" + to_string(i));
-      cout << endl << "Loaded from file" << endl;
-    }
-  }
+  // vector<MatX6> rvs_mi;
+  // for (int i = 0; i < n_sat; ++i) {
+  //   if (config.recompute_part2 || !file_part2.exist("/rvs_mi" + to_string(i))) {
+  //     Vec6 coe0_op_ = coes0_op[i];
+  //     Vec6 rv0_op_ = Classical2Cart(coe0_op_, GM_MOON);
+  //     Vec6 rv0_mi_ = ConvertFrame(t0, rv0_op_, MOON_OP, MOON_CI);
+  //     rvs_mi.push_back(dyn_nbody.Propagate(rv0_mi_, t0, tfs, true));
+  //     dump(file_part2, "/rvs_mi" + to_string(i), rvs_mi[i].cast<double>(), DumpMode::Overwrite);
+  //   } else {
+  //     rvs_mi.push_back(load<MatX6d>(file_part2, "/rvs_mi" + to_string(i)));
+  //     cout << endl << "Loaded from file" << endl;
+  //   }
+  // }
 
-  array<MatX6, 3> coes_mi;
-  for (int i = 0; i < 3; i++) coes_mi[i] = Cart2Classical(rvs_mi[i], GM_MOON);
+  // vector<MatX6> coes_mi;
+  // for (int i = 0; i < n_sat; ++i) coes_mi.push_back(Cart2Classical(rvs_mi[i], GM_MOON));
 
-  if (config.plot_delta_M) {
-    fig = figure(true);
-    title("Constellation stability");
-    for (int i = 0; i < 2; i++) {
-      fig->add_subplot(1, 2, i);
-      hold(true);
-      VecX delta_M = Wrap2Pi(coes_mi[i + 1].col(5) - coes_mi[0].col(5)) * DEG;
-      if (i == 1) {
-        for (int j = 0; j < delta_M.size(); j++) {
-          if (delta_M[j] > 0) delta_M[j] -= 360;
-        }
-      }
-      Plot(tspan / SECS_DAY, delta_M);
-      xlabel("Time [days]");
-      ylabel("\\DeltaM [deg]");
-      xlim({0, dt_total.val() / SECS_DAY});
-      grid(true);
-    }
-    fig->draw();
-  }
+  // if (config.plot_delta_M) {
+  //   fig = figure(true);
+  //   title("Constellation stability");
+  //   for (int i = 0; i < 2; ++i) {
+  //     fig->add_subplot(1, 2, i);
+  //     hold(true);
+  //     VecX delta_M = Wrap2Pi(coes_mi[i + 1].col(5) - coes_mi[0].col(5)) * DEG;
+  //     if (i == 1) {
+  //       for (int j = 0; j < delta_M.size(); ++j) {
+  //         if (delta_M[j] > 0) delta_M[j] -= 360;
+  //       }
+  //     }
+  //     Plot(tspan / SECS_DAY, delta_M);
+  //     xlabel("Time [days]");
+  //     ylabel("\\DeltaM [deg]");
+  //     xlim({0, dt_total.val() / SECS_DAY});
+  //     grid(true);
+  //   }
+  //   fig->draw();
+  // }
 
   // **************************************************************************
-  // Constellation stability
+  // Constellation stability (phasing adjusted)
   // **************************************************************************
-  array<Vec6, 3> coes0_op_adjusted = {
+  cout << endl
+       << endl
+       << "*********** Constellation stability (phasing adjusted) ***********" << endl;
+  vector<Vec6> coes0_op_adjusted = {
       Vec6(6541.4, 0.6, 56.2 * RAD, 0, 90 * RAD, 0),
       Vec6(6541.623458, 0.6, 56.2 * RAD, 0, 90 * RAD, 120 * RAD),
       Vec6(6539.069348, 0.6, 56.2 * RAD, 0, 90 * RAD, 240 * RAD),
   };
 
-  array<MatX6, 3> rvs_mi_adjusted;
-  for (int i = 0; i < 3; i++) {
+  vector<MatX6> rvs_mi_adjusted;
+  for (int i = 0; i < n_sat; ++i) {
     if (config.recompute_part2 || !file_part2.exist("/rvs_mi_adjusted" + to_string(i))) {
       Vec6 coe0_op_ = coes0_op_adjusted[i];
       Vec6 rv0_op_ = Classical2Cart(coe0_op_, GM_MOON);
       Vec6 rv0_mi_ = ConvertFrame(t0, rv0_op_, MOON_OP, MOON_CI);
-      rvs_mi_adjusted[i] = dyn_nbody.Propagate(rv0_mi_, t0, tfs, true);
+      rvs_mi_adjusted.push_back(dyn_nbody.Propagate(rv0_mi_, t0, tfs, true));
       dump(file_part2, "/rvs_mi_adjusted" + to_string(i), rvs_mi_adjusted[i].cast<double>(),
            DumpMode::Overwrite);
     } else {
-      rvs_mi_adjusted[i] = load<MatX6d>(file_part2, "/rvs_mi_adjusted" + to_string(i));
+      rvs_mi_adjusted.push_back(load<MatX6d>(file_part2, "/rvs_mi_adjusted" + to_string(i)));
       cout << endl << "Loaded from file" << endl;
     }
   }
 
-  array<MatX6, 3> coes_mi_adjusted;
-  for (int i = 0; i < 3; i++) coes_mi_adjusted[i] = Cart2Classical(rvs_mi_adjusted[i], GM_MOON);
+  vector<MatX6> coes_mi_adjusted;
+  for (int i = 0; i < n_sat; ++i) {
+    coes_mi_adjusted.push_back(Cart2Classical(rvs_mi_adjusted[i], GM_MOON));
+  }
 
   if (config.plot_delta_M) {
     fig = figure(true);
     title("Constellation stability (adjusted)");
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; ++i) {
       fig->add_subplot(1, 2, i);
       hold(true);
       VecX delta_M = Wrap2Pi(coes_mi_adjusted[i + 1].col(5) - coes_mi_adjusted[0].col(5)) * DEG;
       if (i == 1) {
-        for (int j = 0; j < delta_M.size(); j++) {
+        for (int j = 0; j < delta_M.size(); ++j) {
           if (delta_M[j] > 0) delta_M[j] -= 360;
         }
       }
@@ -463,9 +465,56 @@ int main() {
     fig->draw();
   }
 
+  // **************************************************************************
+  // Coverage
+  // **************************************************************************
+  cout << endl << endl << "*********** Coverage ***********" << endl;
+
+  Real min_elevation = 10 * RAD;  // [rad] Minimum elevation
+
+  // Satellites in ME frame
+  vector<MatX3> rs_me;
+  for (int i = 0; i < n_sat; ++i)
+    rs_me.push_back(
+        ConvertFrame(tfs, rvs_mi_adjusted[i], Frame::MOON_CI, Frame::MOON_ME, true).leftCols(3));
+
+  // Elevation
+  Vec3 r_south_pole = LatLonAlt2Cart(Vec3(-90 * RAD, 0, 0), R_MOON);
+  MatXi visibility = MatXi::Zero(n_sat, n_steps);
+  for (int i = 0; i < n_sat; ++i) {
+    VecX elev = Cart2AzElRange(rs_me[i], r_south_pole).col(1);
+    for (int j = 0; j < n_steps; ++j)
+      if (elev[j] >= min_elevation) visibility(i, j) = 1;
+  }
+
+  // Metrics
+  Vec3 mean_pass, mean_gap, coverage;
+  for (int i = 0; i < n_sat; ++i) {
+    VecXi visibility_i = VecXi::Zero(n_steps + 2);
+    visibility_i.segment(1, n_steps) = visibility.row(i);
+    int n_passes = 0;
+    for (int j = 1; j < visibility_i.size(); ++j) {
+      if (visibility_i[j] - visibility_i[j - 1] > 0) {
+        ++n_passes;
+      }
+    }
+    coverage[i] = 100. * visibility.row(i).sum() / n_steps;
+    mean_pass[i] = coverage[i] / 100. * dt_total / n_passes / SECS_HOUR;
+    mean_gap[i] = (1 - coverage[i] / 100.) * dt_total / (n_passes - 1) / SECS_HOUR;
+  }
+  Real one_fold_coverage
+      = 100. * (visibility.colwise().sum().array() >= 1).cast<int>().sum() / n_steps;
+  Real two_fold_coverage
+      = 100. * (visibility.colwise().sum().array() >= 2).cast<int>().sum() / n_steps;
+
+  cout << "Mean pass duration: " << mean_pass.transpose() << " h" << endl;
+  cout << "Mean gap duration:  " << mean_gap.transpose() << " h" << endl;
+  cout << "Coverage:           " << coverage.transpose() << " %" << endl;
+  cout << "One-fold coverage:  " << one_fold_coverage << " %" << endl;
+  cout << "Two-fold coverage:  " << two_fold_coverage << " %" << endl;
+
   auto end = GetSystemTime();
   cout << "Total elapsed time: " << PrintDuration(end - begin) << endl;
-
-  show();
+  // show();
   return 0;
 }

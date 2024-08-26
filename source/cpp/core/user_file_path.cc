@@ -60,7 +60,6 @@ namespace lupnt {
     if (hours > 0) str += std::to_string(hours) + "h ";
     if (minutes > 0) str += std::to_string(minutes) + "m ";
     str += std::to_string(seconds) + "s ";
-    str += std::to_string(milliseconds) + "ms";
     return str;
   }
 }  // namespace lupnt

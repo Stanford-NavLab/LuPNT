@@ -23,8 +23,8 @@ import bisect
 
 import numpy as np
 
-MAX_ROWS = 100
-MAX_COLS = 100
+MAX_ROWS = 25
+MAX_COLS = 25
 
 
 def __lldb_init_module(debugger, internal_dict):
@@ -260,8 +260,8 @@ class MatChildProvider:
         else:
             name = "[{},{}]".format(row, col)
 
-        if str(self._scalar_type) == "double":
-            # double
+        if str(self._scalar_type) in ("double", "int", "bool"):
+            # double/int/bool
             child = data.CreateChildAtOffset(name, offset, self._scalar_type)
         else:
             # Real
