@@ -36,14 +36,14 @@ private:
 
 struct {
   bool recompute_part1 = false;
-  bool recompute_part2 = false;
+  bool recompute_part2 = true;
   bool plot_case0 = false;
   bool plot_case1 = false;
   bool plot_case2 = false;
   bool plot_case3 = false;
   bool plot_case4 = false;
   bool plot_ew = false;
-  bool plot_delta_M = false;
+  bool plot_delta_M = true;
 } config;
 
 int main() {
@@ -56,7 +56,7 @@ int main() {
   File file_part1(output_path / "data_part1.h5", open_mode_part1);
 
   // Time
-  Real t0 = Gregorian2Time(2009, 7, 1, 1, 0, 0);  // [s] Start time (TAI)
+  Real t0 = Gregorian2Time(2009, 7, 15, 1, 0, 0);  // [s] Start time (TAI)
 
   // Orbital elements
   Real a = 6541.4;      // [km] Semi-major axis
@@ -74,7 +74,7 @@ int main() {
   // **************************************************************************
   // Case 0
   // **************************************************************************
-  cout << endl << endl << "*********** Case 0 ***********" << endl;
+  cout << endl << "*********** Case 0 ***********" << endl;
 
   // Time
   Real dt_total = sat_period;                           // [s] Total propagation time
@@ -83,12 +83,12 @@ int main() {
   VecX tspan = arange(0, dt_total + dt_step, dt_step);  // [s] Time span
   VecX tfs = t0 + tspan.array();                        // [s] Final times
   int n_steps = tspan.size();
-  cout << "Total duration   " << dt_total / SECS_HOUR << " hours" << endl;
-  cout << "Time step        " << dt_step / SECS_MINUTE << " minutes" << endl;
-  cout << "Propagation step " << dt_prop << " seconds" << endl;
-  cout << "Start epoch      " << Time2GregorianString(t0) << endl;
-  cout << "End epoch        " << Time2GregorianString(t0 + dt_total) << endl;
-  cout << "Number of steps  " << n_steps << endl;
+  cout << "Total duration    " << dt_total / SECS_HOUR << " hours" << endl;
+  cout << "Time step         " << dt_step / SECS_MINUTE << " minutes" << endl;
+  cout << "Propagation step  " << dt_prop << " seconds" << endl;
+  cout << "Start epoch       " << Time2GregorianString(t0) << endl;
+  cout << "End epoch         " << Time2GregorianString(t0 + dt_total) << endl;
+  cout << "Number of steps   " << n_steps << endl;
 
   // Initial state
   Vec6 rv0_op = Classical2Cart(coe0_op, GM_MOON);
@@ -119,7 +119,7 @@ int main() {
   // **************************************************************************
   // Case 1
   // **************************************************************************
-  cout << endl << endl << "*********** Case 1 ***********" << endl;
+  cout << endl << "*********** Case 1 ***********" << endl;
 
   Real moon_period = GetOrbitalPeriod(D_EARTH_MOON, GM_EARTH);  // [s] Moon period
   cout << "Moon period: " << moon_period / SECS_DAY << " days" << endl;
@@ -131,12 +131,12 @@ int main() {
   tspan = arange(0, dt_total + dt_step, dt_step);  // [s] Time span
   tfs = t0 + tspan.array();                        // [s] Final times
   n_steps = tspan.size();
-  cout << "Total duration   " << dt_total / SECS_DAY << " days" << endl;
-  cout << "Time step        " << dt_step / SECS_MINUTE << " minutes" << endl;
-  cout << "Propagation step " << dt_prop << " seconds" << endl;
-  cout << "Start epoch      " << Time2GregorianString(t0) << endl;
-  cout << "End epoch        " << Time2GregorianString(t0 + dt_total) << endl;
-  cout << "Number of steps  " << n_steps << endl;
+  cout << "Total duration    " << dt_total / SECS_DAY << " days" << endl;
+  cout << "Time step         " << dt_step / SECS_MINUTE << " minutes" << endl;
+  cout << "Propagation step  " << dt_prop << " seconds" << endl;
+  cout << "Start epoch       " << Time2GregorianString(t0) << endl;
+  cout << "End epoch         " << Time2GregorianString(t0 + dt_total) << endl;
+  cout << "Number of steps   " << n_steps << endl;
 
   // Initial state
   Vec6 rv0_moon_op = GetBodyPosVel(t0, EARTH, MOON, MOON_OP);
@@ -170,7 +170,6 @@ int main() {
   // Propagate
   MatX6 rv_case1_op;
   if (config.recompute_part1 || !file_part1.exist("/rv_case1_op")) {
-    cout << endl << "Propagating" << endl;
     rv_case1_op = dyn_3body_mirc.Propagate(rv0_op, t0, tfs, true);
     dump(file_part1, "/rv_case1_op", rv_case1_op.cast<double>(), DumpMode::Overwrite);
   } else {
@@ -229,7 +228,7 @@ int main() {
   // **************************************************************************
   // Case 2
   // **************************************************************************
-  cout << endl << endl << "*********** Case 2 ***********" << endl;
+  cout << endl << "*********** Case 2 ***********" << endl;
 
   // Dynamics
   NBodyDynamics dyn_3body(IntegratorType::RK4);
@@ -253,7 +252,7 @@ int main() {
   // **************************************************************************
   // Case 3
   // **************************************************************************
-  cout << endl << endl << "*********** Case 3 ***********" << endl;
+  cout << endl << "*********** Case 3 ***********" << endl;
 
   NBodyDynamics dyn_nbody(IntegratorType::RK4);
   dyn_nbody.AddBody(Body::Moon(7, 1));
@@ -277,17 +276,17 @@ int main() {
   // **************************************************************************
   // Case 4
   // **************************************************************************
-  cout << endl << endl << "*********** Case 4 ***********" << endl;
+  cout << endl << "*********** Case 4 ***********" << endl;
   MatX6 rv_case4_me = ConvertFrame(tfs, rv_case3_mi, Frame::MOON_CI, Frame::MOON_ME, true);
   MatX6 coe_case4_me = Cart2Classical(rv_case4_me, GM_MOON);
 
   // **************************************************************************
   // Case 5
   // **************************************************************************
-  cout << endl << endl << "*********** Case 5 ***********" << endl;
+  cout << endl << "*********** Case 5 ***********" << endl;
 
   NBodyDynamics dyn_nbody50(IntegratorType::RK4);
-  dyn_nbody50.AddBody(Body::Moon(5, 5));
+  dyn_nbody50.AddBody(Body::Moon(50, 50));
   dyn_nbody50.AddBody(Body::Earth());
   dyn_nbody50.AddBody(Body::Sun());
   dyn_nbody50.SetTimeStep(dt_prop);
@@ -302,24 +301,27 @@ int main() {
     rv_case5_mi = load<MatX6d>(file_part1, "/rv_case5_mi");
     cout << endl << "Loaded from file" << endl;
   }
-  MatX6 coe_case5_mi = Cart2Classical(rv_case5_mi, GM_MOON);
+  MatX6 rv_case5_me = ConvertFrame(tfs, rv_case5_mi, Frame::MOON_CI, Frame::MOON_ME, true);
+  MatX6 coe_case5_me = Cart2Classical(rv_case5_me, GM_MOON);
 
   // **************************************************************************
   // Case 6
   // **************************************************************************
-  cout << endl << endl << "*********** Case 6 ***********" << endl;
+  cout << endl << "*********** Case 6 ***********" << endl;
 
   // Time
-  dt_total = 2 * DAYS_YEAR * SECS_DAY;             // [s] Total propagation time
+  dt_total = 10 * DAYS_YEAR * SECS_DAY;            // [s] Total propagation time
+  dt_step = 60 * SECS_MINUTE;                      // [s] Time step
+  dt_prop = 2 * SECS_MINUTE;                       // [s] Propagation time step
   tspan = arange(0, dt_total + dt_step, dt_step);  // [s] Time span
   tfs = t0 + tspan.array();                        // [s] Final times
   n_steps = tspan.size();
-  cout << "Total duration   " << dt_total / SECS_DAY << " days" << endl;
-  cout << "Time step        " << dt_step / SECS_MINUTE << " minutes" << endl;
-  cout << "Propagation step " << dt_prop << " seconds" << endl;
-  cout << "Start epoch      " << Time2GregorianString(t0) << endl;
-  cout << "End epoch        " << Time2GregorianString(t0 + dt_total) << endl;
-  cout << "Number of steps  " << n_steps << endl;
+  cout << "Total duration    " << dt_total / SECS_DAY << " days" << endl;
+  cout << "Time step         " << dt_step / SECS_MINUTE << " minutes" << endl;
+  cout << "Propagation step  " << dt_prop << " seconds" << endl;
+  cout << "Start epoch       " << Time2GregorianString(t0) << endl;
+  cout << "End epoch         " << Time2GregorianString(t0 + dt_total) << endl;
+  cout << "Number of steps   " << n_steps << endl;
 
   // Propagate
   MatX6 rv_case6_mi;
@@ -330,14 +332,15 @@ int main() {
     rv_case6_mi = load<MatX6d>(file_part1, "/rv_case6_mi");
     cout << endl << "Loaded from file" << endl;
   }
-  MatX6 coe_case6_mi = Cart2Classical(rv_case6_mi, GM_MOON);
+  MatX6 rv_case6_me = ConvertFrame(tfs, rv_case6_mi, Frame::MOON_CI, Frame::MOON_ME, true);
+  MatX6 coe_case6_me = Cart2Classical(rv_case6_me, GM_MOON);
 
   // **************************************************************************
   // e-w plots
   // **************************************************************************
 
   std::vector<MatX6> coe_cases
-      = {coe_case1_op, coe_case2_op, coe_case3_op, coe_case4_me, coe_case5_mi, coe_case6_mi};
+      = {coe_case1_op, coe_case2_op, coe_case3_op, coe_case4_me, coe_case5_me, coe_case6_me};
 
   if (config.plot_ew) {
     // Plot
@@ -352,8 +355,8 @@ int main() {
       xlabel("w [deg]");
       ylabel("e [-]");
       grid(true);
-      // xlim({70, 110});
-      // ylim({0.5, 0.75});
+      xlim({70, 110});
+      ylim({0.5, 0.75});
       title("Case " + to_string(i + 1));
     }
     fig->draw();
@@ -362,9 +365,24 @@ int main() {
   // **************************************************************************
   // Constellation stability
   // **************************************************************************
-  cout << endl << endl << "*********** Constellation stability ***********" << endl;
+  cout << endl << "*********** Constellation stability ***********" << endl;
 
   const int n_sat = 3;
+
+  // Time
+  dt_total = 2 * DAYS_YEAR * SECS_DAY;             // [s] Total propagation time
+  dt_step = 30 * SECS_MINUTE;                      // [s] Time step
+  dt_prop = 10;                                    // [s] Propagation time step
+  tspan = arange(0, dt_total + dt_step, dt_step);  // [s] Time span
+  tfs = t0 + tspan.array();                        // [s] Final times
+  n_steps = tspan.size();
+  cout << "Total duration    " << dt_total / SECS_DAY << " days" << endl;
+  cout << "Time step         " << dt_step / SECS_MINUTE << " minutes" << endl;
+  cout << "Propagation step  " << dt_prop << " seconds" << endl;
+  cout << "Start epoch       " << Time2GregorianString(t0) << endl;
+  cout << "End epoch         " << Time2GregorianString(t0 + dt_total) << endl;
+  cout << "Number of steps   " << n_steps << endl;
+
   auto open_mode_part2 = (config.recompute_part2) ? File::Truncate : File::OpenOrCreate;
   File file_part2(output_path / "data_part2.h5", open_mode_part1);
 
@@ -397,12 +415,11 @@ int main() {
   //   for (int i = 0; i < 2; ++i) {
   //     fig->add_subplot(1, 2, i);
   //     hold(true);
-  //     VecX delta_M = Wrap2Pi(coes_mi[i + 1].col(5) - coes_mi[0].col(5)) * DEG;
-  //     if (i == 1) {
-  //       for (int j = 0; j < delta_M.size(); ++j) {
-  //         if (delta_M[j] > 0) delta_M[j] -= 360;
-  //       }
-  //     }
+  //     VecX delta_M_tmp = Wrap2Pi(coes_mi[i + 1].col(5) - coes_mi[0].col(5)) * DEG;
+  //     VecX delta_M(delta_M_tmp.size());
+  //     delta_M[0] = delta_M_tmp[0];
+  //     for (int j = 1; j < delta_M.size(); ++j)
+  //       delta_M[j] = delta_M[j - 1] + Wrap2Pi(delta_M_tmp[j] - delta_M_tmp[j - 1]);
   //     Plot(tspan / SECS_DAY, delta_M);
   //     xlabel("Time [days]");
   //     ylabel("\\DeltaM [deg]");
@@ -420,7 +437,7 @@ int main() {
        << "*********** Constellation stability (phasing adjusted) ***********" << endl;
   vector<Vec6> coes0_op_adjusted = {
       Vec6(6541.4, 0.6, 56.2 * RAD, 0, 90 * RAD, 0),
-      Vec6(6541.623458, 0.6, 56.2 * RAD, 0, 90 * RAD, 120 * RAD),
+      Vec6(6541.65, 0.6, 56.2 * RAD, 0, 90 * RAD, 120 * RAD),
       Vec6(6539.069348, 0.6, 56.2 * RAD, 0, 90 * RAD, 240 * RAD),
   };
 
@@ -462,13 +479,15 @@ int main() {
       xlim({0, dt_total.val() / SECS_DAY});
       grid(true);
     }
-    fig->draw();
   }
+
+  show();
+  return 0;
 
   // **************************************************************************
   // Coverage
   // **************************************************************************
-  cout << endl << endl << "*********** Coverage ***********" << endl;
+  cout << endl << "*********** Coverage ***********" << endl;
 
   Real min_elevation = 10 * RAD;  // [rad] Minimum elevation
 
@@ -507,11 +526,11 @@ int main() {
   Real two_fold_coverage
       = 100. * (visibility.colwise().sum().array() >= 2).cast<int>().sum() / n_steps;
 
-  cout << "Mean pass duration: " << mean_pass.transpose() << " h" << endl;
-  cout << "Mean gap duration:  " << mean_gap.transpose() << " h" << endl;
-  cout << "Coverage:           " << coverage.transpose() << " %" << endl;
-  cout << "One-fold coverage:  " << one_fold_coverage << " %" << endl;
-  cout << "Two-fold coverage:  " << two_fold_coverage << " %" << endl;
+  cout << "Mean pass duration  " << mean_pass.transpose() << " h" << endl;
+  cout << "Mean gap duration   " << mean_gap.transpose() << " h" << endl;
+  cout << "Coverage            " << coverage.transpose() << " %" << endl;
+  cout << "One-fold coverage   " << one_fold_coverage << " %" << endl;
+  cout << "Two-fold coverage   " << two_fold_coverage << " %" << endl;
 
   auto end = GetSystemTime();
   cout << "Total elapsed time: " << PrintDuration(end - begin) << endl;

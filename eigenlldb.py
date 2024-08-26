@@ -32,6 +32,9 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand(
         'type summary add --summary-string "${var.m_data.__elems_[0]}" lupnt::Real'
     )
+    debugger.HandleCommand(
+        'type summary add --summary-string "${var.m_data.__elems_[0]}" autodiff::detail::Real<1, double>'
+    )
     # lupnt Vec and Mat
     debugger.HandleCommand(
         "type synthetic add -x lupnt::(Vec|Mat)* --python-class eigenlldb.MatChildProvider"

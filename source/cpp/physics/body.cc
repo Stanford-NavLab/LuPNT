@@ -123,8 +123,10 @@ namespace lupnt {
       case NaifId::NEPTUNE:
         return {NaifId::NEPTUNE,      "NEPTUNE",        GM_NEPTUNE, R_NEPTUNE,
                 Frame::NEPTUNE_FIXED, Frame::NEPTUNE_CI};
-      default: std::cerr << "Body not found" << std::endl;
+      default: break;
     }
+    throw std::runtime_error("Body not found");
+    return {NaifId::SUN, "SUN", GM_SUN, 696342.0, Frame::ICRF, Frame::ICRF};
   }
 
   double GetBodyRadius(NaifId body) {
@@ -222,8 +224,10 @@ namespace lupnt {
         } else {
           double N = (normalized) ? sqrt((2 - kron(0, m)) * (2 * n + 1) * factprod(n, m)) : 1.0;
           iss >> snm;
-          gravity_field.CS(n, m) = N * cnm;
-          gravity_field.CS(m - 1, n) = N * snm;
+          double C = N * cnm;
+          double S = N * snm;
+          gravity_field.CS(n, m) = C;
+          gravity_field.CS(m - 1, n) = S;
         }
       } else if (line.find("END") != std::string::npos) {
         break;
