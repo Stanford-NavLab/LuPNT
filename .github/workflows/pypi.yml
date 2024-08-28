@@ -35,12 +35,12 @@ jobs:
         run: |
           echo "LUPNT_DATA_PATH = $LUPNT_DATA_PATH"
           sudo apt-get update
-          sudo apt-get install -y libomp-dev libhdf5-serial-dev
+          sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
 
       # MacOS
       - name: Install OpenMP (macOS)
         if: matrix.os == 'macos-latest'
-        run: brew install libomp hdf5
+        run: brew install boost libomp hdf5
 
       # MacOS + Ubuntu
       - name: Download and unzip LuPNT_data (MacOS + Ubuntu)

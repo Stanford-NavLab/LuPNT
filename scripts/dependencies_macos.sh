@@ -2,7 +2,7 @@
 
 # 1. Install OpenMP
 echo "Installing OpenMP..."
-brew install libomp hdf5
+brew install boost libomp hdf5
 
 # 2. Download data
 echo "Downloading data..."

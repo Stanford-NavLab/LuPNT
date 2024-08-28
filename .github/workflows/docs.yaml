@@ -40,7 +40,7 @@ jobs:
         run: |
           echo "LUPNT_DATA_PATH = $LUPNT_DATA_PATH"
           sudo apt-get update
-          sudo apt-get install -y libomp-dev
+          sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
           sudo apt-get install -y doxygen
           sudo apt-get install -y pandoc
 

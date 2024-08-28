@@ -30,6 +30,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake
+          sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
           pip3 install clang-format==18.1.8 cmake_format==0.6.13 pyyaml
 
       - name: configure
