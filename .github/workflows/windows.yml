@@ -45,8 +45,8 @@ jobs:
       - name: Download HDF5 binaries
         run: |
           $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest -Uri "https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.3/hdf5-1.14.4.3-Std-win10_64-vs16.zip" -OutFile "hdf5.zip"
-          Expand-Archive -Path "hdf5.zip" -DestinationPath "C:\HDF5"
+          Invoke-WebRequest -Uri "https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.3/hdf5-1.14.4-3-win-vs2022_cl.zip" -OutFile "hdf5.zip"
+          Expand-Archive -Path "hdf5.zip" -DestinationPath "C:\HDF5" -Force
           Remove-Item "hdf5.zip"
 
       - name: Update PATH

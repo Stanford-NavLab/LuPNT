@@ -77,6 +77,6 @@ set_target_properties(uninstall PROPERTIES FOLDER thirdparty)
 
 # LuPNT dependencies used for installing
 set(LUPNT_DEPENDENCIES
-    "fmt 7.1.3;Eigen3 3.4;autodiff 1.1;cspice;Matplot++ 1.2;OpenMP;HighFive 2.10"
+    "fmt 7.1.3;Eigen3 3.4;autodiff 1.1;cspice;Matplot++ 1.2;OpenMP;HighFive 2.10;Boost"
     PARENT_SCOPE
 )
