@@ -1,0 +1,14 @@
+.. _exhale_function_user__file__path_8h_1ac3187c0bf1238d48da542ff233aaff0f:
+
+Function lupnt::PrintDuration
+=============================
+
+- Defined in :ref:`file_include_lupnt_core_user_file_path.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::PrintDuration(const std::chrono::duration<double>&)
+   :project: LuPNT_CPP

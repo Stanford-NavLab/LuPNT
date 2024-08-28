@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1af1b3c6bb88b763900e1f5fae3bea3c04:
+
+Variable lupnt::IAU_SOFA_FILENAME
+=================================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::IAU_SOFA_FILENAME
+   :project: LuPNT_CPP

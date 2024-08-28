@@ -1,0 +1,14 @@
+.. _exhale_function_anomaly_8h_1a7e4853c2be405fc35008781d84362739:
+
+Function lupnt::VEC_DEF_REAL_REAL(GetOrbitalPeriod)
+===================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_anomaly.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::VEC_DEF_REAL_REAL(GetOrbitalPeriod)
+   :project: LuPNT_CPP

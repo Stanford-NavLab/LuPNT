@@ -53,19 +53,19 @@ Included By
 -----------
 
 
-- :ref:`file_include_lupnt_agents_comm_device.h`
-
 - :ref:`file_include_lupnt_core_file.h`
 
 - :ref:`file_include_lupnt_dynamics_forces.h`
 
 - :ref:`file_include_lupnt_lupnt.h`
 
-- :ref:`file_include_lupnt_measurements_occultation.h`
+- :ref:`file_include_lupnt_measurements_comm_device.h`
 
 - :ref:`file_include_lupnt_measurements_radio_measurement.h`
 
 - :ref:`file_include_lupnt_physics_clock.h`
+
+- :ref:`file_include_lupnt_physics_occultation.h`
 
 
 
@@ -83,9 +83,13 @@ Functions
 
 - :ref:`exhale_function_math__utils_8h_1ad1c3f7b22c7688dd88b1ee54c20dba19`
 
+- :ref:`exhale_function_math__utils_8h_1ac042e8496e1e707f3ccc9ac240bf0ee7`
+
 - :ref:`exhale_function_math__utils_8h_1a4d2719ff84acb16d3f1c6a4a7a2423d6`
 
-- :ref:`exhale_function_math__utils_8h_1a95e525c3bf277e9a7b71ef33fec9c134`
+- :ref:`exhale_function_math__utils_8h_1a3aae1637c1624de3b76dbda047b2358a`
+
+- :ref:`exhale_function_math__utils_8h_1af0b4ca8fa8ed9a4ffa45c19f4dbc2ba7`
 
 - :ref:`exhale_function_math__utils_8h_1a84dbd55be744269613b6768af63945ef`
 
@@ -95,25 +99,37 @@ Functions
 
 - :ref:`exhale_function_math__utils_8h_1aca5622608bae7d890388ba22261460cf`
 
-- :ref:`exhale_function_math__utils_8h_1a97f49f30da52c1e55a66e18fada28629`
-
 - :ref:`exhale_function_math__utils_8h_1a9cb58ab175a6643105a0c3853132d010`
+
+- :ref:`exhale_function_math__utils_8h_1a97f49f30da52c1e55a66e18fada28629`
 
 - :ref:`exhale_function_math__utils_8h_1a000c7ed2060942490e1ba79c11b8be79`
 
 - :ref:`exhale_function_math__utils_8h_1abc3e10009ffb1d287882ad70042d6b1c`
 
+- :ref:`exhale_function_math__utils_8h_1a6ce39ce468b111b8614d3f3d8fef6b65`
+
 - :ref:`exhale_function_math__utils_8h_1abd938614a42ea61dded9fd282ee265c5`
 
 - :ref:`exhale_function_math__utils_8h_1a50a8c681e76c84d54a28fedc60db76b2`
+
+- :ref:`exhale_function_math__utils_8h_1a8761065924ad1ca5494bbc54905feceb`
+
+- :ref:`exhale_function_math__utils_8h_1a4e7b05d4b4d0ab69ee1eb96e96dce442`
 
 - :ref:`exhale_function_math__utils_8h_1a74c2b9dc4394a5c8e433b385a63157ca`
 
 - :ref:`exhale_function_math__utils_8h_1a6df0faa7c83dca4b8731e3111aace2f3`
 
+- :ref:`exhale_function_math__utils_8h_1a01080f2ec7a96d215709147d495e7d39`
+
+- :ref:`exhale_function_math__utils_8h_1a352f943527a47acc6df75800204c5ff4`
+
 - :ref:`exhale_function_math__utils_8h_1ad64acadf65296b2d0a5805d173ed0677`
 
 - :ref:`exhale_function_math__utils_8h_1a172163884d6dca8491bb610a8d212557`
+
+- :ref:`exhale_function_math__utils_8h_1ac667dad9fd97e38d7653fc8de35d98f0`
 
 - :ref:`exhale_function_math__utils_8h_1abead0c75a219c9c877b7aeb90d1a55a1`
 
@@ -129,11 +145,15 @@ Functions
 
 - :ref:`exhale_function_math__utils_8h_1aaec9ad811eb99a4c55a863845e79d53b`
 
+- :ref:`exhale_function_math__utils_8h_1a5dfee89e0f80b05dbe040cd71880bb1b`
+
 - :ref:`exhale_function_math__utils_8h_1a4ed108094eb0ca848373a24f36b680d9`
 
 - :ref:`exhale_function_math__utils_8h_1a6f997e03604624a73e118356812b0c7c`
 
 - :ref:`exhale_function_math__utils_8h_1aedd1b0651e7e0a5fd7c1a89acaab33ca`
+
+- :ref:`exhale_function_math__utils_8h_1a404f525b2e8242048e15bac533141dc1`
 
 - :ref:`exhale_function_math__utils_8h_1a370096c8662122674178541fbba10276`
 
@@ -149,7 +169,7 @@ Functions
 
 - :ref:`exhale_function_math__utils_8h_1a8385104e23fa49ada93d7eeb949c80b0`
 
-- :ref:`exhale_function_math__utils_8h_1afef1a9ece3482424d8879ea09b4e420c`
-
 - :ref:`exhale_function_math__utils_8h_1a438f476e3dc6d253ba2f3218b03ef8e5`
+
+- :ref:`exhale_function_math__utils_8h_1afef1a9ece3482424d8879ea09b4e420c`
 

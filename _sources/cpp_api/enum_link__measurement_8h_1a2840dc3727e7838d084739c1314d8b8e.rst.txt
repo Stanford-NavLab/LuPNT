@@ -1,0 +1,14 @@
+.. _exhale_enum_link__measurement_8h_1a2840dc3727e7838d084739c1314d8b8e:
+
+Enum LinkMeasurementType
+========================
+
+- Defined in :ref:`file_include_lupnt_measurements_link_measurement.h`
+
+
+Enum Documentation
+------------------
+
+
+.. doxygenenum:: lupnt::LinkMeasurementType
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_radio__measurement_8h_1a62fe37490e3f3c155a9051237f0470c2:
+
+Function lupnt::ComputeOneWayRange
+==================================
+
+- Defined in :ref:`file_include_lupnt_measurements_radio_measurement.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ComputeOneWayRange(VecX, VecX, Real)
+   :project: LuPNT_CPP

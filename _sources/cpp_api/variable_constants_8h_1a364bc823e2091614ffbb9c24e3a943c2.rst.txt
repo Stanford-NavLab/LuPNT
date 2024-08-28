@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a364bc823e2091614ffbb9c24e3a943c2:
+
+Variable lupnt::TAI_UTC_FILENAME
+================================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::TAI_UTC_FILENAME
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_kernels_8h_1addaeb47daa5cfda8187c99933ba3238c:
+
+Function lupnt::GetLunarMantleData(Real)
+========================================
+
+- Defined in :ref:`file_include_lupnt_data_kernels.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetLunarMantleData(Real)
+   :project: LuPNT_CPP

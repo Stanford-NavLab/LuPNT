@@ -1,0 +1,79 @@
+
+.. _file_include_lupnt_physics_attitude_conversions.h:
+
+File attitude_conversions.h
+===========================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/physics/attitude_conversions.h``)
+-------------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_attitude_conversions.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV Lab 
+
+0.1 
+
+2024-08-11
+
+Copyright (c) 2024 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_physics_attitude_state.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_attitude__conversions_8h_1a6fac39730dd5a5d09235abcf387ddfcd`
+
+- :ref:`exhale_function_attitude__conversions_8h_1afc4477317a2ad395f26c211666d28271`
+
+- :ref:`exhale_function_attitude__conversions_8h_1a7020bc7ab5db785dba52f13334653a9d`
+
+- :ref:`exhale_function_attitude__conversions_8h_1a3c5fd85cd1a2f7e659a4da5618b40588`
+
+- :ref:`exhale_function_attitude__conversions_8h_1aa1d42f840537d81533b1962caa0c6eec`
+
+- :ref:`exhale_function_attitude__conversions_8h_1ac999e305804ec1e6e1b8a65d9dd215ef`
+

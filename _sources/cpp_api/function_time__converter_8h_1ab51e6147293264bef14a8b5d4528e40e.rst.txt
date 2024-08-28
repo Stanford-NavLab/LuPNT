@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1ab51e6147293264bef14a8b5d4528e40e:
+
+Function lupnt::TT2TAI
+======================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::TT2TAI(Real)
+   :project: LuPNT_CPP

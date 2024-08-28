@@ -1,0 +1,32 @@
+
+.. _program_listing_file_include_lupnt_physics_attitude_conversions.h:
+
+Program Listing for File attitude_conversions.h
+===============================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_physics_attitude_conversions.h>` (``include/lupnt/physics/attitude_conversions.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   
+   #pragma once
+   
+   #include "lupnt/core/constants.h"
+   
+   namespace lupnt {
+   
+     Mat3 QuatCoeffToDCM(Vec4 quat);
+   
+     Vec4 DCMToQuatCoeff(Mat3 dcm);
+   
+     Vec3 QuatCoeffToEulerAngles(Vec4 quat);
+   
+     Vec4 EulerAnglesToQuatCoeff(Vec3 euler);
+   
+     Vec3 DCMToEulerAngles(Mat3 dcm);
+   
+     Mat3 EulerAnglesToDCM(Vec3 euler);
+   
+   }  // namespace lupnt

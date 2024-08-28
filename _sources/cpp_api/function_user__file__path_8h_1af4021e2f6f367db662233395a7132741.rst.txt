@@ -1,0 +1,14 @@
+.. _exhale_function_user__file__path_8h_1af4021e2f6f367db662233395a7132741:
+
+Function lupnt::GetAsciiKernelDir
+=================================
+
+- Defined in :ref:`file_include_lupnt_core_user_file_path.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetAsciiKernelDir()
+   :project: LuPNT_CPP

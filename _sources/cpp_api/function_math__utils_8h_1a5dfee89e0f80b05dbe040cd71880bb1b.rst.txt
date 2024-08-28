@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a5dfee89e0f80b05dbe040cd71880bb1b:
+
+Function lupnt::SampleRandNormal
+================================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::SampleRandNormal(double, double, int)
+   :project: LuPNT_CPP

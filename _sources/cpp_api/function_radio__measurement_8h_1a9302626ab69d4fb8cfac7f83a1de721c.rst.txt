@@ -1,0 +1,14 @@
+.. _exhale_function_radio__measurement_8h_1a9302626ab69d4fb8cfac7f83a1de721c:
+
+Function lupnt::ComputeDopplerShift
+===================================
+
+- Defined in :ref:`file_include_lupnt_measurements_radio_measurement.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ComputeDopplerShift(VecX, VecX, VecX, VecX, Real, Real, Real, Real)
+   :project: LuPNT_CPP

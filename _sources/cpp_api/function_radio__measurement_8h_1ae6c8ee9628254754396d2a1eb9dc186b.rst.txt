@@ -1,0 +1,14 @@
+.. _exhale_function_radio__measurement_8h_1ae6c8ee9628254754396d2a1eb9dc186b:
+
+Function lupnt::ComputeTwoWayRangeRateLTR
+=========================================
+
+- Defined in :ref:`file_include_lupnt_measurements_radio_measurement.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ComputeTwoWayRangeRateLTR(Real, Vec6, Vec6, BodyData, BodyData, bool, bool, Real, double)
+   :project: LuPNT_CPP

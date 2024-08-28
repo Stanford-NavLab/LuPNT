@@ -1,0 +1,14 @@
+.. _exhale_function_plot_8h_1af0e3d54662120047b1811ae0faa1baa5:
+
+Function lupnt::PlotArrow3
+==========================
+
+- Defined in :ref:`file_include_lupnt_core_plot.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::PlotArrow3(const Vec3&, std::string_view, double)
+   :project: LuPNT_CPP

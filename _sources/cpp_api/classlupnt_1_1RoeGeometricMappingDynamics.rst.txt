@@ -12,7 +12,7 @@ Inheritance Relationships
 Base Type
 *********
 
-- ``public lupnt::AnalyticalDynamics`` (:ref:`exhale_class_classlupnt_1_1AnalyticalDynamics`)
+- ``public lupnt::IAnalyticalOrbitDynamics`` (:ref:`exhale_class_classlupnt_1_1IAnalyticalOrbitDynamics`)
 
 
 Class Documentation

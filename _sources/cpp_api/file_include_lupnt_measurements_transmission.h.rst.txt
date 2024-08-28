@@ -44,9 +44,15 @@ Includes
 --------
 
 
-- ``gnss_receiver_param.h`` (:ref:`file_include_lupnt_measurements_gnss_receiver_param.h`)
+- ``lupnt/measurements/comm_device.h`` (:ref:`file_include_lupnt_measurements_comm_device.h`)
+
+- ``lupnt/measurements/gnss_receiver_param.h`` (:ref:`file_include_lupnt_measurements_gnss_receiver_param.h`)
+
+- ``map``
 
 - ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
 
 
 
@@ -54,15 +60,17 @@ Included By
 -----------
 
 
-- :ref:`file_include_lupnt_agents_comm_device.h`
-
 - :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_measurements_gnss_channel.h`
 
 - :ref:`file_include_lupnt_measurements_gnss_measurement.h`
 
 - :ref:`file_include_lupnt_measurements_gnss_receiver.h`
 
 - :ref:`file_include_lupnt_measurements_gnss_transmitter.h`
+
+- :ref:`file_include_lupnt_measurements_link_measurement.h`
 
 
 
@@ -78,5 +86,7 @@ Classes
 -------
 
 
-- :ref:`exhale_struct_structlupnt_1_1Transmission`
+- :ref:`exhale_struct_structlupnt_1_1GnssTransmission`
+
+- :ref:`exhale_struct_structlupnt_1_1ITransmission`
 

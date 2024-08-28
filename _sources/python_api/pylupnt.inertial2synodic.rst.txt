@@ -1,0 +1,6 @@
+pylupnt.inertial2synodic
+------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: inertial2synodic

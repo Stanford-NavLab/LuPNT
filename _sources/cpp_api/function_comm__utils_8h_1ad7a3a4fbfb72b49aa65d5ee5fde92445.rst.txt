@@ -1,0 +1,14 @@
+.. _exhale_function_comm__utils_8h_1ad7a3a4fbfb72b49aa65d5ee5fde92445:
+
+Function lupnt::GetTransponderTurnAroundRatio
+=============================================
+
+- Defined in :ref:`file_include_lupnt_measurements_comm_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetTransponderTurnAroundRatio(FrequencyBand, FrequencyBand)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_body_8h_1a18f3afaf217ec4f1a70886467c307169:
+
+Function lupnt::GetInertialFrameName
+====================================
+
+- Defined in :ref:`file_include_lupnt_physics_body.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetInertialFrameName(NaifId)
+   :project: LuPNT_CPP

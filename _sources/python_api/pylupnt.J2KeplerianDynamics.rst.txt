@@ -1,0 +1,9 @@
+pylupnt.J2KeplerianDynamics
+---------------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: J2KeplerianDynamics
+    :members:
+    :undoc-members:
+    :inherited-members:

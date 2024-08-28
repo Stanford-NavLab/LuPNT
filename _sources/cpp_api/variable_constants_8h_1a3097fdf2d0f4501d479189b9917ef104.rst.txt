@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a3097fdf2d0f4501d479189b9917ef104:
+
+Variable lupnt::GM_NEPTUNE
+==========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::GM_NEPTUNE
+   :project: LuPNT_CPP

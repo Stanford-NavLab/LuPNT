@@ -9,10 +9,9 @@ Class Application
 Inheritance Relationships
 -------------------------
 
-Derived Types
-*************
+Derived Type
+************
 
-- ``public lupnt::GnssStateEstimationApp`` (:ref:`exhale_class_classlupnt_1_1GnssStateEstimationApp`)
 - ``public lupnt::StateEstimationApp`` (:ref:`exhale_class_classlupnt_1_1StateEstimationApp`)
 
 

@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1a5784a893852fe03e01ec1871a7230877:
+
+Function lupnt::Gregorian2MJD
+=============================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Gregorian2MJD(int, int, int, int, int, Real)
+   :project: LuPNT_CPP

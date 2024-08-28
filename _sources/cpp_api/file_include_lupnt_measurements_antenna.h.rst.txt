@@ -54,9 +54,9 @@ Included By
 -----------
 
 
-- :ref:`file_include_lupnt_agents_comm_device.h`
-
 - :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_measurements_comm_device.h`
 
 - :ref:`file_include_lupnt_measurements_gnss_transmitter.h`
 

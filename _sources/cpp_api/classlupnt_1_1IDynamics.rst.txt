@@ -12,9 +12,8 @@ Inheritance Relationships
 Derived Types
 *************
 
-- ``public lupnt::AnalyticalDynamics`` (:ref:`exhale_class_classlupnt_1_1AnalyticalDynamics`)
 - ``public lupnt::ClockDynamics`` (:ref:`exhale_class_classlupnt_1_1ClockDynamics`)
-- ``public lupnt::NumericalDynamics`` (:ref:`exhale_class_classlupnt_1_1NumericalDynamics`)
+- ``public lupnt::IOrbitDynamics`` (:ref:`exhale_class_classlupnt_1_1IOrbitDynamics`)
 
 
 Class Documentation

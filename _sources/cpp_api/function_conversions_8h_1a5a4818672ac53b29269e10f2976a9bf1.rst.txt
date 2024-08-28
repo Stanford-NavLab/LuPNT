@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1a5a4818672ac53b29269e10f2976a9bf1:
+
+Function lupnt::QuasiNonsing2Classical(const Vec6&, Real)
+=========================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::QuasiNonsing2Classical(const Vec6&, Real)
+   :project: LuPNT_CPP

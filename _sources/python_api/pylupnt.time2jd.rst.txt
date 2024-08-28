@@ -1,0 +1,6 @@
+pylupnt.time2jd
+---------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: time2jd

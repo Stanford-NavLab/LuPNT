@@ -1,0 +1,14 @@
+.. _exhale_function_body_8h_1af49a1cc69a44972fe6706fd9e03211fa:
+
+Function lupnt::GetBodyName
+===========================
+
+- Defined in :ref:`file_include_lupnt_physics_body.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetBodyName(NaifId)
+   :project: LuPNT_CPP

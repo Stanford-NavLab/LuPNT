@@ -1,0 +1,14 @@
+.. _exhale_function_plot_8h_1a6587459826ea629c0fa01b4fbec8e54c:
+
+Function lupnt::SetLim
+======================
+
+- Defined in :ref:`file_include_lupnt_core_plot.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::SetLim(Real, double)
+   :project: LuPNT_CPP

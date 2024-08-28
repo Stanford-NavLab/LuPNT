@@ -1,0 +1,6 @@
+pylupnt.get_orbital_period
+--------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: get_orbital_period

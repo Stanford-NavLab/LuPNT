@@ -1,0 +1,14 @@
+.. _exhale_function_radio__measurement_8h_1a3423f405394731942361466057214688:
+
+Function lupnt::ComputeOneWayRangeRateLTR
+=========================================
+
+- Defined in :ref:`file_include_lupnt_measurements_radio_measurement.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ComputeOneWayRangeRateLTR(Real, Vec6, Vec6, Real, Real, BodyData, BodyData, bool, bool, Real, double)
+   :project: LuPNT_CPP

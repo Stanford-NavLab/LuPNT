@@ -1,0 +1,14 @@
+.. _exhale_function_body_8h_1a583aa24fba7b48938ed23c64cce22083:
+
+Function lupnt::GetBodyFixedFrameName
+=====================================
+
+- Defined in :ref:`file_include_lupnt_physics_body.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetBodyFixedFrameName(NaifId)
+   :project: LuPNT_CPP

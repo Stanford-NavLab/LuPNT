@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a352f943527a47acc6df75800204c5ff4:
+
+Function lupnt::qfunc
+=====================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::qfunc(double)
+   :project: LuPNT_CPP

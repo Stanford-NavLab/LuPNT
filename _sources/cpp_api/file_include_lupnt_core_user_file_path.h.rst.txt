@@ -27,6 +27,8 @@ Includes
 
 - ``assert.h``
 
+- ``chrono``
+
 - ``filesystem``
 
 - ``iostream``
@@ -34,6 +36,8 @@ Includes
 - ``optional``
 
 - ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+- ``string_view``
 
 
 
@@ -61,9 +65,19 @@ Functions
 ---------
 
 
-- :ref:`exhale_function_user__file__path_8h_1a2b27a98006d8f15342097ef02834a7e1`
+- :ref:`exhale_function_user__file__path_8h_1aea7b3269931114b5a22e9ff6801827d9`
 
-- :ref:`exhale_function_user__file__path_8h_1af1ba31f491c6709de18b471c11efbd30`
+- :ref:`exhale_function_user__file__path_8h_1af4021e2f6f367db662233395a7132741`
 
-- :ref:`exhale_function_user__file__path_8h_1af5193189087f9cbf580c6c13e0a68dc1`
+- :ref:`exhale_function_user__file__path_8h_1a136e0b32464ec60f0add82b128caac91`
+
+- :ref:`exhale_function_user__file__path_8h_1a045c8003d13fc252a7d0f7dc0d238df4`
+
+- :ref:`exhale_function_user__file__path_8h_1a1629dd3ac46c9c655220498bbfcbfef5`
+
+- :ref:`exhale_function_user__file__path_8h_1a555e25f75393fd4ea97c103285e18603`
+
+- :ref:`exhale_function_user__file__path_8h_1a29cb0c4872892b776d1903fa3bb06d18`
+
+- :ref:`exhale_function_user__file__path_8h_1ac3187c0bf1238d48da542ff233aaff0f`
 

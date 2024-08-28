@@ -1,0 +1,14 @@
+.. _exhale_function_graphs_8h_1aed54a0dcbc4544fda49368bf9b205606:
+
+Template Function lupnt::FindShortestPath
+=========================================
+
+- Defined in :ref:`file_include_lupnt_numerics_graphs.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::FindShortestPath(const T, const T, const std::map<std::pair<T, T>, std::function<U>>&)
+   :project: LuPNT_CPP

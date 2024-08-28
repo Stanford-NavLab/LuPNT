@@ -1,0 +1,9 @@
+pylupnt.Husky
+-------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: Husky
+    :members:
+    :undoc-members:
+    :inherited-members:

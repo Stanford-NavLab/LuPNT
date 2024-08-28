@@ -1,0 +1,84 @@
+
+.. _file_include_lupnt_measurements_link_measurement.h:
+
+File link_measurement.h
+=======================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_measurements>` (``include/lupnt/measurements``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/measurements/link_measurement.h``)
+--------------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_measurements_link_measurement.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2024-04-04
+
+Copyright (c) 2024 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``lupnt/agents/agent.h`` (:ref:`file_include_lupnt_agents_agent.h`)
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``radio_measurement.h`` (:ref:`file_include_lupnt_measurements_radio_measurement.h`)
+
+- ``transmission.h`` (:ref:`file_include_lupnt_measurements_transmission.h`)
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_struct_structlupnt_1_1LinkParams`
+
+- :ref:`exhale_class_classlupnt_1_1LinkMeasurement`
+
+
+Enums
+-----
+
+
+- :ref:`exhale_enum_link__measurement_8h_1a2840dc3727e7838d084739c1314d8b8e`
+

@@ -1,0 +1,14 @@
+.. _exhale_function_definitions_8h_1a5db5bc8e9495da8717075a70a10ff253:
+
+Function lupnt::FMT_CLEAN
+=========================
+
+- Defined in :ref:`file_include_lupnt_core_definitions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::FMT_CLEAN(Eigen::StreamPrecision, 0, ", ", ";\n", "", "", "")
+   :project: LuPNT_CPP

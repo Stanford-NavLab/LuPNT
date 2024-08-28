@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a4e7b05d4b4d0ab69ee1eb96e96dce442:
+
+Function lupnt::J1Bessel
+========================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::J1Bessel(double)
+   :project: LuPNT_CPP

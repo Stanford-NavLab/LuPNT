@@ -1,0 +1,14 @@
+.. _exhale_function_converter_8h_1a9f49f07e562b862616cb0002fe7109a5:
+
+Function lupnt::ConvertOrbitStateFrame
+======================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ConvertOrbitStateFrame(const CartesianOrbitState, const Real, const Frame)
+   :project: LuPNT_CPP

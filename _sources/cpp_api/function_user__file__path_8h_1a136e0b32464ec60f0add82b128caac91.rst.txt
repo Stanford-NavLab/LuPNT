@@ -1,0 +1,14 @@
+.. _exhale_function_user__file__path_8h_1a136e0b32464ec60f0add82b128caac91:
+
+Function lupnt::GetCspiceKernelDir
+==================================
+
+- Defined in :ref:`file_include_lupnt_core_user_file_path.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetCspiceKernelDir()
+   :project: LuPNT_CPP

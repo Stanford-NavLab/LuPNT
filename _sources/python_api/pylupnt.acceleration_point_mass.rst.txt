@@ -1,0 +1,6 @@
+pylupnt.acceleration_point_mass
+-------------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: acceleration_point_mass

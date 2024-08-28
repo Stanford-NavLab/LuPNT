@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1ac667dad9fd97e38d7653fc8de35d98f0:
+
+Function lupnt::RootMeanSquareD
+===============================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RootMeanSquareD(VecXd)
+   :project: LuPNT_CPP

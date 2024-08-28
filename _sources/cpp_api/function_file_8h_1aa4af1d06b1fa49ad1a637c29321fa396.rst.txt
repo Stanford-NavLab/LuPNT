@@ -1,0 +1,14 @@
+.. _exhale_function_file_8h_1aa4af1d06b1fa49ad1a637c29321fa396:
+
+Function lupnt::CountLines
+==========================
+
+- Defined in :ref:`file_include_lupnt_core_file.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::CountLines(const std::filesystem::path&)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_body_8h_1ac9290abf67d00b4a37be263323a06c0d:
+
+Function lupnt::GetBodyData
+===========================
+
+- Defined in :ref:`file_include_lupnt_physics_body.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetBodyData(NaifId)
+   :project: LuPNT_CPP

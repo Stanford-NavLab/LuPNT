@@ -1,0 +1,6 @@
+pylupnt.mjd2gregorian
+---------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: mjd2gregorian

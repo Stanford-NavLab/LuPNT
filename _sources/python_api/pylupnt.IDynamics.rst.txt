@@ -1,0 +1,9 @@
+pylupnt.IDynamics
+-----------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: IDynamics
+    :members:
+    :undoc-members:
+    :inherited-members:

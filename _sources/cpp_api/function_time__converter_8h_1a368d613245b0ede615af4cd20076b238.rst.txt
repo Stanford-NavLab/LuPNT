@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1a368d613245b0ede615af4cd20076b238:
+
+Function lupnt::MJD2Time
+========================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::MJD2Time(Real)
+   :project: LuPNT_CPP

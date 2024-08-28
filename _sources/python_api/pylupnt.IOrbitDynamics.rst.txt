@@ -1,0 +1,9 @@
+pylupnt.IOrbitDynamics
+----------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: IOrbitDynamics
+    :members:
+    :undoc-members:
+    :inherited-members:

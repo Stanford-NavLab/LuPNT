@@ -1,0 +1,9 @@
+pylupnt.IntegratorType
+----------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: IntegratorType
+    :members:
+    :undoc-members:
+    :inherited-members:

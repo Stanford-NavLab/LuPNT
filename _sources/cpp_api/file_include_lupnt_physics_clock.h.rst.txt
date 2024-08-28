@@ -48,7 +48,7 @@ Includes
 
 - ``lupnt/numerics/math_utils.h`` (:ref:`file_include_lupnt_numerics_math_utils.h`)
 
-- ``state.h`` (:ref:`file_include_lupnt_physics_orbit_state.h`)
+- ``state.h`` (:ref:`file_include_lupnt_physics_attitude_state.h`)
 
 - ``tuple``
 
@@ -92,9 +92,5 @@ Functions
 ---------
 
 
-- :ref:`exhale_function_clock_8h_1ad584d981daf7b26be3495b2142f178df`
-
-- :ref:`exhale_function_clock_8h_1addde7edeebb10a9b4a28d9198ecb73db`
-
-- :ref:`exhale_function_clock_8h_1ac0aab1650929858512d15f0117946078`
+- :ref:`exhale_function_clock_8h_1a2b67a0cd80be3132f2a26a951c9aeec3`
 

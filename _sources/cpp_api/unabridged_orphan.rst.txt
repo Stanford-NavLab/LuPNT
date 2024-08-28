@@ -85,6 +85,16 @@ Files
 .. toctree::
    :maxdepth: 5
 
+   file_include_lupnt_physics_attitude_conversions.h.rst
+
+.. toctree::
+   :maxdepth: 5
+
+   file_include_lupnt_physics_attitude_state.h.rst
+
+.. toctree::
+   :maxdepth: 5
+
    file_include_lupnt_physics_body.h.rst
 
 .. toctree::
@@ -100,7 +110,12 @@ Files
 .. toctree::
    :maxdepth: 5
 
-   file_include_lupnt_agents_comm_device.h.rst
+   file_include_lupnt_measurements_comm_device.h.rst
+
+.. toctree::
+   :maxdepth: 5
+
+   file_include_lupnt_measurements_comm_utils.h.rst
 
 .. toctree::
    :maxdepth: 5
@@ -121,6 +136,11 @@ Files
    :maxdepth: 5
 
    file_include_lupnt_physics_coordinates.h.rst
+
+.. toctree::
+   :maxdepth: 5
+
+   file_include_lupnt_core_definitions.h.rst
 
 .. toctree::
    :maxdepth: 5
@@ -151,6 +171,11 @@ Files
    :maxdepth: 5
 
    file_include_lupnt_dynamics_forces.h.rst
+
+.. toctree::
+   :maxdepth: 5
+
+   file_include_lupnt_physics_frame_conversions.h.rst
 
 .. toctree::
    :maxdepth: 5
@@ -220,12 +245,12 @@ Files
 .. toctree::
    :maxdepth: 5
 
-   file_include_lupnt_measurements_intersatellite_link.h.rst
+   file_include_lupnt_data_kernels.h.rst
 
 .. toctree::
    :maxdepth: 5
 
-   file_include_lupnt_data_kernels.h.rst
+   file_include_lupnt_measurements_link_measurement.h.rst
 
 .. toctree::
    :maxdepth: 5
@@ -245,7 +270,7 @@ Files
 .. toctree::
    :maxdepth: 5
 
-   file_include_lupnt_measurements_occultation.h.rst
+   file_include_lupnt_physics_occultation.h.rst
 
 .. toctree::
    :maxdepth: 5
@@ -306,11 +331,6 @@ Files
    :maxdepth: 5
 
    file_include_lupnt_agents_state_estimation_app.h.rst
-
-.. toctree::
-   :maxdepth: 5
-
-   file_include_lupnt_agents_state_estimation_app_gnss.h.rst
 
 .. toctree::
    :maxdepth: 5

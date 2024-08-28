@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1af0b4ca8fa8ed9a4ffa45c19f4dbc2ba7:
+
+Function lupnt::BlkDiagD
+========================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::BlkDiagD(const MatXd&, const MatXd&)
+   :project: LuPNT_CPP

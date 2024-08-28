@@ -1,0 +1,14 @@
+.. _exhale_function_comm__utils_8h_1a4ab44ef9b14d39e2fa6e99568c2b1180:
+
+Function lupnt::ComputeBER
+==========================
+
+- Defined in :ref:`file_include_lupnt_measurements_comm_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ComputeBER(double, Modulation)
+   :project: LuPNT_CPP

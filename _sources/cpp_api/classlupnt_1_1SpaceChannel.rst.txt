@@ -6,15 +6,6 @@ Class SpaceChannel
 - Defined in :ref:`file_include_lupnt_measurements_space_channel.h`
 
 
-Inheritance Relationships
--------------------------
-
-Derived Type
-************
-
-- ``public lupnt::GnssChannel`` (:ref:`exhale_class_classlupnt_1_1GnssChannel`)
-
-
 Class Documentation
 -------------------
 

@@ -1,0 +1,84 @@
+
+.. _file_include_lupnt_physics_occultation.h:
+
+File occultation.h
+==================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+
+
+Signal blockage model. 
+
+
+Definition (``include/lupnt/physics/occultation.h``)
+----------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_occultation.h.rst
+
+
+
+Detailed Description
+--------------------
+
+Stanford NAV LAB 
+
+0.1 
+
+2023-09-14
+
+Copyright (c) 2023 
+
+
+
+
+
+
+Includes
+--------
+
+
+- ``cmath``
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``lupnt/numerics/math_utils.h`` (:ref:`file_include_lupnt_numerics_math_utils.h`)
+
+- ``lupnt/physics/frame_converter.h`` (:ref:`file_include_lupnt_physics_frame_converter.h`)
+
+- ``map``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_measurements_gnss_channel.h`
+
+- :ref:`file_include_lupnt_measurements_space_channel.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classlupnt_1_1Occultation`
+

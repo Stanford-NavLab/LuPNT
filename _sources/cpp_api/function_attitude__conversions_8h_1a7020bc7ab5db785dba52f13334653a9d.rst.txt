@@ -1,0 +1,14 @@
+.. _exhale_function_attitude__conversions_8h_1a7020bc7ab5db785dba52f13334653a9d:
+
+Function lupnt::EulerAnglesToDCM
+================================
+
+- Defined in :ref:`file_include_lupnt_physics_attitude_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::EulerAnglesToDCM(Vec3)
+   :project: LuPNT_CPP

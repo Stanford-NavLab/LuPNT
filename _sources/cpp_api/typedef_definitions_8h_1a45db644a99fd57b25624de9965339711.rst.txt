@@ -1,0 +1,14 @@
+.. _exhale_typedef_definitions_8h_1a45db644a99fd57b25624de9965339711:
+
+Typedef lupnt::AngleAxis
+========================
+
+- Defined in :ref:`file_include_lupnt_core_definitions.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::AngleAxis
+   :project: LuPNT_CPP

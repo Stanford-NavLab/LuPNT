@@ -1,0 +1,14 @@
+.. _exhale_function_comm__utils_8h_1aec8093a14370f38ccb70dac45ff187b5:
+
+Function lupnt::ComputeCarrierLoopSNR
+=====================================
+
+- Defined in :ref:`file_include_lupnt_measurements_comm_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ComputeCarrierLoopSNR(double, double, double, Modulation, double)
+   :project: LuPNT_CPP

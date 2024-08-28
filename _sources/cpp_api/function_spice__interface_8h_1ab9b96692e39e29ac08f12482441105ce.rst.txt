@@ -1,0 +1,14 @@
+.. _exhale_function_spice__interface_8h_1ab9b96692e39e29ac08f12482441105ce:
+
+Function lupnt::spice::GetBodyPosVelSpice
+=========================================
+
+- Defined in :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spice::GetBodyPosVelSpice(Real, NaifId, NaifId, Frame, const std::string&)
+   :project: LuPNT_CPP

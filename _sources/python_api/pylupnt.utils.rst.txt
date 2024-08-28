@@ -7,6 +7,7 @@ pylupnt.utils
 
 .. autosummary::
 
+    File
     GridSpec
 
 
@@ -18,8 +19,10 @@ pylupnt.utils
     find_file
     format_element
     get_basepath
+    get_output_path
     load_data
     load_pickle
+    normalize
     plot_RTN
     print_aligned
     set_axes_equal
@@ -30,13 +33,16 @@ pylupnt.utils
 .. toctree::
     :hidden:
 
+    File <pylupnt.utils.File>
     GridSpec <pylupnt.utils.GridSpec>
     dump_pickle <pylupnt.utils.dump_pickle>
     find_file <pylupnt.utils.find_file>
     format_element <pylupnt.utils.format_element>
     get_basepath <pylupnt.utils.get_basepath>
+    get_output_path <pylupnt.utils.get_output_path>
     load_data <pylupnt.utils.load_data>
     load_pickle <pylupnt.utils.load_pickle>
+    normalize <pylupnt.utils.normalize>
     plot_RTN <pylupnt.utils.plot_RTN>
     print_aligned <pylupnt.utils.print_aligned>
     set_axes_equal <pylupnt.utils.set_axes_equal>

@@ -1,0 +1,14 @@
+.. _exhale_enum_comm__utils_8h_1ac24dcd940441c9f306d33cfe1ac71e86:
+
+Enum Modulation
+===============
+
+- Defined in :ref:`file_include_lupnt_measurements_comm_utils.h`
+
+
+Enum Documentation
+------------------
+
+
+.. doxygenenum:: lupnt::Modulation
+   :project: LuPNT_CPP

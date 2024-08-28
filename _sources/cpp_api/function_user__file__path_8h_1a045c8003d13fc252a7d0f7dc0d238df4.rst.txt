@@ -1,0 +1,14 @@
+.. _exhale_function_user__file__path_8h_1a045c8003d13fc252a7d0f7dc0d238df4:
+
+Function lupnt::GetDataPath
+===========================
+
+- Defined in :ref:`file_include_lupnt_core_user_file_path.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetDataPath()
+   :project: LuPNT_CPP

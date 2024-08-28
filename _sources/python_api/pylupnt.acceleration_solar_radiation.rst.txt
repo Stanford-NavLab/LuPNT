@@ -1,0 +1,6 @@
+pylupnt.acceleration_solar_radiation
+------------------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: acceleration_solar_radiation

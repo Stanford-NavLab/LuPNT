@@ -1,0 +1,14 @@
+.. _exhale_function_user__file__path_8h_1a555e25f75393fd4ea97c103285e18603:
+
+Function lupnt::GetOutputPath
+=============================
+
+- Defined in :ref:`file_include_lupnt_core_user_file_path.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetOutputPath(std::string)
+   :project: LuPNT_CPP

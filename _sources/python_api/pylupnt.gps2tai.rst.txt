@@ -1,0 +1,6 @@
+pylupnt.gps2tai
+---------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: gps2tai

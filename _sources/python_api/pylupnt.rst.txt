@@ -7,13 +7,24 @@ pylupnt
 
 .. autosummary::
 
+    Animal
     Body
     CartesianOrbitState
     CartesianTwoBodyDynamics
     ClassicalOE
+    Dog
     EquinoctialOE
+    File
     Frame
+    GravityField
     GridSpec
+    Husky
+    IAnalyticalOrbitDynamics
+    IDynamics
+    IOrbitDynamics
+    IntegratorType
+    J2CartTwoBodyDynamics
+    J2KeplerianDynamics
     KeplerianDynamics
     NBodyDynamics
     NaifId
@@ -24,24 +35,29 @@ pylupnt
     QuasiNonsingROE
     SingularROE
     SpiceInterface
+    Time
 
 
 **Functions**
 
 .. autosummary::
 
+    acceleration_gravity_field
+    acceleration_point_mass
+    acceleration_solar_radiation
     az_el_range2cart
     cart2az_el_range
+    cart2classical
     cart2east_north_up
     cart2lat_lon_alt
-    cartesian2classical
-    classical2cartesian
+    classical2cart
     classical2delaunay
     classical2equinoctial
     classical2quasi_nonsingular
     compute_occultation
     convert_frame
     convert_orbit_state
+    convert_time
     decibel2decimal
     decimal2decibel
     deg_min_sec2degrees
@@ -51,13 +67,40 @@ pylupnt
     eccentric2mean_anomaly
     eccentric2true_anomaly
     equinoctial2classical
+    get_body_pos_vel
+    get_orbital_period
+    gps2tai
+    gregorian2mjd
+    gregorian2time
+    inertial2synodic
+    jd2time
     lat_lon_alt2cart
     mean2eccentric_anomaly
     mean2true_anomaly
+    mjd2gregorian
+    mjd2gregorian_string
+    mjd2time
     quasi_nonsingular2classical
     relative_quasi_nonsingular2classical
+    synodic2intertial
+    tai2gps
+    tai2tt
+    tai2utc
+    tcb2tdb
+    tcg2tt
+    tdb2tt
+    time2gregorian_string
+    time2jd
+    time2mjd
     true2eccentric_anomaly
     true2mean_anomaly
+    tt2tai
+    tt2tcb
+    tt2tcg
+    tt2tdb
+    ut12utc
+    utc2tai
+    utc2ut1
     wrap2pi
     wrap2two_pi
 
@@ -65,13 +108,24 @@ pylupnt
 .. toctree::
     :hidden:
 
+    Animal <pylupnt.Animal>
     Body <pylupnt.Body>
     CartesianOrbitState <pylupnt.CartesianOrbitState>
     CartesianTwoBodyDynamics <pylupnt.CartesianTwoBodyDynamics>
     ClassicalOE <pylupnt.ClassicalOE>
+    Dog <pylupnt.Dog>
     EquinoctialOE <pylupnt.EquinoctialOE>
+    File <pylupnt.File>
     Frame <pylupnt.Frame>
+    GravityField <pylupnt.GravityField>
     GridSpec <pylupnt.GridSpec>
+    Husky <pylupnt.Husky>
+    IAnalyticalOrbitDynamics <pylupnt.IAnalyticalOrbitDynamics>
+    IDynamics <pylupnt.IDynamics>
+    IOrbitDynamics <pylupnt.IOrbitDynamics>
+    IntegratorType <pylupnt.IntegratorType>
+    J2CartTwoBodyDynamics <pylupnt.J2CartTwoBodyDynamics>
+    J2KeplerianDynamics <pylupnt.J2KeplerianDynamics>
     KeplerianDynamics <pylupnt.KeplerianDynamics>
     NBodyDynamics <pylupnt.NBodyDynamics>
     NaifId <pylupnt.NaifId>
@@ -82,18 +136,23 @@ pylupnt
     QuasiNonsingROE <pylupnt.QuasiNonsingROE>
     SingularROE <pylupnt.SingularROE>
     SpiceInterface <pylupnt.SpiceInterface>
+    Time <pylupnt.Time>
+    acceleration_gravity_field <pylupnt.acceleration_gravity_field>
+    acceleration_point_mass <pylupnt.acceleration_point_mass>
+    acceleration_solar_radiation <pylupnt.acceleration_solar_radiation>
     az_el_range2cart <pylupnt.az_el_range2cart>
     cart2az_el_range <pylupnt.cart2az_el_range>
+    cart2classical <pylupnt.cart2classical>
     cart2east_north_up <pylupnt.cart2east_north_up>
     cart2lat_lon_alt <pylupnt.cart2lat_lon_alt>
-    cartesian2classical <pylupnt.cartesian2classical>
-    classical2cartesian <pylupnt.classical2cartesian>
+    classical2cart <pylupnt.classical2cart>
     classical2delaunay <pylupnt.classical2delaunay>
     classical2equinoctial <pylupnt.classical2equinoctial>
     classical2quasi_nonsingular <pylupnt.classical2quasi_nonsingular>
     compute_occultation <pylupnt.compute_occultation>
     convert_frame <pylupnt.convert_frame>
     convert_orbit_state <pylupnt.convert_orbit_state>
+    convert_time <pylupnt.convert_time>
     decibel2decimal <pylupnt.decibel2decimal>
     decimal2decibel <pylupnt.decimal2decibel>
     deg_min_sec2degrees <pylupnt.deg_min_sec2degrees>
@@ -103,12 +162,39 @@ pylupnt
     eccentric2mean_anomaly <pylupnt.eccentric2mean_anomaly>
     eccentric2true_anomaly <pylupnt.eccentric2true_anomaly>
     equinoctial2classical <pylupnt.equinoctial2classical>
+    get_body_pos_vel <pylupnt.get_body_pos_vel>
+    get_orbital_period <pylupnt.get_orbital_period>
+    gps2tai <pylupnt.gps2tai>
+    gregorian2mjd <pylupnt.gregorian2mjd>
+    gregorian2time <pylupnt.gregorian2time>
+    inertial2synodic <pylupnt.inertial2synodic>
+    jd2time <pylupnt.jd2time>
     lat_lon_alt2cart <pylupnt.lat_lon_alt2cart>
     mean2eccentric_anomaly <pylupnt.mean2eccentric_anomaly>
     mean2true_anomaly <pylupnt.mean2true_anomaly>
+    mjd2gregorian <pylupnt.mjd2gregorian>
+    mjd2gregorian_string <pylupnt.mjd2gregorian_string>
+    mjd2time <pylupnt.mjd2time>
     quasi_nonsingular2classical <pylupnt.quasi_nonsingular2classical>
     relative_quasi_nonsingular2classical <pylupnt.relative_quasi_nonsingular2classical>
+    synodic2intertial <pylupnt.synodic2intertial>
+    tai2gps <pylupnt.tai2gps>
+    tai2tt <pylupnt.tai2tt>
+    tai2utc <pylupnt.tai2utc>
+    tcb2tdb <pylupnt.tcb2tdb>
+    tcg2tt <pylupnt.tcg2tt>
+    tdb2tt <pylupnt.tdb2tt>
+    time2gregorian_string <pylupnt.time2gregorian_string>
+    time2jd <pylupnt.time2jd>
+    time2mjd <pylupnt.time2mjd>
     true2eccentric_anomaly <pylupnt.true2eccentric_anomaly>
     true2mean_anomaly <pylupnt.true2mean_anomaly>
+    tt2tai <pylupnt.tt2tai>
+    tt2tcb <pylupnt.tt2tcb>
+    tt2tcg <pylupnt.tt2tcg>
+    tt2tdb <pylupnt.tt2tdb>
+    ut12utc <pylupnt.ut12utc>
+    utc2tai <pylupnt.utc2tai>
+    utc2ut1 <pylupnt.utc2ut1>
     wrap2pi <pylupnt.wrap2pi>
     wrap2two_pi <pylupnt.wrap2two_pi>

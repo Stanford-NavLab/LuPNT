@@ -15,16 +15,44 @@ Program Listing for File space_channel.h
    
    #include <memory>
    
-   #include "lupnt/measurements/occultation.h"
+   #include "lupnt/physics/occultation.h"
    
    namespace lupnt {
    
-     class Transmission;
+     struct ITransmission;
+   
      class ICommDevice;
+     class Transmitter;
+     class Receiver;
    
      class SpaceChannel {
+     private:
+       std::vector<NaifId> occult_bodies_;
+       VecXd occult_alt_;
+   
      public:
-       void computeLinkBudget(std::shared_ptr<ICommDevice> &tx, std::shared_ptr<ICommDevice> &rx,
-                              double t_tx, double t_rx, Transmission &transmission);
+       SpaceChannel() = default;
+   
+       void SetOccultationBodies(std::vector<NaifId> occult_bodies, VecXd occult_alt) {
+         occult_bodies_ = occult_bodies;
+         occult_alt_ = occult_alt;
+       }
+   
+       ITransmission ComputeLinkBudget(std::shared_ptr<Transmitter> &txDevice,
+                                       std::shared_ptr<Receiver> &rxDevice, Real t,
+                                       std::string time_fixed);
+   
+       ITransmission ComputeLinkBudgetDR(std::shared_ptr<Transmitter> &txDevice,
+                                         std::shared_ptr<Receiver> &rxDevice, Real t,
+                                         std::string time_fixed, double data_rate);
+   
+       Real SolveLightTimeDelayRx(std::shared_ptr<Transmitter> &tx, std::shared_ptr<Receiver> &rx,
+                                  Real t_rx);
+   
+       Real SolveLightTimeDelayTx(std::shared_ptr<Transmitter> &tx, std::shared_ptr<Receiver> &rx,
+                                  Real t_tx);
+   
+       double ComputeFreeSpaceLossdB(double dist, double lambda);
      };
+   
    }  // namespace lupnt

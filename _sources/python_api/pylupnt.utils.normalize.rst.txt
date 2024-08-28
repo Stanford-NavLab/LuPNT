@@ -1,0 +1,6 @@
+pylupnt.utils.normalize
+-----------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autofunction:: normalize

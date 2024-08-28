@@ -1,0 +1,14 @@
+.. _exhale_function_definitions_8h_1ab0829478d5b74363acb5edda6aa613fd:
+
+Template Function lupnt::MakePtr
+================================
+
+- Defined in :ref:`file_include_lupnt_core_definitions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::MakePtr(Args&&...)
+   :project: LuPNT_CPP

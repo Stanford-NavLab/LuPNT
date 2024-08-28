@@ -1,0 +1,14 @@
+.. _exhale_function_frame__conversions_8h_1aea47d5022a39b92bfd62a043442caf6c:
+
+Function lupnt::GCRF2ICRF
+=========================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GCRF2ICRF(Real, const Vec6&)
+   :project: LuPNT_CPP

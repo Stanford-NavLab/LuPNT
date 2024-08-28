@@ -47,6 +47,8 @@ Included By
 
 - :ref:`file_include_lupnt_lupnt.h`
 
+- :ref:`file_include_lupnt_physics_frame_conversions.h`
+
 - :ref:`file_include_lupnt_physics_frame_converter.h`
 
 - :ref:`file_include_lupnt_physics_frame_converter_spice.h`

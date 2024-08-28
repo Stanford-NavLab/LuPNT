@@ -1,0 +1,14 @@
+.. _exhale_function_constants_8h_1a728a0ca00b64fa5a9875d0d91d3f8a88:
+
+Function lupnt::GetBodyRadius
+=============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetBodyRadius(NaifId)
+   :project: LuPNT_CPP

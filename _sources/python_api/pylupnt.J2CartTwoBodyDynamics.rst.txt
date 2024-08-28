@@ -1,0 +1,9 @@
+pylupnt.J2CartTwoBodyDynamics
+-----------------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: J2CartTwoBodyDynamics
+    :members:
+    :undoc-members:
+    :inherited-members:

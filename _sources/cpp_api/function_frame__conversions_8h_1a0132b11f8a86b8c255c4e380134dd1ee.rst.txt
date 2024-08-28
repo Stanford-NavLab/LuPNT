@@ -1,0 +1,14 @@
+.. _exhale_function_frame__conversions_8h_1a0132b11f8a86b8c255c4e380134dd1ee:
+
+Function lupnt::RotMoonPA2MoonME
+================================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RotMoonPA2MoonME()
+   :project: LuPNT_CPP

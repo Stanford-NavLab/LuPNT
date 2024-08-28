@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1a18041688ae1197e360c1a8104e6702b7:
+
+Function lupnt::TCG2TT
+======================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::TCG2TT(Real)
+   :project: LuPNT_CPP

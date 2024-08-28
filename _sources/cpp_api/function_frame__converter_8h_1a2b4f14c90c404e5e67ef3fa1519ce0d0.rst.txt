@@ -1,0 +1,14 @@
+.. _exhale_function_frame__converter_8h_1a2b4f14c90c404e5e67ef3fa1519ce0d0:
+
+Function lupnt::ConvertFrame(Real, const Vec3&, Frame, Frame, bool)
+===================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ConvertFrame(Real, const Vec3&, Frame, Frame, bool)
+   :project: LuPNT_CPP

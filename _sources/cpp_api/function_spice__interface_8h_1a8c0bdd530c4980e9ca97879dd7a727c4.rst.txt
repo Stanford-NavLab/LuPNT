@@ -1,0 +1,14 @@
+.. _exhale_function_spice__interface_8h_1a8c0bdd530c4980e9ca97879dd7a727c4:
+
+Function lupnt::spice::String2TDB
+=================================
+
+- Defined in :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spice::String2TDB(const std::string&)
+   :project: LuPNT_CPP

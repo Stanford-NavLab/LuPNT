@@ -1,0 +1,14 @@
+.. _exhale_typedef_definitions_8h_1a897a3477a77f5f50551833d85b0bf12d:
+
+Typedef lupnt::Mat8d
+====================
+
+- Defined in :ref:`file_include_lupnt_core_definitions.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::Mat8d
+   :project: LuPNT_CPP

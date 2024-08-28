@@ -1,0 +1,14 @@
+.. _exhale_function_kernels_8h_1a4cdf48576d742f9a15e79859dc4a7d1e:
+
+Function lupnt::GetLunarMantleData(VecX)
+========================================
+
+- Defined in :ref:`file_include_lupnt_data_kernels.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetLunarMantleData(VecX)
+   :project: LuPNT_CPP

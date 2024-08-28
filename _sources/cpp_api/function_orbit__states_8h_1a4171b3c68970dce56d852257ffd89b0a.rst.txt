@@ -1,0 +1,14 @@
+.. _exhale_function_orbit__states_8h_1a4171b3c68970dce56d852257ffd89b0a:
+
+Function lupnt::operator<<(std::ostream&, const OrbitStateRepres&)
+==================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_orbit_states.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::operator<<(std::ostream&, const OrbitStateRepres&)
+   :project: LuPNT_CPP

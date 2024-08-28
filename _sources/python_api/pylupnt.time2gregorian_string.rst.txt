@@ -1,0 +1,6 @@
+pylupnt.time2gregorian_string
+-----------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: time2gregorian_string

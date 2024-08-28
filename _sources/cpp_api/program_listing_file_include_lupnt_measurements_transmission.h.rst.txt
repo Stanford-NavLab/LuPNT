@@ -13,13 +13,16 @@ Program Listing for File transmission.h
    
    #pragma once
    
+   #include <map>
    #include <string>
+   #include <vector>
    
-   #include "gnss_receiver_param.h"
+   #include "lupnt/measurements/comm_device.h"
+   #include "lupnt/measurements/gnss_receiver_param.h"
    
    namespace lupnt {
    
-     struct Transmission {
+     struct ITransmission {
        // Clock time [s]
        double t_tx;
        double t_rx;
@@ -28,32 +31,57 @@ Program Listing for File transmission.h
        double freq;
        std::string freq_label;
    
-       // Clock offset from Gnss time [s]
-       double dt_tx;
-       double dt_rx;
+       // Position and velocity
+       Vec3d r_tx, v_tx;
+       Vec3d r_rx, v_rx;
    
-       // Clock drift from Gnss time [s/s]
-       double dt_tx_dot;
-       double dt_rx_dot;
+       // Clock offset [s]
+       double dt_tx, dt_rx;
+       double dt_tx_dot, dt_rx_dot;
    
-       double I_rx;  // Ionospheric delay [m] (n_satellites * n_bands)
-       double T_rx;  // Tropospheric delay [m] (n_satellites)
-       double CN0;   // Carrier-to-noise density [dB-Hz] (n_satellites * n_bands)
+       // link budget
+       double EIRP;        // Equivalent isotropic radiated power [dBW]
+       double G_T;         // Transmit antenna gain / Noise temperature [dB/K]
+       double CN0;         // Carrier-to-noise density [dB-Hz]
+       double CN0_linear;  // Carrier-to-noise density [dB-Hz]
    
+       // Signal power [W]
        double AP;
        double RP;
    
+       // Transmitter and receiver
+       std::shared_ptr<Transmitter> tx;
+       std::shared_ptr<Receiver> rx;
+   
+       // Agents
+       bool is_tx_gs;
+       bool is_rx_gs;
+       bool is_tx_bodyfixed;
+       bool is_rx_bodyfixed;
+   
+       // visibility
+       bool vis_all;
+       std::map<std::string, bool> vis_occult;
+   
+       int ID_tx;
+     };
+   
+     struct GnssTransmission : ITransmission {
+       // TX
+       int ID_tx;
+   
+       // Channel
+       double I_rx;  // ionospheric delay [s]
+       double T_rx;  // tropospheric delay [s]
+       bool vis_atmos;
+       bool vis_ionos;
        bool vis_earth;
        bool vis_moon;
        bool vis_antenna;
-       bool vis_atmos;
-       bool vis_ionos;
    
-       GnssReceiverParam gnssr_param;
-   
+       // receiver chip param
        double chip_rate;  // receiver chip rate [Hz]
-   
-       int ID_tx;
-       Vec3d r_tx, v_tx, r_rx, v_rx;
+       GnssReceiverParam gnssr_param;
      };
+   
    }  // namespace lupnt

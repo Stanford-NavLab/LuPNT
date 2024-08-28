@@ -15,24 +15,25 @@ Program Listing for File gnss_channel.h
    
    #include <vector>
    
-   #include "lupnt/measurements/occultation.h"
-   #include "lupnt/measurements/space_channel.h"
+   #include "lupnt/measurements/transmission.h"
    #include "lupnt/physics/frame_converter.h"
+   #include "lupnt/physics/occultation.h"
    
    namespace lupnt {
    
+     struct Transmission;
      class GnssTransmitter;
      class GnssReceiver;
    
-     class GnssChannel : public SpaceChannel {
+     class GnssChannel {
      public:
-       void AddTransmitter(std::shared_ptr<GnssTransmitter> &dev) { tx_devices.push_back(dev); }
+       void AddTransmitter(Ptr<GnssTransmitter> &dev) { tx_devices.push_back(dev); }
    
-       void AddReceiver(std::shared_ptr<GnssReceiver> &dev) { rx_devices.push_back(dev); }
+       void AddReceiver(Ptr<GnssReceiver> &dev) { rx_devices.push_back(dev); }
    
-       std::vector<Transmission> Receive(GnssReceiver &rx, double t);
+       std::vector<GnssTransmission> Receive(GnssReceiver &rx, double t);
    
-       std::vector<std::shared_ptr<GnssReceiver>> rx_devices;
-       std::vector<std::shared_ptr<GnssTransmitter>> tx_devices;
+       std::vector<Ptr<GnssReceiver>> rx_devices;
+       std::vector<Ptr<GnssTransmitter>> tx_devices;
      };
    }  // namespace lupnt

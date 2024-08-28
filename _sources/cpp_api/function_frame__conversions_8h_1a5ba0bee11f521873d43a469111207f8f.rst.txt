@@ -1,0 +1,14 @@
+.. _exhale_function_frame__conversions_8h_1a5ba0bee11f521873d43a469111207f8f:
+
+Function lupnt::MoonCI2MoonOP
+=============================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::MoonCI2MoonOP(Real, const Vec6&)
+   :project: LuPNT_CPP

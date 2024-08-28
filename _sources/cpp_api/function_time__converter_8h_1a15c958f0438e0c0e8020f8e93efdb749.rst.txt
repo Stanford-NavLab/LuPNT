@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1a15c958f0438e0c0e8020f8e93efdb749:
+
+Function lupnt::TCB2TDB
+=======================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::TCB2TDB(Real)
+   :project: LuPNT_CPP

@@ -17,6 +17,7 @@ Files
 -----
 
 - :ref:`file_include_lupnt_core_constants.h`
+- :ref:`file_include_lupnt_core_definitions.h`
 - :ref:`file_include_lupnt_core_event.h`
 - :ref:`file_include_lupnt_core_file.h`
 - :ref:`file_include_lupnt_core_plot.h`

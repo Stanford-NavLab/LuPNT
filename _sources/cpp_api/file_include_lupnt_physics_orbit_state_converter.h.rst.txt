@@ -66,31 +66,13 @@ Functions
 ---------
 
 
-- :ref:`exhale_function_frame__converter_8h_1ad70bf6df453bf49d860ef4642775cf44`
-
-- :ref:`exhale_function_frame__converter_8h_1ad05fee70fcd7ac3bb4ff0fed98df72c5`
-
-- :ref:`exhale_function_frame__converter_8h_1a14bc62981fd9cba0ead46494a17c9661`
-
-- :ref:`exhale_function_frame__converter_8h_1ad808775284f932ee2f82277ee1e49605`
-
-- :ref:`exhale_function_frame__converter_8h_1ad3e830757ab3cf013b33740f88f64150`
-
-- :ref:`exhale_function_frame__converter_8h_1af2111e8357bf7c940e0030f2de64dc57`
-
-- :ref:`exhale_function_frame__converter_8h_1af09a11b6110b6dabdf0ab6c2efd1241a`
-
-- :ref:`exhale_function_frame__converter_8h_1a91d26703ff71af98bc13d8892cb7f03b`
-
-- :ref:`exhale_function_frame__converter_8h_1a9b5dacb2a5c3df88dfdd965d33aa9761`
-
 - :ref:`exhale_function_converter_8h_1a901cc16357baa920906a606df9203d1f`
 
 - :ref:`exhale_function_converter_8h_1aba6a90f5160dc4a933a2403415dbb6f1`
 
-- :ref:`exhale_function_converter_8h_1a6c7fb5a77f8ce014ce6094e2d7139bf3`
+- :ref:`exhale_function_converter_8h_1a9f49f07e562b862616cb0002fe7109a5`
 
-- :ref:`exhale_function_converter_8h_1ad29a0c58f0910a54d6f8ff0f15a24edd`
+- :ref:`exhale_function_converter_8h_1a3533059945c2dd5bce580da78efa5b23`
 
 
 Variables

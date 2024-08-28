@@ -16,8 +16,8 @@ Program Listing for File state_estimation_app.h
    
    #include "lupnt/agents/agent.h"
    #include "lupnt/agents/application.h"
-   #include "lupnt/agents/comm_device.h"
    #include "lupnt/core/file.h"
+   #include "lupnt/measurements/comm_device.h"
    #include "lupnt/measurements/gnss_measurement.h"
    #include "lupnt/measurements/gnss_receiver.h"
    #include "lupnt/numerics/filters.h"
@@ -81,13 +81,14 @@ Program Listing for File state_estimation_app.h
              int state_size = state_vec[i]->GetSize();
              MatXd Phi_tmp(state_size, state_size);
              VecX x_seg(state_size);
+             VecX x_seg_next(state_size);
              for (int j = 0; j < state_size; j++) {
                x_seg(j) = x(start_idx + j);
              }
-             dynamics_vec_[i]->PropagateWithStmX(x_seg, t_curr, t_end, Phi_tmp);
+             x_seg_next = dynamics_vec_[i]->Propagate(x_seg, t_curr, t_end, &Phi_tmp);
              Phi.block(start_idx, start_idx, state_size, state_size) = Phi_tmp;
              for (int j = 0; j < state_size; j++) {
-               x(start_idx + j) = x_seg(j);
+               x(start_idx + j) = x_seg_next(j);
              }
              // Add states
              start_idx += state_size;
@@ -106,23 +107,20 @@ Program Listing for File state_estimation_app.h
        double epoch_;   // curent epoch
        double t_;       // Current time [s]
    
-       std::shared_ptr<Agent> agent_;
-       std::shared_ptr<IFilter> filter_;
+       Ptr<Agent> agent_;
+       Ptr<IFilter> filter_;
        FilterDynamicsFunction dynamics_func_;
        FilterMeasurementFunction meas_func_;
        JointState state_vec_;
    
-       std::shared_ptr<DataHistory> data_history_;
-   
      public:
-       void SetAgent(std::shared_ptr<Agent> agent) { this->agent_ = agent; }
-       void SetDataHistory(std::shared_ptr<DataHistory> data_history) {
-         this->data_history_ = data_history;
-       };
+       void SetAgent(Ptr<Agent> agent) { this->agent_ = agent; }
    
        double GetInitialEpoch() { return epoch0_; };
        double GetCurrentEpoch() { return epoch_; };
        double GetCurrrentTime() { return t_; };
+   
+       void SimulateTruth(double t_end);
    
        void Setup();
        void Step(double t_end);  // execute to step t

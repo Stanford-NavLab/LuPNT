@@ -1,0 +1,14 @@
+.. _exhale_function_radio__measurement_8h_1a5c5f9bcddf69682307e37dc5debefee6:
+
+Function lupnt::ComputeRangeRateErrorOneWay
+===========================================
+
+- Defined in :ref:`file_include_lupnt_measurements_radio_measurement.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ComputeRangeRateErrorOneWay(double, double, double, double, double, double, Modulation, double)
+   :project: LuPNT_CPP

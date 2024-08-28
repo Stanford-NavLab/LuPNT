@@ -1,0 +1,14 @@
+.. _exhale_function_frame__conversions_8h_1a359457f405751c515478eba2554fbc02:
+
+Function lupnt::RotSideralMotion
+================================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RotSideralMotion(Real)
+   :project: LuPNT_CPP

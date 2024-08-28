@@ -44,7 +44,7 @@ Includes
 --------
 
 
-- ``lupnt/measurements/occultation.h`` (:ref:`file_include_lupnt_measurements_occultation.h`)
+- ``lupnt/physics/occultation.h`` (:ref:`file_include_lupnt_physics_occultation.h`)
 
 - ``memory``
 
@@ -56,7 +56,7 @@ Included By
 
 - :ref:`file_include_lupnt_lupnt.h`
 
-- :ref:`file_include_lupnt_measurements_gnss_channel.h`
+- :ref:`file_include_lupnt_measurements_comm_device.h`
 
 
 

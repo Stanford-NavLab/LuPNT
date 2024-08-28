@@ -84,13 +84,15 @@ Classes
 
 - :ref:`exhale_struct_structlupnt_1_1NBodyDynamicsParams`
 
-- :ref:`exhale_class_classlupnt_1_1AnalyticalDynamics`
-
 - :ref:`exhale_class_classlupnt_1_1CartesianTwoBodyDynamics`
 
 - :ref:`exhale_class_classlupnt_1_1ClohessyWiltshireDynamics`
 
+- :ref:`exhale_class_classlupnt_1_1IAnalyticalOrbitDynamics`
+
 - :ref:`exhale_class_classlupnt_1_1IDynamics`
+
+- :ref:`exhale_class_classlupnt_1_1IOrbitDynamics`
 
 - :ref:`exhale_class_classlupnt_1_1J2CartTwoBodyDynamics`
 
@@ -98,13 +100,9 @@ Classes
 
 - :ref:`exhale_class_classlupnt_1_1KeplerianDynamics`
 
-- :ref:`exhale_class_classlupnt_1_1MoonFixedDynamics`
-
 - :ref:`exhale_class_classlupnt_1_1MoonMeanDynamics`
 
 - :ref:`exhale_class_classlupnt_1_1NBodyDynamics`
-
-- :ref:`exhale_class_classlupnt_1_1NumericalDynamics`
 
 - :ref:`exhale_class_classlupnt_1_1NumericalOrbitDynamics`
 

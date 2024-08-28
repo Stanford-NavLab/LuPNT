@@ -1,0 +1,14 @@
+.. _exhale_function_radio__measurement_8h_1a2a7b7b55ae0f0120d292f2afdefef619:
+
+Function lupnt::ComputePseudorangerate
+======================================
+
+- Defined in :ref:`file_include_lupnt_measurements_radio_measurement.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ComputePseudorangerate(VecX, VecX, VecX, VecX, Real, Real, Real)
+   :project: LuPNT_CPP

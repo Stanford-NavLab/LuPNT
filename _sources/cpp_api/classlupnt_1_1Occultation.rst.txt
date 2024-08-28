@@ -3,7 +3,7 @@
 Class Occultation
 =================
 
-- Defined in :ref:`file_include_lupnt_measurements_occultation.h`
+- Defined in :ref:`file_include_lupnt_physics_occultation.h`
 
 
 Class Documentation

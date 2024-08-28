@@ -1,0 +1,14 @@
+.. _exhale_function_spice__interface_8h_1a505f26f0e4911a4c3e23e23c6df3e186:
+
+Function lupnt::spice::String2TAI
+=================================
+
+- Defined in :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spice::String2TAI(const std::string&)
+   :project: LuPNT_CPP

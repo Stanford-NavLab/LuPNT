@@ -1,0 +1,14 @@
+.. _exhale_function_user__file__path_8h_1a1629dd3ac46c9c655220498bbfcbfef5:
+
+Function lupnt::GetFilePath
+===========================
+
+- Defined in :ref:`file_include_lupnt_core_user_file_path.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetFilePath(std::string_view)
+   :project: LuPNT_CPP

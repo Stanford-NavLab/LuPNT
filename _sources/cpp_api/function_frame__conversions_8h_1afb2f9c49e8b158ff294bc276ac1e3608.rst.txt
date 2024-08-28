@@ -1,0 +1,14 @@
+.. _exhale_function_frame__conversions_8h_1afb2f9c49e8b158ff294bc276ac1e3608:
+
+Function lupnt::RotOP2CI
+========================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RotOP2CI(Real)
+   :project: LuPNT_CPP

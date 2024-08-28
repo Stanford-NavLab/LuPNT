@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1a848bd78261a1dd90eec1112a0b98e1a6:
+
+Function lupnt::ConvertTime(Real, Time, Time)
+=============================================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ConvertTime(Real, Time, Time)
+   :project: LuPNT_CPP

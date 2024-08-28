@@ -1,0 +1,14 @@
+.. _exhale_function_frame__conversions_8h_1a791a9653dd2b1660a3ecf63c5dae4f1a:
+
+Function lupnt::GCRF2EMR
+========================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GCRF2EMR(Real, const Vec6&)
+   :project: LuPNT_CPP

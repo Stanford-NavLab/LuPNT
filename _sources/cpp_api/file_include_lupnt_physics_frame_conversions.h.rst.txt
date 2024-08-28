@@ -1,0 +1,113 @@
+
+.. _file_include_lupnt_physics_frame_conversions.h:
+
+File frame_conversions.h
+========================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_physics>` (``include/lupnt/physics``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/physics/frame_conversions.h``)
+----------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_physics_frame_conversions.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``cheby.h`` (:ref:`file_include_lupnt_physics_cheby.h`)
+
+- ``functional``
+
+- ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
+
+- ``map``
+
+- ``memory``
+
+- ``ostream``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_frame__conversions_8h_1a600c25fea3901bf6f982f70521a50645`
+
+- :ref:`exhale_function_frame__conversions_8h_1a6a2891f82356a27260428b0474ebf3a6`
+
+- :ref:`exhale_function_frame__conversions_8h_1a1d067ba777b48923dbae50919d6029b9`
+
+- :ref:`exhale_function_frame__conversions_8h_1a791a9653dd2b1660a3ecf63c5dae4f1a`
+
+- :ref:`exhale_function_frame__conversions_8h_1aea47d5022a39b92bfd62a043442caf6c`
+
+- :ref:`exhale_function_frame__conversions_8h_1ab4eeb3302d939f00597bfc94f3612d36`
+
+- :ref:`exhale_function_frame__conversions_8h_1a862ca77f8e49234694a20431cbb2993f`
+
+- :ref:`exhale_function_frame__conversions_8h_1a3817e76bdc5603d4174d21580e0c8672`
+
+- :ref:`exhale_function_frame__conversions_8h_1a5992b33069953b9425d37363f9ba21ba`
+
+- :ref:`exhale_function_frame__conversions_8h_1a8e26afd12b1e57e60a0f0380252e7b87`
+
+- :ref:`exhale_function_frame__conversions_8h_1a5ba0bee11f521873d43a469111207f8f`
+
+- :ref:`exhale_function_frame__conversions_8h_1a829c6df4cc33487a63e93735abdc37e9`
+
+- :ref:`exhale_function_frame__conversions_8h_1a947105cadc11f3cd7f21fac90c6cea5c`
+
+- :ref:`exhale_function_frame__conversions_8h_1a3e7a572a8cc70bc5c1ca218bcd902f16`
+
+- :ref:`exhale_function_frame__conversions_8h_1afc3f78a51c800969b90d8b1907d641a9`
+
+- :ref:`exhale_function_frame__conversions_8h_1a64798d5cf5cf57dbd7a25f2cd8f76a43`
+
+- :ref:`exhale_function_frame__conversions_8h_1afdc4e4193fd3fd839f3ee2c95a0acb79`
+
+- :ref:`exhale_function_frame__conversions_8h_1a8f0a9ad8bc9ddfbe327c9fd54b51d4dd`
+
+- :ref:`exhale_function_frame__conversions_8h_1a0aa822768d2ed2b29e5e5c5e65bd9401`
+
+- :ref:`exhale_function_frame__conversions_8h_1a7d62028d692de3adeb5f73a39a311559`
+
+- :ref:`exhale_function_frame__conversions_8h_1a0132b11f8a86b8c255c4e380134dd1ee`
+
+- :ref:`exhale_function_frame__conversions_8h_1afb2f9c49e8b158ff294bc276ac1e3608`
+
+- :ref:`exhale_function_frame__conversions_8h_1a32aad9276e0724a0316019341b6f07a5`
+
+- :ref:`exhale_function_frame__conversions_8h_1a413c9eae72485042cffaa8ae4b461bf9`
+
+- :ref:`exhale_function_frame__conversions_8h_1a359457f405751c515478eba2554fbc02`
+
+- :ref:`exhale_function_frame__conversions_8h_1adf36d98bd7f4a46183aa3e8c64af948d`
+

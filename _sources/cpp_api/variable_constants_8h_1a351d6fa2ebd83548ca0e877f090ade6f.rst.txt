@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a351d6fa2ebd83548ca0e877f090ade6f:
+
+Variable lupnt::GM_MARS
+=======================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::GM_MARS
+   :project: LuPNT_CPP

@@ -37,17 +37,10 @@ Program Listing for File converter.h
                             OrbitStateRepres repres_in_c, OrbitStateRepres repres_in_d,
                             OrbitStateRepres repres_out, Real GM);
    
-     std::shared_ptr<OrbitState> ConvertOrbitStateRepresentation(
-         const std::shared_ptr<OrbitState> &state_in, OrbitStateRepres repres_out, Real GM);
+     Ptr<OrbitState> ConvertOrbitStateRepresentation(const Ptr<OrbitState> &state_in,
+                                                     OrbitStateRepres repres_out, Real GM);
    
-     static std::shared_ptr<CartesianOrbitState> ConvertOrbitStateFrame(
-         const std::shared_ptr<CartesianOrbitState> state_in, const Real epoch,
-         const Frame frame_out) {
-       auto rv_in = state_in->GetVec();
-       auto frame_in = state_in->GetCoordSystem();
-       auto rv_out = ConvertFrame(epoch, rv_in, frame_in, frame_out);
-       auto state_out = std::make_shared<CartesianOrbitState>(rv_out, frame_out);
-       return state_out;
-     }
+     CartesianOrbitState ConvertOrbitStateFrame(const CartesianOrbitState state, const Real epoch,
+                                                const Frame frame_out);
    
    }  // namespace lupnt

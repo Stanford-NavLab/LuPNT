@@ -1,7 +1,7 @@
 .. _exhale_struct_structlupnt_1_1GravityField:
 
-Struct GravityField
-===================
+Template Struct GravityField
+============================
 
 - Defined in :ref:`file_include_lupnt_physics_body.h`
 

@@ -1,0 +1,14 @@
+.. _exhale_define_definitions_8h_1a5ec530a7d0e7bbf68f9d5e36fe51111b:
+
+Define ASSERT_WITH_MESSAGE
+==========================
+
+- Defined in :ref:`file_include_lupnt_core_definitions.h`
+
+
+Define Documentation
+--------------------
+
+
+.. doxygendefine:: ASSERT_WITH_MESSAGE
+   :project: LuPNT_CPP

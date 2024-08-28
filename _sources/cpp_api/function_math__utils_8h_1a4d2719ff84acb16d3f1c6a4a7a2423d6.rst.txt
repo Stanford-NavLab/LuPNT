@@ -1,7 +1,7 @@
 .. _exhale_function_math__utils_8h_1a4d2719ff84acb16d3f1c6a4a7a2423d6:
 
-Template Function lupnt::arange
-===============================
+Template Function lupnt::arange(T, T, T)
+========================================
 
 - Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
 

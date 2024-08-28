@@ -1,0 +1,6 @@
+pylupnt.synodic2intertial
+-------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: synodic2intertial

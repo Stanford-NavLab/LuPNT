@@ -1,0 +1,14 @@
+.. _exhale_variable_integrator_8h_1a2cca2a1ef0fe62e7110d58905869d3d7:
+
+Variable lupnt::default_integrator
+==================================
+
+- Defined in :ref:`file_include_lupnt_numerics_integrator.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::default_integrator
+   :project: LuPNT_CPP

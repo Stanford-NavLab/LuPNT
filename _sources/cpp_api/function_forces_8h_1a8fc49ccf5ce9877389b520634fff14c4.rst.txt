@@ -1,0 +1,14 @@
+.. _exhale_function_forces_8h_1a8fc49ccf5ce9877389b520634fff14c4:
+
+Function lupnt::AccelerationEarthSpacecraft
+===========================================
+
+- Defined in :ref:`file_include_lupnt_dynamics_forces.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::AccelerationEarthSpacecraft(Real, const Vec6&, Real, Real, Real, Real, GravityField<double>)
+   :project: LuPNT_CPP

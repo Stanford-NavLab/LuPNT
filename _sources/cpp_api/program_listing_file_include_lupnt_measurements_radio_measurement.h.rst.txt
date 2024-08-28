@@ -13,20 +13,56 @@ Program Listing for File radio_measurement.h
    
    #pragma once
    
+   #include "lupnt/measurements/comm_device.h"
    #include "lupnt/numerics/math_utils.h"
+   #include "lupnt/physics/body.h"
    #include "lupnt/physics/frame_converter.h"
    
    namespace lupnt {
    
-     class RadioMeasurement {
-     public:
-       static Real ComputePseudorange(VecX r_tx, VecX r_rx, Real dt_tx, Real dt_rx, Real offset);
+     Real ComputeOneWayRange(VecX r_tx, VecX r_rx, Real offset);
    
-       static Real ComputePseudorangerate(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx, Real dt_tx_dot,
-                                          Real dt_rx_dot, Real offset);
+     Real ComputePseudorange(VecX r_tx, VecX r_rx, Real dt_tx, Real dt_rx, Real offset);
    
-       static Real ComputeDopplerShift(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx, Real dt_tx_dot,
-                                       Real dt_rx_dot, Real f, Real offset);
-     };
+     Real ComputePseudorangerate(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx, Real dt_tx_dot,
+                                 Real dt_rx_dot, Real offset);
+   
+     Real ComputeDopplerShift(VecX r_tx, VecX r_rx, VecX v_tx, VecX v_rx, Real dt_tx_dot,
+                              Real dt_rx_dot, Real f, Real offset);
+   
+     Real ComputeOneWayRangeLTR(Real epoch_rx, Vec6 rv_tx, Vec6 rv_rx, Real dt_tx, Real dt_rx,
+                                BodyData, BodyData rx_center_body, bool is_bodyfixed_tx,
+                                bool is_bodyfixed_rx, Real hardware_delay);
+   
+     Real ComputeTwoWayRangeLTR(Real epoch_rx, Vec6 rv_target_tr, Vec6 rv_rx_tr,
+                                BodyData target_center_body, BodyData rx_center_body,
+                                bool is_bodyfixed_target, bool is_bodyfixed_rx, Real hardware_delay,
+                                Real additional_delay = 0.0);
+   
+     Real ComputeOneWayRangeRateLTR(Real epoch_rx, Vec6 rv_tx_tr, Vec6 rv_rx_tr, Real dt_dot_tx,
+                                    Real dt_dot_rx, BodyData target_center_body,
+                                    BodyData rx_center_body, bool is_bodyfixed_target,
+                                    bool is_bodyfixed_rx, Real hardware_delay, double T_I);
+   
+     Real ComputeTwoWayRangeRateLTR(Real epoch_rx, Vec6 rv_target_tr, Vec6 rv_rx_tr,
+                                    BodyData target_center_body, BodyData rx_center_body,
+                                    bool is_bodyfixed_target, bool is_bodyfixed_rx,
+                                    Real hardware_delay, double T_I);
+   
+     double ComputePnRangeErrorCTL(double PRC_N0, double B_L_CTL, double T_c,
+                                   Modulation modulation_type = Modulation::BPSK);
+   
+     double ComputePnRangeErrorOL(double PRC_N0, double T_I, double T_c,
+                                  Modulation modulation_type = Modulation::BPSK);
+   
+     double ComputeRangeRateErrorOneWay(double B_L_carrier, double f_C, double T_s, double T_I,
+                                        double PT_N0, double sigma_y_1s,
+                                        Modulation modulation_type = Modulation::BPSK,
+                                        double m_R = 0.0);
+   
+     double ComputeRangeRateErrorTwoWay(double B_L_carrier, double f_C, double T_s, double T_I,
+                                        double PT_N0, double sigma_y_1s, double G,
+                                        Modulation modulation_type = Modulation::BPSK,
+                                        double m_R = 0.0);
    
    }  // namespace lupnt

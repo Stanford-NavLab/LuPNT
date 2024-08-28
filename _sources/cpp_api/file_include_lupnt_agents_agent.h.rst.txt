@@ -44,11 +44,13 @@ Includes
 --------
 
 
-- ``comm_device.h`` (:ref:`file_include_lupnt_agents_comm_device.h`)
-
 - ``lupnt/core/constants.h`` (:ref:`file_include_lupnt_core_constants.h`)
 
 - ``lupnt/dynamics/dynamics.h`` (:ref:`file_include_lupnt_dynamics_dynamics.h`)
+
+- ``lupnt/measurements/comm_device.h`` (:ref:`file_include_lupnt_measurements_comm_device.h`)
+
+- ``lupnt/physics/attitude_state.h`` (:ref:`file_include_lupnt_physics_attitude_state.h`)
 
 - ``lupnt/physics/clock.h`` (:ref:`file_include_lupnt_physics_clock.h`)
 
@@ -57,6 +59,8 @@ Includes
 - ``lupnt/physics/orbit_state.h`` (:ref:`file_include_lupnt_physics_orbit_state.h`)
 
 - ``memory``
+
+- ``typeinfo``
 
 
 
@@ -68,11 +72,9 @@ Included By
 
 - :ref:`file_include_lupnt_agents_state_estimation_app.h`
 
-- :ref:`file_include_lupnt_agents_state_estimation_app_gnss.h`
-
 - :ref:`file_include_lupnt_lupnt.h`
 
-- :ref:`file_include_lupnt_measurements_intersatellite_link.h`
+- :ref:`file_include_lupnt_measurements_link_measurement.h`
 
 
 

@@ -1,0 +1,14 @@
+.. _exhale_function_frame__conversions_8h_1a32aad9276e0724a0316019341b6f07a5:
+
+Function lupnt::RotPolarMotion
+==============================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RotPolarMotion(Real)
+   :project: LuPNT_CPP

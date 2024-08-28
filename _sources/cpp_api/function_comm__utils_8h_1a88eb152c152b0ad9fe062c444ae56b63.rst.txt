@@ -1,0 +1,14 @@
+.. _exhale_function_comm__utils_8h_1a88eb152c152b0ad9fe062c444ae56b63:
+
+Function lupnt::BitsPerSymbol
+=============================
+
+- Defined in :ref:`file_include_lupnt_measurements_comm_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::BitsPerSymbol(Modulation)
+   :project: LuPNT_CPP

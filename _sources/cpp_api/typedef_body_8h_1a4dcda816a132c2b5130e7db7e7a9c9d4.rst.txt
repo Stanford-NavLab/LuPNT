@@ -1,0 +1,14 @@
+.. _exhale_typedef_body_8h_1a4dcda816a132c2b5130e7db7e7a9c9d4:
+
+Typedef lupnt::Body
+===================
+
+- Defined in :ref:`file_include_lupnt_physics_body.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::Body
+   :project: LuPNT_CPP

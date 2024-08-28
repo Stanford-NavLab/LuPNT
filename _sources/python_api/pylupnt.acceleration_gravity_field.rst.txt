@@ -1,0 +1,6 @@
+pylupnt.acceleration_gravity_field
+----------------------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: acceleration_gravity_field

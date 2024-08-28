@@ -54,8 +54,6 @@ Included By
 
 - :ref:`file_include_lupnt_agents_state_estimation_app.h`
 
-- :ref:`file_include_lupnt_agents_state_estimation_app_gnss.h`
-
 - :ref:`file_include_lupnt_core_scheduler.h`
 
 - :ref:`file_include_lupnt_lupnt.h`

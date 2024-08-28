@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1aa1737a7eec3a8b7ed823b0cef938e74c:
+
+Function lupnt::EarthRotationAngle
+==================================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::EarthRotationAngle(Real)
+   :project: LuPNT_CPP

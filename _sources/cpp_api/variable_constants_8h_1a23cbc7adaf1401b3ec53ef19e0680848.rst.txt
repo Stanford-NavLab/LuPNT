@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a23cbc7adaf1401b3ec53ef19e0680848:
+
+Variable lupnt::R_MERCURY
+=========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::R_MERCURY
+   :project: LuPNT_CPP

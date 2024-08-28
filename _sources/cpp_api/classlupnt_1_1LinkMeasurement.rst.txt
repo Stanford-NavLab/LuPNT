@@ -1,0 +1,17 @@
+.. _exhale_class_classlupnt_1_1LinkMeasurement:
+
+Class LinkMeasurement
+=====================
+
+- Defined in :ref:`file_include_lupnt_measurements_link_measurement.h`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: lupnt::LinkMeasurement
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

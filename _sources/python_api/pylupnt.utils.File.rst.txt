@@ -1,0 +1,9 @@
+pylupnt.utils.File
+------------------
+
+.. currentmodule:: pylupnt.utils
+
+.. autoclass:: File
+    :members:
+    :undoc-members:
+    :inherited-members:

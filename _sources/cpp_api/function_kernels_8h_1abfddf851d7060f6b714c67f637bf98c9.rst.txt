@@ -1,0 +1,14 @@
+.. _exhale_function_kernels_8h_1abfddf851d7060f6b714c67f637bf98c9:
+
+Function lupnt::GetBodyPosVel(Real, NaifId, Frame)
+==================================================
+
+- Defined in :ref:`file_include_lupnt_data_kernels.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetBodyPosVel(Real, NaifId, Frame)
+   :project: LuPNT_CPP

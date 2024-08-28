@@ -1,0 +1,82 @@
+
+.. _file_include_lupnt_measurements_comm_utils.h:
+
+File comm_utils.h
+=================
+
+|exhale_lsh| :ref:`Parent directory <dir_include_lupnt_measurements>` (``include/lupnt/measurements``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+Definition (``include/lupnt/measurements/comm_utils.h``)
+--------------------------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_include_lupnt_measurements_comm_utils.h.rst
+
+
+
+Detailed Description
+--------------------
+
+your name (you@domain.com) 
+
+0.1 
+
+2024-08-21
+
+Copyright (c) 2024 
+
+
+
+
+
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_include_lupnt_lupnt.h`
+
+- :ref:`file_include_lupnt_measurements_comm_device.h`
+
+
+
+
+Namespaces
+----------
+
+
+- :ref:`namespace_lupnt`
+
+
+Enums
+-----
+
+
+- :ref:`exhale_enum_comm__utils_8h_1aedf22e966a287ff8137b334f065fba3d`
+
+- :ref:`exhale_enum_comm__utils_8h_1ac24dcd940441c9f306d33cfe1ac71e86`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_comm__utils_8h_1a88eb152c152b0ad9fe062c444ae56b63`
+
+- :ref:`exhale_function_comm__utils_8h_1a4ab44ef9b14d39e2fa6e99568c2b1180`
+
+- :ref:`exhale_function_comm__utils_8h_1aec8093a14370f38ccb70dac45ff187b5`
+
+- :ref:`exhale_function_comm__utils_8h_1a6a981507e49fa9c6ea32951ee72e1a09`
+
+- :ref:`exhale_function_comm__utils_8h_1affc5d0a2168f35877c7aee59921ef0cf`
+
+- :ref:`exhale_function_comm__utils_8h_1ad7a3a4fbfb72b49aa65d5ee5fde92445`
+

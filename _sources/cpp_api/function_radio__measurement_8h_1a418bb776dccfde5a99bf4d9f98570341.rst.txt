@@ -1,0 +1,14 @@
+.. _exhale_function_radio__measurement_8h_1a418bb776dccfde5a99bf4d9f98570341:
+
+Function lupnt::ComputePnRangeErrorOL
+=====================================
+
+- Defined in :ref:`file_include_lupnt_measurements_radio_measurement.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ComputePnRangeErrorOL(double, double, double, Modulation)
+   :project: LuPNT_CPP

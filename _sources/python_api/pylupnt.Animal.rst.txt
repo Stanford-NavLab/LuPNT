@@ -1,0 +1,9 @@
+pylupnt.Animal
+--------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: Animal
+    :members:
+    :undoc-members:
+    :inherited-members:

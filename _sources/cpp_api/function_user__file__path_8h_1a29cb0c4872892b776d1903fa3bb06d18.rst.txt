@@ -1,0 +1,14 @@
+.. _exhale_function_user__file__path_8h_1a29cb0c4872892b776d1903fa3bb06d18:
+
+Function lupnt::GetSystemTime
+=============================
+
+- Defined in :ref:`file_include_lupnt_core_user_file_path.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetSystemTime()
+   :project: LuPNT_CPP

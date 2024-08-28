@@ -12,6 +12,7 @@ Inheritance Relationships
 Derived Types
 *************
 
+- ``public lupnt::AttitudeState`` (:ref:`exhale_class_classlupnt_1_1AttitudeState`)
 - ``public lupnt::ClockState`` (:ref:`exhale_class_classlupnt_1_1ClockState`)
 - ``public lupnt::OrbitState`` (:ref:`exhale_class_classlupnt_1_1OrbitState`)
 

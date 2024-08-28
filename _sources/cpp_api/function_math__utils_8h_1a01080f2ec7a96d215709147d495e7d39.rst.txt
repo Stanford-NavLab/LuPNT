@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a01080f2ec7a96d215709147d495e7d39:
+
+Function lupnt::PercentileD
+===========================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::PercentileD(VecXd, double)
+   :project: LuPNT_CPP

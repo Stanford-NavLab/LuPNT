@@ -82,25 +82,25 @@ Functions
 ---------
 
 
-- :ref:`exhale_function_spice__interface_8h_1a150f4943faf7783cb2624eff36ba454b`
+- :ref:`exhale_function_spice__interface_8h_1a02b8e6e4a726850c0b75a48a273c1fae`
 
 - :ref:`exhale_function_spice__interface_8h_1abacbf5610689a721d22bb5ab268ddd26`
 
-- :ref:`exhale_function_spice__interface_8h_1a798bd4605b4d53e2abe2b695219c57b8`
+- :ref:`exhale_function_spice__interface_8h_1a0cd4a2476c3f84aaa15c2cf7a678b8a0`
 
 - :ref:`exhale_function_spice__interface_8h_1a0dbcc46a13ccefbe04bb494636490b9a`
 
-- :ref:`exhale_function_spice__interface_8h_1ab68b3f0ecd8894649542c0c1408c4ba6`
+- :ref:`exhale_function_spice__interface_8h_1aa842deed5cebf9a133068370435ff518`
 
-- :ref:`exhale_function_spice__interface_8h_1a4c13ad0de6a31225ac60ec63269a2bba`
+- :ref:`exhale_function_spice__interface_8h_1ab9b96692e39e29ac08f12482441105ce`
 
 - :ref:`exhale_function_spice__interface_8h_1a0b84cbf0d439aee2f59a21238ca8d399`
 
 - :ref:`exhale_function_spice__interface_8h_1a8f89d476193983dd04654519ee132196`
 
-- :ref:`exhale_function_spice__interface_8h_1af9fc696883489cd19ae8a3115a061868`
+- :ref:`exhale_function_spice__interface_8h_1a505f26f0e4911a4c3e23e23c6df3e186`
 
-- :ref:`exhale_function_spice__interface_8h_1abf22c4e45d4a2c745bde9293142d351c`
+- :ref:`exhale_function_spice__interface_8h_1a8c0bdd530c4980e9ca97879dd7a727c4`
 
 - :ref:`exhale_function_spice__interface_8h_1aa72bf1191d174b068311016fcbd3b661`
 
@@ -111,9 +111,11 @@ Variables
 ---------
 
 
-- :ref:`exhale_variable_spice__interface_8h_1a3acec19d6130d137a0a48d5c7025ea49`
+- :ref:`exhale_variable_spice__interface_8h_1a2dcc7a2d96d02ba9f071e685de4884eb`
 
 - :ref:`exhale_variable_spice__interface_8h_1a6f2665fa8690dbc7eb69633e6e8c779c`
 
 - :ref:`exhale_variable_spice__interface_8h_1aba22487f4588c09c906b98174268b4d7`
+
+- :ref:`exhale_variable_spice__interface_8h_1a5cdc549182bcda852053bf541eb09dc4`
 

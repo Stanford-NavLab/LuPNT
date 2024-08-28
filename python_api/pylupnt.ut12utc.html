@@ -1,0 +1,1119 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="pylupnt.utc2tai" href="pylupnt.utc2tai.html" /><link rel="prev" title="pylupnt.tt2tdb" href="pylupnt.tt2tdb.html" />
+
+    <!-- Generated with Sphinx 7.4.7 and Furo 2024.08.06 -->
+        <title>pylupnt.ut12utc - LuPNT 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #eeffcc;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">LuPNT 0.0.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/LuPNT_square.png" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">LuPNT 0.0.1 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introducing LuPNT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development.html">Development with VSCode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../builddocs.html">Building Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorial</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tutorial/Python/index.html">Python</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Python</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial/Python/basicdemo.html">Lunar Frozen Orbits and Constellation Coverage</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tutorial/C%2B%2B/index.html">C++</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of C++</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial/C%2B%2B/basic.html">C++ interface</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python API</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="pylupnt.html">pylupnt</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of pylupnt</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.Animal.html">Animal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.Body.html">Body</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.CartesianOrbitState.html">CartesianOrbitState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.CartesianTwoBodyDynamics.html">CartesianTwoBodyDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.ClassicalOE.html">ClassicalOE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.Dog.html">Dog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.EquinoctialOE.html">EquinoctialOE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.File.html">File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.Frame.html">Frame</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.GravityField.html">GravityField</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.GridSpec.html">GridSpec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.Husky.html">Husky</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.IAnalyticalOrbitDynamics.html">IAnalyticalOrbitDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.IDynamics.html">IDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.IOrbitDynamics.html">IOrbitDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.IntegratorType.html">IntegratorType</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.J2CartTwoBodyDynamics.html">J2CartTwoBodyDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.J2KeplerianDynamics.html">J2KeplerianDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.KeplerianDynamics.html">KeplerianDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.NBodyDynamics.html">NBodyDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.NaifId.html">NaifId</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.NumericalOrbitDynamics.html">NumericalOrbitDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.OrbitState.html">OrbitState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.OrbitStateRepres.html">OrbitStateRepres</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.QuasiNonsingOE.html">QuasiNonsingOE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.QuasiNonsingROE.html">QuasiNonsingROE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.SingularROE.html">SingularROE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.SpiceInterface.html">SpiceInterface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.Time.html">Time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.acceleration_gravity_field.html">acceleration_gravity_field</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.acceleration_point_mass.html">acceleration_point_mass</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.acceleration_solar_radiation.html">acceleration_solar_radiation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.az_el_range2cart.html">az_el_range2cart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.cart2az_el_range.html">cart2az_el_range</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.cart2classical.html">cart2classical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.cart2east_north_up.html">cart2east_north_up</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.cart2lat_lon_alt.html">cart2lat_lon_alt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.classical2cart.html">classical2cart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.classical2delaunay.html">classical2delaunay</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.classical2equinoctial.html">classical2equinoctial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.classical2quasi_nonsingular.html">classical2quasi_nonsingular</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.compute_occultation.html">compute_occultation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.convert_frame.html">convert_frame</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.convert_orbit_state.html">convert_orbit_state</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.convert_time.html">convert_time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.decibel2decimal.html">decibel2decimal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.decimal2decibel.html">decimal2decibel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.deg_min_sec2degrees.html">deg_min_sec2degrees</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.degrees2deg_min_sec.html">degrees2deg_min_sec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.delaunay2classical.html">delaunay2classical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.east_north_up2cart.html">east_north_up2cart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.eccentric2mean_anomaly.html">eccentric2mean_anomaly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.eccentric2true_anomaly.html">eccentric2true_anomaly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.equinoctial2classical.html">equinoctial2classical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.get_body_pos_vel.html">get_body_pos_vel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.get_orbital_period.html">get_orbital_period</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.gps2tai.html">gps2tai</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.gregorian2mjd.html">gregorian2mjd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.gregorian2time.html">gregorian2time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.inertial2synodic.html">inertial2synodic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.jd2time.html">jd2time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.lat_lon_alt2cart.html">lat_lon_alt2cart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.mean2eccentric_anomaly.html">mean2eccentric_anomaly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.mean2true_anomaly.html">mean2true_anomaly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.mjd2gregorian.html">mjd2gregorian</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.mjd2gregorian_string.html">mjd2gregorian_string</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.mjd2time.html">mjd2time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.quasi_nonsingular2classical.html">quasi_nonsingular2classical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.relative_quasi_nonsingular2classical.html">relative_quasi_nonsingular2classical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.synodic2intertial.html">synodic2intertial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.tai2gps.html">tai2gps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.tai2tt.html">tai2tt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.tai2utc.html">tai2utc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.tcb2tdb.html">tcb2tdb</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.tcg2tt.html">tcg2tt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.tdb2tt.html">tdb2tt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.time2gregorian_string.html">time2gregorian_string</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.time2jd.html">time2jd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.time2mjd.html">time2mjd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.true2eccentric_anomaly.html">true2eccentric_anomaly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.true2mean_anomaly.html">true2mean_anomaly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.tt2tai.html">tt2tai</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.tt2tcb.html">tt2tcb</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.tt2tcg.html">tt2tcg</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.tt2tdb.html">tt2tdb</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">ut12utc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utc2tai.html">utc2tai</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utc2ut1.html">utc2ut1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.wrap2pi.html">wrap2pi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.wrap2two_pi.html">wrap2two_pi</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="pylupnt.plot.html">pylupnt.plot</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of pylupnt.plot</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.plot.KMeans.html">KMeans</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.plot.Plot3D.html">Plot3D</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="pylupnt.render.html">pylupnt.render</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of pylupnt.render</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.render.Blender.html">Blender</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.render.R.html">R</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pylupnt.scenarios.html">pylupnt.scenarios</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="pylupnt.ephemeris_parsing.html">pylupnt.ephemeris_parsing</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of pylupnt.ephemeris_parsing</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.ephemeris_parsing.datetime.html">datetime</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.ephemeris_parsing.timedelta.html">timedelta</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="pylupnt.math_utils.html">pylupnt.math_utils</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of pylupnt.math_utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.math_utils.arr_to_mat_idx.html">arr_to_mat_idx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.math_utils.cross_norm.html">cross_norm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.math_utils.i_to_arr_idxs.html">i_to_arr_idxs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.math_utils.mat_to_arr_idx.html">mat_to_arr_idx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.math_utils.wrap2Pi.html">wrap2Pi</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="pylupnt.utils.html">pylupnt.utils</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of pylupnt.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.File.html">File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.GridSpec.html">GridSpec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.dump_pickle.html">dump_pickle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.find_file.html">find_file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.format_element.html">format_element</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.get_basepath.html">get_basepath</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.get_output_path.html">get_output_path</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.load_data.html">load_data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.load_pickle.html">load_pickle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.normalize.html">normalize</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.plot_RTN.html">plot_RTN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.print_aligned.html">print_aligned</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.set_axes_equal.html">set_axes_equal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.timed.html">timed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.timer_func.html">timer_func</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">C++ API</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../cpp_api/cpp_library_root.html">C++ Library API</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of C++ Library API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/namespace_lupnt.html">Namespace lupnt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/namespace_lupnt__spice.html">Namespace lupnt::spice</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1BodyData.html">Struct BodyData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1BodyT.html">Template Struct BodyT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1EopData.html">Struct EopData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1EopFileData.html">Struct EopFileData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1GnssReceiverParam.html">Struct GnssReceiverParam</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1GnssTransmission.html">Struct GnssTransmission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1GravityField.html">Template Struct GravityField</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1IauSofaData.html">Struct IauSofaData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1IauSofaFileData.html">Struct IauSofaFileData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1ITransmission.html">Struct ITransmission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1LinkParams.html">Struct LinkParams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1NBodyDynamicsParams.html">Struct NBodyDynamicsParams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1ReceiverParam.html">Struct ReceiverParam</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1segment__t.html">Struct segment_t</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1TaiUtcFileData.html">Struct TaiUtcFileData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1Agent.html">Class Agent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1Antenna.html">Class Antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1Application.html">Class Application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1AttitudeState.html">Class AttitudeState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1CartesianOrbitState.html">Class CartesianOrbitState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1CartesianTwoBodyDynamics.html">Class CartesianTwoBodyDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1ClassicalOE.html">Class ClassicalOE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1ClockDynamics.html">Class ClockDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1ClockState.html">Class ClockState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1ClohessyWiltshireDynamics.html">Class ClohessyWiltshireDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1DelaunayOE.html">Class DelaunayOE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1EKF.html">Class EKF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1EquinoctialOE.html">Class EquinoctialOE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1Event.html">Class Event</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1GnssChannel.html">Class GnssChannel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1GnssConstellation.html">Class GnssConstellation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1GnssMeasurement.html">Class GnssMeasurement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1GnssReceiver.html">Class GnssReceiver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1GnssTransmitter.html">Class GnssTransmitter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1GroundStation.html">Class GroundStation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1IAnalyticalOrbitDynamics.html">Class IAnalyticalOrbitDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1ICommDevice.html">Class ICommDevice</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1IDynamics.html">Class IDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1IFilter.html">Class IFilter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1IIntegrator.html">Class IIntegrator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1IntegratorParams.html">Class IntegratorParams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1IOrbitDynamics.html">Class IOrbitDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1IRKF.html">Class IRKF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1IState.html">Class IState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1J2CartTwoBodyDynamics.html">Class J2CartTwoBodyDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1J2KeplerianDynamics.html">Class J2KeplerianDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1JointState.html">Class JointState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1KeplerianDynamics.html">Class KeplerianDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1LagrangeInterpolator.html">Class LagrangeInterpolator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1LinkMeasurement.html">Class LinkMeasurement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1MoonMeanDynamics.html">Class MoonMeanDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1NBodyDynamics.html">Template Class NBodyDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1NumericalOrbitDynamics.html">Class NumericalOrbitDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1NumericalPropagator.html">Class NumericalPropagator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1Occultation.html">Class Occultation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1OrbitState.html">Class OrbitState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1ProgressBar.html">Class ProgressBar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1QuasiNonsingOE.html">Class QuasiNonsingOE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1QuasiNonsingROE.html">Class QuasiNonsingROE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1Receiver.html">Class Receiver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1RK4.html">Class RK4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1RK8.html">Class RK8</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1RKF45.html">Class RKF45</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1RoeGeometricMappingDynamics.html">Class RoeGeometricMappingDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1Rover.html">Class Rover</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1Scheduler.html">Class Scheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1SingularROE.html">Class SingularROE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1SpaceChannel.html">Class SpaceChannel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1Spacecraft.html">Class Spacecraft</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1StateEstimationApp.html">Class StateEstimationApp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1TLE.html">Class TLE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1Transmitter.html">Class Transmitter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1Transponder.html">Class Transponder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/classlupnt_1_1YamanakaAnkersenDynamics.html">Class YamanakaAnkersenDynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/enum_clock_8h_1a1d1456dc1d1a3e8509d7354d57097a05.html">Enum ClockModel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/enum_frame__converter_8h_1ab3490cfa260b63428dc146a439d2f1b4.html">Enum Frame</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/enum_comm__utils_8h_1aedf22e966a287ff8137b334f065fba3d.html">Enum FrequencyBand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/enum_gnss__measurement_8h_1ac7d0acec0a22a3d623dfb3c27706407c.html">Enum GnssMeasurementType</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/enum_integrator_8h_1a439dc12b6564ad52ce71fe4477f0f564.html">Enum IntegratorType</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/enum_link__measurement_8h_1a2840dc3727e7838d084739c1314d8b8e.html">Enum LinkMeasurementType</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/enum_comm__utils_8h_1ac24dcd940441c9f306d33cfe1ac71e86.html">Enum Modulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/enum_constants_8h_1a1649cc608b11369f5f3e73d79378a82e.html">Enum NaifId</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/enum_orbit__states_8h_1a8d258676bc32bbefbd96ccfde676de87.html">Enum OrbitStateRepres</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/enum_constants_8h_1aac31e9a6bfb044b66f333136729d41e6.html">Enum Time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_forces_8h_1a13bb3181cfbb95e46e4a4537ec7d8f00.html">Template Function lupnt::AccelarationGravityField</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_forces_8h_1a683a4ae386d7efd8032ece31e8869d40.html">Function lupnt::AccelerationDrag</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_forces_8h_1a8fc49ccf5ce9877389b520634fff14c4.html">Function lupnt::AccelerationEarthSpacecraft</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_forces_8h_1a0a4db182c285e44f064b367959631b01.html">Function lupnt::AccelerationPointMass</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_forces_8h_1a05955f36422e8352bf58e2ee9afd3641.html">Function lupnt::AccelerationSolarRadiation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1ad1c3f7b22c7688dd88b1ee54c20dba19.html">Function lupnt::AngleBetweenVecs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a4d2719ff84acb16d3f1c6a4a7a2423d6.html">Template Function lupnt::arange(T, T, T)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1ac042e8496e1e707f3ccc9ac240bf0ee7.html">Function lupnt::arange(Real, Real, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1a831e7853d878a5249b3f88397bf66419.html">Function lupnt::AzElRange2Cart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1aaa4760f2f9d34194b1dff9c9c8344645.html">Function lupnt::AzElRange2EastNorthUp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_comm__utils_8h_1a88eb152c152b0ad9fe062c444ae56b63.html">Function lupnt::BitsPerSymbol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a3aae1637c1624de3b76dbda047b2358a.html">Function lupnt::BlkDiag</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1af0b4ca8fa8ed9a4ffa45c19f4dbc2ba7.html">Function lupnt::BlkDiagD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1a232881ad63b2088c445df3a6f53528a9.html">Function lupnt::Cart2AzElRange</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1af5765515c44896cc300aa6895cd6fd95.html">Function lupnt::Cart2Classical(const CartesianOrbitState&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1ac535fa06883924bd2a02c8ebf324fe28.html">Function lupnt::Cart2Classical(const Vec6&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1ae69496dfa3521c9ff44175cbc3e6d0d9.html">Function lupnt::Cart2Classical(Real, const Vec3&amp;, const Vec3&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1ad2a874dfed7de746a83485acb05e06ff.html">Function lupnt::Cart2EastNorthUp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1a20fd314f45d7e2a0c00807a7e3d118cb.html">Function lupnt::Cart2LatLonAlt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a84dbd55be744269613b6768af63945ef.html">Function lupnt::ceil</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_cheby_8h_1a4dcd21ee5d86c69388b7393202d31041.html">Function lupnt::cheby_eval</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_cheby_8h_1af29c85676c1a3bbfabe5262101c6b0cd.html">Function lupnt::cheby_eval_ad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_cheby_8h_1a4e1afd43c1d8ca7bd3b9ac8ecc7a8026.html">Function lupnt::cheby_posvel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_cheby_8h_1ae826d17333b8165c8d8838a9abacd298.html">Function lupnt::cheby_posvel_ad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_cheby_8h_1a4c99ce396b53a4a85f87759d2a437b70.html">Function lupnt::cheby_segment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_cheby_8h_1a0b2f33728e0b427d61e16ed8fe60c355.html">Function lupnt::cheby_verify</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1ae146dc7d39bd31a81c01f7510a57bc99.html">Function lupnt::Classical2Cart(const ClassicalOE&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1ab6e3d02212a60babc9459d92078e5f78.html">Function lupnt::Classical2Cart(const Vec6&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a825c782171f2c3c11c3d321c16a27d1b.html">Function lupnt::Classical2Delaunay(const ClassicalOE&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a68f37c601d8fb2099ae94ff86d790cf9.html">Function lupnt::Classical2Delaunay(const Vec6&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a1dac24c6e777d15c08759eb043575ae2.html">Function lupnt::Classical2Equinoctial(const ClassicalOE&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1ae7e0dd9d1095c53c3625e4c3d1e7cd13.html">Function lupnt::Classical2Equinoctial(const Vec6&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1af349fa61c191d3498c8b197a8501bfef.html">Function lupnt::Classical2QuasiNonsing(const ClassicalOE&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a324d01f75fbe8600880883ac2ec5417e.html">Function lupnt::Classical2QuasiNonsing(const Vec6&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_comm__utils_8h_1a4ab44ef9b14d39e2fa6e99568c2b1180.html">Function lupnt::ComputeBER</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_comm__utils_8h_1aec8093a14370f38ccb70dac45ff187b5.html">Function lupnt::ComputeCarrierLoopSNR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_mean__osculating_8h_1add9ea103ade416edee7fd6a1fcd153d2.html">Function lupnt::ComputeCorrectionMediumPeriod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_radio__measurement_8h_1a9302626ab69d4fb8cfac7f83a1de721c.html">Function lupnt::ComputeDopplerShift</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_comm__utils_8h_1a6a981507e49fa9c6ea32951ee72e1a09.html">Function lupnt::ComputeEsN0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_mean__osculating_8h_1a41178b416350545546a67da9fe72662d.html">Function lupnt::ComputeFirstOrderMediumPeriod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_radio__measurement_8h_1a62fe37490e3f3c155a9051237f0470c2.html">Function lupnt::ComputeOneWayRange</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_radio__measurement_8h_1a3ae5d1621ce1823abf932611ec0f321f.html">Function lupnt::ComputeOneWayRangeLTR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_radio__measurement_8h_1a3423f405394731942361466057214688.html">Function lupnt::ComputeOneWayRangeRateLTR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_radio__measurement_8h_1a56025a5773fd8970a56e8e197fe61192.html">Function lupnt::ComputePnRangeErrorCTL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_radio__measurement_8h_1a418bb776dccfde5a99bf4d9f98570341.html">Function lupnt::ComputePnRangeErrorOL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_radio__measurement_8h_1ae8c0bea1b59f5074c7ceb7c3f7201b7a.html">Function lupnt::ComputePseudorange</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_radio__measurement_8h_1a2a7b7b55ae0f0120d292f2afdefef619.html">Function lupnt::ComputePseudorangerate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_radio__measurement_8h_1a5c5f9bcddf69682307e37dc5debefee6.html">Function lupnt::ComputeRangeRateErrorOneWay</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_radio__measurement_8h_1a528899fec3bcd466877fef7219e4be12.html">Function lupnt::ComputeRangeRateErrorTwoWay</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_mean__osculating_8h_1abc963e3007b67be32d1efc4098c4652d.html">Function lupnt::ComputeSecondOrderMediumPeriod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_mean__osculating_8h_1aef4eaa09653f79a5c3cc08a622d40098.html">Function lupnt::ComputeSecondOrderShortPeriod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_radio__measurement_8h_1a81107871d36a596ef08522a037b8c803.html">Function lupnt::ComputeTwoWayRangeLTR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_radio__measurement_8h_1ae6c8ee9628254754396d2a1eb9dc186b.html">Function lupnt::ComputeTwoWayRangeRateLTR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter_8h_1aed177d04ef02f77daa161f0dced6d9b1.html">Function lupnt::ConvertFrame(Real, const Vec6&amp;, Frame, Frame, bool)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter_8h_1a2b4f14c90c404e5e67ef3fa1519ce0d0.html">Function lupnt::ConvertFrame(Real, const Vec3&amp;, Frame, Frame, bool)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter_8h_1a19df3e471d7cbaf6f2717c36c19fd184.html">Function lupnt::ConvertFrame(Real, const MatX6&amp;, Frame, Frame, bool)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter_8h_1ac075064ea732ebcb2b959108c9c078e9.html">Function lupnt::ConvertFrame(VecX, const Vec6&amp;, Frame, Frame, bool)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter_8h_1a03cd0e7409c51f733ba1a0e987b5c6b1.html">Function lupnt::ConvertFrame(VecX, const Vec3&amp;, Frame, Frame, bool)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter_8h_1af275199bef37665eed7e1bf8b245d787.html">Function lupnt::ConvertFrame(VecX, const MatX6&amp;, Frame, Frame, bool)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter_8h_1a733e2a7aa1d733014a608759671a3857.html">Function lupnt::ConvertFrame(Real, const CartesianOrbitState&amp;, Frame, bool)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_converter_8h_1a901cc16357baa920906a606df9203d1f.html">Function lupnt::ConvertOrbitState(const Vec6&amp;, OrbitStateRepres, OrbitStateRepres, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_converter_8h_1aba6a90f5160dc4a933a2403415dbb6f1.html">Function lupnt::ConvertOrbitState(const Vec6&amp;, const Vec6&amp;, OrbitStateRepres, OrbitStateRepres, OrbitStateRepres, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_converter_8h_1a9f49f07e562b862616cb0002fe7109a5.html">Function lupnt::ConvertOrbitStateFrame</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_converter_8h_1a3533059945c2dd5bce580da78efa5b23.html">Function lupnt::ConvertOrbitStateRepresentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a848bd78261a1dd90eec1112a0b98e1a6.html">Function lupnt::ConvertTime(Real, Time, Time)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a2bb149e81c85df047d4a6384104fd95f.html">Function lupnt::ConvertTime(VecX, Time, Time)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a238dba80cce71a0b69bf7644d2179afc.html">Function lupnt::cosd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_file_8h_1aa4af1d06b1fa49ad1a637c29321fa396.html">Function lupnt::CountLines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_attitude__conversions_8h_1a6fac39730dd5a5d09235abcf387ddfcd.html">Function lupnt::DCMToEulerAngles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_attitude__conversions_8h_1afc4477317a2ad395f26c211666d28271.html">Function lupnt::DCMToQuatCoeff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a25e7b51981724734ef9ae4a54ce8f2fc.html">Function lupnt::Decibel2Decimal(Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1aca5622608bae7d890388ba22261460cf.html">Function lupnt::Decibel2Decimal(VecX)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a9cb58ab175a6643105a0c3853132d010.html">Function lupnt::Decimal2Decibel(Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a97f49f30da52c1e55a66e18fada28629.html">Function lupnt::Decimal2Decibel(VecX)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a000c7ed2060942490e1ba79c11b8be79.html">Function lupnt::DegMinSec2Degrees</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1abc3e10009ffb1d287882ad70042d6b1c.html">Function lupnt::Degrees2DegMinSec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1aa04461a164d400903c2807c9043bc7e4.html">Function lupnt::Delaunay2Classical(const DelaunayOE&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a0c98d1e778897d9d23aa9e9c23ed13a2.html">Function lupnt::Delaunay2Classical(const Vec6&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_forces_8h_1a3102d0c942b2b0552c514ab8cc5dbf36.html">Function lupnt::DensityHarrisPriester</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1aa1737a7eec3a8b7ed823b0cef938e74c.html">Function lupnt::EarthRotationAngle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1a2797eaf12dcc211c9132cd7bcf20746c.html">Function lupnt::EastNorthUp2AzElRange</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1abe0a8f926d32e6fa1313b23700c21dea.html">Function lupnt::EastNorthUp2Cart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1a999e25d3ba4f4d14bac68453228c8423.html">Function lupnt::Ecc2MeanAnomaly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1aa432d8fef8152621c6ec44692c027a0a.html">Function lupnt::Ecc2TrueAnomaly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a600c25fea3901bf6f982f70521a50645.html">Function lupnt::EME2GCRF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a6a2891f82356a27260428b0474ebf3a6.html">Function lupnt::EMR2GCRF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1a58acf831ce3ef6d50a933d2b52e6eb30.html">Function lupnt::Equatorial2EclipticMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a5d41466191012f18e1abeed08e3b7d63.html">Function lupnt::Equinoctial2Classical(const EquinoctialOE&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1af9971b164bd97203bcf05b012c260ce4.html">Function lupnt::Equinoctial2Classical(const Vec6&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1ae58353456c13005f6f54a516a1e25e0f.html">Function lupnt::EquinoxEquation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a6ce39ce468b111b8614d3f3d8fef6b65.html">Function lupnt::erfc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_attitude__conversions_8h_1a7020bc7ab5db785dba52f13334653a9d.html">Function lupnt::EulerAnglesToDCM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_attitude__conversions_8h_1a3c5fd85cd1a2f7e659a4da5618b40588.html">Function lupnt::EulerAnglesToQuatCoeff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_user__file__path_8h_1aea7b3269931114b5a22e9ff6801827d9.html">Function lupnt::FindFileInDir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_graphs_8h_1aed54a0dcbc4544fda49368bf9b205606.html">Template Function lupnt::FindShortestPath</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1abd938614a42ea61dded9fd282ee265c5.html">Function lupnt::floor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_definitions_8h_1a5db5bc8e9495da8717075a70a10ff253.html">Function lupnt::FMT_CLEAN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_definitions_8h_1a0951680c208b44a0c612c0401bcafb0d.html">Function lupnt::FMT_COMPACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_definitions_8h_1afb8faf3f637054605b62d40c63be26e3.html">Function lupnt::FMT_HEAVY</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a50a8c681e76c84d54a28fedc60db76b2.html">Function lupnt::frac</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a1d067ba777b48923dbae50919d6029b9.html">Function lupnt::GCRF2EME</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a791a9653dd2b1660a3ecf63c5dae4f1a.html">Function lupnt::GCRF2EMR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1aea47d5022a39b92bfd62a043442caf6c.html">Function lupnt::GCRF2ICRF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1ab4eeb3302d939f00597bfc94f3612d36.html">Function lupnt::GCRF2ITRF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a862ca77f8e49234694a20431cbb2993f.html">Function lupnt::GCRF2MoonCI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_user__file__path_8h_1af4021e2f6f367db662233395a7132741.html">Function lupnt::GetAsciiKernelDir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_body_8h_1ac9290abf67d00b4a37be263323a06c0d.html">Function lupnt::GetBodyData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_body_8h_1a583aa24fba7b48938ed23c64cce22083.html">Function lupnt::GetBodyFixedFrameName</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_body_8h_1af49a1cc69a44972fe6706fd9e03211fa.html">Function lupnt::GetBodyName</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_kernels_8h_1abfddf851d7060f6b714c67f637bf98c9.html">Function lupnt::GetBodyPosVel(Real, NaifId, Frame)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_kernels_8h_1ac05abd9ee014057de35a0036b688d976.html">Function lupnt::GetBodyPosVel(Real, NaifId, NaifId, Frame)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_kernels_8h_1a36f24b47f6112710ef5743d1dedcd8c3.html">Function lupnt::GetBodyPosVel(const VecX&amp;, NaifId, Frame)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_kernels_8h_1a0b5f19dc939c1b59a499d804efe128a1.html">Function lupnt::GetBodyPosVel(const VecX&amp;, NaifId, NaifId, Frame)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_constants_8h_1a728a0ca00b64fa5a9875d0d91d3f8a88.html">Function lupnt::GetBodyRadius</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_clock_8h_1a2b67a0cd80be3132f2a26a951c9aeec3.html">Function lupnt::GetClockSigma</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_user__file__path_8h_1a136e0b32464ec60f0add82b128caac91.html">Function lupnt::GetCspiceKernelDir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_user__file__path_8h_1a045c8003d13fc252a7d0f7dc0d238df4.html">Function lupnt::GetDataPath</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_eop_8h_1ac0da340bdf461d913b4d552488e0063d.html">Function lupnt::GetEopData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_user__file__path_8h_1a1629dd3ac46c9c655220498bbfcbfef5.html">Function lupnt::GetFilePath</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_comm__utils_8h_1affc5d0a2168f35877c7aee59921ef0cf.html">Function lupnt::GetFrequencyBand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_iau__sofa_8h_1aa2a08bf3b505ab9934bcdeaf4a104028.html">Function lupnt::GetIauSofaData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_body_8h_1a18f3afaf217ec4f1a70886467c307169.html">Function lupnt::GetInertialFrameName</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_kernels_8h_1addaeb47daa5cfda8187c99933ba3238c.html">Function lupnt::GetLunarMantleData(Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_kernels_8h_1a4cdf48576d742f9a15e79859dc4a7d1e.html">Function lupnt::GetLunarMantleData(VecX)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1ab5544a22126c5541672ccd161ef8b5bc.html">Function lupnt::GetOrbitalPeriod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_user__file__path_8h_1a555e25f75393fd4ea97c103285e18603.html">Function lupnt::GetOutputPath</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_user__file__path_8h_1a29cb0c4872892b776d1903fa3bb06d18.html">Function lupnt::GetSystemTime</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_tai__utc_8h_1a423dfaf81b8cd89d352f33d635e278f0.html">Function lupnt::GetTaiUtcDifference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_comm__utils_8h_1ad7a3a4fbfb72b49aa65d5ee5fde92445.html">Function lupnt::GetTransponderTurnAroundRatio</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_kernels_8h_1a8c7f75f688c1db0f7e635645cf0b8290.html">Function lupnt::GetTtTdbDifference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_eop_8h_1ac783334d3cbc7c788a44e73e088fb1cd.html">Function lupnt::GetUt1UtcDifference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a605b409cf7599c26a6ff96d2f7a30811.html">Function lupnt::GPS2TAI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a8ac9310c8d3db49b982c269af1f96e58.html">Function lupnt::GreenwichApparentSiderealTime</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1a0d06f03614727b4c98419b92a01a67e3.html">Function lupnt::GreenwichHourAngleMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1afb38d5c27b5d28ee2ff013d8fb071cf3.html">Function lupnt::GreenwichMeanSiderealTime</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a5784a893852fe03e01ec1871a7230877.html">Function lupnt::Gregorian2MJD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a5738d2fd2d640c899e89fd731c4b224b.html">Function lupnt::Gregorian2Time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a3817e76bdc5603d4174d21580e0c8672.html">Function lupnt::ICRF2GCRF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_forces_8h_1adbd16506e073af38963355dcc9b9a37f.html">Function lupnt::Illumination</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a9f0a66b4258bbcd599ac606870bae980.html">Function lupnt::Inertial2Synodic(const CartesianOrbitState&amp;, const CartesianOrbitState&amp;)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a76dea858baf8b8880ca752849d4a44cc.html">Function lupnt::Inertial2Synodic(const Vec6&amp;, const Vec6&amp;)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a5992b33069953b9425d37363f9ba21ba.html">Function lupnt::ITRF2GCRF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a8761065924ad1ca5494bbc54905feceb.html">Function lupnt::J0Bessel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a4e7b05d4b4d0ab69ee1eb96e96dce442.html">Function lupnt::J1Bessel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1ad1b8ee63c2df1645782115ce777bf258.html">Function lupnt::JD2Time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1aea41f7af6a7aa8b405553ae522f727f9.html">Function lupnt::LatLonAlt2Cart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_interpolation_8h_1a747e5f5a4b46e8274b0055599444542d.html">Function lupnt::LinearInterp1d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_interpolation_8h_1adf75e5cd05f2c40f4a5a56c7ad1e15e6.html">Function lupnt::LinearInterp2d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_eop_8h_1a12b7a0aa73ba09b4b7d6dff9de010f30.html">Function lupnt::LoadEopFileData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_iau__sofa_8h_1a732a5bdabc23be3a691d324850ffa6b6.html">Function lupnt::LoadIauSofaFileData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_tmp_8h_1a616847444ed43f411cf42f6359173f96.html">Template Function lupnt::make_vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_definitions_8h_1ab0829478d5b74363acb5edda6aa613fd.html">Template Function lupnt::MakePtr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1a840b3bcfb9f9e3b97e9ea5b145241862.html">Function lupnt::Mean2EccAnomaly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_mean__osculating_8h_1a7d6c6a3529a60c0bb65b4d058426d745.html">Function lupnt::Mean2Osculating(const ClassicalOE&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_mean__osculating_8h_1a031ea376c85884f7d2fa5cc878243398.html">Function lupnt::Mean2Osculating(const Vec6&amp;, Real, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1ae84bc89b183068bc6e8baea20c9e8bf3.html">Function lupnt::Mean2TrueAnomaly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1a92a4751b5fc1fc19d026011f01735a90.html">Function lupnt::MeanObliquity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a5719d344bdfcfd30bcaa3914e6d7b2a3.html">Function lupnt::MJD2Gregorian</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1ad75e92e7a79fb50c2f4e5c4b2518ac47.html">Function lupnt::MJD2GregorianString</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a368d613245b0ede615af4cd20076b238.html">Function lupnt::MJD2Time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a74c2b9dc4394a5c8e433b385a63157ca.html">Function lupnt::mod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a8e26afd12b1e57e60a0f0380252e7b87.html">Function lupnt::MoonCI2GCRF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a5ba0bee11f521873d43a469111207f8f.html">Function lupnt::MoonCI2MoonOP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a829c6df4cc33487a63e93735abdc37e9.html">Function lupnt::MoonCI2MoonPA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a947105cadc11f3cd7f21fac90c6cea5c.html">Function lupnt::MoonME2MoonPA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a3e7a572a8cc70bc5c1ca218bcd902f16.html">Function lupnt::MoonOP2MoonCI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1afc3f78a51c800969b90d8b1907d641a9.html">Function lupnt::MoonPA2MoonCI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a64798d5cf5cf57dbd7a25f2cd8f76a43.html">Function lupnt::MoonPA2MoonME</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1ad749971df9a0ed77cb715ed05d2d84b7.html">Function lupnt::MoonPositionLowPrecision</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1a32ca7bf7fee2bd41c44d9c841821cba9.html">Function lupnt::NutAngles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1a0f27b6b8a695c01a4551a4f779d9d7a0.html">Function lupnt::NutationMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1ae8d9547401a07e6d3e69fb728ea61c47.html">Function lupnt::NutationMatrixLowPrecision</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_constants_8h_1a598487bf0c15eecf316cd6f44b208fea.html">Function lupnt::operator&lt;&lt;(std::ostream&amp;, NaifId)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter_8h_1a3f21b56dd7f98223eb3c4076425a7a70.html">Function lupnt::operator&lt;&lt;(std::ostream&amp;, Frame)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_orbit__states_8h_1a4171b3c68970dce56d852257ffd89b0a.html">Function lupnt::operator&lt;&lt;(std::ostream&amp;, const OrbitStateRepres&amp;)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_mean__osculating_8h_1a27b325ce9f156d70eb3028656974542a.html">Function lupnt::Osculating2Mean(const ClassicalOE&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_mean__osculating_8h_1a0564a062f02e6332d25cdeb1b0a2e5bb.html">Function lupnt::Osculating2Mean(const Vec6&amp;, Real, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a6df0faa7c83dca4b8731e3111aace2f3.html">Function lupnt::Percentile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a01080f2ec7a96d215709147d495e7d39.html">Function lupnt::PercentileD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1a54fa4bd7ad2c90109d2ce808434fa24b.html">Function lupnt::PlanetOrientation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_plot_8h_1a1e1c46d44c99ee4e553fb7f67ce8f87b.html">Function lupnt::Plot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_plot_8h_1a6d3447039a2272356ed5aa45b00e7564.html">Function lupnt::Plot3(const VecX&amp;, const VecX&amp;, const VecX&amp;, std::string_view, double)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_plot_8h_1a9628e8b645401ffb4693b4a12e7f39a7.html">Function lupnt::Plot3(const Vec3&amp;, std::string_view, double)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_plot_8h_1af0e3d54662120047b1811ae0faa1baa5.html">Function lupnt::PlotArrow3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_plot_8h_1ae9f8048470a5bb800431550984d876cf.html">Function lupnt::PlotBody</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1a3e6cd24da4a6c79c012b7de32faf71eb.html">Function lupnt::PrecessionMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_user__file__path_8h_1ac3187c0bf1238d48da542ff233aaff0f.html">Function lupnt::PrintDuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a352f943527a47acc6df75800204c5ff4.html">Function lupnt::qfunc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a10a4b8278a3481a447f421f07fda6610.html">Function lupnt::QuasiNonsing2Classical(const QuasiNonsingOE&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a5a4818672ac53b29269e10f2976a9bf1.html">Function lupnt::QuasiNonsing2Classical(const Vec6&amp;, Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_attitude__conversions_8h_1aa1d42f840537d81533b1962caa0c6eec.html">Function lupnt::QuatCoeffToDCM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_attitude__conversions_8h_1ac999e305804ec1e6e1b8a65d9dd215ef.html">Function lupnt::QuatCoeffToEulerAngles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1ad64acadf65296b2d0a5805d173ed0677.html">Function lupnt::RatioOfSectorToTriangleArea</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_string__utils_8h_1a2cdea1a7f73666664fade96927086e5b.html">Function lupnt::ReadCSV</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_body_8h_1ac1b42b8280252fd443a431039529a61e.html">Template Function lupnt::ReadHarmonicGravityField</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a4e5e2e5d9e5948e8242aab295adb9d11.html">Function lupnt::RelQuasiNonsing2Classical(const ClassicalOE&amp;, const QuasiNonsingROE&amp;)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1ae8d95207d942e09f884cc31209bc32c1.html">Function lupnt::RelQuasiNonsing2Classical(const Vec6&amp;, const Vec6&amp;)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a172163884d6dca8491bb610a8d212557.html">Function lupnt::RootMeanSquare</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1ac667dad9fd97e38d7653fc8de35d98f0.html">Function lupnt::RootMeanSquareD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1afdc4e4193fd3fd839f3ee2c95a0acb79.html">Function lupnt::RotGCRF2EME</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a8f0a9ad8bc9ddfbe327c9fd54b51d4dd.html">Function lupnt::RotGCRF2EMEFirstOrder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a0aa822768d2ed2b29e5e5c5e65bd9401.html">Function lupnt::RotGCRF2EMESecondOrder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a7d62028d692de3adeb5f73a39a311559.html">Function lupnt::RotMoonCI2MoonPA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a0132b11f8a86b8c255c4e380134dd1ee.html">Function lupnt::RotMoonPA2MoonME</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1afb2f9c49e8b158ff294bc276ac1e3608.html">Function lupnt::RotOP2CI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a32aad9276e0724a0316019341b6f07a5.html">Function lupnt::RotPolarMotion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1ac053b3a4306af35863a1a078b463a40e.html">Function lupnt::RotPosBodyFixedToInertial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1aed17a7038668061e4ce47f52a4f8e2d7.html">Function lupnt::RotPosInertialToBodyFixed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1a14cde2a70a909e6580485dcfc0c907f1.html">Function lupnt::RotPosVelBodyFixedToInertial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1a5f29fb2f1768a6d7d3e0bf959467cffc.html">Function lupnt::RotPosVelInertialToBodyFixed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a413c9eae72485042cffaa8ae4b461bf9.html">Function lupnt::RotPrecessionNutation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1a359457f405751c515478eba2554fbc02.html">Function lupnt::RotSideralMotion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__conversions_8h_1adf36d98bd7f4a46183aa3e8c64af948d.html">Function lupnt::RotSideralMotionDot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1abead0c75a219c9c877b7aeb90d1a55a1.html">Template Function lupnt::RotX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1af56d12ac1cf3c3aa0c928366b5e02069.html">Template Function lupnt::RotY</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a8598ba1853bc016914eed44d9aa2e3e1.html">Template Function lupnt::RotZ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a9e53f36bea058b3bdb99999de26768fd.html">Function lupnt::round</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1aa2bc911402331a83a32516de376d45c3.html">Function lupnt::safe_acos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a29d913a5a65644630889154ff1242ab6.html">Function lupnt::safe_asin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1aaec9ad811eb99a4c55a863845e79d53b.html">Function lupnt::SampleMVN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a5dfee89e0f80b05dbe040cd71880bb1b.html">Function lupnt::SampleRandNormal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_plot_8h_1a6587459826ea629c0fa01b4fbec8e54c.html">Function lupnt::SetLim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a4ed108094eb0ca848373a24f36b680d9.html">Function lupnt::sind</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a6f997e03604624a73e118356812b0c7c.html">Template Function lupnt::Skew</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter__spice_8h_1ab734fafd2b020e7d188b69016183e672.html">Function lupnt::spice::ConvertFrameSpice(Real, const Vec6&amp;, Frame, Frame)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter__spice_8h_1a06603c06ecbea1535df040e459d61f3b.html">Function lupnt::spice::ConvertFrameSpice(Real, const Vec3&amp;, Frame, Frame)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter__spice_8h_1a1af40c2ddff3154bc498783486cf1d94.html">Function lupnt::spice::ConvertFrameSpice(Real, const MatX6&amp;, Frame, Frame)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter__spice_8h_1a594097c0a524be20a6869d5283fad4e5.html">Function lupnt::spice::ConvertFrameSpice(VecX, const Vec6&amp;, Frame, Frame)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter__spice_8h_1af4bc69468669f137d238dc3bea5a86a1.html">Function lupnt::spice::ConvertFrameSpice(VecX, const Vec3&amp;, Frame, Frame)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter__spice_8h_1a18d7cc4b5b7465f624da576a25f63bcd.html">Function lupnt::spice::ConvertFrameSpice(VecX, const MatX6&amp;, Frame, Frame)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter__spice_8h_1a323ca622f38f2511f76ade5285a406b9.html">Function lupnt::spice::ConvertFrameSpice(Real, const CartesianOrbitState&amp;, Frame)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_spice__interface_8h_1a02b8e6e4a726850c0b75a48a273c1fae.html">Function lupnt::spice::ConvertTime</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_spice__interface_8h_1abacbf5610689a721d22bb5ab268ddd26.html">Function lupnt::spice::ExtractPckCoeffs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_spice__interface_8h_1a0cd4a2476c3f84aaa15c2cf7a678b8a0.html">Function lupnt::spice::GetBodyPosSpice</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_spice__interface_8h_1a0dbcc46a13ccefbe04bb494636490b9a.html">Function lupnt::spice::GetBodyPosVel(const Real, NaifId, NaifId)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_spice__interface_8h_1aa842deed5cebf9a133068370435ff518.html">Function lupnt::spice::GetBodyPosVel(const VecX&amp;, NaifId, NaifId)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_spice__interface_8h_1ab9b96692e39e29ac08f12482441105ce.html">Function lupnt::spice::GetBodyPosVelSpice</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_spice__interface_8h_1a0b84cbf0d439aee2f59a21238ca8d399.html">Function lupnt::spice::GetFrameConversionMat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_spice__interface_8h_1a8f89d476193983dd04654519ee132196.html">Function lupnt::spice::LoadSpiceKernel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_spice__interface_8h_1a505f26f0e4911a4c3e23e23c6df3e186.html">Function lupnt::spice::String2TAI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_spice__interface_8h_1a8c0bdd530c4980e9ca97879dd7a727c4.html">Function lupnt::spice::String2TDB</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_spice__interface_8h_1aa72bf1191d174b068311016fcbd3b661.html">Function lupnt::spice::TAItoStringUTC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_spice__interface_8h_1a7b173c9636c3484c500574c5eb498761.html">Function lupnt::spice::TDBtoStringUTC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_cheby_8h_1a91d6c9f4d156e1a7fb4d66e74317989b.html">Function lupnt::spk_extract</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_cheby_8h_1a249e1fcbe09db04864b964b85bb4a319.html">Function lupnt::spk_free</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_string__utils_8h_1a4d5e5e607be803560021df59638b7a6d.html">Function lupnt::SplitString</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1aedd1b0651e7e0a5fd7c1a89acaab33ca.html">Function lupnt::Std</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a404f525b2e8242048e15bac533141dc1.html">Function lupnt::StdD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_solar__system_8h_1a44e112cd80f7c5dad3c9ff143b5f9b9a.html">Function lupnt::SunPositionLowPrecision</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a1bd51627c0c855d9c7ba2df3a7bf1a85.html">Function lupnt::Synodic2Intertial(const CartesianOrbitState&amp;, const CartesianOrbitState&amp;)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a83a7c80bff313fad47ffadf3e32d0134.html">Function lupnt::Synodic2Intertial(const Vec6&amp;, const Vec6&amp;)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a0c8dc7cbb6b84f7a046b73318d886c98.html">Function lupnt::TAI2GPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1abac8ac606fcbb4998fe6a62455dbd332.html">Function lupnt::TAI2TT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a08bf10a80c5dc2b92520b3bc32cf8191.html">Function lupnt::TAI2UTC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a370096c8662122674178541fbba10276.html">Function lupnt::tand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a15c958f0438e0c0e8020f8e93efdb749.html">Function lupnt::TCB2TDB</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a18041688ae1197e360c1a8104e6702b7.html">Function lupnt::TCG2TT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1aa1f4a710a32e62880fc43ce140a6c868.html">Function lupnt::TDB2TT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1aeb3ed901349aaf45827e0317ef976628.html">Function lupnt::Time2GregorianString</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1adaf4e149e19f984558a458c0800269aa.html">Function lupnt::Time2JD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1adea354ae8598cdf81de3fc699711b385.html">Function lupnt::Time2MJD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a8032f86c105c3cac5a7932127f49a596.html">Function lupnt::ToDouble</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a83fcf45d6fafde82f9d44b2152a1999f.html">Function lupnt::ToDoubleVec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1a00a8ecd2d5ec275e8d859db00c4bb4c4.html">Function lupnt::True2EccAnomaly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1a94713fde7783b92d9efeb5b3761cff10.html">Function lupnt::True2MeanAnomaly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1ab51e6147293264bef14a8b5d4528e40e.html">Function lupnt::TT2TAI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1ae519adce26704a8a2bec1d93b87e0bf6.html">Function lupnt::TT2TCB</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a04197da36a0e7ea21e763d87166a2671.html">Function lupnt::TT2TCG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a5ed16556493b4c01f44b4fbaadbfc752.html">Function lupnt::TT2TDB</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a31dde03b6efafdf5640623ff70cf9bdf.html">Template Function lupnt::unpack</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a462008840618d78c318fff4ff6b0e4fa.html">Template Function lupnt::unpackImpl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a6fb5009d6f180c90dda3bceedc9c2537.html">Function lupnt::UT12UTC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1add6b5d4eaa0a7a29d4b8595953548de5.html">Function lupnt::UTC2TAI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_time__converter_8h_1a60f833a924f4e3e36ae60fca40edf2de.html">Function lupnt::UTC2UT1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1a7e4853c2be405fc35008781d84362739.html">Function lupnt::VEC_DEF_REAL_REAL(GetOrbitalPeriod)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1a948b2fe84d68b3cd92014aa9e5cbfa3d.html">Function lupnt::VEC_DEF_REAL_REAL(GetPeriod)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1ae817f4150aa0955c874d52d5e064da6e.html">Function lupnt::VEC_DEF_REAL_REAL(Ecc2TrueAnomaly)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1ae504ddde996616520f5fc657eb835259.html">Function lupnt::VEC_DEF_REAL_REAL(Ecc2MeanAnomaly)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1ab88e18f3fbc473e95f93fe42293f5f2c.html">Function lupnt::VEC_DEF_REAL_REAL(Mean2EccAnomaly)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1ad9494afd4bd491d90ab6b706455c5e55.html">Function lupnt::VEC_DEF_REAL_REAL(True2EccAnomaly)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1aa3d0e4af25659be69c6e9817fbf86bfe.html">Function lupnt::VEC_DEF_REAL_REAL(Mean2TrueAnomaly)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_anomaly_8h_1aa853146214a3b2826553c10c87440301.html">Function lupnt::VEC_DEF_REAL_REAL(True2MeanAnomaly)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1ac5a019f2684d1d686cf5b6dc456d82ea.html">Function lupnt::VEC_DEF_VECTOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1a4871cef15b35b36ffc963c0e7e683f89.html">Function lupnt::VEC_DEF_VECTOR_REAL(LatLonAlt2Cart, 3)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1ab743489c6a66118b252ad98f07dd73c2.html">Function lupnt::VEC_DEF_VECTOR_REAL(Classical2Cart, 6)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1aca071cc4694a95f02d1dd54e62a5bbe4.html">Function lupnt::VEC_DEF_VECTOR_REAL(Cart2Classical, 6)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1aaeb087daea8c39d3334d161aa1a42d8e.html">Function lupnt::VEC_DEF_VECTOR_REAL(Classical2QuasiNonsing, 6)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a21a666cc90b07252c13a77131f03440a.html">Function lupnt::VEC_DEF_VECTOR_REAL(Classical2Equinoctial, 6)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a19b06a831b6eb0137a42474f3f892193.html">Function lupnt::VEC_DEF_VECTOR_REAL(Classical2Delaunay, 6)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a1ae316a1aba9ef2f46ae209f92ba9159.html">Function lupnt::VEC_DEF_VECTOR_REAL(QuasiNonsing2Classical, 6)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a7c5519995add07574a3b0bdb58d90706.html">Function lupnt::VEC_DEF_VECTOR_REAL(Equinoctial2Classical, 6)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a8f0fa9e6cdb5c337afc370b9d5ecead0.html">Function lupnt::VEC_DEF_VECTOR_REAL(Delaunay2Classical, 6)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1af1c8f7d8ae2b9f490c17eab091f247a3.html">Function lupnt::VEC_DEF_VECTOR_REAL_REAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1a4c9a255e8e14c8fe53847e63b2f202be.html">Function lupnt::VEC_DEF_VECTOR_VECTOR(EastNorthUp2Cart, 3)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_coordinates_8h_1abb72d1c9ef69ef5727f0764c2b35a8eb.html">Function lupnt::VEC_DEF_VECTOR_VECTOR(Cart2AzElRange, 3)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a025a92ee45a04dd792ee395b39d6f8ee.html">Function lupnt::VEC_DEF_VECTOR_VECTOR(Inertial2Synodic, 6)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1a3b38796badfee29ca606d276d03a4409.html">Function lupnt::VEC_DEF_VECTOR_VECTOR(Synodic2Intertial, 6)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_conversions_8h_1ac17d96f32416fe80de50c3136f926cf7.html">Function lupnt::VEC_DEF_VECTOR_VECTOR(RelQuasiNonsing2Classical, 6)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a1dc878576feeaa4c169975f60df4b6f3.html">Function lupnt::Wrap2Pi(Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a8385104e23fa49ada93d7eeb949c80b0.html">Function lupnt::Wrap2Pi(VecX)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a438f476e3dc6d253ba2f3218b03ef8e5.html">Function lupnt::Wrap2TwoPi(Real)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1afef1a9ece3482424d8879ea09b4e420c.html">Function lupnt::Wrap2TwoPi(VecX)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ab92283902a621a60658e6356c2a2ab72.html">Variable lupnt::A1_TAI_OFFSET</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_converter_8h_1adceeaa784ae931807ef9b505ad7dc827.html">Variable lupnt::absolute_conversions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a21eed2da064b53e4e90eef01351f1e3e.html">Variable lupnt::ARCSEC_DEG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a2226617a2bb8955e5e074bbba98f4cee.html">Variable lupnt::ARCSEC_RAD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a3a7b7d102c1f31dddb273f6f1fceefeb.html">Variable lupnt::AU</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a2487f6bd6b2f49466baef38d91a53529.html">Variable lupnt::C</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a31b0891efce532f8c24b12f83bdd1934.html">Variable lupnt::C22_MOON</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a348e89e5912b380dee422676c5570a5f.html">Variable lupnt::D_EARTH_EMB</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a3e363057282cdf6a48bb0a73812fef97.html">Variable lupnt::D_EARTH_MOON</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ad06a4e805685f3e625251b8e2e4f5c5a.html">Variable lupnt::D_MOON_EMB</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a824a8099513dd6d0bf8c5170bc4f7675.html">Variable lupnt::DAYS_CENTURY</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a358376fb4f2b2fa71c39bac3614afc37.html">Variable lupnt::DAYS_SEC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ab26c21d64f26f26a9c111836e04e8e12.html">Variable lupnt::DAYS_WEEK</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ac4f5e1f41bb46563d3d7b82e554bf4fe.html">Variable lupnt::DAYS_YEAR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_integrator_8h_1a2cca2a1ef0fe62e7110d58905869d3d7.html">Variable lupnt::default_integrator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_plot_8h_1ab0b80ffb308726382971748fcfb46d5a.html">Variable lupnt::default_scale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a274298cfe1b39ad83c1f563bed897ea0.html">Variable lupnt::DEG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a41ffcb9143eda887f65fbd59840ad280.html">Variable lupnt::DEG_ARCSEC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a12759cbd2efd39013cb7e106547d8337.html">Variable lupnt::E</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a8de45949bec530910c9ed25b62e80b79.html">Variable lupnt::EOP_FILENAME</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ae1ae1ff63dce944768ee5ca7c0196a13.html">Variable lupnt::EPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a8416750f7152eafebe630bea1ba0dc6d.html">Variable lupnt::FOOT_M</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_spice__interface_8h_1a2dcc7a2d96d02ba9f071e685de4884eb.html">Variable lupnt::frame2string</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a1a5bb64c8d64815d72a81927911c1cac.html">Variable lupnt::FRAME_BIAS_DALPHA0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1af5cc7f5547cf9bbd64fe0e2ccf8a518b.html">Variable lupnt::FRAME_BIAS_ETA0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ab7e4e8b5e4a4719f8570f2e48474671c.html">Variable lupnt::FRAME_BIAS_XI0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_frame__converter_8h_1aa08f287f2c2bf8feee323b9a833afef0.html">Variable lupnt::frame_centers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_frame__converter_8h_1a9ad9b18067388bb3573d5e025349a722.html">Variable lupnt::frame_conversions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a6a6cd67ea1176ef4f28379661ec04c3d.html">Variable lupnt::GM_CERES</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a1b0d8325e2cb30dc49175297de097004.html">Variable lupnt::GM_EARTH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ac91d36077773410370392e0847e2cdaf.html">Variable lupnt::GM_JUPITER</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a691580fd958dd4586f4d08440b647487.html">Variable lupnt::GM_JUPITER_SYSTEM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a351d6fa2ebd83548ca0e877f090ade6f.html">Variable lupnt::GM_MARS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a603f7dc0fc6450219a80d963a3e2bb02.html">Variable lupnt::GM_MARS_SYSTEM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a2321983dab9cc2ae33e2fef55bcc6c92.html">Variable lupnt::GM_MERCURY</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a51979c661ef57ce501ed40f1cb420de4.html">Variable lupnt::GM_MOON</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a3097fdf2d0f4501d479189b9917ef104.html">Variable lupnt::GM_NEPTUNE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a304eb4fc27105fcbb207454bf96e784f.html">Variable lupnt::GM_NEPTUNE_SYSTEM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1aaec16d653b10cd1dcd03c19988f8f14d.html">Variable lupnt::GM_PLUTO_SYSTEM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a10a717bcf87091a08866bffb907b290f.html">Variable lupnt::GM_SATURN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a0c510aa7c8b371246a7a649a1c4647eb.html">Variable lupnt::GM_SATURN_SYSTEM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1acc498b6c6e53125a6683d2ba9c7d0b2b.html">Variable lupnt::GM_SUN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1abf94b836c5dc8a594abacb7f0621e5a9.html">Variable lupnt::GM_URANUS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1aa011ddbaff409ca61fdbc6c8b0b1ed43.html">Variable lupnt::GM_URANUS_SYSTEM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a944c900d9d9a843ba24d5517e591d4ac.html">Variable lupnt::GM_VENUS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1af517acf56d543c322c270ffc6959b160.html">Variable lupnt::GM_VESTA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a03025b75e76fff21e5d327ab6866d2d7.html">Variable lupnt::HOURS_DAY</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1af1b3c6bb88b763900e1f5fae3bea3c04.html">Variable lupnt::IAU_SOFA_FILENAME</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1af07b7eda38db55c1f1726c69be540531.html">Variable lupnt::INCH_M</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a68983460c421e20eefa55a0a44fa5c4e.html">Variable lupnt::J2_EARTH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a921d14b9b3fe3cb1055b711b4b299d38.html">Variable lupnt::J2_MOON</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a34b3696ca7609ced6163caeeb3fece61.html">Variable lupnt::JD_J2000</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ac1c5cd274f49559755ad3671a94422e7.html">Variable lupnt::JD_JAN_5_1941</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a4462920ebb7a804bc8abbf050b2cf3c7.html">Variable lupnt::JD_MJD_OFFSET</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1acb9ec8d3c379ace70a3af53e2e79ae68.html">Variable lupnt::JD_NOV_17_1858</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a5fa4f98518b085b934cf1f63857292b5.html">Variable lupnt::JD_T0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a1d576c02db87760a5312e996748b6b1d.html">Variable lupnt::JULIAN_DATE_OF_010541</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ab33ca995898fdd9ea47e4493a34c9cc8.html">Variable lupnt::KM_M</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1abb8488002dea92d9c2a8e8f496d0f6be.html">Variable lupnt::L_B</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a24c2091de78adc4c947300a7f9e024ef.html">Variable lupnt::L_G</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a78b14fb16ca180073e9fc4901568221e.html">Variable lupnt::LBM_TO_KG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1acafeb2337255705e7f947db78f3108f4.html">Variable lupnt::M_KM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a5001ef46b94b490216298ac20d90e481.html">Variable lupnt::MILE_M</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a6349fc722076c37eca972f6ec6d83422.html">Variable lupnt::MINS_DAY</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ac13f8a8c27a91e1c9d4d3d413ce87a5f.html">Variable lupnt::MINS_HOUR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1af512729b7124b69274fb4cff220d3746.html">Variable lupnt::MJD_J2000</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ab105124b16d36332a1c5d16aceb839aa.html">Variable lupnt::NUM_SECS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a04a6001d0a2710891c4539ff20c62689.html">Variable lupnt::OMEGA_EARTH_MOON</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a8e162e298108dd6a712a8fd117a2e871.html">Variable lupnt::P_SUN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1afd608e17e57ece06ab18e67c950dd6de.html">Variable lupnt::PI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a1a8a1924cf835d9782918e6b9b455063.html">Variable lupnt::PI_OVER_TWO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a2fdb0efbc1edafb3556614d684016370.html">Variable lupnt::R_EARTH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a394d45d9802588a98181fc8dff981f00.html">Variable lupnt::R_JUPITER</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a4209ed24d19e2458fdff0d99a851b6fd.html">Variable lupnt::R_MARS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a23cbc7adaf1401b3ec53ef19e0680848.html">Variable lupnt::R_MERCURY</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a21fd4886e950744af1ffe8ed2acc9738.html">Variable lupnt::R_MOON</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a274da78a0449a69f421f2bada587f0bf.html">Variable lupnt::R_NEPTUNE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a56247678a0ab2999b4f1b22803a10106.html">Variable lupnt::R_PLUTO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a26cc931e13ef41dde4bbc807fc9fd658.html">Variable lupnt::R_SATURN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1aad9d54c38ac84d1ba299cca980326532.html">Variable lupnt::R_SUN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a269793410a7cfd0b0d25639c5a84326a.html">Variable lupnt::R_URANUS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a3873d7b4236138244ae11f832e4ab361.html">Variable lupnt::R_VENUS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1adb86a0f6bd2de04f0793b2a44f706143.html">Variable lupnt::RAD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a13bfd9c1c2b35c1efe8d5beb1b2a1ee2.html">Variable lupnt::RAD_ARCSEC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_converter_8h_1a36e3e7e176d2c9f52a08f6356cd74be1.html">Variable lupnt::relative_conversions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a5fea9b2de45d61174d692aeeddb44392.html">Variable lupnt::S_AU</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1aa3acbf2555c6abdf618c228aba22aac7.html">Variable lupnt::SECS_DAY</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1af794b1f5be5d7f65d6c628e3b818e548.html">Variable lupnt::SECS_HOUR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ae1e49a6c76abab898c961ea56eea56db.html">Variable lupnt::SECS_MINUTE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a3715f6fa3c136df62b1d442977973a57.html">Variable lupnt::SLUG_TO_KG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_spice__interface_8h_1a6f2665fa8690dbc7eb69633e6e8c779c.html">Variable lupnt::spice::cheby_n</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_spice__interface_8h_1aba22487f4588c09c906b98174268b4d7.html">Variable lupnt::spice::cheby_s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a364bc823e2091614ffbb9c24e3a943c2.html">Variable lupnt::TAI_UTC_FILENAME</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_spice__interface_8h_1a5cdc549182bcda852053bf541eb09dc4.html">Variable lupnt::time2string</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a2c3d74e6132497db37b1b4c8b8ecc9e3.html">Variable lupnt::TIME_OF_J2000</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a0d8aec4384a91bd9cc1bd6be3c9b02b3.html">Variable lupnt::TT_TAI_OFFSET</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a37a157bbc7614e8f9c90e18cdca62439.html">Variable lupnt::TWO_PI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a6dbac77bd1ee005c6a65bf65d337b879.html">Variable lupnt::WGS84_A</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a8ead410b7062e239b259a63db948584a.html">Variable lupnt::WGS84_F</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_definitions_8h_1a5ec530a7d0e7bbf68f9d5e36fe51111b.html">Define ASSERT_WITH_MESSAGE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_definitions_8h_1ac100ee915e4145412a3746f1b7ba5683.html">Define DEFINE_DYNAMIC_VECTORS_MATRICES</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_definitions_8h_1a6834e1b1b013cdd221c15435e4c86beb.html">Define DEFINE_STATIC_VECTORS_MATRICES</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_definitions_8h_1a95aed90582fbb73735b40690ddba5367.html">Define DEFINE_VECTORS_MATRICES</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_orbit__states_8h_1ad02adf989bbe783a4e172aef7fcaa6f4.html">Define GETSET_ELEM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_event_8h_1a12c2040f25d8e3a7b9e1c2024c618cb6.html">Define INF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_orbit__states_8h_1a77400247c25dc69ffdb3f644904164f0.html">Define kOrbitStateSize</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_kernels_8h_1a79bd2810e131df6189e69ed5662911d1.html">Define MAXCOEFF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1ad56875614e31dba281543e5130f19d6f.html">Define VEC_DEF_REAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1aeee1c1802f9e1abc0d8cb0e37b0928a6.html">Define VEC_DEF_REAL_REAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1aaa0bfc555588c1a17972a89b41e4877d.html">Define VEC_DEF_VECTOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1a691e9bc25622e3f0afe060dc4c9a9de6.html">Define VEC_DEF_VECTOR_REAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1acbf1c07fbdbf5604594e506a278475ef.html">Define VEC_DEF_VECTOR_REAL_REAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1a794566dffa2cd23ae0da85e1108d96c0.html">Define VEC_DEF_VECTOR_VECTOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1a18b1c21ac2084a3ee8d0d7d7c335e032.html">Define VEC_DEF_VECTOR_VECTOR_REAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1a6045e34bef9f4c6bbb4465b6420f5f16.html">Define VEC_IMP_REAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1ad07470cf8e1280ba0aee17ae7927b88d.html">Define VEC_IMP_REAL_REAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1ae1f9057548f69a3bfc75f77912cd8d4c.html">Define VEC_IMP_VECTOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1aa5d45c3f0d601b10848b1828f0076f23.html">Define VEC_IMP_VECTOR_REAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1a61fc40a4f8bd5f56da99b2308fa5e3d2.html">Define VEC_IMP_VECTOR_REAL_REAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1a3c616c6fd27bbf5b86d01b2b514bcd48.html">Define VEC_IMP_VECTOR_VECTOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/define_vector__macros_8h_1a432b1bd09c898ccd25c883f56bdef7dd.html">Define VEC_IMP_VECTOR_VECTOR_REAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a45db644a99fd57b25624de9965339711.html">Typedef lupnt::AngleAxis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a610cc1fe947a70991229f000fb696745.html">Typedef lupnt::AngleAxisd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_body_8h_1a4dcda816a132c2b5130e7db7e7a9c9d4.html">Typedef lupnt::Body</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_filters_8h_1a461b1259c1a684508e6c65c24274d8b6.html">Typedef lupnt::FilterDynamicsFunction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_filters_8h_1a13bed5d258c8425eec820ba40478a57b.html">Typedef lupnt::FilterMeasurementFunction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_filters_8h_1ae81fbcd1c2df4e8efa6e08093074764a.html">Typedef lupnt::FilterProcessNoiseFunction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aaf1fcc0f109094ce0c9d7b50481ade49.html">Typedef lupnt::Mat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a0fd4d01a0e8037d299d924afc69c7518.html">Typedef lupnt::Mat1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ad06b798746fa27db2942c9f5f9cbe3a6.html">Typedef lupnt::Mat10</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ae18ee92c85ae791c222cb1d2979daa85.html">Typedef lupnt::Mat10d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a887a8f22910ad49004c00e854c832bdd.html">Typedef lupnt::Mat10i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a22b5327c7c817df2c69c9c7dd9796eb4.html">Typedef lupnt::Mat1d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a256cd61e47ed6cedd6c8dd57fd965fa6.html">Typedef lupnt::Mat1i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aab0947adbcddb3a8317a4f74d9a76d57.html">Typedef lupnt::Mat2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ab3fca58f1c6cb0caa43d98ee94a7b995.html">Typedef lupnt::Mat2d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a7d31f8eafe6ce1d6c3203d677380b0ab.html">Typedef lupnt::Mat2i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a8d587e3dc2427d928719ecc10fbb102d.html">Typedef lupnt::Mat3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a382a6bd8b60e8fc1954e7b68bc4345fc.html">Typedef lupnt::Mat3d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a565b8ccf111d7002af741caec1dc8a54.html">Typedef lupnt::Mat3i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a29aee535ff4104485bd11f877b2dcb5e.html">Typedef lupnt::Mat4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ad904dfa693a94e988a9a52040b3991d0.html">Typedef lupnt::Mat4d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a75c6d03d64d1aea2bec53244adda2067.html">Typedef lupnt::Mat4i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1abd8d4e8c3b5d310a4d301313ba17825c.html">Typedef lupnt::Mat5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a03af931e8fa4a6b01f8c5c95945bfac5.html">Typedef lupnt::Mat5d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a858278dd8fcea910d24472f30e0bfe48.html">Typedef lupnt::Mat5i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a031b20ac5f9dbdd974bfc1ffc2fcfb73.html">Typedef lupnt::Mat6</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a4f1477964e4a00a5a419b71539d1d705.html">Typedef lupnt::Mat6d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a59bdedfe6d9bc927cf6cb7b216e9651c.html">Typedef lupnt::Mat6i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aea41ecae9447ca233b6ee58f6a49fd5c.html">Typedef lupnt::Mat7</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a83ba804837713a0db7b819606960c116.html">Typedef lupnt::Mat7d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ae1946f303249f823b2a79a160f106a8a.html">Typedef lupnt::Mat7i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aa00c8ee8497b8fcf22dab0f0c2df80b2.html">Typedef lupnt::Mat8</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a897a3477a77f5f50551833d85b0bf12d.html">Typedef lupnt::Mat8d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a019356b96df5e79ed822630baa2aa6a1.html">Typedef lupnt::Mat8i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a16a96ec72e41dc8de41eba2d927f560a.html">Typedef lupnt::Mat9</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a217829757fd857caf9546238cde0c2e2.html">Typedef lupnt::Mat9d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aa4a128810e53065a77da904961d55082.html">Typedef lupnt::Mat9i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1acae28d4cad7c010e4319735c1a3eff19.html">Typedef lupnt::Matd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ae856fb8852ed250772482372e60397ba.html">Typedef lupnt::MatX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a9fae1c3f5c89406b16f0909e5787db6d.html">Typedef lupnt::MatX3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aa542da2c0bb6b50cef5b053f37c23407.html">Typedef lupnt::MatX3d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a4e1360722668e1734d44b8fda88f0d5f.html">Typedef lupnt::MatX6</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a50b83e0b006b526b2cdd423fc60e6c55.html">Typedef lupnt::MatX6d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a5e962a1bfd68ee9c980631c4f7cd4983.html">Typedef lupnt::MatXd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1af70c315cd37556b17ad27a2cebac33de.html">Typedef lupnt::MatXi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_integrator_8h_1a8cf7f9fe8aae8cbed9614c80f605c074.html">Typedef lupnt::ODE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ae04ccef335090af3c6bba88cd94da23a.html">Typedef lupnt::Ptr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1add1c70b57eb6f8235cf74116cd96f2d0.html">Typedef lupnt::Quat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a21cbbf11ff74b9059030d67463019468.html">Typedef lupnt::Quatd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ae650188ff57cce2f913d6e891bc6b479.html">Typedef lupnt::Real</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a80a96b6694d9d62e86406dd140f26c4b.html">Typedef lupnt::RowVec1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a937683ab851a21121dc1d0cd5c4b52e8.html">Typedef lupnt::RowVec10</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a02e060a9b02d35d5408db9b64f22d4f2.html">Typedef lupnt::RowVec10d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a431bc5edd76ba4a96adfc513c4078083.html">Typedef lupnt::RowVec10i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ac4a2e1d23ed0877a027650f63b151f3a.html">Typedef lupnt::RowVec1d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a5781300c67f88df0e9db042e13b137ea.html">Typedef lupnt::RowVec1i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aff0a4f671ddc0934eaf833bea859f777.html">Typedef lupnt::RowVec2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a5f315a686d977cc2edd91d4da059b0a3.html">Typedef lupnt::RowVec2d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1afd5020e52afc7b0518947fcbfa0f1964.html">Typedef lupnt::RowVec2i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ab2594b4c6b0c8c4c1f2f77fda7041f12.html">Typedef lupnt::RowVec3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a8f2a77108bc94198a1831953c105e337.html">Typedef lupnt::RowVec3d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aba648bd662304b05d1bd152798c6ccee.html">Typedef lupnt::RowVec3i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1af94b87ac1eb4a18ad1f716493ee4585d.html">Typedef lupnt::RowVec4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a7cd516523cc47657671801c3e73304c4.html">Typedef lupnt::RowVec4d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ab3364424afca31fa6055ab681e71bd06.html">Typedef lupnt::RowVec4i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aa8811f8a3c344f0f911435625b130b1b.html">Typedef lupnt::RowVec5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a3fd4c2f236e0f79dcd11db29dd8494ab.html">Typedef lupnt::RowVec5d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a7578cc0e63e04a47deb7d998ecc57844.html">Typedef lupnt::RowVec5i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a863df852ac75c8204635e38a68376085.html">Typedef lupnt::RowVec6</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a7b1204f1be710724e2c3af5b920ad969.html">Typedef lupnt::RowVec6d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a9aa856e2097023240ae0a41bf3b3b28c.html">Typedef lupnt::RowVec6i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aa60245c0604515afe45049b0393ee705.html">Typedef lupnt::RowVec7</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a49d97705d57253139d97dc1a410b325d.html">Typedef lupnt::RowVec7d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a705d8935a4d6b0659ee8d03a63fb522c.html">Typedef lupnt::RowVec7i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a2ef8a3bf89e1b06c9298922ed3bb8b89.html">Typedef lupnt::RowVec8</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a41ec2b0245f36f044b6c7ef6dfbd21b3.html">Typedef lupnt::RowVec8d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a1b58528c89f8781fcd4a0475a43e4b61.html">Typedef lupnt::RowVec8i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a447f71276fe0e9dbce425cf85109f510.html">Typedef lupnt::RowVec9</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a425f76a8ec6ebf20a3fb3312d3958a48.html">Typedef lupnt::RowVec9d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aa6ca35e2df7abd221db1be5cd9429e28.html">Typedef lupnt::RowVec9i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ab4c4d79fcd2c33f25554143ffa844a70.html">Typedef lupnt::RowVecd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a0294ba43397485c0be02b96f70b95451.html">Typedef lupnt::RowVecX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ab22b4777a82d0ed452e4ba943b29d4a4.html">Typedef lupnt::RowVecXd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ac5bdfdbd5de8531160cbd726d931731b.html">Typedef lupnt::RowVecXi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a31413894e4dee33d2cc564ae94d35edd.html">Typedef lupnt::Vec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a927a53db5f7e47fdec9d384744af2a5f.html">Typedef lupnt::Vec1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ac2fac1677c93b0c7792cd6b27e866338.html">Typedef lupnt::Vec10</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a83d9fb941cc45c10e36c42c28f271bf6.html">Typedef lupnt::Vec10d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a67c4f240301d3c6214fdde0f5493c3ed.html">Typedef lupnt::Vec10i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a1b19afb92daf9d9b9872ab3818c6765f.html">Typedef lupnt::Vec1d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a2356c85553f0cc690a11ec9f5b1233ea.html">Typedef lupnt::Vec1i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a4e5b680e57467f70e47a5877235f08f1.html">Typedef lupnt::Vec2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a4d8af33182a0a48bcc3ded8aedbbb074.html">Typedef lupnt::Vec2d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a59b63955494e990a90502c5951c5efed.html">Typedef lupnt::Vec2i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a13df0e738db1227aeee0f5491aeebb38.html">Typedef lupnt::Vec3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aec859f7c53b3e3032db4841b039d3141.html">Typedef lupnt::Vec3d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a680e0f591a7a3b8ae68c2595e8167915.html">Typedef lupnt::Vec3i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a9d27e83ccf3ed482df373acec9a95c9d.html">Typedef lupnt::Vec4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a14a5173f0950fe750950b89486075b00.html">Typedef lupnt::Vec4d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aaef176cc0c507e3d44a183a218e2e5b0.html">Typedef lupnt::Vec4i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aa4f5209ed8082044d6402c36d4bf7b14.html">Typedef lupnt::Vec5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1adf99bf702cd8a5dc3f5a0dd00721be12.html">Typedef lupnt::Vec5d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a772ce3bc14742a3633301fabb4e06e17.html">Typedef lupnt::Vec5i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ae4cd7984644495aab2ef193f76d0464b.html">Typedef lupnt::Vec6</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a2eff9c47187c6f57484fa06fa6a998e7.html">Typedef lupnt::Vec6d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1acbe73541e906df904f642fa9b4009bc8.html">Typedef lupnt::Vec6i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ac59c3f5b58b603f9e8a8f0e56980d0eb.html">Typedef lupnt::Vec7</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1af98f2659b9f446908440e0aec9638854.html">Typedef lupnt::Vec7d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1aff26282b35468fcb0e89bd79eeeffea0.html">Typedef lupnt::Vec7i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a48594ffd1d8fc0bf454cd045bbf504b6.html">Typedef lupnt::Vec8</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ab321b9f1a7d8efbc2f988fe0ce2581de.html">Typedef lupnt::Vec8d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a0d0a597e670b1d8fab96b228c748767d.html">Typedef lupnt::Vec8i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a37ff5bad751aef877e57451464494a86.html">Typedef lupnt::Vec9</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ad85250f77b77824b94cc4e19d9b7abb6.html">Typedef lupnt::Vec9d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a6e7025b2ca501b8fb5da40f98d0505bc.html">Typedef lupnt::Vec9i</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a266c9b6613af62d3af010b98c640317f.html">Typedef lupnt::Vecd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a94c0ae08d538d08ffa60fa74ebbcbf1c.html">Typedef lupnt::VecX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1ae5cb620905680e57716f6aaba3ca6bed.html">Typedef lupnt::VecXd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_definitions_8h_1a884a70a7fc4afb8bce02ecf99ebc5eb1.html">Typedef lupnt::VecXi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_forces_8h_1a7a3778f5d48ae8344f583260d6128b67.html">Typedef Matrix3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_forces_8h_1a5822645aa0885e30754e86d2902d3987.html">Typedef MatrixX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/typedef_forces_8h_1a657c7d063c66df935786985b7159bacd.html">Typedef Vector3</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="pylupnt-ut12utc">
+<h1>pylupnt.ut12utc<a class="headerlink" href="#pylupnt-ut12utc" title="Link to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="pylupnt.ut12utc">
+<span class="sig-prename descclassname"><span class="pre">pylupnt.</span></span><span class="sig-name descname"><span class="pre">ut12utc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ut12utc" title="Link to this definition">¶</a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>ut12utc(t_ut1: float) -&gt; float</p></li>
+<li><p>ut12utc(t_ut1: numpy.ndarray[numpy.float64[m, 1]]) -&gt; numpy.ndarray[numpy.float64[m, 1]]</p></li>
+</ol>
+</dd></dl>
+
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="pylupnt.utc2tai.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">pylupnt.utc2tai</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="pylupnt.tt2tdb.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">pylupnt.tt2tdb</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2020, Jeremy Castagno
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">pylupnt.ut12utc</a><ul>
+<li><a class="reference internal" href="#pylupnt.ut12utc"><code class="docutils literal notranslate"><span class="pre">ut12utc()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    </body>
+</html>

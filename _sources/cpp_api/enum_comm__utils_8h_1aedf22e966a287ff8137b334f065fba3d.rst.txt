@@ -1,0 +1,14 @@
+.. _exhale_enum_comm__utils_8h_1aedf22e966a287ff8137b334f065fba3d:
+
+Enum FrequencyBand
+==================
+
+- Defined in :ref:`file_include_lupnt_measurements_comm_utils.h`
+
+
+Enum Documentation
+------------------
+
+
+.. doxygenenum:: lupnt::FrequencyBand
+   :project: LuPNT_CPP

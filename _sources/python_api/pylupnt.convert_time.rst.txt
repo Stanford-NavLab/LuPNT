@@ -1,0 +1,6 @@
+pylupnt.convert_time
+--------------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: convert_time

@@ -1,0 +1,14 @@
+.. _exhale_variable_spice__interface_8h_1a2dcc7a2d96d02ba9f071e685de4884eb:
+
+Variable lupnt::frame2string
+============================
+
+- Defined in :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::frame2string
+   :project: LuPNT_CPP

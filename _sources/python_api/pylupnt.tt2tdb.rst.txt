@@ -1,0 +1,6 @@
+pylupnt.tt2tdb
+--------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: tt2tdb

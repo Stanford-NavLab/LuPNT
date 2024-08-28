@@ -41,5 +41,5 @@ Program Listing for File forces.h
      Real Illumination(const Vec3& r, const Vec3& r_sun, Real R_body);
      Real DensityHarrisPriester(Real mjd_tt, const Vec3& r_tod);
      Vec3 AccelerationEarthSpacecraft(Real mjd_tt, const Vec6& rv, Real area, Real mass, Real CR,
-                                      Real CD, GravityField grav);
+                                      Real CD, GravityField<double> grav);
    }  // namespace lupnt

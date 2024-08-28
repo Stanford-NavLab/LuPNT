@@ -1,0 +1,14 @@
+.. _exhale_function_plot_8h_1a9628e8b645401ffb4693b4a12e7f39a7:
+
+Function lupnt::Plot3(const Vec3&, std::string_view, double)
+============================================================
+
+- Defined in :ref:`file_include_lupnt_core_plot.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Plot3(const Vec3&, std::string_view, double)
+   :project: LuPNT_CPP

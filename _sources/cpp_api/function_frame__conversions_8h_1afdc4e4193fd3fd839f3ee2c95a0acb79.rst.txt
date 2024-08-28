@@ -1,0 +1,14 @@
+.. _exhale_function_frame__conversions_8h_1afdc4e4193fd3fd839f3ee2c95a0acb79:
+
+Function lupnt::RotGCRF2EME
+===========================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RotGCRF2EME()
+   :project: LuPNT_CPP

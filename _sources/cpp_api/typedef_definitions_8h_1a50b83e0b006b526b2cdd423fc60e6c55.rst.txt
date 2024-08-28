@@ -1,0 +1,14 @@
+.. _exhale_typedef_definitions_8h_1a50b83e0b006b526b2cdd423fc60e6c55:
+
+Typedef lupnt::MatX6d
+=====================
+
+- Defined in :ref:`file_include_lupnt_core_definitions.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::MatX6d
+   :project: LuPNT_CPP

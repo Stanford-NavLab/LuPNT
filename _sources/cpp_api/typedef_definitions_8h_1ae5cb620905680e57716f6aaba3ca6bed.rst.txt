@@ -1,0 +1,14 @@
+.. _exhale_typedef_definitions_8h_1ae5cb620905680e57716f6aaba3ca6bed:
+
+Typedef lupnt::VecXd
+====================
+
+- Defined in :ref:`file_include_lupnt_core_definitions.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::VecXd
+   :project: LuPNT_CPP

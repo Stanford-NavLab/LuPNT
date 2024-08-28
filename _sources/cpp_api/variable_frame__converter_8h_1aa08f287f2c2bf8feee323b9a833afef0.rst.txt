@@ -1,0 +1,14 @@
+.. _exhale_variable_frame__converter_8h_1aa08f287f2c2bf8feee323b9a833afef0:
+
+Variable lupnt::frame_centers
+=============================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_converter.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::frame_centers
+   :project: LuPNT_CPP

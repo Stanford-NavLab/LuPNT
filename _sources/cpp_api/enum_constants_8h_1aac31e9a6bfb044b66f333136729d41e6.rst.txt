@@ -1,0 +1,14 @@
+.. _exhale_enum_constants_8h_1aac31e9a6bfb044b66f333136729d41e6:
+
+Enum Time
+=========
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Enum Documentation
+------------------
+
+
+.. doxygenenum:: lupnt::Time
+   :project: LuPNT_CPP

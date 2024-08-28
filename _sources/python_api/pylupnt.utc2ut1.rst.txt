@@ -1,0 +1,6 @@
+pylupnt.utc2ut1
+---------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: utc2ut1

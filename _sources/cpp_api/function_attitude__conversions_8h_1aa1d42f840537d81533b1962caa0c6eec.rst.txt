@@ -1,0 +1,14 @@
+.. _exhale_function_attitude__conversions_8h_1aa1d42f840537d81533b1962caa0c6eec:
+
+Function lupnt::QuatCoeffToDCM
+==============================
+
+- Defined in :ref:`file_include_lupnt_physics_attitude_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::QuatCoeffToDCM(Vec4)
+   :project: LuPNT_CPP

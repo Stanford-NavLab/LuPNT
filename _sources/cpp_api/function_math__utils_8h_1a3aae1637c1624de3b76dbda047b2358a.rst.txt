@@ -1,0 +1,14 @@
+.. _exhale_function_math__utils_8h_1a3aae1637c1624de3b76dbda047b2358a:
+
+Function lupnt::BlkDiag
+=======================
+
+- Defined in :ref:`file_include_lupnt_numerics_math_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::BlkDiag(const MatX&, const MatX&)
+   :project: LuPNT_CPP

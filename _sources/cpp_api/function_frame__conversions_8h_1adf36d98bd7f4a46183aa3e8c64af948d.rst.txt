@@ -1,0 +1,14 @@
+.. _exhale_function_frame__conversions_8h_1adf36d98bd7f4a46183aa3e8c64af948d:
+
+Function lupnt::RotSideralMotionDot
+===================================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RotSideralMotionDot(Real)
+   :project: LuPNT_CPP

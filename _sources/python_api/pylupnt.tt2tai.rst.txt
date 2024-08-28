@@ -1,0 +1,6 @@
+pylupnt.tt2tai
+--------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: tt2tai

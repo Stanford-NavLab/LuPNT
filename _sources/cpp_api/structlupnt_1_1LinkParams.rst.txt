@@ -1,0 +1,17 @@
+.. _exhale_struct_structlupnt_1_1LinkParams:
+
+Struct LinkParams
+=================
+
+- Defined in :ref:`file_include_lupnt_measurements_link_measurement.h`
+
+
+Struct Documentation
+--------------------
+
+
+.. doxygenstruct:: lupnt::LinkParams
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

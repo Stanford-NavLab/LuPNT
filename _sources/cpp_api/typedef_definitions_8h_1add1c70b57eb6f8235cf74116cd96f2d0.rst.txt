@@ -1,0 +1,14 @@
+.. _exhale_typedef_definitions_8h_1add1c70b57eb6f8235cf74116cd96f2d0:
+
+Typedef lupnt::Quat
+===================
+
+- Defined in :ref:`file_include_lupnt_core_definitions.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::Quat
+   :project: LuPNT_CPP

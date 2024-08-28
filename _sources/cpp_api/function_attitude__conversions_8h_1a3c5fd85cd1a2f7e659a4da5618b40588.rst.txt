@@ -1,0 +1,14 @@
+.. _exhale_function_attitude__conversions_8h_1a3c5fd85cd1a2f7e659a4da5618b40588:
+
+Function lupnt::EulerAnglesToQuatCoeff
+======================================
+
+- Defined in :ref:`file_include_lupnt_physics_attitude_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::EulerAnglesToQuatCoeff(Vec3)
+   :project: LuPNT_CPP

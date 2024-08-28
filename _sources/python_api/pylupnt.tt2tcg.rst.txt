@@ -1,0 +1,6 @@
+pylupnt.tt2tcg
+--------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: tt2tcg

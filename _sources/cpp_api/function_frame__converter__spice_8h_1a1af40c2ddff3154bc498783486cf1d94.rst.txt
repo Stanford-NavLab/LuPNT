@@ -1,0 +1,14 @@
+.. _exhale_function_frame__converter__spice_8h_1a1af40c2ddff3154bc498783486cf1d94:
+
+Function lupnt::spice::ConvertFrameSpice(Real, const MatX6&, Frame, Frame)
+==========================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_converter_spice.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spice::ConvertFrameSpice(Real, const MatX6&, Frame, Frame)
+   :project: LuPNT_CPP

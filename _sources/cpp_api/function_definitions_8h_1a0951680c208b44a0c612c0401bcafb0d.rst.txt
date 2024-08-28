@@ -1,0 +1,14 @@
+.. _exhale_function_definitions_8h_1a0951680c208b44a0c612c0401bcafb0d:
+
+Function lupnt::FMT_COMPACT
+===========================
+
+- Defined in :ref:`file_include_lupnt_core_definitions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::FMT_COMPACT(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ";\n ", "", "", "")
+   :project: LuPNT_CPP

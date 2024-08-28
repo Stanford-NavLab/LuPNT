@@ -6,6 +6,15 @@ Class KeplerianDynamics
 - Defined in :ref:`file_include_lupnt_dynamics_dynamics.h`
 
 
+Inheritance Relationships
+-------------------------
+
+Base Type
+*********
+
+- ``public lupnt::IAnalyticalOrbitDynamics`` (:ref:`exhale_class_classlupnt_1_1IAnalyticalOrbitDynamics`)
+
+
 Class Documentation
 -------------------
 

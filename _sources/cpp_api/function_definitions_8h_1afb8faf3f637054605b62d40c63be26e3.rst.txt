@@ -1,0 +1,14 @@
+.. _exhale_function_definitions_8h_1afb8faf3f637054605b62d40c63be26e3:
+
+Function lupnt::FMT_HEAVY
+=========================
+
+- Defined in :ref:`file_include_lupnt_core_definitions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::FMT_HEAVY(Eigen::FullPrecision, 0, ", ", ", \n", "", "")
+   :project: LuPNT_CPP

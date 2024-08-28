@@ -1,0 +1,14 @@
+.. _exhale_function_spice__interface_8h_1aa842deed5cebf9a133068370435ff518:
+
+Function lupnt::spice::GetBodyPosVel(const VecX&, NaifId, NaifId)
+=================================================================
+
+- Defined in :ref:`file_include_lupnt_physics_spice_interface.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::spice::GetBodyPosVel(const VecX&, NaifId, NaifId)
+   :project: LuPNT_CPP

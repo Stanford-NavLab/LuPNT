@@ -1,0 +1,14 @@
+.. _exhale_function_radio__measurement_8h_1a56025a5773fd8970a56e8e197fe61192:
+
+Function lupnt::ComputePnRangeErrorCTL
+======================================
+
+- Defined in :ref:`file_include_lupnt_measurements_radio_measurement.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ComputePnRangeErrorCTL(double, double, double, Modulation)
+   :project: LuPNT_CPP

@@ -21,13 +21,17 @@ Subdirectories
 Files
 -----
 
+- :ref:`file_include_lupnt_physics_attitude_conversions.h`
+- :ref:`file_include_lupnt_physics_attitude_state.h`
 - :ref:`file_include_lupnt_physics_body.h`
 - :ref:`file_include_lupnt_physics_cheby.h`
 - :ref:`file_include_lupnt_physics_clock.h`
 - :ref:`file_include_lupnt_physics_coordinates.h`
+- :ref:`file_include_lupnt_physics_frame_conversions.h`
 - :ref:`file_include_lupnt_physics_frame_converter.h`
 - :ref:`file_include_lupnt_physics_frame_converter_spice.h`
 - :ref:`file_include_lupnt_physics_gravity.h`
+- :ref:`file_include_lupnt_physics_occultation.h`
 - :ref:`file_include_lupnt_physics_orbit_state.h`
 - :ref:`file_include_lupnt_physics_solar_system.h`
 - :ref:`file_include_lupnt_physics_spice_interface.h`

@@ -1,0 +1,14 @@
+.. _exhale_typedef_filters_8h_1ae81fbcd1c2df4e8efa6e08093074764a:
+
+Typedef lupnt::FilterProcessNoiseFunction
+=========================================
+
+- Defined in :ref:`file_include_lupnt_numerics_filters.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::FilterProcessNoiseFunction
+   :project: LuPNT_CPP

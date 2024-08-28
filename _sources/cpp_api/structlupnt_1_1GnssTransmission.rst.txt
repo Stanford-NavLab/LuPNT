@@ -1,0 +1,26 @@
+.. _exhale_struct_structlupnt_1_1GnssTransmission:
+
+Struct GnssTransmission
+=======================
+
+- Defined in :ref:`file_include_lupnt_measurements_transmission.h`
+
+
+Inheritance Relationships
+-------------------------
+
+Base Type
+*********
+
+- ``public lupnt::ITransmission`` (:ref:`exhale_struct_structlupnt_1_1ITransmission`)
+
+
+Struct Documentation
+--------------------
+
+
+.. doxygenstruct:: lupnt::GnssTransmission
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

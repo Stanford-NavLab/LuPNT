@@ -1,0 +1,6 @@
+pylupnt.tai2utc
+---------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: tai2utc

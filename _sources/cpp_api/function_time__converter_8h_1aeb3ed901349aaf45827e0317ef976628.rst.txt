@@ -1,0 +1,14 @@
+.. _exhale_function_time__converter_8h_1aeb3ed901349aaf45827e0317ef976628:
+
+Function lupnt::Time2GregorianString
+====================================
+
+- Defined in :ref:`file_include_lupnt_physics_time_converter.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Time2GregorianString(Real, int)
+   :project: LuPNT_CPP

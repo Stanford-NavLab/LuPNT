@@ -48,7 +48,7 @@ Includes
 
 - ``gnss_measurement.h`` (:ref:`file_include_lupnt_measurements_gnss_measurement.h`)
 
-- ``lupnt/agents/comm_device.h`` (:ref:`file_include_lupnt_agents_comm_device.h`)
+- ``lupnt/measurements/comm_device.h`` (:ref:`file_include_lupnt_measurements_comm_device.h`)
 
 - ``lupnt/measurements/transmission.h`` (:ref:`file_include_lupnt_measurements_transmission.h`)
 
@@ -65,8 +65,6 @@ Included By
 
 
 - :ref:`file_include_lupnt_agents_state_estimation_app.h`
-
-- :ref:`file_include_lupnt_agents_state_estimation_app_gnss.h`
 
 - :ref:`file_include_lupnt_lupnt.h`
 

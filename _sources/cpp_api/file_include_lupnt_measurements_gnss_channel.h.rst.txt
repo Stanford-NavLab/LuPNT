@@ -44,11 +44,11 @@ Includes
 --------
 
 
-- ``lupnt/measurements/occultation.h`` (:ref:`file_include_lupnt_measurements_occultation.h`)
-
-- ``lupnt/measurements/space_channel.h`` (:ref:`file_include_lupnt_measurements_space_channel.h`)
+- ``lupnt/measurements/transmission.h`` (:ref:`file_include_lupnt_measurements_transmission.h`)
 
 - ``lupnt/physics/frame_converter.h`` (:ref:`file_include_lupnt_physics_frame_converter.h`)
+
+- ``lupnt/physics/occultation.h`` (:ref:`file_include_lupnt_physics_occultation.h`)
 
 - ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
 

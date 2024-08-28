@@ -1,0 +1,42 @@
+
+.. _program_listing_file_include_lupnt_measurements_comm_utils.h:
+
+Program Listing for File comm_utils.h
+=====================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_include_lupnt_measurements_comm_utils.h>` (``include/lupnt/measurements/comm_utils.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   
+   #pragma once
+   
+   namespace lupnt {
+   
+     enum Modulation {
+       Residual,  // Residual carrier
+       // Suppressed carrier
+       BPSK,     // Binary Phase Shift Keying
+       QPSK,     // Quadrature Phase Shift Keying
+       OQPSK,    // Offset Quadrature Phase Shift Keying
+       GMSK,     // Gaussian Minimum Shift Keying
+       GMSK_PN,  // GMSK with PN modulation
+     };
+   
+     enum FrequencyBand { UHF, L, S, Cband, X, Ku, K, Ka };
+   
+     double ComputeBER(double EbN0, Modulation modulation_type);
+   
+     double ComputeEsN0(double EbN0, double modulation_order, double coding_rate);
+   
+     double BitsPerSymbol(Modulation modulation_type);
+     FrequencyBand GetFrequencyBand(double f);
+   
+     double GetTransponderTurnAroundRatio(FrequencyBand fbu, FrequencyBand fbd);
+   
+     double ComputeCarrierLoopSNR(double PT_N0, double B_L_carrier, double T_s,
+                                  Modulation modulation_type, double m_R);
+   
+   }  // namespace lupnt

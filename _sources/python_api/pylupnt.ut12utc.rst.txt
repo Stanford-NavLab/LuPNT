@@ -1,0 +1,6 @@
+pylupnt.ut12utc
+---------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: ut12utc

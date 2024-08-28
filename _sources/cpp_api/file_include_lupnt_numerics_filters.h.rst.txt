@@ -56,8 +56,6 @@ Included By
 
 - :ref:`file_include_lupnt_agents_state_estimation_app.h`
 
-- :ref:`file_include_lupnt_agents_state_estimation_app_gnss.h`
-
 - :ref:`file_include_lupnt_lupnt.h`
 
 
@@ -87,5 +85,5 @@ Typedefs
 
 - :ref:`exhale_typedef_filters_8h_1a13bed5d258c8425eec820ba40478a57b`
 
-- :ref:`exhale_typedef_filters_8h_1ac49ae53f46f09ce9470548ecbda1b640`
+- :ref:`exhale_typedef_filters_8h_1ae81fbcd1c2df4e8efa6e08093074764a`
 

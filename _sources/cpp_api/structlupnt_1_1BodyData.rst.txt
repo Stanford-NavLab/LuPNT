@@ -1,0 +1,17 @@
+.. _exhale_struct_structlupnt_1_1BodyData:
+
+Struct BodyData
+===============
+
+- Defined in :ref:`file_include_lupnt_physics_body.h`
+
+
+Struct Documentation
+--------------------
+
+
+.. doxygenstruct:: lupnt::BodyData
+   :project: LuPNT_CPP
+   :members:
+   :protected-members:
+   :undoc-members:

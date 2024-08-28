@@ -1,0 +1,14 @@
+.. _exhale_typedef_definitions_8h_1a0294ba43397485c0be02b96f70b95451:
+
+Typedef lupnt::RowVecX
+======================
+
+- Defined in :ref:`file_include_lupnt_core_definitions.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::RowVecX
+   :project: LuPNT_CPP

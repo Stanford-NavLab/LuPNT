@@ -1,0 +1,14 @@
+.. _exhale_function_frame__conversions_8h_1a0aa822768d2ed2b29e5e5c5e65bd9401:
+
+Function lupnt::RotGCRF2EMESecondOrder
+======================================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RotGCRF2EMESecondOrder()
+   :project: LuPNT_CPP

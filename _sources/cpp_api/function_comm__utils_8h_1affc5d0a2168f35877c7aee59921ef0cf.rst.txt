@@ -1,0 +1,14 @@
+.. _exhale_function_comm__utils_8h_1affc5d0a2168f35877c7aee59921ef0cf:
+
+Function lupnt::GetFrequencyBand
+================================
+
+- Defined in :ref:`file_include_lupnt_measurements_comm_utils.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::GetFrequencyBand(double)
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_function_frame__conversions_8h_1a413c9eae72485042cffaa8ae4b461bf9:
+
+Function lupnt::RotPrecessionNutation
+=====================================
+
+- Defined in :ref:`file_include_lupnt_physics_frame_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::RotPrecessionNutation(Real)
+   :project: LuPNT_CPP

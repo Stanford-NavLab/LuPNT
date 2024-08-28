@@ -1,7 +1,7 @@
 .. _exhale_class_classlupnt_1_1NBodyDynamics:
 
-Class NBodyDynamics
-===================
+Template Class NBodyDynamics
+============================
 
 - Defined in :ref:`file_include_lupnt_dynamics_dynamics.h`
 

@@ -1,0 +1,14 @@
+.. _exhale_typedef_definitions_8h_1ae04ccef335090af3c6bba88cd94da23a:
+
+Typedef lupnt::Ptr
+==================
+
+- Defined in :ref:`file_include_lupnt_core_definitions.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: lupnt::Ptr
+   :project: LuPNT_CPP

@@ -1,0 +1,14 @@
+.. _exhale_variable_plot_8h_1ab0b80ffb308726382971748fcfb46d5a:
+
+Variable lupnt::default_scale
+=============================
+
+- Defined in :ref:`file_include_lupnt_core_plot.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::default_scale
+   :project: LuPNT_CPP

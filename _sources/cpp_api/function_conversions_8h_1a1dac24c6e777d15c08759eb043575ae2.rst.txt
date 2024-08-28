@@ -1,0 +1,14 @@
+.. _exhale_function_conversions_8h_1a1dac24c6e777d15c08759eb043575ae2:
+
+Function lupnt::Classical2Equinoctial(const ClassicalOE&, Real)
+===============================================================
+
+- Defined in :ref:`file_include_lupnt_physics_orbit_state_conversions.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::Classical2Equinoctial(const ClassicalOE&, Real)
+   :project: LuPNT_CPP

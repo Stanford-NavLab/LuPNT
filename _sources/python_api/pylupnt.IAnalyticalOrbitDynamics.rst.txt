@@ -1,0 +1,9 @@
+pylupnt.IAnalyticalOrbitDynamics
+--------------------------------
+
+.. currentmodule:: pylupnt
+
+.. autoclass:: IAnalyticalOrbitDynamics
+    :members:
+    :undoc-members:
+    :inherited-members:

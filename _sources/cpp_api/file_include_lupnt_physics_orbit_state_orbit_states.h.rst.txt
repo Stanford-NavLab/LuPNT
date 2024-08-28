@@ -29,7 +29,13 @@ Includes
 
 - ``lupnt/physics/state.h`` (:ref:`file_include_lupnt_physics_state.h`)
 
+- ``ostream``
+
 - ``stdexcept``
+
+- ``string`` (:ref:`file_include_lupnt_numerics_string_utils.h`)
+
+- ``vector`` (:ref:`file_include_lupnt_numerics_vector_macros.h`)
 
 
 
@@ -83,6 +89,13 @@ Enums
 
 
 - :ref:`exhale_enum_orbit__states_8h_1a8d258676bc32bbefbd96ccfde676de87`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_orbit__states_8h_1a4171b3c68970dce56d852257ffd89b0a`
 
 
 Defines

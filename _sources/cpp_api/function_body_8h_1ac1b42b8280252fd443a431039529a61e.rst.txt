@@ -1,0 +1,14 @@
+.. _exhale_function_body_8h_1ac1b42b8280252fd443a431039529a61e:
+
+Template Function lupnt::ReadHarmonicGravityField
+=================================================
+
+- Defined in :ref:`file_include_lupnt_physics_body.h`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: lupnt::ReadHarmonicGravityField(const std::string&, int, int, bool)
+   :project: LuPNT_CPP

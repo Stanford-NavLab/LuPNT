@@ -52,6 +52,8 @@ Included By
 
 - :ref:`file_include_lupnt_lupnt.h`
 
+- :ref:`file_include_lupnt_physics_attitude_state.h`
+
 - :ref:`file_include_lupnt_physics_clock.h`
 
 - :ref:`file_include_lupnt_physics_orbit_state_orbit_states.h`

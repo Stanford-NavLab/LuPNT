@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a269793410a7cfd0b0d25639c5a84326a:
+
+Variable lupnt::R_URANUS
+========================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::R_URANUS
+   :project: LuPNT_CPP
