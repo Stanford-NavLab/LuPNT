@@ -51,10 +51,10 @@ namespace lupnt {
     GravityField<T> gravity_field;
 
     static BodyT Sun();
-    static BodyT Earth(int n_max = 0, int m_max = 0, std::string gravity_file = "EGM96.cof");
-    static BodyT Moon(int n_max = 0, int m_max = 0, std::string gravity_file = "grgm900c.cof");
-    static BodyT Venus(int n_max = 0, int m_max = 0, std::string gravity_file = "MGN75HSAAP.cof");
-    static BodyT Mars(int n_max = 0, int m_max = 0, std::string gravity_file = "GMM1.cof");
+    static BodyT Earth(int n = 0, int m = 0, std::string gravity_file = "EGM96.cof");
+    static BodyT Moon(int n = 0, int m = 0, std::string gravity_file = "grgm900c.cof");
+    static BodyT Venus(int n = 0, int m = 0, std::string gravity_file = "MGN75HSAAP.cof");
+    static BodyT Mars(int n = 0, int m = 0, std::string gravity_file = "GMM1.cof");
   };
 
   using Body = BodyT<double>;

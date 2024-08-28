@@ -26,12 +26,12 @@ namespace lupnt {
   enum Frame {
     // Earth
     NONE,         // No frame
+    ICRF,         // International Celestial Reference System
     ITRF,         // International Terrestrial Reference Frame
     ECEF = ITRF,  // Earth-Centered Earth-Fixed
     GCRF,         // Geocentric Reference System
     EME,          // Earth-Centered mean equator and equinox at J2000
     ECI = EME,    // Earth-Centered Inertial
-    ICRF,         // International Celestial Reference System
     SER,          // Sun-Earth Rotating Frame
     GSE,          // Geocentric Solar Ecliptic
     MOD,          // Mean of date equatorial system

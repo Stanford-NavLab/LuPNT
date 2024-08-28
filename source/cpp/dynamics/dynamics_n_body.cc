@@ -39,8 +39,7 @@ namespace lupnt {
         // Position (body-fixed) [km]
         Vector<T, 3> r_bf = ConvertFrame(t_tai, r, frame_, body.fixed_frame).template cast<T>();
         // Acceleration (body-fixed) [km/s^2]
-        Vec3 a_bf
-            = AccelarationGravityField<T>(r_bf, grav.GM, grav.R, grav.CS, grav.n_max, grav.m_max);
+        Vec3 a_bf = AccelarationGravityField<T>(r_bf, grav.GM, grav.R, grav.CS, grav.n, grav.m);
         // Acceleration (inertial) [km/s^2]
         Vec3 ai = ConvertFrame(t_tai, a_bf, body.fixed_frame, frame_, true);
         a += ai;

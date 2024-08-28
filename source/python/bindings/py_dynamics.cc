@@ -279,14 +279,32 @@ void init_dynamics(py::module &m) {
   // Body
   py::class_<Body>(m, "Body")
       .def(py::init<>())
-      .def_static("Moon", &Body::Moon, py::arg("n_max") = 0, py::arg("m_max") = 0,
-                  py::arg("gravity_file") = "EGM96.cof")
-      .def_static("Earth", &Body::Earth, py::arg("n_max") = 0, py::arg("m_max") = 0,
+      .def_static("Moon", &Body::Moon, py::arg("n") = 0, py::arg("m") = 0,
                   py::arg("gravity_file") = "grgm900c.cof")
-      .def_static("Mars", &Body::Mars, py::arg("n_max") = 0, py::arg("m_max") = 0,
+      .def_static("Earth", &Body::Earth, py::arg("n") = 0, py::arg("m") = 0,
+                  py::arg("gravity_file") = "EGM96.cof")
+      .def_static("Mars", &Body::Mars, py::arg("n") = 0, py::arg("m") = 0,
                   py::arg("gravity_file") = "GMM1.cof")
-      .def_static("Venus", &Body::Venus, py::arg("n_max") = 0, py::arg("m_max") = 0,
+      .def_static("Venus", &Body::Venus, py::arg("n") = 0, py::arg("m") = 0,
                   py::arg("gravity_file") = "MGN75HSAAP.cof")
       .def_static("Sun", &Body::Sun)
-      .def("__repr__", [](const Body &body) { return "<pylupnt.Body>"; });
+      .def_readonly("id", &Body::id)
+      .def_readonly("name", &Body::name)
+      .def_readonly("GM", &Body::GM)
+      .def_readonly("R", &Body::R)
+      .def_readonly("fixed_frame", &Body::fixed_frame)
+      .def_readonly("inertial_frame", &Body::inertial_frame)
+      .def_readonly("use_gravity_field", &Body::use_gravity_field)
+      .def_readonly("gravity_field", &Body::gravity_field);
+
+  // GravityField
+  py::class_<GravityField<double>>(m, "GravityField")
+      .def(py::init<>())
+      .def_readonly("n_max", &GravityField<double>::n_max)
+      .def_readonly("m_max", &GravityField<double>::m_max)
+      .def_readonly("n", &GravityField<double>::n)
+      .def_readonly("m", &GravityField<double>::m)
+      .def_readonly("GM", &GravityField<double>::GM)
+      .def_readonly("R", &GravityField<double>::R)
+      .def_readonly("CS", &GravityField<double>::CS);
 }

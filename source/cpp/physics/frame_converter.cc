@@ -87,31 +87,37 @@ namespace lupnt {
   Vec6 ConvertFrameBase(Real t_tai, const Vec6& rv_in, Frame frame_in, Frame frame_out) {
     if (frame_in == frame_out) return rv_in;
     switch (frame_in) {
-      case Frame::ICRF: return ConvertFrameBase(t_tai, ITRF2GCRF(t_tai, rv_in), ITRF, frame_out);
-      case Frame::ITRF: return ConvertFrameBase(t_tai, GCRF2ITRF(t_tai, rv_in), GCRF, frame_out);
+      // Earth ***************
+      case Frame::ICRF:
+        return ConvertFrameBase(t_tai, ICRF2GCRF(t_tai, rv_in), Frame::GCRF, frame_out);
+      case Frame::ITRF:  // Frame::ECEF:
+        return ConvertFrameBase(t_tai, ITRF2GCRF(t_tai, rv_in), Frame::GCRF, frame_out);
       case Frame::GCRF:
         switch (frame_out) {
           case Frame::ICRF: return GCRF2ICRF(t_tai, rv_in);
           case Frame::ITRF: return GCRF2ITRF(t_tai, rv_in);
-          case Frame::SER: throw std::runtime_error("Not implemented");
+          case Frame::SER:
           case Frame::GSE: throw std::runtime_error("Not implemented");
           case Frame::EMR: return GCRF2EMR(t_tai, rv_in);
           case Frame::EME: return GCRF2EME(t_tai, rv_in);
-          case Frame::MOD: throw std::runtime_error("Not implemented");
+          case Frame::MOD:
           case Frame::TOD: throw std::runtime_error("Not implemented");
-          case Frame::MOON_CI:
           case Frame::MOON_PA:
           case Frame::MOON_ME:
           case Frame::MOON_OP:
+          case Frame::MOON_CI:
             return ConvertFrameBase(t_tai, GCRF2MoonCI(t_tai, rv_in), Frame::MOON_CI, frame_out);
           default: break;
         }
-      case Frame::SER: throw std::runtime_error("Not implemented");
-      case Frame::GSE: throw std::runtime_error("Not implemented");
-      case Frame::EME:
+      case Frame::EME:  // Frame::ECI:
         return ConvertFrameBase(t_tai, EME2GCRF(t_tai, rv_in), Frame::GCRF, frame_out);
-      case Frame::MOD: throw std::runtime_error("Not implemented");
+      case Frame::EMR:
+        return ConvertFrameBase(t_tai, EMR2GCRF(t_tai, rv_in), Frame::GCRF, frame_out);
+      case Frame::SER:
+      case Frame::GSE:
+      case Frame::MOD:
       case Frame::TOD: throw std::runtime_error("Not implemented");
+      // Moon ***************
       case Frame::MOON_CI:
         switch (frame_out) {
           case Frame::MOON_OP: return MoonCI2MoonOP(t_tai, rv_in);
@@ -128,6 +134,22 @@ namespace lupnt {
       }
       case Frame::MOON_OP:
         return ConvertFrameBase(t_tai, MoonOP2MoonCI(t_tai, rv_in), Frame::MOON_CI, frame_out);
+        // Solar System ***************
+      case Frame::MERCURY_FIXED:
+      case Frame::VENUS_FIXED:
+      case Frame::MARS_FIXED:
+      case Frame::JUPITER_FIXED:
+      case Frame::SATURN_FIXED:
+      case Frame::URANUS_FIXED:
+      case Frame::NEPTUNE_FIXED:
+      case Frame::MERCURY_CI:
+      case Frame::VENUS_CI:
+      case Frame::MARS_CI:
+      case Frame::JUPITER_CI:
+      case Frame::SATURN_CI:
+      case Frame::URANUS_CI:
+      case Frame::NEPTUNE_CI:
+      case Frame::NONE: throw std::runtime_error("Not implemented");
     }
     throw std::runtime_error("Conversion not implemented");
     return Vec6::Zero();

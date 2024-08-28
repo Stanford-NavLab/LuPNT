@@ -23,8 +23,8 @@ import bisect
 
 import numpy as np
 
-MAX_ROWS = 25
-MAX_COLS = 25
+MAX_ROWS = 10
+MAX_COLS = 10
 
 
 def __lldb_init_module(debugger, internal_dict):

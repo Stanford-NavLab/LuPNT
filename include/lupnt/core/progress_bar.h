@@ -38,7 +38,7 @@ namespace lupnt {
         last_update_ = now;
         value_at_last_update_ = value;
 
-        Display(value, itersPerSecond, remaining_time);
+        Display(value, itersPerSecond, remaining_time, elapsed_since_start.count());
       }
 
       if (value == total_) {
@@ -52,11 +52,8 @@ namespace lupnt {
       current_progress_ = 100;
       std::chrono::duration<double> elapsed_since_start = now - start_time_;
       double total_iters_per_sec = total_ / elapsed_since_start.count();
-      Display(total_, total_iters_per_sec, 0);
+      Display(total_, total_iters_per_sec, 0, elapsed_since_start.count());
       std::cout << std::endl;
-      std::chrono::duration<double> elapsed = now - start_time_;
-      std::cout << "Elapsed time: " << FormatTime(static_cast<int>(elapsed.count())) << std::endl
-                << std::flush;
     }
 
   private:
@@ -69,7 +66,7 @@ namespace lupnt {
     int value_at_last_update_;
     std::chrono::time_point<std::chrono::system_clock> start_time_, last_update_;
 
-    void Display(int value, double speed, int remaining_time) {
+    void Display(int value, double speed, int remaining_time, double elapsed) {
       std::cout << description_;
       std::cout << "[";
       int pos = bar_width_ * current_progress_ / 100 + 1;
@@ -81,9 +78,11 @@ namespace lupnt {
         else
           std::cout << " ";
       }
-      std::cout << "] " << value << "/" << total_ << ", " << current_progress_ << "%, ";
-      std::cout << std::fixed << std::setprecision(2) << speed << " it/s, ";
-      std::cout << FormatTime(remaining_time) << " remaining\r";
+      std::cout << "] " << value << "/" << total_ << ", " << std::setw(3) << current_progress_
+                << "%, ";
+      std::cout << std::fixed << std::setprecision(1) << speed << " it/s, ";
+      std::cout << FormatTime(static_cast<int>(elapsed)) << " elapsed, ";
+      std::cout << FormatTime(remaining_time) << " left\r";
       std::cout << std::flush;
     }
 

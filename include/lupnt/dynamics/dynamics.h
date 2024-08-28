@@ -260,7 +260,8 @@ namespace lupnt {
       }
       bodies_.push_back(body);
     }
-    void GetBodies(std::vector<BodyT<T>> &bodies) { bodies = bodies_; }
+
+    std::vector<BodyT<T>> GetBodies() { return bodies_; }
 
     void RemoveBody(const BodyT<T> &body) {
       for (auto it = bodies_.begin(); it != bodies_.end(); ++it) {

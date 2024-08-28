@@ -192,15 +192,15 @@ namespace lupnt {
 
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 39
   Vec6 GCRF2ICRF(Real t_tai, const Vec6& rv_gcrf) {
-    Vec6 rv_earth2ssb = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::SSB, Frame::GCRF);
-    Vec6 rv_icrf = rv_gcrf + rv_earth2ssb;
+    Vec6 rv_ssb2earth = GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH, Frame::GCRF);
+    Vec6 rv_icrf = rv_gcrf + rv_ssb2earth;
     return rv_icrf;
   }
 
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 40
   Vec6 ICRF2GCRF(Real t_tai, const Vec6& rv_icrf) {
     Vec6 rv_ssb2earth = GetBodyPosVel(t_tai, NaifId::SSB, NaifId::EARTH, Frame::GCRF);
-    Vec6 rv_gcrf = rv_icrf + rv_ssb2earth;
+    Vec6 rv_gcrf = rv_icrf - rv_ssb2earth;
     return rv_gcrf;
   }
 

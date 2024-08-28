@@ -24,7 +24,6 @@ TEST_CASE("SpiceInterface.TDBtoStringUTC") {
   Real et = spice::String2TDB("2023-04-15 00:00:00 UTC");
   int prec = 3;
   std::string str = spice::TDBtoStringUTC(et, prec);
-  //   std::cout << str << std::endl;
   REQUIRE(str == "2023 APR 15 00:00:00.000");
 }
 

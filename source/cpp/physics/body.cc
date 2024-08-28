@@ -173,9 +173,8 @@ namespace lupnt {
   /// @param m Order of the spherical harmonics expansion
   /// @param normalized Whether the coefficients are normalized
   /// @return Gravity field object
-  template <typename T> GravityField<T> ReadHarmonicGravityField(const std::string& filename,
-                                                                 int n_max, int m_max,
-                                                                 bool normalized) {
+  template <typename T> GravityField<T> ReadHarmonicGravityField(const std::string& filename, int n,
+                                                                 int m, bool normalized) {
     GravityField<T> gravity_field;
     std::filesystem::path filepath = GetFilePath(filename);
     std::ifstream file(filepath);
@@ -186,48 +185,50 @@ namespace lupnt {
     while (std::getline(file, line)) {
       if (line.find("POTFIELD") != std::string::npos) {
         std::string potfield = line.substr(0, 8);
-        int n_max = std::stoi(line.substr(8, 3));
-        int m_max = std::stoi(line.substr(11, 3));
+        int n_max_in = std::stoi(line.substr(8, 3));
+        int m_max_in = std::stoi(line.substr(11, 3));
 
         std::istringstream iss(line.substr(14));
         double dummy1, GM, r, dummy2;
         iss >> dummy1 >> GM >> r >> dummy2;
-        gravity_field.n_max = n_max;
-        gravity_field.m_max = m_max;
+        gravity_field.n_max = n_max_in;
+        gravity_field.m_max = m_max_in;
         gravity_field.GM = GM * pow(KM_M, 3);
         gravity_field.R = r * KM_M;
         break;
       }
     }
+    gravity_field.n = n;
+    gravity_field.m = m;
 
     // Initialize Eigen matrices with the specified maxN and maxM
-    assert(n_max <= gravity_field.n_max && m_max <= gravity_field.m_max);
-    gravity_field.n_max = n_max;
-    gravity_field.m_max = m_max;
-    gravity_field.CS = Eigen::MatrixXd::Zero(n_max + 1, m_max + 1);
+    assert(n <= gravity_field.n_max && m <= gravity_field.m_max);
+    gravity_field.CS = Eigen::MatrixXd::Zero(n + 1, m + 1);
     gravity_field.CS(0, 0) = 1.0;  // C00 = 1.0
     // Read coefficient lines
     while (std::getline(file, line)) {
       if (line.find("RECOEF") != std::string::npos) {
         std::string recoef = line.substr(0, 8);
-        int n = std::stoi(line.substr(8, 3));
-        int m = std::stoi(line.substr(11, 3));
+        int n_in = std::stoi(line.substr(8, 3));
+        int m_in = std::stoi(line.substr(11, 3));
         std::istringstream iss(line.substr(14));
         double cnm, snm = 0.0;
         iss >> cnm;
-        if (n >= n_max + 1) break;
-        if (m >= m_max + 1) continue;
+        if (n_in >= n + 1) break;
+        if (m_in >= m + 1) continue;
 
-        if (m == 0) {
-          double N = (normalized) ? sqrt(2 * n + 1) : 1.0;
-          gravity_field.CS(n, m) = N * cnm;
+        if (m_in == 0) {
+          double N = (normalized) ? sqrt(2 * n_in + 1) : 1.0;
+          gravity_field.CS(n_in, m_in) = N * cnm;
         } else {
-          double N = (normalized) ? sqrt((2 - kron(0, m)) * (2 * n + 1) * factprod(n, m)) : 1.0;
+          double N = (normalized)
+                         ? sqrt((2 - kron(0, m_in)) * (2 * n_in + 1) * factprod(n_in, m_in))
+                         : 1.0;
           iss >> snm;
           double C = N * cnm;
           double S = N * snm;
-          gravity_field.CS(n, m) = C;
-          gravity_field.CS(m - 1, n) = S;
+          gravity_field.CS(n_in, m_in) = C;
+          gravity_field.CS(m_in - 1, n_in) = S;
         }
       } else if (line.find("END") != std::string::npos) {
         break;
