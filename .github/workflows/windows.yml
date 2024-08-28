@@ -48,10 +48,12 @@ jobs:
           Invoke-WebRequest -Uri "https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.3/hdf5-1.14.4-3-win-vs2022_cl.zip" -OutFile "hdf5.zip"
           Expand-Archive -Path "hdf5.zip" -DestinationPath "C:\HDF5" -Force
           Remove-Item "hdf5.zip"
+          Expand-Archive -Path "C:/HDF5/hdf5/HDF5-1.14.4-win64.zip" -DestinationPath "C:/HDF5"
+
 
       - name: Update PATH
         run: |
-          $env:PATH += ";C:\HDF5\bin"
+          $env:PATH += ";C:\HDF5\HDF5-1.14.4-win64\bin"
 
       - name: Verify HDF5 installation
         run: |

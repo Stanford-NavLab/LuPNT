@@ -22,4 +22,4 @@ spiceypy
 tqdm
 pybind11_stubgen
 ipywidgets
-ipyml
+ipymls
