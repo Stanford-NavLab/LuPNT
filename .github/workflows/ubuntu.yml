@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: install dependencies
-        run: sudo apt-get install -y libhdf5-serial-dev
+        run: sudo apt-get install -y libomp-dev libhdf5-serial-dev
 
       - uses: actions/checkout@v4
 

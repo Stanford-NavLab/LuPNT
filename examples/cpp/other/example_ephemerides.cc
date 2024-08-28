@@ -26,7 +26,7 @@ int main() {
                   NaifId::NEPTUNE_BARYCENTER};
   NaifId center = NaifId::SSB;
   NaifId target = NaifId::MOON;
-  Frame frame = Frame::ITRF;
+  Frame frame = Frame::ICRF;
 
   for (auto id : ids) {
     Vec6 rv_old = spice::GetBodyPosVel(t_tai, center, id);

@@ -3,7 +3,7 @@ ROOT_DIR=$(dirname "$(realpath "$0")")/..
 cd $ROOT_DIR
 # Configure and build
 cmake -Sexamples/cpp -Bbuild_examples -DCMAKE_BUILD_TYPE=RelWithDebInfo
-cmake --build build_examples -j4 --target all_examples
+cmake --build build_examples -j12 --target all_examples
 # Run
 cd ./build_examples/examples
 for example in *; do

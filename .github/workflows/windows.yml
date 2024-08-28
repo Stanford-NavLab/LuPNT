@@ -42,8 +42,23 @@ jobs:
           Expand-Archive -Path "LuPNT_data.zip" -DestinationPath "."
           Remove-Item "LuPNT_data.zip"
 
+      - name: Download HDF5 binaries
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.3/hdf5-1.14.4.3-Std-win10_64-vs16.zip" -OutFile "hdf5.zip"
+          Expand-Archive -Path "hdf5.zip" -DestinationPath "C:\HDF5"
+          Remove-Item "hdf5.zip"
+
+      - name: Update PATH
+        run: |
+          $env:PATH += ";C:\HDF5\bin"
+
+      - name: Verify HDF5 installation
+        run: |
+          hdf5-config --version
+
       - name: configure
-        run: cmake -Stest -Bbuild
+        run: cmake -Stest -Bbuild -DCMAKE_PREFIX_PATH=C:\HDF5
 
       - name: build
         run: cmake --build build --config Debug -j4
