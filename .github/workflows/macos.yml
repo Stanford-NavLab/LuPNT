@@ -20,8 +20,8 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: install OpenMP
-        run: brew install libomp
+      - name: install dependencies
+        run: brew install libomp hdf5
 
       - uses: actions/checkout@v4
 
