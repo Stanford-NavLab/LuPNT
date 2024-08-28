@@ -14,7 +14,7 @@ namespace lupnt {
   /// @param GM Gravitational parameter [km^3/s^2]
   /// @return Classical orbital elements [km, –, rad, rad, rad, rad]
   ClassicalOE Cart2Classical(const CartesianOrbitState &rv, Real GM) {
-    return ClassicalOE(Cart2Classical(rv.GetVec(), GM), rv.GetCoordSystem());
+    return ClassicalOE(Cart2Classical(rv.GetVec6(), GM), rv.GetFrame());
   }
 
   /// @brief Convert Cartesian state to classical orbital elements
@@ -31,7 +31,7 @@ namespace lupnt {
     Vec3 h = r.cross(v);  // Areal velocity
     Real H = h.norm();    // Angular momentum
 
-    Real Omega = Wrap2TwoPi(atan2(h(0), -h(1)));            // Long. ascend. node
+    Real Omega = atan2(h(0), -h(1));                        // Long. ascend. node
     Real i = atan2(sqrt(h(0) * h(0) + h(1) * h(1)), h(2));  // Inclination
     Real u = atan2(r(2) * H, -r(0) * h(1) + r(1) * h(0));   // Arg. of latitude
     Real R = r.norm();                                      // Distance
@@ -43,9 +43,9 @@ namespace lupnt {
     Real e = sqrt(e2);             // Eccentricity
     Real E = atan2(eSinE, eCosE);  // Eccentric anomaly
 
-    Real M = Wrap2TwoPi(E - eSinE);                       // Mean anomaly
+    Real M = Wrap2Pi(E - eSinE);                          // Mean anomaly
     Real nu = atan2(sqrt(1.0 - e2) * eSinE, eCosE - e2);  // True anomaly
-    Real omega = Wrap2TwoPi(u - nu);                      // Arg. of perihelion
+    Real omega = Wrap2Pi(u - nu);                         // Arg. of perihelion
 
     return Vec6(a, e, i, Omega, omega, M);
   }
@@ -96,17 +96,16 @@ namespace lupnt {
 
     Real e = sqrt(ecos_nu * ecos_nu + esin_nu * esin_nu);
     Real nu = atan2(esin_nu, ecos_nu);
-    Real omega = Wrap2TwoPi(u - nu);
+    Real omega = Wrap2Pi(u - nu);
 
     // Perihelion distance, semimajor axis and mean motion
     Real a = p / (1.0 - e * e);
-    Real n = sqrt(GM / abs(a * a * a));
 
     // Mean anomaly and time of perihelion passage
     Real M;
     if (e < 1.0) {
       Real E = atan2(sqrt((1.0 - e) * (1.0 + e)) * esin_nu, ecos_nu + e * e);
-      M = Wrap2TwoPi(E - e * sin(E));
+      M = Wrap2Pi(E - e * sin(E));
     } else {
       Real sinhH = sqrt((e - 1.0) * (e + 1.0)) * esin_nu / (e + e * ecos_nu);
       M = e * sinhH - log(sinhH + sqrt(1.0 + sinhH * sinhH));
@@ -122,8 +121,7 @@ namespace lupnt {
   /// @return Relative RTN state [km, km/s]
   CartesianOrbitState Inertial2Synodic(const CartesianOrbitState &rv_c,
                                        const CartesianOrbitState &rv_d) {
-    return CartesianOrbitState(Inertial2Synodic(rv_c.GetVec(), rv_d.GetVec()),
-                               rv_c.GetCoordSystem());
+    return CartesianOrbitState(Inertial2Synodic(rv_c.GetVec6(), rv_d.GetVec6()), rv_c.GetFrame());
   }
 
   Vec6 Inertial2Synodic(const Vec6 &rv_c, const Vec6 &rv_d) {
@@ -150,8 +148,8 @@ namespace lupnt {
 
   CartesianOrbitState Synodic2Intertial(const CartesianOrbitState &rv_c,
                                         const CartesianOrbitState &rv_syn_d) {
-    return CartesianOrbitState(Synodic2Intertial(rv_c.GetVec(), rv_syn_d.GetVec()),
-                               rv_c.GetCoordSystem());
+    return CartesianOrbitState(Synodic2Intertial(rv_c.GetVec6(), rv_syn_d.GetVec6()),
+                               rv_c.GetFrame());
   }
 
   Vec6 Synodic2Intertial(const Vec6 &rv_c, const Vec6 &rv_syn_d) {
@@ -178,7 +176,7 @@ namespace lupnt {
   // From ClassicalOE
   // - To CartesianOrbitState
   CartesianOrbitState Classical2Cart(const ClassicalOE &coe, Real GM) {
-    return CartesianOrbitState(Classical2Cart(coe.GetVec(), GM), coe.GetCoordSystem());
+    return CartesianOrbitState(Classical2Cart(coe.GetVec6(), GM), coe.GetFrame());
   }
 
   /// @brief Convert classical orbital elements to Cartesian state
@@ -213,10 +211,11 @@ namespace lupnt {
 
   // - To QuasiNonsingOE
   QuasiNonsingOE Classical2QuasiNonsing(const ClassicalOE &coe, Real GM) {
-    return QuasiNonsingOE(Classical2QuasiNonsing(coe.GetVec(), GM), coe.GetCoordSystem());
+    return QuasiNonsingOE(Classical2QuasiNonsing(coe.GetVec6(), GM), coe.GetFrame());
   }
 
   Vec6 Classical2QuasiNonsing(const Vec6 &coe, Real GM) {
+    (void)GM;
     auto [a, e, i, Omega, w, M] = unpack(coe);
 
     Real u = w + M;
@@ -228,10 +227,11 @@ namespace lupnt {
 
   // - To EquinoctialOE
   EquinoctialOE Classical2Equinoctial(const ClassicalOE &coe, Real GM) {
-    return EquinoctialOE(Classical2Equinoctial(coe.GetVec(), GM), coe.GetCoordSystem());
+    return EquinoctialOE(Classical2Equinoctial(coe.GetVec6(), GM), coe.GetFrame());
   }
 
   Vec6 Classical2Equinoctial(const Vec6 &coe, Real GM) {
+    (void)GM;
     auto [a, e, i, Omega, w, M] = unpack(coe);
 
     Real f = Mean2TrueAnomaly(M, e);
@@ -252,7 +252,7 @@ namespace lupnt {
 
   // - To DelaunayOE
   DelaunayOE Classical2Delaunay(const ClassicalOE &coe, Real GM) {
-    return DelaunayOE(Classical2Delaunay(coe.GetVec(), GM), coe.GetCoordSystem());
+    return DelaunayOE(Classical2Delaunay(coe.GetVec6(), GM), coe.GetFrame());
   }
 
   Vec6 Classical2Delaunay(const Vec6 &coe, Real GM) {
@@ -274,10 +274,11 @@ namespace lupnt {
   // From QuasiNonsingOE
   // - To ClassicalOE
   ClassicalOE QuasiNonsing2Classical(const QuasiNonsingOE &qnsoe, Real GM) {
-    return ClassicalOE(QuasiNonsing2Classical(qnsoe.GetVec(), GM), qnsoe.GetCoordSystem());
+    return ClassicalOE(QuasiNonsing2Classical(qnsoe.GetVec6(), GM), qnsoe.GetFrame());
   }
 
   Vec6 QuasiNonsing2Classical(const Vec6 &qnsoeVec, Real GM) {
+    (void)GM;
     auto [a, u, ex, ey, i, Omega] = unpack(qnsoeVec);
 
     Real e = sqrt(ex * ex + ey * ey);
@@ -291,10 +292,11 @@ namespace lupnt {
   // From EquinoctialOE
   // - To ClassicalOE
   ClassicalOE Equinoctial2Classical(const EquinoctialOE &eqoe, Real GM) {
-    return ClassicalOE(Equinoctial2Classical(eqoe.GetVec(), GM), eqoe.GetCoordSystem());
+    return ClassicalOE(Equinoctial2Classical(eqoe.GetVec6(), GM), eqoe.GetFrame());
   }
 
   Vec6 Equinoctial2Classical(const Vec6 &equioe, Real GM) {
+    (void)GM;
     auto [a, Psi, tq1, tq2, p1, p2] = unpack(equioe);
 
     Real Omega = atan2(p2, p1);
@@ -321,7 +323,7 @@ namespace lupnt {
   // From DelaunayOE
   // - To ClassicalOE
   ClassicalOE Delaunay2Classical(const DelaunayOE &deloe, Real GM) {
-    return ClassicalOE(Delaunay2Classical(deloe.GetVec(), GM), deloe.GetCoordSystem());
+    return ClassicalOE(Delaunay2Classical(deloe.GetVec6(), GM), deloe.GetFrame());
   }
 
   Vec6 Delaunay2Classical(const Vec6 &delaunay, Real GM) {
@@ -345,8 +347,8 @@ namespace lupnt {
   // - To ClassicalOE
   ClassicalOE RelQuasiNonsing2Classical(const ClassicalOE &coe_c,
                                         const QuasiNonsingROE &RelQuasiNonsing) {
-    return ClassicalOE(RelQuasiNonsing2Classical(coe_c.GetVec(), RelQuasiNonsing.GetVec()),
-                       coe_c.GetCoordSystem());
+    return ClassicalOE(RelQuasiNonsing2Classical(coe_c.GetVec6(), RelQuasiNonsing.GetVec6()),
+                       coe_c.GetFrame());
   }
 
   Vec6 RelQuasiNonsing2Classical(const Vec6 &coe_c, const Vec6 &RelQuasiNonsing) {

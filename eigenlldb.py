@@ -23,8 +23,8 @@ import bisect
 
 import numpy as np
 
-MAX_ROWS = 100
-MAX_COLS = 100
+MAX_ROWS = 10
+MAX_COLS = 10
 
 
 def __lldb_init_module(debugger, internal_dict):
@@ -32,12 +32,21 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand(
         'type summary add --summary-string "${var.m_data.__elems_[0]}" lupnt::Real'
     )
+    debugger.HandleCommand(
+        'type summary add --summary-string "${var.m_data.__elems_[0]}" autodiff::detail::Real<1, double>'
+    )
     # lupnt Vec and Mat
     debugger.HandleCommand(
         "type synthetic add -x lupnt::(Vec|Mat)* --python-class eigenlldb.MatChildProvider"
     )
     debugger.HandleCommand(
         "type summary add -x lupnt::(Vec|Mat)* --python-function eigenlldb.summary"
+    )
+    debugger.HandleCommand(
+        "type synthetic add -x Eigen::(Vector|Matrix)* --python-class eigenlldb.MatChildProvider"
+    )
+    debugger.HandleCommand(
+        "type summary add -x Eigen::(Vector|Matrix)* --python-function eigenlldb.summary"
     )
 
 
@@ -254,8 +263,8 @@ class MatChildProvider:
         else:
             name = "[{},{}]".format(row, col)
 
-        if str(self._scalar_type) == "double":
-            # double
+        if str(self._scalar_type) in ("double", "int", "bool"):
+            # double/int/bool
             child = data.CreateChildAtOffset(name, offset, self._scalar_type)
         else:
             # Real

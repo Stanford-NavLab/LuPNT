@@ -13,3 +13,4 @@ IndentWidth: "2"
 NamespaceIndentation: All
 BreakBeforeBinaryOperators: All
 BreakBeforeTernaryOperators: "true"
+AllowShortCaseLabelsOnASingleLine : "true"

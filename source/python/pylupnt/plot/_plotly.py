@@ -5,6 +5,7 @@ from sklearn.cluster import KMeans
 from sklearn.utils import shuffle
 from typing import Union
 import plotly.graph_objs as go
+from plotly.express.colors import sample_colorscale
 import plotly.express as px
 import plotly.io as pio
 import pylupnt as pnt
@@ -26,7 +27,7 @@ pio.templates["lupnt"] = go.layout.Template(
         margin=dict(l=100, r=10, t=10, b=10),
     )
 )
-PLOTLY_COLORS = px.colors.qualitative.D3
+plotly_colors = px.colors.qualitative.D3
 pio.templates.default = "plotly_white+lupnt"
 MOON_SURFACE = Image.open(
     os.path.join(utils.LUPNT_DATA_PATH, "topo", "moon_surface.jpeg")
@@ -101,16 +102,18 @@ def create_sphere_meshgrid(
     )
 
 
-def get_body_trace(
-    body=pnt.MOON,
+def plot_body(
+    fig: go.Figure,
+    body: pnt.NaifId,
     size_factor: int = 5,
     R_b2frame: np.ndarray = None,
     r_b2s_pa: np.ndarray = None,
     r_body: np.ndarray = None,
     alpha: float = 0.2,
-) -> go.Mesh3d:
+    scale: float = 3,
+) -> go.Figure:
     """
-    Get the moon trace
+    Plot a celestial body
 
     Args:
         body (int): celestial body
@@ -139,18 +142,24 @@ def get_body_trace(
         reduced_img, n_colors=32, n_training_pixels=10000
     )
 
-    return go.Mesh3d(
-        x=xyz[:, 0] + r_body[0],
-        y=xyz[:, 1] + r_body[1],
-        z=xyz[:, 2] + r_body[2],
-        i=I,
-        j=J,
-        k=K,
-        intensity=tri_color_intensity,
-        intensitymode="cell",
-        colorscale=pl_colorscale,
-        showscale=False,
+    r_body = r_body / 10**scale
+    xyz = xyz / 10**scale
+
+    fig.add_trace(
+        go.Mesh3d(
+            x=xyz[:, 0] + r_body[0],
+            y=xyz[:, 1] + r_body[1],
+            z=xyz[:, 2] + r_body[2],
+            i=I,
+            j=J,
+            k=K,
+            intensity=tri_color_intensity,
+            intensitymode="cell",
+            colorscale=pl_colorscale,
+            showscale=False,
+        )
     )
+    return fig
 
 
 def plot_frame(
@@ -161,20 +170,21 @@ def plot_frame(
     tip_scale: float = 1,
     width: float = 2,
 ) -> None:
-    plot_3d_arrow(fig, origin, rotation[0], length_scale, tip_scale, "red", width)
-    plot_3d_arrow(fig, origin, rotation[1], length_scale, tip_scale, "green", width)
-    plot_3d_arrow(fig, origin, rotation[2], length_scale, tip_scale, "blue", width)
+    plot_arrow3(fig, origin, rotation[0], length_scale, tip_scale, "red", width)
+    plot_arrow3(fig, origin, rotation[1], length_scale, tip_scale, "green", width)
+    plot_arrow3(fig, origin, rotation[2], length_scale, tip_scale, "blue", width)
 
 
-def plot_3d_arrow(
+def plot_arrow3(
     fig: go.Figure,
-    origin: np.ndarray,
-    direction: np.ndarray,
+    origin: np.ndarray = np.zeros(3),
+    direction: np.ndarray = np.array([1, 0, 0]),
     length_scale: float = 1,
     tip_scale: float = 1,
     color: Union[str, list[str]] = "black",
     width: float = 2,
-) -> None:
+    scale: float = 3,
+) -> go.Figure:
     """
     Add 3D arrow to a plotly figure
 
@@ -187,6 +197,7 @@ def plot_3d_arrow(
         color (str): color of the arrow
         width (float): width of the arrow
     """
+    assert fig is not None, "Please provide a plotly figure"
     if origin.ndim == 1:
         origin = origin[np.newaxis, :]
     if direction.ndim == 1:
@@ -194,6 +205,8 @@ def plot_3d_arrow(
     if isinstance(color, str):
         color = [color] * origin.shape[0]
 
+    origin = origin / 10**scale
+    direction = direction / 10**scale
     for i in range(origin.shape[0]):
         fig.add_trace(
             go.Scatter3d(
@@ -218,13 +231,19 @@ def plot_3d_arrow(
                 showlegend=False,
             )
         )
+    return fig
 
 
-def plot_constellation(
-    rv: np.ndarray, t: int = 0, marker_size=4, fig=None, **kwargs
+def plot_orbits(
+    fig: go.Figure,
+    rv: np.ndarray,
+    t: int = None,
+    marker_size: float = 4,
+    scale: float = 3,
+    color: Union[str, list[str]] = plotly_colors,
+    **kwargs,
 ) -> go.Figure:
-    if fig is None:
-        fig = go.Figure()
+    rv = rv / 10**scale
 
     if rv.ndim == 2:
         rv = rv[np.newaxis, :, :]
@@ -234,7 +253,9 @@ def plot_constellation(
         fig.add_scatter3d(
             **dict(x=rv[i, :, 0], y=rv[i, :, 1], z=rv[i, :, 2]),
             mode="lines",
-            line=dict(color="black", width=3),
+            line=dict(
+                color=color[i % len(color)] if type(color) == list else color, width=3
+            ),
             name="sat_lines",
             showlegend=False,
         )
@@ -242,22 +263,14 @@ def plot_constellation(
         fig.add_scatter3d(
             **dict(x=rv[:, t, 0], y=rv[:, t, 1], z=rv[:, t, 2]),
             mode="markers",
-            marker=dict(color="black", size=4, line=dict(color="black", width=0.5)),
+            marker=dict(
+                color=color, size=marker_size, line=dict(color=color, width=0.5)
+            ),
             name="sat_markers",
             showlegend=False,
         )
 
     # Dummy trace
-    fig.add_scatter3d(
-        **dict(x=None, y=None, z=None),
-        mode="markers+lines",
-        marker=dict(
-            color="black", size=marker_size, line=dict(color="black", width=0.5)
-        ),
-        line=dict(color="black", width=3),
-        name="Satellite",
-    )
-
     c = 220
     axis_dict = dict(
         linecolor=f"rgb({c},{c},{c})",
@@ -272,9 +285,12 @@ def plot_constellation(
             xaxis=dict(title="X [10<sup>3</sup> km]", **axis_dict),
             yaxis=dict(title="Y [10<sup>3</sup> km]", **axis_dict),
             zaxis=dict(title="Z [10<sup>3</sup> km]", **axis_dict),
+            # xaxis=dict(title="X [10<sup>3</sup> km]", **axis_dict),
+            # yaxis=dict(title="Y [10<sup>3</sup> km]", **axis_dict),
+            # zaxis=dict(title="Z [10<sup>3</sup> km]", **axis_dict),
         ),
         font=dict(size=12, family="serif"),
-        margin=dict(l=0, r=0, b=0, t=0),
+        margin=dict(l=10, r=10, t=10, b=10),
         height=600,
         width=600,
         legend=dict(
@@ -377,3 +393,40 @@ def mesh_data(img, n_colors=32, n_training_pixels=800):
         [zc[k][2] if k % 2 else zc[k][1] for k in range(len(zc))]
     )
     return I, J, K, tri_color_intensity, pl_colorscale
+
+
+def scatter(
+    fig: go.Figure,
+    xyz: np.ndarray,
+    mode: str = "markers",
+    marker_size: float = 4,
+    color: Union[str, list[str]] = plotly_colors,
+    scale: float = 3,
+    **kwargs,
+) -> go.Figure:
+    """
+    Create a 3D scatter plot
+
+    Args:
+        x (np.ndarray): x coordinates
+        y (np.ndarray): y coordinates
+        z (np.ndarray): z coordinates
+        mode (str): plot mode
+        marker_size (float): marker size
+        color (str): marker color
+    """
+    if xyz.ndim == 2:
+        xyz = xyz[np.newaxis, :, :]
+    xyz = xyz / 10**scale
+    N = xyz.shape[0]
+    for i in range(N):
+        fig.add_scatter3d(
+            **dict(x=xyz[i, :, 0], y=xyz[i, :, 1], z=xyz[i, :, 2]),
+            mode=mode,
+            marker=dict(
+                color=color[i % len(color)] if type(color) == list else color,
+                size=marker_size,
+            ),
+            showlegend=False,
+        )
+    return fig

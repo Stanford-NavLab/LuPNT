@@ -43,7 +43,7 @@ jobs:
 
       - name: build and install library
         run: |
-          cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
+          cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=RelWithDebInfo
           sudo cmake --build build --target install
           rm -rf build
 

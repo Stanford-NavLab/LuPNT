@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14...3.22)
+cmake_minimum_required(VERSION 3.15)
 set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)
 
 # ---- Project ----
@@ -101,6 +101,8 @@ endfunction(target_link_libraries_system)
 target_link_libraries_system(
   ${PROJECT_NAME} fmt::fmt Eigen3::Eigen matplot autodiff::autodiff cspice
 )
+# Link HighFive
+target_link_libraries(${PROJECT_NAME} PUBLIC HighFive)
 
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${OpenMP_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)

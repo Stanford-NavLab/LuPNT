@@ -16,29 +16,29 @@ struct Transmission {
   int id_;
 };
 
-class Transceiver;
+class Transponder;
 
 // Channel class
 class Channel {
 private:
   int id_;
   double delay_ = 0.5;
-  vector<shared_ptr<Transceiver>> transceivers_;
+  vector<shared_ptr<Transponder>> transponders_;
 
 public:
-  void Send(double t, const Transmission &transm, const Transceiver &sender);
-  void Add(shared_ptr<Transceiver> transceiver) { transceivers_.push_back(transceiver); }
-  vector<shared_ptr<Transceiver>> GetTransceivers() { return transceivers_; }
+  void Send(double t, const Transmission &transm, const Transponder &sender);
+  void Add(shared_ptr<Transponder> Transponder) { transponders_.push_back(Transponder); }
+  vector<shared_ptr<Transponder>> GetTransponders() { return transponders_; }
 };
 
-// Transceiver class
-class Transceiver {
+// Transponder class
+class Transponder {
 private:
   shared_ptr<Channel> channel_;
   function<void(double, const Transmission &)> receive_callback_;
 
 public:
-  Transceiver(shared_ptr<Channel> channel) : channel_(channel) {}
+  Transponder(shared_ptr<Channel> channel) : channel_(channel) {}
   void SetReceiveCallback(function<void(double, const Transmission &)> callback) {
     receive_callback_ = callback;
   }
@@ -48,11 +48,11 @@ public:
   void Receive(double t, const Transmission &transm) { receive_callback_(t, transm); }
 };
 
-void Channel::Send(double t, const Transmission &transm, const Transceiver &sender) {
-  for (const auto &transceiver : transceivers_) {
-    if (transceiver.get() != &sender) {
+void Channel::Send(double t, const Transmission &transm, const Transponder &sender) {
+  for (const auto &Transponder : transponders_) {
+    if (Transponder.get() != &sender) {
       Scheduler::Schedule(t + delay_,
-                          [transceiver, transm](double t) { transceiver->Receive(t, transm); });
+                          [Transponder, transm](double t) { Transponder->Receive(t, transm); });
     }
   }
 }
@@ -62,14 +62,14 @@ class RingAgent {
 private:
   static int id_counter_;
   const int id_;
-  vector<shared_ptr<Transceiver>> transceivers_;
+  vector<shared_ptr<Transponder>> transponders_;
 
 public:
-  RingAgent() : id_(id_counter_++), transceivers_(vector<shared_ptr<Transceiver>>()) {}
+  RingAgent() : id_(id_counter_++), transponders_(vector<shared_ptr<Transponder>>()) {}
   int GetId() { return id_; }
 
-  void Add(shared_ptr<Transceiver> transceiver) { transceivers_.push_back(transceiver); }
-  vector<shared_ptr<Transceiver>> GetTransceivers() { return transceivers_; }
+  void Add(shared_ptr<Transponder> Transponder) { transponders_.push_back(Transponder); }
+  vector<shared_ptr<Transponder>> GetTransponders() { return transponders_; }
 };
 
 int RingAgent::id_counter_ = 0;
@@ -89,20 +89,22 @@ public:
   void Step(double t) override {
     if (id_received_ == -1) {
       cout << "[Agent " << id_ << "] Sending " << id_ << " at t = " << t << endl;
-      for (const auto &transceiver : agent_->GetTransceivers()) {
+      for (const auto &Transponder : agent_->GetTransponders()) {
         // transmittion instance with _id
-        transceiver->Send(t, Transmission{id_});
+        Transponder->Send(t, Transmission{id_});
       }
     } else if (id_received_ > id_) {
       cout << "[Agent " << id_ << "] Sending " << id_received_ << " at t = " << t << endl;
-      for (const auto &transceiver : agent_->GetTransceivers()) {
-        transceiver->Send(t, Transmission{id_received_});
+      for (const auto &Transponder : agent_->GetTransponders()) {
+        Transponder->Send(t, Transmission{id_received_});
       }
     } else if (id_received_ < id_) {
-      cout << "[Agent " << id_ << "] Doing nothing" << " at t = " << t << endl;
+      cout << "[Agent " << id_ << "] Doing nothing"
+           << " at t = " << t << endl;
     } else {
       is_leader_ = true;
-      cout << "[Agent " << id_ << "] Leader" << " at t = " << t << endl;
+      cout << "[Agent " << id_ << "] Leader"
+           << " at t = " << t << endl;
     }
   }
   void TransmissionReceived(double t, const Transmission &transm) {
@@ -124,12 +126,12 @@ int main() {
     channels[i] = make_shared<Channel>();
   }
 
-  // Create transceivers and add them to agents and channels
+  // Create Transponders and add them to agents and channels
   for (int i = 0; i < n; i++) {
     auto ch1 = channels[i];
     auto ch2 = channels[(i + 1) % n];
-    auto transc1 = make_shared<Transceiver>(ch1);
-    auto transc2 = make_shared<Transceiver>(ch2);
+    auto transc1 = make_shared<Transponder>(ch1);
+    auto transc2 = make_shared<Transponder>(ch2);
     transc1->SetReceiveCallback(bind(&LeaderElectionSyncRingApp::TransmissionReceived,
                                      apps[i].get(), placeholders::_1, placeholders::_2));
     transc2->SetReceiveCallback(bind(&LeaderElectionSyncRingApp::TransmissionReceived,

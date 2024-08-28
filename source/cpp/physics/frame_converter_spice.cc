@@ -26,7 +26,7 @@ namespace lupnt {
     CartesianOrbitState ConvertFrameSpice(Real t_tai, const CartesianOrbitState& state_in,
                                           Frame frame_out) {
       Vec6 rv_in = state_in.GetVec();
-      Vec6 rv_out = ConvertFrameSpice(t_tai, rv_in, state_in.GetCoordSystem(), frame_out);
+      Vec6 rv_out = ConvertFrameSpice(t_tai, rv_in, state_in.GetFrame(), frame_out);
       return CartesianOrbitState(rv_out, frame_out);
     }
 
@@ -37,9 +37,8 @@ namespace lupnt {
       return rv_out_6.head(3);
     }
 
-    Mat<-1, 6> ConvertFrameSpice(Real t_tai, const Mat<-1, 6>& rv_in, Frame frame_in,
-                                 Frame frame_out) {
-      Mat<-1, 6> rv_out(rv_in.rows(), 6);
+    MatX6 ConvertFrameSpice(Real t_tai, const MatX6& rv_in, Frame frame_in, Frame frame_out) {
+      MatX6 rv_out(rv_in.rows(), 6);
       for (int i = 0; i < rv_in.rows(); i++) {
         rv_out.row(i)
             = ConvertFrameSpice(t_tai, rv_in.row(i).transpose().eval(), frame_in, frame_out);
@@ -47,33 +46,31 @@ namespace lupnt {
       return rv_out;
     }
 
-    Mat<-1, 3> ConvertFrameSpice(Real t_tai, const Mat<-1, 3>& r_in, Frame frame_in,
-                                 Frame frame_out) {
-      Mat<-1, 6> rv_in(r_in.rows(), 6);
-      rv_in << r_in, Mat<-1, 3>::Zero(r_in.rows(), 3);
-      Mat<-1, 6> rv_out = ConvertFrameSpice(t_tai, rv_in, frame_in, frame_out);
+    MatX3 ConvertFrameSpice(Real t_tai, const MatX3& r_in, Frame frame_in, Frame frame_out) {
+      MatX6 rv_in(r_in.rows(), 6);
+      rv_in << r_in, MatX3::Zero(r_in.rows(), 3);
+      MatX6 rv_out = ConvertFrameSpice(t_tai, rv_in, frame_in, frame_out);
       return rv_out.leftCols(3);
     }
 
-    Mat<-1, 6> ConvertFrameSpice(VecX t_tai, const Vec6& rv_in, Frame frame_in, Frame frame_out) {
-      Mat<-1, 6> rv_out(t_tai.size(), 6);
+    MatX6 ConvertFrameSpice(VecX t_tai, const Vec6& rv_in, Frame frame_in, Frame frame_out) {
+      MatX6 rv_out(t_tai.size(), 6);
       for (int i = 0; i < t_tai.size(); i++) {
         rv_out.row(i) = ConvertFrameSpice(t_tai(i), rv_in, frame_in, frame_out);
       }
       return rv_out;
     }
 
-    Mat<-1, 3> ConvertFrameSpice(VecX t_tai, const Vec3& r_in, Frame frame_in, Frame frame_out) {
-      Mat<-1, 6> rv_in(t_tai.size(), 6);
-      rv_in << r_in, Mat<-1, 3>::Zero(t_tai.size(), 3);
-      Mat<-1, 6> rv_out = ConvertFrameSpice(t_tai, rv_in, frame_in, frame_out);
+    MatX3 ConvertFrameSpice(VecX t_tai, const Vec3& r_in, Frame frame_in, Frame frame_out) {
+      MatX6 rv_in(t_tai.size(), 6);
+      rv_in << r_in, MatX3::Zero(t_tai.size(), 3);
+      MatX6 rv_out = ConvertFrameSpice(t_tai, rv_in, frame_in, frame_out);
       return rv_out.leftCols(3);
     }
 
-    Mat<-1, 6> ConvertFrameSpice(VecX t_tai, const Mat<-1, 6>& rv_in, Frame frame_in,
-                                 Frame frame_out) {
+    MatX6 ConvertFrameSpice(VecX t_tai, const MatX6& rv_in, Frame frame_in, Frame frame_out) {
       assert(t_tai.size() == rv_in.rows() && "Epoch and rv_in must have same size");
-      Mat<-1, 6> rv_out(t_tai.size(), 6);
+      MatX6 rv_out(t_tai.size(), 6);
       for (int i = 0; i < t_tai.size(); i++) {
         rv_out.row(i)
             = ConvertFrameSpice(t_tai(i), rv_in.row(i).transpose().eval(), frame_in, frame_out);
@@ -81,12 +78,11 @@ namespace lupnt {
       return rv_out;
     }
 
-    Mat<-1, 3> ConvertFrameSpice(VecX t_tai, const Mat<-1, 3>& r_in, Frame frame_in,
-                                 Frame frame_out) {
+    MatX3 ConvertFrameSpice(VecX t_tai, const MatX3& r_in, Frame frame_in, Frame frame_out) {
       assert(t_tai.size() == r_in.rows() && "Epoch and r_in must have same size");
-      Mat<-1, 6> rv_in(t_tai.size(), 6);
-      rv_in << r_in, Mat<-1, 3>::Zero(t_tai.size(), 3);
-      Mat<-1, 6> rv_out = ConvertFrameSpice(t_tai, rv_in, frame_in, frame_out);
+      MatX6 rv_in(t_tai.size(), 6);
+      rv_in << r_in, MatX3::Zero(t_tai.size(), 3);
+      MatX6 rv_out = ConvertFrameSpice(t_tai, rv_in, frame_in, frame_out);
       return rv_out.leftCols(3);
     }
 
@@ -233,8 +229,7 @@ namespace lupnt {
               Vec6 rv_out = ConvertFrameSpice(t_tai, rv_mi, MOON_CI, frame_out);
               return rv_out;
             }
-            default:
-              assert(false && "Conversion not found");
+            default: assert(false && "Conversion not found");
           }
         }
 

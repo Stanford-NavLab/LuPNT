@@ -41,9 +41,8 @@ namespace lupnt {
 
     // Zonal terms V(n,0); set W(n,0)=0.0
     V(0, 0) = R_ref / sqrt(r_sqr);
-    W(0, 0) = 0.0;
-
     V(1, 0) = z0 * V(0, 0);
+    W(0, 0) = 0.0;
     W(1, 0) = 0.0;
 
     for (int n = 2; n <= n_max + 1; n++) {
@@ -68,6 +67,7 @@ namespace lupnt {
     };
 
     T ax = 0, ay = 0, az = 0;
+    // #pragma omp parallel for reduction(+ : ax, ay, az)
     for (int m = 0; m <= m_max; m++)
       for (int n = m; n <= n_max; n++)
         if (m == 0) {
@@ -284,9 +284,8 @@ namespace lupnt {
   /// applications. Berlin : New York: Springer, 2000.
   /// doi: 10.1007/978-3-642-58351-3.
   Vec3 AccelerationEarthSpacecraft(Real mjd_tt, const Vec6& rv, Real area, Real mass, Real CR,
-                                   Real CD, GravityField grav) {
+                                   Real CD, GravityField<Real> grav) {
     Vec3 r = rv.head(3);
-    Vec3 v = rv.tail(3);
 
     // Acceleration due to harmonic gravity field
     Real mjd_ut1 = mjd_tt;

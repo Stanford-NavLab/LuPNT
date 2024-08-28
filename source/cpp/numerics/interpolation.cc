@@ -30,7 +30,7 @@ namespace lupnt {
   /// @param y Vector of y values
   /// @param data Matrix of data values
   /// @param xi x interpolation point
-  double LinearInterp2d(const VecXd& x, const VecXd& y, const VecXd& data, double xi, double yi) {
+  double LinearInterp2d(const VecXd& x, const VecXd& y, const MatXd& data, double xi, double yi) {
     assert(x.size() * y.size() == data.size());
     assert(x.size() > 1);
     assert(y.size() > 1);
@@ -42,13 +42,13 @@ namespace lupnt {
     start = x.data();
     end = x.data() + x.size();
     auto it = std::lower_bound(start, end, xi);
-    size_t i0 = it - start;
+    size_t i0 = it - start - 1;
     size_t i1 = i0 + 1;
 
     start = y.data();
     end = y.data() + y.size();
     it = std::lower_bound(start, end, yi);
-    size_t j0 = it - start;
+    size_t j0 = it - start - 1;
     size_t j1 = j0 + 1;
 
     double dx0 = (xi - x[i0]) / (x[i1] - x[i0]);

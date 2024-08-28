@@ -10,7 +10,7 @@ namespace lupnt {
   Vec3 EastNorthUp2AzElRange(const Vec3 &enu) {
     auto [e, n, u] = unpack(enu);
     Real range = enu.norm();
-    Real azim = Wrap2TwoPi(atan2(e, n));
+    Real azim = atan2(e, n);
     Real elev = asin(u / range);
     return Vec3(azim, elev, range);
   }
@@ -56,7 +56,7 @@ namespace lupnt {
 
     auto [x, y, z] = unpack(cart);
     Real e2 = flattening * (2 - flattening);
-    int max_iterations = 1000;
+    const int max_iterations = 1000;
 
     Real delta_z = e2 * z;  // Initial guess for Δz
     Real delta_z_ant = delta_z + 1e3 * EPS;
@@ -85,9 +85,8 @@ namespace lupnt {
   Vec3 EastNorthUp2Cart(const Vec3 &enu, const Vec3 &xyz_ref, Real R_body, Real flattening) {
     Vec3 lla = Cart2LatLonAlt(xyz_ref, R_body, flattening);
     auto [lat, lon, alt] = unpack(lla);
-    Mat3 R = RotY(-lat) * RotZ(lon);
-    Vec3 uen(enu(2), enu(0), enu(1));
-    Vec3 xyz = R.transpose() * uen + xyz_ref;
+    Mat3 R = RotX(PI_OVER_TWO - lat) * RotZ(PI_OVER_TWO + lon);
+    Vec3 xyz = R.transpose() * enu + xyz_ref;
     return xyz;
   }
 
@@ -100,9 +99,8 @@ namespace lupnt {
   Vec3 Cart2EastNorthUp(const Vec3 &xyz, const Vec3 &xyz_ref, Real R_body, Real flattening) {
     Vec3 lla = Cart2LatLonAlt(xyz_ref, R_body, flattening);
     auto [lat, lon, alt] = unpack(lla);
-    Mat3 R = RotY(-lat) * RotZ(lon);
-    Vec3 uen = R * (xyz - xyz_ref);
-    Vec3 enu(uen(1), uen(2), uen(0));
+    Mat3 R = RotX(PI_OVER_TWO - lat) * RotZ(PI_OVER_TWO + lon);
+    Vec3 enu = R * (xyz - xyz_ref);
     return enu;
   }
 

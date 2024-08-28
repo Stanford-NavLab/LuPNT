@@ -31,7 +31,7 @@ Console.WriteLine(de.getPlanet(1, de.getHeader().jdStart)[0]);
 
 24857048.3412405
 */
-
+#pragma once
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -49,7 +49,11 @@ Console.WriteLine(de.getPlanet(1, de.getHeader().jdStart)[0]);
 namespace lupnt {
 
   double GetTtTdbDifference(double t_tai);
-  Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target);
-  Mat<-1, 6> GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target);
+  Vec6 GetLunarMantleData(Real t_tai);
+  MatX6 GetLunarMantleData(VecX t_tai);
 
+  Vec6 GetBodyPosVel(Real t_tai, NaifId target, Frame frame);
+  Vec6 GetBodyPosVel(Real t_tai, NaifId center, NaifId target, Frame frame);
+  MatX6 GetBodyPosVel(const VecX& t_tai, NaifId target, Frame frame);
+  MatX6 GetBodyPosVel(const VecX& t_tai, NaifId center, NaifId target, Frame frame);
 }  // namespace lupnt

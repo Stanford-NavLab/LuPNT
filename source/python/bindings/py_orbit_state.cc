@@ -20,14 +20,12 @@ using namespace lupnt;
   [](const class &s) -> type { return s.Get##attribute().cast<double>(); }, \
       [](class &s, type val) { s.Set##attribute(val.cast<real>()); }
 
-#define DEFINE_REPR(class)                                                         \
-  [](const class &s) -> std::string {                                              \
-    std::stringstream ss;                                                          \
-    ss << "<pylupnt." << #class << " ["                                            \
-       << s.GetVec().transpose().format(                                           \
-              Eigen::IOFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ")) \
-       << "]>";                                                                    \
-    return ss.str();                                                               \
+#define DEFINE_REPR(class)                                                                   \
+  [](const class &s) -> std::string {                                                        \
+    std::stringstream ss;                                                                    \
+    ss << "<pylupnt." << #class << "(" << s.GetVec().transpose().format(FMT_COMPACT) << ", " \
+       << s.GetFrame() << ">";                                                               \
+    return ss.str();                                                                         \
   }
 
 void init_orbit_state(py::module &m) {
@@ -44,14 +42,14 @@ void init_orbit_state(py::module &m) {
 
   // OrbitState
   py::class_<OrbitState>(m, "OrbitState")
-      .def(py::init<const Vec6d &, const Frame, const OrbitStateRepres,
-                    const std::vector<std::string> &, const std::vector<std::string> &>(),
+      .def(py::init<const Vec6d &, Frame, OrbitStateRepres, const std::array<const char *, 6> &,
+                    const std::array<const char *, 6> &>(),
            py::arg("vector"), py::arg("frame"), py::arg("state_repres"), py::arg("names"),
            py::arg("units"))
       .def_property(
           "vector", [](const OrbitState &s) -> Vec6d { return s.GetVec().cast<double>(); },
           [](OrbitState &s, const Vec6d &vec) { s.SetVec(vec.cast<Real>()); })
-      .def_property("frame", &OrbitState::GetCoordSystem, &OrbitState::SetCoordSystem)
+      .def_property("frame", &OrbitState::GetFrame, &OrbitState::SetCoordSystem)
       .def_property("state_repres", &OrbitState::GetOrbitStateRepres,
                     &OrbitState::SetOrbitStateRepres)
       .def_property_readonly("size", &OrbitState::GetSize)
@@ -59,7 +57,8 @@ void init_orbit_state(py::module &m) {
       .def_property_readonly("units", &OrbitState::GetUnits)
       .def("__repr__", [](const OrbitState &s) {
         std::stringstream ss;
-        ss << "<pylupnt.OrbitState [" << s.GetVec().transpose() << "]>";
+        ss << "<pylupnt.OrbitState(" << s.GetVec().transpose() << ", " << s.GetFrame() << ", "
+           << s.GetOrbitStateRepres() << ")>";
         return ss.str();
       });
 

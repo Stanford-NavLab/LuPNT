@@ -4,12 +4,30 @@ import numpy as np
 import pandas as pd
 import time
 import matplotlib.pyplot as plt
+from h5py import File
 
 # import array_to_latex as a2l
 from matplotlib.gridspec import GridSpec
 
 LUPNT_DATA_PATH = os.getenv("LUPNT_DATA_PATH")
 assert LUPNT_DATA_PATH is not None, "Environment variable LUPNT_DATA_PATH not set"
+
+LUPNT_OUTPUT_PATH = os.getenv("LUPNT_OUTPUT_PATH")
+
+
+def get_output_path(output_dirs=None):
+    if LUPNT_OUTPUT_PATH is None:
+        output_path = os.path.join(LUPNT_DATA_PATH, "output")
+    else:
+        output_path = LUPNT_OUTPUT_PATH
+    if output_dirs is not None:
+        output_path = os.path.join(output_path, output_dirs)
+    os.makedirs(output_path, exist_ok=True)
+    return output_path
+
+
+def normalize(vec):
+    return vec / np.linalg.norm(vec)
 
 
 def find_file(filename, path=LUPNT_DATA_PATH):

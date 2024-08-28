@@ -13,14 +13,13 @@ dependencies:
   - mlflow
   - mlflow-skinny
   - networkx
+  - h5py
   - numba
   - onnx
   - pandas
-  - pytorch
-  - torchvision
-  - torchaudio
   - Pillow
   - plotly
+  - plotly-orca
   - scikit-learn
   - scipy
   - setuptools

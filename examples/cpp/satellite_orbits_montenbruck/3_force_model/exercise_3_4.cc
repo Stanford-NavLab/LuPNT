@@ -11,10 +11,10 @@ using namespace std;
 // doi: 10.1007/978-3-642-58351-3.
 int main() {
   // Time
-  Real mjd0_utc = GregorianToMJD(1999, 03, 01, 00, 00, 0.0);  // [days]
-  Real t_tai0 = MJDtoTime(mjd0_utc);                          // [s]
+  Real mjd0_utc = Gregorian2MJD(1999, 03, 01, 00, 00, 0.0);  // [days]
+  Real t_tai0 = MJD2Time(mjd0_utc);                          // [s]
 
-  // Real t_tai0 = ConvertTime(mjd0_utc, TimeSys::MJD_UTC, TimeSys::TAI);  //
+  // Real t_tai0 = ConvertTime(mjd0_utc, Time::MJD_UTC, Time::TAI);  //
   // [s]
 
   // Propagation
@@ -38,12 +38,14 @@ int main() {
   std::string grav_file = "JGM3.cof";
   int n_max = 20, m_max = 20;
   bool normalized = true;
-  GravityField grav = ReadHarmonicGravityField(grav_file, n_max, m_max, normalized);
-  Body earth = Body::Earth();
+  GravityField grav = ReadHarmonicGravityField<double>(grav_file, n_max, m_max, normalized);
+
+  Body earth = BodyT<double>::Earth();
   earth.use_gravity_field = true;
   earth.gravity_field = grav;
-  Body moon = Body::Moon();
-  Body sun = Body::Sun();
+
+  Body moon = BodyT<double>::Moon();
+  Body sun = BodyT<double>::Sun();
 
   // Dynamics
   NBodyDynamics dyn;
@@ -51,7 +53,7 @@ int main() {
   dyn.SetMass(mass);
   dyn.SetSrpCoeff(CR);
   dyn.SetDragCoeff(CD);
-  dyn.SetPrimaryBody(earth);
+  dyn.SetFrame(Frame::ITRF);
   dyn.AddBody(sun);
   dyn.AddBody(moon);
 

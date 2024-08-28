@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <string>
 
+#include "lupnt/core/constants.h"
 #include "lupnt/physics/orbit_state/tle.h"
 
 namespace lupnt {
@@ -44,17 +45,18 @@ namespace lupnt {
 
       ClassicalOE coe({a, e, i, Omega, w, M});
       coe.SetCoordSystem(Frame::GCRF);
-      auto cartOrbitState = std::make_shared<CartesianOrbitState>(Classical2Cart(coe, GM_EARTH));
+      CartesianOrbitState cart = Classical2Cart(coe, GM_EARTH);
+      auto state = MakePtr<CartesianOrbitState>(cart);
 
       // Create the spacecraft
-      auto sat = std::make_shared<Spacecraft>();
+      auto sat = MakePtr<Spacecraft>();
       sat->SetDynamics(dynamics_);
-      sat->SetOrbitState(cartOrbitState);
+      sat->SetOrbitState(state);
       sat->SetEpoch(epoch_);
       sat->SetBodyId(NaifId::EARTH);
 
       if (channel_) {
-        auto transmitter = std::make_shared<GnssTransmitter>(tle.name, tle.prn);
+        auto transmitter = MakePtr<GnssTransmitter>(tle.name, tle.prn);
         sat->AddDevice(transmitter);
         transmitter->SetAgent(sat);
         channel_->AddTransmitter(transmitter);

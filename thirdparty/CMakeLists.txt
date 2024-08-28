@@ -60,6 +60,14 @@ install(
   DESTINATION include
 )
 
+# HighFive
+CPMAddPackage(
+  NAME HighFive
+  GIT_TAG v2.10.0
+  GITHUB_REPOSITORY BlueBrain/HighFive
+  OPTIONS "HIGHFIVE_UNIT_TESTS OFF" "HIGHFIVE_EXAMPLES OFF" "HIGHFIVE_BUILD_DOCS OFF"
+)
+
 set_target_properties(fmt PROPERTIES FOLDER thirdparty)
 set_target_properties(cspice PROPERTIES FOLDER thirdparty)
 set_target_properties(matplot PROPERTIES FOLDER thirdparty)
@@ -69,6 +77,6 @@ set_target_properties(uninstall PROPERTIES FOLDER thirdparty)
 
 # LuPNT dependencies used for installing
 set(LUPNT_DEPENDENCIES
-    "fmt 7.1.3;Eigen3 3.4;autodiff 1.1;cspice;Matplot++ 1.2;OpenMP"
+    "fmt 7.1.3;Eigen3 3.4;autodiff 1.1;cspice;Matplot++ 1.2;OpenMP;HighFive 2.10"
     PARENT_SCOPE
 )

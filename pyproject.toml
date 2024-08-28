@@ -32,6 +32,7 @@ dependencies = [
     "pandas",
     "Pillow",
     "plotly",
+    "plotly-orca",
     "scikit_learn",
     "scipy",
     "setuptools",

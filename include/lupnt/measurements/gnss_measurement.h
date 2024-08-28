@@ -29,9 +29,9 @@ namespace lupnt {
     // Implemenation based on Gnss SDR Observables block:
     // https://gnss-sdr.org/docs/sp-blocks/observables/
   private:
-    int n_meas = 0;                         // Number of measurements
-    std::vector<Transmission> trans_store;  // list of transmittion data
-    std::vector<int> ID_tx;                 // ID of the transmitter (n_meas)
+    int n_meas = 0;                             // Number of measurements
+    std::vector<GnssTransmission> trans_store;  // list of transmittion data
+    std::vector<int> ID_tx;                     // ID of the transmitter (n_meas)
 
     // Visbility
     VecXd vis_earth;
@@ -90,9 +90,9 @@ namespace lupnt {
                       // local coordinates [km] (n_meas * n_bands x 3)
     VecXd d_tx_pcv;   // Transmitter’s antenna phase center variation
                       // [km] (n_meas * n_bands)
-    VecXd e_rx_enu;   // LOS vector from receiver antenna to satellite in
+    MatXd e_rx_enu;   // LOS vector from receiver antenna to satellite in
                       // local coordinates [km] (n_meas x 3)
-    VecXd e_rx;       // LOS vector from receiver antenna to satellite in
+    MatXd e_rx;       // LOS vector from receiver antenna to satellite in
                       // ECEF coordinates [km] (n_meas x 3)
     VecXd E;          // Coordinates transformation matrix from the satellite
                       // body‐fixed coordinates to ECEF coordinates
@@ -103,9 +103,9 @@ namespace lupnt {
     // Doppler shift measurement
     VecXd D_rx;   // Doppler shift measurement [Hz] (n_meas * n_bands)
     VecX r_rx;    // Position of the receiver at time t_rx [km] (3)
-    VecXd r_tx;   // Position of the transmitter at time t_rx [km] (n_meas x 3)
+    MatXd r_tx;   // Position of the transmitter at time t_rx [km] (n_meas x 3)
     VecXd v_rx;   // Velocity of the receiver at time t_rx [m/s] (3)
-    VecXd v_tx;   // Velocity of the transmitter at time t_tx [m/s] (n_meas x 3)
+    MatXd v_tx;   // Velocity of the transmitter at time t_tx [m/s] (n_meas x 3)
     VecXd eps_D;  // Doppler shift measurement noise [Hz] (n_meas * n_bands)
 
     // Pseudorange rate measurement
@@ -123,7 +123,7 @@ namespace lupnt {
     VecXd CN0;  // Carrier‐to‐noise density [dB‐Hz] (n_meas * n_bands)
 
   public:
-    GnssMeasurement(const std::vector<Transmission> transmissions);
+    GnssMeasurement(const std::vector<GnssTransmission> transmissions);
 
     GnssMeasurement ExtractSignal(std::string freq_label);
 
@@ -151,11 +151,11 @@ namespace lupnt {
      * @param seed   random seed
      * @return VecX
      */
-    VecX ComputePseudorange(VecX r_rx, Real dt_rx, bool with_noise = false, int seed = 0);
-    VecX ComputePseudorangerate(VecX r_rx, VecX v_rx, Real dt_rx_dot, bool with_noise = false,
-                                int seed = 0);
-    VecX ComputeCarrierPhase(VecX r_rx, Real dt_rx, VecX N_rx, bool with_noise = false,
-                             int seed = 0);
+    VecX ComputeGnssPseudorange(VecX r_rx, Real dt_rx, bool with_noise = false, int seed = 0);
+    VecX ComputeGnssPseudorangerate(VecX r_rx, VecX v_rx, Real dt_rx_dot, bool with_noise = false,
+                                    int seed = 0);
+    VecX ComputeGnssCarrierPhase(VecX r_rx, Real dt_rx, VecX N_rx, bool with_noise = false,
+                                 int seed = 0);
 
     /***********************************************************
      *  Methods for true measurement generation
@@ -211,7 +211,7 @@ namespace lupnt {
      * @param frame_in  coordinate system of the input state
      */
     VecX GetPredictedGnssMeasurement(double epoch, Vec6 rv_pred, Vec2 clk_pred, VecX N_pred,
-                                     VecXd &H_gnss, std::vector<GnssMeasurementType> meas_type,
+                                     MatXd &H_gnss, std::vector<GnssMeasurementType> meas_type,
                                      Frame frame_in = Frame::MOON_CI);
 
     /**
@@ -224,7 +224,7 @@ namespace lupnt {
      * @param frame_in  coordinate system of the input state
      * @return VecX
      */
-    VecX GetPredictedPseudorange(double epoch, Vec6 rv_pred, Vec2 clk_pred, VecXd &H_pr,
+    VecX GetPredictedPseudorange(double epoch, Vec6 rv_pred, Vec2 clk_pred, MatXd &H_pr,
                                  Frame frame_in = Frame::MOON_CI);
 
     /**
@@ -238,7 +238,7 @@ namespace lupnt {
      * @return * VecX
      */
     VecX GetPredictedPseudorangeAnalyticalJacobian(double epoch, Vec6 rv_pred, Vec2 clk_pred,
-                                                   VecXd &H_pr, Frame frame_in = Frame::MOON_CI);
+                                                   MatXd &H_pr, Frame frame_in = Frame::MOON_CI);
 
     /**
      * @brief Get the Pseudorange Rate object
@@ -250,7 +250,7 @@ namespace lupnt {
      * @param frame_in  coordinate system of the input state
      * @return VecX
      */
-    VecX GetPredictedPseudorangerate(double epoch, Vec6 rv_pred, Vec2 clk_pred, VecXd &H_prr,
+    VecX GetPredictedPseudorangerate(double epoch, Vec6 rv_pred, Vec2 clk_pred, MatXd &H_prr,
                                      Frame frame_in = Frame::MOON_CI);
 
     /**
@@ -264,7 +264,7 @@ namespace lupnt {
      * @return VecX
      */
     VecX GetPredictedCarrierPhase(double epoch, Vec6 rv_pred, Vec2 clk_pred, VecX N_pred,
-                                  VecXd &H_cp, Frame frame_in = Frame::MOON_CI);
+                                  MatXd &H_cp, Frame frame_in = Frame::MOON_CI);
 
     /*********************************************************************
      * Noise Models
@@ -285,7 +285,7 @@ namespace lupnt {
      * @param CN0  Carrier‐to‐noise density [dB‐Hz]
      * @return double  Pseudorange noise [km]
      */
-    double ComputePseudorangeNoise(double CN0);
+    double ComputeGnssPseudorangeNoise(double CN0);
 
     /**
      * @brief Compute the pseudorange rate noise using thermal noise in FLL
@@ -294,7 +294,7 @@ namespace lupnt {
      * @param CN0  Carrier‐to‐noise density [dB‐Hz]
      * @return double  Pseudorange rate noise [km/s]
      */
-    double ComputePseudorangeRateNoise(double CN0, double lambda);
+    double ComputeGnssPseudorangerateNoise(double CN0, double lambda);
 
     /**
      * @brief Compute the carrier phase noise using thermal noise in PLL
@@ -303,6 +303,6 @@ namespace lupnt {
      * @param CN0  Carrier‐to‐noise density [dB‐Hz]
      * @return double  Carrier phase noise [cycles]
      */
-    double ComputeCarrierPhaseNoise(double CN0, double lambda);
+    double ComputeGnssCarrierPhaseNoise(double CN0, double lambda);
   };
 }  // namespace lupnt

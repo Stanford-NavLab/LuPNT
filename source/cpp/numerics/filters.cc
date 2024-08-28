@@ -19,14 +19,14 @@ namespace lupnt {
 
   void EKF::Predict(Real t_end) {
     int n = x_.size();
-    MatXd Phi(n, n);
+    Phi_.resize(n, n);
     P_.resize(n, n);
     Q_.resize(n, n);
 
     Q_ = this->process_noise_(x_, t_curr_, t_end);
-    x_ = this->dynamics_(x_, t_curr_, t_end, Phi);
+    x_ = this->dynamics_(x_, t_curr_, t_end, Phi_);
 
-    P_ = Phi * P_ * Phi.transpose() + Q_;
+    P_ = Phi_ * P_ * Phi_.transpose() + Q_;
     xbar_ = x_;
     Pbar_ = P_;
     t_curr_ = t_end;

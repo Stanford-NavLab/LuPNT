@@ -19,13 +19,14 @@
 
 namespace lupnt {
 
-  NBodyDynamics::NBodyDynamics(std::string integratorType)
+  template <typename T> NBodyDynamics<T>::NBodyDynamics(IntegratorType integ)
       : NumericalOrbitDynamics(std::bind(&NBodyDynamics::ComputeRates, this, std::placeholders::_1,
                                          std::placeholders::_2),
-                               OrbitStateRepres::CARTESIAN, integratorType) {};
+                               integ){};
+  template class NBodyDynamics<double>;
+  template class NBodyDynamics<Real>;
 
-  VecX NBodyDynamics::ComputeRates(Real t_tai, const VecX& rv) const {
-    assert(rv.size() == 6);
+  template <typename T> Vec6 NBodyDynamics<T>::ComputeRates(Real t_tai, const Vec6& rv) const {
     // Position, velocity, and acceleration [km, km/s, km/s^2]
     // w.r.t. to the inertial frame origin
     Vec3 r = rv.head(3);
@@ -36,44 +37,50 @@ namespace lupnt {
       if (body.use_gravity_field) {
         auto& grav = body.gravity_field;
         // Position (body-fixed) [km]
-        Vec3 r_bf = ConvertFrame(t_tai, r, central_body_.inertial_frame, body.fixed_frame);
+        Vector<T, 3> r_bf = ConvertFrame(t_tai, r, frame_, body.fixed_frame).template cast<T>();
         // Acceleration (body-fixed) [km/s^2]
-        Vec3 a_bf
-            = AccelarationGravityField(r_bf, grav.GM, grav.R, grav.CS, grav.n_max, grav.m_max);
+        Vec3 a_bf = AccelarationGravityField<T>(r_bf, grav.GM, grav.R, grav.CS, grav.n, grav.m);
         // Acceleration (inertial) [km/s^2]
-        Vec3 ai = ConvertFrame(t_tai, a_bf, body.fixed_frame, central_body_.inertial_frame);
+        Vec3 ai = ConvertFrame(t_tai, a_bf, body.fixed_frame, frame_, true);
         a += ai;
       } else {
         // Body position w.r.t. the inertial frame origin [km]
-        Vec3 r_body = GetBodyPosVel(t_tai, central_body_.id, body.id).head(3);
+        Vec3 r_body = GetBodyPosVel(t_tai, body.id, frame_).head(3);
         // Acceleration (inertial) [km/s^2]
         Vec3 ai = AccelerationPointMass(rv.head(3), r_body, body.GM);
         a += ai;
       }
-    }
 
-    // Solar radiation pressure
-    if (use_srp_) {
-      Vec3 r_sun = GetBodyPosVel(t_tai, central_body_.id, NaifId::SUN).head(3);
+      // Solar radiation pressure
+      if (use_srp_ && body.id != SUN) {
+        Vec3 r_sun = GetBodyPosVel(t_tai, body.id, NaifId::SUN, frame_).head(3);
+        Vec3 a_srp = Illumination(r, r_sun, body.R)
+                     * AccelerationSolarRadiation(r, r_sun, area_, mass_, CR_, P_SUN, AU);
+        a += a_srp;
+      }
 
-      Vec3 a_srp = Illumination(r, r_sun, central_body_.R)
-                   * AccelerationSolarRadiation(r, r_sun, area_, mass_, CR_, P_SUN, AU);
-      a += a_srp;
-    }
-
-    // Atmospheric drag
-    if (use_drag_ && central_body_.id == NaifId::EARTH) {
-      // TODO: Currently only works for Earth
-      Real tt = ConvertTime(t_tai, TimeSys::TAI, TimeSys::TT);
-      Real mjd_tt = (tt + MJD_J2000) / SECS_DAY;
-      Mat3 T = NutationMatrix(mjd_tt) * PrecessionMatrix(MJD_J2000, mjd_tt);
-      Vec3 a_drag = AccelerationDrag(mjd_tt, rv, T, area_, mass_, CD_);
-      a += a_drag;
+      // Atmospheric drag
+      if (use_drag_ && body.id == NaifId::EARTH) {
+        // TODO: Currently only works for Earth
+        Real tt = ConvertTime(t_tai, Time::TAI, Time::TT);
+        Real mjd_tt = (tt + MJD_J2000) / SECS_DAY;
+        MatX3 Rot = NutationMatrix(mjd_tt) * PrecessionMatrix(MJD_J2000, mjd_tt);
+        Vec3 a_drag = AccelerationDrag(mjd_tt, rv, Rot, area_, mass_, CD_);
+        a += a_drag;
+      }
     }
 
     Vec6 rv_dot;
     rv_dot << v, a;
     return rv_dot;
+  }
+
+  template <typename T> OrbitState NBodyDynamics<T>::PropagateState(const OrbitState& state,
+                                                                    Real t0, Real tf, Mat6d* stm) {
+    assert(state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN
+           && "OrbitState type not supported");
+    Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);
+    return CartesianOrbitState(xf, state.GetFrame());
   }
 
 }  // namespace lupnt
