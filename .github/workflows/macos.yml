@@ -46,7 +46,7 @@ jobs:
           rm LuPNT_data.zip
 
       - name: configure
-        run: cmake -Stest -Bbuild -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        run: cmake -Stest -Bbuild -DCMAKE_BUILD_TYPE=Debug
 
       - name: build
         run: cmake --build build -j4
@@ -54,4 +54,4 @@ jobs:
       - name: test
         run: |
           cd build
-          ctest --build-config RelWithDebInfo
+          ctest --build-config Debug
