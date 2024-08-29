@@ -84,7 +84,18 @@ jobs:
           [System.Environment]::SetEnvironmentVariable('HDF5_INCLUDE_DIRS', "C:\HDF5\HDF5-1.14.4-win64\include", 'User')
           choco install boost-msvc-14.1
 
+      # Windows
       - name: Install Python bindings using pip
+        env:
+          HDF5_DIR: C:\HDF5\HDF5-1.14.4-win64\CMake
+          HDF5_ROOT: C:\HDF5\HDF5-1.14.4-win64
+          HDF5_LIBRARIES: C:\HDF5\HDF5-1.14.4-win64\lib
+          HDF5_INCLUDE_DIRS: C:\HDF5\HDF5-1.14.4-win64\include
+        run: python -m pip install .[test] -v
+    
+      # MacOS + Ubuntu
+      - name: Install Python bindings using pip
+        if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest'
         run: python -m pip install .[test] -v
 
       - name: Run Python tests
