@@ -4,7 +4,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <iostream>
 
-#include "utils.cc"
+#include "../utils.cc"
 
 using namespace lupnt;
 using namespace Catch::Matchers;
