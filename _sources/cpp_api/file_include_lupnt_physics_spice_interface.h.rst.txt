@@ -88,9 +88,9 @@ Functions
 
 - :ref:`exhale_function_spice__interface_8h_1a0cd4a2476c3f84aaa15c2cf7a678b8a0`
 
-- :ref:`exhale_function_spice__interface_8h_1a0dbcc46a13ccefbe04bb494636490b9a`
-
 - :ref:`exhale_function_spice__interface_8h_1aa842deed5cebf9a133068370435ff518`
+
+- :ref:`exhale_function_spice__interface_8h_1a0dbcc46a13ccefbe04bb494636490b9a`
 
 - :ref:`exhale_function_spice__interface_8h_1ab9b96692e39e29ac08f12482441105ce`
 
