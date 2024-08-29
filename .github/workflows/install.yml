@@ -47,7 +47,7 @@ jobs:
       - name: build and install library
         run: |
           cmake -S. -Bbuild_install -DCMAKE_BUILD_TYPE=RelWithDebInfo
-          sudo cmake --build build_install --target install
+          sudo cmake --build build_install --target install -j4
           rm -rf build_install
 
       - name: configure
