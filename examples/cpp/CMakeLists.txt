@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)
 
 project(LuPNTExamples LANGUAGES CXX)

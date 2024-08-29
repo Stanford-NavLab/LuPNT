@@ -26,7 +26,7 @@ namespace lupnt {
     CartesianOrbitState ConvertFrameSpice(Real t_tai, const CartesianOrbitState& state_in,
                                           Frame frame_out) {
       Vec6 rv_in = state_in.GetVec();
-      Vec6 rv_out = ConvertFrameSpice(t_tai, rv_in, state_in.GetCoordSystem(), frame_out);
+      Vec6 rv_out = ConvertFrameSpice(t_tai, rv_in, state_in.GetFrame(), frame_out);
       return CartesianOrbitState(rv_out, frame_out);
     }
 
@@ -37,9 +37,8 @@ namespace lupnt {
       return rv_out_6.head(3);
     }
 
-    Mat<-1, 6> ConvertFrameSpice(Real t_tai, const Mat<-1, 6>& rv_in, Frame frame_in,
-                                 Frame frame_out) {
-      Mat<-1, 6> rv_out(rv_in.rows(), 6);
+    MatX6 ConvertFrameSpice(Real t_tai, const MatX6& rv_in, Frame frame_in, Frame frame_out) {
+      MatX6 rv_out(rv_in.rows(), 6);
       for (int i = 0; i < rv_in.rows(); i++) {
         rv_out.row(i)
             = ConvertFrameSpice(t_tai, rv_in.row(i).transpose().eval(), frame_in, frame_out);
@@ -47,33 +46,31 @@ namespace lupnt {
       return rv_out;
     }
 
-    Mat<-1, 3> ConvertFrameSpice(Real t_tai, const Mat<-1, 3>& r_in, Frame frame_in,
-                                 Frame frame_out) {
-      Mat<-1, 6> rv_in(r_in.rows(), 6);
-      rv_in << r_in, Mat<-1, 3>::Zero(r_in.rows(), 3);
-      Mat<-1, 6> rv_out = ConvertFrameSpice(t_tai, rv_in, frame_in, frame_out);
+    MatX3 ConvertFrameSpice(Real t_tai, const MatX3& r_in, Frame frame_in, Frame frame_out) {
+      MatX6 rv_in(r_in.rows(), 6);
+      rv_in << r_in, MatX3::Zero(r_in.rows(), 3);
+      MatX6 rv_out = ConvertFrameSpice(t_tai, rv_in, frame_in, frame_out);
       return rv_out.leftCols(3);
     }
 
-    Mat<-1, 6> ConvertFrameSpice(VecX t_tai, const Vec6& rv_in, Frame frame_in, Frame frame_out) {
-      Mat<-1, 6> rv_out(t_tai.size(), 6);
+    MatX6 ConvertFrameSpice(VecX t_tai, const Vec6& rv_in, Frame frame_in, Frame frame_out) {
+      MatX6 rv_out(t_tai.size(), 6);
       for (int i = 0; i < t_tai.size(); i++) {
         rv_out.row(i) = ConvertFrameSpice(t_tai(i), rv_in, frame_in, frame_out);
       }
       return rv_out;
     }
 
-    Mat<-1, 3> ConvertFrameSpice(VecX t_tai, const Vec3& r_in, Frame frame_in, Frame frame_out) {
-      Mat<-1, 6> rv_in(t_tai.size(), 6);
-      rv_in << r_in, Mat<-1, 3>::Zero(t_tai.size(), 3);
-      Mat<-1, 6> rv_out = ConvertFrameSpice(t_tai, rv_in, frame_in, frame_out);
+    MatX3 ConvertFrameSpice(VecX t_tai, const Vec3& r_in, Frame frame_in, Frame frame_out) {
+      MatX6 rv_in(t_tai.size(), 6);
+      rv_in << r_in, MatX3::Zero(t_tai.size(), 3);
+      MatX6 rv_out = ConvertFrameSpice(t_tai, rv_in, frame_in, frame_out);
       return rv_out.leftCols(3);
     }
 
-    Mat<-1, 6> ConvertFrameSpice(VecX t_tai, const Mat<-1, 6>& rv_in, Frame frame_in,
-                                 Frame frame_out) {
+    MatX6 ConvertFrameSpice(VecX t_tai, const MatX6& rv_in, Frame frame_in, Frame frame_out) {
       assert(t_tai.size() == rv_in.rows() && "Epoch and rv_in must have same size");
-      Mat<-1, 6> rv_out(t_tai.size(), 6);
+      MatX6 rv_out(t_tai.size(), 6);
       for (int i = 0; i < t_tai.size(); i++) {
         rv_out.row(i)
             = ConvertFrameSpice(t_tai(i), rv_in.row(i).transpose().eval(), frame_in, frame_out);
@@ -81,12 +78,11 @@ namespace lupnt {
       return rv_out;
     }
 
-    Mat<-1, 3> ConvertFrameSpice(VecX t_tai, const Mat<-1, 3>& r_in, Frame frame_in,
-                                 Frame frame_out) {
+    MatX3 ConvertFrameSpice(VecX t_tai, const MatX3& r_in, Frame frame_in, Frame frame_out) {
       assert(t_tai.size() == r_in.rows() && "Epoch and r_in must have same size");
-      Mat<-1, 6> rv_in(t_tai.size(), 6);
-      rv_in << r_in, Mat<-1, 3>::Zero(t_tai.size(), 3);
-      Mat<-1, 6> rv_out = ConvertFrameSpice(t_tai, rv_in, frame_in, frame_out);
+      MatX6 rv_in(t_tai.size(), 6);
+      rv_in << r_in, MatX3::Zero(t_tai.size(), 3);
+      MatX6 rv_out = ConvertFrameSpice(t_tai, rv_in, frame_in, frame_out);
       return rv_out.leftCols(3);
     }
 
@@ -131,25 +127,25 @@ namespace lupnt {
       }
 
       switch (frame_in) {
-        case ITRF: {
+        case Frame::ITRF: {
           switch (frame_out) {
-            case GCRF: {
+            case Frame::GCRF: {
               // Convert to GCRF
               Mat6 Rrv_itrf2gcrf = GetFrameConversionMat(t_tai, Frame::ITRF, Frame::GCRF);
               Vec6 rv_gcrf = Rrv_itrf2gcrf * rv_in;
               return rv_gcrf;
             }
             default: {  // First convert to GCRF and then to the desired frame
-              Vec6 rv_gcrf = ConvertFrameSpice(t_tai, rv_in, ITRF, GCRF);
-              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_gcrf, GCRF, frame_out);
+              Vec6 rv_gcrf = ConvertFrameSpice(t_tai, rv_in, Frame::ITRF, Frame::GCRF);
+              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_gcrf, Frame::GCRF, frame_out);
               return rv_out;
             }
           }
         }
 
-        case MOON_ME: {
+        case Frame::MOON_ME: {
           switch (frame_out) {
-            case MOON_PA: {  // Convert to MOON_PA
+            case Frame::MOON_PA: {  // Convert to MOON_PA
               Vec3 r_ME = rv_in.head(3);
               Vec3 v_ME = rv_in.tail(3);
 
@@ -167,16 +163,16 @@ namespace lupnt {
               return rv_PA;
             }
             default: {  // first convert to MOON_PA and then to the desired frame
-              Vec6 rv_pa = ConvertFrameSpice(t_tai, rv_in, MOON_ME, MOON_PA);
-              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_pa, MOON_PA, frame_out);
+              Vec6 rv_pa = ConvertFrameSpice(t_tai, rv_in, Frame::MOON_ME, Frame::MOON_PA);
+              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_pa, Frame::MOON_PA, frame_out);
               return rv_out;
             }
           }
         }
 
-        case MOON_PA: {
+        case Frame::MOON_PA: {
           switch (frame_out) {
-            case MOON_ME: {
+            case Frame::MOON_ME: {
               // Rotation Mat MOON_ME (in DE421) -> MOON_PA (in DE440)
               // Reference:
               // https://iopscience.iop.org/article/10.3847/1538-3881/abd414/pdf
@@ -190,126 +186,125 @@ namespace lupnt {
               rv_me << r_ME, v_ME;
               return rv_me;
             }
-            case MOON_CI: {  // Convert to Moon Inertial
+            case Frame::MOON_CI: {  // Convert to Moon Inertial
               Mat6 Mrot = GetFrameConversionMat(t_tai, Frame::MOON_PA, Frame::GCRF);
               Vec6 rv_mi = Mrot * rv_in;
               return rv_mi;
             }
             default: {  // first convert to MOON_CI and then to the desired frame
-              Vec6 rv_mi = ConvertFrameSpice(t_tai, rv_in, MOON_PA, MOON_CI);
-              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_mi, MOON_CI, frame_out);
+              Vec6 rv_mi = ConvertFrameSpice(t_tai, rv_in, Frame::MOON_PA, Frame::MOON_CI);
+              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_mi, Frame::MOON_CI, frame_out);
               return rv_out;
             }
           }
         }
 
-        case GCRF: {
+        case Frame::GCRF: {
           switch (frame_out) {
-            case ICRF: {
+            case Frame::ICRF: {
               Vec6 rv_icrf_ssb2e
                   = GetBodyPosVel(t_tai, NaifId::SOLAR_SYSTEM_BARYCENTER, NaifId::EARTH);
               Vec6 rv_icrf = rv_in + rv_icrf_ssb2e;
               return rv_icrf;
             }
-            case ITRF: {
+            case Frame::ITRF: {
               Mat6 Rrv_gcrf2itrf = GetFrameConversionMat(t_tai, Frame::GCRF, Frame::ITRF);
               Vec6 rv_itrf = Rrv_gcrf2itrf * rv_in;
               return rv_itrf;
             }
-            case MOON_CI: {
+            case Frame::MOON_CI: {
               Vec6 rv_icrf_m2e = GetBodyPosVel(t_tai, NaifId::MOON, NaifId::EARTH);
               Vec6 rv_mi = rv_in + rv_icrf_m2e;
               return rv_mi;
             }
-            case EMR: {
+            case Frame::EMR: {
               Vec6 rv_icrf_emb2e
                   = GetBodyPosVel(t_tai, NaifId::EARTH_MOON_BARYCENTER, NaifId::EARTH);
               Vec6 rv_emr = Inertial2Synodic(rv_icrf_emb2e, rv_in);
               return rv_emr;
             }
-            case MOON_PA:
-            case MOON_ME: {
-              Vec6 rv_mi = ConvertFrameSpice(t_tai, rv_in, GCRF, MOON_CI);
-              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_mi, MOON_CI, frame_out);
+            case Frame::MOON_PA:
+            case Frame::MOON_ME: {
+              Vec6 rv_mi = ConvertFrameSpice(t_tai, rv_in, Frame::GCRF, Frame::MOON_CI);
+              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_mi, Frame::MOON_CI, frame_out);
               return rv_out;
             }
-            default:
-              assert(false && "Conversion not found");
+            default: assert(false && "Conversion not found");
           }
         }
 
-        case MOON_CI: {
+        case Frame::MOON_CI: {
           switch (frame_out) {
-            case GCRF: {
+            case Frame::GCRF: {
               Vec6 rv_icrf_e2m = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON);
               Vec6 rv_gcrf = rv_in + rv_icrf_e2m;
               return rv_gcrf;
             }
-            case MOON_PA: {
+            case Frame::MOON_PA: {
               Mat6 Mrot = GetFrameConversionMat(t_tai, Frame::GCRF, Frame::MOON_PA);
               Vec6 rv_pa = Mrot * rv_in;
               return rv_pa;
             }
-            case MOON_ME: {
-              Vec6 rv_pa = ConvertFrameSpice(t_tai, rv_in, MOON_CI, MOON_PA);
-              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_pa, MOON_PA, frame_out);
+            case Frame::MOON_ME: {
+              Vec6 rv_pa = ConvertFrameSpice(t_tai, rv_in, Frame::MOON_CI, Frame::MOON_PA);
+              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_pa, Frame::MOON_PA, frame_out);
               return rv_out;
             }
-            case MOON_OP: {
+            case Frame::MOON_OP: {
               Mat6 R_op2mi = RotOp2Mi(t_tai);
               Vec6 rv_op = R_op2mi.transpose() * rv_in;
               return rv_op;
             }
             default: {
-              Vec6 rv_gcrf = ConvertFrameSpice(t_tai, rv_in, MOON_CI, GCRF);
-              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_gcrf, GCRF, frame_out);
+              Vec6 rv_gcrf = ConvertFrameSpice(t_tai, rv_in, Frame::MOON_CI, Frame::GCRF);
+              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_gcrf, Frame::GCRF, frame_out);
               return rv_out;
             }
           }
         }
 
-        case ICRF: {
+        case Frame::ICRF: {
           switch (frame_out) {
-            case GCRF: {
+            case Frame::GCRF: {
               Vec6 rv_icrf_ssb2e
                   = GetBodyPosVel(t_tai, NaifId::SOLAR_SYSTEM_BARYCENTER, NaifId::EARTH);
               Vec6 rv_gcrf = rv_in - rv_icrf_ssb2e;
               return rv_gcrf;
             }
             default: {
-              Vec6 rv_gcrf = ConvertFrameSpice(t_tai, rv_in, ICRF, GCRF);
-              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_gcrf, GCRF, frame_out);
+              Vec6 rv_gcrf = ConvertFrameSpice(t_tai, rv_in, Frame::ICRF, Frame::GCRF);
+              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_gcrf, Frame::GCRF, frame_out);
               return rv_out;
             }
           }
         }
 
-        case EMR: {
+        case Frame::EMR: {
           switch (frame_out) {
-            case GCRF: {
+            case Frame::GCRF: {
               Vec6 rv_icrf_emb2e
                   = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::EARTH_MOON_BARYCENTER);
               Vec6 rv_gcrf = Synodic2Intertial(rv_icrf_emb2e, rv_in);
               return rv_gcrf;
             }
             default: {
-              Vec6 rv_gcrf = ConvertFrameSpice(t_tai, rv_in, EMR, GCRF);
-              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_gcrf, GCRF, frame_out);
+              Vec6 rv_gcrf = ConvertFrameSpice(t_tai, rv_in, Frame::EMR, Frame::GCRF);
+              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_gcrf, Frame::GCRF, frame_out);
               return rv_out;
             }
           }
         }
 
-        case MOON_OP: {
+        case Frame::MOON_OP: {
           switch (frame_out) {
-            case MOON_CI: {
+            case Frame::MOON_CI: {
               Mat6 R_op2mi = RotOp2Mi(t_tai);
               Vec6 rv_mi = R_op2mi * rv_in;
               return rv_mi;
             }
             default: {
-              Vec6 rv_mi = ConvertFrameSpice(t_tai, rv_in, MOON_OP, MOON_CI);
-              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_mi, MOON_CI, frame_out);
+              Vec6 rv_mi = ConvertFrameSpice(t_tai, rv_in, Frame::MOON_OP, Frame::MOON_CI);
+              Vec6 rv_out = ConvertFrameSpice(t_tai, rv_mi, Frame::MOON_CI, frame_out);
               return rv_out;
             }
           }

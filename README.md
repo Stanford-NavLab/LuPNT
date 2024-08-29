@@ -12,6 +12,7 @@
 [![PyPI Release](https://img.shields.io/pypi/v/pylupnt.svg)](https://pypi.org/project/pylupnt)
 [![Python Versions](https://img.shields.io/pypi/pyversions/pylupnt)](https://pypi.org/project/pylupnt)
 [![codecov](https://codecov.io/gh/Stanford-NavLab/LuPNT/branch/guillemc/graph/badge.svg)](https://codecov.io/gh/Stanford-NavLab/LuPNT)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Stanford-NavLab/LuPNT/guillemc?labpath=examples%2Fpython%2Fnotebooks%2Fex_frozen_orbits.ipynb)
 
 <!-- [![Conda Release](https://img.shields.io/conda/v/conda-forge/pylupnt)](https://anaconda.org/conda-forge/pylupnt) -->
 
@@ -126,7 +127,7 @@ This is useful during development, as it exposes all subprojects to your IDE and
 
 ```bash
 cmake -S all -B build
-cmake --build build
+cmake --build build -j4
 
 # run tests
 ./build/test/LuPNTTests

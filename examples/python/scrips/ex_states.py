@@ -29,7 +29,7 @@ print("")
 print("a = ", x_oe.a)
 
 # Convert orbital elements to Cartesian state
-x_cart_from_oe = pnt.classical2cartesian(x_oe, mu=pnt.GM_EARTH)
+x_cart_from_oe = pnt.classical2cart(x_oe, mu=pnt.GM_EARTH)
 print(" ")
 print("Converted Cartesian State:")
 print(x_cart_from_oe.vector)

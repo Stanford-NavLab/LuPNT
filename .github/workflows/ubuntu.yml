@@ -21,6 +21,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: install dependencies
+        run: sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
+
       - uses: actions/checkout@v4
 
       - uses: actions/cache@v4

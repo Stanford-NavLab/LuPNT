@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pylupnt"
-version = "0.0.1"
+version = "0.0.2"
 description = "Lunar Positioning, Navigation, and Timing (PNT) library"
 readme = "README.md"
 license = {text = "MIT"}
@@ -14,7 +14,7 @@ authors=[
 maintainers=[
     {name="Guillem Casadesus Vila, Keidai Iiyama", email="guillemc@stanford.edu;kiiyama@stanford.edu"},
 ]
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "numpy",
     "astropy",
@@ -32,12 +32,11 @@ dependencies = [
     "pandas",
     "Pillow",
     "plotly",
+    "h5py",
     "scikit_learn",
     "scipy",
     "setuptools",
     "spiceypy",
-    "torch",
-    "torchvision",
     "tqdm",
     "mypy",
     "ipywidgets",
@@ -46,6 +45,9 @@ keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "examp
 classifiers=[
     "Programming Language :: C++",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",

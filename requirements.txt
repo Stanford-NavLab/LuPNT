@@ -1,0 +1,25 @@
+astropy
+auto_mix_prep
+# bpy
+dataset
+filterpy
+mathutils
+matplotlib
+mlflow
+mlflow_skinny
+networkx
+numba
+numpy
+onnx
+pandas
+Pillow
+plotly
+h5py
+scikit_learn
+scipy
+setuptools
+spiceypy
+tqdm
+pybind11_stubgen
+ipywidgets
+ipymls

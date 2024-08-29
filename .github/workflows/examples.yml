@@ -44,10 +44,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake
-          sudo apt-get install -y libomp-dev
+          sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
 
       - name: configure
-        run: cmake -Sexamples/cpp -Bbuild_examples -DCMAKE_BUILD_TYPE=Release
+        run: cmake -Sexamples/cpp -Bbuild_examples -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
       - name: build
         run: cmake --build build_examples -j4 --target all_examples

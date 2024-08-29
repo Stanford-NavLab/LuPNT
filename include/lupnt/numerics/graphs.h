@@ -9,7 +9,7 @@
 
 namespace lupnt {
   template <typename T, typename U>
-  std::vector<T> FindShortestPath(const T& start, const T& end,
+  std::vector<T> FindShortestPath(const T start, const T end,
                                   const std::map<std::pair<T, T>, std::function<U>>& map) {
     std::queue<T> queue;
     std::map<T, T> predecessors;

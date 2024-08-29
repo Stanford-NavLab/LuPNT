@@ -11,7 +11,7 @@ using namespace std;
 // doi: 10.1007/978-3-642-58351-3.
 int main() {
   // Time
-  const Real mjd0_utc = GregorianToMJD(1997, 01, 01);
+  const Real mjd0_utc = Gregorian2MJD(1997, 01, 01);
 
   // Ground station
   const Real lon_gs = 11 * RAD;  // [rad]
@@ -39,7 +39,8 @@ int main() {
     Real mjd_utc = mjd0_utc + minute / MINS_DAY;  // [days]
     Real dt = (mjd_utc - mjd0_utc) * SECS_DAY;    // [s]
 
-    Vec6 coe = KeplerianDynamics::PropagateClassicalOE(coe0, dt, GM_EARTH);
+    KeplerianDynamics dyn(GM_EARTH);
+    Vec6 coe = dyn.PropagateClassicalOE(coe0, 0, dt);
     Vec6 rv_eci = Classical2Cart(coe, GM_EARTH);
 
     // Note: it should be UT1
@@ -49,7 +50,7 @@ int main() {
     Vec3 aer = Cart2AzElRange(r_ecef, r_gs, R_EARTH, WGS84_F);
     auto [az, el, range] = unpack(aer);
 
-    cout << MJDtoGregorianString(mjd_utc, 3);
+    cout << MJD2GregorianString(mjd_utc, 3);
     cout << setw(10) << fixed << setprecision(1);
     cout << setw(10) << az * DEG;
     cout << setw(10) << el * DEG;

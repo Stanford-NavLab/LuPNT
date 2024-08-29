@@ -14,40 +14,88 @@
 #include "lupnt/physics/solar_system.h"
 
 #define TIME_CONVERSION(from, to, func) \
-  {{TimeSys::from, TimeSys::to}, [](Real t) -> Real { return func(t); }}
+  {{Time::from, Time::to}, [](Real t) -> Real { return func(t); }}
 
-/// @ref
+/// @note
 /// D. Folta, N. Bosanac, I. Elliott, L. Mann, R. Mesarch, and J. Rosales,
 /// ‘Astrodynamics Convention and Modeling Reference for Lunar, Cislunar, and
 /// Libration Point Orbits’, Jan. 2022.
-/// @ref
-// O. Montenbruck and G. Eberhard, “Satellite Orbits: Models, Methods, and
-// Applications,” Berlin : New York: Springer, 2000.
-// doi: 10.1007/978-3-642-58351-3.
+///
+/// O. Montenbruck and G. Eberhard, “Satellite Orbits: Models, Methods, and
+/// Applications,” Berlin : New York: Springer, 2000.
+/// doi: 10.1007/978-3-642-58351-3.
 
 namespace lupnt {
 
-  std::map<std::pair<std::string, std::string>, std::function<Real(Real)>> time_conversions
-      = {TIME_CONVERSION(UTC, UT1, UTCtoUT1), TIME_CONVERSION(UT1, UTC, UT1toUTC),
-         TIME_CONVERSION(TAI, UTC, TAItoUTC), TIME_CONVERSION(UTC, TAI, UTCtoTAI),
-         TIME_CONVERSION(TAI, TT, TAItoTT),   TIME_CONVERSION(TT, TAI, TTtoTAI),
-         TIME_CONVERSION(TCG, TT, TCGtoTT),   TIME_CONVERSION(TT, TCG, TTtoTCG),
-         TIME_CONVERSION(TT, TDB, TTtoTDB),   TIME_CONVERSION(TDB, TT, TDBtoTT),
-         TIME_CONVERSION(TAI, GPS, TAItoGPS), TIME_CONVERSION(GPS, TAI, GPStoTAI),
-         TIME_CONVERSION(TCB, TDB, TCBtoTDB), TIME_CONVERSION(TT, TCB, TTtoTCB)};
-
-  Real ConvertTime(Real t, const std::string& from, const std::string& to) {
+  /// @brief Convert time from one time system to another
+  /// @param t Time in the original time system
+  /// @param from Original time system
+  /// @param to Converted time system
+  /// @return Real Time in the converted time system
+  /// @note
+  ///                     TCG
+  ///                      |
+  /// UT1 -- UTC -- TAI -- TT -> TCB
+  ///                |     |      |
+  ///               GPS   TDB <---+
+  Real ConvertTime(Real t, Time from, Time to) {
     if (from == to) return t;
-    std::vector<std::string> path = FindShortestPath(from, to, time_conversions);
-    Real t_out = t;
-    for (size_t i = 0; i < path.size() - 1; i++) {
-      std::function<Real(Real)> f = time_conversions[{path[i], path[i + 1]}];
-      t_out = f(t_out);
+    switch (from) {
+      case Time::UT1: return ConvertTime(UT12UTC(t), Time::UTC, to);
+      case Time::UTC: {
+        if (to == Time::UT1) return UTC2UT1(t);
+        return ConvertTime(UTC2TAI(t), Time::TAI, to);
+      }
+      case Time::TAI: {
+        switch (to) {
+          case Time::TAI: return t;
+          case Time::GPS: return TAI2GPS(t);
+          case Time::UTC: return TAI2UTC(t);
+          case Time::UT1: return UTC2UT1(TAI2UTC(t));
+          case Time::TT: return TAI2TT(t);
+          case Time::TCG: return TT2TCG(TAI2TT(t));
+          case Time::TDB: return TT2TDB(TAI2TT(t));
+          case Time::TCB: return TT2TCB(TAI2TT(t));
+          case Time::JD_TT: return Time2JD(TAI2TT(t));
+          case Time::JD_TDB: return Time2JD(TT2TDB(TAI2TT(t)));
+          default: break;
+        }
+      }
+      case Time::TDB: {
+        switch (to) {
+          case Time::TT: return TDB2TT(t);
+          case Time::TCB: return TT2TCB(TDB2TT(t));
+          case Time::TCG: return TT2TCG(TDB2TT(t));
+          case Time::TAI: return TT2TAI(TDB2TT(t));
+          case Time::JD_TDB: return Time2JD(t);
+          case Time::JD_TT: return Time2JD(TDB2TT(t));
+          default: return ConvertTime(TT2TAI(TDB2TT(t)), Time::TAI, to);
+        }
+      }
+      case Time::TT: {
+        switch (to) {
+          case Time::TAI: return TT2TAI(t);
+          case Time::TDB: return TT2TDB(t);
+          case Time::TCG: return TT2TCG(t);
+          case Time::TCB: return TT2TCB(t);
+          case Time::UTC: return TAI2UTC(TT2TAI(t));
+          case Time::UT1: return UTC2UT1(TAI2UTC(TT2TAI(t)));
+          case Time::GPS: return TAI2GPS(TT2TAI(t));
+          case Time::JD_TT: return Time2JD(t);
+          case Time::JD_TDB: return Time2JD(TT2TDB(t));
+          default: break;
+        }
+      }
+      case Time::TCG: return ConvertTime(TCG2TT(t), Time::TT, to);
+      case Time::TCB: return ConvertTime(TCB2TDB(t), Time::TDB, to);
+      case Time::GPS: return ConvertTime(GPS2TAI(t), Time::TAI, to);
+      default: break;
     }
-    return t_out;
+    throw std::invalid_argument("Invalid time conversion");
+    return 0;
   }
 
-  VecX ConvertTime(VecX t, const std::string& from, const std::string& to) {
+  VecX ConvertTime(VecX t, Time from, Time to) {
     VecX t_out(t.size());
     for (int i = 0; i < t.size(); i++) {
       t_out(i) = ConvertTime(t(i), from, to);
@@ -55,45 +103,45 @@ namespace lupnt {
     return t_out;
   }
 
-  Real UTCtoUT1(Real t_utc) {
+  Real UTC2UT1(Real t_utc) {
     Real mjd_utc = t_utc / SECS_DAY + MJD_J2000;
     Real ut1_utc = GetUt1UtcDifference(mjd_utc);
     Real t_ut1 = t_utc + ut1_utc;
     return t_ut1;
   }
 
-  Real UT1toUTC(Real t_ut1) {
+  Real UT12UTC(Real t_ut1) {
     Real mjd_ut1 = t_ut1 / SECS_DAY + MJD_J2000;
     Real ut1_utc = GetUt1UtcDifference(mjd_ut1);
     Real t_utc = t_ut1 - ut1_utc;
     return t_utc;
   }
 
-  Real UTCtoTAI(Real t_utc) {
+  Real UTC2TAI(Real t_utc) {
     Real mjd_utc = t_utc / SECS_DAY + MJD_J2000;
     Real tai_utc = GetTaiUtcDifference(mjd_utc.val());
     Real t_tai = t_utc + tai_utc;
     return t_tai;
   }
 
-  Real TAItoUTC(Real t_tai) {
+  Real TAI2UTC(Real t_tai) {
     Real mjd_tai = t_tai / SECS_DAY + MJD_J2000;
     Real tai_utc = GetTaiUtcDifference(mjd_tai.val());
     Real t_utc = t_tai - tai_utc;
     return t_utc;
   }
 
-  Real TAItoTT(Real t_tai) { return t_tai + TT_TAI_OFFSET; }
+  Real TAI2TT(Real t_tai) { return t_tai + TT_TAI_OFFSET; }
 
-  Real TTtoTAI(Real t_tt) { return t_tt - TT_TAI_OFFSET; }
+  Real TT2TAI(Real t_tt) { return t_tt - TT_TAI_OFFSET; }
 
-  Real TTtoTCG(Real t_tt) {
+  Real TT2TCG(Real t_tt) {
     Real jd_tt = JD_J2000 + t_tt / SECS_DAY;
     Real tt_tcg = -L_G / (1.0 - L_G) * (jd_tt - JD_T0) * SECS_DAY;
     return t_tt - tt_tcg;
   }
 
-  Real TCGtoTT(Real t_tcg) {
+  Real TCG2TT(Real t_tcg) {
     Real jd_tcg = JD_J2000 + t_tcg / SECS_DAY;
     Real tt_tcg = -L_G * (jd_tcg - JD_T0) * SECS_DAY;
     return t_tcg + tt_tcg;
@@ -104,7 +152,7 @@ namespace lupnt {
   /// @return
   /// @ref
   /// https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/req/time.html#The%20Relationship%20between%20TT%20and%20TDB
-  Real TDBtoTT(Real t_tdb) {
+  Real TDB2TT(Real t_tdb) {
     double k = 1.657e-3;
     double eb = 1.671e-2;
     Real mean_anom = 6.239996 + 1.99096871e-7 * t_tdb;
@@ -119,7 +167,7 @@ namespace lupnt {
   /// @ref
   /// https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB
   /// @note Accurate to about 30 microseconds
-  Real TTtoTDB(Real t_tt) {
+  Real TT2TDB(Real t_tt) {
     double k = 1.657e-3;
     double eb = 1.671e-2;
     Real mean_anom = 6.239996 + 1.99096871e-7 * t_tt;
@@ -128,25 +176,25 @@ namespace lupnt {
     return t_tdb;
   }
 
-  Real TAItoGPS(Real t_tai) {
+  Real TAI2GPS(Real t_tai) {
     Real t_gps = t_tai - 19.0;
     return t_gps;
   }
 
-  Real GPStoTAI(Real t_gps) {
+  Real GPS2TAI(Real t_gps) {
     Real t_tai = t_gps + 19.0;
     return t_tai;
   }
 
-  Real TCBtoTDB(Real t_tcb) {
+  Real TCB2TDB(Real t_tcb) {
     const double tdb0 = -6.44e-5;
     Real jd_tcb = JD_J2000 + t_tcb / SECS_DAY;
     Real t_tdb = 1.55051976772e-8 * (jd_tcb - JD_T0) * SECS_DAY + tdb0;
     return t_tdb;
   }
 
-  Real TTtoTCB(Real t_tt) {
-    Real t_tai = TTtoTAI(t_tt);
+  Real TT2TCB(Real t_tt) {
+    Real t_tai = TT2TAI(t_tt);
     Real jd_tai = JD_J2000 + t_tai / SECS_DAY;
     Real t_tcb = t_tt + 1.5505197677e-8 * (jd_tai - JD_T0) * SECS_DAY;
     return t_tcb;
@@ -159,7 +207,7 @@ namespace lupnt {
     return Wrap2Pi(theta_era);
   }
 
-  Real GregorianToMJD(int year, int month, int day, int hour, int min, Real sec) {
+  Real Gregorian2MJD(int year, int month, int day, int hour, int min, Real sec) {
     if (month <= 2) {
       month += 12;
       --year;
@@ -175,7 +223,7 @@ namespace lupnt {
     return mjd_midnight + frac_of_day;
   }
 
-  std::tuple<int, int, int, int, int, Real> MJDtoGregorian(Real mjd) {
+  std::tuple<int, int, int, int, int, Real> MJD2Gregorian(Real mjd) {
     long a, b, c, d, e, f;
     a = long(mjd + 2400001.0);  // Convert Julian day number to calendar date
     if (a < 2299161) {          // Julian calendar
@@ -199,9 +247,9 @@ namespace lupnt {
     return std::make_tuple(year, month, day, hour, min, sec);
   }
 
-  Real GregorianToTime(int year, int month, int day, int hour, int min, Real sec) {
-    Real mjd = GregorianToMJD(year, month, day, hour, min, sec);
-    return MJDtoTime(mjd);
+  Real Gregorian2Time(int year, int month, int day, int hour, int min, Real sec) {
+    Real mjd = Gregorian2MJD(year, month, day, hour, min, sec);
+    return MJD2Time(mjd);
   }
 
   /// @brief Greenwich Mean Sidereal Time
@@ -219,22 +267,22 @@ namespace lupnt {
     return TWO_PI * frac(gmst / SECS_DAY);  // [rad]
   }
 
-  Real MJDtoTime(Real mjd) { return (mjd - MJD_J2000) * SECS_DAY; }
+  Real MJD2Time(Real mjd) { return (mjd - MJD_J2000) * SECS_DAY; }
 
-  Real TimeToMJD(Real t) { return t / SECS_DAY + MJD_J2000; }
+  Real Time2MJD(Real t) { return t / SECS_DAY + MJD_J2000; }
 
-  Real JDtoTime(Real jd) { return (jd - JD_J2000) * SECS_DAY; }
+  Real JD2Time(Real jd) { return (jd - JD_J2000) * SECS_DAY; }
 
-  Real TimeToJD(Real t) { return t / SECS_DAY + JD_J2000; }
+  Real Time2JD(Real t) { return t / SECS_DAY + JD_J2000; }
 
   /// @brief Convert Modified Julian Date to date string
   /// @param mjd Modified Julian Date
   /// @param precision Number of seconds precision
   /// @return Date string
-  std::string MJDtoGregorianString(Real mjd, int precision) {
+  std::string MJD2GregorianString(Real mjd, int precision) {
     double pow10 = pow(10, precision);
     Real mjd_round = (round(mjd * SECS_DAY * pow10, precision) + 0.1) / (SECS_DAY * pow10);
-    auto [year, month, day, hour, min, sec] = MJDtoGregorian(mjd_round);
+    auto [year, month, day, hour, min, sec] = MJD2Gregorian(mjd_round);
     std::stringstream ss;
     sec = round(sec, precision);
     ss << year << "/";
@@ -248,9 +296,9 @@ namespace lupnt {
     return ss.str();
   }
 
-  std::string TimeToGregorianString(Real t, int precision) {
-    Real mjd = TimeToMJD(t);
-    return MJDtoGregorianString(mjd, precision);
+  std::string Time2GregorianString(Real t, int precision) {
+    Real mjd = Time2MJD(t);
+    return MJD2GregorianString(mjd, precision);
   }
 
   /// @brief Greenwich Apparent Sidereal Time
@@ -260,24 +308,24 @@ namespace lupnt {
     return mod(GreenwichMeanSiderealTime(mjd_ut1) + EquinoxEquation(mjd_ut1), TWO_PI);
   }
 
-  VEC_IMP_REAL(UTCtoUT1)
-  VEC_IMP_REAL(UT1toUTC)
-  VEC_IMP_REAL(TAItoUTC)
-  VEC_IMP_REAL(UTCtoTAI)
-  VEC_IMP_REAL(TAItoTT)
-  VEC_IMP_REAL(TTtoTAI)
-  VEC_IMP_REAL(TCGtoTT)
-  VEC_IMP_REAL(TTtoTCG)
-  VEC_IMP_REAL(TTtoTDB)
-  VEC_IMP_REAL(TDBtoTT)
-  VEC_IMP_REAL(TAItoGPS)
-  VEC_IMP_REAL(GPStoTAI)
-  VEC_IMP_REAL(TCBtoTDB)
-  VEC_IMP_REAL(TTtoTCB)
+  VEC_IMP_REAL(UTC2UT1)
+  VEC_IMP_REAL(UT12UTC)
+  VEC_IMP_REAL(TAI2UTC)
+  VEC_IMP_REAL(UTC2TAI)
+  VEC_IMP_REAL(TAI2TT)
+  VEC_IMP_REAL(TT2TAI)
+  VEC_IMP_REAL(TCG2TT)
+  VEC_IMP_REAL(TT2TCG)
+  VEC_IMP_REAL(TT2TDB)
+  VEC_IMP_REAL(TDB2TT)
+  VEC_IMP_REAL(TAI2GPS)
+  VEC_IMP_REAL(GPS2TAI)
+  VEC_IMP_REAL(TCB2TDB)
+  VEC_IMP_REAL(TT2TCB)
 
-  VEC_IMP_REAL(MJDtoTime)
-  VEC_IMP_REAL(TimeToMJD)
-  VEC_IMP_REAL(JDtoTime)
-  VEC_IMP_REAL(TimeToJD)
+  VEC_IMP_REAL(MJD2Time)
+  VEC_IMP_REAL(Time2MJD)
+  VEC_IMP_REAL(JD2Time)
+  VEC_IMP_REAL(Time2JD)
 
 }  // namespace lupnt

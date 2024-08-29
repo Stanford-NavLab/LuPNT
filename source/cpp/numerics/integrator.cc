@@ -33,7 +33,7 @@ namespace lupnt {
    * @param x  The state to propagate
    * @param dt  Timestep
    */
-  VecX RK4::Step(const ODE f, const Real t, const VecX x, Real& dt) {
+  VecX RK4::Step(const ODE& f, Real t, const VecX& x, Real dt) {
     // usleep(1000);
     // return x + x;
 
@@ -69,7 +69,7 @@ namespace lupnt {
    * @ref
    * https://www.mathworks.com/matlabcentral/fileexchange/55431-runge-kutta-8th-order-integration
    */
-  VecX RK8::Step(const ODE f, const Real t, const VecX x, Real& dt) {
+  VecX RK8::Step(const ODE& f, Real t, const VecX& x, Real dt) {
     // 1
     VecX k_1 = f(t, x) * dt;
 
@@ -143,7 +143,7 @@ namespace lupnt {
    * @ref
    * https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta%E2%80%93Fehlberg_method
    */
-  VecX IRKF::Step(const ODE f, const Real t, const VecX x, Real& dt) {
+  VecX IRKF::Step(const ODE& f, Real t, const VecX& x, Real dt) {
     int n = x.size();
 
     VecX x_new_low(n), x_new_high(n);
@@ -158,14 +158,13 @@ namespace lupnt {
     return x_new_low;
   }
 
-  bool IRKF::ComputeRelError(const VecX& x_new_low, const VecX& x_new_high, Real& dt) {
+  bool IRKF::ComputeRelError(const VecX& x_new_low, const VecX& x_new_high, Real dt) {
     // Compute the error norm
     Real err_norm = 0.0;
     double tol = 0.0;
     double error = 0.0;
     bool within_tolerance = true;
     double max_error = 0.0;
-    int n = x_new_low.size();
 
     // Non-conservative acceptance threshold
     double accept_thresh
@@ -173,9 +172,9 @@ namespace lupnt {
                    (order_ + 1) / order_);  // J.C. Butcher, Numerical Methods for
                                             // Ordinary Differential Equations, p291
 
-    for (size_t i = 0; i < n; ++i) {
+    for (size_t i = 0; i < x_new_low.size(); ++i) {
       error = std::abs(x_new_high(i).val() - x_new_low(i).val());
-      tol = std::max(params_.reltol * std::abs(x_new_high(i).val()), params_.abstol);
+      tol = std::max<double>(params_.reltol * std::abs(x_new_high(i).val()), params_.abstol);
       max_error = std::max(max_error, error / tol);
       if ((error / tol) > accept_thresh) {
         within_tolerance = false;
@@ -204,7 +203,7 @@ namespace lupnt {
    * https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta%E2%80%93Fehlberg_method
    */
 
-  void RKF45::Update(const ODE f, const Real t, const VecX x, const Real dt, VecX& x_new_low,
+  void RKF45::Update(const ODE& f, Real t, const VecX& x, const Real dt, VecX& x_new_low,
                      VecX& x_new_high) {
     // Compute k1 to k6
     VecX k1 = f(t, x) * dt;

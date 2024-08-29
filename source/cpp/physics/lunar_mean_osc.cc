@@ -18,8 +18,8 @@
 namespace lupnt {
 
   Vec6 Mean2Osculatingulating(Vec6 meanCoeVec) {
-    double t = 0.0;  // Time [s]
-    double nM = 2.66e-6;
+    //  double t = 0.0;  // Time [s]
+    //  double nM = 2.66e-6;
     Vec6 meanDoeVec = Classical2Delaunay(meanCoeVec, GM_MOON);
 
     double lpp = (double)meanDoeVec(0);
@@ -48,8 +48,8 @@ namespace lupnt {
   }
 
   Vec6 Osculating2Mean(Vec6 oscCoeVec) {
-    double t = 0.0;
-    double nM = 2.66e-6;
+    //  double t = 0.0;
+    //  double nM = 2.66e-6;
     Vec6 oscDoeVec = Classical2Delaunay(oscCoeVec, GM_MOON);
 
     double l = (double)oscDoeVec(0);
@@ -86,24 +86,24 @@ namespace lupnt {
 
   std::array<double, 6> ComputeSecondOrderShortPeriod(Vec6 &coe, Vec6 &doe) {
     double n3 = 2.66e-6;
-    double nM = 2.66e-6;
-    double J2 = 2.03e-4;
+    //  double nM = 2.66e-6;
+    //  double J2 = 2.03e-4;
     double k = 0.98785;
 
     double a = (double)coe(0);
     double e = (double)coe(1);
     double i = (double)coe(2);
-    double O = (double)coe(3);
-    double w = (double)coe(4);
-    double M = (double)coe(5);
+    //  double O = (double)coe(3);
+    //  double w = (double)coe(4);
+    //  double M = (double)coe(5);
     double f = (double)Mean2TrueAnomaly(coe(5), coe(1));
 
     double l = (double)doe(0);
     double g = (double)doe(1);
     double h = (double)doe(2);
-    double L = (double)doe(3);
-    double G = (double)doe(4);
-    double H = (double)doe(5);
+    //  double L = (double)doe(3);
+    //  double G = (double)doe(4);
+    //  double H = (double)doe(5);
 
     // The second-order terms of the short-period variations are
 
@@ -191,10 +191,11 @@ namespace lupnt {
                      + 12 * sqrt(1 - pow(e, 2))
                            * (-2 * (pow(e, 2) + 1) * sin(2 * E) + 5 * e * sin(E) + e * sin(3 * E))
                            * sin(2 * g + 2 * h);
-    double B_M_E_4
-        = 4
-          * (9 * e * (4 + pow(e, 2)) * sin(E) - 9 * pow(e, 2) * sin(2 * E) + pow(e, 3) * sin(3 * E))
-          * sin(2 * h);
+    //  double B_M_E_4
+    //      = 4
+    //        * (9 * e * (4 + pow(e, 2)) * sin(E) - 9 * pow(e, 2) * sin(2 * E) + pow(e, 3) * sin(3 *
+    //        E))
+    //        * sin(2 * h);
 
     // B_M_g
     double B_M_g_0 = 0;
@@ -448,23 +449,23 @@ namespace lupnt {
 
   std::array<double, 6> ComputeFirstOrderMediumPeriod(Vec6 &coe, Vec6 &doe) {
     double n3 = 2.66e-6;
-    double nM = 2.66e-6;
-    double J2 = 2.03e-4;
+    //  double nM = 2.66e-6;
+    //  double J2 = 2.03e-4;
     double k = 0.98785;
 
     double a = (double)coe(0);
     double e = (double)coe(1);
     double i = (double)coe(2);
-    double O = (double)coe(3);
-    double w = (double)coe(4);
-    double M = (double)coe(5);
+    //  double O = (double)coe(3);
+    //  double w = (double)coe(4);
+    //  double M = (double)coe(5);
 
-    double l = (double)doe(0);
+    //  double l = (double)doe(0);
     double g = (double)doe(1);
     double h = (double)doe(2);
-    double L = (double)doe(3);
-    double G = (double)doe(4);
-    double H = (double)doe(5);
+    //  double L = (double)doe(3);
+    //  double G = (double)doe(4);
+    //  double H = (double)doe(5);
 
     // The first-order terms of the medium-period variation are
     double L_mp1 = 0;
@@ -511,23 +512,23 @@ namespace lupnt {
 
   std::array<double, 6> ComputeSecondOrderMediumPeriod(Vec6 &coe, Vec6 &doe) {
     double n3 = 2.66e-6;
-    double nM = 2.66e-6;
-    double J2 = 2.03e-4;
+    //  double nM = 2.66e-6;
+    //  double J2 = 2.03e-4;
     double k = 0.98785;
 
     double a = (double)coe(0);
     double e = (double)coe(1);
     double i = (double)coe(2);
-    double O = (double)coe(3);
-    double w = (double)coe(4);
-    double M = (double)coe(5);
+    //  double O = (double)coe(3);
+    //  double w = (double)coe(4);
+    //  double M = (double)coe(5);
 
-    double l = (double)doe(0);
+    //  double l = (double)doe(0);
     double g = (double)doe(1);
     double h = (double)doe(2);
-    double L = (double)doe(3);
-    double G = (double)doe(4);
-    double H = (double)doe(5);
+    //  double L = (double)doe(3);
+    //  double G = (double)doe(4);
+    //  double H = (double)doe(5);
 
     // The second-order terms of the medium-period variation are
     double L_mp2 = 0;
@@ -769,22 +770,22 @@ namespace lupnt {
 
   std::array<double, 6> ComputeCorrectionMediumPeriod(Vec6 &coe, Vec6 &doe) {
     double n3 = 2.66e-6;
-    double nM = 2.66e-6;
-    double J2 = 2.03e-4;
+    //  double nM = 2.66e-6;
+    //  double J2 = 2.03e-4;
     double k = 0.98785;
 
     double a = (double)coe(0);
     double e = (double)coe(1);
     double i = (double)coe(2);
-    double O = (double)coe(3);
-    double w = (double)coe(4);
-    double M = (double)coe(5);
+    //  double O = (double)coe(3);
+    //  double w = (double)coe(4);
+    //  double M = (double)coe(5);
 
-    double l = (double)doe(0);
+    //  double l = (double)doe(0);
     double g = (double)doe(1);
     double h = (double)doe(2);
-    double L = (double)doe(3);
-    double G = (double)doe(4);
+    //  double L = (double)doe(3);
+    //  double G = (double)doe(4);
 
     // Assuming the required variables are already defined
     double L_mp1c = 0;

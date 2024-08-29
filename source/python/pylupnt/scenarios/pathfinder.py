@@ -15,7 +15,7 @@ def load():
     aop = np.deg2rad([86.322])  # [rad] Argument of periapsis
     ma = np.deg2rad([0])  # [rad] Mean anomaly
 
-    t0_tai = pnt.SpiceInterface.string_to_tai(t0_tai_str)
+    t0_tai = pnt.spice.string2tai(t0_tai_str)
     coe_op = np.zeros((N_sat, 6))
     N_sat_plane = N_sat // N_planes
     for i_pl in range(N_planes):
@@ -25,8 +25,8 @@ def load():
                 [sma, ecc[i_pl], inc[i_pl], raan[i_pl], aop[i_pl], ma[i_spl]]
             )
 
-    rv0_m2sc_op = pnt.classical2cartesian(coe_op, pnt.GM_MOON)
-    rv0_m2sc_mi = pnt.convert_frame(t0_tai, rv0_m2sc_op, pnt.MOON_OP, pnt.MOON_CI)
+    rv0_m2sc_op = pnt.classical2cart(coe_op, pnt.GM_MOON)
+    rv0_m2sc_ci = pnt.convert_frame(t0_tai, rv0_m2sc_op, pnt.MOON_OP, pnt.MOON_CI)
 
     # Time
     sma = coe_op[0, 0]  # [km] Semi-major axis
@@ -40,29 +40,30 @@ def load():
 
     # Dynamics (three-body)
     dyn = pnt.NBodyDynamics()
-    dyn.set_primary_body(pnt.Body.Moon())
+    dyn.add_body(pnt.Body.Moon())
     dyn.add_body(pnt.Body.Earth())
+    dyn.set_frame(pnt.MOON_CI)
     dyn.set_time_step(dt)
 
     # Propagation
     # rv_from2to_frame [km, km/s] (x, y, z, vx, vy, vz)
-    rv_m2sc_mi = np.zeros((N_sat, Nt, 6))
+    rv_m2sc_ci = np.zeros((N_sat, Nt, 6))
     rv_m2sc_pa = np.zeros((N_sat, Nt, 6))
     for i_sat in range(N_sat):
-        rv_m2sc_mi[i_sat] = dyn.propagate(rv0_m2sc_mi[i_sat], t0_tai, t_tai)
+        rv_m2sc_ci[i_sat] = dyn.propagate(rv0_m2sc_ci[i_sat], t0_tai, t_tai)
         rv_m2sc_pa[i_sat] = pnt.convert_frame(
-            t_tai, rv_m2sc_mi[i_sat], pnt.MOON_CI, pnt.MOON_PA
+            t_tai, rv_m2sc_ci[i_sat], pnt.MOON_CI, pnt.MOON_PA
         )
 
-    rv_m2e_mi = pnt.SpiceInterface.get_body_pos_vel(t_tai, pnt.MOON, pnt.EARTH)
-    rv_m2e_pa = pnt.convert_frame(t_tai, rv_m2e_mi, pnt.MOON_CI, pnt.MOON_PA)
-    rv_m2s_mi = pnt.SpiceInterface.get_body_pos_vel(t_tai, pnt.MOON, pnt.SUN)
-    rv_m2s_pa = pnt.convert_frame(t_tai, rv_m2s_mi, pnt.MOON_CI, pnt.MOON_PA)
+    rv_m2e_ci = pnt.spice.get_body_pos_vel(t_tai, pnt.MOON, pnt.EARTH)
+    rv_m2e_pa = pnt.convert_frame(t_tai, rv_m2e_ci, pnt.MOON_CI, pnt.MOON_PA)
+    rv_m2s_ci = pnt.spice.get_body_pos_vel(t_tai, pnt.MOON, pnt.SUN)
+    rv_m2s_pa = pnt.convert_frame(t_tai, rv_m2s_ci, pnt.MOON_CI, pnt.MOON_PA)
 
     # Directions
-    e_sc2m = np.array(-rv_m2sc_mi[:, :, 0:3])
-    e_sc2s = np.array(rv_m2s_mi[None, :, 0:3] - rv_m2sc_mi[:, :, 0:3])
-    e_sc2e = np.array(rv_m2e_mi[None, :, 0:3] - rv_m2sc_mi[:, :, 0:3])
+    e_sc2m = np.array(-rv_m2sc_ci[:, :, 0:3])
+    e_sc2s = np.array(rv_m2s_ci[None, :, 0:3] - rv_m2sc_ci[:, :, 0:3])
+    e_sc2e = np.array(rv_m2e_ci[None, :, 0:3] - rv_m2sc_ci[:, :, 0:3])
     e_sc2m /= np.linalg.norm(e_sc2m, axis=2)[:, :, None]
     e_sc2s /= np.linalg.norm(e_sc2s, axis=2)[:, :, None]
     e_sc2e /= np.linalg.norm(e_sc2e, axis=2)[:, :, None]
@@ -88,7 +89,7 @@ def load():
 
     R_pa2mi = np.zeros((Nt, 3, 3))
     for i in range(Nt):
-        R_pa2mi[i] = pnt.SpiceInterface.get_frame_conversion_matrix(
+        R_pa2mi[i] = pnt.spice.get_frame_conversion_matrix(
             t_tai[i], pnt.MOON_PA, pnt.MOON_CI
         )[:3, :3]
 

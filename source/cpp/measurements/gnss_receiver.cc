@@ -23,9 +23,9 @@ namespace lupnt {
   void GnssReceiver::InitializeReceiverParams() {
     if (receiver_name_ == "moongpsr") {
       // Lunar Gnss Receiver
-      rx_param_.Ts = 190.0;           // System noise temp [K]
-      rx_param_.Ae = 0.0;             // Attenuation due to atmosphere (should be negative) [dB]
-      rx_param_.Nf = -2.85;           // Noise figure of receiver/LNA [dB]
+      rx_param_.Tsys = 190.0;  // System noise temp [K]
+      rx_param_.Ae = 0.0;      // Attenuation due to atmosphere (should be negative) [dB]
+      // rx_param_.Nf = -2.85;  // Noise figure of receiver/LNA [dB]
       rx_param_.L = -0.16;            // Receiver implementation, A/D conversion losses [dB]
       rx_param_.As = 0.0;             // System losses, in front of LNA [dB]
       rx_param_.CN0threshold = 15.0;  // CN0 threshold [dB-Hz]
@@ -52,8 +52,9 @@ namespace lupnt {
    */
   std::vector<Vec3d> GnssReceiver::GetReceiverOrientation(double t, Vec3d& r_rx_gcrf,
                                                           std::string mode) {
-    Vec3d r_sat2sun = GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN).cast<double>().head(3)
-                      - r_rx_gcrf;  // (SUN-Earth) - (Sat-Earth) = (Sun-Sat)
+    Vec3d r_sat2sun
+        = GetBodyPosVel(t, NaifId::EARTH, NaifId::SUN, Frame::GCRF).cast<double>().head(3)
+          - r_rx_gcrf;  // (SUN-Earth) - (Sat-Earth) = (Sun-Sat)
 
     Vec3d e_zero = Vec3d::Zero();
 
@@ -72,7 +73,7 @@ namespace lupnt {
   }
 
   /**
-   * @brief Get the Anttena Gain of the Receiver
+   * @brief Get the Antenna Gain of the Receiver
    *
    * @param t   epoch (TAI) [s]
    * @param r_tx_gcrf  position of the transmitter in GCRF [km]
@@ -80,9 +81,12 @@ namespace lupnt {
    * @param mode  receiver orientation mode  (PZ_EarthPoint, )
    * @return double
    */
-  double GnssReceiver::GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf,
-                                              std::string mode) {
-    auto e_sat = GnssReceiver::GetReceiverOrientation(t, r_rx_gcrf, mode);
+  double GnssReceiver::GetReceiverAntennaGain(double t, Vec3d r_tx_gcrf, Vec3d r_rx_gcrf) {
+    if (attitude_mode_ == "NONE") {
+      std::runtime_error("Receiver attitude mode not set");
+    }
+
+    auto e_sat = GnssReceiver::GetReceiverOrientation(t, r_rx_gcrf, attitude_mode_);
     auto e_x = e_sat[0];
     auto e_y = e_sat[1];
     auto e_z = e_sat[2];
@@ -102,9 +106,12 @@ namespace lupnt {
    */
   GnssMeasurement GnssReceiver::GetMeasurement(double t) {
     // Revieve Gnss signals
-    std::vector<Transmission> transmissions = channel->Receive(*this, t);
+    std::vector<GnssTransmission> transmissions = gnss_channel_->Receive(*this, t);
 
     // Generate a measurement from the Gnss transmissions
+    if (transmissions.size() == 0) {
+      return GnssMeasurement(transmissions);
+    }
     GnssMeasurement measurement = GnssMeasurement(transmissions);
     return measurement;
   }

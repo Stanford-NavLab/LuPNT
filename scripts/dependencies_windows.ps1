@@ -1,5 +1,12 @@
-# 1. The compiler should provide OpenMP support
-# (No explicit command to install OpenMP on Windows as it's compiler-dependent)
+# 1. Dependencies
+$ProgressPreference = 'SilentlyContinue'
+Invoke-WebRequest -Uri "https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.3/hdf5-1.14.4-3-win-vs2022_cl.zip" -OutFile "hdf5.zip"
+Expand-Archive -Path "hdf5.zip" -DestinationPath "C:\HDF5" -Force
+Remove-Item "hdf5.zip"
+Expand-Archive -Path "C:/HDF5/hdf5/HDF5-1.14.4-win64.zip" -DestinationPath "C:/HDF5"
+[System.Environment]::SetEnvironmentVariable('HDF5_DIR', "C:\HDF5\HDF5-1.14.4-win64\CMake", 'User')
+
+choco install boost-msvc-14.1
 
 # 2. Download data
 $ProgressPreference = 'SilentlyContinue'

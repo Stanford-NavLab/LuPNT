@@ -20,6 +20,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: install dependencies
+        run: sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
+
       - uses: actions/checkout@v4
 
       - uses: actions/cache@v4
@@ -43,17 +46,17 @@ jobs:
 
       - name: build and install library
         run: |
-          cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
-          sudo cmake --build build --target install
-          rm -rf build
+          cmake -S. -Bbuild_install -DCMAKE_BUILD_TYPE=Release
+          sudo cmake --build build_install --target install -j4
+          rm -rf build_install
 
       - name: configure
-        run: cmake -Stest -Bbuild -DTEST_INSTALLED_VERSION=1
+        run: cmake -Stest -Bbuild_install -DTEST_INSTALLED_VERSION=1
 
       - name: build
-        run: cmake --build build --config Debug -j4
+        run: cmake --build build_install --config Release -j4
 
       - name: test
         run: |
-          cd build
-          ctest --build-config Debug
+          cd build_install
+          ctest --build-config Release

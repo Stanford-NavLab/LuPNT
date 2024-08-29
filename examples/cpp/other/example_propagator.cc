@@ -42,9 +42,9 @@ int main() {
 
   for (int p = 0; p < n_problem; p++) {
     IntegratorParams params = IntegratorParams(20, 1e-8, 1e-8);  // max_iter, abstol, reltol
-    NumericalPropagator prop_rk4 = NumericalPropagator("RK4");
-    NumericalPropagator prop_rk8 = NumericalPropagator("RK8");
-    NumericalPropagator prop_rkf45 = NumericalPropagator("RKF45", params);
+    NumericalPropagator prop_rk4 = NumericalPropagator(IntegratorType::RK4);
+    NumericalPropagator prop_rk8 = NumericalPropagator(IntegratorType::RK8);
+    NumericalPropagator prop_rkf45 = NumericalPropagator(IntegratorType::RKF45, params);
 
     Real dt = 0.01;  // time step
     Real t0 = 0.0;   // initial time
@@ -118,7 +118,8 @@ int main() {
   for (int p = 0; p < n_problem; p++) {
     cout << "Problem: " << vec_ode_name[p] << endl;
     cout << "----------------------------------------------------" << endl;
-    cout << setw(10) << "Method" << "  Elapsed Time (ms)"
+    cout << setw(10) << "Method"
+         << "  Elapsed Time (ms)"
          << "    Final Position" << endl;
     cout << "----------------------------------------------------" << endl;
     for (int j = 0; j < n_methods; j++) {

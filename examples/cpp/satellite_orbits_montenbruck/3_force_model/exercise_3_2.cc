@@ -19,14 +19,13 @@ int main() {
   cout << "  Moon position from low precision analytical theory" << endl;
   cout << "  Date [TT]                 " << " Position [km] " << endl;
 
-  Real mjd0 = GregorianToMJD(2006, 03, 14, 00, 00, 0.0);
+  Real mjd0 = Gregorian2MJD(2006, 03, 14, 00, 00, 0.0);
   Real mjd_tt;
   Vec3 r;
   for (int i = 0; i <= N_step; i++) {
     mjd_tt = mjd0 + i * dt;
     r = MoonPositionLowPrecision(mjd_tt) / 1000.0;
-    cout << "  " << MJDtoGregorianString(mjd_tt, 1) << "      " << r.transpose().format(fmt)
-         << endl;
+    cout << "  " << MJD2GregorianString(mjd_tt, 1) << "      " << r.transpose().format(fmt) << endl;
   };
 
   cout << endl << " Moon position from DE405" << endl;
@@ -35,9 +34,9 @@ int main() {
   for (int i = 0; i <= N_step; i++) {
     mjd_tt = mjd0 + i * dt;
     Real tt = (mjd_tt - MJD_J2000) * SECS_DAY;
-    Real t_tai = ConvertTime(tt, TimeSys::TT, TimeSys::TAI);
-    r = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON).head(3);
-    cout << " " << MJDtoGregorianString(mjd_tt, 1) << "      " << r.transpose().format(fmt) << endl;
+    Real t_tai = ConvertTime(tt, Time::TT, Time::TAI);
+    r = GetBodyPosVel(t_tai, NaifId::EARTH, NaifId::MOON, Frame::GCRF).head(3);
+    cout << " " << MJD2GregorianString(mjd_tt, 1) << "      " << r.transpose().format(fmt) << endl;
   };
 
   return 0;
