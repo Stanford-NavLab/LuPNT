@@ -6,7 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
 
-#include "utils.cc"
+#include "../utils.cc"
 
 using namespace lupnt;
 

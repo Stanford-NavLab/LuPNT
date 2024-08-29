@@ -6,7 +6,7 @@
 #include <iostream>
 #include <vector>
 
-#include "utils.cc"
+#include "../utils.cc"
 
 using namespace lupnt;
 using namespace Catch::Matchers;

@@ -45,7 +45,7 @@ endif()
 # ---- Create binary ----
 
 set(ENV{CATCH_VERBOSITY} 2)
-file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/cpp/*.cc)
+file(GLOB_RECURSE sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/cpp/*.cc)
 add_executable(${PROJECT_NAME} ${sources})
 target_link_libraries(${PROJECT_NAME} Catch2::Catch2 LuPNT::LuPNT)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)

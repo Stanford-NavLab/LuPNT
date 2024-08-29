@@ -53,8 +53,6 @@ namespace lupnt {
     auto hours = total_seconds / 3600;
     auto minutes = (total_seconds % 3600) / 60;
     auto seconds = total_seconds % 60;
-    auto milliseconds
-        = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() % 1000;
 
     std::string str;
     if (hours > 0) str += std::to_string(hours) + "h ";
