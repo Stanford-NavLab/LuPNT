@@ -67,17 +67,17 @@ Functions
 ---------
 
 
-- :ref:`exhale_function_kernels_8h_1a0b5f19dc939c1b59a499d804efe128a1`
-
 - :ref:`exhale_function_kernels_8h_1abfddf851d7060f6b714c67f637bf98c9`
 
 - :ref:`exhale_function_kernels_8h_1ac05abd9ee014057de35a0036b688d976`
 
 - :ref:`exhale_function_kernels_8h_1a36f24b47f6112710ef5743d1dedcd8c3`
 
-- :ref:`exhale_function_kernels_8h_1addaeb47daa5cfda8187c99933ba3238c`
+- :ref:`exhale_function_kernels_8h_1a0b5f19dc939c1b59a499d804efe128a1`
 
 - :ref:`exhale_function_kernels_8h_1a4cdf48576d742f9a15e79859dc4a7d1e`
+
+- :ref:`exhale_function_kernels_8h_1addaeb47daa5cfda8187c99933ba3238c`
 
 - :ref:`exhale_function_kernels_8h_1a8c7f75f688c1db0f7e635645cf0b8290`
 
