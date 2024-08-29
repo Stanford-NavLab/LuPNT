@@ -54,7 +54,8 @@ jobs:
 
       - name: Boost
         run: |
-            hdf5-msvc-
+            choco install boost-msvc-14.1
+
       - name: Update PATH
         run: |
           $env:PATH += ";C:\HDF5\HDF5-1.14.4-win64\bin"
