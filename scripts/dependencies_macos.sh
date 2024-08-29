@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# 1. Install OpenMP
-echo "Installing OpenMP..."
+# 1. Dependencies
+echo "Installing dependencies..."
 brew install boost libomp hdf5
 
 # 2. Download data

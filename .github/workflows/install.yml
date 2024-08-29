@@ -46,7 +46,7 @@ jobs:
 
       - name: build and install library
         run: |
-          cmake -S. -Bbuild_install -DCMAKE_BUILD_TYPE=Debug
+          cmake -S. -Bbuild_install -DCMAKE_BUILD_TYPE=Release
           sudo cmake --build build_install --target install -j4
           rm -rf build_install
 
@@ -54,9 +54,9 @@ jobs:
         run: cmake -Stest -Bbuild_install -DTEST_INSTALLED_VERSION=1
 
       - name: build
-        run: cmake --build build_install --config Debug -j4
+        run: cmake --build build_install --config Release -j4
 
       - name: test
         run: |
           cd build_install
-          ctest --build-config Debug
+          ctest --build-config Release
