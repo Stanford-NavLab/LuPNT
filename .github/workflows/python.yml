@@ -69,13 +69,16 @@ jobs:
           Invoke-WebRequest -Uri "https://bit.ly/LuPNT_data" -OutFile "LuPNT_data.zip"
           Expand-Archive -Path "LuPNT_data.zip" -DestinationPath "."
           Remove-Item "LuPNT_data.zip"
+
+      - name: Dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
           Invoke-WebRequest -Uri "https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.3/hdf5-1.14.4-3-win-vs2022_cl.zip" -OutFile "hdf5.zip"
           Expand-Archive -Path "hdf5.zip" -DestinationPath "$HOME_DIR\\HDF5" -Force
           Remove-Item "hdf5.zip"
           Expand-Archive -Path "$HOME_DIR\\HDF5\hdf5\HDF5-1.14.4-win64.zip" -DestinationPath "$HOME_DIR\\HDF5"
           [System.Environment]::SetEnvironmentVariable('HDF5_DIR', "$HOME_DIR\\HDF5\HDF5-1.14.4-win64\CMake", 'User')
           choco install boost-msvc-14.1
-          set HDF5_ROOT=%USERPROFILE%\HDF5\HDF5-1.14.4-win64
 
       - name: Install Python bindings using pip
         run: python -m pip install .[test] -v
