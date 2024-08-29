@@ -96,7 +96,7 @@ int main() {
 
   // Initial state
   Vec6 rv0_op = Classical2Cart(coe0_op, GM_MOON);
-  Vec6 rv0_ci = ConvertFrame(t0, rv0_op, MOON_OP, MOON_CI);
+  Vec6 rv0_ci = ConvertFrame(t0, rv0_op, Frame::MOON_OP, Frame::MOON_CI);
 
   // Dynamics
   CartesianTwoBodyDynamics dyn0(GM_MOON);
@@ -112,7 +112,7 @@ int main() {
     fig = figure(true);
     title("Case 0: Moon orbit in CI frame");
     hold(true);
-    PlotBody(MOON);
+    PlotBody(NaifId::MOON);
     p = Plot3(rv_case0_ci.col(0), rv_case0_ci.col(1), rv_case0_ci.col(2), "b-");
     p->line_width(2);
     p->marker_indices({0});
@@ -143,7 +143,7 @@ int main() {
   cout << "Number of steps   " << n_steps << endl;
 
   // Initial state
-  Vec6 rv0_moon_op = GetBodyPosVel(t0, EARTH, MOON, MOON_OP);
+  Vec6 rv0_moon_op = GetBodyPosVel(t0, NaifId::EARTH, NaifId::MOON, Frame::MOON_OP);
   Vec6 coe0_moon_op = Cart2Classical(rv0_moon_op, GM_EARTH);
 
   // Dynamics
@@ -158,8 +158,8 @@ int main() {
     fig = figure(true);
     title("Case 1: Moon orbit in OP frame");
     hold(true);
-    PlotBody(EARTH);
-    PlotBody(MOON, rv0_moon_op.head(3));
+    PlotBody(NaifId::EARTH);
+    PlotBody(NaifId::MOON, rv0_moon_op.head(3));
     p = Plot3(rv_moon_op.col(0), rv_moon_op.col(1), rv_moon_op.col(2), "b-o");
     p->marker_indices({0});
     p->line_width(2);
@@ -219,7 +219,7 @@ int main() {
     fig = figure(true);
     title("Case 1: Satellite orbit in OP frame");
     hold(true);
-    PlotBody(MOON);
+    PlotBody(NaifId::MOON);
     for (int i = 0; i < n_plot; ++i) {
       p = Plot3(rv_plot_op[i].col(0), rv_plot_op[i].col(1), rv_plot_op[i].col(2), "b-");
       p->line_width(2);
@@ -238,7 +238,7 @@ int main() {
   dyn_3body.AddBody(Body::Moon());
   dyn_3body.AddBody(Body::Earth());
   dyn_3body.SetTimeStep(dt_prop);
-  dyn_3body.SetFrame(MOON_CI);
+  dyn_3body.SetFrame(Frame::MOON_CI);
 
   // Propagate
   MatX6 rv_case2_ci;
@@ -263,7 +263,7 @@ int main() {
   dyn_nbody.AddBody(Body::Earth());
   dyn_nbody.AddBody(Body::Sun());
   dyn_nbody.SetTimeStep(dt_prop);
-  dyn_nbody.SetFrame(MOON_CI);
+  dyn_nbody.SetFrame(Frame::MOON_CI);
 
   // Propagate
   MatX6 rv_case3_ci;
@@ -294,7 +294,7 @@ int main() {
   dyn_nbody50.AddBody(Body::Earth());
   dyn_nbody50.AddBody(Body::Sun());
   dyn_nbody50.SetTimeStep(dt_prop);
-  dyn_nbody50.SetFrame(MOON_CI);
+  dyn_nbody50.SetFrame(Frame::MOON_CI);
 
   // Propagate
   MatX6 rv_case5_ci;
@@ -404,7 +404,7 @@ int main() {
     if (config.recompute_part2 || !file_part2.exist("/rvs_ci" + to_string(i))) {
       Vec6 coe0_op_ = coes0_op[i];
       Vec6 rv0_op_ = Classical2Cart(coe0_op_, GM_MOON);
-      Vec6 rv0_ci_ = ConvertFrame(t0, rv0_op_, MOON_OP, MOON_CI);
+      Vec6 rv0_ci_ = ConvertFrame(t0, rv0_op_, Frame::MOON_OP, Frame::MOON_CI);
       rvs_ci.push_back(dyn_nbody.Propagate(rv0_ci_, t0, tfs, true));
       dump(file_part2, "/rvs_ci" + to_string(i), rvs_ci[i].cast<double>(), DumpMode::Overwrite);
     } else {
@@ -453,7 +453,7 @@ int main() {
     if (config.recompute_part2 || !file_part2.exist("/rvs_ci_adjusted" + to_string(i))) {
       Vec6 coe0_op_ = coes0_op_adjusted[i];
       Vec6 rv0_op_i = Classical2Cart(coe0_op_, GM_MOON);
-      Vec6 rv0_ci_i = ConvertFrame(t0, rv0_op_i, MOON_OP, MOON_CI);
+      Vec6 rv0_ci_i = ConvertFrame(t0, rv0_op_i, Frame::MOON_OP, Frame::MOON_CI);
       rvs_ci_adjusted.push_back(dyn_nbody.Propagate(rv0_ci_i, t0, tfs, true));
       dump(file_part2, "/rvs_ci_adjusted" + to_string(i), rvs_ci_adjusted[i].cast<double>(),
            DumpMode::Overwrite);

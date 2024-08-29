@@ -153,7 +153,7 @@ namespace lupnt {
   // NAIF Intefer ID codes
   // Reference:
   // https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/req/naif_ids.html
-  enum NaifId {
+  enum class NaifId {
     SSB = 0,
     SOLAR_SYSTEM_BARYCENTER = SSB,
     MERCURY_BARYCENTER = 1,
@@ -183,7 +183,7 @@ namespace lupnt {
   double GetBodyRadius(NaifId body);
   const std::ostream& operator<<(std::ostream& os, NaifId id);
 
-  enum Time {
+  enum class Time {
     UT1,    // Universal Time 1
     UTC,    // Coordinated Universal Time
     TAI,    // International Atomic Time

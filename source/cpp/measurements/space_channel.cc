@@ -105,7 +105,6 @@ namespace lupnt {
 
     // Compute Light time delay
     Real tau_prev = 0.0;  // propagation time
-    int n_iter = 0;
     int max_iter = 100;
     double rho = 0.0;
 

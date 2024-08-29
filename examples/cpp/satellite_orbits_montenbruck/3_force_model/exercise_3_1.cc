@@ -34,7 +34,7 @@ int main() {
     double start = omp_get_wtime();
 #pragma omp parallel for
     for (int i = 0; i < N_Step; i++) {
-      Vec3d a = AccelarationGravityField<double>(r, grav.GM, grav.R, grav.CS, n, n);
+      Vec3 a = AccelarationGravityField(r, grav.GM, grav.R, grav.CS, n, n);
     }
     double end = omp_get_wtime();
     cout << setw(4) << n << setprecision(2) << fixed << setw(13) << (end - start) << endl;

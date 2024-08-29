@@ -27,6 +27,8 @@ namespace lupnt {
   template class NBodyDynamics<Real>;
 
   template <typename T> Vec6 NBodyDynamics<T>::ComputeRates(Real t_tai, const Vec6& rv) const {
+    if (frame_ == Frame::NONE) throw std::runtime_error("Frame not set");
+
     // Position, velocity, and acceleration [km, km/s, km/s^2]
     // w.r.t. to the inertial frame origin
     Vec3 r = rv.head(3);
@@ -52,7 +54,7 @@ namespace lupnt {
       }
 
       // Solar radiation pressure
-      if (use_srp_ && body.id != SUN) {
+      if (use_srp_ && body.id != NaifId::SUN) {
         Vec3 r_sun = GetBodyPosVel(t_tai, body.id, NaifId::SUN, frame_).head(3);
         Vec3 a_srp = Illumination(r, r_sun, body.R)
                      * AccelerationSolarRadiation(r, r_sun, area_, mass_, CR_, P_SUN, AU);

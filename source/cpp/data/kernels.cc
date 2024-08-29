@@ -347,7 +347,7 @@ namespace lupnt {
       if (target == NaifId::EARTH) {
         rv_target = GetEarthPosVel(t_tdb);
       } else if (target == NaifId::MOON) {
-        rv_target = GetEarthPosVel(t_tdb) + GetBodyPosVelKernel(t_tdb, NaifId::MOON);
+        rv_target = GetEarthPosVel(t_tdb) + GetBodyPosVelKernel(t_tdb, EphemID::MOON);
       } else if (target != NaifId::SSB) {
         rv_target = GetBodyPosVelKernel(t_tdb, naif2ephemId.at(target));
       }
