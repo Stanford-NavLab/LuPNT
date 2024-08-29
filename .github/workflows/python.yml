@@ -75,6 +75,7 @@ jobs:
           Expand-Archive -Path "$HOME_DIR\\HDF5\hdf5\HDF5-1.14.4-win64.zip" -DestinationPath "$HOME_DIR\\HDF5"
           [System.Environment]::SetEnvironmentVariable('HDF5_DIR', "$HOME_DIR\\HDF5\HDF5-1.14.4-win64\CMake", 'User')
           choco install boost-msvc-14.1
+          set HDF5_ROOT=%USERPROFILE%\HDF5\HDF5-1.14.4-win64
 
       - name: Install Python bindings using pip
         run: python -m pip install .[test] -v
