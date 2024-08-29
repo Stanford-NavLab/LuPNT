@@ -23,7 +23,7 @@ namespace lupnt {
 
   class CartesianOrbitState;
 
-  enum Frame {
+  enum class Frame {
     // Earth
     NONE,         // No frame
     ICRF,         // International Celestial Reference System

@@ -236,7 +236,7 @@ namespace lupnt {
 
   template <typename T = double> class NBodyDynamics : public NumericalOrbitDynamics {
   private:
-    Frame frame_ = Frame::GCRF;
+    Frame frame_ = Frame::NONE;
     std::vector<BodyT<T>> bodies_;
     NumericalPropagator propagator;
     ODE odefunc;

@@ -91,8 +91,7 @@ namespace lupnt {
       case Time::GPS: return ConvertTime(GPS2TAI(t), Time::TAI, to);
       default: break;
     }
-    throw std::invalid_argument("Invalid time conversion from " + std::to_string(from) + " to "
-                                + std::to_string(to));
+    throw std::invalid_argument("Invalid time conversion");
     return 0;
   }
 
