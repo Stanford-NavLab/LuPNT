@@ -83,6 +83,10 @@ jobs:
           [System.Environment]::SetEnvironmentVariable('HDF5_LIBRARIES', "C:\HDF5\HDF5-1.14.4-win64\lib", 'User')
           [System.Environment]::SetEnvironmentVariable('HDF5_INCLUDE_DIRS', "C:\HDF5\HDF5-1.14.4-win64\include", 'User')
           choco install -y boost-msvc-14.1
+          $env:HDF5_DIR = "C:\HDF5\HDF5-1.14.4-win64\CMake"
+          $env:HDF5_ROOT = "C:\HDF5\HDF5-1.14.4-win64"
+          $env:HDF5_LIBRARIES = "C:\HDF5\HDF5-1.14.4-win64\lib"
+          $env:HDF5_INCLUDE_DIRS = "C:\HDF5\HDF5-1.14.4-win64\include"
           python -m pip install .[test] -v
 
         # MacOS + Ubuntu
