@@ -207,9 +207,9 @@ Functions
 
 - :ref:`exhale_function_math__utils_8h_1ad1c3f7b22c7688dd88b1ee54c20dba19`
 
-- :ref:`exhale_function_math__utils_8h_1a4d2719ff84acb16d3f1c6a4a7a2423d6`
-
 - :ref:`exhale_function_math__utils_8h_1ac042e8496e1e707f3ccc9ac240bf0ee7`
+
+- :ref:`exhale_function_math__utils_8h_1a4d2719ff84acb16d3f1c6a4a7a2423d6`
 
 - :ref:`exhale_function_coordinates_8h_1a831e7853d878a5249b3f88397bf66419`
 
@@ -757,9 +757,9 @@ Functions
 
 - :ref:`exhale_function_math__utils_8h_1a8385104e23fa49ada93d7eeb949c80b0`
 
-- :ref:`exhale_function_math__utils_8h_1a438f476e3dc6d253ba2f3218b03ef8e5`
-
 - :ref:`exhale_function_math__utils_8h_1afef1a9ece3482424d8879ea09b4e420c`
+
+- :ref:`exhale_function_math__utils_8h_1a438f476e3dc6d253ba2f3218b03ef8e5`
 
 
 Typedefs
