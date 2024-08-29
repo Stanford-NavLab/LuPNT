@@ -34,7 +34,6 @@ pylupnt
     QuasiNonsingOE
     QuasiNonsingROE
     SingularROE
-    SpiceInterface
     Time
 
 
@@ -135,7 +134,6 @@ pylupnt
     QuasiNonsingOE <pylupnt.QuasiNonsingOE>
     QuasiNonsingROE <pylupnt.QuasiNonsingROE>
     SingularROE <pylupnt.SingularROE>
-    SpiceInterface <pylupnt.SpiceInterface>
     Time <pylupnt.Time>
     acceleration_gravity_field <pylupnt.acceleration_gravity_field>
     acceleration_point_mass <pylupnt.acceleration_point_mass>

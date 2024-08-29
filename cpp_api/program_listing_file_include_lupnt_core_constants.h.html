@@ -248,7 +248,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../python_api/pylupnt.QuasiNonsingOE.html">QuasiNonsingOE</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../python_api/pylupnt.QuasiNonsingROE.html">QuasiNonsingROE</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../python_api/pylupnt.SingularROE.html">SingularROE</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../python_api/pylupnt.SpiceInterface.html">SpiceInterface</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../python_api/pylupnt.Time.html">Time</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../python_api/pylupnt.acceleration_gravity_field.html">acceleration_gravity_field</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../python_api/pylupnt.acceleration_point_mass.html">acceleration_point_mass</a></li>
@@ -1176,7 +1175,7 @@
 <span class="w">  </span><span class="c1">// NAIF Intefer ID codes</span>
 <span class="w">  </span><span class="c1">// Reference:</span>
 <span class="w">  </span><span class="c1">// https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/req/naif_ids.html</span>
-<span class="w">  </span><span class="k">enum</span><span class="w"> </span><span class="nc">NaifId</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">NaifId</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">SSB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
 <span class="w">    </span><span class="n">SOLAR_SYSTEM_BARYCENTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SSB</span><span class="p">,</span>
 <span class="w">    </span><span class="n">MERCURY_BARYCENTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
@@ -1206,7 +1205,7 @@
 <span class="w">  </span><span class="kt">double</span><span class="w"> </span><span class="nf">GetBodyRadius</span><span class="p">(</span><span class="n">NaifId</span><span class="w"> </span><span class="n">body</span><span class="p">);</span>
 <span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span><span class="w"> </span><span class="n">os</span><span class="p">,</span><span class="w"> </span><span class="n">NaifId</span><span class="w"> </span><span class="n">id</span><span class="p">);</span>
 
-<span class="w">  </span><span class="k">enum</span><span class="w"> </span><span class="nc">Time</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Time</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">UT1</span><span class="p">,</span><span class="w">    </span><span class="c1">// Universal Time 1</span>
 <span class="w">    </span><span class="n">UTC</span><span class="p">,</span><span class="w">    </span><span class="c1">// Coordinated Universal Time</span>
 <span class="w">    </span><span class="n">TAI</span><span class="p">,</span><span class="w">    </span><span class="c1">// International Atomic Time</span>
