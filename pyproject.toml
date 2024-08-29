@@ -14,7 +14,7 @@ authors=[
 maintainers=[
     {name="Guillem Casadesus Vila, Keidai Iiyama", email="guillemc@stanford.edu;kiiyama@stanford.edu"},
 ]
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "numpy",
     "astropy",
@@ -45,6 +45,8 @@ keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "examp
 classifiers=[
     "Programming Language :: C++",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
