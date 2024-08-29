@@ -21,7 +21,7 @@ sed -i '2i\ \"env": {"LUPNT_DATA_PATH":"'"$(pwd)"'/LuPNT_data"},' /srv/conda/env
 
 # Install LuPNT
 # sudo apt-get update
-# sudo apt-get install -y cmake libomp-dev
+# sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
 # pip install . -v
 
 # pip install pylupnt -v

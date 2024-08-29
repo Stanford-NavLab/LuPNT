@@ -127,7 +127,7 @@ This is useful during development, as it exposes all subprojects to your IDE and
 
 ```bash
 cmake -S all -B build
-cmake --build build
+cmake --build build -j4
 
 # run tests
 ./build/test/LuPNTTests

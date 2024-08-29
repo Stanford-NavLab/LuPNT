@@ -14,14 +14,12 @@ onnx
 pandas
 Pillow
 plotly
-plotly-orca
+h5py
 scikit_learn
 scipy
 setuptools
 spiceypy
-torch
-torchvision
 tqdm
 pybind11_stubgen
 ipywidgets
-ipyml
+ipymls

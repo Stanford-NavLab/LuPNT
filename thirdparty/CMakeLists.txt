@@ -7,14 +7,6 @@ CPMAddPackage(
   VERSION 1.11.2
 )
 
-# fmt
-CPMAddPackage(
-  NAME fmt
-  GIT_TAG 11.0.2
-  GITHUB_REPOSITORY fmtlib/fmt
-  OPTIONS "FMT_INSTALL ON" "CMAKE"
-)
-
 # Eigen
 CPMAddPackage(
   NAME Eigen
@@ -68,7 +60,6 @@ CPMAddPackage(
   OPTIONS "HIGHFIVE_UNIT_TESTS OFF" "HIGHFIVE_EXAMPLES OFF" "HIGHFIVE_BUILD_DOCS OFF"
 )
 
-set_target_properties(fmt PROPERTIES FOLDER thirdparty)
 set_target_properties(cspice PROPERTIES FOLDER thirdparty)
 set_target_properties(matplot PROPERTIES FOLDER thirdparty)
 set_target_properties(nodesoup PROPERTIES FOLDER thirdparty)
@@ -77,6 +68,6 @@ set_target_properties(uninstall PROPERTIES FOLDER thirdparty)
 
 # LuPNT dependencies used for installing
 set(LUPNT_DEPENDENCIES
-    "fmt 7.1.3;Eigen3 3.4;autodiff 1.1;cspice;Matplot++ 1.2;OpenMP;HighFive 2.10"
+    "Eigen3 3.4;autodiff 1.1;cspice;Matplot++ 1.2;OpenMP;HighFive 2.10;Boost"
     PARENT_SCOPE
 )

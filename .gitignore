@@ -10,3 +10,4 @@ projects/*
 /local
 /output
 /profiling
+/*venv*/

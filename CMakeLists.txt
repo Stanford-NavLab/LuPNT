@@ -98,9 +98,7 @@ function(target_link_libraries_system target)
 endfunction(target_link_libraries_system)
 
 # Link dependencies
-target_link_libraries_system(
-  ${PROJECT_NAME} fmt::fmt Eigen3::Eigen matplot autodiff::autodiff cspice
-)
+target_link_libraries_system(${PROJECT_NAME} Eigen3::Eigen matplot autodiff::autodiff cspice)
 # Link HighFive
 target_link_libraries(${PROJECT_NAME} PUBLIC HighFive)
 

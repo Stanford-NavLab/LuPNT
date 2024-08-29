@@ -1,9 +1,9 @@
 #!/bin/bash
+# 1. Dependencies
 
-# 1. Install OpenMP (libomp-dev package for Ubuntu)
-echo "Installing OpenMP..."
+echo "Installing dependencies..."
 sudo apt-get update
-sudo apt-get install -y libomp-dev
+sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
 
 # 2. Download data
 echo "Downloading data..."
