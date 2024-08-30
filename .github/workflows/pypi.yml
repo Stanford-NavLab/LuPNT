@@ -84,7 +84,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.20
         env:
           CIBW_BEFORE_ALL_LINUX: |
-            sudo apt install -y libboost-all-dev libomp-dev libhdf5-serial-dev
+            apt install -y libboost-all-dev libomp-dev libhdf5-serial-dev
 
       - uses: actions/upload-artifact@v4
         with:
