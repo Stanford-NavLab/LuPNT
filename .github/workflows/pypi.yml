@@ -37,7 +37,7 @@ jobs:
             unzip LuPNT_data.zip
             rm LuPNT_data.zip
           CIBW_BEFORE_ALL_WINDOWS: |
-            $ProgressPreference = 'SilentlyContinue'
+            set ProgressPreference=SilentlyContinue
             Invoke-WebRequest -Uri "https://bit.ly/LuPNT_data" -OutFile "LuPNT_data.zip"
             Expand-Archive -Path "LuPNT_data.zip" -DestinationPath "."
             Remove-Item "LuPNT_data.zip"
