@@ -48,8 +48,6 @@ Includes
 
 - ``fstream``
 
-- ``highfive/H5Easy.hpp``
-
 - ``iostream``
 
 - ``lupnt/core/definitions.h`` (:ref:`file_include_lupnt_core_definitions.h`)
