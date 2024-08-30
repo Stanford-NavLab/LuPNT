@@ -34,7 +34,7 @@ pio.templates.default = "plotly_white+lupnt"
 print("Contents of /")
 print(os.listdir("/"), "\n\n")
 
-if "project" not in os.listdir("/"):
+if "project" in os.listdir("/"):
     print("Contents of /project")
     print(os.listdir("/project"), "\n\n")
 else:
