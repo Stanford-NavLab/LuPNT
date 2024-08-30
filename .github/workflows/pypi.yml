@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - development
   pull_request:
     branches:
       - main
+      - development
 
 jobs:
   build-wheels:
@@ -35,7 +37,6 @@ jobs:
         run: |
           echo "LUPNT_DATA_PATH = $LUPNT_DATA_PATH"
           sudo apt-get update
-          sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
 
       # MacOS
       - name: Install OpenMP (macOS)
@@ -79,9 +80,13 @@ jobs:
           $env:HDF5_LIBRARIES = "C:\HDF5\HDF5-1.14.4-win64\lib"
           $env:HDF5_INCLUDE_DIRS = "C:\HDF5\HDF5-1.14.4-win64\include"
 
-      # All
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.20
+        env:
+          CIBW_BEFORE_ALL_LINUX: |
+            yum install –y epel-release
+            yum-config-manager --enable epel
+            yum install -y boost-devel hdf5-devel
 
       - uses: actions/upload-artifact@v4
         with:

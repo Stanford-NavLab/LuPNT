@@ -29,6 +29,23 @@ pio.templates["lupnt"] = go.layout.Template(
 )
 plotly_colors = px.colors.qualitative.D3
 pio.templates.default = "plotly_white+lupnt"
+
+# Print contents of /
+print("Contents of /")
+print(os.listdir("/"), "\n\n")
+
+if "project" in os.listdir("/"):
+    print("Contents of /project")
+    print(os.listdir("/project"), "\n\n")
+else:
+    print("Directory /project not found\n\n")
+
+print("Contents of /project/LuPNT")
+if "LuPNT" in os.listdir("/project"):
+    print(os.listdir("/project/LuPNT"), "\n\n")
+else:
+    print("Directory /project/LuPNT not found\n\n")
+
 MOON_SURFACE = Image.open(
     os.path.join(utils.LUPNT_DATA_PATH, "topo", "moon_surface.jpeg")
 )
