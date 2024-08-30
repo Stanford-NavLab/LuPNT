@@ -57,9 +57,9 @@ Functions
 
 - :ref:`exhale_function_mean__osculating_8h_1aef4eaa09653f79a5c3cc08a622d40098`
 
-- :ref:`exhale_function_mean__osculating_8h_1a7d6c6a3529a60c0bb65b4d058426d745`
-
 - :ref:`exhale_function_mean__osculating_8h_1a031ea376c85884f7d2fa5cc878243398`
+
+- :ref:`exhale_function_mean__osculating_8h_1a7d6c6a3529a60c0bb65b4d058426d745`
 
 - :ref:`exhale_function_mean__osculating_8h_1a27b325ce9f156d70eb3028656974542a`
 
