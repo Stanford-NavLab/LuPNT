@@ -53,9 +53,9 @@ Functions
 
 - :ref:`exhale_function_plot_8h_1a1e1c46d44c99ee4e553fb7f67ce8f87b`
 
-- :ref:`exhale_function_plot_8h_1a6d3447039a2272356ed5aa45b00e7564`
-
 - :ref:`exhale_function_plot_8h_1a9628e8b645401ffb4693b4a12e7f39a7`
+
+- :ref:`exhale_function_plot_8h_1a6d3447039a2272356ed5aa45b00e7564`
 
 - :ref:`exhale_function_plot_8h_1af0e3d54662120047b1811ae0faa1baa5`
 
