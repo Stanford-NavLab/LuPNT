@@ -16,9 +16,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
     env:
       MACOSX_DEPLOYMENT_TARGET: 14.0
+      CIBW_ARCHS: auto64
+      CIBW_SKIP: "*musllinux*"
+      # TODO
+      # [tool.cibuildwheel.linux]
+      # before-all = "yum install mylib"
+      # test-command = "echo 'installed'"
+
+      # [[tool.cibuildwheel.overrides]]
+      # select = "*-musllinux*"
+      # before-all = "apk add mylib"
 
     steps:
       - uses: actions/checkout@v4
@@ -81,10 +91,28 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.20
         env:
+          CIBW_ENVIRONMENT:
+            LUPNT_DATA_PATH="$(pwd)/LuPNT_data"
+
+          CIBW_ENVIRONMENT_WINDOWS:
+            HDF5_DIR="C:/HDF5/HDF5-1.14.4-win64/CMake"
+            HDF5_ROOT="C:/HDF5/HDF5-1.14.4-win64"
+            HDF5_LIBRARIES="C:/HDF5/HDF5-1.14.4-win64/lib"
+            HDF5_INCLUDE_DIRS="C:/HDF5/HDF5-1.14.4-win64/include"
+
           CIBW_BEFORE_ALL_LINUX: |
             yum install –y epel-release
             yum-config-manager --enable epel
             yum install -y boost-devel hdf5-devel
+            curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+            unzip LuPNT_data.zip
+            rm LuPNT_data.zip
+
+          CIBW_BEFORE_ALL_MACOS: |
+            brew install boost libomp hdf5
+            curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+            unzip LuPNT_data.zip
+            rm LuPNT_data.zip
 
       - uses: actions/upload-artifact@v4
         with:
