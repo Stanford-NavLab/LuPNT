@@ -3,7 +3,7 @@
 #include <omp.h>
 
 #include <filesystem>
-#include <highfive/highfive.hpp>
+#include <highfive/H5Easy.hpp>
 
 using namespace lupnt;
 using namespace std;
@@ -55,9 +55,9 @@ int main() {
   auto path1 = output_path / "data_part1.h5";
   if (config.recompute_part1 && filesystem::exists(path1)) filesystem::remove(path1);
   auto open_mode1 = (config.recompute_part1 || !filesystem::exists(path1))
-                        ? HighFive::File::OpenOrCreate
-                        : HighFive::File::ReadOnly;
-  HighFive::File file_part1(path1, open_mode1);
+                        ? H5Easy::File::OpenOrCreate
+                        : H5Easy::File::ReadOnly;
+  H5Easy::File file_part1(path1, open_mode1);
 
   // Time
   Real t0 = Gregorian2Time(2009, 7, 15, 1, 0, 0);  // [s] Start time (TAI)
@@ -175,9 +175,9 @@ int main() {
   MatX6 rv_case1_op;
   if (config.recompute_part1 || !file_part1.exist("/rv_case1_op")) {
     rv_case1_op = dyn_3body_circ.Propagate(rv0_op, t0, tfs, true);
-    dump(file_part1, "/rv_case1_op", rv_case1_op.cast<double>(), DumpMode::Overwrite);
+    dump(file_part1, "/rv_case1_op", rv_case1_op.cast<double>(), H5Easy::DumpMode::Overwrite);
   } else {
-    rv_case1_op = load<MatX6d>(file_part1, "/rv_case1_op");
+    rv_case1_op = H5Easy::load<MatX6d>(file_part1, "/rv_case1_op");
   }
   MatX6 coe_case1_op = Cart2Classical(rv_case1_op, GM_MOON);
 
@@ -244,9 +244,10 @@ int main() {
   MatX6 rv_case2_ci;
   if (config.recompute_part1 || !file_part1.exist("/rv_case2_ci")) {
     rv_case2_ci = dyn_3body.Propagate(rv0_ci, t0, tfs, true);
-    dump(file_part1, "/rv_case2_ci", rv_case2_ci.cast<double>(), DumpMode::Overwrite);
+    H5Easy::dump(file_part1, "/rv_case2_ci", rv_case2_ci.cast<double>(),
+                 H5Easy::DumpMode::Overwrite);
   } else {
-    rv_case2_ci = load<MatX6d>(file_part1, "/rv_case2_ci");
+    rv_case2_ci = H5Easy::load<MatX6d>(file_part1, "/rv_case2_ci");
   }
 
   // Convert
@@ -269,9 +270,10 @@ int main() {
   MatX6 rv_case3_ci;
   if (config.recompute_part1 || !file_part1.exist("/rv_case3_ci")) {
     rv_case3_ci = dyn_nbody.Propagate(rv0_ci, t0, tfs, true);
-    dump(file_part1, "/rv_case3_ci", rv_case3_ci.cast<double>(), DumpMode::Overwrite);
+    H5Easy::dump(file_part1, "/rv_case3_ci", rv_case3_ci.cast<double>(),
+                 H5Easy::DumpMode::Overwrite);
   } else {
-    rv_case3_ci = load<MatX6d>(file_part1, "/rv_case3_ci");
+    rv_case3_ci = H5Easy::load<MatX6d>(file_part1, "/rv_case3_ci");
   }
 
   MatX6 rv_case3_op = ConvertFrame(tfs, rv_case3_ci, Frame::MOON_CI, Frame::MOON_OP);
@@ -300,9 +302,10 @@ int main() {
   MatX6 rv_case5_ci;
   if (config.recompute_part1 || !file_part1.exist("/rv_case5_ci")) {
     rv_case5_ci = dyn_nbody50.Propagate(rv0_ci, t0, tfs, true);
-    dump(file_part1, "/rv_case5_ci", rv_case5_ci.cast<double>(), DumpMode::Overwrite);
+    H5Easy::dump(file_part1, "/rv_case5_ci", rv_case5_ci.cast<double>(),
+                 H5Easy::DumpMode::Overwrite);
   } else {
-    rv_case5_ci = load<MatX6d>(file_part1, "/rv_case5_ci");
+    rv_case5_ci = H5Easy::load<MatX6d>(file_part1, "/rv_case5_ci");
   }
 
   MatX6 rv_case5_me = ConvertFrame(tfs, rv_case5_ci, Frame::MOON_CI, Frame::MOON_ME, true);
@@ -331,9 +334,10 @@ int main() {
   MatX6 rv_case6_ci;
   if (config.recompute_part1 || !file_part1.exist("/rv_case6_ci")) {
     rv_case6_ci = dyn_nbody.Propagate(rv0_ci, t0, tfs, true);
-    dump(file_part1, "/rv_case6_ci", rv_case6_ci.cast<double>(), DumpMode::Overwrite);
+    H5Easy::dump(file_part1, "/rv_case6_ci", rv_case6_ci.cast<double>(),
+                 H5Easy::DumpMode::Overwrite);
   } else {
-    rv_case6_ci = load<MatX6d>(file_part1, "/rv_case6_ci");
+    rv_case6_ci = H5Easy::load<MatX6d>(file_part1, "/rv_case6_ci");
   }
   MatX6 rv_case6_me = ConvertFrame(tfs, rv_case6_ci, Frame::MOON_CI, Frame::MOON_ME, true);
   MatX6 coe_case6_me = Cart2Classical(rv_case6_me, GM_MOON);
@@ -389,9 +393,9 @@ int main() {
   auto path2 = output_path / "data_part2.h5";
   if (config.recompute_part2 && filesystem::exists(path2)) filesystem::remove(path2);
   auto open_mode2 = (config.recompute_part2 || !filesystem::exists(path2))
-                        ? HighFive::File::OpenOrCreate
-                        : HighFive::File::ReadOnly;
-  HighFive::File file_part2(path2, open_mode2);
+                        ? H5Easy::File::OpenOrCreate
+                        : H5Easy::File::ReadOnly;
+  H5Easy::File file_part2(path2, open_mode2);
 
   vector<Vec6> coes0_op = {
       Vec6(6541.4, 0.6, 56.2 * RAD, 0, 90 * RAD, 0),
@@ -406,9 +410,10 @@ int main() {
       Vec6 rv0_op_ = Classical2Cart(coe0_op_, GM_MOON);
       Vec6 rv0_ci_ = ConvertFrame(t0, rv0_op_, Frame::MOON_OP, Frame::MOON_CI);
       rvs_ci.push_back(dyn_nbody.Propagate(rv0_ci_, t0, tfs, true));
-      dump(file_part2, "/rvs_ci" + to_string(i), rvs_ci[i].cast<double>(), DumpMode::Overwrite);
+      H5Easy::dump(file_part2, "/rvs_ci" + to_string(i), rvs_ci[i].cast<double>(),
+                   H5Easy::DumpMode::Overwrite);
     } else {
-      rvs_ci.push_back(load<MatX6d>(file_part2, "/rvs_ci" + to_string(i)));
+      rvs_ci.push_back(H5Easy::load<MatX6d>(file_part2, "/rvs_ci" + to_string(i)));
     }
   }
 
@@ -455,10 +460,11 @@ int main() {
       Vec6 rv0_op_i = Classical2Cart(coe0_op_, GM_MOON);
       Vec6 rv0_ci_i = ConvertFrame(t0, rv0_op_i, Frame::MOON_OP, Frame::MOON_CI);
       rvs_ci_adjusted.push_back(dyn_nbody.Propagate(rv0_ci_i, t0, tfs, true));
-      dump(file_part2, "/rvs_ci_adjusted" + to_string(i), rvs_ci_adjusted[i].cast<double>(),
-           DumpMode::Overwrite);
+      H5Easy::dump(file_part2, "/rvs_ci_adjusted" + to_string(i), rvs_ci_adjusted[i].cast<double>(),
+                   H5Easy::DumpMode::Overwrite);
     } else {
-      rvs_ci_adjusted.push_back(load<MatX6d>(file_part2, "/rvs_ci_adjusted" + to_string(i)));
+      rvs_ci_adjusted.push_back(
+          H5Easy::load<MatX6d>(file_part2, "/rvs_ci_adjusted" + to_string(i)));
     }
   }
 
@@ -543,21 +549,5 @@ int main() {
   cout << "Total elapsed time: " << PrintDuration(end - begin) << endl;
   show();
 
-  // **************************************************************************
-  // Surface Coverage
-  // **************************************************************************
-  // vector<MatX6> rvs_ci_adjusted;
-  // for (int i = 0; i < n_sat; ++i) {
-  //   if (config.recompute_part2 || !file_part2.exist("/rvs_ci_adjusted" + to_string(i))) {
-  //     Vec6 coe0_op_ = coes0_op_adjusted[i];
-  //     Vec6 rv0_op_ = Classical2Cart(coe0_op_, GM_MOON);
-  //     Vec6 rv0_ci_ = ConvertFrame(t0, rv0_op_, MOON_OP, MOON_CI);
-  //     rvs_ci_adjusted.push_back(dyn_nbody.Propagate(rv0_ci_, t0, tfs, true));
-  //     dump(file_part2, "/rvs_ci_adjusted" + to_string(i), rvs_ci_adjusted[i].cast<double>(),
-  //          DumpMode::Overwrite);
-  //   } else {
-  //     rvs_ci_adjusted.push_back(load<MatX6d>(file_part2, "/rvs_ci_adjusted" + to_string(i)));
-  //   }
-  // }
   return 0;
 }

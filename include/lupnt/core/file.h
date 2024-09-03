@@ -12,7 +12,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <highfive/H5Easy.hpp>
 #include <iostream>
 #include <map>
 #include <string>
@@ -22,12 +21,6 @@
 #include "lupnt/numerics/math_utils.h"
 
 namespace lupnt {
-  using H5Easy::DataSet;
-  using H5Easy::dump;
-  using H5Easy::DumpMode;
-  using H5Easy::DumpOptions;
-  using H5Easy::File;
-  using H5Easy::load;
 
   size_t CountLines(const std::filesystem::path& filepath);
 

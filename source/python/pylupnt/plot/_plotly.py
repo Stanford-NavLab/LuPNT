@@ -29,6 +29,7 @@ pio.templates["lupnt"] = go.layout.Template(
 )
 plotly_colors = px.colors.qualitative.D3
 pio.templates.default = "plotly_white+lupnt"
+
 MOON_SURFACE = Image.open(
     os.path.join(utils.LUPNT_DATA_PATH, "topo", "moon_surface.jpeg")
 )
