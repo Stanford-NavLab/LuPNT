@@ -743,15 +743,15 @@ Functions
 
 - :ref:`exhale_function_coordinates_8h_1af1c8f7d8ae2b9f490c17eab091f247a3`
 
+- :ref:`exhale_function_coordinates_8h_1a4c9a255e8e14c8fe53847e63b2f202be`
+
+- :ref:`exhale_function_coordinates_8h_1abb72d1c9ef69ef5727f0764c2b35a8eb`
+
 - :ref:`exhale_function_conversions_8h_1a025a92ee45a04dd792ee395b39d6f8ee`
 
 - :ref:`exhale_function_conversions_8h_1a3b38796badfee29ca606d276d03a4409`
 
 - :ref:`exhale_function_conversions_8h_1ac17d96f32416fe80de50c3136f926cf7`
-
-- :ref:`exhale_function_coordinates_8h_1abb72d1c9ef69ef5727f0764c2b35a8eb`
-
-- :ref:`exhale_function_coordinates_8h_1a4c9a255e8e14c8fe53847e63b2f202be`
 
 - :ref:`exhale_function_math__utils_8h_1a1dc878576feeaa4c169975f60df4b6f3`
 
