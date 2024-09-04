@@ -8,6 +8,20 @@ from .. import utils
 
 from .. import _pylupnt as _pnt
 
+###patch start###
+from mpl_toolkits.mplot3d.axis3d import Axis
+
+if not hasattr(Axis, "_get_coord_info_old"):
+
+    def _get_coord_info_new(self, renderer):
+        mins, maxs, centers, deltas, tc, highs = self._get_coord_info_old(renderer)
+        mins += deltas / 4
+        maxs -= deltas / 4
+        return mins, maxs, centers, deltas, tc, highs
+
+    Axis._get_coord_info_old = Axis._get_coord_info
+    Axis._get_coord_info = _get_coord_info_new
+###patch end###
 
 COLORS = list(mcolors.TABLEAU_COLORS.keys())
 
@@ -190,10 +204,7 @@ class Plot3D:
         self.ax.set_zticks(z)
 
     def set_lims(self, xlims: tuple, ylims: tuple, zlims: tuple, equal=True) -> None:
-        for x in xlims:
-            for y in ylims:
-                for z in zlims:
-                    self.ax.scatter([x], [y], [z], color="white", s=0)
+
         self.ax.set_xlim(xlims)
         self.ax.set_ylim(ylims)
         self.ax.set_zlim(zlims)
