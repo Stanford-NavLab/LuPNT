@@ -21,7 +21,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: 14.0
       CIBW_ARCHS: auto64
       CIBW_SKIP: "*musllinux*"
-      # TODO
+      # TODO: build wheels on Windows and musllinux
       # [tool.cibuildwheel.linux]
       # before-all = "yum install mylib"
       # test-command = "echo 'installed'"
