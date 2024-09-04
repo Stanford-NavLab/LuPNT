@@ -21,7 +21,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: 14.0
       CIBW_ARCHS: auto64
       CIBW_SKIP: "*musllinux*"
-      # TODO: build wheels on Windows and musllinux
+      # TODO
       # [tool.cibuildwheel.linux]
       # before-all = "yum install mylib"
       # test-command = "echo 'installed'"
@@ -32,61 +32,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/cache@v4
-        id: cache-lupnt-data
-        with:
-          path: LuPNT_data
-          key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
-
-      # Ubuntu
-      - name: Install OpenMP and download data (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          echo "LUPNT_DATA_PATH = $LUPNT_DATA_PATH"
-          sudo apt-get update
-
-      # MacOS
-      - name: Install OpenMP (macOS)
-        if: matrix.os == 'macos-latest'
-        run: brew install boost libomp hdf5
-
-      # MacOS + Ubuntu
-      - name: Download and unzip LuPNT_data (MacOS + Ubuntu)
-        if: |
-          (matrix.os == 'macos-latest'   ||
-           matrix.os == 'ubuntu-latest') &&
-          steps.cache-lupnt-data.outputs.cache-hit != 'true'
-        run: |
-          curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
-          unzip LuPNT_data.zip
-          rm LuPNT_data.zip
-
-      # Windows
-      - name: Download and unzip LuPNT_data (Windows)
-        if: |
-          matrix.os == 'windows-latest' &&
-          steps.cache-lupnt-data.outputs.cache-hit != 'true'
-        run: |
-          $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest -Uri "https://bit.ly/LuPNT_data" -OutFile "LuPNT_data.zip"
-          Expand-Archive -Path "LuPNT_data.zip" -DestinationPath "."
-          Remove-Item "LuPNT_data.zip"
-
-      - name: Dependencies (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest -Uri "https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.3/hdf5-1.14.4-3-win-vs2022_cl.zip" -OutFile "hdf5.zip"
-          Expand-Archive -Path "hdf5.zip" -DestinationPath "C:\HDF5" -Force
-          Remove-Item "hdf5.zip"
-          Expand-Archive -Path "C:/HDF5/hdf5/HDF5-1.14.4-win64.zip" -DestinationPath "C:/HDF5"
-          [System.Environment]::SetEnvironmentVariable('HDF5_DIR', "C:\HDF5\HDF5-1.14.4-win64\CMake", 'User')
-          choco install boost-msvc-14.1
-          $env:HDF5_DIR = "C:\HDF5\HDF5-1.14.4-win64\CMake"
-          $env:HDF5_ROOT = "C:\HDF5\HDF5-1.14.4-win64"
-          $env:HDF5_LIBRARIES = "C:\HDF5\HDF5-1.14.4-win64\lib"
-          $env:HDF5_INCLUDE_DIRS = "C:\HDF5\HDF5-1.14.4-win64\include"
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.20
@@ -99,7 +44,6 @@ jobs:
             HDF5_ROOT="C:/HDF5/HDF5-1.14.4-win64"
             HDF5_LIBRARIES="C:/HDF5/HDF5-1.14.4-win64/lib"
             HDF5_INCLUDE_DIRS="C:/HDF5/HDF5-1.14.4-win64/include"
-
           CIBW_BEFORE_ALL_LINUX: |
             yum install –y epel-release
             yum-config-manager --enable epel
@@ -107,13 +51,11 @@ jobs:
             curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
             unzip LuPNT_data.zip
             rm LuPNT_data.zip
-
           CIBW_BEFORE_ALL_MACOS: |
             brew install boost libomp hdf5
             curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
             unzip LuPNT_data.zip
             rm LuPNT_data.zip
-
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}
