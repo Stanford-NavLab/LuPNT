@@ -95,9 +95,9 @@ Functions
 
 - :ref:`exhale_function_math__utils_8h_1a238dba80cce71a0b69bf7644d2179afc`
 
-- :ref:`exhale_function_math__utils_8h_1aca5622608bae7d890388ba22261460cf`
-
 - :ref:`exhale_function_math__utils_8h_1a25e7b51981724734ef9ae4a54ce8f2fc`
+
+- :ref:`exhale_function_math__utils_8h_1aca5622608bae7d890388ba22261460cf`
 
 - :ref:`exhale_function_math__utils_8h_1a9cb58ab175a6643105a0c3853132d010`
 
