@@ -1,4 +1,4 @@
-name: pypi
+name: PyPI
 
 on:
   push:
