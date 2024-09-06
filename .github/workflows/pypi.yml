@@ -1,4 +1,4 @@
-name: pypi
+name: PyPI
 
 on:
   push:
@@ -44,7 +44,6 @@ jobs:
             HDF5_ROOT="C:/HDF5/HDF5-1.14.4-win64"
             HDF5_LIBRARIES="C:/HDF5/HDF5-1.14.4-win64/lib"
             HDF5_INCLUDE_DIRS="C:/HDF5/HDF5-1.14.4-win64/include"
-
           CIBW_BEFORE_ALL_LINUX: |
             yum install –y epel-release
             yum-config-manager --enable epel
@@ -52,13 +51,11 @@ jobs:
             curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
             unzip LuPNT_data.zip
             rm LuPNT_data.zip
-
           CIBW_BEFORE_ALL_MACOS: |
             brew install boost libomp hdf5
             curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
             unzip LuPNT_data.zip
             rm LuPNT_data.zip
-
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}
