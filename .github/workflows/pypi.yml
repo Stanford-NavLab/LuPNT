@@ -3,13 +3,11 @@ name: PyPI
 on:
   push:
     branches:
-      - main
       - development
     tags:
       - v*
   pull_request:
     branches:
-      - main
       - development
 
 jobs:
