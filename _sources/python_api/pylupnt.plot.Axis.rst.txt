@@ -1,0 +1,9 @@
+pylupnt.plot.Axis
+-----------------
+
+.. currentmodule:: pylupnt.plot
+
+.. autoclass:: Axis
+    :members:
+    :undoc-members:
+    :inherited-members:
