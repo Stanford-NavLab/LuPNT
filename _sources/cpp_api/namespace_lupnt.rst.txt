@@ -723,8 +723,6 @@ Functions
 
 - :ref:`exhale_function_coordinates_8h_1ac5a019f2684d1d686cf5b6dc456d82ea`
 
-- :ref:`exhale_function_coordinates_8h_1a4871cef15b35b36ffc963c0e7e683f89`
-
 - :ref:`exhale_function_conversions_8h_1ab743489c6a66118b252ad98f07dd73c2`
 
 - :ref:`exhale_function_conversions_8h_1aca071cc4694a95f02d1dd54e62a5bbe4`
@@ -740,6 +738,8 @@ Functions
 - :ref:`exhale_function_conversions_8h_1a7c5519995add07574a3b0bdb58d90706`
 
 - :ref:`exhale_function_conversions_8h_1a8f0fa9e6cdb5c337afc370b9d5ecead0`
+
+- :ref:`exhale_function_coordinates_8h_1a4871cef15b35b36ffc963c0e7e683f89`
 
 - :ref:`exhale_function_coordinates_8h_1af1c8f7d8ae2b9f490c17eab091f247a3`
 

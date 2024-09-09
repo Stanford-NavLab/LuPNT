@@ -86,8 +86,6 @@ Functions
 ---------
 
 
-- :ref:`exhale_function_frame__converter_8h_1a733e2a7aa1d733014a608759671a3857`
-
 - :ref:`exhale_function_frame__converter_8h_1aed177d04ef02f77daa161f0dced6d9b1`
 
 - :ref:`exhale_function_frame__converter_8h_1a2b4f14c90c404e5e67ef3fa1519ce0d0`
@@ -99,6 +97,8 @@ Functions
 - :ref:`exhale_function_frame__converter_8h_1a03cd0e7409c51f733ba1a0e987b5c6b1`
 
 - :ref:`exhale_function_frame__converter_8h_1af275199bef37665eed7e1bf8b245d787`
+
+- :ref:`exhale_function_frame__converter_8h_1a733e2a7aa1d733014a608759671a3857`
 
 - :ref:`exhale_function_frame__converter_8h_1a3f21b56dd7f98223eb3c4076425a7a70`
 
