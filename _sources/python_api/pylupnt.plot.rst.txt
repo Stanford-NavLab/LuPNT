@@ -7,6 +7,7 @@ pylupnt.plot
 
 .. autosummary::
 
+    Axis
     KMeans
     Plot3D
 
@@ -14,5 +15,6 @@ pylupnt.plot
 .. toctree::
     :hidden:
 
+    Axis <pylupnt.plot.Axis>
     KMeans <pylupnt.plot.KMeans>
     Plot3D <pylupnt.plot.Plot3D>

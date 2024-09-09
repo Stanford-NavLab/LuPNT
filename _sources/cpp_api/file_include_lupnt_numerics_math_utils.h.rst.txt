@@ -83,9 +83,9 @@ Functions
 
 - :ref:`exhale_function_math__utils_8h_1ad1c3f7b22c7688dd88b1ee54c20dba19`
 
-- :ref:`exhale_function_math__utils_8h_1a4d2719ff84acb16d3f1c6a4a7a2423d6`
-
 - :ref:`exhale_function_math__utils_8h_1ac042e8496e1e707f3ccc9ac240bf0ee7`
+
+- :ref:`exhale_function_math__utils_8h_1a4d2719ff84acb16d3f1c6a4a7a2423d6`
 
 - :ref:`exhale_function_math__utils_8h_1a3aae1637c1624de3b76dbda047b2358a`
 
@@ -99,9 +99,9 @@ Functions
 
 - :ref:`exhale_function_math__utils_8h_1aca5622608bae7d890388ba22261460cf`
 
-- :ref:`exhale_function_math__utils_8h_1a9cb58ab175a6643105a0c3853132d010`
-
 - :ref:`exhale_function_math__utils_8h_1a97f49f30da52c1e55a66e18fada28629`
+
+- :ref:`exhale_function_math__utils_8h_1a9cb58ab175a6643105a0c3853132d010`
 
 - :ref:`exhale_function_math__utils_8h_1a000c7ed2060942490e1ba79c11b8be79`
 
@@ -165,11 +165,11 @@ Functions
 
 - :ref:`exhale_function_math__utils_8h_1a462008840618d78c318fff4ff6b0e4fa`
 
-- :ref:`exhale_function_math__utils_8h_1a8385104e23fa49ada93d7eeb949c80b0`
-
 - :ref:`exhale_function_math__utils_8h_1a1dc878576feeaa4c169975f60df4b6f3`
 
-- :ref:`exhale_function_math__utils_8h_1a438f476e3dc6d253ba2f3218b03ef8e5`
+- :ref:`exhale_function_math__utils_8h_1a8385104e23fa49ada93d7eeb949c80b0`
 
 - :ref:`exhale_function_math__utils_8h_1afef1a9ece3482424d8879ea09b4e420c`
+
+- :ref:`exhale_function_math__utils_8h_1a438f476e3dc6d253ba2f3218b03ef8e5`
 
