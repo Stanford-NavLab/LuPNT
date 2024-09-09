@@ -25,7 +25,7 @@ if not hasattr(Axis, "_get_coord_info_old"):
 
 COLORS = list(mcolors.TABLEAU_COLORS.keys())
 
-plt.rc("text", usetex=True)
+# plt.rc("text", usetex=True)
 plt.rc("font", family="serif")
 
 plot_data = {

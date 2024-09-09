@@ -8,6 +8,8 @@ echo "export LUPNT_DATA_PATH=$(pwd)/LuPNT_data" >> ~/.bashrc
 source ~/.bashrc
 sed -i '2i\ \"env": {"LUPNT_DATA_PATH":"'"$(pwd)"'/LuPNT_data"},' /srv/conda/envs/notebook/share/jupyter/kernels/python3/kernel.json
 
+pip install pylupnt -v
+
 # Increase swap space
 # sudo mkdir -p /var/cache/swap/
 # sudo dd if=/dev/zero of=/var/cache/swap/swap0 bs=64M count=64

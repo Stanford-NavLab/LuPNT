@@ -355,7 +355,9 @@ def image2zvals(
 
     observations = img[:, :, :3].reshape(rows * cols, 3)
     training_pixels = shuffle(observations, random_state=rngs)[:n_training_pixels]
-    model = KMeans(n_clusters=n_colors, random_state=rngs).fit(training_pixels)
+    model = KMeans(n_clusters=n_colors, random_state=rngs, n_init="auto").fit(
+        training_pixels
+    )
 
     codebook = model.cluster_centers_
     indices = model.predict(observations)
@@ -366,7 +368,9 @@ def image2zvals(
     # define the Plotly colorscale with n_colors entries
     scale = np.linspace(0, 1, n_colors)
     colors = (codebook * 255).astype(np.uint8)
-    pl_colorscale = [[sv, f"rgb{tuple(color)}"] for sv, color in zip(scale, colors)]
+    pl_colorscale = [
+        [sv, f"rgb{tuple(int(c) for c in color)}"] for sv, color in zip(scale, colors)
+    ]
 
     # Reshape z_vals  to  img.shape[:2]
     return z_vals.reshape(rows, cols), pl_colorscale

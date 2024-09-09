@@ -1,5 +1,6 @@
 try:
     # py2 py3 compatible
+    from . import download_data
     from .utils import *
     from . import render
     from .math_utils import *

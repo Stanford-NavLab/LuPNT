@@ -2,16 +2,11 @@
 import os
 import numpy as np
 import pylupnt as pnt
-import matplotlib as mpl
-import plotly.io as pio
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 from matplotlib.colors import ListedColormap
 
 cov_cmap_tmp = plt.get_cmap("Blues", 3 + 1)
 cov_cmap = ListedColormap(cov_cmap_tmp([1, 2, 3]))
-
-pio.renderers.default = "notebook"
 np.set_printoptions(precision=4, suppress=True)
 
 # Data path
