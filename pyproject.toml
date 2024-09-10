@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pylupnt"
-version = "0.0.3"
+version = "0.0.4"
 description = "Lunar Positioning, Navigation, and Timing (PNT) library"
 readme = "README.md"
 license = {text = "MIT"}
@@ -16,30 +16,19 @@ maintainers=[
 ]
 requires-python = ">=3.10,<3.13"
 dependencies = [
-    "numpy",
-    "astropy",
-    "auto_mix_prep",
-    # "bpy",
-    "dataset",
-    "filterpy",
+    "h5py",
+    "ipykernel",
     "mathutils",
     "matplotlib",
-    "mlflow",
-    "mlflow_skinny",
-    "networkx",
-    "numba",
-    "onnx",
+    "mypy",
+    "nbformat",
+    "numpy",
     "pandas",
     "Pillow",
     "plotly",
-    "h5py",
-    "scikit_learn",
-    "scipy",
-    "setuptools",
-    "spiceypy",
+    "requests",
+    "scikit-learn",
     "tqdm",
-    "mypy",
-    "ipywidgets",
 ]
 keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "example", "wheel", "pypi", "conda-forge"]
 classifiers=[

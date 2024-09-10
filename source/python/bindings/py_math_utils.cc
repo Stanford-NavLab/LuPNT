@@ -53,4 +53,26 @@ void init_math_utils(py::module &m) {
       "decimal2decibel",
       [](MatXd x) -> MatXd { return Decimal2Decibel(x.cast<Real>().eval()).cast<double>(); },
       py::arg("x"));
+
+  // Rotation
+  m.def("rot_x", &RotX<double>, "Active rotation matrix about the x-axis", py::arg("angle"));
+  m.def("rot_y", &RotY<double>, "Active rotation matrix about the y-axis", py::arg("angle"));
+  m.def("rot_z", &RotZ<double>, "Active rotation matrix about the z-axis", py::arg("angle"));
+  m.def("skew", &Skew<double>, "Skew symmetric matrix from a vector", py::arg("x"));
+  m.def(
+      "rot2quat",
+      [](const Mat3d &rot) -> Vec4d {
+        Quatd quat(rot);
+        quat.normalize();
+        if (quat.w() < 0) quat.coeffs() *= -1;
+        return quat.coeffs();
+      },
+      "Convert rotation matrix to quaternion [x, y, z, w]", py::arg("R"));
+  m.def(
+      "quat2rot",
+      [](const Vec4d &q) -> Mat3d {
+        Quatd quat(q(3), q(0), q(1), q(2));
+        return quat.toRotationMatrix();
+      },
+      "Convert quaternion to rotation matrix", py::arg("q"));
 }

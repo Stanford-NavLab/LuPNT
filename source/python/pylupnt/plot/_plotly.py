@@ -108,7 +108,7 @@ def plot_body(
     body: pnt.NaifId,
     size_factor: int = 5,
     R_b2frame: np.ndarray = None,
-    r_b2s_pa: np.ndarray = None,
+    r_b2s: np.ndarray = None,
     r_body: np.ndarray = None,
     alpha: float = 0.2,
     scale: float = 3,
@@ -120,7 +120,7 @@ def plot_body(
         body (int): celestial body
         size_factor (int): size factor
         R_b2frame (np.ndarray): rotation matrix from body to frame
-        r_b2s_pa (np.ndarray): vector from body to sun in the frame
+        r_b2s (np.ndarray): vector from body to sun in the frame
         alpha (float): light intensity
     """
     img = IMAGES[body]
@@ -132,8 +132,8 @@ def plot_body(
     r, c, _ = reduced_img.shape
     x, y, z = create_sphere_meshgrid(r, c, radius)
     xyz = np.array([x.flatten(), y.flatten(), z.flatten()]).T
-    if r_b2s_pa is not None:
-        light = xyz @ r_b2s_pa / np.linalg.norm(xyz, axis=1) / np.linalg.norm(r_b2s_pa)
+    if r_b2s is not None:
+        light = xyz @ r_b2s / np.linalg.norm(xyz, axis=1) / np.linalg.norm(r_b2s)
         reduced_img = reduced_img * (alpha + (1 - alpha) * light.reshape(r, c, 1))
 
     if R_b2frame is not None:

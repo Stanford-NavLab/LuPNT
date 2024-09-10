@@ -1,29 +1,18 @@
 channels:
-  - pytorch-nightly
   - conda-forge
-  - gurobi
   - defaults
 dependencies:
-  - numpy
-  - astropy
-  - cvxpy
-  - dataset
-  - filterpy
-  - matplotlib
-  - mlflow
-  - mlflow-skinny
-  - networkx
   - h5py
-  - numba
-  - onnx
+  - ipykernel
+  - matplotlib
+  - mypy
+  - nbformat
+  - numpy
   - pandas
   - Pillow
   - plotly
+  - requests
   - scikit-learn
-  - scipy
-  - setuptools
-  - spiceypy
   - tqdm
-  - mypy
-  - ipywidgets
-  - ipympl
+  - pip:
+    - mathutils

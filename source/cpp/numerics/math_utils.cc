@@ -20,7 +20,11 @@
 #include "lupnt/core/constants.h"
 
 namespace lupnt {
-
+  /// @brief Create a range of values
+  /// @param start Start value
+  /// @param stop Stop value
+  /// @param step Step value
+  /// @return Vector of values
   template <typename T> VectorX<T> arange(T start, T stop, T step) {
     std::vector<T> values;
     for (T value = start; value < stop; value += step) {
@@ -28,7 +32,6 @@ namespace lupnt {
     }
     return Eigen::Map<VectorX<T>>(values.data(), values.size());
   }
-
   template VectorX<int> arange<int>(int start, int stop, int step);
   template VectorX<double> arange<double>(double start, double stop, double step);
   template VectorX<Real> arange<Real>(Real start, Real stop, Real step);
@@ -420,7 +423,7 @@ namespace lupnt {
 
   std::vector<double> ToDoubleVec(const VecX& x) {
     std::vector<double> y(x.size());
-    for (int i = 0; i < x.size(); i++) {
+    for (size_t i = 0; i < x.size(); i++) {
       y[i] = x(i).val();
     }
     return y;
@@ -428,7 +431,7 @@ namespace lupnt {
 
   std::vector<double> ToDoubleVec(const VecXd& x) {
     std::vector<double> y(x.size());
-    for (int i = 0; i < x.size(); i++) {
+    for (size_t i = 0; i < x.size(); i++) {
       y[i] = x(i);
     }
     return y;
@@ -436,7 +439,7 @@ namespace lupnt {
 
   std::vector<double> ToDoubleVec(const VecXi& x) {
     std::vector<double> y(x.size());
-    for (int i = 0; i < x.size(); i++) {
+    for (size_t i = 0; i < x.size(); i++) {
       y[i] = x(i);
     }
     return y;
@@ -444,7 +447,7 @@ namespace lupnt {
 
   std::vector<double> ToDoubleVec(const std::vector<Real>& x) {
     std::vector<double> y(x.size());
-    for (int i = 0; i < x.size(); i++) {
+    for (size_t i = 0; i < x.size(); i++) {
       y[i] = x[i].val();
     }
     return y;

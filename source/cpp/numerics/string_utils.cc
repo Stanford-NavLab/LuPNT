@@ -35,7 +35,7 @@ namespace lupnt {
     int startIndex = 0, endIndex = 0;
     std::vector<std::string> strings;
 
-    for (int i = 0; i <= str.size(); i++) {
+    for (size_t i = 0; i <= str.size(); i++) {
       // If we reached the end of the word or the end of the input.
       if (str[i] == separator || i == str.size()) {
         endIndex = i;

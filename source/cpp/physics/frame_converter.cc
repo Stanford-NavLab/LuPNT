@@ -255,4 +255,9 @@ namespace lupnt {
     }
     return r_out;
   }
+
+  Mat3 GetFrameConversionMatrix(Real t_tai, Frame from_frame, Frame to_frame) {
+    MatX3 I = Mat3::Identity();
+    return ConvertFrame(t_tai, I, to_frame, from_frame, true);
+  }
 }  // namespace lupnt

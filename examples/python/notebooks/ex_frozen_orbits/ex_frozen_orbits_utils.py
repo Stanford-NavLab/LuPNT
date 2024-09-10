@@ -4,6 +4,10 @@ import numpy as np
 import pylupnt as pnt
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+import plotly.io as pio
+
+if "VSCODE_PID" in os.environ:
+    pio.renderers.default = "notebook"
 
 cov_cmap_tmp = plt.get_cmap("Blues", 3 + 1)
 cov_cmap = ListedColormap(cov_cmap_tmp([1, 2, 3]))
