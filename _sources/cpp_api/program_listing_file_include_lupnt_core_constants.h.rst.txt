@@ -142,11 +142,11 @@ Program Listing for File constants.h
      static constexpr double FRAME_BIAS_DALPHA0 = 7.0783e-8;  // [rad]
    
      // Solar Radiation Pressure Constants
-     static constexpr double AU = 149597970;      // AU [km]
-     static constexpr double S_AU = 1358 * 1e-6;  // Mean Solar Flux at 1 AU [W/km^2]
-     static constexpr double C = 299792.458;      // Light speed [km/s]
+     static constexpr double AU = 149597970;               // AU [km]
+     static constexpr double SOLAR_FLUX_AU = 1358 * 1e-6;  // Mean Solar Flux at 1 AU [W/km^2]
+     static constexpr double C = 299792.458;               // Light speed [km/s]
      static constexpr double P_SUN
-         = S_AU / C;  // Solar radiation pressure at 1 AU [N/km^2] = 4.56e-6 N/m^2
+         = SOLAR_FLUX_AU / C;  // Solar radiation pressure at 1 AU [N/km^2] = 4.56e-6 N/m^2
    
      // File Path *******************************************************************
      static constexpr std::string_view TAI_UTC_FILENAME = "tai-utc.dat";

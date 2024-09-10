@@ -80,7 +80,13 @@ pylupnt
     mjd2gregorian_string
     mjd2time
     quasi_nonsingular2classical
+    quat2rot
     relative_quasi_nonsingular2classical
+    rot2quat
+    rot_x
+    rot_y
+    rot_z
+    skew
     synodic2intertial
     tai2gps
     tai2tt
@@ -174,7 +180,13 @@ pylupnt
     mjd2gregorian_string <pylupnt.mjd2gregorian_string>
     mjd2time <pylupnt.mjd2time>
     quasi_nonsingular2classical <pylupnt.quasi_nonsingular2classical>
+    quat2rot <pylupnt.quat2rot>
     relative_quasi_nonsingular2classical <pylupnt.relative_quasi_nonsingular2classical>
+    rot2quat <pylupnt.rot2quat>
+    rot_x <pylupnt.rot_x>
+    rot_y <pylupnt.rot_y>
+    rot_z <pylupnt.rot_z>
+    skew <pylupnt.skew>
     synodic2intertial <pylupnt.synodic2intertial>
     tai2gps <pylupnt.tai2gps>
     tai2tt <pylupnt.tai2tt>

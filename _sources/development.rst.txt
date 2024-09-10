@@ -193,3 +193,11 @@ Python Environment
 We recommend using `micromamba <https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html>`_  to create a new environment for the project.
 
 Conda and mamba can be used for package management, but mamba is generally preferred due to its faster performance. Mamba is a partial re-implementation of conda in C++, utilizing multi-threading and libsolv for improved speed. It still relies on some conda code and has a dependency on Python. Alternatively, micromamba is a pure C++ re-implementation with no Python dependency, making it a better choice for creating lightweight images from scratch. It is possible to `use mamba's solver from within conda <https://conda.github.io/conda-libmamba-solver/user-guide/>`_.
+
+To create a new environment with micromamba, run the following commands in the root directory of the repository.
+
+.. code-block:: bash
+
+        micromamba create -n lupnt python=3.11
+        micromamba activate lupnt
+        micromamba install --file requirements.yml

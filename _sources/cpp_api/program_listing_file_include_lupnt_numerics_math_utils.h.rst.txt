@@ -85,7 +85,7 @@ Program Listing for File math_utils.h
      template <typename T> Matrix<T, 3, 3> RotX(T angle);
      template <typename T> Matrix<T, 3, 3> RotY(T angle);
      template <typename T> Matrix<T, 3, 3> RotZ(T angle);
-     template <typename T> Matrix<T, 3, 3> Skew(T x);
+     template <typename T> Matrix<T, 3, 3> Skew(Vector<T, 3> x);
    
      VecXd ToDouble(const VecX& x);
      // MatXd ToDouble(const MatX& x);

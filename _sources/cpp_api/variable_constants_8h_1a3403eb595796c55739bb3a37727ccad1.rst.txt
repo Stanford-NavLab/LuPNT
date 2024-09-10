@@ -1,0 +1,14 @@
+.. _exhale_variable_constants_8h_1a3403eb595796c55739bb3a37727ccad1:
+
+Variable lupnt::SOLAR_FLUX_AU
+=============================
+
+- Defined in :ref:`file_include_lupnt_core_constants.h`
+
+
+Variable Documentation
+----------------------
+
+
+.. doxygenvariable:: lupnt::SOLAR_FLUX_AU
+   :project: LuPNT_CPP

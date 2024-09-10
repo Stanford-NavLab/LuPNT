@@ -1,4 +1,4 @@
-.. _exhale_function_math__utils_8h_1a6f997e03604624a73e118356812b0c7c:
+.. _exhale_function_math__utils_8h_1a2ccbefe65d28fd9e2d5926085d323777:
 
 Template Function lupnt::Skew
 =============================
@@ -10,5 +10,5 @@ Function Documentation
 ----------------------
 
 
-.. doxygenfunction:: lupnt::Skew(T)
+.. doxygenfunction:: lupnt::Skew(Vector<T, 3>)
    :project: LuPNT_CPP

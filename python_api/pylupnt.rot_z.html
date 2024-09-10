@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="pylupnt.ephemeris_parsing.timedelta" href="pylupnt.ephemeris_parsing.timedelta.html" /><link rel="prev" title="pylupnt.ephemeris_parsing" href="pylupnt.ephemeris_parsing.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="pylupnt.skew" href="pylupnt.skew.html" /><link rel="prev" title="pylupnt.rot_y" href="pylupnt.rot_y.html" />
 
     <!-- Generated with Sphinx 7.4.7 and Furo 2024.08.06 -->
-        <title>pylupnt.ephemeris_parsing.datetime - LuPNT 0.0.3 documentation</title>
+        <title>pylupnt.rot_z - LuPNT 0.0.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
@@ -166,7 +166,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">LuPNT 0.0.3 documentation</div></a>
+      <a href="../index.html"><div class="brand">LuPNT 0.0.4 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -193,7 +193,7 @@
     <img class="sidebar-logo" src="../_static/LuPNT_square.png" alt="Logo"/>
   </div>
   
-  <span class="sidebar-brand-text">LuPNT 0.0.3 documentation</span>
+  <span class="sidebar-brand-text">LuPNT 0.0.4 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -220,7 +220,7 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Python API</span></p>
 <ul class="current">
-<li class="toctree-l1 has-children"><a class="reference internal" href="pylupnt.html">pylupnt</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of pylupnt</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="pylupnt.html">pylupnt</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of pylupnt</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.Animal.html">Animal</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.Body.html">Body</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.CartesianOrbitState.html">CartesianOrbitState</a></li>
@@ -288,7 +288,13 @@
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.mjd2gregorian_string.html">mjd2gregorian_string</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.mjd2time.html">mjd2time</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.quasi_nonsingular2classical.html">quasi_nonsingular2classical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.quat2rot.html">quat2rot</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.relative_quasi_nonsingular2classical.html">relative_quasi_nonsingular2classical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.rot2quat.html">rot2quat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.rot_x.html">rot_x</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.rot_y.html">rot_y</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">rot_z</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pylupnt.skew.html">skew</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.synodic2intertial.html">synodic2intertial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.tai2gps.html">tai2gps</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.tai2tt.html">tai2tt</a></li>
@@ -324,12 +330,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="pylupnt.scenarios.html">pylupnt.scenarios</a></li>
-<li class="toctree-l1 current has-children"><a class="reference internal" href="pylupnt.ephemeris_parsing.html">pylupnt.ephemeris_parsing</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of pylupnt.ephemeris_parsing</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">datetime</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pylupnt.ephemeris_parsing.timedelta.html">timedelta</a></li>
-</ul>
-</li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="pylupnt.math_utils.html">pylupnt.math_utils</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of pylupnt.math_utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="pylupnt.math_utils.html">pylupnt.math_utils</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of pylupnt.math_utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.math_utils.arr_to_mat_idx.html">arr_to_mat_idx</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.math_utils.cross_norm.html">cross_norm</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.math_utils.i_to_arr_idxs.html">i_to_arr_idxs</a></li>
@@ -337,7 +338,7 @@
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.math_utils.wrap2Pi.html">wrap2Pi</a></li>
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="pylupnt.utils.html">pylupnt.utils</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of pylupnt.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="pylupnt.utils.html">pylupnt.utils</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of pylupnt.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.File.html">File</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.GridSpec.html">GridSpec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pylupnt.utils.dump_pickle.html">dump_pickle</a></li>
@@ -358,7 +359,7 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">C++ API</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../cpp_api/cpp_library_root.html">C++ Library API</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of C++ Library API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../cpp_api/cpp_library_root.html">C++ Library API</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of C++ Library API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/namespace_lupnt.html">Namespace lupnt</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/namespace_lupnt__spice.html">Namespace lupnt::spice</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/structlupnt_1_1BodyData.html">Struct BodyData</a></li>
@@ -668,7 +669,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a5dfee89e0f80b05dbe040cd71880bb1b.html">Function lupnt::SampleRandNormal</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_plot_8h_1a6587459826ea629c0fa01b4fbec8e54c.html">Function lupnt::SetLim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a4ed108094eb0ca848373a24f36b680d9.html">Function lupnt::sind</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a6f997e03604624a73e118356812b0c7c.html">Template Function lupnt::Skew</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_math__utils_8h_1a2ccbefe65d28fd9e2d5926085d323777.html">Template Function lupnt::Skew</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter__spice_8h_1ab734fafd2b020e7d188b69016183e672.html">Function lupnt::spice::ConvertFrameSpice(Real, const Vec6&amp;, Frame, Frame)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter__spice_8h_1a06603c06ecbea1535df040e459d61f3b.html">Function lupnt::spice::ConvertFrameSpice(Real, const Vec3&amp;, Frame, Frame)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/function_frame__converter__spice_8h_1a1af40c2ddff3154bc498783486cf1d94.html">Function lupnt::spice::ConvertFrameSpice(Real, const MatX6&amp;, Frame, Frame)</a></li>
@@ -832,11 +833,11 @@
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1adb86a0f6bd2de04f0793b2a44f706143.html">Variable lupnt::RAD</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a13bfd9c1c2b35c1efe8d5beb1b2a1ee2.html">Variable lupnt::RAD_ARCSEC</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_converter_8h_1a36e3e7e176d2c9f52a08f6356cd74be1.html">Variable lupnt::relative_conversions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a5fea9b2de45d61174d692aeeddb44392.html">Variable lupnt::S_AU</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1aa3acbf2555c6abdf618c228aba22aac7.html">Variable lupnt::SECS_DAY</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1af794b1f5be5d7f65d6c628e3b818e548.html">Variable lupnt::SECS_HOUR</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1ae1e49a6c76abab898c961ea56eea56db.html">Variable lupnt::SECS_MINUTE</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a3715f6fa3c136df62b1d442977973a57.html">Variable lupnt::SLUG_TO_KG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a3403eb595796c55739bb3a37727ccad1.html">Variable lupnt::SOLAR_FLUX_AU</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_spice__interface_8h_1a6f2665fa8690dbc7eb69633e6e8c779c.html">Variable lupnt::spice::cheby_n</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_spice__interface_8h_1aba22487f4588c09c906b98174268b4d7.html">Variable lupnt::spice::cheby_s</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cpp_api/variable_constants_8h_1a364bc823e2091614ffbb9c24e3a943c2.html">Variable lupnt::TAI_UTC_FILENAME</a></li>
@@ -1028,260 +1029,12 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="pylupnt-ephemeris-parsing-datetime">
-<h1>pylupnt.ephemeris_parsing.datetime<a class="headerlink" href="#pylupnt-ephemeris-parsing-datetime" title="Link to this heading">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pylupnt.ephemeris_parsing.</span></span><span class="sig-name descname"><span class="pre">datetime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">year</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">month</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">day</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">hour</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">minute</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">second</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">microsecond</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">tzinfo</span></span></em><span class="optional">]</span><span class="optional">]</span><span class="optional">]</span><span class="optional">]</span><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime" title="Link to this definition">¶</a></dt>
-<dd><p>The year, month and day arguments are required. tzinfo may be None, or an
-instance of a tzinfo subclass. The remaining arguments may be ints.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.__init__" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.astimezone">
-<span class="sig-name descname"><span class="pre">astimezone</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.astimezone" title="Link to this definition">¶</a></dt>
-<dd><p>tz -&gt; convert to local time in new timezone tz</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.combine">
-<span class="sig-name descname"><span class="pre">combine</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.combine" title="Link to this definition">¶</a></dt>
-<dd><p>date, time -&gt; datetime with same date and time fields</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.ctime">
-<span class="sig-name descname"><span class="pre">ctime</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.ctime" title="Link to this definition">¶</a></dt>
-<dd><p>Return ctime() style string.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.date">
-<span class="sig-name descname"><span class="pre">date</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.date" title="Link to this definition">¶</a></dt>
-<dd><p>Return date object with same year, month and day.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.dst">
-<span class="sig-name descname"><span class="pre">dst</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.dst" title="Link to this definition">¶</a></dt>
-<dd><p>Return self.tzinfo.dst(self).</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.fromisocalendar">
-<span class="sig-name descname"><span class="pre">fromisocalendar</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.fromisocalendar" title="Link to this definition">¶</a></dt>
-<dd><p>int, int, int -&gt; Construct a date from the ISO year, week number and weekday.</p>
-<p>This is the inverse of the date.isocalendar() function</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.fromisoformat">
-<span class="sig-name descname"><span class="pre">fromisoformat</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.fromisoformat" title="Link to this definition">¶</a></dt>
-<dd><p>string -&gt; datetime from a string in most ISO 8601 formats</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.fromordinal">
-<span class="sig-name descname"><span class="pre">fromordinal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.fromordinal" title="Link to this definition">¶</a></dt>
-<dd><p>int -&gt; date corresponding to a proleptic Gregorian ordinal.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.fromtimestamp">
-<span class="sig-name descname"><span class="pre">fromtimestamp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.fromtimestamp" title="Link to this definition">¶</a></dt>
-<dd><p>timestamp[, tz] -&gt; tz’s local time from POSIX timestamp.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.isocalendar">
-<span class="sig-name descname"><span class="pre">isocalendar</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.isocalendar" title="Link to this definition">¶</a></dt>
-<dd><p>Return a named tuple containing ISO year, week number, and weekday.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.isoformat">
-<span class="sig-name descname"><span class="pre">isoformat</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.isoformat" title="Link to this definition">¶</a></dt>
-<dd><p>[sep] -&gt; string in ISO 8601 format, YYYY-MM-DDT[HH[:MM[:SS[.mmm[uuu]]]]][+HH:MM].
-sep is used to separate the year from the time, and defaults to ‘T’.
-The optional argument timespec specifies the number of additional terms
-of the time to include. Valid options are ‘auto’, ‘hours’, ‘minutes’,
-‘seconds’, ‘milliseconds’ and ‘microseconds’.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.isoweekday">
-<span class="sig-name descname"><span class="pre">isoweekday</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.isoweekday" title="Link to this definition">¶</a></dt>
-<dd><p>Return the day of the week represented by the date.
-Monday == 1 … Sunday == 7</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.now">
-<span class="sig-name descname"><span class="pre">now</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.now" title="Link to this definition">¶</a></dt>
-<dd><p>Returns new datetime object representing current time local to tz.</p>
-<blockquote>
-<div><dl class="simple">
-<dt>tz</dt><dd><p>Timezone object.</p>
-</dd>
-</dl>
-</div></blockquote>
-<p>If no tz is specified, uses local timezone.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.replace">
-<span class="sig-name descname"><span class="pre">replace</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.replace" title="Link to this definition">¶</a></dt>
-<dd><p>Return datetime with new specified fields.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.strftime">
-<span class="sig-name descname"><span class="pre">strftime</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.strftime" title="Link to this definition">¶</a></dt>
-<dd><p>format -&gt; strftime() style string.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.strptime">
-<span class="sig-name descname"><span class="pre">strptime</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.strptime" title="Link to this definition">¶</a></dt>
-<dd><p>string, format -&gt; new datetime parsed from a string (like time.strptime()).</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.time">
-<span class="sig-name descname"><span class="pre">time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.time" title="Link to this definition">¶</a></dt>
-<dd><p>Return time object with same time but with tzinfo=None.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.timestamp">
-<span class="sig-name descname"><span class="pre">timestamp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.timestamp" title="Link to this definition">¶</a></dt>
-<dd><p>Return POSIX timestamp as float.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.timetuple">
-<span class="sig-name descname"><span class="pre">timetuple</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.timetuple" title="Link to this definition">¶</a></dt>
-<dd><p>Return time tuple, compatible with time.localtime().</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.timetz">
-<span class="sig-name descname"><span class="pre">timetz</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.timetz" title="Link to this definition">¶</a></dt>
-<dd><p>Return time object with same time and tzinfo.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.today">
-<span class="sig-name descname"><span class="pre">today</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.today" title="Link to this definition">¶</a></dt>
-<dd><p>Current date or datetime:  same as self.__class__.fromtimestamp(time.time()).</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.toordinal">
-<span class="sig-name descname"><span class="pre">toordinal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.toordinal" title="Link to this definition">¶</a></dt>
-<dd><p>Return proleptic Gregorian ordinal.  January 1 of year 1 is day 1.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.tzname">
-<span class="sig-name descname"><span class="pre">tzname</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.tzname" title="Link to this definition">¶</a></dt>
-<dd><p>Return self.tzinfo.tzname(self).</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.utcfromtimestamp">
-<span class="sig-name descname"><span class="pre">utcfromtimestamp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.utcfromtimestamp" title="Link to this definition">¶</a></dt>
-<dd><p>Construct a naive UTC datetime from a POSIX timestamp.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.utcnow">
-<span class="sig-name descname"><span class="pre">utcnow</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.utcnow" title="Link to this definition">¶</a></dt>
-<dd><p>Return a new datetime representing UTC day and time.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.utcoffset">
-<span class="sig-name descname"><span class="pre">utcoffset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.utcoffset" title="Link to this definition">¶</a></dt>
-<dd><p>Return self.tzinfo.utcoffset(self).</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.utctimetuple">
-<span class="sig-name descname"><span class="pre">utctimetuple</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.utctimetuple" title="Link to this definition">¶</a></dt>
-<dd><p>Return UTC time tuple, compatible with time.localtime().</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.weekday">
-<span class="sig-name descname"><span class="pre">weekday</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.weekday" title="Link to this definition">¶</a></dt>
-<dd><p>Return the day of the week represented by the date.
-Monday == 0 … Sunday == 6</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.day">
-<span class="sig-name descname"><span class="pre">day</span></span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.day" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.fold">
-<span class="sig-name descname"><span class="pre">fold</span></span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.fold" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.hour">
-<span class="sig-name descname"><span class="pre">hour</span></span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.hour" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.max">
-<span class="sig-name descname"><span class="pre">max</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">datetime.datetime(9999,</span> <span class="pre">12,</span> <span class="pre">31,</span> <span class="pre">23,</span> <span class="pre">59,</span> <span class="pre">59,</span> <span class="pre">999999)</span></em><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.max" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.microsecond">
-<span class="sig-name descname"><span class="pre">microsecond</span></span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.microsecond" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.min">
-<span class="sig-name descname"><span class="pre">min</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">datetime.datetime(1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">0,</span> <span class="pre">0)</span></em><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.min" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.minute">
-<span class="sig-name descname"><span class="pre">minute</span></span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.minute" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.month">
-<span class="sig-name descname"><span class="pre">month</span></span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.month" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.resolution">
-<span class="sig-name descname"><span class="pre">resolution</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">datetime.timedelta(microseconds=1)</span></em><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.resolution" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.second">
-<span class="sig-name descname"><span class="pre">second</span></span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.second" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.tzinfo">
-<span class="sig-name descname"><span class="pre">tzinfo</span></span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.tzinfo" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pylupnt.ephemeris_parsing.datetime.year">
-<span class="sig-name descname"><span class="pre">year</span></span><a class="headerlink" href="#pylupnt.ephemeris_parsing.datetime.year" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
+          <section id="pylupnt-rot-z">
+<h1>pylupnt.rot_z<a class="headerlink" href="#pylupnt-rot-z" title="Link to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="pylupnt.rot_z">
+<span class="sig-prename descclassname"><span class="pre">pylupnt.</span></span><span class="sig-name descname"><span class="pre">rot_z</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">angle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.float64</span><span class="p"><span class="pre">[</span></span><span class="m"><span class="pre">3</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="m"><span class="pre">3</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#pylupnt.rot_z" title="Link to this definition">¶</a></dt>
+<dd><p>Active rotation matrix about the z-axis</p>
 </dd></dl>
 
 </section>
@@ -1291,23 +1044,23 @@ Monday == 0 … Sunday == 6</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="pylupnt.ephemeris_parsing.timedelta.html">
+          <a class="next-page" href="pylupnt.skew.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">pylupnt.ephemeris_parsing.timedelta</div>
+                <div class="title">pylupnt.skew</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="pylupnt.ephemeris_parsing.html">
+          <a class="prev-page" href="pylupnt.rot_y.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">pylupnt.ephemeris_parsing</div>
+                <div class="title">pylupnt.rot_y</div>
                 
               </div>
             </a>
@@ -1341,51 +1094,8 @@ Monday == 0 … Sunday == 6</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">pylupnt.ephemeris_parsing.datetime</a><ul>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime"><code class="docutils literal notranslate"><span class="pre">datetime</span></code></a><ul>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.__init__"><code class="docutils literal notranslate"><span class="pre">datetime.__init__()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.astimezone"><code class="docutils literal notranslate"><span class="pre">datetime.astimezone()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.combine"><code class="docutils literal notranslate"><span class="pre">datetime.combine()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.ctime"><code class="docutils literal notranslate"><span class="pre">datetime.ctime()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.date"><code class="docutils literal notranslate"><span class="pre">datetime.date()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.dst"><code class="docutils literal notranslate"><span class="pre">datetime.dst()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.fromisocalendar"><code class="docutils literal notranslate"><span class="pre">datetime.fromisocalendar()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.fromisoformat"><code class="docutils literal notranslate"><span class="pre">datetime.fromisoformat()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.fromordinal"><code class="docutils literal notranslate"><span class="pre">datetime.fromordinal()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.fromtimestamp"><code class="docutils literal notranslate"><span class="pre">datetime.fromtimestamp()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.isocalendar"><code class="docutils literal notranslate"><span class="pre">datetime.isocalendar()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.isoformat"><code class="docutils literal notranslate"><span class="pre">datetime.isoformat()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.isoweekday"><code class="docutils literal notranslate"><span class="pre">datetime.isoweekday()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.now"><code class="docutils literal notranslate"><span class="pre">datetime.now()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.replace"><code class="docutils literal notranslate"><span class="pre">datetime.replace()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.strftime"><code class="docutils literal notranslate"><span class="pre">datetime.strftime()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.strptime"><code class="docutils literal notranslate"><span class="pre">datetime.strptime()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.time"><code class="docutils literal notranslate"><span class="pre">datetime.time()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.timestamp"><code class="docutils literal notranslate"><span class="pre">datetime.timestamp()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.timetuple"><code class="docutils literal notranslate"><span class="pre">datetime.timetuple()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.timetz"><code class="docutils literal notranslate"><span class="pre">datetime.timetz()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.today"><code class="docutils literal notranslate"><span class="pre">datetime.today()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.toordinal"><code class="docutils literal notranslate"><span class="pre">datetime.toordinal()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.tzname"><code class="docutils literal notranslate"><span class="pre">datetime.tzname()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.utcfromtimestamp"><code class="docutils literal notranslate"><span class="pre">datetime.utcfromtimestamp()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.utcnow"><code class="docutils literal notranslate"><span class="pre">datetime.utcnow()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.utcoffset"><code class="docutils literal notranslate"><span class="pre">datetime.utcoffset()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.utctimetuple"><code class="docutils literal notranslate"><span class="pre">datetime.utctimetuple()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.weekday"><code class="docutils literal notranslate"><span class="pre">datetime.weekday()</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.day"><code class="docutils literal notranslate"><span class="pre">datetime.day</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.fold"><code class="docutils literal notranslate"><span class="pre">datetime.fold</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.hour"><code class="docutils literal notranslate"><span class="pre">datetime.hour</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.max"><code class="docutils literal notranslate"><span class="pre">datetime.max</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.microsecond"><code class="docutils literal notranslate"><span class="pre">datetime.microsecond</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.min"><code class="docutils literal notranslate"><span class="pre">datetime.min</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.minute"><code class="docutils literal notranslate"><span class="pre">datetime.minute</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.month"><code class="docutils literal notranslate"><span class="pre">datetime.month</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.resolution"><code class="docutils literal notranslate"><span class="pre">datetime.resolution</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.second"><code class="docutils literal notranslate"><span class="pre">datetime.second</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.tzinfo"><code class="docutils literal notranslate"><span class="pre">datetime.tzinfo</span></code></a></li>
-<li><a class="reference internal" href="#pylupnt.ephemeris_parsing.datetime.year"><code class="docutils literal notranslate"><span class="pre">datetime.year</span></code></a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#">pylupnt.rot_z</a><ul>
+<li><a class="reference internal" href="#pylupnt.rot_z"><code class="docutils literal notranslate"><span class="pre">rot_z()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -1397,7 +1107,7 @@ Monday == 0 … Sunday == 6</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=47de8214"></script>
+</div><script src="../_static/documentation_options.js?v=8c5712d9"></script>
     <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=5fa4622c"></script>

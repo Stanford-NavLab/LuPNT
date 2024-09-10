@@ -1,0 +1,6 @@
+pylupnt.quat2rot
+----------------
+
+.. currentmodule:: pylupnt
+
+.. autofunction:: quat2rot

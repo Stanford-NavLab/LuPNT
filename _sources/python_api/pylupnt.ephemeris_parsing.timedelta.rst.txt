@@ -1,9 +1,0 @@
-pylupnt.ephemeris_parsing.timedelta
------------------------------------
-
-.. currentmodule:: pylupnt.ephemeris_parsing
-
-.. autoclass:: timedelta
-    :members:
-    :undoc-members:
-    :inherited-members:

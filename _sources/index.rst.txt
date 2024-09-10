@@ -45,7 +45,6 @@ A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timi
     python_api/pylupnt.plot
     python_api/pylupnt.render
     python_api/pylupnt.scenarios
-    python_api/pylupnt.ephemeris_parsing
     python_api/pylupnt.math_utils
     python_api/pylupnt.utils
 
@@ -56,7 +55,6 @@ A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timi
     MAKE_DOCS/python_api/pylupnt.plot python_only
     MAKE_DOCS/python_api/pylupnt.render python_only
     MAKE_DOCS/python_api/pylupnt.scenarios python_only
-    MAKE_DOCS/python_api/pylupnt.ephemeris_parsing python_only
     MAKE_DOCS/python_api/pylupnt.math_utils python_only
     MAKE_DOCS/python_api/pylupnt.utils python_only
 
