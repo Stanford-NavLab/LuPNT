@@ -7,7 +7,7 @@ except ImportError:
 import os
 import mathutils
 import numpy as np
-import pylupnt as pnt
+from .. import _pylupnt as _pnt
 from scipy.spatial.transform import Rotation as R
 from .. import utils
 
@@ -103,7 +103,7 @@ class Blender:
             R_pa2ogl = self.R_ocv2ogl @ R_pa2c
         elif frame == "OpenGL":
             R_pa2ogl = R_pa2c
-        q_c_pa = pnt.mat(R_pa2ogl.T).as_quat()
+        q_c_pa = _pnt.rot2quat(R_pa2ogl.T)
         q_c_pa = q_c_pa[[3, 0, 1, 2]]
         r_m_pa = np.zeros(3)
         q_m_pa = np.array([1, 0, 0, 0])
@@ -121,7 +121,7 @@ class Blender:
 
         self.SUN.rotation_mode = "QUATERNION"
         self.SUN.location = r_s_pa * SUN_DISTANCE * self.SCALE_BU
-        self.SUN.rotation_quaternion = mathutils.Vec(r_s_pa).to_track_quat("Z", "Y")
+        self.SUN.rotation_quaternion = mathutils.Vector(r_s_pa).to_track_quat("Z", "Y")
 
         bpy.context.view_layer.update()
         os.makedirs(os.path.dirname(filepath), exist_ok=True)

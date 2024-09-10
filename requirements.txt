@@ -8,6 +8,7 @@ numpy
 pandas
 Pillow
 plotly
+pre-commit
 requests
 scikit-learn
 tqdm
