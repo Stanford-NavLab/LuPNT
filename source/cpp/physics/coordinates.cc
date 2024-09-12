@@ -34,8 +34,6 @@ namespace lupnt {
   /// @return Cartesian coordinates
   Vec3 LatLonAlt2Cart(const Vec3 &lla, Real R_body, Real flattening) {
     auto [lat, lon, alt] = unpack(lla);
-    if (R_body == 0) R_body = alt;
-
     Real e2 = flattening * (2 - flattening);
     Real cos_lat = cos(lat);
     Real sin_lat = sin(lat);
@@ -52,8 +50,6 @@ namespace lupnt {
   /// @param flattening Body flattening
   /// @return Latitude, longitude, and altitude
   Vec3 Cart2LatLonAlt(const Vec3 &cart, Real R_body, Real flattening) {
-    if (R_body == 0) R_body = cart.norm();
-
     auto [x, y, z] = unpack(cart);
     Real e2 = flattening * (2 - flattening);
     const int max_iterations = 1000;
