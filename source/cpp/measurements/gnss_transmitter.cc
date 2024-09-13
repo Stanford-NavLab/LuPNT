@@ -132,7 +132,7 @@ namespace lupnt {
     Vec3d u_tx_rx = (r_rx_gcrf - r_tx_gcrf).normalized();
     double theta_tx = acos(u_tx_rx.dot(e_z_gnss));
     double phi_tx = atan2(u_tx_rx.dot(e_y_gnss), u_tx_rx.dot(e_x_gnss));
-    double At = GnssTransmitter::GetAntennaGain(theta_tx * DEG, phi_tx * DEG);
+    double At = GnssTransmitter::ComputeGain(theta_tx, phi_tx);
     return At;
   }
 

@@ -154,7 +154,7 @@ MatXd ConstructInitCovariance(double pos_err, double vel_err, double clk_bias_er
 
 void AddStateEstimationData(const std::shared_ptr<DataHistory> data_history,
                             const std::shared_ptr<Spacecraft> sat, EKF* ekf,
-                            GnssConstellation* gps_const, GnssMeasurement* meas, double t,
+                            Constellation* gps_const, GnssMeasurement* meas, double t,
                             double epoch) {
   // Navigation
   data_history->AddData("z_true", t, ekf->z_true_);
@@ -479,7 +479,7 @@ int main() {
    * Simulation Parameters
    *********************************************/
   // Get initial epoch
-  auto gps_const = GnssConstellation();
+  auto gps_const = Constellation();
   double epoch0 = gps_const.GetEpoch();
 
   // Time

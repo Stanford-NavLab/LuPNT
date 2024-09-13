@@ -13,20 +13,30 @@
 #include <string>
 
 #include "lupnt/core/constants.h"
+#include "lupnt/numerics/vector_macros.h"
 
 namespace lupnt {
   class Antenna {
   public:
-    std::string comms_name_;            // Name of the antenna
-    MatXd antenna_pattern_;             // Antenna gain pattern [deg & dB]
-    double antenna_mask_ = 80.0 * RAD;  // Cut off angle for the transmit antenna [rad]
-
     Antenna() = default;
-    Antenna(std::string comms_name) : comms_name_(comms_name) { LoadAntennaPattern(); };
+    Antenna(const std::string& name) : name_(name) { LoadAntennaPattern(); };
 
     void LoadAntennaPattern();
-    double GetAntennaGain(double theta, double phi);
-    double GetAntennaGain(Vec3d direction);
+
+    Real ComputeGain(Real elev, Real azim);
+    VEC_DEF_REAL_REAL(ComputeGain)
+
+    double ComputeGain(Vec3 direction);
+    MatXd GetGainPattern() { return gain_; }
+    VecXd GetElevationAngles() { return elev_; }
+    VecXd GetAzimuthAngles() { return azim_; }
+
+  private:
+    int n_dim_;         // Number of dimensions (1 or 2)
+    std::string name_;  // Name (e.g., Block-IIR_ACE)
+    MatXd gain_;        // Gain pattern [dB]
+    VecXd elev_;        // Elevation angles [deg]
+    VecXd azim_;        // Azimuth angles [deg]
   };
 
 }  // namespace lupnt

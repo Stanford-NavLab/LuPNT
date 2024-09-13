@@ -65,17 +65,24 @@ namespace lupnt {
     GnssTransmission GenerateTransmission(double t);
 
     // Getters and Setters
-    void SetChannel(const Ptr<SpaceChannel> ch) override { channel = ch; };
+    void SetChannel(const Ptr<SpaceChannel> ch) override {
+      channel_ = std::static_pointer_cast<GnssChannel>(ch);
+    };
     int GetPRN() { return prn_; };
     void SetFreq(double freq) { freq_tx = freq; };
     std::string GetGnssType() { return gnss_type_; };
-    inline Ptr<Agent> GetAgent() const override { return agent; };
-    inline void SetAgent(const Ptr<Agent>& agent) override { this->agent = agent; };
-    double GetAntennaGain(Vec3d direction) { return antenna_.GetAntennaGain(direction); };
-    double GetAntennaGain(double theta, double phi) { return antenna_.GetAntennaGain(theta, phi); };
+
+    inline Ptr<Agent> GetAgent() const override { return agent_; };
+    inline Ptr<SpaceChannel> GetChannel() const override {
+      return std::static_pointer_cast<SpaceChannel>(channel_);
+    };
+    inline void SetAgent(Ptr<Agent> agent) override { agent_ = agent; };
+
+    double ComputeGain(Vec3d direction) { return antenna_.ComputeGain(direction); };
+    double ComputeGain(double theta, double phi) { return antenna_.ComputeGain(theta, phi); };
 
   private:
-    Ptr<Agent> agent;          // Agent that owns the device
-    Ptr<GnssChannel> channel;  // Channel that the device is connected to
+    Ptr<Agent> agent_;          // Agent that owns the device
+    Ptr<GnssChannel> channel_;  // Channel that the device is connected to
   };
 }  // namespace lupnt

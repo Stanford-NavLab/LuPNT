@@ -20,7 +20,7 @@
 
 namespace lupnt {
 
-  void GnssConstellation::LoadTleFile(std::string_view filename) {
+  void Constellation::LoadTleFile(std::string_view filename) {
     std::filesystem::path path = GetFilePath(filename);
 
     bool is_first = true;
@@ -60,7 +60,7 @@ namespace lupnt {
         sat->AddDevice(transmitter);
         transmitter->SetAgent(sat);
         channel_->AddTransmitter(transmitter);
-        transmitter->SetChannel(channel_);
+        transmitter->SetChannel(std::static_pointer_cast<SpaceChannel>(channel_));
       }
 
       satellites_.push_back(sat);

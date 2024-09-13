@@ -94,7 +94,7 @@ namespace lupnt {
     auto u_rx_tx = (r_tx_gcrf - r_rx_gcrf).normalized();
     double theta_rx = acos(u_rx_tx.dot(e_z));
     double phi_rx = atan2(u_rx_tx.dot(e_y), u_rx_tx.dot(e_x));
-    double Ar = GnssReceiver::GetAntennaGain(theta_rx * DEG, phi_rx * DEG);
+    double Ar = GnssReceiver::ComputeGain(theta_rx, phi_rx);
     return Ar;
   }
 

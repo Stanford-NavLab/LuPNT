@@ -99,7 +99,7 @@ namespace lupnt {
     virtual ~Transponder() = default;
     inline void SetTransmitter(const std::shared_ptr<Transmitter> &tx) { tx_ = tx; };
     inline void SetReceiver(const std::shared_ptr<Receiver> &rx) { rx_ = rx; };
-    inline void SetAgent(const std::shared_ptr<Agent> &agent) override {
+    inline void SetAgent(Ptr<Agent> agent) override {
       ICommDevice::SetAgent(agent);
       tx_->SetAgent(agent);
       rx_->SetAgent(agent);

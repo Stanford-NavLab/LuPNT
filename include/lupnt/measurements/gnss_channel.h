@@ -22,7 +22,7 @@ namespace lupnt {
   class GnssTransmitter;
   class GnssReceiver;
 
-  class GnssChannel {
+  class GnssChannel : public SpaceChannel {
   public:
     void AddTransmitter(Ptr<GnssTransmitter> &dev) { tx_devices.push_back(dev); }
 

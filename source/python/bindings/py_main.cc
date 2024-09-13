@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 
+#include "py_antenna.cc"
 #include "py_constants.cc"
 #include "py_dynamics.cc"
 #include "py_file.cc"
@@ -32,4 +33,5 @@ PYBIND11_MODULE(_pylupnt, m) {
   init_forces(m);
   init_file(m);
   init_tle(m);
+  init_antenna(m);
 }

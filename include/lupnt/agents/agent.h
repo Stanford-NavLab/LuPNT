@@ -62,7 +62,7 @@ namespace lupnt {
 
     // Setters
     void SetIsBodyFixed(bool is_bodyfixed) { is_bodyfixed_ = is_bodyfixed; }
-    virtual void SetRvState(Ptr<IState> rv) { rv_ = rv; }
+    void SetRvState(Ptr<IState> rv) { rv_ = rv; }
     void SetDynamics(Ptr<IDynamics> dyn) { dynamics_ = dyn; }
     void SetEpoch(Real epoch) { epoch_ = epoch; }
     void SetBodyId(NaifId bodyId) { bodyId_ = bodyId; }

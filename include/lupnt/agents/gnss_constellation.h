@@ -22,7 +22,7 @@
 
 namespace lupnt {
 
-  class GnssConstellation {
+  class Constellation {
   private:
     std::vector<Ptr<Spacecraft>> satellites_;
     Ptr<IDynamics> dynamics_;

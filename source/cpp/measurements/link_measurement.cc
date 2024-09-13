@@ -20,11 +20,11 @@ namespace lupnt {
 
   LinkMeasurement::LinkMeasurement(std::vector<NaifId> occult_bodies, VecXd occult_alt,
                                    Real hardware_delay)
-      : hardware_delay_(hardware_delay), occult_bodies_(occult_bodies), occult_alt_(occult_alt) {}
+      : occult_bodies_(occult_bodies), occult_alt_(occult_alt), hardware_delay_(hardware_delay) {}
 
   void LinkMeasurement::SetLinkParams() {
     ITransmission trans, trans_u;
-    double G = 1.0;
+    // double G = 1.0;
 
     if (one_way_generated_) {
       trans = trans_ow_;
@@ -111,8 +111,8 @@ namespace lupnt {
                                                  std::vector<LinkMeasurementType> meas_types,
                                                  bool with_noise, bool with_jacobian) {
     Real rho_ow, rho_ow_rate;
-    double sigma_ow = 0.0;
-    double sigma_ow_rate = 0.0;
+    // double sigma_ow = 0.0;
+    // double sigma_ow_rate = 0.0;
 
     int meas_size = meas_types.size();
     int state_size = state_size_ow_;
@@ -207,6 +207,8 @@ namespace lupnt {
 
       return rho_ow;
     }
+    throw std::runtime_error("Not implemented");
+    return 0.0;
   }
 
   Real LinkMeasurement::GetOneWayRangeRateMeasurement(Real epoch_rx, Vec6 rv_tx, Vec6 rv_rx,
@@ -216,6 +218,7 @@ namespace lupnt {
     auto func = [epoch_rx, rv_tx, clk_tx, hardware_delay, this](
                     const Vec6 rv_tx_in, const Vec2 clk_tx_in, const Vec6 rv_rx_in,
                     const Vec2 clk_rx_in) {
+      (void)clk_tx_in;
       Real owrr = ComputeOneWayRangeRateLTR(
           epoch_rx, rv_tx_in, rv_rx_in, clk_tx(1), clk_rx_in(1), linkparams_.tx_center_body,
           linkparams_.rx_center_body, linkparams_.is_bodyfixed_tx, linkparams_.is_bodyfixed_rx,
@@ -334,8 +337,8 @@ namespace lupnt {
                                                  std::vector<LinkMeasurementType> meas_types,
                                                  bool with_noise, bool with_jacobian) {
     Real rho_tw, rho_tw_rate;
-    double sigma_tw = 0.0;
-    double sigma_tw_rate = 0.0;
+    // double sigma_tw = 0.0;
+    // double sigma_tw_rate = 0.0;
 
     int meas_size = meas_types.size();
     int state_size = state_size_tw_;
@@ -418,6 +421,8 @@ namespace lupnt {
 
       return rho_tw;
     }
+    throw std::runtime_error("Not implemented");
+    return 0.0;
   }
 
   Real LinkMeasurement::GetTwoWayRangeRateMeasurement(Real epoch_rx, Vec6 rv_receiver,

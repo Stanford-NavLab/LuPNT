@@ -64,12 +64,14 @@ namespace lupnt {
     // Getters and Setters
     // Override channel getters and setters
     inline Ptr<Agent> GetAgent() const override { return agent; };
-    inline void SetAgent(const Ptr<Agent>& agent) override { this->agent = agent; };
+    inline void SetAgent(Ptr<Agent> agent) override { this->agent = agent; };
     inline Ptr<GnssChannel> GetGnssChannel() { return gnss_channel_; };
-    inline void SetChannel(const Ptr<GnssChannel>& channel) { gnss_channel_ = channel; };
+    inline void SetChannel(Ptr<SpaceChannel> channel) override {
+      gnss_channel_ = std::static_pointer_cast<GnssChannel>(channel);
+    };
 
-    double GetAntennaGain(Vec3d direction) { return antenna_.GetAntennaGain(direction); };
-    double GetAntennaGain(double theta, double phi) { return antenna_.GetAntennaGain(theta, phi); };
+    double ComputeGain(Vec3d direction) { return antenna_.ComputeGain(direction); };
+    double ComputeGain(double theta, double phi) { return antenna_.ComputeGain(theta, phi); };
 
   private:
     Ptr<Agent> agent;  // Agent that owns the device

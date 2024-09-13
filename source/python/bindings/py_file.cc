@@ -9,18 +9,14 @@
 namespace py = pybind11;
 using namespace lupnt;
 
-void init_file(py::module &m) {
-  py::class_<std::filesystem::path>(m, "Path")
-      .def(py::init<std::string>())
-      .def("__str__", [](const std::filesystem::path &p) { return p.string(); })
-      .def("__repr__", [](const std::filesystem::path &p) { return p.string(); });
-  py::implicitly_convertible<std::string, std::filesystem::path>();
-
-  m.def("get_data_path", &GetDataPath, "Get data path");
-  m.def("get_output_path", &GetOutputPath, "Get output path", py::arg("output_dir"));
-  m.def("find_file_in_dir", &FindFileInDir, "Find file in directory", py::arg("base_path"),
-        py::arg("filename"));
-  m.def("get_file_path", &GetFilePath, "Get file path", py::arg("filename"));
-  m.def("get_cspice_kernel_dir", &GetCspiceKernelDir, "Get cspice kernel directory");
-  m.def("get_ascii_kernel_dir", &GetAsciiKernelDir, "Get ascii kernel directory");
+void init_file(py::module& m) {
+  m.def("get_data_path", []() { return GetDataPath().string(); });
+  m.def("get_output_path",
+        [](std::string output_dir) { return GetOutputPath(output_dir).string(); });
+  m.def("find_file_in_dir", [](std::string base_path, std::string filename) {
+    return FindFileInDir(base_path, filename).value_or(std::filesystem::path(""));
+  });
+  m.def("get_file_path", [](std::string filename) { return GetFilePath(filename).string(); });
+  m.def("get_cspice_kernel_dir", []() { return GetCspiceKernelDir().string(); });
+  m.def("get_ascii_kernel_dir", []() { return GetAsciiKernelDir().string(); });
 }

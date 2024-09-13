@@ -435,3 +435,43 @@ def scatter(
             showlegend=False,
         )
     return fig
+
+
+def plot_antenna_gain_pattern(
+    fig: go.Figure = None,
+    antenna: pnt.Antenna = None,
+    azim: np.ndarray = None,
+    elev: np.ndarray = None,
+    gain: np.ndarray = None,
+) -> go.Figure:
+    if fig is None:
+        fig = go.Figure()
+    if azim is None:
+        azim = antenna.get_azimuth_angles()
+    if elev is None:
+        elev = antenna.get_elevation_angles()
+    if gain is None:
+        gain = antenna.get_gain_pattern()
+
+    # Create the meshgrid
+    AZ, EL = np.meshgrid(np.deg2rad(azim), np.deg2rad(elev))
+    R = gain - np.min(gain)
+    X = R * np.cos(AZ) * np.sin(EL)
+    Y = R * np.sin(AZ) * np.sin(EL)
+    Z = R * np.cos(EL)
+
+    # Create the 3D surface plot
+    fig = go.Figure()
+    fig.add_surface(
+        x=X,
+        y=Y,
+        z=Z,
+        surfacecolor=gain,
+        colorscale="Viridis",
+        colorbar=dict(title="Gain (dBi)"),
+    )
+    tmp = dict(title="", showticklabels=False)
+    fig.update_layout(
+        scene=dict(xaxis=tmp, yaxis=tmp, zaxis=tmp), width=600, height=400
+    )
+    return fig
