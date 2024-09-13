@@ -81,9 +81,9 @@ namespace lupnt {
     double G_T_rx_dB = Ar - 10.0 * log10(rx->rx_param_.Tsys);
     double loss = rx->rx_param_.Ae + rx->rx_param_.As + rx->rx_param_.L;  // sum of lossess (minus)
     double CN0 = EIRP_dB - fsl_loss_dB + 228.6 + G_T_rx_dB + loss;
-    double CN = CN0 - 10.0 * log10(tx->bandwidth);
+    // double CN = CN0 - 10.0 * log10(tx->bandwidth);
     double RP = CN0 - 228.6 + 10.0 * log10(rx->rx_param_.Tsys);  // Received Power
-    double RP_N0 = RP - 10.0 * log10(rx->rx_param_.Tsys);        // Received Power Noise
+    // double RP_N0 = RP - 10.0 * log10(rx->rx_param_.Tsys);        // Received Power Noise
 
     // register the values
     trans.EIRP = EIRP_dB;
@@ -131,7 +131,7 @@ namespace lupnt {
 
     // Compute Light time delay
     Real tau_prev = 0.0;  // propagation time
-    int n_iter = 0;
+    // int n_iter = 0;
     int max_iter = 100;
     double rho = 0.0;
 

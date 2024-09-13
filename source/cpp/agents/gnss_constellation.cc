@@ -40,8 +40,8 @@ namespace lupnt {
       Real i = tle.inclination * RAD;
       Real Omega = tle.raan * RAD;
       Real w = tle.arg_perigee * RAD;
-      Real rad_per_sec = tle.mean_motion * 2 * PI / SECS_DAY;    // TLE mean motion is in revs/day
-      Real M = tle.mean_anomaly * RAD + dt_epoch * rad_per_sec;  // in radians
+      Real rad_per_sec = tle.mean_motion * 2 * PI / SECS_DAY;  // TLE mean motion is in revs/day
+      Real M = Wrap2Pi(tle.mean_anomaly * RAD + dt_epoch * rad_per_sec);  // [rad]
 
       ClassicalOE coe({a, e, i, Omega, w, M});
       coe.SetCoordSystem(Frame::GCRF);

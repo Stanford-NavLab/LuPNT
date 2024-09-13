@@ -177,6 +177,7 @@ namespace lupnt {
   }
 
   double ComputePnRangeErrorCTL(double PRC_N0, double B_L, double Tc, Modulation modulation_type) {
+    (void)modulation_type;
     double sigma = 0.0;
     double f_RC = 1 / (2 * Tc);
 
@@ -189,6 +190,7 @@ namespace lupnt {
   }
 
   double ComputePnRangeErrorOL(double PRC_N0, double TI, double Tc, Modulation modulation_type) {
+    (void)modulation_type;
     double sigma = 0.0;
     double f_RC = 1 / (2 * Tc);
 

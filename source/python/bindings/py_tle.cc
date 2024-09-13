@@ -22,5 +22,6 @@ void init_tle(py::module &m) {
       .def_readonly("arg_perigee", &TLE::arg_perigee)
       .def_readonly("mean_anomaly", &TLE::mean_anomaly)
       .def_readonly("mean_motion", &TLE::mean_motion)
-      .def_readonly("epoch_tai", &TLE::epoch_tai);
+      .def_readonly("epoch_tai", &TLE::epoch_tai)
+      .def("__repr__", [](const TLE &t) { return "<TLE " + t.name + ">"; });
 }

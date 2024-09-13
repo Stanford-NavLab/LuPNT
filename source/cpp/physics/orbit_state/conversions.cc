@@ -376,6 +376,17 @@ namespace lupnt {
     return Vec6(ad, ed, id, Od, wd, Md);
   }
 
+  Vec6 TLE2Classical(const TLE &tle, Real GM) {
+    Real T = SECS_DAY / tle.mean_motion;
+    Real a = pow((T * T * GM_EARTH) / (4.0 * PI * PI), 1.0 / 3.0);
+    Real e = tle.eccentricity;
+    Real i = tle.inclination * RAD;
+    Real O = tle.raan * RAD;
+    Real w = tle.arg_perigee * RAD;
+    Real M = Wrap2Pi(tle.mean_anomaly * RAD);
+    return Vec6(a, e, i, O, w, M);
+  }
+
   VEC_IMP_VECTOR_REAL(Classical2Cart, 6);
   VEC_IMP_VECTOR_VECTOR(Inertial2Synodic, 6);
   VEC_IMP_VECTOR_VECTOR(Synodic2Intertial, 6);

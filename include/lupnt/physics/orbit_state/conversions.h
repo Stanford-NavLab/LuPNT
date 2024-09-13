@@ -1,6 +1,7 @@
 #pragma once
 #include "lupnt/numerics/vector_macros.h"
 #include "orbit_states.h"
+#include "tle.h"
 
 namespace lupnt {
 
@@ -56,6 +57,8 @@ namespace lupnt {
   ClassicalOE RelQuasiNonsing2Classical(const ClassicalOE &coe,
                                         const QuasiNonsingROE &RelQuasiNonsing);
   Vec6 RelQuasiNonsing2Classical(const Vec6 &coe, const Vec6 &RelQuasiNonsing);
+
+  Vec6 TLE2Classical(const TLE &tle, Real GM);
 
   // Vector definitions
   VEC_DEF_VECTOR_REAL(Classical2Cart, 6);

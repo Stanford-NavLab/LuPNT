@@ -65,7 +65,7 @@ namespace lupnt {
     GnssTransmission GenerateTransmission(double t);
 
     // Getters and Setters
-    void SetChannel(Ptr<GnssChannel> ch) { channel = ch; };
+    void SetChannel(const Ptr<SpaceChannel> ch) override { channel = ch; };
     int GetPRN() { return prn_; };
     void SetFreq(double freq) { freq_tx = freq; };
     std::string GetGnssType() { return gnss_type_; };

@@ -11,6 +11,7 @@
 
 #include "lupnt/physics/orbit_state/tle.h"
 
+#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -23,11 +24,10 @@
 namespace lupnt {
   TLE TLE::FromLines(const std::string& line1, const std::string& line2, const std::string& line3) {
     TLE tle;
+    tle.name = boost::trim_right_copy(line1);
     if (line1.substr(0, 3) == "GPS") {
-      tle.name = "GPS";
       tle.prn = stod(SplitString(line1, '(')[1].substr(4, 2));
     } else if (line1.substr(0, 3) == "BEI") {
-      tle.name = "BEIDOU";
       std::vector<std::string> split = SplitString(line1, '(');
       if (split[1].substr(0, 1) == "C") {
         tle.prn = stod(split[1].substr(1, 2));
@@ -35,14 +35,11 @@ namespace lupnt {
         tle.prn = 0;
       }
     } else if (line1.substr(0, 3) == "GSA") {
-      tle.name = "GALILEO";
       tle.prn = stod(SplitString(line1, '(')[1].substr(5, 2));
     } else if (line1.substr(0, 3) == "COS") {
-      tle.name = "GLONASS";
       tle.prn = stod(SplitString(line1, '(')[1].substr(0, 3));
     } else {
-      tle.name = line1;
-      tle.prn = 0;
+      tle.prn = -1;
     }
     tle.epoch_year = stod(line2.substr(18, 2));
     tle.epoch_day = stod(line2.substr(20, 12));
@@ -63,13 +60,14 @@ namespace lupnt {
   };
 
   std::vector<TLE> TLE::FromFile(const std::string& filename) {
-    std::ifstream inputFile(filename);
-    if (!inputFile.is_open()) {
+    std::filesystem::path path = GetFilePath(filename);
+    std::ifstream input_file(path);
+    if (!input_file.is_open()) {
       throw std::runtime_error("Could not open file " + filename);
     }
     std::vector<TLE> tles;
     std::string line1, line2, line3;
-    while (getline(inputFile, line1) && getline(inputFile, line2) && getline(inputFile, line3)) {
+    while (getline(input_file, line1) && getline(input_file, line2) && getline(input_file, line3)) {
       TLE tle = TLE::FromLines(line1, line2, line3);
       tles.push_back(tle);
     };

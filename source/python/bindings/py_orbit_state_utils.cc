@@ -75,6 +75,9 @@ void init_orbit_state_utils(py::module &m) {
         return RelQuasiNonsing2Classical(coe, rel_qnsoe);
       },
       py::arg("coe"), py::arg("rel_qnsoe"));
+  m.def("tle2classical", [](const TLE &tle, double GM) -> ClassicalOE {
+    return TLE2Classical(tle, GM).cast<double>();
+  });
 
   VEC_BIND_REAL_REAL("get_orbital_period", GetOrbitalPeriod, "a", "GM");
 

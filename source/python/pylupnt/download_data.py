@@ -11,7 +11,7 @@ DATA_FOLDERNAME = "LuPNT_data"
 if "LUPNT_DATA_PATH" not in os.environ or not os.path.isdir(
     os.path.join(os.environ["LUPNT_DATA_PATH"], "ephemeris")
 ):
-    print("Downloading required data from", DATA_URL)
+    print("Fetching data from", DATA_URL)
     response = requests.get(DATA_URL, stream=True)
     with open(DATA_FILENAME, "wb") as f:
         shutil.copyfileobj(response.raw, f)
@@ -20,5 +20,3 @@ if "LUPNT_DATA_PATH" not in os.environ or not os.path.isdir(
     os.remove(DATA_FILENAME)
     os.environ["LUPNT_DATA_PATH"] = os.path.join(os.getcwd(), DATA_FOLDERNAME)
     print("Downloaded data to", os.path.relpath(os.environ["LUPNT_DATA_PATH"]))
-else:
-    print("Found required data at", os.path.relpath(os.environ["LUPNT_DATA_PATH"]))
