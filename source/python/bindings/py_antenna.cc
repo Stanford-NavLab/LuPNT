@@ -11,14 +11,14 @@ void init_antenna(py::module &m) {
       .def(py::init<const std::string &>())
       .def(
           "compute_gain",
-          [](Antenna &ant, double elev, double azim) -> double {
-            return ant.ComputeGain(elev, azim);
+          [](Antenna &ant, double azim, double elev) -> double {
+            return ant.ComputeGain(azim, elev).val();
           },
           py::arg("elev"), py::arg("azim"))
       .def(
           "compute_gain",
-          [](Antenna &ant, Eigen::VectorXd elev, Eigen::VectorXd azim) -> Eigen::VectorXd {
-            return ant.ComputeGain(elev, azim).cast<double>();
+          [](Antenna &ant, Eigen::VectorXd azim, Eigen::VectorXd elev) -> Eigen::VectorXd {
+            return ant.ComputeGain(azim, elev).cast<double>();
           },
           py::arg("elev"), py::arg("azim"))
       .def("get_gain_pattern", [](Antenna &ant) { return ant.GetGainPattern().cast<double>(); })

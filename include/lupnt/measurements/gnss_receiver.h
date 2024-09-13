@@ -70,8 +70,8 @@ namespace lupnt {
       gnss_channel_ = std::static_pointer_cast<GnssChannel>(channel);
     };
 
-    double ComputeGain(Vec3d direction) { return antenna_.ComputeGain(direction); };
-    double ComputeGain(double theta, double phi) { return antenna_.ComputeGain(theta, phi); };
+    Real ComputeGain(Vec3 direction) { return antenna_.ComputeGain(direction); };
+    Real ComputeGain(Real azim, Real elev) { return antenna_.ComputeGain(azim, elev); };
 
   private:
     Ptr<Agent> agent;  // Agent that owns the device

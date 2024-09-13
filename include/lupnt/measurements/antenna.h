@@ -23,10 +23,10 @@ namespace lupnt {
 
     void LoadAntennaPattern();
 
-    Real ComputeGain(Real elev, Real azim);
+    Real ComputeGain(Real azim, Real elev);
     VEC_DEF_REAL_REAL(ComputeGain)
 
-    double ComputeGain(Vec3 direction);
+    Real ComputeGain(Vec3 direction);
     MatXd GetGainPattern() { return gain_; }
     VecXd GetElevationAngles() { return elev_; }
     VecXd GetAzimuthAngles() { return azim_; }

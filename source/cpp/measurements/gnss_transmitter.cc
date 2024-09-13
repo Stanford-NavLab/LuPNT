@@ -130,9 +130,9 @@ namespace lupnt {
     Vec3d e_y_gnss = e_gnss[1];
     Vec3d e_z_gnss = e_gnss[2];
     Vec3d u_tx_rx = (r_rx_gcrf - r_tx_gcrf).normalized();
-    double theta_tx = acos(u_tx_rx.dot(e_z_gnss));
-    double phi_tx = atan2(u_tx_rx.dot(e_y_gnss), u_tx_rx.dot(e_x_gnss));
-    double At = GnssTransmitter::ComputeGain(theta_tx, phi_tx);
+    double elev_tx = acos(u_tx_rx.dot(e_z_gnss));
+    double azim_tx = atan2(u_tx_rx.dot(e_y_gnss), u_tx_rx.dot(e_x_gnss));
+    double At = GnssTransmitter::ComputeGain(azim_tx, elev_tx).val();
     return At;
   }
 

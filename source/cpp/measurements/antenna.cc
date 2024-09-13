@@ -104,17 +104,10 @@ namespace lupnt {
     file.close();
   }
 
-  /**
-   * @brief Get the Antenna Gain object
-   *
-   * @param elev elevation angle [rad]
-   * @param az azimuth angle [rad]
-   * @return double   antenna gain [dB]
-   */
-  double Antenna::ComputeGain(Real elev, Real azim) {
+  Real Antenna::ComputeGain(Real azim, Real elev) {
     elev *= DEG;
     azim *= DEG;
-    double gain = 0.0;
+    Real gain = 0.0;
 
     // Omni-directional antenna
     if (n_dim_ == 0) return gain;
@@ -131,16 +124,16 @@ namespace lupnt {
     return gain;
   }
 
-  VEC_IMP_REAL_REAL(ComputeGain)
+  VEC_IMP_REAL_REAL(Antenna::ComputeGain)
 
-  double Antenna::ComputeGain(Vec3 direction) {
+  Real Antenna::ComputeGain(Vec3 direction) {
     direction.normalize();
 
     // Compute elevation and azimuth angles
     Real elev = acos(direction.dot(Vec3::UnitZ()));
     Real azim = atan2(direction.y(), direction.x());
 
-    return ComputeGain(elev, azim);
+    return ComputeGain(azim, elev);
   }
 
 }  // namespace lupnt
