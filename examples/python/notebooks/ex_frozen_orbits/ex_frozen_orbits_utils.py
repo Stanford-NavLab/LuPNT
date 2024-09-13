@@ -6,6 +6,11 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import plotly.io as pio
 
+# Silence ipykernel depreciation warnings
+import warnings
+
+warnings.filterwarnings("ignore")
+
 if "VSCODE_PID" in os.environ:
     pio.renderers.default = "notebook"
 

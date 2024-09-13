@@ -288,6 +288,8 @@ void init_dynamics(py::module &m) {
       .def_static("Venus", &Body::Venus, py::arg("n") = 0, py::arg("m") = 0,
                   py::arg("gravity_file") = "MGN75HSAAP.cof")
       .def_static("Sun", &Body::Sun)
+      .def_static("Jupiter", &Body::Jupiter)
+      .def_static("Saturn", &Body::Saturn)
       .def_readonly("id", &Body::id)
       .def_readonly("name", &Body::name)
       .def_readonly("GM", &Body::GM)

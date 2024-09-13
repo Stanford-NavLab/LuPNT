@@ -39,9 +39,7 @@ namespace lupnt {
 
       // Compute Light time delay
       double tau_prev = 0.0;  // propagation time
-      int n_iter = 0;
       int max_iter = 100;
-
       for (int n_iter = 0; n_iter < max_iter; n_iter++) {
         rv_tx_gcrf = tx->GetAgent()->GetCartesianGCRFStateAtEpoch(t - tau);
         double rho = (rv_tx_gcrf.r() - rv_rx_gcrf.r()).norm().val();

@@ -63,6 +63,7 @@ namespace lupnt {
       case Frame::MOON_OP: os << "MOON_OP"; break;
       case Frame::MARS_FIXED: os << "MARS_FIXED"; break;
       case Frame::VENUS_FIXED: os << "VENUS_FIXED"; break;
+      default: throw std::runtime_error("Frame not implemented");
     }
     return os;
   }

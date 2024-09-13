@@ -15,33 +15,33 @@
 #include <string>
 
 #include "lupnt/core/constants.h"
+#include "lupnt/core/user_file_path.h"
 #include "lupnt/physics/orbit_state/tle.h"
 
 namespace lupnt {
 
-  void GnssConstellation::LoadTleFile(std::string filename) {
-    std::filesystem::path path = kTlePath / filename;
-    path += ".txt";
+  void GnssConstellation::LoadTleFile(std::string_view filename) {
+    std::filesystem::path path = GetFilePath(filename);
 
     bool is_first = true;
 
     for (auto tle : TLE::FromFile(path.string())) {
       // extract epoch
       if (is_first) {
-        epoch_ = tle.epochTAI;
+        epoch_ = tle.epoch_tai;
       }
-      double dt_epoch = epoch_ - tle.epochTAI;
+      double dt_epoch = epoch_ - tle.epoch_tai;
 
-      double T = SECS_DAY / tle.meanMotion;
+      double T = SECS_DAY / tle.mean_motion;
 
       // Classical orbital elements
       Real a = pow((T * T * GM_EARTH) / (4.0 * PI * PI), 1.0 / 3.0);
       Real e = tle.eccentricity;
       Real i = tle.inclination * RAD;
       Real Omega = tle.raan * RAD;
-      Real w = tle.argPerigee * RAD;
-      Real rad_per_sec = tle.meanMotion * 2 * PI / SECS_DAY;    // TLE mean motion is in revs/day
-      Real M = tle.meanAnomaly * RAD + dt_epoch * rad_per_sec;  // in radians
+      Real w = tle.arg_perigee * RAD;
+      Real rad_per_sec = tle.mean_motion * 2 * PI / SECS_DAY;    // TLE mean motion is in revs/day
+      Real M = tle.mean_anomaly * RAD + dt_epoch * rad_per_sec;  // in radians
 
       ClassicalOE coe({a, e, i, Omega, w, M});
       coe.SetCoordSystem(Frame::GCRF);

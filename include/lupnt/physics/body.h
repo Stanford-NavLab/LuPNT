@@ -55,6 +55,8 @@ namespace lupnt {
     static BodyT Moon(int n = 0, int m = 0, std::string gravity_file = "grgm900c.cof");
     static BodyT Venus(int n = 0, int m = 0, std::string gravity_file = "MGN75HSAAP.cof");
     static BodyT Mars(int n = 0, int m = 0, std::string gravity_file = "GMM1.cof");
+    static BodyT Jupiter();
+    static BodyT Saturn();
   };
 
   using Body = BodyT<double>;

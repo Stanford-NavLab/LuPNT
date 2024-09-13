@@ -154,7 +154,6 @@ namespace lupnt {
               // https://iopscience.iop.org/article/10.3847/1538-3881/abd414/pdf
               Mat3 B_M = RotX(-0.2785 * DEG_ARCSEC) * RotY(-78.6944 * DEG_ARCSEC)
                          * RotZ(-67.8526 * DEG_ARCSEC);
-              Mat3 B_M_inv = B_M.transpose();
 
               Vec3 r_PA = B_M * r_ME;
               Vec3 v_PA = B_M * v_ME;

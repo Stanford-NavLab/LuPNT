@@ -17,7 +17,6 @@ namespace lupnt {
     bool with_angular_velocity_ = false;  // With Angular Velocity
 
     Frame frame_ = Frame::NONE;
-    AttitudeState *attached_to_ = nullptr;
 
   public:
     AttitudeState(const VecX &x) : x_(x) {

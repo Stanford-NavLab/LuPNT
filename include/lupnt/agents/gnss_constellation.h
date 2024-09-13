@@ -11,6 +11,7 @@
 #pragma once
 
 #include <memory>
+#include <string_view>
 #include <vector>
 
 #include "agent.h"
@@ -27,7 +28,6 @@ namespace lupnt {
     Ptr<IDynamics> dynamics_;
     Ptr<GnssChannel> channel_;
     double epoch_;  // in TAI
-    const std::filesystem::path kTlePath = GetDataPath() / "tle";
 
   public:
     // Setters
@@ -49,7 +49,7 @@ namespace lupnt {
       epoch_ = epoch;
     }
 
-    void LoadTleFile(std::string filename);
+    void LoadTleFile(std::string_view filename);
   };
 
 }  // namespace lupnt

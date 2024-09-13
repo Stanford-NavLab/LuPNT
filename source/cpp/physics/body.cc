@@ -97,6 +97,30 @@ namespace lupnt {
   template BodyT<double> BodyT<double>::Venus(int n_max, int m_max, std::string gravity_file);
   template BodyT<Real> BodyT<Real>::Venus(int n_max, int m_max, std::string gravity_file);
 
+  template <typename T> BodyT<T> BodyT<T>::Jupiter() {
+    BodyT<T> jupiter;
+    jupiter.name = "JUPITER";
+    jupiter.id = NaifId::JUPITER;
+    jupiter.fixed_frame = Frame::JUPITER_FIXED;
+    jupiter.GM = GM_JUPITER;
+    jupiter.R = R_JUPITER;
+    return jupiter;
+  }
+  template BodyT<double> BodyT<double>::Jupiter();
+  template BodyT<Real> BodyT<Real>::Jupiter();
+
+  template <typename T> BodyT<T> BodyT<T>::Saturn() {
+    BodyT<T> saturn;
+    saturn.name = "SATURN";
+    saturn.id = NaifId::SATURN;
+    saturn.fixed_frame = Frame::SATURN_FIXED;
+    saturn.GM = GM_SATURN;
+    saturn.R = R_SATURN;
+    return saturn;
+  }
+  template BodyT<double> BodyT<double>::Saturn();
+  template BodyT<Real> BodyT<Real>::Saturn();
+
   BodyData GetBodyData(NaifId id) {
     switch (id) {
       case NaifId::SUN: return {NaifId::SUN, "SUN", GM_SUN, 696342.0, Frame::ICRF, Frame::ICRF};

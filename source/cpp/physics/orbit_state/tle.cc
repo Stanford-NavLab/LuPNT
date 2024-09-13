@@ -44,22 +44,21 @@ namespace lupnt {
       tle.name = line1;
       tle.prn = 0;
     }
-    tle.epochYear = stod(line2.substr(18, 2));
-    tle.epochDay = stod(line2.substr(20, 12));
+    tle.epoch_year = stod(line2.substr(18, 2));
+    tle.epoch_day = stod(line2.substr(20, 12));
     tle.bstar = stod(line2.substr(53, 8));
     tle.inclination = stod(line3.substr(8, 8));
     tle.raan = stod(line3.substr(17, 8));
     tle.eccentricity = stod("0." + line3.substr(26, 7));
-    tle.argPerigee = stod(line3.substr(34, 8));
-    tle.meanAnomaly = stod(line3.substr(43, 8));
-    tle.meanMotion = stod(line3.substr(52, 11));
+    tle.arg_perigee = stod(line3.substr(34, 8));
+    tle.mean_anomaly = stod(line3.substr(43, 8));
+    tle.mean_motion = stod(line3.substr(52, 11));
 
     // compute TAI from epoch
     std::string fullyear_string = "20" + line2.substr(18, 2);
-    Real epochYearStartTAI = spice::String2TAI(fullyear_string + "/01/01 00:00:00 UTC");
-    double epochTAI = epochYearStartTAI.val() + tle.epochDay * SECS_DAY;
-    tle.epochTAI = epochTAI;
-
+    Real epoch_year_start_tai = spice::String2TAI(fullyear_string + "/01/01 00:00:00 UTC");
+    double epoch_tai = epoch_year_start_tai.val() + tle.epoch_day * SECS_DAY;
+    tle.epoch_tai = epoch_tai;
     return tle;
   };
 

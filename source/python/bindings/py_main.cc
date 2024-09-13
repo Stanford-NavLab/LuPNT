@@ -2,6 +2,7 @@
 
 #include "py_constants.cc"
 #include "py_dynamics.cc"
+#include "py_file.cc"
 #include "py_forces.cc"
 #include "py_frame_converter.cc"
 #include "py_kernels.cc"
@@ -12,6 +13,7 @@
 #include "py_sandbox.cc"
 #include "py_spice_interface.cc"
 #include "py_time_converter.cc"
+#include "py_tle.cc"
 
 namespace py = pybind11;
 
@@ -28,4 +30,6 @@ PYBIND11_MODULE(_pylupnt, m) {
   init_kernels(m);
   init_sandbox(m);
   init_forces(m);
+  init_file(m);
+  init_tle(m);
 }
