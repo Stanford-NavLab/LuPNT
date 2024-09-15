@@ -20,6 +20,50 @@
 
 namespace lupnt {
 
+  void Antenna::FormatAntennaPattern(std::vector<double> &phi, std::vector<double> &theta,
+                                     std::vector<std::vector<double>> &gain) {
+    // Format theta to [0, 360] and phi to [-180, 180]
+    if (theta.front() == 0 && theta.back() <= 360 && phi.back() <= 180) {
+      if (phi.back() >= 80 && phi.back() < 90) {
+        phi.push_back(90);
+        gain.push_back(gain.front());
+      }
+      if (phi.back() >= 170 && phi.back() < 180) {
+        phi.push_back(180);
+        gain.push_back(gain.front());
+      }
+      phi_max_ = phi.back();
+      if (theta.back() < 360) {
+        theta.push_back(360);
+        for (auto &g : gain) g.push_back(g.front());
+      }
+    } else if (theta.front() == -180 && theta.back() == 180 && phi.front() == 0
+               && phi.back() == 180) {
+      std::vector<double> theta_tmp, g_tmp;
+      std::vector<std::vector<double>> gain_tmp;
+      for (size_t i = 0; i < phi.size(); i++) {
+        g_tmp.clear();
+        for (size_t j = 0; j < theta.size(); j++) {
+          if (theta[j] >= 0) {  // [0, 180]
+            if (i == 0) theta_tmp.push_back(theta[j]);
+            g_tmp.push_back(gain[i][j]);
+          }
+        }
+        for (size_t j = 1; j < theta.size(); j++) {
+          if (theta[j] <= 0) {  // (180, 360]
+            if (i == 0) theta_tmp.push_back(theta[j] + 360);
+            g_tmp.push_back(gain[i][j]);
+          }
+        }
+        gain_tmp.push_back(g_tmp);
+      }
+      phi_max_ = phi.back();
+      theta = theta_tmp;
+      gain = gain_tmp;
+    } else {
+      throw std::runtime_error("Invalid antenna pattern");
+    }
+  }
   void Antenna::LoadAntennaPattern() {
     // Check for omni-directional antenna
     if (name_ == "") {
@@ -62,65 +106,65 @@ namespace lupnt {
     if (tokens.size() == 2) {
       // 1D pattern
       n_dim_ = 1;
-      std::vector<double> elev, gain;
+      std::vector<double> phi, gain;
       while (std::getline(file, line)) {
         ss = std::stringstream(line);
         tokens.clear();
         while (std::getline(ss, token, ',')) tokens.push_back(std::stod(token));
-        elev.push_back(tokens[0]);
+        phi.push_back(tokens[0]);
         gain.push_back(tokens[1]);
       }
-      gain_ = MatXd::Zero(elev.size(), 1);
-      elev_ = VecXd::Zero(elev.size());
+      gain_ = MatXd::Zero(phi.size(), 1);
+      phi_ = VecXd::Zero(phi.size());
       for (size_t i = 0; i < gain.size(); i++) {
         gain_(i, 0) = gain[i];
-        elev_(i) = elev[i];
+        phi_(i) = Wrap2Pi(phi[i] * RAD).val();
       }
     } else {
       // 2D
       n_dim_ = 2;
-      std::vector<double> elev, azim;
+      std::vector<double> phi, theta;
       std::vector<std::vector<double>> gain;
-      for (size_t i = 1; i < tokens.size(); i++) azim.push_back(tokens[i]);
+      for (size_t i = 1; i < tokens.size(); i++) theta.push_back(tokens[i]);
       while (std::getline(file, line)) {
         ss = std::stringstream(line);
         tokens.clear();
         while (std::getline(ss, token, ',')) tokens.push_back(std::stod(token));
-        elev.push_back(tokens[0]);
+        phi.push_back(tokens[0]);
         gain.push_back(std::vector<double>(tokens.begin() + 1, tokens.end()));
       }
-      azim.push_back(360.0);
-      for (size_t i = 0; i < gain.size(); i++) gain[i].push_back(gain[i][0]);
 
-      gain_ = MatXd::Zero(elev.size(), azim.size());
-      elev_ = VecXd::Zero(elev.size());
-      azim_ = VecXd::Zero(azim.size());
+      // Format theta to [0, 360] and phi to [-180, 180]
+      FormatAntennaPattern(phi, theta, gain);
+
+      // Pattern
+      gain_ = MatXd::Zero(phi.size(), theta.size());
+      phi_ = VecXd::Zero(phi.size());
+      theta_ = VecXd::Zero(theta.size());
       for (size_t i = 0; i < gain.size(); i++) {
-        elev_(i) = elev[i];
+        phi_(i) = phi[i];
         for (size_t j = 0; j < gain[i].size(); j++) gain_(i, j) = gain[i][j];
       }
-      for (size_t i = 0; i < azim.size(); i++) azim_(i) = azim[i];
+      for (size_t i = 0; i < theta.size(); i++) theta_(i) = theta[i];
     }
     file.close();
   }
 
-  Real Antenna::ComputeGain(Real azim, Real elev) {
-    elev *= DEG;
-    azim *= DEG;
+  Real Antenna::ComputeGain(Real theta, Real phi) {
     Real gain = 0.0;
+    if (n_dim_ == 0) return gain;  // Omni-directional antenna
 
-    // Omni-directional antenna
-    if (n_dim_ == 0) return gain;
+    theta = Wrap2TwoPi(theta) * DEG;
+    phi = Wrap2Pi(phi) * DEG;
+    if (phi > phi_max_ || phi < -phi_max_) return NAN;  // Minimum angle
+    if (phi < 0 && phi_(0) >= 0) phi = -phi;            // Symmetry
 
-    // Maximum elevation angle
-    if (elev > elev_.maxCoeff()) return -500;
-
-    // Gain
-    if (n_dim_ == 2)
-      gain = LinearInterp2d(elev_, azim_, gain_, elev.val(), azim.val());
-    else if (n_dim_ == 1)
-      gain = LinearInterp1d(elev_, gain_, elev.val());
-
+    // Interpolation
+    if (n_dim_ == 2) {
+      gain = LinearInterp2d(phi_, theta_, gain_, phi.val(), theta.val());
+    } else if (n_dim_ == 1) {
+      gain = LinearInterp1d(phi_, gain_, phi.val());
+    }
     return gain;
   }
 
@@ -129,11 +173,11 @@ namespace lupnt {
   Real Antenna::ComputeGain(Vec3 direction) {
     direction.normalize();
 
-    // Compute elevation and azimuth angles
-    Real elev = acos(direction.dot(Vec3::UnitZ()));
-    Real azim = atan2(direction.y(), direction.x());
+    // Compute phiation and thetauth angles
+    Real phi = acos(direction.dot(Vec3::UnitZ()));
+    Real theta = atan2(direction.y(), direction.x());
 
-    return ComputeGain(azim, elev);
+    return ComputeGain(theta, phi);
   }
 
 }  // namespace lupnt

@@ -201,7 +201,7 @@ namespace lupnt {
   double J0Bessel(double x) {
     // Bessel function of the first kind of order 0
     // Reference: https://en.wikipedia.org/wiki/Bessel_function
-    double J0 = 0.0;
+    // double J0 = 0.0;
     double y = 1.0;
     double sum = 1.0;
     for (int i = 1; i < 10; i++) {
@@ -215,7 +215,7 @@ namespace lupnt {
   double J1Bessel(double x) {
     // Bessel function of the first kind of order 1
     // Reference: https://en.wikipedia.org/wiki/Bessel_function
-    double J1 = 0.0;
+    // double J1 = 0.0;
     double y = 1.0;
     double sum = 1.0;
     for (int i = 1; i < 10; i++) {
@@ -423,7 +423,7 @@ namespace lupnt {
 
   std::vector<double> ToDoubleVec(const VecX& x) {
     std::vector<double> y(x.size());
-    for (size_t i = 0; i < x.size(); i++) {
+    for (int i = 0; i < x.size(); i++) {
       y[i] = x(i).val();
     }
     return y;
@@ -431,7 +431,7 @@ namespace lupnt {
 
   std::vector<double> ToDoubleVec(const VecXd& x) {
     std::vector<double> y(x.size());
-    for (size_t i = 0; i < x.size(); i++) {
+    for (int i = 0; i < x.size(); i++) {
       y[i] = x(i);
     }
     return y;
@@ -439,7 +439,7 @@ namespace lupnt {
 
   std::vector<double> ToDoubleVec(const VecXi& x) {
     std::vector<double> y(x.size());
-    for (size_t i = 0; i < x.size(); i++) {
+    for (int i = 0; i < x.size(); i++) {
       y[i] = x(i);
     }
     return y;

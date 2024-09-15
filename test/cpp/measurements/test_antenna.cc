@@ -1,5 +1,8 @@
 #include <lupnt/lupnt.h>
 
+#include <string>
+#include <vector>
+
 #include "../utils.cc"
 
 double ABS_TOL = 1e-6;
@@ -14,4 +17,21 @@ TEST_CASE("Antenna") {
   RequireNear(ant.ComputeGain(358.5 * RAD, 74 * RAD), 0.5 * (-18.68 - 18.73), ABS_TOL);
   RequireNear(ant.ComputeGain(359.5 * RAD, 74 * RAD), 0.5 * (-20.45 - 18.73), ABS_TOL);
   RequireNear(ant.ComputeGain(359 * RAD, 74.5 * RAD), 0.5 * (-17.48 - 18.73), ABS_TOL);
+
+  std::vector<std::string> names
+      = {"Parabora_S_d10", "Parabora_S_d100", "Block-IIA_ACE", "Block-IIR-M_ACE",
+         "BEIDOU_IGSO",    "BEIDOU_MEO",      "GALLILEO",      "moongpsr",
+         "DSN-S",          "DSN-X",           "LGPS",          "Patch_22_RHCP_8025MHz"};
+  VecX phi = VecX::LinSpaced(-90, 90, 181) * DEG;
+  VecX theta = VecX::LinSpaced(0, 360, 361) * DEG;
+  for (std::string name : names) {
+    Antenna ant(name);
+    MatX gain = ant.ComputeGain(theta, phi);
+    for (int i = 0; i < gain.rows(); i++) {
+      for (int j = 0; j < gain.cols(); j++) {
+        REQUIRE(gain(i, j).val() < 1e6);
+        REQUIRE(gain(i, j).val() > -1e6);
+      }
+    }
+  }
 }

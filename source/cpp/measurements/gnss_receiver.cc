@@ -92,9 +92,9 @@ namespace lupnt {
     auto e_z = e_sat[2];
 
     auto u_rx_tx = (r_tx_gcrf - r_rx_gcrf).normalized();
-    double elev_rx = acos(u_rx_tx.dot(e_z));
-    double azim_rx = atan2(u_rx_tx.dot(e_y), u_rx_tx.dot(e_x));
-    double Ar = GnssReceiver::ComputeGain(azim_rx, elev_rx).val();
+    double phi_rx = acos(u_rx_tx.dot(e_z));
+    double theta_rx = atan2(u_rx_tx.dot(e_y), u_rx_tx.dot(e_x));
+    double Ar = GnssReceiver::ComputeGain(theta_rx, phi_rx).val();
     return Ar;
   }
 

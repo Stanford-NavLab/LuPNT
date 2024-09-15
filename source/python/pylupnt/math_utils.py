@@ -2,19 +2,6 @@ import numpy as np
 from typing import Union
 
 
-def wrap2Pi(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    """
-    Wrap angle in radians to [-pi pi]
-
-    Args:
-        x (float): angle in radians
-    Returns:
-        x (float): angle in radians wrapped to [-pi pi]
-    """
-    x = np.mod(x + np.pi, 2 * np.pi) - np.pi
-    return x
-
-
 def mat_to_arr_idx(i: int, j: int, n: int) -> int:
     """
     Convert matrix indices to array index

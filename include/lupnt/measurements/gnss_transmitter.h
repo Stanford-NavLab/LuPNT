@@ -79,7 +79,7 @@ namespace lupnt {
     inline void SetAgent(Ptr<Agent> agent) override { agent_ = agent; };
 
     Real ComputeGain(Vec3d direction) { return antenna_.ComputeGain(direction); };
-    Real ComputeGain(Real azim, Real elev) { return antenna_.ComputeGain(azim, elev); };
+    Real ComputeGain(Real theta, Real phi) { return antenna_.ComputeGain(theta, phi); };
 
   private:
     Ptr<Agent> agent_;          // Agent that owns the device

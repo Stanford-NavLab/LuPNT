@@ -28,6 +28,7 @@ namespace lupnt {
   std::optional<std::filesystem::path> FindFileInDir(const std::filesystem::path& base_path,
                                                      std::string_view filename) {
     for (const auto& entry : std::filesystem::recursive_directory_iterator(base_path)) {
+      if (entry.is_directory()) continue;
       if (entry.path().filename().string() == filename) return entry.path();
       if (entry.path().stem().string() == filename) return entry.path();
     }

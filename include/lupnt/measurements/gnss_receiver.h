@@ -71,7 +71,7 @@ namespace lupnt {
     };
 
     Real ComputeGain(Vec3 direction) { return antenna_.ComputeGain(direction); };
-    Real ComputeGain(Real azim, Real elev) { return antenna_.ComputeGain(azim, elev); };
+    Real ComputeGain(Real theta, Real phi) { return antenna_.ComputeGain(theta, phi); };
 
   private:
     Ptr<Agent> agent;  // Agent that owns the device

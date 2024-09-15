@@ -167,21 +167,24 @@ def plot_frame(
     fig: go.Figure,
     origin: np.ndarray,
     rotation: np.ndarray,
-    length_scale: float = 1,
-    tip_scale: float = 1,
+    length: Union[float, np.ndarray] = 1,
+    tip: float = 1,
     width: float = 2,
+    scale: float = 3,
 ) -> None:
-    plot_arrow3(fig, origin, rotation[0], length_scale, tip_scale, "red", width)
-    plot_arrow3(fig, origin, rotation[1], length_scale, tip_scale, "green", width)
-    plot_arrow3(fig, origin, rotation[2], length_scale, tip_scale, "blue", width)
+    if isinstance(length, (int, float)):
+        length = np.array([length, length, length])
+    plot_arrow3(fig, origin, rotation[0], length[0], tip, "red", width, scale)
+    plot_arrow3(fig, origin, rotation[1], length[1], tip, "green", width, scale)
+    plot_arrow3(fig, origin, rotation[2], length[2], tip, "blue", width, scale)
 
 
 def plot_arrow3(
     fig: go.Figure,
     origin: np.ndarray = np.zeros(3),
     direction: np.ndarray = np.array([1, 0, 0]),
-    length_scale: float = 1,
-    tip_scale: float = 1,
+    length: float = 1,
+    tip: float = 1,
     color: Union[str, list[str]] = "black",
     width: float = 2,
     scale: float = 3,
@@ -193,8 +196,8 @@ def plot_arrow3(
         fig (go.Figure): plotly figure
         origin (np.ndarray): origin of the arrow
         direction (np.ndarray): direction of the arrow
-        length_scale (float): scale factor for the length of the arrow
-        tip_scale (float): scale factor for the tip of the arrow
+        length (float): scale factor for the length of the arrow
+        tip (float): scale factor for the tip of the arrow
         color (str): color of the arrow
         width (float): width of the arrow
     """
@@ -211,9 +214,9 @@ def plot_arrow3(
     for i in range(origin.shape[0]):
         fig.add_trace(
             go.Scatter3d(
-                x=[origin[i, 0], origin[i, 0] + direction[i, 0] * length_scale],
-                y=[origin[i, 1], origin[i, 1] + direction[i, 1] * length_scale],
-                z=[origin[i, 2], origin[i, 2] + direction[i, 2] * length_scale],
+                x=[origin[i, 0], origin[i, 0] + direction[i, 0] * length],
+                y=[origin[i, 1], origin[i, 1] + direction[i, 1] * length],
+                z=[origin[i, 2], origin[i, 2] + direction[i, 2] * length],
                 mode="lines",
                 line=dict(color=color[i], width=width),
                 showlegend=False,
@@ -221,12 +224,12 @@ def plot_arrow3(
         )
         fig.add_trace(
             go.Cone(
-                x=[origin[i, 0] + direction[i, 0] * length_scale],
-                y=[origin[i, 1] + direction[i, 1] * length_scale],
-                z=[origin[i, 2] + direction[i, 2] * length_scale],
-                u=[direction[i, 0] * tip_scale],
-                v=[direction[i, 1] * tip_scale],
-                w=[direction[i, 2] * tip_scale],
+                x=[origin[i, 0] + direction[i, 0] * length],
+                y=[origin[i, 1] + direction[i, 1] * length],
+                z=[origin[i, 2] + direction[i, 2] * length],
+                u=[direction[i, 0] * tip],
+                v=[direction[i, 1] * tip],
+                w=[direction[i, 2] * tip],
                 showscale=False,
                 colorscale=[[0, color[i]], [1, color[i]]],
                 showlegend=False,
@@ -440,21 +443,21 @@ def scatter(
 def plot_antenna_gain_pattern(
     fig: go.Figure = None,
     antenna: pnt.Antenna = None,
-    azim: np.ndarray = None,
-    elev: np.ndarray = None,
+    theta: np.ndarray = None,
+    phi: np.ndarray = None,
     gain: np.ndarray = None,
 ) -> go.Figure:
     if fig is None:
         fig = go.Figure()
-    if azim is None:
-        azim = antenna.get_azimuth_angles()
-    if elev is None:
-        elev = antenna.get_elevation_angles()
+    if theta is None:
+        theta = antenna.get_theta_vector()
+    if phi is None:
+        phi = antenna.get_phi_vector()
     if gain is None:
-        gain = antenna.get_gain_pattern()
+        gain = antenna.get_gain_matrix()
 
     # Create the meshgrid
-    AZ, EL = np.meshgrid(np.deg2rad(azim), np.deg2rad(elev))
+    AZ, EL = np.meshgrid(np.deg2rad(theta), np.deg2rad(phi))
     R = gain - np.min(gain)
     X = R * np.cos(AZ) * np.sin(EL)
     Y = R * np.sin(AZ) * np.sin(EL)
@@ -469,6 +472,16 @@ def plot_antenna_gain_pattern(
         surfacecolor=gain,
         colorscale="Viridis",
         colorbar=dict(title="Gain (dBi)"),
+    )
+    # Plot axis
+    plot_frame(
+        fig,
+        np.zeros(3),
+        np.eye(3),
+        length=np.array([X.max(), Y.max(), Z.max()]) * 12,
+        tip=100,
+        scale=1,
+        width=5,
     )
     tmp = dict(title="", showticklabels=False)
     fig.update_layout(

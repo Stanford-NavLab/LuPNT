@@ -19,24 +19,28 @@ namespace lupnt {
   class Antenna {
   public:
     Antenna() = default;
-    Antenna(const std::string& name) : name_(name) { LoadAntennaPattern(); };
+    Antenna(const std::string &name) : name_(name) { LoadAntennaPattern(); };
 
     void LoadAntennaPattern();
 
-    Real ComputeGain(Real azim, Real elev);
+    Real ComputeGain(Real theta, Real phi);
     VEC_DEF_REAL_REAL(ComputeGain)
 
     Real ComputeGain(Vec3 direction);
-    MatXd GetGainPattern() { return gain_; }
-    VecXd GetElevationAngles() { return elev_; }
-    VecXd GetAzimuthAngles() { return azim_; }
+    MatXd GetGainMatrix() { return gain_; }
+    VecXd GetPhiVector() { return phi_; }
+    VecXd GetThetaVector() { return theta_; }
 
   private:
     int n_dim_;         // Number of dimensions (1 or 2)
     std::string name_;  // Name (e.g., Block-IIR_ACE)
+    double phi_max_;    // Minimum phiation angle [deg]
     MatXd gain_;        // Gain pattern [dB]
-    VecXd elev_;        // Elevation angles [deg]
-    VecXd azim_;        // Azimuth angles [deg]
+    VecXd phi_;         // Phi angles [deg]
+    VecXd theta_;       // Theta angles [deg]
+
+    void FormatAntennaPattern(std::vector<double> &phi, std::vector<double> &theta,
+                              std::vector<std::vector<double>> &gain);
   };
 
 }  // namespace lupnt

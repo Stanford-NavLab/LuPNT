@@ -6,13 +6,13 @@
 
 namespace lupnt {
 
-  double LinearInterp1d(const VecXd& x, const VecXd& data, double ix);
-  double LinearInterp2d(const VecXd& x, const VecXd& y, const MatXd& data, double ix, double iy);
+  double LinearInterp1d(const VecXd& x, const VecXd& z, double ix);
+  double LinearInterp2d(const VecXd& x, const VecXd& y, const MatXd& z, double ix, double iy);
 
   class LagrangeInterpolator {
   public:
     LagrangeInterpolator(const VecXd& x, double xi, int order);
-    double Interpolate(const VecXd& data);
+    double Interpolate(const VecXd& z);
 
   private:
     VecXd x_;

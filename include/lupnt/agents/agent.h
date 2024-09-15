@@ -156,7 +156,7 @@ namespace lupnt {
       return orbit_state_;
     }
 
-    CartesianOrbitState GetCartesianGCRFStateAtEpoch(Real epoch);
+    CartesianOrbitState GetCartesianGCRFStateAtEpoch(Real epoch) override;
 
     VecX GetStateVec() {
       Vec6 rv = rv_->GetVec();
