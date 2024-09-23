@@ -26,6 +26,7 @@ namespace lupnt {
     Real ComputeGain(Real theta, Real phi);
     VEC_DEF_REAL_REAL(ComputeGain)
 
+    std::string GetName() { return name_; }
     Real ComputeGain(Vec3 direction);
     MatXd GetGainMatrix() { return gain_; }
     VecXd GetPhiVector() { return phi_; }

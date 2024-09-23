@@ -26,7 +26,7 @@ def get_output_path(output_dirs=None):
 
 
 def normalize(vec):
-    return vec / np.linalg.norm(vec)
+    return vec / np.linalg.norm(vec, axis=len(vec.shape) - 1, keepdims=True)
 
 
 def find_file(filename, path=LUPNT_DATA_PATH):

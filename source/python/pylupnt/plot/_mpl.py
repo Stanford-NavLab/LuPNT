@@ -213,3 +213,34 @@ class Plot3D:
             self.ax.set_box_aspect(
                 [xlims[1] - xlims[0], ylims[1] - ylims[0], zlims[1] - zlims[0]]
             )
+
+
+def plot_antenna_gain_patter_2D(
+    ax: plt.Axes = None,
+    antenna: _pnt.Antenna = None,
+    phi: np.ndarray = None,
+    theta: np.ndarray = None,
+):
+    if ax is not None:
+        plt.sca(ax)
+    if phi is None:
+        phi = np.linspace(-180, 180, 500)  # [deg]
+    if theta is None:
+        theta = np.linspace(0, 90, 4)  # [deg]
+    for az in theta:
+        gain = antenna.compute_gain(az * _pnt.RAD, phi * _pnt.RAD)
+        plt.plot(
+            _pnt.DEG * _pnt.wrap2pi(phi * _pnt.RAD), gain, label=f"theta = {az:.0f}°"
+        )
+    plt.title(antenna.name)
+    plt.xlabel("Phi [deg]")
+    plt.ylabel("Gain [dB]")
+    plt.text(
+        0.98,
+        0.95,
+        f"max = {antenna.get_gain_matrix().max():.2f} dB",
+        transform=plt.gca().transAxes,
+        ha="right",
+        va="top",
+    )
+    plt.grid()

@@ -95,4 +95,5 @@ namespace lupnt {
         const VecX& epoch, const Mat<-1, 3>& r1, const Mat<-1, 3>& r2, Frame cs1, Frame cs2,
         const std::vector<NaifId>& bodies, const VecXd& atm_h);
   };
+
 }  // namespace lupnt
