@@ -17,7 +17,7 @@
 
 namespace lupnt {
 
-  Vec6 Mean2Osculatingulating(Vec6 meanCoeVec) {
+  Vec6 Mean2Osculating(Vec6 meanCoeVec) {
     //  double t = 0.0;  // Time [s]
     //  double nM = 2.66e-6;
     Vec6 meanDoeVec = Classical2Delaunay(meanCoeVec, GM_MOON);

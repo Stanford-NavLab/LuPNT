@@ -220,6 +220,7 @@ def plot_antenna_gain_patter_2D(
     antenna: _pnt.Antenna = None,
     phi: np.ndarray = None,
     theta: np.ndarray = None,
+    show_max: bool = True,
 ):
     if ax is not None:
         plt.sca(ax)
@@ -230,17 +231,21 @@ def plot_antenna_gain_patter_2D(
     for az in theta:
         gain = antenna.compute_gain(az * _pnt.RAD, phi * _pnt.RAD)
         plt.plot(
-            _pnt.DEG * _pnt.wrap2pi(phi * _pnt.RAD), gain, label=f"theta = {az:.0f}°"
+            _pnt.DEG * _pnt.wrap2pi(phi * _pnt.RAD),
+            gain,
+            label=f"$\\varphi = {az:.0f}^\\circ$",
         )
     plt.title(antenna.name)
-    plt.xlabel("Phi [deg]")
-    plt.ylabel("Gain [dB]")
+    plt.xlabel("Elevation $\\theta$ [deg]")
+    plt.ylabel("Gain $G$ [dB]")
     plt.text(
         0.98,
         0.95,
-        f"max = {antenna.get_gain_matrix().max():.2f} dB",
+        f"$G_{{\max}} = {antenna.get_gain_matrix().max():.2f}$ dB",
         transform=plt.gca().transAxes,
         ha="right",
         va="top",
     )
     plt.grid()
+    # Legend with titl
+    plt.legend(title="Azimuth $\\theta$")

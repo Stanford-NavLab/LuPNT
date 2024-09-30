@@ -22,16 +22,19 @@ TEST_CASE("Antenna") {
       = {"Parabora_S_d10", "Parabora_S_d100", "Block-IIA_ACE", "Block-IIR-M_ACE",
          "BEIDOU_IGSO",    "BEIDOU_MEO",      "GALLILEO",      "moongpsr",
          "DSN-S",          "DSN-X",           "LGPS",          "Patch_22_RHCP_8025MHz"};
-  VecX phi = VecX::LinSpaced(-90, 90, 181) * DEG;
-  VecX theta = VecX::LinSpaced(0, 360, 361) * DEG;
+  VecX phi = VecX::LinSpaced(-90, 90, 181) * RAD;
+  VecX theta = VecX::LinSpaced(0, 360, 361) * RAD;
   for (std::string name : names) {
     Antenna ant(name);
-    MatX gain = ant.ComputeGain(theta, phi);
-    for (int i = 0; i < gain.rows(); i++) {
-      for (int j = 0; j < gain.cols(); j++) {
-        REQUIRE(gain(i, j).val() < 1e6);
-        REQUIRE(gain(i, j).val() > -1e6);
+    MatX gain_mat = ant.ComputeGain(theta, phi);
+    for (int i = 0; i < gain_mat.rows(); i++) {
+      for (int j = 0; j < gain_mat.cols(); j++) {
+        REQUIRE(gain_mat(i, j).val() < 1e6);
+        REQUIRE(gain_mat(i, j).val() > -1e6);
       }
     }
+    Real gain = ant.ComputeGain(0.0, 0.0);
+    REQUIRE(gain.val() < 1e6);
+    REQUIRE(gain.val() > -1e6);
   }
 }

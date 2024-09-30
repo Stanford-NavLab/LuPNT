@@ -285,14 +285,16 @@ namespace lupnt {
     auto [year, month, day, hour, min, sec] = MJD2Gregorian(mjd_round);
     std::stringstream ss;
     sec = round(sec, precision);
-    ss << year << "/";
-    ss << std::setw(2) << std::setfill('0') << month << "/";
+    ss << year << "-";
+    ss << std::setw(2) << std::setfill('0') << month << "-";
     ss << std::setw(2) << std::setfill('0') << day << " ";
     ss << std::setw(2) << std::setfill('0') << hour << ":";
     ss << std::setw(2) << std::setfill('0') << min << ":";
-    ss << std::setw(2) << std::setfill('0') << floor(sec) << ".";
-    ss << std::fixed << std::setprecision(0) << std::setw(precision) << std::setfill('0')
-       << round((sec - floor(sec)) * pow(10, precision));
+    ss << std::setw(2) << std::setfill('0') << floor(sec);
+    if (precision > 0) {
+      ss << "." << std::fixed << std::setprecision(0) << std::setw(precision) << std::setfill('0')
+         << round((sec - floor(sec)) * pow(10, precision));
+    }
     return ss.str();
   }
 

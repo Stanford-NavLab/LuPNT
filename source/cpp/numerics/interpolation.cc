@@ -50,13 +50,13 @@ namespace lupnt {
 
     start = x.data();
     end = x.data() + x.size();
-    auto it = std::lower_bound(start, end, xi);
+    auto it = std::lower_bound(start, end, xi + EPS);
     size_t i0 = it - start - 1;
     size_t i1 = i0 + 1;
 
     start = y.data();
     end = y.data() + y.size();
-    it = std::lower_bound(start, end, yi);
+    it = std::lower_bound(start, end, yi + EPS);
     size_t j0 = it - start - 1;
     size_t j1 = j0 + 1;
 

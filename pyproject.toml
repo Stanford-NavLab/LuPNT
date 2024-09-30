@@ -48,7 +48,7 @@ classifiers=[
 
 [project.urls]
 Github = "https://github.com/Stanford-NavLab/LuPNT"
-Documentation = "https://lupnt.readthedocs.io"
+Documentation = "https://stanford-navlab.github.io/LuPNT/index.html"
 
 [project.optional-dependencies]
 test = ["pytest"]

@@ -245,7 +245,6 @@ def plot_orbits(
     marker_size: float = 4,
     scale: float = 3,
     color: Union[str, list[str]] = plotly_colors,
-    **kwargs,
 ) -> go.Figure:
     rv = rv / 10**scale
 
@@ -260,7 +259,7 @@ def plot_orbits(
             line=dict(
                 color=color[i % len(color)] if type(color) == list else color, width=3
             ),
-            name="sat_lines",
+            name=f"plot_orbits_{i}",
             showlegend=False,
         )
     if t is not None:
@@ -270,7 +269,7 @@ def plot_orbits(
             marker=dict(
                 color=color, size=marker_size, line=dict(color=color, width=0.5)
             ),
-            name="sat_markers",
+            name="plot_orbits_markers",
             showlegend=False,
         )
 
@@ -306,7 +305,6 @@ def plot_orbits(
         ),
     )
     fig.update_layout(scene_aspectmode="data")
-    fig.update_layout(**kwargs)
     xticks = fig.layout.scene.xaxis.tickvals
     yticks = fig.layout.scene.yaxis.tickvals
     zticks = fig.layout.scene.zaxis.tickvals
@@ -410,7 +408,6 @@ def scatter(
     marker_size: float = 4,
     color: Union[str, list[str]] = plotly_colors,
     scale: float = 3,
-    **kwargs,
 ) -> go.Figure:
     """
     Create a 3D scatter plot
