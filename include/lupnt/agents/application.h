@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include <lupnt/core/definitions.h>
+
 #include <memory>
 
 namespace lupnt {
@@ -19,7 +21,7 @@ namespace lupnt {
     virtual ~Application() {};
 
     virtual void Setup() = 0;
-    virtual void Step(double t) = 0;
-    virtual double GetFrequency() = 0;
+    virtual void Step(Real t) = 0;
+    virtual Real GetFrequency() = 0;
   };
 };  // namespace lupnt

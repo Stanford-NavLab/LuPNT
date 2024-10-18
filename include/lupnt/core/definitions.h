@@ -81,6 +81,9 @@ namespace lupnt {
   using Eigen::VectorX;
 
   using Real = autodiff::real;
+  using autodiff::at;
+  using autodiff::jacobian;
+  using autodiff::wrt;
   template <int rows, int cols> using Mat = Matrix<Real, rows, cols>;
   template <int rows, int cols> using Matd = Matrix<double, rows, cols>;
   template <int size> using Vec = Matrix<Real, size, 1>;
