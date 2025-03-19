@@ -1,0 +1,29 @@
+# Get LuPNT data
+curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+unzip LuPNT_data.zip
+rm LuPNT_data.zip
+
+# Set the environment variable
+echo "export LUPNT_DATA_PATH=$(pwd)/LuPNT_data" >> ~/.bashrc
+source ~/.bashrc
+sed -i '2i\ \"env": {"LUPNT_DATA_PATH":"'"$(pwd)"'/LuPNT_data"},' /srv/conda/envs/notebook/share/jupyter/kernels/python3/kernel.json
+
+pip install pylupnt -v
+
+# Increase swap space
+# sudo mkdir -p /var/cache/swap/
+# sudo dd if=/dev/zero of=/var/cache/swap/swap0 bs=64M count=64
+# sudo chmod 0600 /var/cache/swap/swap0
+# sudo mkswap /var/cache/swap/swap0
+# sudo swapon /var/cache/swap/swap0
+# sudo swapon -s
+
+# Set MAKEFLAGS environment variable
+# export MAKEFLAGS="-j1"
+
+# Install LuPNT
+# sudo apt-get update
+# sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
+# pip install . -v
+
+# pip install pylupnt -v

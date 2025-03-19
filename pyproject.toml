@@ -1,0 +1,77 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pylupnt"
+version = "0.0.4"
+description = "Lunar Positioning, Navigation, and Timing (PNT) library"
+readme = "README.md"
+license = {text = "MIT"}
+authors=[
+    {name="Guillem Casadesus Vila, Keidai Iiyama", email="guillemc@stanford.edu;kiiyama@stanford.edu"},
+]
+maintainers=[
+    {name="Guillem Casadesus Vila, Keidai Iiyama", email="guillemc@stanford.edu;kiiyama@stanford.edu"},
+]
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "h5py",
+    "ipykernel",
+    "mathutils",
+    "matplotlib",
+    "mypy",
+    "nbformat",
+    "numpy",
+    "pandas",
+    "Pillow",
+    "plotly",
+    "requests",
+    "scikit-learn",
+    "tqdm",
+]
+keywords = ["pybind11", "cibuildwheel", "c++", "pypi", "numpy", "simple", "example", "wheel", "pypi", "conda-forge"]
+classifiers=[
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+Github = "https://github.com/Stanford-NavLab/LuPNT"
+Documentation = "https://lupnt.readthedocs.io"
+
+[project.optional-dependencies]
+test = ["pytest"]
+docs = [
+    "cmake",
+    "breathe",
+    "sphinx_rtd_theme",
+    "notebook",
+    "sphinx",
+    "exhale",
+    "breathe",
+    "m2r",
+    "nbsphinx",
+    "nbsphinx-link",
+    "jinja2",
+    "lxml_html_clean",
+]
+
+[tool.scikit-build]
+wheel.packages = ["source/python/pylupnt"]
+cmake.source-dir = "source/python"
+
+[tool.cibuildwheel]
+test-extras = "test"
+test-command = "python -m pytest {project}/test/python -v"
+test-skip = "pp* *-musllinux* *-manylinux_i686"

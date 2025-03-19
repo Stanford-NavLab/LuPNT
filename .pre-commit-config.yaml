@@ -1,0 +1,46 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        exclude: "source/python/pylupnt/_pylupnt.pyi"
+
+  - repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: v0.6.13
+    hooks:
+      - id: cmake-format
+        additional_dependencies: [pyyaml]
+
+  # - repo: https://github.com/pre-commit/mirrors-clang-format
+  #   rev: v18.1.8
+  #   hooks:
+  #     - id: clang-format
+
+  - repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    hooks:
+      - id: clang-format
+      # - id: clang-tidy
+      #   args:
+      #     - --checks=-modernize-use-trailing-return-type,-readability-identifier-length,-readability-magic-numbers
+      # - id: oclint
+      # - id: uncrustify
+      # - id: cppcheck
+      # - id: cpplint
+      # - id: include-what-you-use
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        types: [python, markdown, json]
+ci:
+  autoupdate_schedule: quarterly

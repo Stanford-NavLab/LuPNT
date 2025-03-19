@@ -1,0 +1,38 @@
+name: Style
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+
+env:
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
+  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
+
+jobs:
+  build-style:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: "**/cpm_modules"
+          key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+
+      - name: Install format dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+          sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
+          pip3 install clang-format==18.1.8 cmake_format==0.6.13 pyyaml
+
+      - name: configure
+        run: cmake -Stest -Bbuild
+
+      - name: check style
+        run: cmake --build build --target check-format

@@ -1,0 +1,63 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+
+env:
+  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
+
+jobs:
+  build-docs:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        id: cache-cpm-modules
+        with:
+          path: "**/cpm_modules"
+          key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          allow-prereleases: true
+
+      - uses: actions/cache@v4
+        id: cache-lupnt-data
+        with:
+          path: LuPNT_data
+          key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
+
+      - name: Install OpenMP and download data (Ubuntu)
+        run: |
+          echo "LUPNT_DATA_PATH = $LUPNT_DATA_PATH"
+          sudo apt-get update
+          sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
+          sudo apt-get install -y doxygen
+          sudo apt-get install -y pandoc
+
+      - name: Download and unzip LuPNT_data (MacOS + Ubuntu)
+        if: steps.cache-lupnt-data.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+          unzip LuPNT_data.zip
+          rm LuPNT_data.zip
+
+      - name: Build docs
+        run: |
+          python -m pip install . -v
+          cd docs
+          python -m pip install -r requirements.txt
+          python make_docs.py
+
+      - name: Publish
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.PERSONAL_TOKEN }}
+          publish_dir: ./build/docs

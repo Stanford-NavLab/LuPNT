@@ -1,0 +1,60 @@
+name: Install
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+
+env:
+  CTEST_OUTPUT_ON_FAILURE: 1
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
+  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
+
+jobs:
+  build-install:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: install dependencies
+        run: sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        id: cache-cpm-modules
+        with:
+          path: "**/cpm_modules"
+          key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+
+      - uses: actions/cache@v4
+        id: cache-lupnt
+        with:
+          path: LuPNT_data
+          key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
+
+      - name: download and unzip LuPNT_data
+        if: steps.cache-lupnt.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+          unzip LuPNT_data.zip
+          rm LuPNT_data.zip
+
+      - name: build and install library
+        run: |
+          cmake -S. -Bbuild_install -DCMAKE_BUILD_TYPE=Release
+          sudo cmake --build build_install --target install -j4
+          rm -rf build_install
+
+      - name: configure
+        run: cmake -Stest -Bbuild_install -DTEST_INSTALLED_VERSION=1
+
+      - name: build
+        run: cmake --build build_install --config Release -j4
+
+      - name: test
+        run: |
+          cd build_install
+          ctest --build-config Release

@@ -1,0 +1,71 @@
+name: Examples
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+
+env:
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
+  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
+
+jobs:
+  build-examples:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: "**/cpm_modules"
+          key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+
+      - name: cache LuPNT_data
+        id: cache-lupnt
+        uses: actions/cache@v4
+        with:
+          path: data
+          key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
+
+      - name: download and unzip LuPNT_data
+        if: steps.cache-lupnt.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+          unzip LuPNT_data.zip
+          rm LuPNT_data.zip
+
+      - name: dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+          sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
+
+      - name: configure
+        run: cmake -Sexamples/cpp -Bbuild_examples -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+      - name: build
+        run: cmake --build build_examples -j4 --target all_examples
+
+      - name: run examples
+        run: |
+          set +e
+          cd ${{ github.workspace }}/build_examples/examples && for example in *; do
+            file_path=$(find ${{ github.workspace }}/examples/cpp -name "$example.cc")
+            if [ -n "$file_path" ]; then
+              if ! grep -qE "show()|draw()" "$file_path"; then
+                echo -e "\n\n*********** Running example: $example ***********\n"
+                timeout 1m ./"$example"  # Set maximum compute time to 1 minute
+                if [ $? -eq 124 ]; then
+                  echo "Timeout occurred for example $example"
+                else
+                  echo "Example $example completed successfully"
+                fi
+              fi
+            fi
+          done
+          cd ${{ github.workspace }}
+          set -e

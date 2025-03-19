@@ -1,0 +1,65 @@
+name: Windows
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+
+env:
+  CTEST_OUTPUT_ON_FAILURE: 1
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
+  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        id: cache-cpm-modules
+        with:
+          path: "**/cpm_modules"
+          key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+
+      - uses: actions/cache@v4
+        id: cache-lupnt-data
+        with:
+          path: LuPNT_data
+          key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
+
+      - name: Download and unzip LuPNT_data
+        if: steps.cache-lupnt-data.outputs.cache-hit != 'true'
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://bit.ly/LuPNT_data" -OutFile "LuPNT_data.zip"
+          Expand-Archive -Path "LuPNT_data.zip" -DestinationPath "."
+          Remove-Item "LuPNT_data.zip"
+
+      - name: Dependencies
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.3/hdf5-1.14.4-3-win-vs2022_cl.zip" -OutFile "hdf5.zip"
+          Expand-Archive -Path "hdf5.zip" -DestinationPath "C:\HDF5" -Force
+          Remove-Item "hdf5.zip"
+          Expand-Archive -Path "C:/HDF5/hdf5/HDF5-1.14.4-win64.zip" -DestinationPath "C:/HDF5"
+          [System.Environment]::SetEnvironmentVariable('HDF5_DIR', "C:\HDF5\HDF5-1.14.4-win64\CMake", 'User')
+          [System.Environment]::SetEnvironmentVariable('HDF5_ROOT', "C:\HDF5\HDF5-1.14.4-win64", 'User')
+          [System.Environment]::SetEnvironmentVariable('HDF5_LIBRARIES', "C:\HDF5\HDF5-1.14.4-win64\lib", 'User')
+          [System.Environment]::SetEnvironmentVariable('HDF5_INCLUDE_DIRS', "C:\HDF5\HDF5-1.14.4-win64\include", 'User')
+          choco install boost-msvc-14.1
+
+      - name: configure
+        run: cmake -Stest -Bbuild -DHDF5_ROOT="C:/HDF5/HDF5-1.14.4-win64" -DCMAKE_BUILD_TYPE=DebugWithRelInfo
+
+      - name: build
+        run: cmake --build build --config Debug -j4
+
+      - name: test
+        run: |
+          cd build
+          ctest --build-config Debug

@@ -1,0 +1,19 @@
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - h5py
+  - ipykernel
+  - matplotlib
+  - mypy
+  - nbformat
+  - numpy
+  - pandas
+  - Pillow
+  - plotly
+  - pre-commit
+  - requests
+  - scikit-learn
+  - tqdm
+  - pip:
+    - mathutils

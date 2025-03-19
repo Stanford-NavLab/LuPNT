@@ -1,0 +1,93 @@
+name: PyPI
+
+on:
+  push:
+    branches:
+      - development
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - development
+
+jobs:
+  build-wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    env:
+      MACOSX_DEPLOYMENT_TARGET: 14.0
+      CIBW_ARCHS: auto64
+      CIBW_SKIP: "*musllinux*"
+      # TODO
+      # [tool.cibuildwheel.linux]
+      # before-all = "yum install mylib"
+      # test-command = "echo 'installed'"
+
+      # [[tool.cibuildwheel.overrides]]
+      # select = "*-musllinux*"
+      # before-all = "apk add mylib"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.20
+        env:
+          CIBW_ENVIRONMENT:
+            LUPNT_DATA_PATH="$(pwd)/LuPNT_data"
+
+          CIBW_ENVIRONMENT_WINDOWS:
+            HDF5_DIR="C:/HDF5/HDF5-1.14.4-win64/CMake"
+            HDF5_ROOT="C:/HDF5/HDF5-1.14.4-win64"
+            HDF5_LIBRARIES="C:/HDF5/HDF5-1.14.4-win64/lib"
+            HDF5_INCLUDE_DIRS="C:/HDF5/HDF5-1.14.4-win64/include"
+          CIBW_BEFORE_ALL_LINUX: |
+            yum install –y epel-release
+            yum-config-manager --enable epel
+            yum install -y boost-devel hdf5-devel
+            curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+            unzip LuPNT_data.zip
+            rm LuPNT_data.zip
+          CIBW_BEFORE_ALL_MACOS: |
+            brew install boost libomp hdf5
+            curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+            unzip LuPNT_data.zip
+            rm LuPNT_data.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
+
+  build-sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build sdist
+        run: pipx run build --sdist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-sdist
+          path: dist/*.tar.gz
+
+  upload_pypi:
+    needs: [build-wheels, build-sdist]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cibw-*
+          merge-multiple: true
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true

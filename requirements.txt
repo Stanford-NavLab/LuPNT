@@ -1,0 +1,14 @@
+h5py
+ipykernel
+mathutils
+matplotlib
+mypy
+nbformat
+numpy
+pandas
+Pillow
+plotly
+pre-commit
+requests
+scikit-learn
+tqdm
