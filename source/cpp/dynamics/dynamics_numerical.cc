@@ -102,8 +102,8 @@ namespace lupnt {
     rv_dot.tail(3) = -GM_ * r / pow(r_norm, 3);
 
     Vec3 a_J2;
-    Real aux1 = -3.0 / 2.0 * GM_ * J2_ * pow(R_body_, 2.0) / pow(r_norm, 4.0);
-    Real aux2 = 5.0 * pow(r(2) / R_body_, 2.0);
+    Real aux1 = -3.0 / 2.0 * GM_ * J2_ * pow(R_body_, 2.0) / pow(r_norm, 5.0);
+    Real aux2 = 5.0 * pow(r(2) / r_norm, 2.0);
     a_J2(0) = aux1 * (1.0 - aux2) * r(0);
     a_J2(1) = aux1 * (1.0 - aux2) * r(1);
     a_J2(2) = aux1 * (3.0 - aux2) * r(2);
