@@ -22,7 +22,7 @@ namespace lupnt {
   Real NumericalOrbitDynamics::GetTimeStep() const { return dt_; };
   void NumericalOrbitDynamics::SetODEFunction(ODE odefunc) { odefunc_ = odefunc; };
 
-  Vec6 NumericalOrbitDynamics::Propagate(const Vec6 &x0, Real t0, Real tf, Mat6d *stm) {
+  Vec6 NumericalOrbitDynamics::Propagate(const Vec6& x0, Real t0, Real tf, Mat6d* stm) {
     if (abs(tf - t0) < EPS) return x0;
     if (stm == nullptr) {
       Vec6 xf = propagator_.Propagate(odefunc_, t0, tf, x0, dt_);
@@ -35,7 +35,7 @@ namespace lupnt {
     }
   }
 
-  MatX6 NumericalOrbitDynamics::Propagate(const Vec6 &x0, Real t0, const VecX &tf, bool progress) {
+  MatX6 NumericalOrbitDynamics::Propagate(const Vec6& x0, Real t0, const VecX& tf, bool progress) {
     MatX6 xf = MatX6::Zero(tf.size(), 6);
     ProgressBar pbar(tf.size());
     pbar.SetDescription("Propagating");
@@ -57,10 +57,10 @@ namespace lupnt {
   // ****************************************************************************
 
   CartesianTwoBodyDynamics::CartesianTwoBodyDynamics(Real GM, IntegratorType integ)
-      : NumericalOrbitDynamics([this](Real t, const Vec6 &x) { return ComputeRates(t, x); }, integ),
+      : NumericalOrbitDynamics([this](Real t, const Vec6& x) { return ComputeRates(t, x); }, integ),
         GM_(GM) {};
 
-  Vec6 CartesianTwoBodyDynamics::ComputeRates(Real t, const Vec6 &x) const {
+  Vec6 CartesianTwoBodyDynamics::ComputeRates(Real t, const Vec6& x) const {
     (void)t;
     Vec6 rv_dot;
     Vec3 r = x.head(3);
@@ -73,8 +73,8 @@ namespace lupnt {
     return rv_dot;
   }
 
-  OrbitState CartesianTwoBodyDynamics::PropagateState(const OrbitState &state, Real t0, Real tf,
-                                                      Mat6d *stm) {
+  OrbitState CartesianTwoBodyDynamics::PropagateState(const OrbitState& state, Real t0, Real tf,
+                                                      Mat6d* stm) {
     assert(state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN
            && "OrbitState type not supported");
     Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);
@@ -86,12 +86,12 @@ namespace lupnt {
   // ****************************************************************************
 
   J2CartTwoBodyDynamics::J2CartTwoBodyDynamics(Real GM, Real J2, Real R_body, IntegratorType integ)
-      : NumericalOrbitDynamics([this](Real t, const Vec6 &x) { return ComputeRates(t, x); }, integ),
+      : NumericalOrbitDynamics([this](Real t, const Vec6& x) { return ComputeRates(t, x); }, integ),
         GM_(GM),
         J2_(J2),
         R_body_(R_body) {};
 
-  Vec6 J2CartTwoBodyDynamics::ComputeRates(Real t, const Vec6 &x) const {
+  Vec6 J2CartTwoBodyDynamics::ComputeRates(Real t, const Vec6& x) const {
     (void)t;
     Vec6 rv_dot(6);
     Vec3 r = x.head(3);
@@ -113,8 +113,8 @@ namespace lupnt {
     return rv_dot;
   }
 
-  OrbitState J2CartTwoBodyDynamics::PropagateState(const OrbitState &state, Real t0, Real tf,
-                                                   Mat6d *stm) {
+  OrbitState J2CartTwoBodyDynamics::PropagateState(const OrbitState& state, Real t0, Real tf,
+                                                   Mat6d* stm) {
     assert(state.GetOrbitStateRepres() == OrbitStateRepres::CARTESIAN
            && "OrbitState type not supported");
     Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);
@@ -126,12 +126,12 @@ namespace lupnt {
   // ****************************************************************************
 
   J2KeplerianDynamics::J2KeplerianDynamics(Real GM, Real J2, Real R_body, IntegratorType integ)
-      : NumericalOrbitDynamics([this](Real t, const Vec6 &x) { return ComputeRates(t, x); }, integ),
+      : NumericalOrbitDynamics([this](Real t, const Vec6& x) { return ComputeRates(t, x); }, integ),
         GM_(GM),
         J2_(J2),
         R_body_(R_body) {};
 
-  Vec6 J2KeplerianDynamics::ComputeRates(Real t, const Vec6 &x) const {
+  Vec6 J2KeplerianDynamics::ComputeRates(Real t, const Vec6& x) const {
     (void)t;
     Real p = x(0) * (1.0 - x(1) * x(1));
     Real n = sqrt(GM_ / pow(x(0), 3.0));
@@ -148,8 +148,8 @@ namespace lupnt {
     return coe_dot;
   }
 
-  OrbitState J2KeplerianDynamics::PropagateState(const OrbitState &state, Real t0, Real tf,
-                                                 Mat6d *stm) {
+  OrbitState J2KeplerianDynamics::PropagateState(const OrbitState& state, Real t0, Real tf,
+                                                 Mat6d* stm) {
     assert(state.GetOrbitStateRepres() == OrbitStateRepres::CLASSICAL_OE
            && "OrbitState type not supported");
     Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);
@@ -161,10 +161,10 @@ namespace lupnt {
   // ****************************************************************************
 
   MoonMeanDynamics::MoonMeanDynamics(IntegratorType integ)
-      : NumericalOrbitDynamics([this](Real t, const Vec6 &x) { return ComputeRates(t, x); },
+      : NumericalOrbitDynamics([this](Real t, const Vec6& x) { return ComputeRates(t, x); },
                                integ) {};
 
-  Vec6 MoonMeanDynamics::ComputeRates(Real t, const Vec6 &x) const {
+  Vec6 MoonMeanDynamics::ComputeRates(Real t, const Vec6& x) const {
     (void)t;
     Real a = x(0);
     Real e = x(1);
@@ -198,8 +198,8 @@ namespace lupnt {
     return coe_dot;
   }
 
-  OrbitState MoonMeanDynamics::PropagateState(const OrbitState &state, Real t0, Real tf,
-                                              Mat6d *stm) {
+  OrbitState MoonMeanDynamics::PropagateState(const OrbitState& state, Real t0, Real tf,
+                                              Mat6d* stm) {
     assert(state.GetOrbitStateRepres() == OrbitStateRepres::CLASSICAL_OE
            && "OrbitState type not supported");
     Vec6 xf = Propagate(state.GetVec(), t0, tf, stm);
