@@ -1,5 +1,6 @@
 # Build
 **/*build*/
+/install/
 /dist/
 
 # IDE

@@ -58,21 +58,12 @@ set(GCPM_PROCESSED)
 foreach(src ${GCPM_RAW})
   get_filename_component(fname ${src} NAME)
   set(out "${PREPROCESSED_DIR}/${fname}")
-  if(APPLE)
-    add_custom_command(
-      OUTPUT ${out}
-      COMMAND sed -e "s@type@print@g" -e "/^d/ d" ${src} > ${out}
-      DEPENDS ${src}
-      COMMENT "Preprocessing ${fname} (macOS sed)"
-    )
-  else()
-    add_custom_command(
-      OUTPUT ${out}
-      COMMAND sed -e "s\\type\\print\\g" -e "/^d/ d" ${src} > ${out}
-      DEPENDS ${src}
-      COMMENT "Preprocessing ${fname}"
-    )
-  endif()
+  add_custom_command(
+    OUTPUT ${out}
+    COMMAND sed -e "s/type/print/g" -e "/^d/ d" ${src} > ${out}
+    DEPENDS ${src}
+    COMMENT "Preprocessing ${fname}"
+  )
   list(APPEND GCPM_PROCESSED ${out})
 endforeach()
 
