@@ -49,6 +49,13 @@ import re
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+def _sphinx_jobs():
+    jobs = os.environ.get("LUPNT_DOCS_JOBS")
+    if jobs:
+        return jobs
+    return str(multiprocessing.cpu_count())
+
+
 def _create_or_clear_dir(dir_path):
     if os.path.exists(dir_path):
         shutil.rmtree(dir_path)
@@ -303,7 +310,7 @@ class SphinxDocsBuilder:
                 "-D",
                 "release=" + release_version,
                 "-j",
-                str(multiprocessing.cpu_count()),
+                _sphinx_jobs(),
                 ".",
                 build_dir,
             ]
@@ -313,7 +320,7 @@ class SphinxDocsBuilder:
                 "-b",
                 "html",
                 "-j",
-                str(multiprocessing.cpu_count()),
+                _sphinx_jobs(),
                 ".",
                 build_dir,
             ]

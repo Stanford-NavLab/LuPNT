@@ -13,6 +13,7 @@ permissions:
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
+  LUPNT_DOCS_JOBS: 2
 
 jobs:
   build-docs:
