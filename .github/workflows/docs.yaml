@@ -13,7 +13,9 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
+  id-token: write
+  pages: write
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
@@ -22,6 +24,9 @@ env:
 jobs:
   build-docs:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - uses: actions/checkout@v4
@@ -60,9 +65,15 @@ jobs:
       - name: Build docs
         run: pixi run build-docs
 
-      - name: Publish
+      - uses: actions/configure-pages@v5
         if: github.event_name == 'push'
-        uses: peaceiris/actions-gh-pages@v4
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name == 'push'
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/docs
+          path: ./build/docs
+
+      - name: Deploy
+        id: deployment
+        if: github.event_name == 'push'
+        uses: actions/deploy-pages@v4

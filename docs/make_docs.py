@@ -393,6 +393,7 @@ if __name__ == "__main__":
             shutil.rmtree(doc_folder)
         print("Copying Folder")
         shutil.copytree(html_out, doc_folder)
+        remove_dir(os.path.join(doc_folder, ".doctrees"))
         shutil.copy(os.path.join(pwd, ".nojekyll"), os.path.join(doc_folder, ".nojekyll"))
 
     if args.clean:
