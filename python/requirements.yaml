@@ -1,0 +1,70 @@
+name: lupnt
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Core scientific packages with native dependencies (conda)
+  - python=3.10
+  - numpy<2.0.0
+  - scipy
+  - matplotlib
+  - pandas
+  - scikit-learn
+  - scikit-image
+  - h5py
+  - pillow
+  - imageio
+  - ipykernel
+  - ipywidgets
+  - plotly
+  - pyyaml
+  - tqdm
+  - pytest
+  - munch
+  - nbformat
+  - opencv
+  - compilers
+
+  # Development tools
+  - cmake
+  - ninja
+
+  # pip packages (installed after conda packages)
+  - pip
+  - pip:
+    # Deep learning and ML
+    - torch
+    - torchvision
+    - pytorch-lightning
+    - pytorch-msssim
+    - transformers
+    - timm
+    - segmentation-models-pytorch
+    - kornia
+
+    # Computer vision and 3D
+    - open3d-python
+    - gsplat
+    - viser
+    - nerfstudio
+
+    # Optimization and math
+    - cvxpy
+    - opt-einsum
+    - mathutils
+
+    # Data processing
+    - rasterio
+    - plyfile
+    - requests
+
+    # Visualization
+    - kaleido
+    - mpld3
+
+    # Development
+    - mypy
+    - pre-commit
+
+    # Linux-specific packages
+    - git+https://github.com/camenduru/simple-knn.git; sys_platform == 'linux'

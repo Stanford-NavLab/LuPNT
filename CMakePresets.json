@@ -1,0 +1,59 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "pixi-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "description": "Base preset: generator only. Compilers (CC/CXX/FC) and package paths (CONDA_PREFIX → CMAKE_PREFIX_PATH via CondaAware.cmake) are resolved at cmake-configure time from the pixi environment activated by cmake-pixi.sh. No $env{} variables here — VSCode expands those in its own shell before the wrapper runs, which would pick up the wrong conda env."
+    },
+    {
+      "name": "release",
+      "displayName": "Release (pixi)",
+      "description": "Optimised release build — fastest runtime, no debug symbols.",
+      "inherits": "pixi-base",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Debug (pixi)",
+      "description": "Unoptimised debug build — full debug symbols, LLDB-friendly.",
+      "inherits": "pixi-base",
+      "binaryDir": "${sourceDir}/build-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "relwithdebinfo",
+      "displayName": "RelWithDebInfo (pixi)",
+      "description": "Optimised build with debug symbols — good for profiling.",
+      "inherits": "pixi-base",
+      "binaryDir": "${sourceDir}/build-reldbg",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "release",
+      "displayName": "Release (pixi)",
+      "configurePreset": "release"
+    },
+    {
+      "name": "debug",
+      "displayName": "Debug (pixi)",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "relwithdebinfo",
+      "displayName": "RelWithDebInfo (pixi)",
+      "configurePreset": "relwithdebinfo"
+    }
+  ]
+}

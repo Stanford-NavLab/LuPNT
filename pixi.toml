@@ -1,0 +1,106 @@
+[workspace]
+name = "lupnt"
+version = "0.1.0"
+description = "Lunar Positioning, Navigation, and Timing (PNT) library"
+channels = ["conda-forge"]
+platforms = ["osx-arm64"]
+
+[dependencies]
+# Build tools
+cmake = ">=3.21"
+ninja = "*"
+make = "*"
+compilers = "*"
+git = "*"
+
+# Python
+python = "3.12.*"
+pybind11 = "*"
+mypy = "*"
+
+# C++ libraries
+boost-cpp = "*"
+eigen = "3.4.0.*"
+fmt = "*"
+hdf5 = "*"
+llvm-openmp = "*"
+tbb = "*"
+tbb-devel = "*"
+nlohmann_json = "*"
+spdlog = "*"
+yaml-cpp = "*"
+libjpeg-turbo = "*"
+libtiff = "*"
+gdal = "*"
+libopencv = "*"
+ffmpeg = "*"
+libcxx = "18.*"
+gfortran = "*"
+gtsam = "*"
+doxygen = "*"
+pandoc = "*"
+
+[pypi-dependencies]
+fastapi = "*"
+h5py = "*"
+ipykernel = "*"
+kaleido = "*"
+matplotlib = "*"
+nbformat = "*"
+numba = "*"
+pandas = "*"
+plotly = "*"
+pre-commit = "*"
+pymoo = "*"
+pytest = "*"
+requests = "*"
+rerun-sdk = "==0.24.0"
+scikit-learn = "*"
+sphinx = "*"
+sphinx-rtd-theme = "*"
+furo = "*"
+exhale = "*"
+breathe = "*"
+nbsphinx = "*"
+nbsphinx-link = "*"
+lxml_html_clean = "*"
+tqdm = "*"
+uvicorn = "*"
+
+[activation]
+env = { LUPNT_DATA_PATH = "$PIXI_PROJECT_ROOT/data/LuPNT_data", PYTHONPATH = "$PIXI_PROJECT_ROOT/python", PECSIMPY_BASE_PATH = "$PIXI_PROJECT_ROOT/data/LuPNT_data/plasma" }
+
+# ---- Optional dev tooling -------------------------------------------------
+# `orekit` (a JVM-based astrodynamics library, via the JCC Python wrapper) is
+# only needed to *regenerate* the reference vectors used by the
+# `*_orekit_reference*` tests (see cpp/test/data/orekit/README.md). Normal
+# users/tests never need it, so it lives in its own feature/environment:
+#   pixi run -e dev python cpp/test/data/orekit/gen_orekit_reference.py
+[feature.orekit.dependencies]
+orekit = "*"
+
+[environments]
+default = { solve-group = "default" }
+dev = { features = ["orekit"], solve-group = "default" }
+
+[tasks]
+build         = { cmd = "cmake -B build         -GNinja -DCMAKE_BUILD_TYPE=Release        && ninja -C build         lupnt" }
+build-debug   = { cmd = "cmake -B build-debug   -GNinja -DCMAKE_BUILD_TYPE=Debug          && ninja -C build-debug   lupnt" }
+build-reldbg  = { cmd = "cmake -B build-reldbg  -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo && ninja -C build-reldbg  lupnt" }
+build-py      = { cmd = "ninja -C build         _pylupnt && cmake -E copy build/bindings/_pylupnt.cpython-312-darwin.so         python/pylupnt/_pylupnt.cpython-312-darwin.so", depends-on = ["build"] }
+build-py-debug  = { cmd = "ninja -C build-debug   _pylupnt && cmake -E copy build-debug/bindings/_pylupnt.cpython-312-darwin.so   python/pylupnt/_pylupnt.cpython-312-darwin.so", depends-on = ["build-debug"] }
+build-py-reldbg = { cmd = "ninja -C build-reldbg  _pylupnt && cmake -E copy build-reldbg/bindings/_pylupnt.cpython-312-darwin.so  python/pylupnt/_pylupnt.cpython-312-darwin.so", depends-on = ["build-reldbg"] }
+build-docs    = { cmd = "python docs/make_docs.py" }
+build-test-cpp = { cmd = "cmake -S cpp/test -B build-cpp-test-pixi -GNinja -DCMAKE_BUILD_TYPE=Release && cmake --build build-cpp-test-pixi --target lupnt_tests" }
+test-cpp       = { cmd = "ctest --test-dir build-cpp-test-pixi --output-on-failure", depends-on = ["build-test-cpp"] }
+test-py        = { cmd = "pytest python/test", depends-on = ["build-py"] }
+test           = { depends-on = ["test-cpp", "test-py"] }
+build-gnss-filtering = { cmd = "cmake -B build-gnss-filtering -GNinja -DCMAKE_BUILD_TYPE=Release && cmake --build build-gnss-filtering --target ex_lunar_gnss_odts" }
+download-sp3-example = { cmd = "python python/examples/ex_gnss/download_sp3_epochs.py", depends-on = ["build-py"] }
+download-sp3-example-cpp = { cmd = "cmake --build build --target ex_download_sp3_epochs && ./build/examples/ex_download_sp3_epochs", depends-on = ["build"] }
+precompute-gnss-links = { cmd = "./build-gnss-filtering/examples/ex_lunar_gnss_odts --config projects/GNSS_Filtering/gnss_filtering_config.yaml --precompute", depends-on = ["build-gnss-filtering"] }
+precompute-gnss-delays = { cmd = "python projects/GNSS_Filtering/precompute_delays.py projects/GNSS_Filtering/gnss_filtering_config.yaml", depends-on = ["precompute-gnss-links"] }
+run-gnss-monte-carlo = { cmd = "./build-gnss-filtering/examples/ex_lunar_gnss_odts --config projects/GNSS_Filtering/gnss_filtering_config.yaml --run", depends-on = ["build-gnss-filtering"] }
+run-gnss-filtering = { cmd = "bash projects/GNSS_Filtering/run_pipeline.sh --no-plot" }
+run-gnss-pipeline = { cmd = "bash projects/GNSS_Filtering/run_pipeline.sh" }
+plot-gnss-filtering = { cmd = "python projects/GNSS_Filtering/plot_gnss_filtering_results.py" }

@@ -1,0 +1,25 @@
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Core scientific packages missing from environment.yaml
+  - numpy<2.0.0
+  - scipy
+  - matplotlib
+  - pandas
+  - scikit-learn
+  - scikit-image
+  - h5py
+  - pillow
+  - imageio
+  - ipykernel
+  - ipywidgets
+  - plotly
+  - pyyaml
+  - tqdm
+  - pytest
+  - munch
+  - nbformat
+  - pip
+  - fastapi

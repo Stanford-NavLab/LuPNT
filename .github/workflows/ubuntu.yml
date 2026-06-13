@@ -20,7 +20,9 @@ jobs:
 
     steps:
       - name: install dependencies
-        run: sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev libfmt-dev
 
       - uses: actions/checkout@v4
 
@@ -44,7 +46,8 @@ jobs:
           rm LuPNT_data.zip
 
       - name: configure
-        run: cmake -Stest -Bbuild -DENABLE_TEST_COVERAGE=1 -DCMAKE_BUILD_TYPE=Debug
+        # run: cmake -Stest -Bbuild -DENABLE_TEST_COVERAGE=1 -DCMAKE_BUILD_TYPE=Debug
+        run: cmake -S. -Bbuild -DENABLE_TEST_COVERAGE=1 -DCMAKE_BUILD_TYPE=Debug
 
       - name: build
         run: cmake --build build -j4

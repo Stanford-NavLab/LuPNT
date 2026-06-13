@@ -1,0 +1,44 @@
+name: lupnt
+
+channels:
+  - conda-forge
+  - nvidia/label/cuda-12.8.1
+  - defaults
+
+dependencies:
+  # lupnt
+  - asio
+  - boost-cpp
+  - cmake
+  - compilers
+  - eigen
+  - fmt
+  - fftw
+  - gnuplot
+  - hdf5
+  - llvm-openmp
+  - make
+  - mypy
+  - opencv
+  # - cuda-toolkit=12.8.1
+  - ninja
+  - tbb
+  - tbb-devel
+  - nlohmann_json
+  - pybind11
+  - python=3.12
+  - spdlog
+  - yaml-cpp
+  - libjpeg-turbo
+  - libtiff
+  - gdal
+  - gtsam
+  - tbb
+  - tbb-devel
+  - arrow-cpp>12
+  - ffmpeg
+  - libcxx=18
+  - git
+  - pip
+  - pip:
+    - rerun-sdk==0.24.0

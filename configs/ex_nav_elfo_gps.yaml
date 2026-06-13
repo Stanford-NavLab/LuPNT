@@ -1,0 +1,160 @@
+# time configuration
+config_type:
+
+time:
+  epoch0: [2023, 6, 9, 8, 30, 0.00] # Initial time, UTC [year, month, day, hour, min, sec]
+  dt_integ: 1.0 # Integration timestep [s]
+  dt_meas: 5.0 # Measurement timestep [s]
+  tf: -1 # Final time [s] (if -1, use n_orbit to compute final time)
+  n_orbit: 2 # Number of orbits to simulate (if tf=-1, valid only when there is single agent)
+
+# satellites
+satellites:
+  num_satellites: 1
+  sat1:
+    center_body: MOON
+    states:
+      rv1:
+        class: CartesianState
+        frame: MOON_CI
+        dynamics: dynamics_agent_true
+        init:
+          type: ClassicalOE
+          val: # for OE, specify using degree
+            a: 6541.4
+            e: 0.6
+            i: 65.5
+            Omega: 0.0
+            w: 90.0
+            M: 0.0
+          frame: MOON_OP
+      clock1:
+        class: ClockState
+        dynamics: dynamics_agent_clock_true
+        init:
+          val:
+            bias: 0.0
+            drift: 0.0
+    # comm devices:
+    device:
+      gps_receiver1:
+        class: GnssReceiver
+        name: moongpsr
+        attitude_mode: PZ_EarthPoint
+        channel: channel_gps1
+    # onboard applications
+    applications:
+      app1:
+        class: StateEstimationApp
+        filter: filter1
+
+# comm channels:
+channels:
+  num_channel: 1
+  channel_gps1:
+    type: GnssChannel
+
+# gnss constellation:
+gnss:
+  num_gnss: 1
+  gps:
+    initialization: TLE
+    gnss_type: GPS # GPS, GLONASS, GALILEO, BEIDOU, QZSS
+    filename: gps.txt
+    channel: channel_gps1
+    dynamics: dynamics_gps
+
+# list of orbit dynamics models
+dynamics:
+  num_dynamics: 5
+
+  dynamics_agent_true:
+    type: NBodyDynamics
+    use_real: false
+    integrator: RKF45
+    integ_options:
+      reltol: 1.0e-12
+      abstol: 1.0e-12
+    bodies: ["MOON", "EARTH"] # 301: Moon, 399: Earth
+    sph_order: [8, 0]
+    sph_degree: [8, 0]
+    srp:
+      enable: true
+      cr: 1.2
+      area: 1.0
+    drag:
+      enable: false
+    mass: 1000.0
+
+  dynamics_agent_est:
+    type: NBodyDynamics
+    use_real: true
+    integrator: RKF45
+    integ_options:
+      reltol: 1.0e-12
+      abstol: 1.0e-12
+    bodies: ["MOON", "EARTH"] # 301: Moon, 399: Earth
+    sph_order: [8, 0]
+    sph_degree: [8, 0]
+    srp:
+      enable: false
+      cr: 1.2
+      area: 1.0
+    drag:
+      enable: false
+      cd: 2.2
+      area: 1.0
+    mass: 1000.0
+  dynamics_gps:
+    type: NBodyDynamics
+    use_real: false
+    integrator: RKF45
+    integ_options:
+      reltol: 1.0e-12
+      abstol: 1.0e-12
+    bodies: ["EARTH"] # 301: Moon, 399: Earth
+    sph_order: [2]
+    sph_degree: [2]
+    srp:
+      enable: false
+      cr: 1.2
+      area: 1.0
+    drag:
+      enable: false
+      cd: 2.2
+      area: 1.0
+    mass: 1000.0
+  dynamics_agent_clock_true:
+    type: ClockDynamics
+    model: MiniRafs
+  dynamics_agent_clock_est:
+    type: ClockDynamics
+    model: MiniRafs
+
+# filter
+filters:
+  filter1:
+    type: EKF
+    dynamics_list: # dynamics model and proc noise model will be generated from here
+      dyn1_rv:
+        state: rv1
+        dynamics: dynamics_agent_est
+        params:
+          bcoeff_srp:
+            type: estimated # estimated, true_fixed, consider
+            cov_ratio: 0.1 # initial covariance of the parameter (ratio of the true value)
+        proc_noise_func:
+          type: rv_linear
+          sigma_acc: 1.0e-12
+        init_cov: [1.0, 1.0, 1.0, 1.0e-3, 1.0e-3, 1.0e-3]
+      dyn1_clock:
+        state: clock1
+        dynamics: dynamics_agent_clock_est
+        params: []
+        params_option: "true"
+        init_cov: [1.0e-6, 1.0e-9]
+    measurements: # measurements function and noise model will be generated from here
+      meas1:
+        type: GnssMeasurement
+        channel: channel_gps1
+        device: gps_receiver1

@@ -1,0 +1,59 @@
+# Test 1
+test1:
+  process_noise:
+    algorithm: ASNC  # Process noise algorithm: "ASNC", "ADNC"
+    N_window: 30 # [-]
+    N_wait: 0   # [-]
+    alpha: 2e-2     # [-]
+    beta: [5e-4, 5e-4, 5e-4]    # [1/s]
+    Q_min: 1e-8   # [m/s^2] Process noise limits
+    Q_max: 1e8   # [m/s^2] Process noise limits
+    sigma_a: [5e-4, 5e-4, 5e-4] # [m/s^2] Initial process noise
+  filter:
+    dmc: false            # Dynamic model compensation
+    tau: 10.0             # [s] DMC correlation time
+    rtn: false            # Radial, tangential, normal
+    cm: false             # Covariance matching
+    alpha_cm: 0.5
+    N_cm_start_frac: 0.25 # Fraction of N_t for covariance matching start
+    outlier_rejection: true
+    outlier_threshold: 3.0
+    N_t_filter: -1      # -1 means use all time steps
+    N_clk: 3
+    N_srp: 1              # Number of SRP parameters to estimate
+    sigma_r0_sat: 1000.0  # [m] Initial satellite position uncertainty
+    sigma_v0_sat: 1.0     # [m/s] Initial satellite velocity uncertainty
+    sigma_clk0_sat: 1000.0   # [m] Initial satellite clock uncertainty
+    sigma_clkd0_sat: 1.0    # [m/s] Initial satellite clock drift uncertainty
+    use_srp: true           # Whether to estimate SRP parameters
+    srp_initial_error_ratio: 0.2  # Initial SRP error as a fraction of true value
+    sigma_acc: 3e-5    # [m/s^2] Process noise for satellite acceleration
+    sigma_ure: 1.0    # [m] Inflated standard deviation for signal-in-space user range error (1-sigma)
+    sigma_iono: 1.0    # [m] Inflated standard deviation for ionospheric error (1-sigma)
+    use_meas_autodiff: true # Whether to use autodiff for measurement processing
+  measurements:
+    gnss: ["GPS", "GALILEO"]  # Available GNSS constellations for measurements
+    signal: [1, 5]               # Available Signal types for measurements
+    rz:     [50.0]        # Plasmasphere radii for measurements [km]
+    code:
+      L1: [0, 2000e3, 50000e3]   # [use_code, alt_mask_min (m), alt_mask_max (m)]
+      L5: [0, 10000e3, 50000e3]  # [use_code, alt_mask_min (m), alt_mask_max (m)]
+    carrier:
+      L1: [0, 2000e3, 50000e3]  # [use_carrier, alt_mask_min (m), alt_mask_max (m)]
+      L5: [0, 2000e3, 50000e3]  # [use_carrier, alt_mask_min (m), alt_mask_max (m)]
+    tdcp:
+      L1: [0, 500e3, 50000e3]
+      L5: [0, 500e3, 50000e3]
+    graphic:
+      L1: [0, 500e3, 50000e3]
+      L5: [0, 500e3, 50000e3]
+    ionofree_code:
+      L1_L5: [1, 500e3, 50000e3]   # [use_ionofree_code, alt_mask_min (m), alt_mask_max (m)]
+    ionofree_carrier:
+      L1_L5: [0, 500e3, 50000e3]  # [use_ionofree_carrier, alt_mask_min (m), alt_mask_max (m)]
+    ionofree_tdcp:
+      L1_L5: [0, 500e3, 50000e3]
+    cycle_slip:
+      ratio: 0.0         # probability of cycle slip (0-1)
+      magnitude: 5       # max cycles added/subtracted at cycle slip
+      detect_sigma: 3.0  # sigma threshold for cycle slip detection

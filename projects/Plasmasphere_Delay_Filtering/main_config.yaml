@@ -1,0 +1,114 @@
+scenario:
+  satellite_id: 0  # Satellite ID to simulate (0-4: LCRNS  5:south-pole)
+  N_mc: 40 # Number of Monte Carlo runs
+  case_name: "sim_tdcp"  # Case name for output files
+
+time:
+  dt: 1.0  # [s] Time step
+  dt_prop: 1.0  # [s] Propagation time step
+  dt_raytrace: 120.0  # [s] Raytracing time step
+  N_orbit: 6
+  t0_utc: "2025-03-01T12:00:00.0"  # Initial UTC time
+
+process_noise:
+  algorithm: "SNC"  # Process noise algorithm: SNC, ASNC, ADMC
+  N_wait: 0   # [-]
+  N_window: 50   # [-] Window size for process noise estimation
+  alpha: 1.0    # [-]
+  beta: [5e-4, 5e-4, 5e-4]    # [1/s]
+  Q_sigma_min: 1e-14  # [m/s^2] Process noise limits
+  Q_sigma_max: 3e-9   # [m/s^2] Process noise limits
+  sigma_a: [1e-9, 1e-9, 1e-9] # [m/s^2] Initial process noise
+  rtn: false    # use rtn for process noise
+
+filter:
+  N_smooth_iter: 5  # Number of smoothing iterations
+  smoothing_fraction: 0.33  # Fraction of data to smooth over (1/6)
+  run_smoother: true  # Whether to run the smoother
+  outlier_rejection: true
+  outlier_threshold: 3.0
+  N_t_filter: -1 # -1 means use all time steps
+  N_clk: 3
+  N_srp: 1              # Number of SRP parameters to estimate
+  sigma_r0_sat: 1000.0  # [m] Initial satellite position uncertainty
+  sigma_v0_sat: 1.0     # [m/s] Initial satellite velocity uncertainty
+  sigma_clk0_sat: 1000.0   # [m] Initial satellite clock uncertainty
+  sigma_clkd0_sat: 1.0    # [m/s] Initial satellite clock drift uncertainty
+  use_srp: true           # Whether to estimate SRP parameters
+  srp_initial_error_ratio: 0.2  # Initial SRP error as a fraction of true value
+  sigma_ure: 10.0    # [m] Inflated standard deviation for signal-in-space user range error (1-sigma, addition)   0.7
+  sigma_iono: 0.0    # [m] Inflated standard deviation for ionospheric error (1-sigma, addition)
+  sigma_graphic: 0.1    # [m] Inflated standard deviation for graphic error (1-sigma, addition)
+  sigma_tdcp: 0.008  # [m] Inflated standard deviation for TDCP error (1-sigma, addition)  0.01
+  sigma_tdcp_ionofree: 0.001   # [m] Inflated standard deviation for iono-free TDCP error (1-sigma, addition)  0.001
+  sigma_inflation:
+    code: 1.0   # [-] Inflation rate (for variance) for measurement standard deviations (1.0 = no inflation)
+    carrier: 1.0
+    tdcp: 1.0
+    graphic: 1.0
+    ionofree_code: 1.0
+    ionofree_carrier: 1.0
+    ionofree_tdcp: 1.0
+  inflate_q2: 1.0  # Inflation factor for q2 in clock noise
+  tau_ambiguity: 1e6 # [s] Time constant for ambiguity parameters
+  q_ambiguity: 1e-12  # [] Process noise for ambiguity parameters
+  est_pr_delay: true  # Estimate pseudorange delay
+  use_meas_autodiff: false  # Whether to use autodiff for measurement processing
+  use_udu: true # Whether to use UDU decomposition for covariance
+  udu_predict_single: false    # Run the measurement model for each individual measurement (vs correct with linear models)
+  use_cloning_udu: true  # Whether to always use state cloning with UDU decomposition
+  joint_orbit_clock_dynamics: true  # Use joint orbit-clock dynamics model
+  joint_orbit_clock_dynamics_est: true # Estimate orbit and clock jointly
+
+clock: "OCXO"  # Clock models for satellites  # OCXO, MINI_RAFS
+
+measurements:
+  gnss: ["GPS", "GALILEO", "QZSS"]  # Available GNSS constellations for measurements
+  signal: [1, 5]               # Available Signal types for measurements
+  rz:     [50.0]        # Plasmasphere radii for measurements [km]
+  correct_pco: true  # Whether to correct for PCO in the measurements
+  correct_clock_bias: true  # Whether to correct for clock bias in the measurements
+  max_ephem_error_m: 5.0  # Maximum ephemeris range error (in meters) to include measurements
+  code:
+    L1: [0, 1000e3, 50000e3, 1]   # [use_code, alt_mask_min (m), alt_mask_max (m), process interval]
+    L5: [0, 10000e3, 50000e3, 1]   # [use_code, alt_mask_min (m), alt_mask_max (m), process interval]
+  carrier:
+    L1: [0, 4000e3, 50000e3, 1]  # [use_carrier, alt_mask_min (m), alt_mask_max (m), process interval]
+    L5: [0, 4000e3, 50000e3, 1]  # [use_carrier, alt_mask_min (m), alt_mask_max (m), process interval]
+  tdcp:
+    L1: [1, 5000e3,  50000e3, 2]   # For TDCP, only process once in two steps
+    L5: [0, 10000e3, 50000e3, 2]   # For TDCP, only process once in two steps
+  graphic:
+    L1: [0, 2000e3, 50000e3, 1]
+    L5: [0, 1000e3, 50000e3, 1]
+  ionofree_code:
+    L1_L5: [1, 1000e3, 50000e3, 1]   # [use_ionofree_code, alt_mask_min (m), alt_mask_max (m), process interval]
+  ionofree_carrier:
+    L1_L5: [0, 1000e3, 50000e3, 1]  # [use_ionofree_carrier, alt_mask_min (m), alt_mask_max (m), process interval]
+  ionofree_tdcp:
+    L1_L5: [0, 1000e3, 50000e3, 2]  # [use_ionofree_tdcp, alt_mask_min (m), alt_mask_max (m), process interval]
+  cycle_slip:
+    ratio: 0.1         # probability of cycle slip (0-1)
+    magnitude: 5       # max cycles added/subtracted at cycle slip
+    detect_sigma: 2.5  # sigma threshold for cycle slip detection
+    max_cn0: 25.0      # maximum C/N0 for cycle slip to occur
+    fix_cycleslip: false  # whether to attempt to fix cycle slips
+
+dynamics:
+  moon_order_truth: 50   # Moon harmonic order for truth dynamics
+  moon_order_filter: 18   # Moon harmonic order for filter dynamics
+  cr: 1.8
+  area: 1.0
+  mass: 850.0
+
+recompute:
+  gnss: false # Whether to recompute cached GNSS data
+  filter: false # Whether to recompute filter results
+
+verbose:
+  initialization: true
+  filter_dynamics: 0       # -1: disable  0: first step only 1: every step  N>=2: every N steps
+  filter_predict: 0   # -1: disable  0: first step only 1: every step  N>=2: every N steps
+  filter_measurement: 100000  # -1: disable  0: first step only 1: every step  N>=2: every N steps
+  filter_update: 100000 # -1: disable  0: first step only 1: every step  N>=2: every N steps
+  filter_smoothing: 100000 # -1: disable  0: first step only 1: every step  N>=2: every N steps

@@ -1,0 +1,195 @@
+name: sim
+class: Simulation
+environment: None
+epoch: 2025-01-01T00:00:00Z # TAI
+duration: 12:00:00.000 # hh:mm:ss.sss
+
+# Logging
+log_level: INFO # [DEBUG, INFO, WARN, ERROR]
+# cesium_port: 8080
+rerun: "save" # [spawn, server, save]
+
+# Channels *****************************************************
+channels:
+  gnss_channel:
+    class: Channel
+
+  lnss_channel:
+    class: Channel
+
+# Agents *****************************************************
+agents:
+  # Rover *****************************************************
+  rover:
+    class: Rover
+    frequency: 1.0 # [Hz]
+
+    devices:
+      # - class: Camera
+      #   frequency: 0.15 # [Hz]
+      #   height: 1024 # [px]
+      #   width: 1024 # [px]
+
+      clock:
+        class: Clock
+        model: MICROSEMI_CSAC
+
+      imu:
+        class: Imu
+        model: LN200S
+        frequency: 1.0 # [Hz]
+
+      gnss_receiver:
+        class: Receiver
+        frequency: 1.0 # [Hz]
+        channel: gnss_channel
+
+      lnss_receiver:
+        class: Receiver
+        frequency: 1.0 # [Hz]
+        channel: lnss_channel
+
+    dynamics:
+      class: SurfaceDynamics2D
+      seed: 0
+      sigma_r: 0.1 # [m/s]
+      sigma_theta: 0.1 # [deg/s]
+
+    attitude_dynamics:
+      class: FixedAttitudeDynamics
+
+    initial_state:
+      lat_ref: -89.51 # [deg] Reference latitude
+      lon_ref: 225.0 # [deg] Reference longitude
+      x: 5e3 # [m] Offset from reference
+      y: 5e3 # [m] Offset from reference
+      th: 120.0 # [deg] Heading
+
+    application:
+      class: RoverApp
+      frequency: 1.0 # [Hz]
+
+      trajectory:
+        R: 500 # [m] Rover radius
+        v: 0.1 # [m/s] Rover velocity
+
+      dynamics:
+        class: SurfaceDynamics2D
+        seed: 0
+
+      filter:
+        class: EKF
+
+      initial_state:
+        sigma_r: 1.0 # [m]
+        sigma_v: 0.1 # [m/s]
+        sigma_theta: 5.0 # [deg]
+
+  # Satellite *****************************************************
+  satellite_0:
+    class: Satellite
+    frequency: 1.0 # [Hz] Dynamics and logging
+
+    devices:
+      lnss_transmitter:
+        class: Transmitter
+        channel: lnss_channel
+        frequency: 1.0 # [Hz]
+
+      gnss_receiver:
+        class: GnssReceiver
+        channel: gnss_receiver
+        frequency: 1.0 # [Hz]
+
+      clock:
+        class: Clock
+        model: MINI_RAFS
+        frequency: 1.0 # [Hz]
+
+    initial_state:
+        class: ClassicalOE
+        a: 5740.0e3 # [m] Semi-major axis
+        e: 0.58 # [-] Eccentricity
+        i: 54.856 # [deg] Inclination
+        Omega: 0 # [deg] Right ascension of the ascending node
+        omega: 86.322 # [deg] Argument of periapsis
+        M: 0 # [deg] Mean anomaly
+        frame: MOON_OP
+
+    dynamics:
+      class: NBodyDynamics
+      bodies:
+        - MOON:
+            n: 20
+            m: 20
+        - EARTH:
+        - SUN:
+        - MARS:
+      frame: MOON_CI
+      dt: 1 # [s] Time step
+      CR: 1.2 # [-] Coefficient of Reflectance
+      area: 4.767 # [m^2] Area
+      mass: 273.85 # [kg] Mass
+
+    attitude_dynamics:
+      class: FixedPointingDynamics
+      primary_axis: Z
+      primary_body_id: MOON
+      secondary_axis: Y
+      secondary_body_id: SUN
+      frame: MOON_CI
+
+    application:
+      class: LnssApp
+      frequency: 1.0 # [Hz]
+
+      dynamics:
+        class: NBodyDynamics
+        bodies:
+          - MOON:
+              n: 5
+              m: 5
+          - EARTH:
+          - SUN:
+          - MARS:
+        frame: MOON_CI
+        dt: 1.0 # [s] Time step
+        CR: 1.3 # [-] Coefficient of Reflectance
+        area: 5.0 # [m^2] Area
+        mass: 300.0 # [kg] Mass
+        autodiff: true
+
+      filter:
+        class: EKF
+
+      initial_state:
+        sigma_r: 100.0 # [m]
+        sigma_v: 1.0e-3 # [m/s]
+
+      process_noise:
+        sigma_a: 0.0 # [m/s^2]
+
+# Constellations *****************************************************
+constellations:
+  gps:
+    class: Constellation
+    tle: gps_2025_01_01.txt
+    frequency: 1.0 # [Hz] Dynamics and logging
+
+    devices:
+      gnss_transmitter:
+        class: Transmitter
+        channel: gnss_channel
+
+    dynamics:
+      class: KeplerianDynamics
+      body: EARTH
+      frame: GCRF
+
+    attitude_dynamics:
+      class: FixedPointingDynamics
+      primary_axis: Z
+      primary_body_id: EARTH
+      secondary_axis: Y
+      secondary_body_id: SUN
+      frame: GCRF

@@ -1,0 +1,9 @@
+lac_segmentation:
+  class: UnetPlusPlus
+  checkpoint: ./pretrained/segmentation/LAC_UnetPlusPlus_lac_20250525_210741.pth
+
+  encoder_name: resnet34
+  encoder_weights: imagenet
+  in_channels: 3
+  classes: 5
+  input_size: [512, 512]

@@ -112,7 +112,7 @@ class PyAPIDocsBuilder:
         out_string = ""
         out_string += "%s.%s" % (sub_module_full_name, function_name)
         out_string += "\n" + "-" * len(out_string)
-        out_string += "\n\n" + ".. currentmodule:: %s" % sub_module_full_name
+        out_string += "\n\n" + ".. py:currentmodule:: %s" % sub_module_full_name
         out_string += "\n\n" + ".. autofunction:: %s" % function_name
         out_string += "\n"
 
@@ -125,7 +125,7 @@ class PyAPIDocsBuilder:
         out_string = ""
         out_string += "%s.%s" % (sub_module_full_name, class_name)
         out_string += "\n" + "-" * len(out_string)
-        out_string += "\n\n" + ".. currentmodule:: %s" % sub_module_full_name
+        out_string += "\n\n" + ".. py:currentmodule:: %s" % sub_module_full_name
         out_string += "\n\n" + ".. autoclass:: %s" % class_name
         out_string += "\n    :members:"
         out_string += "\n    :undoc-members:"
@@ -148,7 +148,7 @@ class PyAPIDocsBuilder:
         out_string = ""
         out_string += sub_module_full_name
         out_string += "\n" + "-" * len(out_string)
-        out_string += "\n\n" + ".. currentmodule:: %s" % sub_module_full_name
+        out_string += "\n\n" + ".. py:currentmodule:: %s" % sub_module_full_name
 
         if len(class_names) > 0:
             out_string += "\n\n**Classes**"
@@ -189,13 +189,26 @@ class PyAPIDocsBuilder:
         print("Generating docs for submodule: %s" % sub_module_full_name)
 
         # Class docs
-        class_names = [obj[0] for obj in getmembers(sub_module) if isclass(obj[1])]
+        if module_type == "python_only":
+            class_names = [
+                obj[0]
+                for obj in getmembers(sub_module)
+                if isclass(obj[1]) and obj[1].__module__ == sub_module.__name__
+            ]
+        else:
+            class_names = [
+                obj[0]
+                for obj in getmembers(sub_module)
+                if isclass(obj[1])
+                and (
+                    obj[1].__module__ == sub_module.__name__
+                    or obj[1].__module__.startswith(sub_module.__name__ + ".")
+                )
+            ]
         for class_name in class_names:
             file_name = "%s.%s.rst" % (sub_module_full_name, class_name)
             output_path = os.path.join(output_dir, file_name)
-            PyAPIDocsBuilder._generate_class_doc(
-                sub_module_full_name, class_name, output_path
-            )
+            PyAPIDocsBuilder._generate_class_doc(sub_module_full_name, class_name, output_path)
 
         # Function docs
         if module_type == "python_only":
@@ -205,9 +218,7 @@ class PyAPIDocsBuilder:
                 if isfunction(obj[1]) and obj[1].__module__ == sub_module.__name__
             ]
         else:
-            function_names = [
-                obj[0] for obj in getmembers(sub_module) if isbuiltin(obj[1])
-            ]
+            function_names = [obj[0] for obj in getmembers(sub_module) if isbuiltin(obj[1])]
         for function_name in function_names:
             file_name = "%s.%s.rst" % (sub_module_full_name, function_name)
             output_path = os.path.join(output_dir, file_name)
@@ -232,7 +243,7 @@ class SphinxDocsBuilder:
     (3) Calls `sphinx-build` with the user argument
     """
 
-    def __init__(self, html_output_dir, is_release=True):
+    def __init__(self, html_output_dir, is_release=False):
 
         # Get the modules for which we want to build the documentation.
         # We use the modules listed in the index.rst file here.
@@ -250,7 +261,7 @@ class SphinxDocsBuilder:
         module_names = []
         with open("index.rst", "r") as f:
             for line in f:
-                m = re.match("\s*MAKE_DOCS/python_api/([^\s]*)\s*(.*)\s*$", line)
+                m = re.match(r"\s*MAKE_DOCS/python_api/([^\s]*)\s*(.*)\s*$", line)
                 # m = re.match('^\s*python_api/(.*)\s*$', line)
                 if m:
                     module_names.append((m.group(1), m.group(2)))
@@ -278,8 +289,7 @@ class SphinxDocsBuilder:
 
         if self.is_release:
             version_list = [
-                line.rstrip("\n").split(" ")[1]
-                for line in open("../source/version.txt")
+                line.rstrip("\n").split(" ")[1] for line in open("../source/version.txt")
             ]
             release_version = ".".join(version_list[:3])
             print("Building docs for release:", release_version)
@@ -337,6 +347,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     pwd = os.path.dirname(os.path.realpath(__file__))
+    os.chdir(pwd)
 
     # Clear output dir if new docs are to be built
     html_output_dir = os.path.join(pwd, "_out")
@@ -375,9 +386,7 @@ if __name__ == "__main__":
             shutil.rmtree(doc_folder)
         print("Copying Folder")
         shutil.copytree(html_out, doc_folder)
-        shutil.copy(
-            os.path.join(pwd, ".nojekyll"), os.path.join(doc_folder, ".nojekyll")
-        )
+        shutil.copy(os.path.join(pwd, ".nojekyll"), os.path.join(doc_folder, ".nojekyll"))
 
     if args.clean:
         for directory in [

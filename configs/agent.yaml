@@ -1,0 +1,34 @@
+
+
+rover:
+  class: RoverAgent
+  timestep: 1.0 # [s]
+  state: [25.0, -3.0]
+  radius: 1.0 # [m]
+
+  cameras:
+    Front:
+      res: [1280, 720]
+      fovx: 1.2217304763960306 # [rad]
+      body2camera:
+        - [1.0, 0.0, 0.0, 0.28]
+        - [0.0, 1.0, 0.0, 0.081]
+        - [0.0, 0.0, 1.0, 0.131]
+        - [0.0, 0.0, 0.0, 1.0]
+
+  application:
+    class: MappingApp
+
+    cameras:
+      - Front
+
+    path_planner:
+      class: PathPlanner
+      goal: [-25.0, -12.0]
+      xlim: [-50.0, 50.0]
+      ylim: [-50.0, 50.0]
+      d_keep_out: 2.0 # [m]
+      d_keep_out_gt: 1.0 # [m]
+      max_slope: 90.0 # [deg]
+      lambda_slope: 1.0
+      resolution: 0.2 # [m]

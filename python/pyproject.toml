@@ -1,0 +1,119 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pylupnt"
+version = "0.0.4"
+description = "Lunar Positioning, Navigation, and Timing (PNT) library"
+readme = "../README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Guillem Casadesus", email = "guillemc@stanford.edu" },
+    { name = "Keidai Iiyama", email = "kiiyama@stanford.edu" },
+    { name = "Adam Dai", email = "addai@stanford.edu" },
+]
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "Pillow",
+    "cvxpy",
+    "gsplat==1.4.0",
+    "h5py",
+    "imageio[ffmpeg]",
+    "ipykernel",
+    "ipywidgets",
+    "kaleido",
+    "kornia",
+    "mathutils",
+    "matplotlib",
+    "mpld3",
+    "munch",
+    "mypy",
+    "nbformat",
+    "nerfstudio",
+    "numpy<2.0.0",
+    "open3d",
+    # "opencv",
+    "opencv-stubs",
+    "opt-einsum",
+    "pandas",
+    "plotly",
+    "plyfile",
+    "pre-commit",
+    "pyyaml",
+    "pytorch-lightning",
+    "pytorch-msssim",
+    "rasterio",
+    "requests",
+    "scikit-image",
+    "scikit-learn",
+    "scipy",
+    "scipy-stubs",
+    "segmentation-models-pytorch",
+    "timm",
+    "torch",
+    "torchvision",
+    "transformers",
+    "tqdm",
+    "viser",
+    "fastapi",
+    "uvicorn"
+]
+
+keywords = [
+    "pybind11",
+    "cibuildwheel",
+    "c++",
+    "pypi",
+    "numpy",
+    "simple",
+    "example",
+    "wheel",
+    "pypi",
+    "conda-forge",
+]
+classifiers = [
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+Github = "https://github.com/Stanford-NavLab/LuPNT"
+Documentation = "https://stanford-navlab.github.io/LuPNT/index.html"
+
+[project.optional-dependencies]
+test = ["pytest"]
+docs = [
+    "cmake",
+    "breathe",
+    "sphinx_rtd_theme",
+    "notebook",
+    "sphinx",
+    "exhale",
+    "breathe",
+    "m2r",
+    "nbsphinx",
+    "nbsphinx-link",
+    "jinja2",
+    "lxml_html_clean",
+]
+
+[tool.scikit-build]
+wheel.packages = ["pylupnt", "thirdparty"]
+cmake.source-dir = "bindings"
+
+[tool.cibuildwheel]
+test-extras = "test"
+test-command = "python -m pytest python/test -v"
+test-skip = "pp* *-musllinux* *-manylinux_i686"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pylupnt", "thirdparty"]

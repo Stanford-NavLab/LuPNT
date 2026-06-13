@@ -1,0 +1,12 @@
+feature_tracker:
+  class: FeatureTracker
+  extractor_max_keypoints: 2048
+  max_tracked_points: 200  # currently unused
+  max_stereo_matches: 1024
+  min_score: 0.0
+  max_depth: 100.0
+
+  # PnP
+  reprojection_error: 1.0
+  iterations_count: 500
+  confidence: 0.99

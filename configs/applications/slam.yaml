@@ -1,0 +1,41 @@
+slam:
+  class: SLAM
+
+  # Frontend configuration
+  frontend:
+    class: Frontend
+    tracker: applications/tracking/tracker.yaml::feature_tracker
+    segmentation:
+      enabled: false
+      use_ground_truth: false
+      model: applications/segmentation/segmentation.yaml::segmentation
+    keyframe_interval: 10
+
+  # Backend configuration
+  backend:
+    class: Backend
+    loop_closure:
+      enabled: false
+      min_score: 0.25
+      min_matches: 120
+      distance_threshold_m: 1.0
+      angle_threshold_deg: 5.0
+      exclude_recent_keyframes: 10
+      r_sigma: 0.001  # [rad]
+      t_sigma: 0.005  # [m]
+    optimization:
+      window: 100
+      max_iterations: 100
+      convergence_threshold: 1e-6
+      use_imu: true
+      use_dem_height_factor: true
+      use_dem_normal_factor: true
+      use_dem_horizon_factor: true
+      odom_r_sigma: 0.0004  # [rad]
+      odom_t_sigma: 0.001  # [m]
+      height_sigma: 1.0  # [m]
+      normal_sigma: 0.087  # [rad] (5 degrees)
+    mapping:
+      enable_semantic_mapping: true
+      point_cloud_resolution: 0.1
+    dem_factor_frequency: 10

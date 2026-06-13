@@ -1,0 +1,99 @@
+/**
+ * @file rinex_nav_loader.h
+ * @author Stanford NAV LAB
+ * @brief RINEX navigation (broadcast ephemeris / BRDC) file loader
+ * @version 0.1
+ * @date 2025-06-07
+ *
+ * @copyright Copyright (c) 2025
+ *
+ * Parses RINEX V3 navigation ("BRDC") files and provides broadcast-ephemeris
+ * ECEF position/velocity/clock-correction queries via Keplerian propagation
+ * of the navigation message nearest the requested epoch. This is the C++
+ * counterpart of `pylupnt.interfaces.gnss_file_loader.BRDCLoader`
+ * (`python/pylupnt/interfaces/gnss_file_loader.py`); it supports the
+ * Keplerian-element systems GPS / Galileo / BeiDou / QZSS (`G`/`E`/`C`/`J`)
+ * -- GLONASS (`R`, which uses tabulated orbital state vectors rather than
+ * Keplerian elements) is intentionally not supported, matching
+ * `BRDCLoader.get_posvelclock_all`'s default exclusion of GLONASS.
+ *
+ * Simplification vs. the Python reference: the Galileo-specific GST/GPST
+ * "GAGP" system-time-correction term (`t_corr_sys`, parsed from the
+ * "TIME SYSTEM CORR" header record) is omitted (`t_corr_sys = 0`). This term
+ * only affects the returned satellite *clock* correction (sub-100ns, i.e.
+ * sub-30m range-equivalent) and has **no effect whatsoever on the broadcast
+ * position/velocity** -- which is this loader's primary purpose (setting up
+ * antenna transmit positions / link-budget geometry).
+ */
+#pragma once
+
+#include <filesystem>
+#include <map>
+#include <string>
+#include <vector>
+
+#include "lupnt/core/definitions.h"
+
+namespace lupnt {
+
+  /// @brief Loader / propagator for RINEX V3 broadcast-ephemeris ("BRDC")
+  /// navigation files.
+  ///
+  /// Satellites are identified the same way as in `Sp3Loader`, e.g. `"G01"`.
+  class RinexNavLoader {
+  public:
+    RinexNavLoader() = default;
+
+    /// @brief Construct and load a single RINEX nav file.
+    explicit RinexNavLoader(const std::filesystem::path& filepath);
+
+    /// @brief Construct and load multiple RINEX nav files (e.g. consecutive
+    /// days); navigation messages are concatenated per-satellite.
+    explicit RinexNavLoader(const std::vector<std::filesystem::path>& filepaths);
+
+    /// @brief Parse an additional RINEX nav file and merge its messages in.
+    void LoadFile(const std::filesystem::path& filepath);
+
+    /// @brief Identifiers of all satellites with navigation messages loaded
+    /// so far (e.g. `{"G01", "G02", ..., "E11", ...}`); GLONASS excluded.
+    const std::vector<std::string>& GetSatellites() const { return sats_; }
+
+    bool HasSatellite(const std::string& sat_id) const;
+
+    /// @brief Broadcast-ephemeris ECEF position/velocity [m, m/s] (`rv_ecef`)
+    /// and clock correction [s] (`clock_corr_s`, polynomial + relativistic
+    /// terms only -- see file-level note on the omitted Galileo system-time
+    /// term) of satellite `sat_id` at `t_tai`, computed via Keplerian
+    /// propagation of the navigation message with the closest time-of-epoch.
+    /// Mirrors `BRDCLoader.get_posvelclock` for systems G/E/C/J.
+    void GetPosVelClock(const std::string& sat_id, Real t_tai, Vec6& rv_ecef,
+                        Real& clock_corr_s) const;
+
+    /// @brief Broadcast-ephemeris ECEF position/velocity [m, m/s] only.
+    Vec6 GetPosVel(const std::string& sat_id, Real t_tai) const;
+
+  private:
+    /// @brief A single broadcast navigation message (Keplerian orbital
+    /// elements + clock polynomial), for systems G/E/C/J. Field names follow
+    /// RINEX 3.04 (see http://acc.igs.org/misc/rinex304.pdf).
+    struct NavMessage {
+      double epoch_tai = 0.0;
+      double af0 = 0.0, af1 = 0.0, af2 = 0.0;
+      double crs = 0.0, delta_n = 0.0, m0 = 0.0;
+      double cuc = 0.0, ecc = 0.0, cus = 0.0, sqrt_a = 0.0;
+      double toe = 0.0, cic = 0.0, omega0 = 0.0, cis = 0.0;
+      double i0 = 0.0, crc = 0.0, omega = 0.0, omega_dot = 0.0, idot = 0.0;
+      double week = 0.0;
+    };
+
+    std::vector<std::string> sats_;
+    std::map<std::string, std::vector<NavMessage>> nav_;  // sat_id -> messages (any order)
+
+    void ParseFile(const std::filesystem::path& filepath);
+
+    /// @brief Index of the navigation message in `nav_[sat_id]` whose
+    /// `epoch_tai` is closest to `t_tai` (mirrors `np.argmin(abs(epoch_tai - t))`).
+    int FindClosestMessage(const std::string& sat_id, double t_tai) const;
+  };
+
+}  // namespace lupnt

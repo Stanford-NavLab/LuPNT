@@ -1,0 +1,33 @@
+s3li_dataset:
+  class: S3LIDataset
+  base_dir: /home/shared/data_raw/Terrain/dlr-datasets/s3li
+  sequence: s3li_loops
+
+  dem_file: Mt_Etna-DSM.tif
+  dem_buffer: 0.2  # fraction
+
+  # Dataset parameters
+  downsample_img: 1
+
+  # Data loading parameters (subset of synchronized frames)
+  start: 0.0    # Start from beginning of synchronized frames
+  step: 1       # Use every frame
+  end: 1.0      # Use all synchronized frames
+
+  # Camera intrinsics (loaded from cfgs/cam0_pinhole.yaml and cfgs/cam1_pinhole.yaml)
+  # These are placeholders - actual values loaded from calibration files
+  intrinsics_left:
+    fx: 579.4882694716105
+    fy: 579.4882694716105
+    cx: 342.1329879760742
+    cy: 255.80628776550293
+    W: 688
+    H: 512
+
+  intrinsics_right:
+    fx: 579.4882694716105
+    fy: 579.4882694716105
+    cx: 342.1329879760742
+    cy: 255.80628776550293
+    W: 688
+    H: 512

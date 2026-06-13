@@ -1,0 +1,45 @@
+seed: 0
+
+time:
+  t0_utc: "2028-01-01T12:00:00.000"
+  dt: 1.0 # [s] Integration time step
+  Dt: 10.0 # [s] Propagation time step
+  n_orbit: 3
+
+sat_dynamics:
+  true:
+    bodies: [Earth, Moon, Sun, Mars, Jupiter]
+    degree_moon: 20
+  filter:
+    bodies: [Earth, Moon, Sun]
+    degree_moon: 5
+
+satellite:
+  coe: [6541.4, 0.6, 65.5, 0.0, 90.0, 180.0]
+  frame: MOON_OP
+  clock: MiniRAFS
+
+filter:
+  initial:
+    sigma_pos: 1.0e3 # [m]
+    sigma_vel: 1.0 # [m/s]
+    sigma_bias: 1.0e-3 # [s]
+    sigma_drift: 1.0e-6 # [s/s]
+  sigma_acc: 1e-7 # [m/s^2]
+  outlier_threshold: 3.0 # [-]
+
+dynamics:
+  abstol: 1e-12
+  reltol: 1e-12
+
+gnss:
+  tles:
+    gps: gps_2025_01_01
+    galileo: galileo_2025_01_01
+    qzss: qzss_2025_01_01
+  use:
+    gps: true
+    galileo: true
+    qzss: true
+  sigma_rho: 5.0e-3
+  sigma_rhodot: 1.0e-6

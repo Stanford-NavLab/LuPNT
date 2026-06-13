@@ -1,13 +1,62 @@
-/*build*/
-.vscode
-cpm_modules
-.DS_Store
-LuPNT_data*
-*cache*
+# Build
+**/*build*/
+/dist/
+
+# IDE
+.vscode/
+.idea/
+*.sw[po]
+.clangd
+
+# CMake user-local overrides (machine-specific, not shared)
+CMakeUserPresets.json
+
+# Python
+**/__pycache__/
+*.py[cod]
 *.so
-projects/*
-!projects/CMakeLists.txt
-/local
-/output
-/profiling
-/*venv*/
+*.egg*
+.env*
+**/*venv*/
+.python-version
+.coverage*
+**/.cache/
+**/.mypy_cache/
+**/.ipynb_checkpoints/
+
+# Project
+/data/
+**/*output*/
+**/*results*/
+**/*cache*/
+**/*local*/
+**/*profiling*/
+**/*shared*/
+**/wandb/
+**/*pretrained*/
+**/*visualizations*/
+*.log
+!pretrained/.gitkeep
+!data/.gitkeep
+!.vscode/settings_template.json
+/python/examples/ex_constellation_optimization/data/*
+/python/examples/ex_constellation_optimization/figs/*
+
+# Third party
+**/*orekit-data*/
+**/*cpm_modules*/
+
+# OS
+.DS_Store
+*.mp4
+*.dylib
+
+# Data
+LuPNT_data/*
+projects/Constellation_Optimization/data/*
+projects/Constellation_Optimization/figs/*
+projects/Ephemeris/data/*
+projects/Ephemeris/figures/*
+
+# pixi
+.pixi/

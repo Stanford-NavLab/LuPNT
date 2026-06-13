@@ -399,7 +399,7 @@ SUBGROUPING            = YES
 INLINE_GROUPED_CLASSES = NO
 
 # When the INLINE_SIMPLE_STRUCTS tag is set to YES, structs, classes, and unions
-# with only public data fields or simple typedef fields will be shown inline in
+# with only public data fields or simple typedef fields will be shown  in
 # the documentation of the scope in which they are defined (i.e. file,
 # namespace, or group documentation), provided this scope is documented. If set
 # to NO, structs, classes, and unions are shown on a separate page (for HTML and
@@ -568,8 +568,8 @@ SHOW_GROUPED_MEMB_INC  = NO
 
 FORCE_LOCAL_INCLUDES   = NO
 
-# If the INLINE_INFO tag is set to YES then a tag [inline] is inserted in the
-# documentation for inline members.
+# If the INLINE_INFO tag is set to YES then a tag [] is inserted in the
+# documentation for  members.
 # The default value is: YES.
 
 INLINE_INFO            = YES
@@ -800,8 +800,7 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = ../README.md \
-                         ../include \
-                         ../source/cpp \
+                         ../cpp/lupnt \
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -1116,7 +1115,7 @@ IGNORE_PREFIX          =
 # If the GENERATE_HTML tag is set to YES, doxygen will generate HTML output
 # The default value is: YES.
 
-GENERATE_HTML          = YES
+GENERATE_HTML          = NO
 
 # The HTML_OUTPUT tag is used to specify where the HTML docs will be put. If a
 # relative path is entered the value of OUTPUT_DIRECTORY will be put in front of
@@ -1276,7 +1275,7 @@ HTML_INDEX_NUM_ENTRIES = 100
 # Makefile in the HTML output directory. Running make will produce the docset in
 # that directory and running make install will install the docset in
 # ~/Library/Developer/Shared/Documentation/DocSets so that Xcode will find it at
-# startup. See https://developer.apple.com/tools/creatingdocsetswithdoxygen.html
+# startup. See https://developer.apple.com/Tools/creatingdocsetswithdoxygen.html
 # for more information.
 # The default value is: NO.
 # This tag requires that the tag GENERATE_HTML is set to YES.
@@ -1948,7 +1947,7 @@ MAN_LINKS              = NO
 # captures the structure of the code including all documentation.
 # The default value is: NO.
 
-GENERATE_XML           = NO
+GENERATE_XML           = YES
 
 # The XML_OUTPUT tag is used to specify where the XML pages will be put. If a
 # relative path is entered the value of OUTPUT_DIRECTORY will be put in front of

@@ -1,0 +1,30 @@
+euroc_dataset:
+  class: EurocDataset
+  base_dir: /home/shared/data_raw/euroc
+  sequence: MH_01_easy
+
+  # Dataset parameters
+  downsample_img: 1
+
+  # Data loading parameters
+  start: 0.0
+  step: 1
+  end: 1.0
+
+  # Camera intrinsics (will be loaded from sensor.yaml files)
+  # These are placeholders - actual values loaded from calibration files
+  intrinsics_left:
+    fx: 458.654
+    fy: 457.296
+    cx: 367.215
+    cy: 248.375
+    W: 752
+    H: 480
+
+  intrinsics_right:
+    fx: 458.654
+    fy: 457.296
+    cx: 367.215
+    cy: 248.375
+    W: 752
+    H: 480

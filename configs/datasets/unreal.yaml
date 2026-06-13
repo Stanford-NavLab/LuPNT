@@ -1,0 +1,44 @@
+unreal_dataset:
+  class: UnrealDataset
+  basedir: /home/shared_ws6/local_traverse/base_1
+  agent: rover0
+
+  # Preload mode: "none" (load on demand), "cpu" (preload to RAM), "gpu" (preload to GPU)
+  preload: none
+
+  dem_file: ldem_87s_5mpp.tif
+  dem_buffer_percent: 0.2 # [%]
+  dem_buffer_meters: 10.0  # [m]
+
+  # Frame selection: start/end can be int (index) or float 0-1 (fraction)
+  start: 0      # Start frame index or fraction (0.0 = first frame)
+  end: -1       # End frame index or fraction (1.0 or -1 = last frame)
+  step: 1       # Step size for sampling frames
+
+  # Data types to load for each camera: rgb, depth, label
+  data_types:
+    - rgb
+    - depth
+    - label
+
+  # Camera measurements to load
+  cameras:
+    - front_left
+
+  # Enable IMU data loading (if available)
+  load_imu: true
+
+  extrinsics:
+    front_left:
+      body_T_cam:
+        - [1.0, 0.0, 0.0, 0.5]
+        - [0.0, 1.0, 0.0, +0.1]
+        - [0.0, 0.0, 1.0, 1.4]
+        - [0.0, 0.0, 0.0, 1.0]
+
+    front_right:
+      body_T_cam:
+        - [1.0, 0.0, 0.0, 0.5]
+        - [0.0, 1.0, 0.0, -0.1]
+        - [0.0, 0.0, 1.0, 1.4]
+        - [0.0, 0.0, 0.0, 1.0]

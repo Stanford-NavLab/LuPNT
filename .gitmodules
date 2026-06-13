@@ -1,0 +1,6 @@
+[submodule "python/thirdparty/CREStereo_pytorch"]
+	path = python/thirdparty/CREStereo_pytorch
+	url = https://github.com/ibaiGorordo/CREStereo-Pytorch
+[submodule "python/thirdparty/eai_stereo"]
+	path = python/thirdparty/eai_stereo
+	url = https://github.com/smartadpole/EAI-Stereo

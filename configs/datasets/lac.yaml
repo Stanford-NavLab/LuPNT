@@ -1,0 +1,67 @@
+lac_dataset:
+  class: LACDataset
+  base_dir: data/LAC/runs/
+  map_path: data/LAC/heightmaps/competition/Moon_Map_01_preset_1.dat
+  sequence: 2025-05-28_11-59-12
+
+  start_frame: 80
+  end_frame: -1  # -1 means process all frames
+  step: 2
+
+  measurements:
+    - front_left
+    - front_right
+    - side_left
+    - side_right
+    # - IMU
+
+  cameras:
+    front_left:
+      body_T_cam:
+        - [1.0, 0.0, 0.0, 0.28]
+        - [0.0, 1.0, 0.0, 0.081]
+        - [0.0, 0.0, 1.0, 0.131]
+        - [0.0, 0.0, 0.0, 1.0]
+
+    front_right:
+      body_T_cam:
+        - [1.0, 0.0, 0.0, 0.28]
+        - [0.0, 1.0, 0.0, -0.081]
+        - [0.0, 0.0, 1.0, 0.131]
+        - [0.0, 0.0, 0.0, 1.0]
+
+    back_left:
+      body_T_cam:
+        - [-1.0, 0.0, 0.0, -0.28]
+        - [0.0, -1.0, 0.0, -0.081]
+        - [0.0, 0.0, 1.0, 0.131]
+        - [0.0, 0.0, 0.0, 1.0]
+
+    back_right:
+      body_T_cam:
+        - [-1.0, 0.0, 0.0, -0.28]
+        - [0.0, -1.0, 0.0, 0.081]
+        - [0.0, 0.0, 1.0, 0.131]
+        - [0.0, 0.0, 0.0, 1.0]
+
+    side_left:
+      body_T_cam:
+        - [0.0, -1.0, 0.0, 0.015]
+        - [1.0, 0.0, 0.0, 0.252]
+        - [0.0, 0.0, 1.0, 0.132]
+        - [0.0, 0.0, 0.0, 1.0]
+
+    side_right:
+      body_T_cam:
+        - [0.0, 1.0, 0.0, -0.015]
+        - [-1.0, 0.0, 0.0, -0.252]
+        - [0.0, 0.0, 1.0, 0.132]
+        - [0.0, 0.0, 0.0, 1.0]
+
+  intrinsics:
+    fx: 914.0151876932167 # [px] Focal length
+    fy: 914.0151876932167 # [px] Focal length
+    H: 720 # [px] Image height
+    W: 1280 # [px] Image width
+
+  stereo_baseline: 0.162  # [m]

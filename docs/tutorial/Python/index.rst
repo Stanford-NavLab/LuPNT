@@ -6,4 +6,5 @@ Python Tutorials
 .. toctree::
     :maxdepth: 0
 
-    basicdemo
+    basic
+    gnss_files

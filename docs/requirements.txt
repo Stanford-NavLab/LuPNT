@@ -1,17 +1,13 @@
-gitpython # for version bump script
-pytest # for testing
-
-# Documentation Generation Packages
+# Python packages for building LuPNT documentation outside pixi.
 notebook
 sphinx
-sphinx_rtd_theme
+sphinx-rtd-theme
+furo
 exhale
 breathe
-m2r
 nbsphinx
 nbsphinx-link
 jinja2
-furo
 lxml_html_clean
-# Also need to use conda to install these through conda or get binaries another way
-# conda install -c conda-forge pandoc doxygen
+
+# Install doxygen and pandoc with a system package manager or conda-forge.

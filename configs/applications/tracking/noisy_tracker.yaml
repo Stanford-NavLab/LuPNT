@@ -1,0 +1,4 @@
+noisy_tracker:
+  class: NoisyTracker
+  trans_sigma: 0.01 # [m]
+  rot_sigma: 0.00174 # [rad]

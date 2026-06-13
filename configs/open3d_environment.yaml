@@ -1,0 +1,51 @@
+open3d_env:
+  class: Open3DEnvironment
+  background_color: [0.0, 0.0, 0.0, 0.0] # [r, g, b, a]
+  resolution: 0.1 # [m]
+
+  sun:
+    el: 20.0 # [deg]
+    az: 180.0 # [deg]
+
+  material:
+    base_color: [0.5, 0.5, 0.5, 1.0] # [r, g, b, a]
+    base_roughness: 1.0 # [-]
+    base_metallic: 0.0 # [-]
+    base_reflectance: 0.0 # [-]
+
+open3d_small:
+  inherit_from: open3d_env
+  xlims: [-30, 30] # [m]
+  ylims: [-20, 20] # [m]
+
+  surface:
+    seed: 0
+    amplitude: 2 # [m]
+    slope_x: 3 # [m]
+    slope_y: 3 # [m]
+    lambda_x: 50 # [m]
+    lambda_y: 30 # [m]
+    noise: 0.01 # [m]
+
+  craters:
+    seed: 0
+    num: 0 # [-]
+    radius: [0.20, 5.0] # [m]
+    depth: [0.1, 0.3] # [-]
+    noise: 0.01 # [m]
+
+  rocks:
+    seed: 0
+    num: 50 # [-]
+    radius: [0.5, 1.0] # [m]
+    sink: [0.5, 0.9] # [-]
+    noise: 0.05 # [m]
+    color: [0.4, 0.4, 0.4] # [r, g, b]
+
+
+open3d_dem:
+  inherit_from: open3d_env
+  dem_path: "ldem_87s_5mpp.tif"
+  xlims: [-12.0e3, -7.0e3] # [m]
+  ylims: [-7.5e3, -2.0e3] # [m]
+  resolution: 1.0 # [m]

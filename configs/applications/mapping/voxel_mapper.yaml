@@ -1,0 +1,8 @@
+voxel_mapper:
+  class: VoxelMapper
+  max_depth: 200.0 # [m]
+  voxel_size: 0.05 # [m]
+  print_every: 1e5
+  viser:
+    port: 8080
+    poses: true

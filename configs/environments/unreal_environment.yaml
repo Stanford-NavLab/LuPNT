@@ -1,0 +1,25 @@
+lander_two_rovers:
+  dem:
+    xlims: [-10e3, 0e3] # [m]
+    ylims: [-10e3, 0e3] # [m]
+    res: 5.0 # [m]
+
+  xy_center: [-8700.0, -7300.0] # [m]
+
+  sun:
+    az: 90.0 # [deg]
+    el: 3.0 # [deg]
+
+  agents:
+    lander:
+      ue_class: blue_moon_lander
+      xyz: [0.0, 0.0, 0.5] # [m]
+      rpy: [0.0, 0.0, 0.0] # [deg]
+
+    rover0:
+      xyz: [-10.0, -5.0, 0.5] # [m]
+      rpy: [0.0, 0.0, 30.0] # [deg]
+
+    rover1:
+      xyz: [-10.0, 5.0, 0.5] # [m]
+      rpy: [0.0, 0.0, -30.0] # [deg]
