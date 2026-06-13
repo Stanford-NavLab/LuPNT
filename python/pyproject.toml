@@ -106,7 +106,7 @@ docs = [
 ]
 
 [tool.scikit-build]
-wheel.packages = ["pylupnt", "thirdparty"]
+wheel.packages = ["pylupnt"]
 cmake.source-dir = "bindings"
 
 [tool.cibuildwheel]
@@ -116,4 +116,4 @@ test-skip = "pp* *-musllinux* *-manylinux_i686"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["pylupnt", "thirdparty"]
+include = ["pylupnt"]
