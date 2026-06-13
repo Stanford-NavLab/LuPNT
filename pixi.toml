@@ -97,7 +97,7 @@ build-docs    = { cmd = "python docs/make_docs.py", depends-on = ["build-py"] }
 configure-test-cpp = { cmd = "cmake -S cpp/test -B build-cpp-test-pixi -GNinja -DCMAKE_BUILD_TYPE=Release" }
 build-test-cpp = { cmd = "cmake --build build-cpp-test-pixi --target lupnt_tests", depends-on = ["configure-test-cpp"] }
 test-cpp       = { cmd = "ctest --test-dir build-cpp-test-pixi --output-on-failure", depends-on = ["build-test-cpp"] }
-test-cpp-ci    = { cmd = "ctest --test-dir build-cpp-test-pixi --output-on-failure -E 'data.eop_latest_iers|agents.gnss_constellation.setup_from_files|interfaces.rinex_nav_loader|interfaces.sp3_loader|measurements.gnss_measurements.visibility'", depends-on = ["build-test-cpp"] }
+test-cpp-ci    = { cmd = "ctest --test-dir build-cpp-test-pixi --output-on-failure -E 'data.eop_latest_iers|devices.space_comms|agents.gnss_constellation.setup_from_files|interfaces.antex_loader|interfaces.rinex_nav_loader|interfaces.sp3_loader|measurements.gnss_measurements.visibility|states.tle'", depends-on = ["build-test-cpp"] }
 test-py        = { cmd = "pytest python/test", depends-on = ["build-py"] }
 test           = { depends-on = ["test-cpp", "test-py"] }
 build-examples = { cmd = "cmake -S cpp/examples -B build-examples-pixi -GNinja -DCMAKE_BUILD_TYPE=Release && cmake --build build-examples-pixi --target all_examples" }
