@@ -19,7 +19,10 @@ endforeach()
 # helpers (which live in `<root>/cmake/`, see `cpp/CMakeLists.txt`) are reached via `../../cmake/`,
 # not `../cmake/` (which would resolve to the nonexistent `cpp/cmake/`).
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Tools.cmake)
+set(LUPNT_TOOLS_CMAKE "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Tools.cmake")
+if(EXISTS "${LUPNT_TOOLS_CMAKE}")
+  include("${LUPNT_TOOLS_CMAKE}")
+endif()
 
 # ---- Dependencies ----
 # `FindOpenMP.cmake`/`Python.cmake` don't exist anywhere in the repo (and aren't needed here):

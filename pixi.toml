@@ -93,7 +93,7 @@ build-reldbg  = { cmd = "cmake -S cpp -B build-reldbg  -GNinja -DCMAKE_BUILD_TYP
 build-py      = { cmd = "cmake -S python/bindings -B build-py         -GNinja -DCMAKE_BUILD_TYPE=Release        && cmake --build build-py         --target pylupnt-dev" }
 build-py-debug  = { cmd = "cmake -S python/bindings -B build-py-debug   -GNinja -DCMAKE_BUILD_TYPE=Debug          && cmake --build build-py-debug   --target pylupnt-dev" }
 build-py-reldbg = { cmd = "cmake -S python/bindings -B build-py-reldbg  -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo && cmake --build build-py-reldbg  --target pylupnt-dev" }
-build-docs    = { cmd = "python docs/make_docs.py" }
+build-docs    = { cmd = "python docs/make_docs.py", depends-on = ["build-py"] }
 configure-test-cpp = { cmd = "cmake -S cpp/test -B build-cpp-test-pixi -GNinja -DCMAKE_BUILD_TYPE=Release" }
 build-test-cpp = { cmd = "cmake --build build-cpp-test-pixi --target lupnt_tests", depends-on = ["configure-test-cpp"] }
 test-cpp       = { cmd = "ctest --test-dir build-cpp-test-pixi --output-on-failure", depends-on = ["build-test-cpp"] }

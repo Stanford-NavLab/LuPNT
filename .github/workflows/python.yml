@@ -45,13 +45,13 @@ jobs:
       - name: Download LuPNT_data
         shell: bash
         run: |
-          if [ -d data/LuPNT_data ]; then
+          if [ -f data/LuPNT_data/gnss/igs20.atx ] && [ -f data/LuPNT_data/tle/2023_06_09/gps_2023_06_09.txt ]; then
             exit 0
           fi
+          rm -rf data/LuPNT_data
           mkdir -p data
           curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
           unzip -q LuPNT_data.zip
-          rm -rf data/LuPNT_data
           mv LuPNT_data data/LuPNT_data
           rm LuPNT_data.zip
 
