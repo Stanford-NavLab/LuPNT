@@ -8,12 +8,16 @@ on:
     branches:
       - development
 
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
-  LUPNT_DOCS_JOBS: 2
+  LUPNT_DOCS_JOBS: 4
 
 jobs:
   build-docs:
