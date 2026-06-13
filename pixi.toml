@@ -3,7 +3,7 @@ name = "lupnt"
 version = "0.1.0"
 description = "Lunar Positioning, Navigation, and Timing (PNT) library"
 channels = ["conda-forge"]
-platforms = ["osx-arm64"]
+platforms = ["linux-64", "osx-arm64"]
 
 [dependencies]
 # Build tools
@@ -12,6 +12,9 @@ ninja = "*"
 make = "*"
 compilers = "*"
 git = "*"
+clang-format = "18.*"
+cmake-format = "*"
+python-build = "*"
 
 # Python
 python = "3.12.*"
@@ -84,17 +87,22 @@ default = { solve-group = "default" }
 dev = { features = ["orekit"], solve-group = "default" }
 
 [tasks]
-build         = { cmd = "cmake -B build         -GNinja -DCMAKE_BUILD_TYPE=Release        && ninja -C build         lupnt" }
-build-debug   = { cmd = "cmake -B build-debug   -GNinja -DCMAKE_BUILD_TYPE=Debug          && ninja -C build-debug   lupnt" }
-build-reldbg  = { cmd = "cmake -B build-reldbg  -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo && ninja -C build-reldbg  lupnt" }
-build-py      = { cmd = "ninja -C build         _pylupnt && cmake -E copy build/bindings/_pylupnt.cpython-312-darwin.so         python/pylupnt/_pylupnt.cpython-312-darwin.so", depends-on = ["build"] }
-build-py-debug  = { cmd = "ninja -C build-debug   _pylupnt && cmake -E copy build-debug/bindings/_pylupnt.cpython-312-darwin.so   python/pylupnt/_pylupnt.cpython-312-darwin.so", depends-on = ["build-debug"] }
-build-py-reldbg = { cmd = "ninja -C build-reldbg  _pylupnt && cmake -E copy build-reldbg/bindings/_pylupnt.cpython-312-darwin.so  python/pylupnt/_pylupnt.cpython-312-darwin.so", depends-on = ["build-reldbg"] }
+build         = { cmd = "cmake -S cpp -B build         -GNinja -DCMAKE_BUILD_TYPE=Release        && cmake --build build         --target lupnt" }
+build-debug   = { cmd = "cmake -S cpp -B build-debug   -GNinja -DCMAKE_BUILD_TYPE=Debug          && cmake --build build-debug   --target lupnt" }
+build-reldbg  = { cmd = "cmake -S cpp -B build-reldbg  -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo && cmake --build build-reldbg  --target lupnt" }
+build-py      = { cmd = "cmake -S python/bindings -B build-py         -GNinja -DCMAKE_BUILD_TYPE=Release        && cmake --build build-py         --target pylupnt-dev" }
+build-py-debug  = { cmd = "cmake -S python/bindings -B build-py-debug   -GNinja -DCMAKE_BUILD_TYPE=Debug          && cmake --build build-py-debug   --target pylupnt-dev" }
+build-py-reldbg = { cmd = "cmake -S python/bindings -B build-py-reldbg  -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo && cmake --build build-py-reldbg  --target pylupnt-dev" }
 build-docs    = { cmd = "python docs/make_docs.py" }
-build-test-cpp = { cmd = "cmake -S cpp/test -B build-cpp-test-pixi -GNinja -DCMAKE_BUILD_TYPE=Release && cmake --build build-cpp-test-pixi --target lupnt_tests" }
+configure-test-cpp = { cmd = "cmake -S cpp/test -B build-cpp-test-pixi -GNinja -DCMAKE_BUILD_TYPE=Release" }
+build-test-cpp = { cmd = "cmake --build build-cpp-test-pixi --target lupnt_tests", depends-on = ["configure-test-cpp"] }
 test-cpp       = { cmd = "ctest --test-dir build-cpp-test-pixi --output-on-failure", depends-on = ["build-test-cpp"] }
+test-cpp-ci    = { cmd = "ctest --test-dir build-cpp-test-pixi --output-on-failure -E 'data.eop_latest_iers|agents.gnss_constellation.setup_from_files|interfaces.rinex_nav_loader|interfaces.sp3_loader|measurements.gnss_measurements.visibility'", depends-on = ["build-test-cpp"] }
 test-py        = { cmd = "pytest python/test", depends-on = ["build-py"] }
 test           = { depends-on = ["test-cpp", "test-py"] }
+build-examples = { cmd = "cmake -S cpp/examples -B build-examples-pixi -GNinja -DCMAKE_BUILD_TYPE=Release && cmake --build build-examples-pixi --target all_examples" }
+format-check   = { cmd = "python scripts/check_format.py" }
+install-test   = { cmd = "cmake -S cpp -B build-install-pixi -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PIXI_PROJECT_ROOT/install && cmake --build build-install-pixi --target install && cmake -S cpp/test -B build-installed-test-pixi -GNinja -DCMAKE_BUILD_TYPE=Release -DTEST_INSTALLED_VERSION=1 -DCMAKE_PREFIX_PATH=$PIXI_PROJECT_ROOT/install && cmake --build build-installed-test-pixi --target lupnt_tests && ctest --test-dir build-installed-test-pixi --output-on-failure -E 'data.eop_latest_iers|agents.gnss_constellation.setup_from_files|interfaces.rinex_nav_loader|interfaces.sp3_loader|measurements.gnss_measurements.visibility'" }
 build-gnss-filtering = { cmd = "cmake -B build-gnss-filtering -GNinja -DCMAKE_BUILD_TYPE=Release && cmake --build build-gnss-filtering --target ex_lunar_gnss_odts" }
 download-sp3-example = { cmd = "python python/examples/ex_gnss/download_sp3_epochs.py", depends-on = ["build-py"] }
 download-sp3-example-cpp = { cmd = "cmake --build build --target ex_download_sp3_epochs && ./build/examples/ex_download_sp3_epochs", depends-on = ["build"] }

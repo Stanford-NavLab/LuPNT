@@ -46,6 +46,14 @@
 #include "lupnt/core/simulation.h"
 #include "lupnt/core/string_utils.h"
 
+// data
+#include "lupnt/data/crater_data.h"
+#include "lupnt/data/dem.h"
+#include "lupnt/data/eop.h"
+#include "lupnt/data/iau_sofa.h"
+#include "lupnt/data/kernels.h"
+#include "lupnt/data/tai_utc.h"
+
 // devices
 #include "lupnt/devices/camera.h"
 #include "lupnt/devices/clock.h"

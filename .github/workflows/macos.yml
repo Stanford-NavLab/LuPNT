@@ -11,45 +11,42 @@ on:
 env:
   CTEST_OUTPUT_ON_FAILURE: 1
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
-  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
 
 jobs:
   build-macos:
-    runs-on: macos-latest
+    runs-on: macos-14
 
     steps:
-      - name: install dependencies
-        run: brew install boost libomp hdf5
-
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          pixi-version: v0.68.1
+          cache: true
+          frozen: true
 
       - uses: actions/cache@v4
-        id: cache-cpm-modules
         with:
           path: "**/cpm_modules"
           key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
 
-      - name: cache LuPNT_data
-        id: cache-lupnt
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
+        id: cache-lupnt-data
         with:
-          path: data
+          path: data/LuPNT_data
           key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
 
-      - name: download and unzip LuPNT_data
-        if: steps.cache-lupnt.outputs.cache-hit != 'true'
+      - name: Download LuPNT_data
+        if: steps.cache-lupnt-data.outputs.cache-hit != 'true'
         run: |
+          mkdir -p data
           curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
-          unzip LuPNT_data.zip
+          unzip -q LuPNT_data.zip
+          rm -rf data/LuPNT_data
+          mv LuPNT_data data/LuPNT_data
           rm LuPNT_data.zip
 
-      - name: configure
-        run: cmake -Stest -Bbuild -DCMAKE_BUILD_TYPE=Debug
-
-      - name: build
-        run: cmake --build build -j4
-
-      - name: test
-        run: |
-          cd build
-          ctest --build-config Debug
+      - name: Build and test C++
+        run: pixi run test-cpp-ci

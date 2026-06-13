@@ -1,7 +1,6 @@
 # LuPNT
 
 [![MacOS](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/macos.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/macos.yml)
-[![Windows](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/windows.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/windows.yml)
 [![Ubuntu](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/ubuntu.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/ubuntu.yml)
 [![Style](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/style.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/style.yml)
 [![Install](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/install.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/install.yml)
@@ -11,7 +10,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI Release](https://img.shields.io/pypi/v/pylupnt.svg)](https://pypi.org/project/pylupnt)
 [![Python Versions](https://img.shields.io/pypi/pyversions/pylupnt)](https://pypi.org/project/pylupnt)
-[![codecov](https://codecov.io/gh/Stanford-NavLab/LuPNT/branch/development/graph/badge.svg)](https://codecov.io/gh/Stanford-NavLab/LuPNT)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Stanford-NavLab/LuPNT/development?labpath=python%2Fexamples%2Fex_frozen_orbits%2Fex_frozen_orbits.ipynb)
 [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1yhHImp3hB5P8dadLlv0CcYWQWLabNfuh)
 

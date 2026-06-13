@@ -9,84 +9,49 @@ on:
       - development
 
 env:
-  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
 
 jobs:
   build-python:
-    name: "${{ matrix.os }} :: Python ${{ matrix.python-version }}"
-    runs-on: ${{matrix.os}}
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12"]
+        os: [ubuntu-latest, macos-14]
+
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          allow-prereleases: true
+          submodules: recursive
+
+      - uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          pixi-version: v0.68.1
+          cache: true
+          frozen: true
+
+      - uses: actions/cache@v4
+        with:
+          path: "**/cpm_modules"
+          key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
 
       - uses: actions/cache@v4
         id: cache-lupnt-data
         with:
-          path: LuPNT_data
+          path: data/LuPNT_data
           key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
 
-      # Ubuntu
-      - name: Install OpenMP and download data (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Download LuPNT_data
+        if: steps.cache-lupnt-data.outputs.cache-hit != 'true'
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
-
-      # MacOS
-      - name: Install OpenMP (macOS)
-        if: matrix.os == 'macos-latest'
-        run: brew install boost libomp hdf5
-
-      # MacOS + Ubuntu
-      - name: Download and unzip LuPNT_data (MacOS + Ubuntu)
-        if: |
-          (matrix.os == 'macos-latest'   ||
-            matrix.os == 'ubuntu-latest') &&
-          steps.cache-lupnt-data.outputs.cache-hit != 'true'
-        run: |
+          mkdir -p data
           curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
-          unzip LuPNT_data.zip
+          unzip -q LuPNT_data.zip
+          rm -rf data/LuPNT_data
+          mv LuPNT_data data/LuPNT_data
           rm LuPNT_data.zip
 
-      # Windows
-      - name: Download and unzip LuPNT_data (Windows)
-        if: |
-          matrix.os == 'windows-latest' &&
-          steps.cache-lupnt-data.outputs.cache-hit != 'true'
-        run: |
-          $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest -Uri "https://bit.ly/LuPNT_data" -OutFile "LuPNT_data.zip"
-          Expand-Archive -Path "LuPNT_data.zip" -DestinationPath "."
-          Remove-Item "LuPNT_data.zip"
-
-      - name: Dependencies (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest -Uri "https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.3/hdf5-1.14.4-3-win-vs2022_cl.zip" -OutFile "hdf5.zip"
-          Expand-Archive -Path "hdf5.zip" -DestinationPath "C:\HDF5" -Force
-          Remove-Item "hdf5.zip"
-          Expand-Archive -Path "C:/HDF5/hdf5/HDF5-1.14.4-win64.zip" -DestinationPath "C:/HDF5"
-          choco install -y boost-msvc-14.1
-          $env:HDF5_DIR = "C:\HDF5\HDF5-1.14.4-win64\CMake"
-          $env:HDF5_ROOT = "C:\HDF5\HDF5-1.14.4-win64"
-          $env:HDF5_LIBRARIES = "C:\HDF5\HDF5-1.14.4-win64\lib"
-          $env:HDF5_INCLUDE_DIRS = "C:\HDF5\HDF5-1.14.4-win64\include"
-          python -m pip install "./python[test]" -v
-
-        # MacOS + Ubuntu
-      - name: Install Python bindings using pip
-        if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest'
-        run: python -m pip install "./python[test]" -v
-
-      - name: Run Python tests
-        run: python -m pytest python/test -v
+      - name: Build bindings and run Python tests
+        run: pixi run test-py

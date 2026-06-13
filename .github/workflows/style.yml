@@ -10,7 +10,6 @@ on:
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
-  LUPNT_DATA_PATH: ${{ github.workspace }}/LuPNT_data
 
 jobs:
   build-style:
@@ -18,21 +17,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          pixi-version: v0.68.1
+          cache: true
+          frozen: true
 
       - uses: actions/cache@v4
         with:
           path: "**/cpm_modules"
           key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
 
-      - name: Install format dependencies
+      - name: Check style
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake
-          sudo apt-get install -y libboost-all-dev libomp-dev libhdf5-serial-dev
-          pip3 install clang-format==18.1.8 cmake_format==0.6.13 pyyaml
-
-      - name: configure
-        run: cmake -Stest -Bbuild
-
-      - name: check style
-        run: cmake --build build --target check-format
+          BASE_REF="${{ github.event.pull_request.base.sha || github.event.before }}"
+          if [ "$BASE_REF" = "0000000000000000000000000000000000000000" ]; then
+            BASE_REF="$(git rev-list --max-parents=0 HEAD)"
+          fi
+          pixi run format-check "$BASE_REF"
