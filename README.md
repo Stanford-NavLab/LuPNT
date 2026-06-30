@@ -2,7 +2,7 @@
 
 [![MacOS](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/macos.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/macos.yml)
 [![Ubuntu](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/ubuntu.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/ubuntu.yml)
-[![Style](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/style.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/style.yml)
+[![Style](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/style.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/style.yml)P
 [![Install](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/install.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/install.yml)
 [![Python](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/python.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/python.yml)
 [![Examples](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/examples.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/examples.yml)
@@ -90,10 +90,32 @@ LuPNT/
 
 ### Prerequisites
 
-Install [pixi](https://pixi.sh) (manages the compiler toolchain, Python, and all C++ dependencies via conda-forge — no manual dependency installation needed):
+1. Install [pixi](https://pixi.sh) (manages the compiler toolchain, Python, and all C++ dependencies via conda-forge — no manual dependency installation needed):
 ```bash
 curl -fsSL https://pixi.sh/install.sh | bash
 ```
+
+2. **NASA Earthdata Login is required.** Several C++ tests (`pixi run test-cpp`) and GNSS
+   examples depend on live GNSS/EOP products (SP3 precise orbits, RINEX nav, ANTEX) fetched from
+   [CDDIS](https://cddis.nasa.gov/), which requires authentication. Set this up before running
+   `pixi run test-cpp` or any of the GNSS download tasks:
+
+   1. **Create an Earthdata Login account** at
+      [urs.earthdata.nasa.gov](https://urs.earthdata.nasa.gov/): click "Register for a profile",
+      fill in the required fields, and verify your email address.
+
+   2. **Create a `~/.netrc` file** with your credentials (run inside WSL on Windows, not
+      PowerShell/cmd — see [Setting up on Windows (via WSL)](#setting-up-on-windows-via-wsl)
+      below):
+   ```bash
+   touch ~/.netrc
+   chmod 0600 ~/.netrc
+   echo "machine urs.earthdata.nasa.gov login <your_username> password <your_password>" >> ~/.netrc
+   ```
+      Replace `<your_username>` and `<your_password>` with your actual credentials. The
+      `chmod 0600` step is required — curl/wget refuse to use a `.netrc` with broader permissions.
+      Verify with `cat ~/.netrc`. Never share or commit this file (it stays outside the repo, at
+      `~/.netrc`, so there's no risk of it being checked into git).
 
 ### Setup
 
@@ -111,6 +133,53 @@ pixi run build
 ```bash
 pixi run build-py
 ```
+
+> **Note:** `data/LuPNT_data` (ephemeris, GNSS antenna/clock products, plasma coefficients, TLEs)
+> is downloaded and extracted automatically the first time you run step 2 or 3 above — no manual
+> setup needed. It's a ~650MB one-time download (see
+> [cmake/FetchLuPNTData.cmake](cmake/FetchLuPNTData.cmake)); subsequent builds skip it since the
+> data is already present. To disable this (e.g. air-gapped builds), pass
+> `-DLUPNT_FETCH_DATA=OFF` to the underlying `cmake` configure call, or place the data manually
+> at `data/LuPNT_data` beforehand.
+
+### Setting up on Windows (via WSL)
+
+LuPNT does not build natively on Windows; Windows users should develop inside
+**WSL (Windows Subsystem for Linux)**, which runs a real Linux environment and
+follows the same setup as native Linux/macOS above.
+
+1. **Install WSL** (PowerShell, run as Administrator). This installs the
+   default Ubuntu distribution:
+```powershell
+wsl --install
+```
+   Reboot if prompted, then launch "Ubuntu" from the Start menu and create a
+   Unix username/password when asked.
+
+2. **Update packages inside the WSL Ubuntu shell**
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+3. **Clone the repository inside the WSL filesystem** (not under `/mnt/c/...`,
+   which is much slower and can break symlinks/permissions):
+```bash
+cd ~
+git clone https://github.com/Stanford-NavLab/LuPNT.git
+cd LuPNT
+```
+
+4. **Continue with the regular [Prerequisites](#prerequisites) and
+   [Setup](#setup) steps above** (`curl -fsSL https://pixi.sh/install.sh | bash`,
+   then `pixi install`, `pixi run build`, `pixi run build-py`) from inside the
+   WSL shell.
+
+5. **Editing files**: you can edit the cloned repo from Windows tools (e.g.
+   VS Code with the "WSL" extension, or `code .` from inside the WSL shell)
+   while all builds/tests run inside WSL.
+
+Once set up, every command in the rest of this README (`pixi shell`,
+`pixi run test`, etc.) works identically inside the WSL terminal.
 
 ### Build modes
 
@@ -132,7 +201,7 @@ pixi run build-py-debug    # Debug bindings
 
 ### Daily workflow
 
-Activate the pixi environment in a shell (sets `LUPNT_DATA_PATH`, `PECSIMPY_BASE_PATH`, and `PYTHONPATH` automatically):
+Activate the pixi environment in a shell (sets `LUPNT_DATA_PATH`, `LUPNT_OUTPUT_PATH`, `PECSIMPY_BASE_PATH`, and `PYTHONPATH` automatically):
 ```bash
 pixi shell
 ```
@@ -160,15 +229,30 @@ PECSIMPY_BASE_PATH=$PWD/data/LuPNT_data/plasma \
 
 ### Jupyter notebooks
 
-Select the **`lupnt (pixi)`** kernel in Jupyter. The kernel has `LUPNT_DATA_PATH`, `PECSIMPY_BASE_PATH`, and `PYTHONPATH` pre-configured so all notebooks in `projects/` work out of the box.
+Select the **`lupnt (pixi)`** kernel in Jupyter. The kernel has `LUPNT_DATA_PATH`, `LUPNT_OUTPUT_PATH`, `PECSIMPY_BASE_PATH`, and `PYTHONPATH` pre-configured so all notebooks in `projects/` work out of the box.
 
 ### Running tests
 
+`pixi run test-cpp` includes tests (`data.eop_latest_iers`, `devices.space_comms`,
+`agents.gnss_constellation.setup_from_files`, `interfaces.antex_loader`,
+`interfaces.rinex_nav_loader`, `interfaces.sp3_loader`, `measurements.gnss_measurements.visibility`,
+`states.tle`) that need live GNSS/EOP products (SP3, RINEX nav, ANTEX) from
+[CDDIS](https://cddis.nasa.gov/) — this is why NASA Earthdata Login (see
+[Prerequisites](#prerequisites)) is required. Some of these tests (`interfaces.sp3_loader`,
+`interfaces.rinex_nav_loader`, `agents.gnss_constellation.setup_from_files`) additionally expect
+specific SP3/BRDC files to already exist on disk rather than downloading them on the fly (see
+`GnssFilesDir()` in [cpp/test/interfaces/test_sp3_loader.cc](cpp/test/interfaces/test_sp3_loader.cc)),
+so fetch those once before running the suite:
+
 ```bash
-pixi run test-cpp        # Build and run C++ Catch2/CTest tests
-pixi run test-py         # Build Python bindings, then run pytest
-pixi run test            # Run both suites
+pixi run download-gnss-test-data   # one-time; requires ~/.netrc (see Prerequisites)
+pixi run test-cpp                  # Build and run C++ Catch2/CTest tests
+pixi run test-py                   # Build Python bindings, then run pytest
+pixi run test                      # Run both suites
 ```
+
+If you don't have Earthdata Login set up, use `pixi run test-cpp-ci` instead — it's the same
+command CI runs and excludes the tests above.
 
 More details are in [cpp/test/README.md](cpp/test/README.md).
 

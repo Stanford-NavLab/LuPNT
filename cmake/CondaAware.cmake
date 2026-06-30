@@ -90,8 +90,11 @@ if(DEFINED ENV{CONDA_PREFIX})
   list(PREPEND CMAKE_PREFIX_PATH ${CONDA_AWARE_PREFIX})
   message(STATUS "CondaAware: Prepended ${CONDA_AWARE_PREFIX} to CMAKE_PREFIX_PATH")
 
-  # Ensure include directory in conda environment is known to the project
-  include_directories(${CONDA_AWARE_PREFIX}/include)
+  # Ensure include directory in conda environment is known to the project. Wrapped in
+  # $<BUILD_INTERFACE:> so it is never baked into install(EXPORT ...) interfaces for targets whose
+  # CMAKE_INSTALL_PREFIX-relative source path (e.g. an in-tree .pixi/envs/.../include) would
+  # otherwise trip CMake's "path is prefixed in the source directory" export check.
+  include_directories("$<BUILD_INTERFACE:${CONDA_AWARE_PREFIX}/include>")
   message(STATUS "CondaAware: Appended ${CONDA_AWARE_PREFIX}/include to include directories")
 
   # Ensure library directory in conda environment is known to the project

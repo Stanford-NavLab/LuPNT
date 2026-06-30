@@ -3,6 +3,13 @@
 Run tests from the repository root with pixi so the compiler, library paths,
 data paths, and Python path all come from the same environment.
 
+A NASA Earthdata Login (`~/.netrc`, see the main [README](../../README.md#prerequisites)) is
+required for the full suite, since several tests fetch or parse live CDDIS GNSS/EOP products. Run
+`pixi run download-gnss-test-data` once beforehand to pre-fetch the SP3/BRDC fixture files that
+`interfaces.sp3_loader`, `interfaces.rinex_nav_loader`, and
+`agents.gnss_constellation.setup_from_files` expect on disk. Without Earthdata Login, use
+`pixi run test-cpp-ci` instead (same command CI runs; excludes the CDDIS-dependent tests).
+
 ## C++ Tests
 
 ```bash

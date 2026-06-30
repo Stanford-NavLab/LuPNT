@@ -358,7 +358,11 @@ namespace lupnt {
     Real u = -p1.dot(segment) / segment_norm2;
     u = std::clamp(u, Real(0.0), Real(1.0));
     Real closest_radius = (p1 + u * segment).norm();
-    if (closest_radius <= R_body) return false;
+    // Strict: a surface receiver looking at its own zenith has its closest approach to the body
+    // center exactly at R_body (u clamps to 0/1 when receiver, body center, and the other point
+    // are collinear), which must not be treated as an occlusion -- the elevation-angle check below
+    // already handles that case correctly.
+    if (closest_radius < R_body) return false;
 
     if (r1_is_surface) {
       Vec3 r12 = r2 - r1;

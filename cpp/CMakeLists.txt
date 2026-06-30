@@ -37,6 +37,7 @@ endif()
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/CondaAware.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/CPM.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/WriteHeader.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/FetchLuPNTData.cmake)
 
 # ---- Fortran compiler flags for plasma/pecsim module ----
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")

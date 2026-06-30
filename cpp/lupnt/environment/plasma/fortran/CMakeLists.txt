@@ -38,8 +38,10 @@ else()
   message(FATAL_ERROR "IRI2020 library sources not found.")
 endif()
 
-# Copy IRI2020 data files (.asc, .dat) to the plasma data directory
-set(IRI_DATA_DEST "${CMAKE_SOURCE_DIR}/data/LuPNT_data/plasma/data/iri")
+# Copy IRI2020 data files (.asc, .dat) to the plasma data directory. Uses LUPNT_DATA_DIR (set by
+# FetchLuPNTData.cmake) rather than CMAKE_SOURCE_DIR, since CMAKE_SOURCE_DIR resolves to cpp/ (not
+# the repo root) when this is configured via `cmake -S cpp -B build` (e.g. `pixi run build`).
+set(IRI_DATA_DEST "${LUPNT_DATA_DIR}/plasma/data/iri")
 file(MAKE_DIRECTORY ${IRI_DATA_DEST})
 file(GLOB IRI2020_DATA "${FORTRAN_DIR}/00_iri2020/*.asc" "${FORTRAN_DIR}/00_iri2020/*.dat")
 foreach(f ${IRI2020_DATA})
