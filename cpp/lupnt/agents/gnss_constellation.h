@@ -24,6 +24,7 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <vector>
 
@@ -51,8 +52,11 @@ namespace lupnt {
   /// GNSS transmitter and a receiver (e.g. the Earth or the Moon).
   struct GnssOccludingBody {
     Real radius_m = 0.0;             // [m] Body radius
-    Vec3 position_m = Vec3::Zero();  // [m] Body center, in the same frame as the
-                                     //     satellite/receiver states (e.g. ECI)
+    Vec3 position_m = Vec3::Zero();  // [m] Body center (used when position_provider is null)
+    /// Per-epoch position callback; if set, overrides position_m in BuildChannels.
+    /// Called with the receive epoch in options_.receive_time_scale; must return [m]
+    /// in the same frame as the receiver/transmitter states (options_.frame).
+    std::function<Vec3(Real)> position_provider;
   };
 
   /// @brief Constellation of GNSS satellites with precomputed ephemerides.

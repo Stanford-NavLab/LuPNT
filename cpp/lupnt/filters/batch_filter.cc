@@ -70,6 +70,11 @@ namespace lupnt {
         meas_idx++;
       }
 
+      // Record pre-correction diagnostics for this iteration (measurement residuals
+      // only, matching the "raw" fit quality before any initialization pull is added).
+      const double weighted_rms
+          = std::sqrt((all_weights.array() * all_residuals.array().square()).mean());
+
       // Add initialization constraints if enabled
       MatXd H_final = all_jacobians;
       VecXd residuals_final = all_residuals;
@@ -93,6 +98,9 @@ namespace lupnt {
         state_correction
             = (H_final.transpose() * H_final).ldlt().solve(H_final.transpose() * residuals_final);
       }
+
+      results.iteration_history.push_back(
+          {iteration, state_estimate, state_correction.norm(), weighted_rms});
 
       // Update state estimate
       state_estimate += state_correction;

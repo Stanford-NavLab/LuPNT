@@ -34,16 +34,6 @@ if "DISPLAY" not in os.environ:
 # Version information
 __version__ = "0.1.0"
 
-# Import matplotlib and configure plots
-import matplotlib.pyplot as plt
-
-plt.rcParams["font.family"] = "serif"
-plt.rcParams["font.serif"] = "cmr10"
-plt.rcParams["font.sans-serif"] = "cmss10"
-plt.rcParams["font.monospace"] = "cmtt10"
-plt.rcParams["axes.formatter.use_mathtext"] = True
-
-
 import warnings
 
 Config = dict

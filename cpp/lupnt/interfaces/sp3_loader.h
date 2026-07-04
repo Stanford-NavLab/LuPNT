@@ -104,7 +104,7 @@ namespace lupnt {
     std::vector<std::string> sats_;            // SP3 identifiers, e.g. "G01"
     std::map<std::string, VecXd> epochs_tai_;  // sat -> [N] epochs (TAI seconds, sorted)
     std::map<std::string, MatXd> pos_clock_;   // sat -> [N x 4] ECEF (x,y,z) [m], clock [s]
-    std::map<std::string, ChebyshevFitModel> pos_clock_cheby_;  // sat -> [x,y,z,clock] fit
+    std::map<std::string, ChebyshevFitModel> pos_cheby_;  // sat -> [x,y,z] Chebyshev fit (no clock)
 
     void ParseFile(const std::filesystem::path& filepath);
     void RebuildChebyshevModels();

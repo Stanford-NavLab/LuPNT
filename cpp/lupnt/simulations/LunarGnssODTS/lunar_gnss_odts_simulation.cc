@@ -664,7 +664,14 @@ namespace lupnt {
       options.apply_shapiro_delay = truth_model;
       options.apply_visibility = true;
       options.apply_cn0_threshold = cfg.design.apply_cn0_threshold;
+      // `cn0_threshold_dbhz` is deprecated in favor of separate acquisition/tracking
+      // thresholds (see GnssMeasurementOptions); mirror GnssMeasurement::SetCN0Threshold
+      // and drive all three from the single design-level threshold so
+      // `design.cn0_threshold_dbhz` still controls visibility instead of silently
+      // falling back to the acquisition/tracking defaults (22/20 dBHz).
       options.cn0_threshold_dbhz = cfg.design.cn0_threshold_dbhz;
+      options.cn0_acquisition_threshold_dbhz = cfg.design.cn0_threshold_dbhz;
+      options.cn0_tracking_threshold_dbhz = cfg.design.cn0_threshold_dbhz;
       options.apply_ionosphere_plasma_delay = truth_model && cfg.plasma.simulate_truth;
       return options;
     }
@@ -822,7 +829,7 @@ namespace lupnt {
                                          H != nullptr ? &H_curr : nullptr);
         Real prev_m = CarrierRangeMeters(previous_state, pairs[i].previous, options,
                                          H != nullptr ? &H_prev : nullptr);
-        y(i) = curr_m - prev_m;
+        y(i) = (curr_m - prev_m).val();
         if (H != nullptr) {
           H->block(i, 0, 1, current_state.size()) = H_curr;
           H->block(i, current_state.size(), 1, previous_state.size()) = -H_prev;
@@ -991,10 +998,10 @@ namespace lupnt {
     bool LunarGnssLinkVisible(Real t_tdb, const Vec3& rx_mci, const GnssChannel& channel) {
       Vec3 rx_eci = ConvertFrame(t_tdb, rx_mci, Frame::MOON_CI, Frame::ECI);
       Vec3 tx_eci = ConvertFrame(t_tdb, Vec3(channel.tx_state.head(3)), channel.frame, Frame::ECI);
-      if (!GNSSMeasurements::ComputeVisibility(rx_eci, tx_eci, R_EARTH, Vec3::Zero())) return false;
+      if (!ComputeVisibility(rx_eci, tx_eci, R_EARTH, Vec3::Zero())) return false;
 
       Vec3 tx_mci = ConvertFrame(t_tdb, tx_eci, Frame::ECI, Frame::MOON_CI);
-      return GNSSMeasurements::ComputeVisibility(rx_mci, tx_mci, R_MOON, Vec3::Zero());
+      return ComputeVisibility(rx_mci, tx_mci, R_MOON, Vec3::Zero());
     }
 
     GnssChannel ConvertChannelToMoonCi(const GnssChannel& channel) {

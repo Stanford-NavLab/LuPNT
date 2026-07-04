@@ -110,6 +110,9 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_LIST_DIR}/../lib
   COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:lupnt>
           ${CMAKE_CURRENT_LIST_DIR}/../lib/
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:_pylupnt>
+          ${CMAKE_CURRENT_LIST_DIR}/../pylupnt/
+  COMMENT "Syncing _pylupnt extension module to python/pylupnt/"
 )
 
 if(TARGET iri2007_lib)

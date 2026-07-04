@@ -470,8 +470,16 @@ namespace pecsim {
     z(8) = 0.0;  // Second order delay (if computed)
     z(9) = 0.0;  // Third order delay (if computed)
 
-    int n_steps = static_cast<int>(sf / step_size) + 1;
-    int sidx = 0;  // Step index for debugging output
+    // When adaptive stepping is active, step_size can drop to 10 km (the
+    // minimum returned by adjust_stepsize) even if config.step_size is large.
+    // Allocate for worst-case step count so sidx never overruns store_mat.
+    const double min_adaptive_step_p = 10.0;
+    double alloc_step_p = (config.use_adaptive_step && !use_precomputed_vals)
+                              ? std::min(step_size, min_adaptive_step_p)
+                              : step_size;
+    int n_steps = static_cast<int>(sf / alloc_step_p) + 2;
+    int sidx = 0;           // Step index for debugging output
+    bool cutoff_hit_p = false;  // Set true when the ray exits via the cutoff radius
     Vec3d pos_now, dir_now;
     double r = 0.0;           // Geocentric radial distance
     double r_prev = 50 * RE;  // Previous radial distance for comparison (set to
@@ -498,11 +506,12 @@ namespace pecsim {
       // Compute the derivative and store it in store_mat
       VecXd store_vec;
       if (use_precomputed_vals) {
-        store_vec = store_mat.row(sidx);
+        if (sidx >= store_mat.rows()) break;  // perturbed ray is longer than precomputed path
+        store_vec = store_mat.row(sidx).transpose();
       } else {
         if (is_method_rk4(integ_method)) {
           // If using RK4, we need to store the state vector for each step
-          store_vec.resize(n_steps, STORE_VEC_SIZE * 4);
+          store_vec.resize(STORE_VEC_SIZE * 4);
         } else {
           store_vec.resize(STORE_VEC_SIZE);
         }
@@ -512,7 +521,7 @@ namespace pecsim {
       integ_step(z, s, step_size, t_tx, config, store_vec, use_precomputed_vals, false);
 
       // Store
-      store_mat.row(sidx) = store_vec;
+      store_mat.row(sidx) = store_vec.transpose();
 
       // Normalize the direction vector
       z.segment<3>(3) = z.segment<3>(3).normalized();
@@ -541,12 +550,24 @@ namespace pecsim {
         z.segment<3>(0) = final_pos;  // Update the position in the state vector
         z(6) = computed_prop_time;    // Update the time in the state vector
 
+        cutoff_hit_p = true;
         break;  // Exit the loop after reaching the cutoff radius
       } else {
         sidx++;
       }
 
       r_prev = r;  // Store the previous radial distance
+    }
+
+    // Trim store_mat to the rows that were actually written so that subsequent
+    // precomputed calls (Nelder-Mead) cannot read uninitialized rows (h=0 would
+    // cause an infinite loop since s never advances, and sidx would overflow).
+    // Cutoff exit: last write was at row sidx (sidx++ was NOT called before break).
+    // Non-cutoff exit: sidx++ ran after each write, so last write was at row sidx-1.
+    if (!use_precomputed_vals) {
+      int valid_rows = cutoff_hit_p ? (sidx + 1) : sidx;
+      int store_cols = is_method_rk4(integ_method) ? STORE_VEC_SIZE * 4 : STORE_VEC_SIZE;
+      store_mat.conservativeResize(valid_rows, store_cols);
     }
 
     return z;
@@ -623,7 +644,22 @@ namespace pecsim {
     z(8) = 0.0;  // Second order delay (if computed)
     z(9) = 0.0;  // Third order delay (if computed)
 
-    int n_steps = static_cast<int>(sf / step_size) + 1;
+    // Allocate enough rows for all steps that will actually be taken.
+    // Non-precomputed: adaptive stepping can use 10 km steps even if step_size=100,
+    //   so allocate based on the minimum adaptive step.
+    // Precomputed: step sizes come from the stored h values in store_mat (same
+    //   adaptive steps as the original run), NOT from config.step_size.
+    //   Using sf/step_size would severely underestimate the row count and cause
+    //   OOB writes to pp.s, pp.r, etc., corrupting the heap.
+    int n_steps;
+    if (use_precomputed_densities) {
+      n_steps = static_cast<int>(store_mat.rows()) + 2;
+    } else {
+      const double min_adaptive_step = 10.0;
+      double alloc_step
+          = config.use_adaptive_step ? std::min(step_size, min_adaptive_step) : step_size;
+      n_steps = static_cast<int>(sf / alloc_step) + 2;
+    }
 
     PathProfile pp;
     pp.s = VecXd::Zero(n_steps);
@@ -635,8 +671,9 @@ namespace pecsim {
     pp.dist_to_line = VecXd::Zero(n_steps);
     pp.dir_start = dir;
 
-    bool debug_integ = false;       // Debug flag for RK4 steps
-    if (debug) debug_integ = true;  // Enable detailed debug output for the first step
+    bool cutoff_hit = false;          // Set to true when the ray exits the cutoff radius
+    bool debug_integ = false;         // Debug flag for RK4 steps
+    if (debug) debug_integ = true;    // Enable detailed debug output for the first step
     int sidx = 0;
 
     double r = 0.0;          // Geocentric radial distance
@@ -645,7 +682,7 @@ namespace pecsim {
     double tecu = 0.0;       // Total electron content in m^-2
     double tecu_prev = 0.0;  // Previous TEC value for debugging
 
-    Vec3d final_pos;          // Final position in Cartesian coordinates
+    Vec3d final_pos = x2;     // Final position; initialized to x2, updated during propagation
     double final_time;        // Final time in seconds since J2000
     double r_prev = 50 * RE;  // Previous radial distance for comparison (set to
                               // a large value to ensure the first step is
@@ -689,7 +726,8 @@ namespace pecsim {
       }
 
       // Integration
-      VecXd store_vec = store_mat.row(sidx);
+      if (use_precomputed_densities && sidx >= store_mat.rows()) break;
+      VecXd store_vec = store_mat.row(sidx).transpose();
       integ_step(z, s, step_size, t_tx, config, store_vec, use_precomputed_densities, debug_integ);
 
       // Compute variables
@@ -740,6 +778,7 @@ namespace pecsim {
         }
 
         // resize the storage vectors to the current size
+        cutoff_hit = true;
         pp.s.conservativeResize(sidx + 1);
         pp.r.conservativeResize(sidx + 1);
         pp.tec_section.conservativeResize(sidx + 1);
@@ -758,8 +797,18 @@ namespace pecsim {
       r_prev = r;  // Store the previous radial distance
     }
 
-    // std::cout << "[compute_path_profile] Completed ray tracing..." <<
-    // std::endl;
+    // Non-cutoff exit: the loop ended because s >= sf.  sidx was incremented
+    // after each write, so entries 0..sidx-1 are valid.  The pp members were
+    // over-allocated (worst-case adaptive step count), so trim them now.
+    if (!cutoff_hit) {
+      pp.s.conservativeResize(sidx);
+      pp.r.conservativeResize(sidx);
+      pp.tec_section.conservativeResize(sidx);
+      pp.pos_eci.conservativeResize(sidx, 3);
+      pp.az_dir.conservativeResize(sidx);
+      pp.el_dir.conservativeResize(sidx);
+      pp.dist_to_line.conservativeResize(sidx);
+    }
 
     // compute tec for straight line distance
     // std::cout << "[compute_path_profile] Computing TEC for straight line..."
@@ -776,7 +825,7 @@ namespace pecsim {
     VecXd dist_to_line(pp.s.size());
     double max_sep_line = 0.0;  // Maximum distance to the line for debugging
     for (int i = 0; i < pp.s.size(); ++i) {
-      pos_i = pp.pos_eci.row(i);
+      pos_i = pp.pos_eci.row(i).transpose();
       w = pos_i - initial_pos;
       dist_to_line(i) = (v.cross(w)).norm() / v.norm();  // Distance to the straight line
       if (dist_to_line(i) > max_sep_line) {

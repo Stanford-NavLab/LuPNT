@@ -61,6 +61,11 @@ namespace lupnt {
     outlier_threshold_ = outlier_threshold;
   }
 
+  void EKF::SetConsiderStateCount(int n_consider) {
+    LUPNT_CHECK(n_consider >= 0, "(SetConsiderStateCount) n_consider must be non-negative", "EKF");
+    n_consider_ = n_consider;
+  }
+
   void EKF::Update(const VecX& z_true) {
     LUPNT_CHECK(!z_true.hasNaN(), "(Update) True measurement has NaN", "EKF");
     LUPNT_CHECK(f_meas_, "(Update) Measurement function not set", "EKF");
@@ -95,6 +100,15 @@ namespace lupnt {
     // Update step
     K_ = P_ * H_.transpose() * S_.inverse();  // Kalman gain
     LUPNT_CHECK(!K_.hasNaN(), "(Update) Kalman gain has NaN", "EKF");
+
+    if (n_consider_ > 0) {
+      // Schmidt-Kalman: never correct the trailing consider states. The Joseph-form
+      // covariance update below remains valid for this non-optimal gain, so the
+      // consider states' (co)variance still updates consistently even though their
+      // mean does not move.
+      LUPNT_CHECK(n_consider_ <= N_state, "(Update) n_consider exceeds state size", "EKF");
+      K_.bottomRows(n_consider_).setZero();
+    }
 
     dx_ = K_ * dz_;
     Sigma_dx_ = K_ * S_ * K_.transpose();

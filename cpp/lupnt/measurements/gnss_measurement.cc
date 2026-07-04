@@ -325,8 +325,14 @@ namespace lupnt {
     return epochs;
   }
 
-  GNSSMeasurements::GNSSMeasurements(Ptr<GnssConstellation> constellation)
-      : constellation_(constellation) {}
+  GNSSMeasurements::GNSSMeasurements(Ptr<GnssConstellation> constellation) {
+    constellations_.emplace_back(constellation, frequency_);
+  }
+
+  void GNSSMeasurements::AddConstellation(Ptr<GnssConstellation> constellation,
+                                          GnssFreq frequency) {
+    constellations_.emplace_back(constellation, frequency);
+  }
 
   Vec3 GNSSMeasurements::SunPosition(Real t) const {
     if (sun_position_provider_) return sun_position_provider_(t);
@@ -339,53 +345,11 @@ namespace lupnt {
     return Vec3::Zero();
   }
 
-  bool GNSSMeasurements::ComputeVisibility(const Vec3& r1, const Vec3& r2, Real R_body,
-                                           const Vec3& r_body) {
-    const Real min_alt = R_body + 50e3;
-    const Real min_elev = -10.0 * RAD;
-
-    Real r1body_norm = (r1 - r_body).norm();
-    Real r2body_norm = (r2 - r_body).norm();
-    bool r1_is_surface = (r1body_norm < min_alt);
-    bool r2_is_surface = (r2body_norm < min_alt);
-
-    Vec3 p1 = r1 - r_body;
-    Vec3 p2 = r2 - r_body;
-    Vec3 segment = p2 - p1;
-    Real segment_norm2 = segment.squaredNorm();
-    if (segment_norm2 <= 0.0) return p1.norm() > R_body;
-
-    Real u = -p1.dot(segment) / segment_norm2;
-    u = std::clamp(u, Real(0.0), Real(1.0));
-    Real closest_radius = (p1 + u * segment).norm();
-    // Strict: a surface receiver looking at its own zenith has its closest approach to the body
-    // center exactly at R_body (u clamps to 0/1 when receiver, body center, and the other point
-    // are collinear), which must not be treated as an occlusion -- the elevation-angle check below
-    // already handles that case correctly.
-    if (closest_radius < R_body) return false;
-
-    if (r1_is_surface) {
-      Vec3 r12 = r2 - r1;
-      Vec3 r1_to_body = r_body - r1;
-      Real cos_elev_arg = r12.dot(r1_to_body) / r12.norm() / r1_to_body.norm();
-      Real elev = safe_acos(cos_elev_arg) - PI_OVER_TWO;
-      return elev > min_elev;
-    }
-
-    if (r2_is_surface) {
-      Vec3 r21 = r1 - r2;
-      Vec3 r2_to_body = r_body - r2;
-      Real cos_elev_arg = r21.dot(r2_to_body) / r21.norm() / r2_to_body.norm();
-      Real elev = safe_acos(cos_elev_arg) - PI_OVER_TWO;
-      return elev > min_elev;
-    }
-
-    return true;
-  }
-
   GnssChannel GNSSMeasurements::BuildChannelForPrn(int prn, Real receive_time,
                                                    const State& user_state,
-                                                   bool compute_ionosphere_plasma_delay) const {
+                                                   bool compute_ionosphere_plasma_delay,
+                                                   const Ptr<GnssConstellation>& constellation,
+                                                   GnssFreq frequency) const {
     LUPNT_CHECK(options_.ephemeris_time_scale == Time::TAI,
                 "GnssConstellation ephemerides are stored and interpolated in TAI seconds",
                 "GNSSMeasurements");
@@ -401,7 +365,7 @@ namespace lupnt {
                                        options_.ephemeris_time_scale);
     Real t_tx_ephem = t_rx_ephem;
     Vec6 rv_tx = ConvertEciTransmitStateToMeasurementFrame(
-        constellation_->GetSatelliteStateEci(prn, t_tx_ephem), t_tx_ephem, options_);
+        constellation->GetSatelliteStateEci(prn, t_tx_ephem), t_tx_ephem, options_);
 
     if (options_.solve_light_time) {
       for (int iter = 0; iter < options_.light_time_max_iterations; iter++) {
@@ -410,19 +374,19 @@ namespace lupnt {
         if (abs(t_next - t_tx_ephem) < options_.light_time_tolerance_s) {
           t_tx_ephem = t_next;
           rv_tx = ConvertEciTransmitStateToMeasurementFrame(
-              constellation_->GetSatelliteStateEci(prn, t_tx_ephem), t_tx_ephem, options_);
+              constellation->GetSatelliteStateEci(prn, t_tx_ephem), t_tx_ephem, options_);
           break;
         }
         t_tx_ephem = t_next;
         rv_tx = ConvertEciTransmitStateToMeasurementFrame(
-            constellation_->GetSatelliteStateEci(prn, t_tx_ephem), t_tx_ephem, options_);
+            constellation->GetSatelliteStateEci(prn, t_tx_ephem), t_tx_ephem, options_);
       }
     }
 
     GnssChannel channel;
-    channel.gnss_const = constellation_->GetGnssConst();
+    channel.gnss_const = constellation->GetGnssConst();
     channel.prn = prn;
-    channel.frequency = frequency_;
+    channel.frequency = frequency;
     channel.receive_time = receive_time;
     channel.receive_time_scale = options_.receive_time_scale;
     channel.transmit_time = t_tx_ephem;
@@ -430,13 +394,13 @@ namespace lupnt {
     channel.ephemeris_time_scale = options_.ephemeris_time_scale;
     channel.frame = options_.frame;
     channel.tx_state = rv_tx;
-    channel.ephemeris_times = constellation_->GetEphemerisTimesTai();
+    channel.ephemeris_times = constellation->GetEphemerisTimesTai();
     if (options_.frame == Frame::ECI) {
-      channel.ephemeris_tx_states = constellation_->GetSatelliteStateHistoryEci(prn);
-      channel.ephemeris_chebyshev = constellation_->GetSatelliteStateChebyshevEci(prn);
+      channel.ephemeris_tx_states = constellation->GetSatelliteStateHistoryEci(prn);
+      channel.ephemeris_chebyshev = constellation->GetSatelliteStateChebyshevEci(prn);
     } else {
       const VecXd& ephemeris_times = channel.ephemeris_times;
-      const MatXd& rv_eci_history = constellation_->GetSatelliteStateHistoryEci(prn);
+      const MatXd& rv_eci_history = constellation->GetSatelliteStateHistoryEci(prn);
       channel.ephemeris_tx_states.resize(rv_eci_history.rows(), rv_eci_history.cols());
       for (int i = 0; i < rv_eci_history.rows(); ++i) {
         Vec6 rv_eci = rv_eci_history.row(i).transpose();
@@ -451,7 +415,7 @@ namespace lupnt {
     channel.shapiro_delay_m = ComputeShapiroDelay(receive_time, r_rx, rv_tx.head(3));
     if (compute_ionosphere_plasma_delay) {
       channel.ionosphere_plasma_delay_m
-          = ComputeIonospherePlasmaDelay(receive_time, r_rx, rv_tx.head(3), frequency_);
+          = ComputeIonospherePlasmaDelay(receive_time, r_rx, rv_tx.head(3), frequency);
     }
     return channel;
   }
@@ -526,8 +490,9 @@ namespace lupnt {
   }
 
   Real GNSSMeasurements::ComputeCN0(const GnssChannel& channel, const Vec3& r_rx_eci,
-                                    Real receive_time) const {
-    if (!constellation_->HasTransmitterInfo(channel.prn, channel.frequency)) return Real(NAN);
+                                    Real receive_time,
+                                    const Ptr<GnssConstellation>& constellation) const {
+    if (!constellation->HasTransmitterInfo(channel.prn, channel.frequency)) return Real(NAN);
 
     Vec6 rv_tx = channel.GetTransmitState(channel.transmit_time);
     Vec3 r_tx = rv_tx.head(3);
@@ -551,10 +516,10 @@ namespace lupnt {
     Real theta_tx = atan2(u_tx2rx_gcrf.dot(ey), u_tx2rx_gcrf.dot(ex));
     Real phi_rx = safe_acos(u_rx2body.dot(u_rx2tx));
 
-    Real G_tx = constellation_->GetTransmitterAntenna(channel.prn, channel.frequency)
+    Real G_tx = constellation->GetTransmitterAntenna(channel.prn, channel.frequency)
                     .ComputeGain(theta_tx, phi_tx);
     Real G_rx = rx_antenna_.ComputeGain(0.0, phi_rx);
-    Real P_tx = constellation_->GetTransmitPowerDbw(channel.prn, channel.frequency);
+    Real P_tx = constellation->GetTransmitPowerDbw(channel.prn, channel.frequency);
 
     return LinkBudget(P_tx, G_tx, G_rx, range, channel.frequency);
   }
@@ -606,7 +571,7 @@ namespace lupnt {
 
   std::vector<GnssChannel> GNSSMeasurements::BuildChannels(
       Real receive_time, const State& user_state, bool compute_ionosphere_plasma_delay) const {
-    LUPNT_CHECK(constellation_ != nullptr, "GNSS constellation is not set", "GNSSMeasurements");
+    LUPNT_CHECK(!constellations_.empty(), "No GNSS constellations added", "GNSSMeasurements");
     LUPNT_CHECK(user_state.size() >= options_.indices.position + 3,
                 "User state does not contain position", "GNSSMeasurements");
     LUPNT_CHECK(user_state.size() >= options_.indices.velocity + 3,
@@ -615,40 +580,61 @@ namespace lupnt {
     std::vector<GnssChannel> channels;
     Vec3 r_rx = user_state.segment(options_.indices.position, 3);
 
-    for (int prn : constellation_->GetPrns()) {
-      if (constellation_->IsFaultPrn(prn)) continue;
-
-      GnssChannel channel
-          = BuildChannelForPrn(prn, receive_time, user_state, compute_ionosphere_plasma_delay);
-      Vec3 r_tx = channel.tx_state.head(3);
-
-      if (options_.apply_visibility) {
-        bool visible = true;
-        for (const auto& body : occluding_bodies_) {
-          if (!ComputeVisibility(r_rx, r_tx, body.radius_m, body.position_m)) {
-            visible = false;
-            break;
-          }
-        }
-        if (!visible) continue;
-      }
-
-      channel.cn0_dbhz = ComputeCN0(channel, r_rx, receive_time);
-      if (options_.apply_cn0_threshold && !(channel.cn0_dbhz > options_.cn0_threshold_dbhz)) {
-        continue;
-      }
-
-      if (std::isfinite(channel.cn0_dbhz.val())) {
-        Real sigma_range = ComputeSigmaRange(channel.cn0_dbhz, channel.frequency);
-        Real sigma_rate = ComputeSigmaRangeRate(channel.cn0_dbhz, channel.frequency);
-        Real sigma_phase = ComputeSigmaCarrierPhase(channel.cn0_dbhz, channel.frequency);
-        channel.sigma_pseudorange_m = sigma_range;
-        channel.sigma_doppler_hz = sigma_rate / channel.Wavelength();
-        channel.sigma_carrier_phase_cycles = sigma_phase / channel.Wavelength();
-      }
-
-      channels.push_back(channel);
+    // Resolve per-epoch body positions once (avoid redundant callbacks per PRN).
+    std::vector<Vec3> body_positions;
+    body_positions.reserve(occluding_bodies_.size());
+    for (const auto& body : occluding_bodies_) {
+      body_positions.push_back(body.position_provider ? body.position_provider(receive_time)
+                                                      : body.position_m);
     }
+
+    for (const auto& [constellation, frequency] : constellations_) {
+      LUPNT_CHECK(constellation != nullptr, "GNSS constellation is not set", "GNSSMeasurements");
+
+      for (int prn : constellation->GetPrns()) {
+        if (constellation->IsFaultPrn(prn)) continue;
+
+        GnssChannel channel = BuildChannelForPrn(prn, receive_time, user_state,
+                                                 compute_ionosphere_plasma_delay, constellation,
+                                                 frequency);
+        Vec3 r_tx = channel.tx_state.head(3);
+
+        if (options_.apply_visibility) {
+          bool visible = true;
+          for (size_t bi = 0; bi < occluding_bodies_.size(); ++bi) {
+            if (!ComputeVisibility(r_rx, r_tx, occluding_bodies_[bi].radius_m,
+                                   body_positions[bi])) {
+              visible = false;
+              break;
+            }
+          }
+          if (!visible) continue;
+        }
+
+        channel.cn0_dbhz = ComputeCN0(channel, r_rx, receive_time, constellation);
+        if (options_.apply_cn0_threshold) {
+          bool in_lock = tracking_prns_.count({channel.gnss_const, prn}) > 0;
+          Real threshold = in_lock ? options_.cn0_tracking_threshold_dbhz
+                                   : options_.cn0_acquisition_threshold_dbhz;
+          if (!(channel.cn0_dbhz > threshold)) continue;
+        }
+
+        if (std::isfinite(channel.cn0_dbhz.val())) {
+          Real sigma_range = ComputeSigmaRange(channel.cn0_dbhz, channel.frequency);
+          Real sigma_rate = ComputeSigmaRangeRate(channel.cn0_dbhz, channel.frequency);
+          Real sigma_phase = ComputeSigmaCarrierPhase(channel.cn0_dbhz, channel.frequency);
+          channel.sigma_pseudorange_m = sigma_range;
+          channel.sigma_doppler_hz = sigma_rate / channel.Wavelength();
+          channel.sigma_carrier_phase_cycles = sigma_phase / channel.Wavelength();
+        }
+
+        channels.push_back(channel);
+      }
+    }
+
+    // Update tracking state: satellites that survived this epoch stay in lock.
+    tracking_prns_.clear();
+    for (const auto& ch : channels) tracking_prns_.insert({ch.gnss_const, ch.prn});
 
     return channels;
   }

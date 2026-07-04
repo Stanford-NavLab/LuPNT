@@ -12,7 +12,10 @@
 #include "lupnt/agents/surface_station.h"
 
 // applications
+#include "lupnt/applications/almanac.h"
 #include "lupnt/applications/application.h"
+#include "lupnt/applications/ephemeris.h"
+#include "lupnt/applications/ephemeris_basis.h"
 #include "lupnt/applications/lunanet_sat_app.h"
 #include "lupnt/applications/rover_app.h"
 #include "lupnt/applications/surface_station_app.h"
@@ -89,6 +92,7 @@
 #include "lupnt/filters/filter.h"
 #include "lupnt/filters/filter_print.h"
 #include "lupnt/filters/filter_utils.h"
+#include "lupnt/filters/schmidt_ekf.h"
 #include "lupnt/filters/udu_filter.h"
 #include "lupnt/filters/udu_utils.h"
 #include "lupnt/filters/ukf.h"
@@ -121,6 +125,8 @@
 #include "lupnt/numerics/vector_macros.h"
 
 // simulations
+#include "lupnt/simulations/ephemeris_simulation.h"
+#include "lupnt/simulations/isl_odts_simulation.h"
 #include "lupnt/simulations/lunar_gnss_odts_simulation.h"
 
 // states

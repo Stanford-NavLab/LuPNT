@@ -32,6 +32,20 @@ namespace lupnt {
   };
 
   /**
+   * @brief Diagnostics for a single batch filter iteration, in the order the
+   * iterations were performed. `state_estimate` is the state *before* this
+   * iteration's correction was applied, so it lines up with `weighted_rms`
+   * (computed from residuals at that state) and precedes the application of
+   * `correction_norm`.
+   */
+  struct BatchFilterIterationInfo {
+    int iteration = 0;
+    VecXd state_estimate;          // State estimate at the start of this iteration
+    double correction_norm = 0.0;  // norm of the correction solved for and applied
+    double weighted_rms = 0.0;     // sqrt(mean(weight_i * residual_i^2)) over all measurements
+  };
+
+  /**
    * @brief Results from batch filter estimation
    */
   struct BatchFilterResults {
@@ -41,6 +55,7 @@ namespace lupnt {
     double pdop;             // Position Dilution of Precision
     int iterations;          // Number of iterations to convergence
     bool converged;          // Whether filter converged
+    std::vector<BatchFilterIterationInfo> iteration_history;  // One entry per iteration performed
 
     BatchFilterResults() : pdop(0.0), iterations(0), converged(false) {}
   };

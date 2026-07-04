@@ -115,4 +115,50 @@ namespace lupnt {
     return G_max - 12.0 * phi.square() / pow(hpbw, 2);
   }
 
+  Real clamp(Real x, Real min, Real max) {
+    return std::max(min, std::min(max, x));
+  }
+
+  bool ComputeVisibility(const Vec3& r1, const Vec3& r2, Real R_body,
+                         const Vec3& r_body, const Real min_alt, const Real min_elev_deg) {
+    Real min_r = R_body + min_alt;
+    Real min_elev_rad = min_elev_deg * DEG;
+
+    Real r1body_norm = (r1 - r_body).norm();
+    Real r2body_norm = (r2 - r_body).norm();
+    bool r1_is_surface = (r1body_norm < min_r);
+    bool r2_is_surface = (r2body_norm < min_r);
+
+    if (r1_is_surface) {
+      Vec3 r12 = r2 - r1;
+      Vec3 r1_to_body = r_body - r1;
+      Real cos_elev_arg = r12.dot(r1_to_body) / r12.norm() / r1_to_body.norm();
+      Real elev = safe_acos(cos_elev_arg) - PI_OVER_TWO;
+      // Return false if occulated
+      if (elev < min_elev_rad) return false;
+    }
+
+    if (r2_is_surface) {
+      Vec3 r21 = r1 - r2;
+      Vec3 r2_to_body = r_body - r2;
+      Real cos_elev_arg = r21.dot(r2_to_body) / r21.norm() / r2_to_body.norm();
+      Real elev = safe_acos(cos_elev_arg) - PI_OVER_TWO;
+      // Return false if occulated
+      if (elev < min_elev_rad) return false;
+    }
+
+    // Final judgement criteria
+    Vec3 r = r2 - r1;
+    Real r_norm = r.norm();
+    Vec3 r1body = r1 - r_body;
+    Real dot_r_r1b = -r1body.dot(r);
+    Real theta1 = acos(clamp(dot_r_r1b / r_norm / r1body_norm, -1.0, 1.0));
+    Real theta2 = asin(clamp(R_body / r1body_norm, -1.0, 1.0));
+    Real r1_to_horizon = sqrt(r1body_norm * r1body_norm - R_body * R_body);
+    if (theta1 < theta2 && r_norm > r1_to_horizon) return false;
+
+
+    return true;
+  }
+
 }  // namespace lupnt

@@ -2,12 +2,7 @@ import os
 import pickle
 import numpy as np
 import time
-import matplotlib.pyplot as plt
-from h5py import File
 from pathlib import Path
-
-# import array_to_latex as a2l
-from matplotlib.gridspec import GridSpec
 
 LUPNT_DATA_PATH = Path(os.getenv("LUPNT_DATA_PATH"))
 assert LUPNT_DATA_PATH is not None, "Environment variable LUPNT_DATA_PATH not set"
@@ -105,6 +100,11 @@ def dump_pickle(obj, path):
         pickle.dump(obj, f)
 
 
+def File(path, mode="r"):
+    from h5py import File as _File
+    return _File(path, mode)
+
+
 def set_axes_equal(ax):
     """Make axes of 3D plot have equal scale so that spheres appear as spheres,
     cubes as cubes, etc..  This is one possible solution to Matplotlib's
@@ -135,6 +135,9 @@ def set_axes_equal(ax):
 
 
 def plot_RTN(rv_RTN, labels=None, legend_text=None, init=False, final=True, center=True):
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
     delta = 5
     # Find limits
     if labels is None:

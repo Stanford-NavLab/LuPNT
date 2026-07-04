@@ -155,6 +155,7 @@ namespace lupnt {
     LUPNT_CHECK(x_.size() == 2 * n, "Cloned UDU state has incorrect size", "UDU");
 
     State x_prev_current = x_.head(n);
+    x_prev_current.SetFrame(x_.GetFrame());  // State's Eigen-slice ctor leaves frame_ unset
     MatXd F_base;
     State x_current = f_dyn_(x_prev_current, t_, t, u, &F_base);
     LUPNT_CHECK(F_base.rows() == n && F_base.cols() == n, "(Predict) Base STM has incorrect size",

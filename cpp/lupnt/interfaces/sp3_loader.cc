@@ -32,6 +32,9 @@ namespace lupnt {
     /// @brief Speed of light [m/s] (matches `gnss_file_loader.SP3Loader`).
     constexpr double kC = 299792458.0;
     constexpr double kSecsWeek = 7.0 * SECS_DAY;
+    /// @brief SP3 sentinel for unavailable clock data: 999999.999999 µs.
+    /// Values above this threshold (in µs, before ×1e-6 conversion) are invalid.
+    constexpr double kSp3ClockSentinelUs = 999990.0;
 
     struct Sp3ProductInfo {
       int gps_week = 0;
@@ -261,12 +264,28 @@ namespace lupnt {
         pc_sorted.row(i) = pc.row(order[i]);
       }
 
-      // De-duplicate consecutive equal epochs (keep first occurrence, matching
-      // `np.unique(..., return_index=True)` on sorted data).
+      // De-duplicate consecutive equal epochs.
+      // Policy: at day-file boundaries the same epoch appears in both files;
+      // the earlier file typically has a sentinel clock (999999.999999 µs → NaN)
+      // while the later file has the real value.  Prefer the record with a valid
+      // (non-NaN) clock; if both have the same clock status, keep the later one
+      // (from the newer file, which supersedes the older boundary epoch).
       std::vector<int> keep;
       keep.reserve(epochs_sorted.size());
-      for (int i = 0; i < epochs_sorted.size(); i++) {
-        if (i == 0 || epochs_sorted(i) != epochs_sorted(i - 1)) keep.push_back(i);
+      for (int i = 0; i < static_cast<int>(epochs_sorted.size()); i++) {
+        if (i == 0 || epochs_sorted(i) != epochs_sorted(i - 1)) {
+          keep.push_back(i);
+        } else {
+          bool prev_nan = std::isnan(pc_sorted(keep.back(), 3));
+          bool curr_nan = std::isnan(pc_sorted(i, 3));
+          if (!prev_nan && curr_nan) {
+            // Previous has valid clock; current is sentinel → keep previous.
+          } else {
+            // Current has valid clock (and previous is sentinel), or both have
+            // the same status → prefer the later record.
+            keep.back() = i;
+          }
+        }
       }
 
       VecXd epochs_unique(keep.size());
@@ -320,10 +339,14 @@ namespace lupnt {
         sv.erase(0, sv.find_first_not_of(" \t"));
         if (sv.empty()) continue;
 
-        double x = std::stod(line.substr(4, 14)) * 1000.0;     // km -> m
-        double y = std::stod(line.substr(18, 14)) * 1000.0;    // km -> m
-        double z = std::stod(line.substr(32, 14)) * 1000.0;    // km -> m
-        double clock = std::stod(line.substr(46, 14)) * 1e-6;  // microseconds -> s
+        double x = std::stod(line.substr(4, 14)) * 1000.0;   // km -> m
+        double y = std::stod(line.substr(18, 14)) * 1000.0;  // km -> m
+        double z = std::stod(line.substr(32, 14)) * 1000.0;  // km -> m
+        double clock_us = std::stod(line.substr(46, 14));
+        // Store sentinel (999999.999999 µs) as NaN; valid biases are << 1 s.
+        double clock = (clock_us > kSp3ClockSentinelUs)
+                           ? std::numeric_limits<double>::quiet_NaN()
+                           : clock_us * 1e-6;
 
         new_epochs[sv].push_back(current_epoch.val());
         new_pos_clock[sv].push_back({x, y, z, clock});
@@ -364,7 +387,7 @@ namespace lupnt {
   }
 
   void Sp3Loader::RebuildChebyshevModels() {
-    pos_clock_cheby_.clear();
+    pos_cheby_.clear();
     for (const auto& sat : sats_) {
       const VecXd& epochs = epochs_tai_.at(sat);
       const MatXd& pc = pos_clock_.at(sat);
@@ -377,16 +400,18 @@ namespace lupnt {
       const double segment_length = std::max(1.0, 8.0 * min_step);
       const int num_coeffs = std::min(12, std::max(2, static_cast<int>(epochs.size())));
 
-      pos_clock_cheby_[sat] = FitChebyshevModel(
+      // Fit Chebyshev only for position (x, y, z); clock uses linear interpolation
+      // at query time to avoid ringing / Gibbs-like jumps at day boundaries.
+      pos_cheby_[sat] = FitChebyshevModel(
           [&epochs, &pc](double t) {
-            VecXd sample(4);
-            for (int k = 0; k < 4; ++k) {
+            VecXd sample(3);
+            for (int k = 0; k < 3; ++k) {
               VecXd col = pc.col(k);
               sample(k) = LinearInterp1d(epochs, col, t);
             }
             return sample;
           },
-          epochs(0), epochs(epochs.size() - 1), 4, segment_length, num_coeffs);
+          epochs(0), epochs(epochs.size() - 1), 3, segment_length, num_coeffs);
     }
   }
 
@@ -421,22 +446,42 @@ namespace lupnt {
                     + "' (no orbital-propagation fallback)",
                 "Sp3Loader");
 
-    auto it_model = pos_clock_cheby_.find(sat_id);
+    auto it_model = pos_cheby_.find(sat_id);
     LUPNT_CHECK(
-        it_model != pos_clock_cheby_.end(),
+        it_model != pos_cheby_.end(),
         "Chebyshev SP3 interpolation model for satellite '" + sat_id + "' has not been built",
         "Sp3Loader");
 
-    VecX pos_clock;
-    VecX pos_clock_dot;
-    LUPNT_CHECK(it_model->second.Eval(t_tai, &pos_clock, &pos_clock_dot),
+    VecX pos;
+    VecX pos_dot;
+    LUPNT_CHECK(it_model->second.Eval(t_tai, &pos, &pos_dot),
                 "Requested epoch is outside the Chebyshev SP3 interpolation span for satellite '"
                     + sat_id + "'",
                 "Sp3Loader");
 
-    rv_ecef.head(3) = pos_clock.head(3);
-    rv_ecef.tail(3) = pos_clock_dot.head(3);
-    clock_bias_s = pos_clock(3);
+    rv_ecef.head(3) = pos.head(3);
+    rv_ecef.tail(3) = pos_dot.head(3);
+
+    // Clock: linear interpolation over raw SP3 samples, excluding sentinel
+    // (NaN) epochs so that day-boundary 999999.999999 µs values do not corrupt
+    // the interpolation.
+    VecXd clk_col = pos_clock_.at(sat_id).col(3);
+    std::vector<double> valid_ep, valid_clk;
+    valid_ep.reserve(static_cast<size_t>(epochs.size()));
+    valid_clk.reserve(static_cast<size_t>(epochs.size()));
+    for (int i = 0; i < epochs.size(); ++i) {
+      if (!std::isnan(clk_col(i))) {
+        valid_ep.push_back(epochs(i));
+        valid_clk.push_back(clk_col(i));
+      }
+    }
+    if (valid_ep.size() >= 2) {
+      VecXd vep  = Eigen::Map<VecXd>(valid_ep.data(),  static_cast<int>(valid_ep.size()));
+      VecXd vclk = Eigen::Map<VecXd>(valid_clk.data(), static_cast<int>(valid_clk.size()));
+      clock_bias_s = LinearInterp1d(vep, vclk, t);
+    } else {
+      clock_bias_s = std::numeric_limits<double>::quiet_NaN();
+    }
 
     // Relativistic clock correction: t_corr_rel = -2/c^2 * dot(r, v)
     Real dot_rv = rv_ecef.head(3).dot(rv_ecef.tail(3));

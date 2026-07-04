@@ -329,4 +329,241 @@ void InitGnss(py::module& m) {
           "returns (rv_ecef, clock_corr_s)")
       .def("get_pos_vel", &RinexNavLoader::GetPosVel, py::arg("sat_id"), py::arg("t_tai"),
            "Broadcast-ephemeris ECEF position/velocity [m, m/s] only");
+
+  // ---- GnssReceiverParams ----------------------------------------------------
+
+  py::class_<GnssReceiverParams>(m, "GnssReceiverParams")
+      .def(py::init<>())
+      .def_readwrite("Bp", &GnssReceiverParams::Bp, "Carrier loop noise bandwidth [Hz]")
+      .def_readwrite("T", &GnssReceiverParams::T, "Tracking loop integration time [s]")
+      .def_readwrite("b", &GnssReceiverParams::b, "Front-end bandwidth factor")
+      .def_readwrite("Bn", &GnssReceiverParams::Bn, "Code loop noise bandwidth [Hz]")
+      .def_readwrite("Bf", &GnssReceiverParams::Bf, "Frequency loop noise bandwidth [Hz]")
+      .def_readwrite("D", &GnssReceiverParams::D, "Early-to-late correlator spacing [chip]");
+
+  // ---- GnssOccludingBody -----------------------------------------------------
+
+  py::class_<GnssOccludingBody>(m, "GnssOccludingBody")
+      .def(py::init<>())
+      .def_readwrite("radius_m", &GnssOccludingBody::radius_m, "Body radius [m]")
+      .def_property(
+          "position_m",
+          [](const GnssOccludingBody& b) -> VecXd { return b.position_m.cast<double>(); },
+          [](GnssOccludingBody& b, const VecXd& v) { b.position_m = v.cast<Real>(); },
+          "Body center [m] in the same frame as satellite/receiver states (used when "
+          "position_provider is None)")
+      .def_property(
+          "position_provider",
+          [](const GnssOccludingBody& b) -> py::object {
+            if (!b.position_provider) return py::none();
+            return py::cpp_function([fn = b.position_provider](double t) -> VecXd {
+              return fn(static_cast<Real>(t)).cast<double>();
+            });
+          },
+          [](GnssOccludingBody& b, py::object fn) {
+            if (fn.is_none()) {
+              b.position_provider = nullptr;
+            } else {
+              b.position_provider = [fn](Real t) -> Vec3 {
+                py::gil_scoped_acquire gil;
+                return fn(static_cast<double>(t)).cast<Vec3>();
+              };
+            }
+          },
+          "Per-epoch position callback(t_tai) -> [x,y,z] [m]; overrides position_m if set");
+
+  // ---- GnssMeasurementOptions ------------------------------------------------
+
+  py::class_<GnssMeasurementOptions>(m, "GnssMeasurementOptions")
+      .def(py::init<>())
+      .def_readwrite("frame", &GnssMeasurementOptions::frame)
+      .def_readwrite("receive_time_scale", &GnssMeasurementOptions::receive_time_scale)
+      .def_readwrite("ephemeris_time_scale", &GnssMeasurementOptions::ephemeris_time_scale)
+      .def_readwrite("solve_light_time", &GnssMeasurementOptions::solve_light_time)
+      .def_readwrite("apply_transmitter_relativity",
+                     &GnssMeasurementOptions::apply_transmitter_relativity)
+      .def_readwrite("apply_shapiro_delay", &GnssMeasurementOptions::apply_shapiro_delay)
+      .def_readwrite("apply_visibility", &GnssMeasurementOptions::apply_visibility)
+      .def_readwrite("apply_cn0_threshold", &GnssMeasurementOptions::apply_cn0_threshold)
+      .def_readwrite("cn0_threshold_dbhz", &GnssMeasurementOptions::cn0_threshold_dbhz)
+      .def_readwrite("cn0_acquisition_threshold_dbhz",
+                     &GnssMeasurementOptions::cn0_acquisition_threshold_dbhz,
+                     "Min CN0 to acquire a new satellite [dBHz]")
+      .def_readwrite("cn0_tracking_threshold_dbhz",
+                     &GnssMeasurementOptions::cn0_tracking_threshold_dbhz,
+                     "Min CN0 to maintain an existing lock [dBHz]")
+      .def_readwrite("apply_ionosphere_plasma_delay",
+                     &GnssMeasurementOptions::apply_ionosphere_plasma_delay);
+
+  // ---- GnssChannel -----------------------------------------------------------
+
+  py::class_<GnssChannel>(m, "GnssChannel")
+      .def(py::init<>())
+      .def_readwrite("gnss_const", &GnssChannel::gnss_const)
+      .def_readwrite("prn", &GnssChannel::prn)
+      .def_readwrite("frequency", &GnssChannel::frequency)
+      .def_readwrite("receive_time", &GnssChannel::receive_time)
+      .def_readwrite("transmit_time", &GnssChannel::transmit_time)
+      .def_property(
+          "tx_state",
+          [](const GnssChannel& ch) -> VecXd { return ch.tx_state.cast<double>(); },
+          [](GnssChannel& ch, const VecXd& v) { ch.tx_state = v.cast<Real>(); },
+          "Transmitter ECI state [r; v] [m, m/s] at transmit epoch")
+      .def_readwrite("tx_clock_bias_s", &GnssChannel::tx_clock_bias_s)
+      .def_readwrite("shapiro_delay_m", &GnssChannel::shapiro_delay_m)
+      .def_readwrite("cn0_dbhz", &GnssChannel::cn0_dbhz)
+      .def_readwrite("sigma_pseudorange_m", &GnssChannel::sigma_pseudorange_m)
+      .def_readwrite("sigma_doppler_hz", &GnssChannel::sigma_doppler_hz)
+      .def_readwrite("sigma_carrier_phase_cycles", &GnssChannel::sigma_carrier_phase_cycles);
+
+  // ---- GNSSMeasurementsEpoch -------------------------------------------------
+
+  py::class_<GNSSMeasurementsEpoch>(m, "GNSSMeasurementsEpoch")
+      .def(py::init<>())
+      .def_readwrite("receive_time", &GNSSMeasurementsEpoch::receive_time)
+      .def_readwrite("channels", &GNSSMeasurementsEpoch::channels);
+
+  // ---- GnssConstellation -----------------------------------------------------
+
+  py::class_<GnssConstellation, std::shared_ptr<GnssConstellation>>(m, "GnssConstellation")
+      .def(py::init<>())
+      .def(py::init<GnssConst>(), py::arg("gnss_const"))
+      .def(
+          "set_satellite_states",
+          [](GnssConstellation& gc, const std::vector<int>& prns, const VecXd& t_tai,
+             const std::vector<MatXd>& rv_eci) {
+            // rv_eci[i] is [M×6]; the C++ API expects the same layout.
+            std::vector<MatXd> rv_real;
+            rv_real.reserve(rv_eci.size());
+            for (const auto& m : rv_eci) rv_real.push_back(m.cast<Real>());
+            gc.SetSatelliteStates(prns, t_tai.cast<Real>(), rv_real);
+          },
+          py::arg("prns"), py::arg("t_tai"), py::arg("rv_eci"),
+          "Set precomputed satellite ECI position/velocity histories (M×6 per PRN)")
+      .def(
+          "setup_satellite_states_from_files",
+          [](GnssConstellation& gc, const std::vector<std::string>& sp3_paths,
+             const std::string& antex_path, const VecXd& t_tai, GnssFreq freq,
+             const std::vector<int>& prns) {
+            gc.SetupSatelliteStatesFromFiles(ToPaths(sp3_paths),
+                                              std::filesystem::path(antex_path),
+                                              t_tai.cast<Real>(), freq, prns);
+          },
+          py::arg("sp3_paths"), py::arg("antex_path"), py::arg("t_tai"),
+          py::arg("freq") = GnssFreq::L1, py::arg("prns") = std::vector<int>{},
+          "Build ephemerides from SP3 + ANTEX files with PCO correction")
+      .def(
+          "load_ephemeris",
+          [](GnssConstellation& gc, const std::string& filepath) {
+            gc.LoadEphemeris(std::filesystem::path(filepath));
+          },
+          py::arg("filepath"), "Load satellite ephemerides from HDF5 file")
+      .def(
+          "save_ephemeris",
+          [](const GnssConstellation& gc, const std::string& filepath) {
+            gc.SaveEphemeris(std::filesystem::path(filepath));
+          },
+          py::arg("filepath"), "Save satellite ephemerides to HDF5 file")
+      .def("setup_transmitters", &GnssConstellation::SetupTransmitters,
+           "Load transmitter antenna patterns and power for all PRNs (GPS/Galileo/QZSS)")
+      .def("get_num_satellites", &GnssConstellation::GetNumSatellites)
+      .def("get_prns", &GnssConstellation::GetPrns)
+      .def("get_gnss_const", &GnssConstellation::GetGnssConst)
+      .def("set_fault_prns", &GnssConstellation::SetFaultPrns, py::arg("prns"))
+      .def("is_fault_prn", &GnssConstellation::IsFaultPrn, py::arg("prn"))
+      .def(
+          "get_satellite_state_eci",
+          [](const GnssConstellation& gc, int prn, double t_tai) -> VecXd {
+            return gc.GetSatelliteStateEci(prn, static_cast<Real>(t_tai)).cast<double>();
+          },
+          py::arg("prn"), py::arg("t_tai"),
+          "Interpolated ECI [r; v] [m, m/s] of satellite `prn` at `t_tai` (TAI seconds)")
+      .def("has_transmitter_info", &GnssConstellation::HasTransmitterInfo, py::arg("prn"),
+           py::arg("freq"))
+      .def("get_transmitter_antenna", &GnssConstellation::GetTransmitterAntenna, py::arg("prn"),
+           py::arg("freq"), py::return_value_policy::reference_internal,
+           "Transmit antenna pattern for `prn` and `freq`")
+      .def(
+          "get_transmit_power_dbw",
+          [](const GnssConstellation& gc, int prn, GnssFreq freq) -> double {
+            return static_cast<double>(gc.GetTransmitPowerDbw(prn, freq));
+          },
+          py::arg("prn"), py::arg("freq"), "Transmit power [dB-W] for `prn` and `freq`");
+
+  // ---- GNSSMeasurements ------------------------------------------------------
+
+  py::class_<GNSSMeasurements>(m, "GNSSMeasurements")
+      .def(py::init([](std::shared_ptr<GnssConstellation> constellation) {
+             return GNSSMeasurements(constellation);
+           }),
+           py::arg("constellation"))
+      .def("add_constellation", &GNSSMeasurements::AddConstellation, py::arg("constellation"),
+           py::arg("frequency"),
+           "Append a (constellation, frequency) pair; BuildChannels merges channels from all pairs")
+      .def("set_frequency", &GNSSMeasurements::SetFrequency, py::arg("frequency"))
+      .def("set_options", &GNSSMeasurements::SetOptions, py::arg("options"))
+      .def("get_options", &GNSSMeasurements::GetOptions,
+           py::return_value_policy::reference_internal)
+      .def("set_occluding_bodies", &GNSSMeasurements::SetOccludingBodies, py::arg("bodies"))
+      .def("set_receiver_params", &GNSSMeasurements::SetReceiverParams, py::arg("params"))
+      .def("set_receiver_antenna", &GNSSMeasurements::SetReceiverAntenna, py::arg("antenna"))
+      .def("set_cn0_threshold", &GNSSMeasurements::SetCN0Threshold,
+           py::arg("cn0_threshold_dbhz"),
+           "Set both acquisition and tracking CN0 thresholds to the same value [dBHz]")
+      .def("reset_tracking", &GNSSMeasurements::ResetTracking,
+           "Clear the internal tracking state; all satellites must re-acquire on next call")
+      .def(
+          "set_sun_position_provider",
+          [](GNSSMeasurements& meas, py::object fn) {
+            meas.SetSunPositionProvider([fn](Real t) -> Vec3 {
+              py::gil_scoped_acquire gil;
+              return fn(static_cast<double>(t)).cast<Vec3>();
+            });
+          },
+          py::arg("fn"),
+          "Set callback returning Sun position [m] in options.frame at epoch t [TAI s]")
+      .def(
+          "set_boresight_target_provider",
+          [](GNSSMeasurements& meas, py::object fn) {
+            meas.SetBoresightTargetProvider([fn](Real t) -> Vec3 {
+              py::gil_scoped_acquire gil;
+              return fn(static_cast<double>(t)).cast<Vec3>();
+            });
+          },
+          py::arg("fn"),
+          "Set callback returning receiver boresight target position [m] at epoch t [TAI s]")
+      .def(
+          "build_channels",
+          [](GNSSMeasurements& meas, double t, const VecXd& state) {
+            State s(static_cast<int>(state.size()));
+            s = state.cast<Real>();
+            return meas.BuildChannels(static_cast<Real>(t), s);
+          },
+          py::arg("t"), py::arg("state"),
+          "Build visible GNSS channels at receive epoch `t` [TAI s] for receiver `state`")
+      .def(
+          "compute",
+          [](GNSSMeasurements& meas, double t, const VecXd& state) {
+            State s(static_cast<int>(state.size()));
+            s = state.cast<Real>();
+            return meas.Compute(static_cast<Real>(t), s);
+          },
+          py::arg("t"), py::arg("state"),
+          "Compute GNSS measurement epoch (channels + observables) at `t` for `state`")
+      .def(
+          "precompute",
+          [](GNSSMeasurements& meas, const std::vector<double>& times,
+             const std::vector<VecXd>& states, bool compute_jacobians) {
+            std::vector<Real> ts(times.begin(), times.end());
+            std::vector<State> ss;
+            ss.reserve(states.size());
+            for (const auto& v : states) {
+              State s(static_cast<int>(v.size()));
+              s = v.cast<Real>();
+              ss.push_back(std::move(s));
+            }
+            return meas.Precompute(ts, ss, compute_jacobians);
+          },
+          py::arg("times"), py::arg("states"), py::arg("compute_jacobians") = false,
+          "Batch-compute GNSS measurement epochs for a series of receive times / states");
 }

@@ -51,6 +51,27 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND APPLE)
   )
 endif()
 
+# cmake 4.x rejects bare source-tree paths in INTERFACE_INCLUDE_DIRECTORIES of
+# exported targets (hard error, not a warning).  When the pixi/conda environment
+# lives inside the project source tree (.pixi/), matplotplusplus's 3rd_party
+# cmake adds JPEG/TIFF/PNG/ZLIB/LAPACK/BLAS include dirs to the cimg INTERFACE
+# target without $<BUILD_INTERFACE:...> guards.  Wrap any bare paths here so
+# the generate-time export check only sees generator expressions.
+if(TARGET cimg)
+  get_target_property(_cimg_incs cimg INTERFACE_INCLUDE_DIRECTORIES)
+  if(_cimg_incs)
+    set(_cimg_fixed "")
+    foreach(_inc IN LISTS _cimg_incs)
+      if(_inc MATCHES "^\\$<")
+        list(APPEND _cimg_fixed "${_inc}")
+      else()
+        list(APPEND _cimg_fixed "$<BUILD_INTERFACE:${_inc}>")
+      endif()
+    endforeach()
+    set_target_properties(cimg PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${_cimg_fixed}")
+  endif()
+endif()
+
 install(
   TARGETS cimg
   EXPORT Matplot++Targets

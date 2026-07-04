@@ -2,6 +2,8 @@
 
 #include <functional>
 #include <optional>
+#include <set>
+#include <utility>
 #include <vector>
 
 #include "lupnt/agents/gnss_constellation.h"
@@ -58,7 +60,9 @@ namespace lupnt {
     Vec3 shapiro_body_position = Vec3::Zero();
     bool apply_visibility = true;
     bool apply_cn0_threshold = true;
-    Real cn0_threshold_dbhz = 15.0;
+    Real cn0_threshold_dbhz = 15.0;          // Deprecated: use acq/tracking below
+    Real cn0_acquisition_threshold_dbhz = 22.0;  // Min CN0 to acquire a new satellite [dBHz]
+    Real cn0_tracking_threshold_dbhz = 20.0;     // Min CN0 to maintain an existing lock [dBHz]
     bool apply_ionosphere_plasma_delay = false;
     Real default_ionosphere_plasma_delay_m = 0.0;
   };
@@ -367,23 +371,35 @@ namespace lupnt {
 
     GNSSMeasurements() = default;
 
-    /// @brief Construct with a GNSS constellation to draw transmitter
-    /// ephemerides/antennas/power from (see BuildChannelForPrn).
+    /// @brief Construct with a single GNSS constellation on L1 (convenience overload).
     explicit GNSSMeasurements(Ptr<GnssConstellation> constellation);
 
-    /// @brief Set the GNSS constellation providing transmitter ephemerides,
-    /// antennas, and transmit power for BuildChannels()/Compute().
-    void SetConstellation(Ptr<GnssConstellation> constellation) { constellation_ = constellation; }
+    /// @brief Add a constellation/frequency pair to process in BuildChannels().
+    ///
+    /// Channels from all added (constellation, frequency) pairs are concatenated.
+    void AddConstellation(Ptr<GnssConstellation> constellation, GnssFreq frequency);
 
-    /// @brief Get the GNSS constellation currently in use.
-    Ptr<GnssConstellation> GetConstellation() const { return constellation_; }
+    /// @brief Replace the first (or only) constellation; clears all others.
+    void SetConstellation(Ptr<GnssConstellation> constellation) {
+      constellations_.clear();
+      constellations_.emplace_back(constellation, frequency_);
+    }
 
-    /// @brief Set the GNSS frequency (e.g. L1/L2/L5) used for all channels
-    /// built by BuildChannels().
-    void SetFrequency(GnssFreq frequency) { frequency_ = frequency; }
+    /// @brief Get the first constellation (backward-compat accessor).
+    Ptr<GnssConstellation> GetConstellation() const {
+      return constellations_.empty() ? nullptr : constellations_[0].first;
+    }
 
-    /// @brief Get the GNSS frequency currently used for built channels.
-    GnssFreq GetFrequency() const { return frequency_; }
+    /// @brief Set the frequency for all current constellations (and as default for future ones).
+    void SetFrequency(GnssFreq frequency) {
+      frequency_ = frequency;
+      for (auto& p : constellations_) p.second = frequency;
+    }
+
+    /// @brief Get the frequency of the first constellation (backward-compat accessor).
+    GnssFreq GetFrequency() const {
+      return constellations_.empty() ? frequency_ : constellations_[0].second;
+    }
 
     /// @brief Replace the measurement options (observable selection, state
     /// layout, light-time/relativity/Shapiro/plasma settings, etc.) used by
@@ -427,9 +443,16 @@ namespace lupnt {
 
     /// @brief Set the CN0 threshold [dB-Hz] below which a channel is dropped
     /// by BuildChannels() when `options.apply_cn0_threshold` is true.
+    /// Sets both acquisition and tracking thresholds to the same value.
     void SetCN0Threshold(Real cn0_threshold_dbhz) {
       options_.cn0_threshold_dbhz = cn0_threshold_dbhz;
+      options_.cn0_acquisition_threshold_dbhz = cn0_threshold_dbhz;
+      options_.cn0_tracking_threshold_dbhz = cn0_threshold_dbhz;
     }
+
+    /// @brief Reset the internal tracking state, forcing all satellites to
+    /// re-acquire at the acquisition threshold on the next BuildChannels() call.
+    void ResetTracking() { tracking_prns_.clear(); }
 
     /// @brief Set a custom per-channel ionosphere/plasma delay model,
     /// overriding the ray-trace and default-constant delay options.
@@ -475,25 +498,6 @@ namespace lupnt {
     /// or `options_.default_ionosphere_plasma_delay_m`.
     void ClearIonospherePlasmaRayTraceOptions() { ionosphere_plasma_raytrace_options_.reset(); }
 
-    /// @brief Line-of-sight visibility test between two points in a common
-    /// frame, accounting for a spherical occluding body.
-    ///
-    /// Used by BuildChannels() (when `options.apply_visibility` is true) to
-    /// drop transmitter channels whose line of sight to the receiver is
-    /// blocked by an occluding body (e.g. the Moon or Earth), or whose
-    /// elevation from a surface point falls below a minimum elevation mask.
-    /// Handles three cases: either endpoint near the occluding body's surface
-    /// (elevation-mask test) or both endpoints elevated (geometric horizon
-    /// occlusion test).
-    ///
-    /// @param r1     First point [m], any common frame
-    /// @param r2     Second point [m], same frame as `r1`
-    /// @param R_body Radius of the occluding body [m]
-    /// @param r_body Center of the occluding body [m], same frame as `r1`
-    /// @return       True if `r1` and `r2` have an unobstructed line of sight
-    ///                (subject to the elevation mask)
-    static bool ComputeVisibility(const Vec3& r1, const Vec3& r2, Real R_body,
-                                  const Vec3& r_body = Vec3::Zero());
 
     /// @brief Build the set of visible, above-CN0-threshold GNSS channels for
     /// every PRN in the constellation at a receiver epoch/state.
@@ -578,8 +582,11 @@ namespace lupnt {
     FilterMeasurementFunction CreateFunction(Real t) const;
 
   private:
-    Ptr<GnssConstellation> constellation_;
+    std::vector<std::pair<Ptr<GnssConstellation>, GnssFreq>> constellations_;
     GnssFreq frequency_ = GnssFreq::L1;
+    // Satellites currently in lock: (GnssConst, PRN). Mutable so BuildChannels
+    // (const) can update tracking state each epoch.
+    mutable std::set<std::pair<GnssConst, int>> tracking_prns_;
     GnssMeasurementOptions options_;
     std::vector<GnssOccludingBody> occluding_bodies_;
     Antenna rx_antenna_;
@@ -632,7 +639,9 @@ namespace lupnt {
     ///        `channel.ionosphere_plasma_delay_m` via ComputeIonospherePlasmaDelay()
     /// @return Fully populated GnssChannel for `prn` (visibility/CN0 not yet applied)
     GnssChannel BuildChannelForPrn(int prn, Real receive_time, const State& user_state,
-                                   bool compute_ionosphere_plasma_delay = true) const;
+                                   bool compute_ionosphere_plasma_delay,
+                                   const Ptr<GnssConstellation>& constellation,
+                                   GnssFreq frequency) const;
 
     /// @brief BuildChannels() implementation with explicit control over
     /// per-channel ionosphere/plasma delay computation.
@@ -752,7 +761,8 @@ namespace lupnt {
     /// @param receive_time Receiver signal-reception epoch
     ///                       [s, `options_.receive_time_scale`]
     /// @return Estimated CN0 [dB-Hz], or NaN if unavailable
-    Real ComputeCN0(const GnssChannel& channel, const Vec3& r_rx_eci, Real receive_time) const;
+    Real ComputeCN0(const GnssChannel& channel, const Vec3& r_rx_eci, Real receive_time,
+                    const Ptr<GnssConstellation>& constellation) const;
 
     /// @brief Convert CN0 to a pseudorange (code-tracking) noise standard deviation.
     ///

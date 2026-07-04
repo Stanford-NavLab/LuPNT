@@ -100,4 +100,27 @@ namespace lupnt {
   /// @brief Array (element-wise) overload of ParabolicAntennaGain() over a vector of angles.
   ArrX ParabolicAntennaGain(const ArrX& phi, Real hpbw, Real G_max);
 
+  /// @brief Line-of-sight visibility test between two points in a common
+  /// frame, accounting for a spherical occluding body.
+  ///
+  /// Used by BuildChannels() (when `options.apply_visibility` is true) to
+  /// drop transmitter channels whose line of sight to the receiver is
+  /// blocked by an occluding body (e.g. the Moon or Earth), or whose
+  /// elevation from a surface point falls below a minimum elevation mask.
+  /// Handles three cases: either endpoint near the occluding body's surface
+  /// (elevation-mask test) or both endpoints elevated (geometric horizon
+  /// occlusion test).
+  ///
+  /// @param r1     First point [m], any common frame
+  /// @param r2     Second point [m], same frame as `r1`
+  /// @param R_body Radius of the occluding body [m]
+  /// @param r_body Center of the occluding body [m], same frame as `r1`
+  /// @param min_alt Minimum altitude for visibility test [m]
+  /// @param min_elev_rad Minimum elevation angle for visibility test [rad]
+  /// @return       True if `r1` and `r2` have an unobstructed line of sight
+  ///                (subject to the elevation mask)
+  bool ComputeVisibility(const Vec3& r1, const Vec3& r2, Real R_body,
+                                const Vec3& r_body = Vec3::Zero(), const Real min_alt=10e3, 
+                                const Real min_elev_deg=5.0);
+
 }  // namespace lupnt

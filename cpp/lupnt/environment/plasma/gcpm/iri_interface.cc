@@ -76,6 +76,7 @@ namespace pecsim {
 #pragma omp critical(file_io)
     {
       if (model == IRIModel::IRI_2007) {
+        initialize_();     // must be called before any IRI_SUB invocation
         readapf107_2007_();
       } else if (model == IRIModel::IRI_2020) {
         readapf107_2020_();

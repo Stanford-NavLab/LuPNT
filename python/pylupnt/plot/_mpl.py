@@ -2,6 +2,12 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+
+plt.rcParams["font.family"] = "serif"
+plt.rcParams["font.serif"] = "cmr10"
+plt.rcParams["font.sans-serif"] = "cmss10"
+plt.rcParams["font.monospace"] = "cmtt10"
+plt.rcParams["axes.formatter.use_mathtext"] = True
 from PIL import Image
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms

@@ -101,6 +101,8 @@ class SP3Loader:
         self.epochs_dt = []
         self.sats = []  # use a set to avoid duplicates
         self.positions = {}  # dictionary to store positions for each satellite
+        # satellites that have at least one sentinel (999999.999999 µs) clock epoch
+        self.fault_clock_sats: set = set()
 
         # parse the SP3 file
         for filename in self.filenames:
@@ -223,7 +225,11 @@ class SP3Loader:
                 x = float(line[4:18].strip()) * 1000  # km to meters
                 y = float(line[18:32].strip()) * 1000
                 z = float(line[32:46].strip()) * 1000
-                clock = float(line[46:60].strip()) * 1e-6  # microseconds to seconds
+                clock_us = float(line[46:60].strip())  # microseconds
+                # Sentinel 999999.999999 µs means clock unavailable → NaN
+                clock = np.nan if clock_us > 999990.0 else clock_us * 1e-6
+                if np.isnan(clock):
+                    self.fault_clock_sats.add(sv)
 
                 self.sats.append(sv)  # add satellite to the list
                 self.positions.setdefault(sv, []).append((current_epoch, (x, y, z, clock)))
@@ -262,28 +268,59 @@ class SP3Loader:
         epochs_ref = epochs_ref[sorted_indices]
         positions = positions[sorted_indices]
 
-        # remove duplicate epochs
-        unique_epochs, unique_indices = np.unique(epochs_ref, return_index=True)
-        epochs_ref = unique_epochs
-        positions = positions[unique_indices]
+        # Remove duplicate epochs, preferring the record with a valid (non-NaN) clock.
+        # When the same epoch appears at the end of one SP3 daily file and the start of
+        # the next, the first occurrence carries sentinel clock (999999.999999 µs → NaN)
+        # while the second has the real value.
+        keep_mask = np.ones(len(epochs_ref), dtype=bool)
+        prev_idx = 0
+        for i in range(1, len(epochs_ref)):
+            if epochs_ref[i] == epochs_ref[prev_idx]:
+                prev_nan = np.isnan(positions[prev_idx, 3])
+                curr_nan = np.isnan(positions[i, 3])
+                if not prev_nan and curr_nan:
+                    keep_mask[i] = False  # keep previous (valid clock)
+                else:
+                    keep_mask[prev_idx] = False  # keep current (later record or both NaN)
+                    prev_idx = i
+            else:
+                prev_idx = i
+        epochs_ref = epochs_ref[keep_mask]
+        positions = positions[keep_mask]
 
         # fit polynomials
         interp_type = "cubic"  # use cubic spline interpolation
 
+        # Clock: linear interpolation on valid (non-sentinel) epochs only
+        valid_clk = ~np.isnan(positions[:, 3])
         if interp_type == "cubic":
             interp_x = CubicSpline(epochs_ref, positions[:, 0])
             interp_y = CubicSpline(epochs_ref, positions[:, 1])
             interp_z = CubicSpline(epochs_ref, positions[:, 2])
-            interp_clock = CubicSpline(epochs_ref, positions[:, 3])
+            if np.sum(valid_clk) >= 2:
+                from scipy.interpolate import interp1d
+                interp_clock = interp1d(
+                    epochs_ref[valid_clk], positions[valid_clk, 3],
+                    kind="linear", bounds_error=False, fill_value=np.nan
+                )
+            else:
+                interp_clock = None
         elif interp_type == "barycentric":
             interp_x = BarycentricInterpolator(epochs_ref, positions[:, 0])
             interp_y = BarycentricInterpolator(epochs_ref, positions[:, 1])
             interp_z = BarycentricInterpolator(epochs_ref, positions[:, 2])
-            interp_clock = BarycentricInterpolator(epochs_ref, positions[:, 3])
+            if np.sum(valid_clk) >= 2:
+                from scipy.interpolate import interp1d
+                interp_clock = interp1d(
+                    epochs_ref[valid_clk], positions[valid_clk, 3],
+                    kind="linear", bounds_error=False, fill_value=np.nan
+                )
+            else:
+                interp_clock = None
         else:
             raise ValueError(f"Unsupported interpolation type: {interp_type}")
 
-        clock = interp_clock(epoch)  # clock correction in seconds
+        clock = interp_clock(epoch) if interp_clock is not None else np.full_like(np.asarray(epoch, dtype=float), np.nan)
 
         # range of epochs
         min_epoch = np.min(epochs_ref)
@@ -394,6 +431,10 @@ class SP3Loader:
         clock = clock + t_corr_rel  # in seconds
 
         return rv_prop, clock
+
+    def get_fault_clock_prns(self):
+        """Return sorted list of SP3 satellite IDs that had at least one sentinel (999999.999999 µs) clock epoch."""
+        return sorted(self.fault_clock_sats)
 
     def get_posvel(self, sys, prn, epoch, out_frame=pnt.ECI, propagate=False):
         """

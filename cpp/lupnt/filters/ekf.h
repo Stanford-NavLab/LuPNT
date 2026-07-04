@@ -196,6 +196,10 @@ namespace lupnt {
   protected:
     double outlier_threshold_ = 3.0;
 
+    /// @brief Number of trailing state elements treated as Schmidt "consider"
+    /// states (0 disables consider-state handling, i.e. a plain EKF).
+    int n_consider_ = 0;
+
     std::vector<VecXd> x_prior_log_;  // Logged prior states
     std::vector<MatXd> P_prior_log_;  // Logged prior covariances
     std::vector<VecXd> x_pos_log_;    // Logged posterior states
@@ -215,6 +219,29 @@ namespace lupnt {
     ///
     /// @param outlier_threshold  Threshold in sigma; must be non-negative
     void SetOutlierThreshold(double outlier_threshold);
+
+    /// @brief Configure the trailing `n_consider` elements of the state vector as
+    /// Schmidt "consider" states, turning this `EKF` into a Schmidt (consider-
+    /// parameter) Extended Kalman Filter (also available pre-configured as
+    /// `SchmidtEKF`, see `schmidt_ekf.h`).
+    ///
+    /// Consider states are still propagated (`Predict`) and contribute to the
+    /// measurement Jacobian `H_` and hence to the Kalman gain and covariance
+    /// bookkeeping in `Update`, but are never corrected: `Update` zeros the
+    /// trailing `n_consider` rows of the Kalman gain `K_` before applying the
+    /// state correction, so their mean is left unchanged while their (co)variance
+    /// -- including cross-covariance with the estimated states -- still updates
+    /// consistently (the Joseph-form covariance update is valid for any gain,
+    /// optimal or not). This is the standard "gain zeroing" implementation of the
+    /// Schmidt-Kalman filter.
+    ///
+    /// @param n_consider  Number of trailing state elements to treat as consider
+    ///                    states (0 disables consider-state handling)
+    void SetConsiderStateCount(int n_consider);
+
+    /// @brief Get the number of trailing consider states configured via
+    /// `SetConsiderStateCount` (0 if this is a plain EKF).
+    int GetConsiderStateCount() const { return n_consider_; }
 
     /// @brief Drop measurement components whose normalized residual
     /// `|dz_i| / sqrt(S_ii)` exceeds `outlier_threshold_`, shrinking `dz_`, `H_`, `R_`, and
