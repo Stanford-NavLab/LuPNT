@@ -8,8 +8,8 @@
  *
  * @copyright Copyright (c) 2025
  *
- * This class is the C++ counterpart of `pylupnt.measurements.gnss_meas.GNSSMeas`
- * (see `python/pylupnt/measurements/gnss_meas.py`). It is intended to support
+ * This class is the C++ counterpart of the `GNSSMeas` helper in
+ * `projects/Plasmasphere_Delay_Datagen/src/gnss_meas.py`. It is intended to support
  * cislunar / sidelobe GNSS navigation scenarios. Receiver-dependent operations
  * such as light-time iteration, visibility, C/N0 thresholding, and channel
  * selection are intentionally performed by the GNSS measurement model because
@@ -37,7 +37,8 @@
 namespace lupnt {
 
   /// @brief GNSS receiver tracking-loop parameters.
-  /// Mirrors `pylupnt.measurements.gnss_meas.GNSSReceiverParam`.
+  /// Mirrors `GNSSReceiverParam` in
+  /// `projects/Plasmasphere_Delay_Datagen/src/gnss_meas.py`.
   /// Reference: https://www.mdpi.com/1424-8220/16/3/347
   struct GnssReceiverParams {
     Real Bp = 1.0;   // [Hz] Carrier loop noise bandwidth

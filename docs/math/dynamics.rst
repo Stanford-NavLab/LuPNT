@@ -10,6 +10,12 @@ with emphasis on the numerical Cartesian dynamics used by
 force-model conventions explicit enough that propagation and filtering tests
 can compare against the same equations.
 
+The Cartesian rate assembly lives in
+``cpp/lupnt/dynamics/numerical_orbit_dynamics.cc`` (classes
+``NBodyDynamics``, ``JToCartTwoBodyDynamics``, ``CartesianTwoBodyDynamics``);
+the individual force-model accelerations live in
+``cpp/lupnt/environment/forces.cc`` / ``forces.h``.
+
 State, Epoch, Frame, and Unit Contract
 -------------------------------------------------------------------
 
@@ -60,6 +66,24 @@ The model computes
      a(t, r, v)
    \end{bmatrix}.
 
+Implemented by
+``cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: NBodyDynamics::ComputeRates``.
+The TDB epoch offset and the :math:`\dot{x} = [v;\,a]` assembly are the first
+and last lines of the routine:
+
+.. code-block:: cpp
+
+   VecX NBodyDynamics::ComputeRates(Real t, const State& rv) const {
+     Real t_tdb = t + GetLupntEpoch();
+     Vec3 r = rv.head(3);
+     Vec3 v = rv.tail(3);
+     Vec3 a = Vec3::Zero();
+     // ... sum force-model accelerations into a ...
+     Vec6 rv_dot;
+     rv_dot << v, a;
+     return rv_dot;
+   }
+
 Unit Conversion
 -------------------------------------------------------------------
 
@@ -89,6 +113,22 @@ For example,
 Planetary ephemerides are evaluated in the internal TDB-compatible coordinate
 scale and then converted to the requested unit system at the dynamics boundary.
 
+Implemented by the unit-conversion helpers in the anonymous namespace of
+``cpp/lupnt/dynamics/numerical_orbit_dynamics.cc``
+(``PositionFromSI`` / ``PositionToSI`` / ``VelocityToSI`` /
+``AccelerationFromSI`` / ``StateToSI``), each a scaling by the ``UnitSystem``
+length/time powers:
+
+.. code-block:: cpp
+
+   Vec3 PositionFromSI(const Vec3& r, const UnitSystem& units) { return r / units.length; }
+   Vec3 VelocityToSI(const Vec3& v, const UnitSystem& units) {
+     return v * (units.length / units.time);
+   }
+   Vec3 AccelerationFromSI(const Vec3& a, const UnitSystem& units) {
+     return a * (units.time * units.time / units.length);
+   }
+
 Point-Mass Gravity
 -------------------------------------------------------------------
 
@@ -116,6 +156,21 @@ central two-body term remains:
    a_i
    =
    -\mu_i \frac{r}{\lVert r \rVert^3}.
+
+Implemented by
+``cpp/lupnt/environment/forces.cc :: AccelerationPointMass`` (called per
+non-gravity-field body by ``NBodyDynamics::ComputeRates``):
+
+.. code-block:: cpp
+
+   Vec3 AccelerationPointMass(const Vec3& r, const Vec3& s, Real GM) {
+     Vec3 d = r - s;
+     Vec3 a = Vec3::Zero();
+     if (s.norm() > EPS) a += s / pow(s.norm(), 3);   // indirect (origin recoil) term
+     if (d.norm() > EPS) a += d / pow(d.norm(), 3);   // direct attraction
+     a *= -GM;
+     return a;
+   }
 
 Gravity-Field Acceleration
 -------------------------------------------------------------------
@@ -149,6 +204,20 @@ The result is rotated back to the integration frame:
 
 This path uses only the rotation component of the frame transform for
 accelerations.
+
+Implemented by
+``cpp/lupnt/environment/forces.cc :: AccelarationGravityField`` (the
+Montenbruck-Gill ``V_nm`` / ``W_nm`` harmonic recursion, templated on ``Real``
+for autodiff or ``double`` for fast propagation), driven by the gravity-field
+branch of ``NBodyDynamics::ComputeRates``:
+
+.. code-block:: cpp
+
+   // NBodyDynamics::ComputeRates -- rotate to body-fixed, evaluate field, rotate back
+   Vec3 r_bf = PositionFromSI(ConvertFrame(t_tdb, r_si, frame_, body.fixed_frame), units_);
+   a_bf = AccelarationGravityField<Real>(r_bf, grav.GM, grav.R, grav.CS, grav.n, grav.m);
+   auto [R_bf_to_frame, translation] = GetFrameRotationTranslation(t_tdb, body.fixed_frame, frame_);
+   a += R_bf_to_frame * a_bf;
 
 J2 Cartesian Dynamics
 -------------------------------------------------------------------
@@ -204,6 +273,22 @@ The acceleration is then rotated back to the integration frame:
 Setting the body-fixed frame equal to the integration frame recovers the older
 inertial-axis J2 convention and is useful for reference comparisons that were
 generated with that approximation.
+
+Implemented by
+``cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: JToCartTwoBodyDynamics::ComputeRates``:
+
+.. code-block:: cpp
+
+   Vec3 r_bf = R_frame_to_body_fixed * r;
+   Real aux1 = -3.0 / 2.0 * GM_ * J2_ * pow(R_body_, 2.0) / pow(r_norm, 5.0);
+   Real aux2 = 5.0 * pow(r_bf(2) / r_norm, 2.0);
+   a_J2_bf(0) = aux1 * (1.0 - aux2) * r_bf(0);
+   a_J2_bf(1) = aux1 * (1.0 - aux2) * r_bf(1);
+   a_J2_bf(2) = aux1 * (3.0 - aux2) * r_bf(2);
+   rv_dot.tail(3) += R_frame_to_body_fixed.transpose() * a_J2_bf;
+
+The plain two-body term :math:`-\mu r/\lVert r\rVert^3` is
+``cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: CartesianTwoBodyDynamics::ComputeRates``.
 
 Solar Radiation Pressure
 -------------------------------------------------------------------
@@ -272,6 +357,30 @@ It is in umbra when the occulting disk covers the solar disk:
 Otherwise, :math:`\nu` is one minus the overlap area of the two apparent disks
 divided by the solar disk area.
 
+The cannonball acceleration is
+``cpp/lupnt/environment/forces.cc :: AccelerationSolarRadiation`` and the
+shadow factor :math:`\nu` is
+``cpp/lupnt/environment/forces.cc :: ShadowFunction`` (wrapped by
+``Illumination``); ``NBodyDynamics::ComputeRates`` multiplies them together.
+The two apparent-radius angles and the umbra / penumbra tests are:
+
+.. code-block:: cpp
+
+   // ShadowFunction: apparent radii of Sun (a) and occulting body (b), separation (c)
+   Real a = asin(ClampUnit(R_sun / rho_sun_norm));
+   Real b = asin(ClampUnit(R_body / r_norm));
+   Real c = acos(ClampUnit(-r.dot(rho_sun) / (r_norm * rho_sun_norm)));
+   if (c >= a + b) return 1.0;                       // fully illuminated
+   if (c <= abs(b - a)) { if (b >= a) return 0.0; }  // umbra / annular
+
+.. note::
+
+   ``ClampUnit`` returns a strictly-interior constant :math:`\pm(1-10^{-12})`
+   at the domain edges of ``asin`` / ``acos`` so the autodiff derivative stays
+   finite across a grazing shadow boundary; this is what lets the SRP
+   state-transition matrix be formed analytically (see the ``ClampUnit`` /
+   ``Clamp01`` comments in ``forces.cc``).
+
 Atmospheric Drag
 -------------------------------------------------------------------
 
@@ -304,6 +413,23 @@ and the drag acceleration is
 
 The implementation converts the propagated state to SI for the drag model and
 then converts the resulting acceleration back to the configured unit system.
+
+Implemented by
+``cpp/lupnt/environment/forces.cc :: AccelerationDrag`` (with the density from
+``cpp/lupnt/environment/forces.cc :: DensityHarrisPriester``), invoked for
+Earth by ``NBodyDynamics::ComputeRates``:
+
+.. code-block:: cpp
+
+   Vec3 v_rel = v_tod - omega.cross(r_tod);          // Earth-relative velocity
+   Real v_abs = v_rel.norm();
+   Real dens  = DensityHarrisPriester(mjd_tt, r_tod);
+   Vec3 a_tod = -0.5 * bcoeff_drag * dens * v_abs * v_rel * KM_M;
+   return T.transpose() * a_tod;                      // back to inertial
+
+``DensityHarrisPriester`` interpolates the tabulated min/max density profiles
+exponentially in altitude and weights them by the diurnal-bulge factor
+:math:`\cos^{n}(\psi/2)` before returning kg/m^3.
 
 Relativistic Orbit Correction
 -------------------------------------------------------------------
@@ -350,6 +476,20 @@ The Sun term uses the same expression with
    \qquad
    \mu = \mu_\odot.
 
+Implemented by
+``cpp/lupnt/environment/forces.cc :: AccelerationRelativisticCorrection``;
+``NBodyDynamics::ComputeRates`` selects the nearest planet-like body as the
+second center (``min_relativity_distance`` loop):
+
+.. code-block:: cpp
+
+   Vec3 AccelerationRelativisticCorrection(const Vec3& r, const Vec3& v, Real GM, Real c_light) {
+     Real c2 = c_light * c_light;
+     Real v2 = v.squaredNorm();
+     Real rv = r.dot(v);
+     return -GM / (c2 * pow(r.norm(), 3)) * ((4.0 * GM / r.norm() - v2) * r + 4.0 * rv * v);
+   }
+
 Total N-Body Acceleration
 -------------------------------------------------------------------
 
@@ -371,6 +511,15 @@ The total acceleration assembled by ``NBodyDynamics`` is
 
 with optional terms omitted when their corresponding switches are disabled or
 when no applicable body is configured.
+
+Assembled by
+``cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: NBodyDynamics::ComputeRates``
+(the per-body loop adds gravity, SRP, and drag; the relativity terms are added
+after the loop).  For a per-term breakdown of the same sum, see
+``cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: NBodyDynamics::ComputeAccelerations``,
+which returns a map keyed ``"<BODY>_gravity"``, ``"srp"``, ``"drag"``,
+``"relativity"``, etc., whose values sum to the acceleration part of
+``ComputeRates``.
 
 State Transition Matrix Convention
 -------------------------------------------------------------------
@@ -401,6 +550,20 @@ The finite-dimensional contract is that rows and columns follow the order
 .. math::
 
    [r_x,\ r_y,\ r_z,\ v_x,\ v_y,\ v_z].
+
+Requested through
+``cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: NBodyDynamics::Propagate``
+(the ``MatXd* stm`` overload), which requires autodiff to be enabled:
+
+.. code-block:: cpp
+
+   State NBodyDynamics::Propagate(const State& x0, Real t0, Real tf, const State* u, MatXd* stm) {
+     LUPNT_CHECK(use_ad_, "Autodiff not enabled", "NBodyDynamics");
+     return NumericalDynamics::Propagate(x0, t0, tf, u, stm);
+   }
+
+See :doc:`integration` for how the sensitivity matrix is actually formed
+(``Integrator::Propagate(..., MatXd* J)`` via ``JacobianParallel``).
 
 Current Model Boundaries
 -------------------------------------------------------------------

@@ -4,6 +4,8 @@ import os
 import tecsimpy as tec
 import plotly.graph_objects as go
 
+from src.gnss_meas import GNSSMeas
+
 
 def setup_lcrns_sats(n_orbit=6.0, dt=1, savefig=False, overwrite=True):
     """
@@ -204,7 +206,7 @@ def setup_gnss_constellation(
     Setup the GNSS satellites.
     """
     gnss_meas_dir = os.path.join(pnt.get_output_dir(), "iono_delay")
-    gnss_meas = pnt.GNSSMeas(
+    gnss_meas = GNSSMeas(
         t_tai,
         rv_m2sc_ci,
         basepath=gnss_meas_dir,

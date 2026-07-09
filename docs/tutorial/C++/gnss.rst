@@ -43,8 +43,7 @@ ray-trace stage.
 
 The release-facing C++ implementation is the ``LunarGnssODTSSimulation`` under
 ``cpp/lupnt/applications/LunarGnssODTS``, driven by the ``ex_lunar_gnss_odts``
-executable and the staged pipeline described in
-:doc:`../../projects/gnss_filtering_pipeline`:
+executable and the staged pipeline it runs:
 
 .. code-block:: bash
 

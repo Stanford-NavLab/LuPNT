@@ -10,6 +10,13 @@ conversion functions such as ``ConvertFrame``,
 helpers.  The key requirements are explicit epoch scale, frame origin,
 rotation, translation, and velocity conventions.
 
+The public dispatch (``ConvertFrame``, ``GetFrameRotationTranslation``,
+``GetFrameRotationTranslationRv``, ``GetFrameCenter``) lives in
+``cpp/lupnt/conversions/frame_converter.cc`` /
+``frame_converter.h``; the individual body-pair rotations
+(``GcrfToItrf``, ``MoonCiToPa``, the IAU planet orientation, ...) live in
+``cpp/lupnt/conversions/frame_conversions.cc`` / ``frame_conversions.h``.
+
 Epoch Contract
 -------------------------------------------------------------------
 
@@ -45,6 +52,18 @@ frame :math:`A` expressed in frame :math:`B`.
 
 ``GetFrameRotationTranslation`` returns exactly the pair
 :math:`(R_{BA}, p_{BA})`.
+
+Implemented by
+``cpp/lupnt/conversions/frame_converter.cc :: GetFrameRotationTranslation``,
+which recovers :math:`(R, p)` by transforming the identity basis and the zero
+vector through ``ConvertFrame``:
+
+.. code-block:: cpp
+
+   Mat3 M = ConvertFrame(t_tdb, I3, from_frame, to_frame);          // basis images + offset
+   Vec3 r = ConvertFrame(t_tdb, MatX3::Zero(1, 3), from_frame, to_frame).transpose();
+   Mat3 R = (M.rowwise() - r.transpose()).transpose();              // subtract offset -> rotation
+   return std::make_pair(R, r);
 
 Cartesian State Transform
 -------------------------------------------------------------------
@@ -88,6 +107,16 @@ For a pure time-dependent rotation and translation,
 :math:`(R_{6,BA}, p_{6,BA})` by applying ``ConvertFrame`` to the Cartesian
 basis states and the zero state.
 
+Implemented by
+``cpp/lupnt/conversions/frame_converter.cc :: GetFrameRotationTranslationRv``:
+
+.. code-block:: cpp
+
+   Vec6 t6 = ConvertFrame(t_tdb, MatX6::Zero(1, 6), from_frame, to_frame, false).row(0).transpose();
+   MatX6 Y = ConvertFrame(t_tdb, Mat6::Identity(), from_frame, to_frame, false);   // 6x6
+   for (int j = 0; j < 6; ++j) R6.col(j) = Y.row(j).transpose() - t6;              // columns of R6
+   return {R6, t6};
+
 Rotate-Only Mode
 -------------------------------------------------------------------
 
@@ -103,6 +132,20 @@ returned by ``GetFrameRotationTranslation``:
 This mode is useful for vector-like quantities such as accelerations or local
 offsets where the origin velocity terms should not be applied.  For ordinary
 position-velocity state transformations, ``rotate_only`` should be false.
+
+Implemented by the ``rotate_only`` branch of the ``Vec6`` overload of
+``cpp/lupnt/conversions/frame_converter.cc :: ConvertFrame``:
+
+.. code-block:: cpp
+
+   Vec6 ConvertFrame(Real t_tdb, const Vec6& rv_in, Frame frame_in, Frame frame_out, bool rotate_only) {
+     if (!rotate_only) return ConvertFrameBase(t_tdb, rv_in, frame_in, frame_out);
+     auto [R, r] = GetFrameRotationTranslation(t_tdb, frame_in, frame_out);
+     Vec6 rv_out;
+     rv_out.head(3) = R * rv_in.head(3) + r;   // position: rotate + translate
+     rv_out.tail(3) = R * rv_in.tail(3);       // velocity: rotate only
+     return rv_out;
+   }
 
 Frame Graph
 -------------------------------------------------------------------
@@ -141,6 +184,22 @@ Lunar fixed and lunar orbit-plane frames attach through MOON_CI:
 
 The Earth-Moon rotating frame EMR attaches through GCRF.
 
+The routing itself is
+``cpp/lupnt/conversions/frame_converter.cc :: ConvertFrameBase`` (a recursive
+``switch`` on ``frame_in`` that hops through the GCRF / MOON_CI / ICRF hubs);
+solar-system planet frames are split off first to
+``ConvertPlanetFrame``:
+
+.. code-block:: cpp
+
+   // ConvertFrameBase -- e.g. GCRF -> any lunar frame routes through MOON_CI
+   case Frame::GCRF:
+     switch (frame_out) {
+       case Frame::ITRF: return GcrfToItrf(t_tdb, rv_in);
+       case Frame::MOON_PA: case Frame::MOON_ME: case Frame::MOON_OP: case Frame::MOON_CI:
+         return ConvertFrame(t_tdb, GcrfToMoonCi(t_tdb, rv_in), Frame::MOON_CI, frame_out);
+     }
+
 Frame Centers
 -------------------------------------------------------------------
 
@@ -173,6 +232,10 @@ helpers:
    =
    \mathrm{Moon}.
 
+Implemented by the ``frame_centers`` map and
+``cpp/lupnt/conversions/frame_converter.cc :: GetFrameCenter`` (also covers the
+solar-system ``<PLANET>_CI`` / ``<PLANET>_FIXED`` frames).
+
 GCRF and ICRF
 -------------------------------------------------------------------
 
@@ -198,6 +261,10 @@ ephemerides in GCRF axes, then
    v_{\mathrm{SSB}\rightarrow E}.
 
 The inverse subtracts the same Earth barycentric state.
+
+Implemented by
+``cpp/lupnt/conversions/frame_conversions.cc :: GcrfToIcrf`` /
+``IcrfToGcrf`` (a pure translation by the SSB-to-Earth ephemeris state).
 
 GCRF and ITRF
 -------------------------------------------------------------------
@@ -251,6 +318,24 @@ The inverse is
      \dot{R}_{\mathrm{ITRF},\mathrm{GCRF}} r_\mathrm{GCRF}
    \right).
 
+Implemented by
+``cpp/lupnt/conversions/frame_conversions.cc :: GcrfToItrf`` (and the inverse
+``ItrfToGcrf``); the rotation product uses ``RotPolarMotion`` /
+``RotSideralMotion`` / ``RotPrecessionNutation``:
+
+.. code-block:: cpp
+
+   Mat3 R_GcrfToItrf     = R_po * R_s     * R_pn;   // R_polar R_ERA R_PN
+   Mat3 R_GcrfToItrf_dot = R_po * R_s_dot * R_pn;
+   Vec3 r_itrf = R_GcrfToItrf * r_gcrf;
+   Vec3 v_itrf = R_GcrfToItrf * v_gcrf + R_GcrfToItrf_dot * r_gcrf;
+
+.. note::
+
+   If ``InitFrameConversionFromSpice`` has fitted a SPICE-derived EOP model
+   covering ``t_tdb``, ``RotPolarMotion`` / ``RotSideralMotion`` transparently
+   use the fitted EOP so this matches ``spice::ConvertFrameSpice`` closely.
+
 GCRF and EME
 -------------------------------------------------------------------
 
@@ -263,6 +348,16 @@ GCRF and EME are related by the Earth frame-bias rotation
    R_x(-\eta_0) R_y(\xi_0) R_z(\Delta \alpha_0).
 
 The same static rotation is applied to both position and velocity.
+
+Implemented by the static bias matrix
+``cpp/lupnt/conversions/frame_conversions.cc :: RotGcrfToEme``, applied by
+``GcrfToEme`` / ``EmeToGcrf``:
+
+.. code-block:: cpp
+
+   Mat3d RotGcrfToEme() {
+     return RotX(-FRAME_BIAS_ETA0) * RotY(FRAME_BIAS_XI0) * RotZ(FRAME_BIAS_DALPHA0);
+   }
 
 GCRF and MOON_CI
 -------------------------------------------------------------------
@@ -288,6 +383,17 @@ relative to Earth.  Then
    v_{E\rightarrow M}.
 
 The inverse adds the same Earth-to-Moon state.
+
+Implemented by
+``cpp/lupnt/conversions/frame_conversions.cc :: GcrfToMoonCi`` /
+``MoonCiToGcrf`` (a pure translation by the Earth-to-Moon ephemeris state):
+
+.. code-block:: cpp
+
+   Vec6 GcrfToMoonCi(Real t_tdb, const Vec6& rv_gcrf) {
+     Vec6 rv_earth2moon = GetBodyPosVel(t_tdb, BodyId::EARTH, BodyId::MOON, Frame::GCRF);
+     return rv_gcrf - rv_earth2moon;
+   }
 
 MOON_CI and MOON_PA
 -------------------------------------------------------------------
@@ -315,6 +421,26 @@ The velocity transform includes the exact derivative of this rotation:
 The inverse subtracts the rotation-rate contribution before applying the
 transpose rotation.
 
+Implemented by
+``cpp/lupnt/conversions/frame_conversions.cc :: RotMoonCiToPa`` (the ZXZ angle
+reconstruction and its analytic :math:`\dot R`), applied by ``MoonCiToPa`` /
+``MoonPaToCi``:
+
+.. code-block:: cpp
+
+   auto [phi, theta, psi, phi_dot, theta_dot, psi_dot] = Unpack(GetLunarMantleData(t_tdb, true));
+   Mat3 R_mi2pa = RotZ(psi) * RotX(theta) * RotZ(phi);
+   *R_mi2pa_dot = RotZdot(psi, psi_dot) * RotX(theta)   * RotZ(phi)
+                + RotZ(psi)   * RotXdot(theta, theta_dot) * RotZ(phi)
+                + RotZ(psi)   * RotX(theta)   * RotZdot(phi, phi_dot);
+
+.. note::
+
+   If ``InitFrameConversionFromSpice`` has fitted a lunar-orientation model
+   covering ``t_tdb``, the SPICE-fitted MOON_CI->MOON_PA rotation (and its
+   exact derivative) is used in place of the DE-Chebyshev libration angles
+   (``TryGetFittedMoonCiToPa``).
+
 MOON_PA and MOON_ME
 -------------------------------------------------------------------
 
@@ -329,6 +455,16 @@ MOON_ME is related to MOON_PA through a static bias rotation:
    R_z(-67.8526'').
 
 The same static rotation is applied to both position and velocity.
+
+Implemented by the static matrix
+``cpp/lupnt/conversions/frame_conversions.cc :: RotMoonPaToMe``, applied by
+``MoonPaToMe`` / ``MoonMeToPa``:
+
+.. code-block:: cpp
+
+   Mat3d RotMoonPaToMe() {
+     return RotX(-0.2785 * RAD_ARCSEC) * RotY(-78.6944 * RAD_ARCSEC) * RotZ(-67.8526 * RAD_ARCSEC);
+   }
 
 MOON_OP
 -------------------------------------------------------------------
@@ -371,6 +507,56 @@ The rotation from MOON_OP to MOON_CI is
 The current implementation applies this rotation to both position and velocity
 without an explicit :math:`\dot{R}` term for MOON_OP.
 
+Implemented by
+``cpp/lupnt/conversions/frame_conversions.cc :: RotMoonOpToCi``, applied by
+``MoonOpToCi`` / ``MoonCiToOp``:
+
+.. code-block:: cpp
+
+   Vec6 rv_m2e = GetBodyPosVel(t_tdb, BodyId::MOON, BodyId::EARTH, Frame::GCRF);
+   Vec3 z_op   = rv_m2e.head(3).cross(rv_m2e.tail(3)).normalized();
+   Vec3 i_pole = ConvertFrame(t_tdb, Vec3::UnitZ(), Frame::MOON_ME, Frame::MOON_CI);
+   Vec3 x_op   = i_pole.cross(z_op).normalized();
+   Vec3 y_op   = z_op.cross(x_op).normalized();
+   R_op2ci << x_op, y_op, z_op;
+
+Solar-System Planet Frames (IAU Orientation)
+-------------------------------------------------------------------
+
+Each solar-system ``<PLANET>_CI`` frame is ICRF-aligned and centered on the
+planet, and each ``<PLANET>_FIXED`` frame co-rotates with it under the IAU
+linear orientation model.  With pole right ascension/declination
+:math:`(\alpha, \delta)` and prime-meridian angle :math:`W`, the ICRF-to-fixed
+rotation is
+
+.. math::
+
+   R_{\mathrm{FIXED},\mathrm{CI}}
+   =
+   R_z(W)\,R_x(\tfrac{\pi}{2}-\delta)\,R_z(\tfrac{\pi}{2}+\alpha),
+
+with :math:`(\alpha, \delta)` linear in Julian centuries past J2000 (TT) and
+:math:`W` linear in days past J2000 (TT).  Only the prime-meridian spin
+contributes appreciably to :math:`\dot{R}`.
+
+Implemented by
+``cpp/lupnt/conversions/frame_conversions.cc :: RotBodyCiToFixed`` (with the
+per-body coefficients in ``IauOrientationTable``), applied by
+``BodyCiToFixed`` / ``BodyFixedToCi``; the frame predicates
+``IsPlanetFrame`` / ``IsPlanetFixedFrame`` / ``IsPlanetCiFrame`` classify these
+frames, and
+``cpp/lupnt/conversions/frame_converter.cc :: ConvertPlanetFrame`` routes them
+through the ICRF hub (with a same-body fast path):
+
+.. code-block:: cpp
+
+   // RotBodyCiToFixed
+   Real ra  = (o.ra0  + o.ra0_T  * T) * RAD;
+   Real dec = (o.dec0 + o.dec0_T * T) * RAD;
+   Real W   = (o.w0   + o.w_dot  * d) * RAD;
+   Mat3 R = RotZ(W) * RotX(M_PI / 2 - dec) * RotZ(M_PI / 2 + ra);
+   if (R_dot) *R_dot = RotZdot(W, o.w_dot * RAD / SECS_DAY) * RotX(M_PI / 2 - dec) * RotZ(M_PI / 2 + ra);
+
 SPICE-Fitted Orientation Option
 -------------------------------------------------------------------
 
@@ -400,6 +586,12 @@ rotation matrices.
 
 If the requested epoch is outside the fitted time window, LuPNT falls back to
 the native analytic Earth or lunar orientation model.
+
+Implemented by
+``cpp/lupnt/conversions/frame_conversions.cc :: InitFrameConversionFromSpice``
+(the Euler-angle fit is ``FitEulerAngleModel``; the fitted lunar rotation is
+consumed by ``TryGetFittedMoonCiToPa``, and the fitted EOP by the Earth
+rotation helpers).
 
 Coordinate Scale and Units
 -------------------------------------------------------------------

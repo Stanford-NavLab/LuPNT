@@ -37,6 +37,7 @@ A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timi
 
     tutorial/Python/index
     tutorial/C++/index
+    pages/related_publications
 
 .. _math_specs_index:
 
@@ -46,14 +47,6 @@ A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timi
 
     math/index
 
-.. _projects_index:
-
-.. toctree::
-    :maxdepth: 1
-    :caption: Projects
-
-    projects/index
-
 .. _python_api_index:
 
 .. toctree::
@@ -62,10 +55,8 @@ A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timi
 
     python_api/pylupnt
     python_api/pylupnt.plot
-    python_api/pylupnt.core.simulation
     python_api/pylupnt.core.pylupnt_utils
     python_api/pylupnt.interfaces.gnss_utils
-    python_api/pylupnt.measurements.gnss_meas
     python_api/pylupnt.plasma.kp_loader
 
 ..
@@ -73,10 +64,8 @@ A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timi
     Meta data can be a string at the end that says python_only. To be used for pure python module (no pybind).
     MAKE_DOCS/python_api/pylupnt
     MAKE_DOCS/python_api/pylupnt.plot python_only
-    MAKE_DOCS/python_api/pylupnt.core.simulation python_only
     MAKE_DOCS/python_api/pylupnt.core.pylupnt_utils python_only
     MAKE_DOCS/python_api/pylupnt.interfaces.gnss_utils python_only
-    MAKE_DOCS/python_api/pylupnt.measurements.gnss_meas python_only
     MAKE_DOCS/python_api/pylupnt.plasma.kp_loader python_only
 
 .. _cpp_api_index:

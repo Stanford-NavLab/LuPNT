@@ -10,7 +10,7 @@
  * Computes the canonical GNSS satellite "yaw-steering" body frame used for
  * antenna gain-pattern lookups (nadir / sun cross-track / along-track),
  * mirroring the attitude computation in `GNSSMeas.setup_measurements`
- * (`python/pylupnt/measurements/gnss_meas.py`). This frame is orthonormal by
+ * (`projects/Plasmasphere_Delay_Datagen/src/gnss_meas.py`). This frame is orthonormal by
  * construction and is distinct from the (non-orthonormal) `ijk_to_ecef_rot`
  * frame used for antenna phase-center-offset (PCO) corrections -- see
  * `lupnt/interfaces/antex_loader.h`.
@@ -57,7 +57,7 @@ namespace lupnt {
     /// transmitter-to-receiver line of sight onto this triad to get the
     /// off-boresight angles fed to `Antenna::ComputeGain`. Mirrors the
     /// attitude computation in `GNSSMeas.setup_measurements`
-    /// (`python/pylupnt/measurements/gnss_meas.py`).
+    /// (`projects/Plasmasphere_Delay_Datagen/src/gnss_meas.py`).
     /// @param r_sat_eci Satellite position (ECI or any inertial frame) [m]
     /// @param r_sun_eci Sun position, in the same frame as `r_sat_eci` [m]
     /// @param[out] ex Along-track body axis (unit vector)

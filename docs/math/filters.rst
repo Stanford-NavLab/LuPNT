@@ -49,6 +49,9 @@ The estimation loop alternates ``Predict(t)`` (propagate to :math:`t`) and
 ``GetFilterDynamicsFunction`` / ``GetFilterMeasurementFunction`` using
 autodiff).
 
+The callback typedefs and the shared ``x_`` / ``P_`` / ``F_`` / ``H_`` / ``R_``
+members are declared on the base class ``cpp/lupnt/numerics/filters/filter.h``.
+
 Extended Kalman Filter (EKF)
 -------------------------------------------------------------------
 
@@ -72,6 +75,16 @@ When a process-noise mapping :math:`G` is registered
 :math:`Q \leftarrow G Q G^\mathsf{T}`.  The propagated-only block
 :math:`\bar{P} = F P F^\mathsf{T}` is retained (``GetCovarianceBar``) for
 adaptive process-noise estimation.
+
+Implemented by ``cpp/lupnt/numerics/filters/ekf.cc :: EKF::Predict``:
+
+.. code-block:: cpp
+
+   Q_ = f_proc_(x_, t_, t);
+   if (use_process_noise_mapping_) Q_ = G_ * Q_ * G_.transpose();
+   x_ = f_dyn_(x_, t_, t, u, &F_);
+   P_bar_ = F_ * P_ * F_.transpose();
+   P_ = P_bar_ + Q_;
 
 **Update.**  ``EKF::Update`` linearizes the measurement, forms the innovation
 covariance and residual, rejects outliers, and applies a Joseph-form update:
@@ -99,6 +112,18 @@ covariance and residual, rejects outliers, and applies a Joseph-form update:
 The state-correction covariance :math:`\Sigma_{\delta x} = K S K^\mathsf{T}`
 is recorded.
 
+Implemented by ``cpp/lupnt/numerics/filters/ekf.cc :: EKF::Update``:
+
+.. code-block:: cpp
+
+   z_prior_ = f_meas_(x_, &H_, &R_);
+   S_ = R_ + H_ * P_ * H_.transpose();
+   dz_ = z_true_ - z_prior_;
+   K_ = P_ * H_.transpose() * S_.inverse();
+   dx_ = K_ * dz_;  x_ = x_ + dx_;
+   MatXd G = I - K_ * H_;
+   P_ = G * P_ * G.transpose() + K_ * R_ * K_.transpose();  // Joseph form
+
 **Outlier rejection.**  Before the gain is applied, ``RemoveOutliers`` drops
 any measurement component whose normalized residual exceeds the threshold
 :math:`\tau` (default :math:`3\sigma`),
@@ -113,6 +138,15 @@ shrinking :math:`\delta z, H, R` and recomputing
 :math:`S = H P^- H^\mathsf{T} + R`.  A custom
 ``FaultDetectionFunction`` may replace this default.
 
+Implemented by ``cpp/lupnt/numerics/filters/ekf.cc :: EKF::RemoveOutliers``:
+
+.. code-block:: cpp
+
+   VecXd ratio = dz_.array().abs() / S_.diagonal().array().sqrt();
+   VecXb is_outlier = ratio.array() > outlier_threshold_;
+   // ... drop flagged rows from dz_, H_, R_ ...
+   S_ = H_ * P_prior_ * H_.transpose() + R_;
+
 **Schmidt / consider states.**  ``SetConsiderStateCount(n_c)`` (also exposed
 as ``SchmidtEKF``) marks the trailing :math:`n_c` states as consider
 parameters.  They enter :math:`F`, :math:`H`, :math:`K`, and the covariance
@@ -120,6 +154,15 @@ bookkeeping, but their mean is never corrected: the last :math:`n_c` rows of
 :math:`K` are zeroed before :math:`\delta x = K\,\delta z`.  The Joseph-form
 update remains valid for this non-optimal gain, so their (cross-)covariance
 still updates consistently.
+
+Implemented by the ``n_consider_`` branch of
+``cpp/lupnt/numerics/filters/ekf.cc :: EKF::Update``
+(``SchmidtEKF`` is a thin subclass in ``schmidt_ekf.h``):
+
+.. code-block:: cpp
+
+   if (n_consider_ > 0) K_.bottomRows(n_consider_).setZero();  // never correct consider states
+   dx_ = K_ * dz_;
 
 **RTS smoother.**  With the logged prior/posterior states, covariances, and
 STMs, ``EKF::UpdateSmoother`` runs the standard Rauch-Tung-Striebel backward
@@ -136,6 +179,14 @@ recursion:
 .. math::
 
    P_{k|N} = P_{k|k} + A_k\big(P_{k+1|N} - P_{k+1|k}\big)A_k^\mathsf{T} .
+
+Implemented by ``cpp/lupnt/numerics/filters/ekf.cc :: EKF::UpdateSmoother``:
+
+.. code-block:: cpp
+
+   MatXd A_k = P_kk * stm_k.transpose() * P_k1k.inverse();
+   x_sm_[k] = x_kk + A_k * (x_sm_[k + 1] - x_k1k);
+   P_sm_[k] = P_kk + A_k * (P_sm_[k + 1] - P_k1k) * A_k.transpose();
 
 Unscented Kalman Filter (UKF)
 -------------------------------------------------------------------
@@ -196,6 +247,23 @@ points :math:`\mathcal{Z}_i`, and forms
    \qquad
    P^+ = P^- - K S K^\mathsf{T} .
 
+The weights are set in
+``cpp/lupnt/numerics/filters/ukf.cc :: UKF::InitializeUkfParams``; the sigma
+points in ``UKF::ComputeSigmaPoints``; predict/update in ``UKF::Predict`` /
+``UKF::Update`` (all in ``ukf.cc``, declared in ``ukf.h``):
+
+.. code-block:: cpp
+
+   // InitializeUkfParams
+   lambda_  = alpha_ * alpha_ * (n_x_ + kappa_) - n_x_;
+   w_m_(0)  = lambda_ / (n_x_ + lambda_);
+   w_c_(0)  = lambda_ / (n_x_ + lambda_) + (1.0 - alpha_ * alpha_ + beta_);
+
+   // ComputeSigmaPoints -- columns of chol((n_x_ + lambda_) * cov)
+   MatXd chol_cov = ((n_x_ + lambda_) * cov).llt().matrixL();
+   sigma_points.col(i + 1)        = state + chol_cov.col(i);
+   sigma_points.col(i + 1 + n_x_) = state - chol_cov.col(i);
+
 UD-Factorized Filter (Bierman-Thornton)
 -------------------------------------------------------------------
 
@@ -232,6 +300,19 @@ computed without forming the product (thesis Ch. 6.2.2, Eqs. 6.20-6.23).  The
 process noise :math:`Q` must be diagonal; correlated noise is supplied through
 the mapping matrix :math:`G`.
 
+Implemented by ``cpp/lupnt/numerics/filters/udu_filter.cc :: UDUEKF::Predict``
+(the MWGS itself is ``ModifiedGramSchmidt`` in ``udu_utils.cc``):
+
+.. code-block:: cpp
+
+   MatXd Y = MatXd::Zero(n, n + m);
+   Y.leftCols(n)  = F_ * U_;
+   Y.rightCols(m) = G_;
+   MatXd D_tilde = MatXd::Zero(n + m, n + m);
+   D_tilde.topLeftCorner(n, n)     = D_diag_.asDiagonal();
+   D_tilde.bottomRightCorner(m, m) = Q_;
+   std::tie(D_diag_, U_) = ModifiedGramSchmidt(D_tilde, Y);
+
 **Measurement update (Carlson rank-one).**  Measurements are processed
 sequentially, one scalar component at a time (requiring diagonal :math:`R`).
 For a scalar row :math:`h` with variance :math:`r`, define
@@ -254,6 +335,21 @@ with the Carlson recursion updating the columns of :math:`U` in place and
 accumulating the gain :math:`K = \beta / \alpha_n` (``UDUEKF::CarlsonUpdate``).
 This is the rank-one UD downdate of the thesis (Ch. 6.2.3, Eqs. 6.24-6.27;
 Algorithm 2).
+
+Implemented by
+``cpp/lupnt/numerics/filters/udu_filter.cc :: UDUEKF::CarlsonUpdate``:
+
+.. code-block:: cpp
+
+   VecXd f = U_.transpose() * h;         // f = U^T h
+   VecXd v = D_diag_.asDiagonal() * f;   // v = D f
+   alpha(0) = r;
+   for (int k = 0; k < n; ++k) {
+     alpha(k + 1) = alpha(k) + v(k) * f(k);
+     D_plus(k)    = alpha(k) / alpha(k + 1) * D_diag_(k);
+     // ... rank-one column update of U ...
+   }
+   VecXd k_gain = beta / alpha(n);
 
 Square-Root Information Filter (SRIF)
 -------------------------------------------------------------------
@@ -291,6 +387,18 @@ zeros the bottom-left block; the bottom-right block is the a-priori
 information square root at :math:`t_f`.  The estimate is re-centered on
 :math:`\hat{x}` each step, so the data column is zero.
 
+Implemented by ``cpp/lupnt/numerics/filters/srif.cc :: SRIF::Predict``
+(``QrRFactor`` is the file-local Householder helper):
+
+.. code-block:: cpp
+
+   MatXd RPhiInv = R_info_ * F_.inverse();
+   MatXd A = MatXd::Zero(2 * n, 2 * n);
+   A.topLeftCorner(n, n)     = MatXd::Identity(n, n);
+   A.bottomLeftCorner(n, n)  = -RPhiInv * S;   // Q = S S^T
+   A.bottomRightCorner(n, n) = RPhiInv;
+   R_info_ = QrRFactor(A).bottomRightCorner(n, n);
+
 **Measurement update.**  The rows are whitened by :math:`R^{-1/2}` (with
 :math:`R = L L^\mathsf{T}`, :math:`H_w = L^{-1}H`,
 :math:`\delta z_w = L^{-1}\delta z`) and folded into the information array by
@@ -312,6 +420,18 @@ a QR triangularization
    \qquad
    \hat{x}^+ = \hat{x}^- + \delta x .
 
+Implemented by
+``cpp/lupnt/numerics/filters/srif.cc :: SRIF::InformationUpdate``:
+
+.. code-block:: cpp
+
+   MatXd L = llt.matrixL();                      // R = L L^T
+   MatXd H_w  = L.triangularView<Eigen::Lower>().solve(H_);
+   VecXd dz_w = L.triangularView<Eigen::Lower>().solve(dz_);
+   // QR of [R_info_ 0; H_w dz_w] -> R_hat (top-left), b_hat (top of last col)
+   dx_ = R_info_.triangularView<Eigen::Upper>().solve(b_hat);
+   x_  = x_ + dx_;
+
 Batch Weighted Least Squares
 -------------------------------------------------------------------
 
@@ -332,9 +452,9 @@ constraints are enabled, a soft prior is appended by augmenting
 .. math::
 
    H \leftarrow \begin{bmatrix} H \\ I \end{bmatrix},
-   \quad
+   \qquad
    \delta z \leftarrow \begin{bmatrix} \delta z \\ x_0 - \hat{x} \end{bmatrix},
-   \quad
+   \qquad
    W \leftarrow \operatorname{blkdiag}\!\big(W,\ \operatorname{diag}(1/\sigma_{0}^2)\big) .
 
 Iteration stops when :math:`\|\delta x\| <` ``convergence_tol`` or the
@@ -346,6 +466,22 @@ iteration limit is reached.  The final covariance is the inverse information
    P = \big(H^\mathsf{T} W H\big)^{-1},
    \qquad
    \text{PDOP} = \sqrt{\operatorname{tr}\!\big(P_{[0:3,0:3]}\big)} .
+
+Implemented by
+``cpp/lupnt/numerics/filters/batch_filter.cc :: RunBatchFilter``, with the
+normal-equation solve in ``SolveWeightedLeastSquares``, the soft prior in
+``AddInitializationConstraints``, and the PDOP in ``CalculatePDOP`` (all in
+``batch_filter.cc``):
+
+.. code-block:: cpp
+
+   // SolveWeightedLeastSquares
+   MatXd HTW  = H.transpose() * weights.asDiagonal();
+   return (HTW * H).ldlt().solve(HTW * residuals);   // (H^T W H) dx = H^T W r
+
+   // final covariance -- SVD pseudo-inverse of the measurement information
+   Eigen::JacobiSVD<MatXd> svd(information_matrix, ComputeFullU | ComputeFullV);
+   covariance_matrix = svd.solve(MatXd::Identity(n_state, n_state));
 
 Process-Noise Models
 -------------------------------------------------------------------
@@ -362,6 +498,18 @@ acceleration PSD :math:`q_a` [:math:`\mathrm{m}^2/\mathrm{s}^3`],
      \tfrac{\Delta t^3}{3}\, I_3 & \tfrac{\Delta t^2}{2}\, I_3 \\[4pt]
      \tfrac{\Delta t^2}{2}\, I_3 & \Delta t\, I_3
    \end{bmatrix}.
+
+Implemented by
+``cpp/lupnt/numerics/filters/srif.cc :: CwnaProcessNoise``:
+
+.. code-block:: cpp
+
+   const double q3 = accel_psd * dt * dt * dt / 3.0;
+   const double q2 = accel_psd * dt * dt / 2.0;
+   const double q1 = accel_psd * dt;
+   for (int k = 0; k < 3; ++k) {
+     Q(k, k) = q3;  Q(k, k + 3) = q2;  Q(k + 3, k) = q2;  Q(k + 3, k + 3) = q1;
+   }
 
 **Clock two- and three-state noise.**  ``ClockDynamics`` propagates a clock
 error state with the polynomial transition matrices
@@ -414,6 +562,23 @@ noise of the thesis (Ch. 6.1.2, Eq. 6.6), whose diffusion coefficients
 :math:`q_1, q_2, q_3` correspond to phase, frequency, and frequency-drift
 (aging) noise.
 
+Implemented in ``cpp/lupnt/dynamics/clock_dynamics.cc``:
+``ClockDynamics::GetClockValues`` (the per-oscillator PSDs),
+``ClockDynamics::TwoStatePhi`` / ``ThreeStatePhi`` (the :math:`\Phi` above), and
+``ClockDynamics::TwoStateNoise`` / ``ThreeStateNoise`` (the :math:`Q` above,
+with the bias-unit overload applying :math:`\sigma^2`):
+
+.. code-block:: cpp
+
+   // ThreeStateNoise
+   Q(0, 0) = q1 * dt + q2 * dt3 / 3 + q3 * dt5 / 20.0;
+   Q(0, 1) = q2 * dt2 / 2.0 + q3 * dt4 / 8.0;   Q(0, 2) = q3 * dt3 / 6.0;
+   Q(1, 1) = q2 * dt + q3 * dt3 / 3.0;          Q(1, 2) = q3 * dt2 / 2.0;
+   Q(2, 2) = q3 * dt;   // (lower triangle mirrored)
+
+   // bias-unit overload: Q_unit = sigma^2 Q,  sigma = SecondsToBiasUnitScale(unit)
+   return ThreeStateNoise(clk_model, dt) * scale * scale;
+
 **Adaptive process noise.**  ``ProcessNoise`` implements a sliding-window
 adaptive scheme (``ProcessNoiseAlgorithm`` :math:`\in`
 :math:`\{\text{SNC}, \text{ASNC}, \text{ADMC}\}`) that re-estimates the
@@ -422,6 +587,12 @@ acceleration-noise level from the recent history of state corrections
 propagated/posterior covariances :math:`\bar{P}, P^+`, clamped to configured
 :math:`[\sigma_\text{min}^2, \sigma_\text{max}^2]` limits.  It is consumed as
 a ``ProcessNoiseFunction`` via ``GetProcessNoiseFunction``.
+
+Implemented by ``cpp/lupnt/numerics/filters/adaptive_process_noise.cc`` (class
+``ProcessNoise``, declared in ``adaptive_process_noise.h``); the per-step
+history :math:`(\delta x, \Sigma_{\delta x}, \bar P, P^+)` is fed in through
+``ProcessNoise::Update`` and the estimate is exposed via
+``ProcessNoise::GetProcessNoiseFunction``.
 
 Stochastic-Cloning UD Filter and Smoother
 -------------------------------------------------------------------
@@ -446,7 +617,7 @@ The augmented state and its UD-factored, time-propagated covariance are
        \mathbf{G}_k & \boldsymbol{\Phi}_{k,k-1}\hat{\mathbf{U}}_{k-1|k-1} \\
        \mathbf{0} & \hat{\mathbf{U}}_{k-1|k-1}
      \end{bmatrix},
-   \quad
+   \qquad
    \hat{\mathbf{D}}^{\mathrm{sc}}_{k|k-1}
    = \begin{bmatrix}
        \mathbf{Q}^D_k & \mathbf{0} \\
@@ -460,6 +631,19 @@ In LuPNT the augmented STM is
 and the Thornton MWGS time update acts on the current block only (process
 noise mapped through the base :math:`G`).
 
+Implemented by
+``cpp/lupnt/numerics/filters/udu_filter.cc :: UDUStochasticCloningEKF::Predict``
+(augmented STM assembly and the current-block-only MWGS):
+
+.. code-block:: cpp
+
+   F_.topLeftCorner(n, n)    = F_base;                 // [ F_base 0 ]
+   F_.bottomLeftCorner(n, n) = MatXd::Identity(n, n);  // [ I      0 ]
+   MatXd E = MatXd::Zero(n2, m);  E.topRows(n) = G_;   // noise on current block only
+   MatXd Y = MatXd::Zero(n2, n2 + m);
+   Y.leftCols(n2) = F_ * U_;  Y.rightCols(m) = E;
+   std::tie(D_diag_, U_) = ModifiedGramSchmidt(D_tilde, Y);
+
 The measurement Jacobian with respect to the augmented state splits into
 current- and cloned-state parts (thesis Eq. 6.25),
 
@@ -469,7 +653,7 @@ current- and cloned-state parts (thesis Eq. 6.25),
    = \begin{bmatrix} \mathbf{H}^{(1)}_{k,m} & \mathbf{H}^{(2)}_{k,m} \end{bmatrix},
    \qquad
    \mathbf{H}^{(1)}_{k,m} = \frac{\partial h}{\partial \mathbf{X}_k},
-   \quad
+   \qquad
    \mathbf{H}^{(2)}_{k,m} = \frac{\partial h}{\partial \mathbf{X}_{k-1}} ,
 
 with :math:`\mathbf{H}^{(2)} = \mathbf{0}` for current-state-only

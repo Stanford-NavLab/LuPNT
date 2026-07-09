@@ -39,6 +39,12 @@ unit, frame, and epoch conventions are those of the calling dynamics model
 (see :doc:`dynamics`).  The independent variable :math:`t` is in seconds and
 the step size :math:`h` is signed by the propagation direction.
 
+The ``ODE`` typedef is declared in ``cpp/lupnt/numerics/integrator.h``:
+
+.. code-block:: cpp
+
+   using ODE = std::function<VecX(Real, const State&)>;
+
 Integrator Selection
 -------------------------------------------------------------------
 
@@ -53,6 +59,19 @@ model's ``SetIntegrator``:
 ``RK4`` and ``RK8`` are fixed-step methods; ``RKF45`` (an ``IRKF``) and
 ``PD45`` are embedded, adaptive-step methods.  The default is
 ``IntegratorType::RK4``.
+
+Implemented by
+``cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: NumericalDynamics::SetIntegrator``
+(default ``default_integrator = IntegratorType::RK4`` in ``integrator.h``):
+
+.. code-block:: cpp
+
+   void NumericalDynamics::SetIntegrator(IntegratorType integ) {
+     if (integ == IntegratorType::RK4)        integrator_ = MakeUnique<RK4>();
+     else if (integ == IntegratorType::RK8)   integrator_ = MakeUnique<RK8>();
+     else if (integ == IntegratorType::RKF45) integrator_ = MakeUnique<RKF45>();
+     else if (integ == IntegratorType::PD45)  integrator_ = MakeUnique<PD45>();
+   }
 
 Fixed-Step Runge-Kutta Contract
 -------------------------------------------------------------------
@@ -89,6 +108,17 @@ In the LuPNT source the stage derivatives are stored pre-scaled by :math:`h`
    k_3 = h f\!\left(t+\tfrac{h}{2}, x+\tfrac{k_2}{2}\right),\quad
    k_4 = h f(t+h, x+k_3).
 
+Implemented by ``cpp/lupnt/numerics/integrator.cc :: RK4::Step``:
+
+.. code-block:: cpp
+
+   State k_1 = f(t, x) * dt;
+   State k_2 = f(t + dt / 2.0, x + k_1 / 2.0) * dt;
+   State k_3 = f(t + dt / 2.0, x + k_2 / 2.0) * dt;
+   State k_4 = f(t + dt,       x + k_3)       * dt;
+   State dx  = (k_1 + k_2 * 2.0 + k_3 * 2.0 + k_4) / 6.0;
+   return x + dx;
+
 **RK8** is a fixed-step 10-stage, 8th-order Runge-Kutta method
 (Cooper-Verner-type coefficients).  The stage nodes are
 :math:`c = [0,\tfrac{4}{27},\tfrac{2}{9},\tfrac{1}{3},\tfrac12,\tfrac23,
@@ -103,6 +133,15 @@ In the LuPNT source the stage derivatives are stored pre-scaled by :math:`h`
 
 with the intermediate stage coefficients as tabulated in ``RK8::Step``.  Only
 the constants that appear in the source are contractual.
+
+Implemented by ``cpp/lupnt/numerics/integrator.cc :: RK8::Step``; the final
+combination is:
+
+.. code-block:: cpp
+
+   State dx
+       = (41 * k_1 + 27 * k_4 + 272 * k_5 + 27 * k_6 + 216 * k_7 + 216 * k_9 + 41 * k_10) / 840;
+   return x + dx;
 
 Propagation Loop
 -------------------------------------------------------------------
@@ -125,6 +164,23 @@ Propagation Loop
 
 and :math:`\mathrm{d}t` is treated as a magnitude.  A zero span
 (:math:`t_f = t_0`) returns immediately.
+
+Implemented by
+``cpp/lupnt/numerics/integrator.cc :: Integrator::Propagate`` and
+``cpp/lupnt/numerics/integrator.cc :: Integrator::PropagateEx``:
+
+.. code-block:: cpp
+
+   // Integrator::Propagate -- clamp to land exactly on tf
+   while (t < tf) {
+     dt = std::min(dt, tf - t);
+     Real prev_dt = dt;
+     x = Step(odefunc, t, x, dt);
+     t += prev_dt;
+   }
+
+   // Integrator::PropagateEx -- signed step (dir = sign(tf - t0))
+   Real h = dir * std::min(std::abs(dt.val()), std::abs((tf - t).val()));
 
 Adaptive Step-Size Contract (Embedded RKF)
 -------------------------------------------------------------------
@@ -165,6 +221,21 @@ so the step may grow or shrink by at most a factor of two per attempt.
 ``IRKF::Step`` retries up to ``IntegratorParams::max_iter`` times and returns
 the low-order solution; failing to converge throws.
 
+The retry loop is
+``cpp/lupnt/numerics/integrator.cc :: IRKF::Step`` and the acceptance test /
+PI controller is
+``cpp/lupnt/numerics/integrator.cc :: IRKF::ComputeRelError``:
+
+.. code-block:: cpp
+
+   // IRKF::ComputeRelError -- Butcher acceptance threshold + factor-of-two clamp
+   double accept_thresh = std::pow(order_ + 1, (order_ + 1) / order_);
+   tol       = max(params_.reltol * abs(x_new_high(i)), params_.abstol);
+   max_error = std::max(max_error, error / tol);
+   double s  = 0.9 * std::pow(1.0 / max_error, 1.0 / (order_ + 1));
+   s  = std::max(0.5, std::min(2.0, s));
+   dt = s * dt;
+
 **RKF45** (``IRKF(4)``) is the 6-stage Fehlberg 4(5) pair.  With the stored,
 :math:`h`-scaled stages :math:`k_1,\dots,k_6`, the two embedded solutions are
 
@@ -182,6 +253,15 @@ the low-order solution; failing to converge throws.
 
 with stage nodes :math:`c = [0,\tfrac14,\tfrac38,\tfrac{12}{13},1,\tfrac12]`
 and the Fehlberg :math:`a_{ij}` as coded in ``RKF45::Update``.
+
+Implemented by ``cpp/lupnt/numerics/integrator.cc :: RKF45::Update``:
+
+.. code-block:: cpp
+
+   x_new_low  = x + k1 * (25.0 / 216.0)  + k3 * (1408.0 / 2565.0)
+                  + k4 * (2197.0 / 4104.0) - k5 * (1.0 / 5.0);
+   x_new_high = x + k1 * (16.0 / 135.0)  + k3 * (6656.0 / 12825.0)
+                  + k4 * (28561.0 / 56430.0) - k5 * (9.0 / 50.0) + k6 * (2.0 / 55.0);
 
 Adaptive Step-Size Contract (Dormand-Prince)
 -------------------------------------------------------------------
@@ -216,6 +296,18 @@ The step is accepted when :math:`E \le 1` (returning the high-order solution
 and retried, up to ``max_iter`` attempts.  The step throws if
 :math:`|\mathrm{d}t| < 10^{-3}` or the iteration limit is exceeded.
 
+Implemented by ``cpp/lupnt/numerics/integrator.cc :: PD45::Step`` (tableau
+constants ``PD45::A_`` / ``PD45::b_`` / ``PD45::b_star_``):
+
+.. code-block:: cpp
+
+   for (int i = 0; i < stages; ++i) { y_high += b_[i] * k[i]; y_low += b_star_[i] * k[i]; }
+   State scale = (Real(params_.abstol) + params_.reltol * x.cwiseAbs().array()).matrix();
+   Real error_norm = (error_vec.cwiseQuotient(scale)).norm() / std::sqrt(x.size());
+   if (error_norm <= 1.0) { t += dt; return y_high; }             // accept
+   double factor = std::pow(safety / error_norm.val(), 0.25);
+   dt *= std::max(factor, 0.1);                                    // reject, shrink
+
 .. note::
 
    ``PD45::Step`` evaluates each stage time as :math:`t + a_{i0}\,h` (the
@@ -240,6 +332,10 @@ tolerances and limits, all required positive:
 It also holds an optional early-termination predicate
 :math:`\texttt{terminate\_if}(t, x) \to \{\text{true},\text{false}\}`.
 
+Defined in ``cpp/lupnt/numerics/integrator.h :: IntegratorParams`` (defaults
+``max_iter = 20``, ``abstol = reltol = 1e-6``); validated by
+``cpp/lupnt/numerics/integrator.cc :: IntegratorParams::CheckIntegratorParams``.
+
 Termination Semantics
 -------------------------------------------------------------------
 
@@ -257,6 +353,17 @@ once before stepping and again after every accepted step; the run stops with
 
 ``steps`` counts the accepted integration steps taken.
 
+Implemented by
+``cpp/lupnt/numerics/integrator.cc :: Integrator::PropagateEx`` (predicate
+checked before the loop and after each ``Step``):
+
+.. code-block:: cpp
+
+   if (params_.terminate_if && params_.terminate_if(t, x))
+     return {x, t, TerminationReason::UserCondition, steps};
+   // ... after each accepted Step(...) ++steps; re-check terminate_if ...
+   return {x, t, TerminationReason::ReachedTf, steps};
+
 State-Transition (Sensitivity) Matrix Propagation
 -------------------------------------------------------------------
 
@@ -267,12 +374,30 @@ The sensitivity-matrix overloads
 
    J = \frac{\partial x(t_f)}{\partial x(t_0)}
 
-by **parallel finite differences** (``JacobianParallel``): the nominal
-trajectory is re-propagated for perturbed initial states and the columns of
-:math:`J` are assembled from the differences.  This is a finite-difference
-sensitivity, not an augmented variational integration; the ordering of rows
-and columns of :math:`J` matches the state ordering of :math:`x`.  When ``J``
-is ``nullptr`` the Jacobian computation is skipped.
+by **column-parallel forward-mode automatic differentiation**
+(``JacobianParallel``): the re-propagation function is differentiated one input
+component at a time, with the columns distributed across cores by OpenMP (see
+:doc:`autodiff`).  This is exact AD carried through the integration in ``Real``
+arithmetic -- not a finite-difference approximation and not an augmented
+variational integration; the ordering of rows and columns of :math:`J` matches
+the state ordering of :math:`x`.  When ``J`` is ``nullptr`` the Jacobian
+computation is skipped.
+
+Implemented by
+``cpp/lupnt/numerics/integrator.cc :: Integrator::Propagate`` (the ``MatXd* J``
+overload), which forwards a re-propagation closure to
+``cpp/lupnt/numerics/math_utils.cc :: JacobianParallel``:
+
+.. code-block:: cpp
+
+   // Integrator::Propagate(..., MatXd* J)
+   auto func = [=, this](const State& x) { return Propagate(odefunc, t0, tf, x, dt); };
+   State xf = (J != nullptr) ? JacobianParallel(func, x0, *J) : func(x0);
+
+   // JacobianParallel -- one autodiff column per state, OpenMP-parallel
+   #pragma omp parallel for
+   for (int i = 0; i < n; i++)
+     jacobian(func, wrt(x0_tmp(i)), at(x0_tmp), xi, Ji);
 
 .. note::
 

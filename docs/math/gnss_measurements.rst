@@ -245,39 +245,19 @@ meters:
 
 It is disabled by default.  When
 ``options.apply_ionosphere_plasma_delay`` is true, the delay is supplied by one
-of:
-
-* ``SetCustomIonospherePlasmaDelayModel`` for a custom online link-by-link
-  model.
-* ``SetIonospherePlasmaRayTraceOptions`` for built-in link-by-link evaluation
-  with the plasma ray tracer in ``environment/plasma/tec/raytrace``.
-* ``SetBatchCustomIonospherePlasmaDelayModel`` for a custom precompute model
-  over all epochs and all channels.
-* ``options.default_ionosphere_plasma_delay_m`` when no provider is installed.
-
-The built-in raytrace option calls ``pecsim::trace_ray`` directly.  The caller
-must supply the ``pecsim::RayTraceConfig`` and, when desired, the IRI model
-selection; ``GNSSMeasurements`` does not choose Kp, step size, integrator,
-correction method, cutoff radius, or GCPM/IRI settings.  The GNSS channel
-frequency is copied into ``RayTraceConfig::freq_Hz`` by default, but this can
-be disabled through ``use_channel_frequency``.  Receiver and transmitter
-positions are converted from ``options.frame`` to
-``GnssIonospherePlasmaRayTraceOptions::raytrace_frame`` before tracing, and
-the receive epoch is converted from ``options.receive_time_scale`` to
-``raytrace_epoch_scale``.
-
-The raytracer returns a path profile.  The GNSS measurement uses
-``PathProfile::tec_delay_m`` by default:
+of ``SetCustomIonospherePlasmaDelayModel`` (custom online link-by-link),
+``SetIonospherePlasmaRayTraceOptions`` (built-in plasma ray tracer in
+``environment/plasma/tec/raytrace``), ``SetBatchCustomIonospherePlasmaDelayModel``
+(precompute over all epochs/channels), or the static
+``options.default_ionosphere_plasma_delay_m``.  The ray-traced TEC delay uses
 
 .. math::
 
    \Delta \rho_\mathrm{plasma}
-      = \frac{40.3}{f^2}\int_\Gamma n_e \, ds .
+      = \frac{40.3}{f^2}\int_\Gamma n_e \, ds ,
 
-When ``delay_mode`` is ``TEC_PLUS_HIGHER_ORDER``, the second- and third-order
-terms reported by the raytracer are added to this code delay.
-
-The sign convention is dispersive:
+and the full electron-density / ray-bending model is specified in
+:doc:`ionosphere_plasmasphere`.  The sign convention is dispersive:
 
 .. math::
 
@@ -400,37 +380,205 @@ occlusion test.  C/N0 thresholding is then optionally applied:
 
    C/N_0 > (C/N_0)_\mathrm{min}.
 
-Noise and Covariance
+The geometric visibility test and its two regimes are specified in
+:doc:`link_budget` (``ComputeVisibility``).
+
+Link Budget and C/N0
 -------------------------------------------------------------------
 
-For each selected channel, the measurement covariance is diagonal in the
-current implementation:
+For each surviving channel, ``GNSSMeasurements::ComputeCN0``
+(``cpp/lupnt/measurements/gnss_measurement.cc :: ComputeCN0``) evaluates the
+received carrier-to-noise density in dB-Hz.  The link-budget equation and the
+free-space path-loss, EIRP, gain-pattern, and tracking-loop-noise details are
+specified in full in :doc:`link_budget`; this section covers only
+how the *variables that feed the budget* are computed inside the GNSS model.
+
+.. code-block:: cpp
+
+   GnssAttitude::Compute(r_tx_gcrf, v_tx_gcrf, r_sun_gcrf, ex, ey, ez);
+   Real phi_tx   = safe_acos(u_tx2rx_gcrf.dot(ez));
+   Real theta_tx = atan2(u_tx2rx_gcrf.dot(ey), u_tx2rx_gcrf.dot(ex));
+   Real G_tx = constellation->GetTransmitterAntenna(prn, freq)
+                   .ComputeGain(theta_tx, phi_tx);
+   Real G_rx = rx_antenna_.ComputeGain(0.0, phi_rx);
+   Real P_tx = constellation->GetTransmitPowerDbw(prn, freq);
+   return LinkBudget(P_tx, G_tx, G_rx, range, freq, rx_params_);
+
+In closed form (thesis Eq. 6.59),
 
 .. math::
 
-   R =
-   \operatorname{diag}
-   \left(
-     \sigma_P^2,
-     \sigma_D^2,
-     \sigma_\Phi^2
-   \right),
+   \left(C/N_0\right)_\mathrm{dB\text{-}Hz}
+   =
+   P_\mathrm{tx}
+   + G_\mathrm{tx}(\theta_\mathrm{tx}, \varphi_\mathrm{tx})
+   + G_\mathrm{rx}(\theta_\mathrm{rx})
+   - L_\mathrm{fs}
+   - L_\mathrm{atm}
+   - L_\mathrm{ad}
+   - L_\mathrm{pol}
+   - 10\log_{10}(k_B)
+   - 10\log_{10}(T_\mathrm{eff}).
 
-using the subset and order requested by ``options.observables``.
+Transmitter Attitude and Yaw Steering
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When C/N0 is finite, the tracking-loop noise models provide:
+The transmit gain :math:`G_\mathrm{tx}` is looked up in the GNSS satellite's
+yaw-steering body frame, computed by ``GnssAttitude::Compute``
+(``cpp/lupnt/agents/gnss_attitude.cc``).  ``ComputeCN0`` first transforms the
+transmitter state, receiver position, and Sun position from ``options.frame``
+into ``Frame::GCRF`` before building the attitude, so the gain pattern is
+evaluated in the same Earth-centered inertial frame the ANTEX data assume.
+The orthonormal triad is
 
 .. math::
 
-   \sigma_P \quad [\mathrm{m}],
-   \qquad
-   \sigma_D \quad [\mathrm{Hz}],
-   \qquad
-   \sigma_\Phi \quad [\mathrm{cycles}].
+   e_z = \widehat{-r_S}\ (\text{nadir/boresight}),
+   \quad
+   e_y = \widehat{e_z \times \widehat{(r_\odot - r_S)}}\ (\text{Sun side}),
+   \quad
+   e_x = \widehat{e_y \times e_z},
 
-If a channel does not have a finite positive standard deviation for an
-observable, the filter wrapper uses a fallback standard deviation of ``1`` in
-that observable's native unit.
+and the boresight angles of the transmitter-to-receiver line of sight
+:math:`\hat{u}` are
+
+.. math::
+
+   \varphi_\mathrm{tx} = \cos^{-1}\!\big(\hat{u}^\mathsf{T} e_z\big),
+   \qquad
+   \theta_\mathrm{tx}
+   = \operatorname{atan2}\!\big(\hat{u}^\mathsf{T} e_y,\ \hat{u}^\mathsf{T} e_x\big).
+
+The velocity-aware overload derives this same frame from the documented
+**nominal yaw-steering law** (``cpp/lupnt/agents/gnss_yaw_steering.cc ::
+NominalYawAngle``, Cheng et al. 2025, Eq. 1):
+
+.. code-block:: cpp
+
+   Real GnssYawSteering::NominalYawAngle(Real beta, Real mu) {
+     return atan2(-tan(beta), sin(mu));            // Eq. (1)
+   }
+
+with :math:`\beta` the Sun elevation above the orbital plane
+(``BetaAngle``) and :math:`\mu` the orbit angle from the midnight point
+(``OrbitAngle``).  ``GnssYawSteering`` additionally provides the block-specific
+maneuver laws (GPS IIF/IIR/III, Galileo IOV/FOC, BDS-3 CAST/SECM; Eqs. 3-16)
+as stateless building blocks, but ``ComputeCN0`` uses only the nominal frame,
+matching the thesis assumption (Chapter 6.4.3) of nominal yaw steering with
+boresight along the spacecraft-Earth direction and eclipse steering left as
+future work.
+
+Antenna Gain Patterns (ANTEX / ACE)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The gains are table lookups into measured patterns,
+``Antenna::ComputeGain`` (``cpp/lupnt/measurements/antenna.cc``), over the
+off-boresight angle :math:`\varphi` and azimuth :math:`\theta`:
+
+.. code-block:: cpp
+
+   Real gain = LinearInterp2d(phi_, theta_, gain_, phi, theta);   // 2D pattern
+   if (phi > phi_max_ || phi < -phi_max_) return NAN;             // sidelobe cutoff
+
+Patterns are read by ``Antenna::LoadAntennaPattern`` from named data files and
+normalized to :math:`\varphi\in[-180,180]^\circ`,
+:math:`\theta\in[0,360]^\circ` by ``FormatAntennaPattern``.  Per the thesis
+(Chapter 6.4.3), the transmit patterns are populated from the NASA antenna
+characterization experiment (ACE) study for GPS Block II-F, Lockheed-Martin
+data for Block IIR/IIR-M, the U.S. Coast Guard Navigation Center for
+Block III, the EU Publications Office for Galileo, and the Cabinet Office of
+Japan for QZSS; the lunar receive antenna has a peak gain of 14 dBi with a
+:math:`12.2^\circ` half-power beamwidth.  The transmit power values
+:math:`P_\mathrm{tx}` (thesis Table 6.3) are supplied separately by
+``GnssConstellation::GetTransmitPowerDbw``.  An empty antenna name gives an
+omni pattern (:math:`G\equiv 0`), and off-pattern directions return ``NaN``,
+which acts as an implicit sidelobe cutoff.
+
+The Python-side pattern loader is
+``python/pylupnt/interfaces/antex_file_loader.py`` (``ANTEXLoader``); the C++
+counterpart ``cpp/lupnt/interfaces/antex_loader.{h,cc}`` (``AntexLoader``)
+parses the same IGS ANTEX (``.atx``) files but exposes the antenna
+phase-center offsets (see below) rather than the gain pattern.
+
+Precise (SP3) and Broadcast (BRDC) Ephemeris
+-------------------------------------------------------------------
+
+``GnssConstellation`` consumes *precomputed* transmitter ephemerides (ECI
+position/velocity history per PRN) fit with a piecewise Chebyshev model.
+Those ephemerides are produced by one of two loaders, which differ in how the
+transmitter position, velocity, and clock are obtained.
+
+Precise SP3 ephemeris
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``cpp/lupnt/interfaces/sp3_loader.{h,cc}`` (``Sp3Loader``, the C++ counterpart
+of ``pylupnt.interfaces.gnss_file_loader.SP3Loader``) parses IGS SP3
+precise-ephemeris files.  SP3 tabulates satellite **center-of-mass** ECEF
+positions and clock bias at a fixed cadence; ``Sp3Loader::GetPosVelClock``
+returns an interpolated position/velocity/clock from a per-satellite
+piecewise Chebyshev fit, with velocity taken as the analytic derivative of the
+fitted position polynomial:
+
+.. code-block:: cpp
+
+   void Sp3Loader::GetPosVelClock(const std::string& sat_id, Real t_tai,
+                                  Vec6& rv_ecef, Real& clock_bias_s) const;
+
+Because SP3 positions are referred to the center of mass, the antenna
+**phase-center offset** (PCO) must be added to place the transmit point at the
+antenna.  ``cpp/lupnt/interfaces/antex_loader.{h,cc}`` (``AntexLoader``)
+supplies the PCO in the satellite North/East/Up frame and applies it via the
+satellite "IJK" rotation:
+
+.. math::
+
+   r_\mathrm{ant}^\mathrm{ecef}
+   =
+   r_\mathrm{CoM}^\mathrm{ecef}
+   +
+   C_{ijk}(t, r_\mathrm{CoM}^\mathrm{ecef})\,\Delta_\mathrm{PCO}^\mathrm{NEU},
+
+.. code-block:: cpp
+
+   static Vec3d AntexLoader::ApplyPcoCorrectionEcef(
+       Real t_tai, const Vec3d& pos_sp3_ecef, const Vec3d& pco_neu_m);
+
+.. note::
+
+   The PCO "IJK" triad ``AntexLoader::ComputeIjkToEcefRotation``
+   (``jvec = normalize(r_sun - r_sat)``, ``kvec = -normalize(r_sat)``,
+   ``ivec = jvec x kvec``) is intentionally the *raw, un-orthogonalized*
+   Sun-pointing frame used to generate the precomputed PCO-corrected
+   ephemerides.  It is deliberately distinct from the orthonormal
+   ``GnssAttitude`` body frame used for gain-pattern lookups; the two must not
+   be conflated.
+
+Broadcast BRDC ephemeris
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``cpp/lupnt/interfaces/rinex_nav_loader.{h,cc}`` (``RinexNavLoader``, the C++
+counterpart of ``BRDCLoader``) parses RINEX V3 navigation ("BRDC") files and
+evaluates the transmitter state by **Keplerian propagation of the broadcast
+navigation message** nearest the requested epoch (GPS / Galileo / BeiDou /
+QZSS; GLONASS, which uses tabulated state vectors, is intentionally
+unsupported).  Broadcast ephemerides carry the real-time signal-in-space error
+(position and clock) relative to the precise product, and are used to inject
+realistic ephemeris/clock modeling errors into the measurement truth.  The
+LunaNet-style broadcast-message generation on the transmit side lives in
+``cpp/lupnt/applications/lunanet_ephemeris.*`` and ``ephemeris_gen_app.*``
+(specified in :doc:`ephemeris_almanac`).
+
+.. note::
+
+   The thesis (Chapter 6.4.2 / 6.5.2) treats the antenna-phase-center-corrected
+   IGS precise (SP3) product as truth and derives per-satellite ephemeris
+   errors by differencing the broadcast (BRDC) position/clock against it; a
+   per-constellation median clock-bias offset (thesis Eq. 6.58) is removed to
+   absorb the broadcast/precise time-reference difference.  In LuPNT, the
+   ``RinexNavLoader`` omits the Galileo-specific GST/GPST ("GAGP")
+   system-time-correction term; this affects only the satellite *clock*
+   (sub-100 ns, i.e. sub-30 m range-equivalent) and has no effect on the
+   broadcast position or velocity.
 
 Jacobian Convention
 -------------------------------------------------------------------
@@ -500,46 +648,24 @@ state are not included in the current analytic Jacobian.
 Online and Precompute Equivalence
 -------------------------------------------------------------------
 
-The online path computes
-
-.. math::
-
-   \mathcal{Y}(t_i, x_i)
-   =
-   \operatorname{Compute}(t_i, x_i)
-
-one epoch at a time.
-
-The precompute path computes the same measurement epochs for vectors
-``receive_times`` and ``user_states``:
-
-.. math::
-
-   \left\{
-     \mathcal{Y}(t_i, x_i)
-   \right\}_{i=0}^{M-1}.
-
-When a batch ionosphere/plasma provider is configured, precompute first builds
-all light-time-corrected channels without running the online plasma model:
-
-.. math::
-
-   \mathcal{C}_{ij}
-   =
-   \operatorname{BuildChannel}(t_i, x_i, \mathrm{PRN}_j),
-
-then calls the batch provider to fill
+The online path computes :math:`\mathcal{Y}(t_i, x_i) =
+\operatorname{Compute}(t_i, x_i)` one epoch at a time.  The precompute path
+computes the same measurement epochs for vectors ``receive_times`` and
+``user_states``.  When a batch ionosphere/plasma provider is configured,
+precompute first builds all light-time-corrected channels without running the
+online plasma model, then calls the batch provider to fill
 :math:`\Delta \rho_{\mathrm{plasma},ij}` for each epoch/channel before
 evaluating the observables.  This keeps visibility, light-time, transmitter
-clock terms, and batch plasma simulation ordered explicitly, and it avoids
-doing an online raytrace that would be overwritten by the batch result.
+clock terms, and batch plasma simulation ordered explicitly, and avoids an
+online raytrace that would be overwritten by the batch result.
 
 In the staged Lunar GNSS ODTS scenario, this contract is implemented with an
 explicit file boundary: ``LunarGnssODTSSimulation::Precompute`` writes all
 light-time-corrected links with zero plasma delay, ``precompute_delays.py``
-fills the delay terms with GCPM/IRI ray tracing, and
-``LunarGnssODTSSimulation::Run`` merges the delay file back into the truth
-channels before generating pseudorange, Doppler, and optional TDCP
-measurements. TDCP is represented as a carrier-range difference in meters and
-is processed by the UDU stochastic-cloning filter because its measurement model
-depends on both the current and previous receiver state.
+fills the delay terms with GCPM/IRI ray tracing (see
+:doc:`ionosphere_plasmasphere`), and ``LunarGnssODTSSimulation::Run`` merges the
+delay file back into the truth channels before generating pseudorange,
+Doppler, and optional TDCP measurements. TDCP is represented as a carrier-range
+difference in meters and is processed by the UDU stochastic-cloning filter
+because its measurement model depends on both the current and previous receiver
+state.

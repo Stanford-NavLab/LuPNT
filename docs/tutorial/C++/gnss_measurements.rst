@@ -135,8 +135,8 @@ does not pick Kp, step size, cutoff radius, integrator, or correction policy.
 
 For cislunar GNSS filtering runs, the recommended high-throughput workflow is
 to precompute all receiver-specific links first, then run the expensive
-GCPM/IRI delay calculation as a separate Python multiprocessing step. See
-:doc:`../../projects/gnss_filtering_pipeline` for the full staged pipeline.
+GCPM/IRI delay calculation as a separate Python multiprocessing step (the
+Precompute Flow below).
 
 Precompute Flow
 -------------------------------------------------------------------

@@ -4,13 +4,36 @@ Math Specifications
 This section records the mathematical contracts used by LuPNT models.  The
 goal is to make each model's state conventions, units, time scales, optional
 corrections, and observable equations explicit enough that implementations can
-be tested against the same specification.
+be tested against the same specification.  Each page ties its algorithms to
+the implementing C++/Python code.
 
 .. toctree::
    :maxdepth: 1
+   :caption: Fundamentals
 
+   time_conversions
+   frame_conversions
    dynamics
    integration
+   autodiff
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Estimation
+
    filters
-   frame_conversions
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Measurements & Signals
+
    gnss_measurements
+   link_budget
+   ionosphere_plasmasphere
+   measurements
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Navigation Message Design
+
+   ephemeris_almanac

@@ -192,6 +192,32 @@ filter predict (using the ``Dynamics`` / ``JointState`` STM) and update. Results
 are logged through ``Application::Log`` ← ``Agent::Log``. Periodic events
 reschedule themselves.
 
+As pseudocode, the engine loop (``Simulation::Run``) and a periodic navigation
+``Application::Step`` are:
+
+.. code-block:: text
+
+   # Simulation::Run  (simulations/simulation.cc)
+   while queue not empty and queue.top().time <= duration:
+       e = queue.pop()                       # earliest time, then highest priority
+       time = e.time
+       e.callback(time)                      # Agent/Device/Application Step, or a Publish
+       if e.frequency > 0:                   # periodic -> reschedule
+           queue.push(Event(time + 1/e.frequency, e.frequency, e.priority, e.callback))
+   DataLogger::Flush()
+
+   # AgentWithDynamics::Step(t)   (priority DYNAMICS) — advance the truth state
+   state_, attitude_ = dynamics_.Propagate(state_, time_, t, control_)
+   time_ = t;  Log(t)
+
+   # A navigation Application::Step(t)   (priority APPLICATION)
+   for tx in visible_transmitters(t):        # geometry via tx.GetStateAt(t)
+       z, H, R = measurement(tx, receiver=agent_).Compute(x_hat, &H)   # h(x), Jacobian, noise
+       stack z, H, R
+   filter.Predict(t)                         # x_hat, P via Dynamics/JointState STM + process noise
+   filter.Update(z, H, R)                    # innovation, gain, covariance update
+   Log(t)
+
 Configuration and the asset factory
 -----------------------------------
 
@@ -271,6 +297,44 @@ Use this when the scenario fits the agent model. **Template:**
    implement ``GetStateAt``, optionally override ``Propagate`` / ``Setup``;
    ``REGISTER_FACTORY_CLASS(Agent, MyAgent)``. Reference: ``agents/satellite.cc``,
    ``agents/rover.cc``.
+
+The skeleton of the two most common extensions — a new ``Application`` and a new
+``Measurement`` — is:
+
+.. code-block:: cpp
+
+   // --- A new navigation application ---------------------------------------
+   class MyOdtsApp : public Application {
+    public:
+     MyOdtsApp(Config& cfg) : Application(cfg) {
+       target_ = cfg["target"].as<std::string>();      // agent name to track
+       sigma_  = cfg["range_sigma_m"].as<double>();
+     }
+     void Setup() override {
+       Application::Setup();                            // schedules Step at frequency_
+       target_agent_ = GetAgent()->GetSimulation()->GetAgent(target_);
+       // seed filter_ state x_hat_ and covariance P_ here
+     }
+     void Step(Real t) override {
+       Cart6 x_tx = target_agent_->GetStateAt(t);       // truth geometry
+       MatXd H; MyMeasurement meas(BuildConfig(x_tx));
+       MeasData zHR = meas.Compute(x_hat_, &H);         // z = h(x), R, and H
+       filter_.Predict(t);                              // STM + process noise
+       filter_.Update(zHR.value, H, zHR.covariance);    // innovation, gain, update
+       Log(t);
+     }
+   };
+   REGISTER_FACTORY_CLASS(Application, MyOdtsApp)        // YAML: class: MyOdtsApp
+
+   // --- A new observable ---------------------------------------------------
+   class MyMeasurement : public MeasurementClone<MyMeasurement> {
+    public:
+     MeasData Compute(const State& x, MatXd* H = nullptr) const override {
+       VecXd z(1);   z(0) = /* h(x): range, Doppler, ... */;
+       if (H) { H->resize(1, x.size()); *H = /* dh/dx */; }
+       return MeasData{timestamp_, z, R_};              // value, covariance
+     }
+   };
 
 Path B — monolithic C++ driver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

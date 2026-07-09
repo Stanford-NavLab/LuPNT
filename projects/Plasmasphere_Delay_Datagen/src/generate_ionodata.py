@@ -12,7 +12,7 @@ def generate_labels(gnss_meas, sim_params, overwrite=False, tidxs_inv_raytrace=6
 
     Parameters
     ----------
-    gnss_meas : pnt.GNSSMeas
+    gnss_meas : src.gnss_meas.GNSSMeas
         GNSS measurement object containing visibility and measurement data.
     sim_params : dict
         Simulation parameters including:

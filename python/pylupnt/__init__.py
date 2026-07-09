@@ -59,10 +59,10 @@ def _try_import(module):
 # `core` is cheap (utilities used throughout pylupnt) and stays eager.
 _try_import("core")
 
-# interfaces/measurements/plot/plasma pull in heavy optional deps (plotly, sklearn,
+# interfaces/plot/plasma pull in heavy optional deps (plotly, sklearn,
 # scipy, pandas) that most users of the core C++ bindings never touch. Import them
 # lazily, on first attribute access, instead of paying their cost at `import pylupnt`.
-_lazy_submodules = ["interfaces", "measurements", "plot", "plasma"]
+_lazy_submodules = ["interfaces", "plot", "plasma"]
 
 
 def __getattr__(name):
