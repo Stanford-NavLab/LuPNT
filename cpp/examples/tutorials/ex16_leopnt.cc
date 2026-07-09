@@ -31,52 +31,52 @@ using namespace lupnt;
 
 namespace {
 
-// East-North-Up basis at a geodetic (lat, lon) on a sphere; rows are E, N, U.
-Eigen::Matrix3d EnuBasis(double lat, double lon) {
-  const double cl = std::cos(lat), sl = std::sin(lat);
-  const double co = std::cos(lon), so = std::sin(lon);
-  Eigen::Matrix3d R;
-  R.row(0) << -so, co, 0.0;
-  R.row(1) << -sl * co, -sl * so, cl;
-  R.row(2) << cl * co, cl * so, sl;
-  return R;
-}
-
-// Classical Walker-delta elements [a,e,i,RAAN,argp,M] for T sats, P planes,
-// relative phasing F (columns match ClassicalToCart's COE layout).
-std::vector<Vec6> WalkerElements(int T, int P, int F, double a, double e, double inc) {
-  const int spp = T / P;
-  std::vector<Vec6> coes;
-  for (int p = 0; p < P; ++p) {
-    const double raan = p * 2.0 * M_PI / P;
-    for (int s = 0; s < spp; ++s) {
-      double M = s * 2.0 * M_PI / spp + p * 2.0 * M_PI * F / T;
-      M = std::fmod(M, 2.0 * M_PI);
-      coes.emplace_back(a, e, inc, raan, 0.0, M);
-    }
+  // East-North-Up basis at a geodetic (lat, lon) on a sphere; rows are E, N, U.
+  Eigen::Matrix3d EnuBasis(double lat, double lon) {
+    const double cl = std::cos(lat), sl = std::sin(lat);
+    const double co = std::cos(lon), so = std::sin(lon);
+    Eigen::Matrix3d R;
+    R.row(0) << -so, co, 0.0;
+    R.row(1) << -sl * co, -sl * so, cl;
+    R.row(2) << cl * co, cl * so, sl;
+    return R;
   }
-  return coes;
-}
 
-// True if the LEO->GPS line of sight clears the Earth (occulting radius r_occ).
-bool GpsVisible(const Eigen::Vector3d& r_leo, const Eigen::Vector3d& r_gps, double r_occ) {
-  const Eigen::Vector3d d = r_gps - r_leo;
-  const double L = d.norm();
-  const Eigen::Vector3d u = d / L;
-  const double s = -r_leo.dot(u);  // foot of perpendicular from Earth centre
-  if (s < 0.0 || s > L) return true;
-  return (r_leo + s * u).norm() > r_occ;
-}
+  // Classical Walker-delta elements [a,e,i,RAAN,argp,M] for T sats, P planes,
+  // relative phasing F (columns match ClassicalToCart's COE layout).
+  std::vector<Vec6> WalkerElements(int T, int P, int F, double a, double e, double inc) {
+    const int spp = T / P;
+    std::vector<Vec6> coes;
+    for (int p = 0; p < P; ++p) {
+      const double raan = p * 2.0 * M_PI / P;
+      for (int s = 0; s < spp; ++s) {
+        double M = s * 2.0 * M_PI / spp + p * 2.0 * M_PI * F / T;
+        M = std::fmod(M, 2.0 * M_PI);
+        coes.emplace_back(a, e, inc, raan, 0.0, M);
+      }
+    }
+    return coes;
+  }
 
-double Median(std::vector<double> v) {
-  std::sort(v.begin(), v.end());
-  return v.empty() ? std::nan("") : v[v.size() / 2];
-}
-double Percentile(std::vector<double> v, double p) {
-  std::sort(v.begin(), v.end());
-  return v.empty() ? std::nan("")
-                   : v[std::min<size_t>(v.size() - 1, size_t(p / 100.0 * v.size()))];
-}
+  // True if the LEO->GPS line of sight clears the Earth (occulting radius r_occ).
+  bool GpsVisible(const Eigen::Vector3d& r_leo, const Eigen::Vector3d& r_gps, double r_occ) {
+    const Eigen::Vector3d d = r_gps - r_leo;
+    const double L = d.norm();
+    const Eigen::Vector3d u = d / L;
+    const double s = -r_leo.dot(u);  // foot of perpendicular from Earth centre
+    if (s < 0.0 || s > L) return true;
+    return (r_leo + s * u).norm() > r_occ;
+  }
+
+  double Median(std::vector<double> v) {
+    std::sort(v.begin(), v.end());
+    return v.empty() ? std::nan("") : v[v.size() / 2];
+  }
+  double Percentile(std::vector<double> v, double p) {
+    std::sort(v.begin(), v.end());
+    return v.empty() ? std::nan("")
+                     : v[std::min<size_t>(v.size() - 1, size_t(p / 100.0 * v.size()))];
+  }
 
 }  // namespace
 
@@ -84,7 +84,7 @@ int main() {
   std::cout << std::fixed;
 
   // --- 0. Earth constants from LuPNT's body model ----------------------------
-  const Body earth_pm = Body::Earth();      // point-mass, for GM / R
+  const Body earth_pm = Body::Earth();  // point-mass, for GM / R
   const double GM_EARTH = earth_pm.GM.val();
   const double R_EARTH = earth_pm.R.val();
   std::cout << std::setprecision(4);
@@ -189,9 +189,10 @@ int main() {
     for (double lo_deg : lon_g) {
       const double lat = la_deg * RAD, lon = lo_deg * RAD;
       const Eigen::Matrix3d Renu = EnuBasis(lat, lon);
-      const Eigen::Vector3d r_user =
-          R_EARTH * Eigen::Vector3d(std::cos(lat) * std::cos(lon), std::cos(lat) * std::sin(lon),
-                                    std::sin(lat));
+      const Eigen::Vector3d r_user
+          = R_EARTH
+            * Eigen::Vector3d(std::cos(lat) * std::cos(lon), std::cos(lat) * std::sin(lon),
+                              std::sin(lat));
       const bool in_band = std::abs(la_deg) <= 60.0;
       std::vector<double> pdop_t;
       for (int tt = 0; tt < N_T; tt += 2) {  // subsample time to keep the map fast
@@ -225,9 +226,10 @@ int main() {
   // --- 5. Single-point positioning at San Francisco --------------------------
   const double SF_LAT = 37.7749 * RAD, SF_LON = -122.4194 * RAD;
   const Eigen::Matrix3d Renu = EnuBasis(SF_LAT, SF_LON);
-  const Eigen::Vector3d r_user =
-      R_EARTH * Eigen::Vector3d(std::cos(SF_LAT) * std::cos(SF_LON),
-                                std::cos(SF_LAT) * std::sin(SF_LON), std::sin(SF_LAT));
+  const Eigen::Vector3d r_user
+      = R_EARTH
+        * Eigen::Vector3d(std::cos(SF_LAT) * std::cos(SF_LON), std::cos(SF_LAT) * std::sin(SF_LON),
+                          std::sin(SF_LAT));
   const double SIGMA = 1.0;  // [m] ranging noise
   RandomEngine::SetSeed(0);
   std::vector<double> err3d, err_h, err_v, pdop_fix;
@@ -296,8 +298,7 @@ int main() {
   // --- 6. On-board orbit- and time-determination (ODTS) with GPS -------------
   // A nominal GPS Walker 24/6/2 at ~20,200 km serves as the truth reference; the
   // LEO nav-satellite carries a GPS receiver and runs an EKF over [r, v, b, d].
-  const std::vector<Vec6> gps_coes =
-      WalkerElements(24, 6, 2, R_EARTH + 20200e3, 0.0, 55.0 * RAD);
+  const std::vector<Vec6> gps_coes = WalkerElements(24, 6, 2, R_EARTH + 20200e3, 0.0, 55.0 * RAD);
   CartesianTwoBodyDynamics gps_dyn(GM_EARTH);
   const double DT_ODTS = 30.0;
   const VecX TS_ODTS = EPOCH + Arange(Real(0.0), Real(2.0 * PERIOD), Real(DT_ODTS)).array();
@@ -379,14 +380,15 @@ int main() {
     Eigen::VectorXd y(mv);
     for (int i = 0; i < mv; ++i) {
       const Eigen::Vector3d r_gps = gps_truth[vis[i]].row(k).transpose();
-      const double rho = (r_gps - r_true).norm() + b_true[k] + SampleNormal(0.0, 1.0).val() * SIGMA_RHO;
+      const double rho
+          = (r_gps - r_true).norm() + b_true[k] + SampleNormal(0.0, 1.0).val() * SIGMA_RHO;
       const double rho_pred = (r_gps - x.head(3)).norm();
       H.block(i, 0, 1, 3) = (-(r_gps - x.head(3)) / rho_pred).transpose();
       H(i, 6) = 1.0;
       y(i) = rho - (rho_pred + x(6));
     }
-    const Eigen::MatrixXd S =
-        H * P * H.transpose() + Eigen::MatrixXd::Identity(mv, mv) * SIGMA_RHO * SIGMA_RHO;
+    const Eigen::MatrixXd S
+        = H * P * H.transpose() + Eigen::MatrixXd::Identity(mv, mv) * SIGMA_RHO * SIGMA_RHO;
     const Eigen::MatrixXd K = P * H.transpose() * S.inverse();
     x += K * y;
     P = (Eigen::MatrixXd::Identity(8, 8) - K * H) * P;

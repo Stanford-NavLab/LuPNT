@@ -83,8 +83,12 @@ def process(nb_path: Path, max_width: int, colors: int, dry_run: bool):
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--max-width", type=int, default=1200, help="cap image width in px (0 = no resize)")
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    p.add_argument(
+        "--max-width", type=int, default=1200, help="cap image width in px (0 = no resize)"
+    )
     p.add_argument("--colors", type=int, default=256, help="adaptive palette size")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--only", nargs="+", help="substring filter on notebook stem")
@@ -103,8 +107,10 @@ def main() -> int:
         if n:
             print(f"{nb.name:34s} {n:4d} {b/1024:8.0f}K {a/1024:8.0f}K  {100*(b-a)/b:4.0f}%")
     print("-" * 68)
-    print(f"{'TOTAL image bytes':34s} {'':4s} {tot_b/1048576:7.1f}M {tot_a/1048576:7.1f}M  "
-          f"{100*(tot_b-tot_a)/max(1,tot_b):4.0f}%{'  (dry-run)' if args.dry_run else ''}")
+    print(
+        f"{'TOTAL image bytes':34s} {'':4s} {tot_b/1048576:7.1f}M {tot_a/1048576:7.1f}M  "
+        f"{100*(tot_b-tot_a)/max(1,tot_b):4.0f}%{'  (dry-run)' if args.dry_run else ''}"
+    )
     return 0
 
 

@@ -76,11 +76,30 @@ def run_one(path: Path, kernel: str, timeout: int):
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--only", nargs="+", metavar="SUBSTR", help="run only notebooks whose name contains any of these")
-    p.add_argument("--skip", nargs="+", metavar="SUBSTR", help="skip notebooks whose name contains any of these")
-    p.add_argument("--timeout", type=int, default=1800, help="per-notebook cell timeout in seconds (default 1800)")
-    p.add_argument("--kernel", default="lupnt", help="kernelspec name to execute with (default 'lupnt')")
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    p.add_argument(
+        "--only",
+        nargs="+",
+        metavar="SUBSTR",
+        help="run only notebooks whose name contains any of these",
+    )
+    p.add_argument(
+        "--skip",
+        nargs="+",
+        metavar="SUBSTR",
+        help="skip notebooks whose name contains any of these",
+    )
+    p.add_argument(
+        "--timeout",
+        type=int,
+        default=1800,
+        help="per-notebook cell timeout in seconds (default 1800)",
+    )
+    p.add_argument(
+        "--kernel", default="lupnt", help="kernelspec name to execute with (default 'lupnt')"
+    )
     p.add_argument("--fail-fast", action="store_true", help="stop at the first failing notebook")
     args = p.parse_args()
 
@@ -89,8 +108,10 @@ def main() -> int:
         print(f"No notebooks matched under {EXAMPLES_DIR}", file=sys.stderr)
         return 1
 
-    print(f"Running {len(notebooks)} notebook(s) from {EXAMPLES_DIR.relative_to(ROOT)} "
-          f"[kernel={args.kernel}, timeout={args.timeout}s]\n")
+    print(
+        f"Running {len(notebooks)} notebook(s) from {EXAMPLES_DIR.relative_to(ROOT)} "
+        f"[kernel={args.kernel}, timeout={args.timeout}s]\n"
+    )
 
     results = []
     for i, nb in enumerate(notebooks, 1):
@@ -107,8 +128,10 @@ def main() -> int:
     failed = [r for r in results if not r[1]]
 
     print("\n" + "=" * 60)
-    print(f"Summary: {len(passed)} passed, {len(failed)} failed, "
-          f"{len(notebooks) - len(results)} not run")
+    print(
+        f"Summary: {len(passed)} passed, {len(failed)} failed, "
+        f"{len(notebooks) - len(results)} not run"
+    )
     for name, ok, secs, err in results:
         print(f"  {'PASS' if ok else 'FAIL'}  {name}  ({secs:.1f}s)")
     if failed:

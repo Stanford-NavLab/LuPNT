@@ -64,12 +64,18 @@ def run_one(path: Path, kernel: str, timeout: int, allow_errors: bool):
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     p.add_argument("--only", nargs="+", metavar="SUBSTR")
     p.add_argument("--skip", nargs="+", metavar="SUBSTR")
     p.add_argument("--timeout", type=int, default=2400)
     p.add_argument("--kernel", default="lupnt")
-    p.add_argument("--allow-errors", action="store_true", help="keep going within a notebook past a failing cell")
+    p.add_argument(
+        "--allow-errors",
+        action="store_true",
+        help="keep going within a notebook past a failing cell",
+    )
     args = p.parse_args()
 
     notebooks = discover(args.only, args.skip)
@@ -77,8 +83,11 @@ def main() -> int:
         print(f"No notebooks matched under {EXAMPLES_DIR}", file=sys.stderr)
         return 1
 
-    print(f"Executing {len(notebooks)} notebook(s) in place "
-          f"[kernel={args.kernel}, timeout={args.timeout}s, allow_errors={args.allow_errors}]\n", flush=True)
+    print(
+        f"Executing {len(notebooks)} notebook(s) in place "
+        f"[kernel={args.kernel}, timeout={args.timeout}s, allow_errors={args.allow_errors}]\n",
+        flush=True,
+    )
 
     results = []
     for i, nb in enumerate(notebooks, 1):

@@ -115,8 +115,7 @@ TEST_CASE("dynamics.clock_dynamics") {
   SECTION("bias-unit scaling and round-trip conversions") {
     REQUIRE_THAT(ClockDynamics::SecondsToBiasUnitScale(ClockBiasUnit::SECONDS),
                  WithinAbs(1.0, 1e-12));
-    REQUIRE_THAT(ClockDynamics::SecondsToBiasUnitScale(ClockBiasUnit::METERS),
-                 WithinRel(C, 1e-12));
+    REQUIRE_THAT(ClockDynamics::SecondsToBiasUnitScale(ClockBiasUnit::METERS), WithinRel(C, 1e-12));
 
     // SecondsToBiasUnits and BiasUnitsToSeconds are mutual inverses.
     const Real value_s = 3.5e-9;  // 3.5 ns

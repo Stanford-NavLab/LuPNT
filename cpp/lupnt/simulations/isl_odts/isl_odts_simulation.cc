@@ -163,8 +163,10 @@ namespace lupnt {
       for (int b = 0; b < n_sat; ++b) {
         const int g = order[j][b];
         const double sr = (b == 0) ? cfg.initial_position_sigma_m : cfg.consider_position_sigma_m;
-        const double sv = (b == 0) ? cfg.initial_velocity_sigma_mps : cfg.consider_velocity_sigma_mps;
-        const double sb = (b == 0) ? cfg.initial_clock_bias_sigma_s : cfg.consider_clock_bias_sigma_s;
+        const double sv
+            = (b == 0) ? cfg.initial_velocity_sigma_mps : cfg.consider_velocity_sigma_mps;
+        const double sb
+            = (b == 0) ? cfg.initial_clock_bias_sigma_s : cfg.consider_clock_bias_sigma_s;
         const double sd
             = (b == 0) ? cfg.initial_clock_drift_sigma_sps : cfg.consider_clock_drift_sigma_sps;
         x0j.segment(kSubStateSize * b, kSubStateSize)
@@ -182,8 +184,8 @@ namespace lupnt {
       apps[j] = MakePtr<IslOdtsApp>(app_params);
 
       // Reduced-order, deterministic, autodiff-enabled filter dynamics (one per filter).
-      Ptr<NBodyDynamics> orbit_filter = MakeOrbitDynamics(
-          cfg.moon_gravity_degree_filter, cfg.moon_gravity_order_filter, true, cfg);
+      Ptr<NBodyDynamics> orbit_filter = MakeOrbitDynamics(cfg.moon_gravity_degree_filter,
+                                                          cfg.moon_gravity_order_filter, true, cfg);
       Ptr<JointOrbitClockDynamics> dyn_filter = MakeJointDynamics(orbit_filter, false, 0, cfg);
       apps[j]->Configure(t0_tdb, x0j, P0j, dyn_filter);
 
@@ -232,8 +234,9 @@ namespace lupnt {
       *prr = MatXd::Zero(n_sat, n_sat);
       for (int a = 0; a < n_sat; ++a) {
         for (int b = a + 1; b < n_sat; ++b) {
-          Vec2 y = RangeAndRangeRate(VecX(x_truth[a].head(3)), VecX(x_truth[b].head(3)),
-                                     VecX(x_truth[a].segment(3, 3)), VecX(x_truth[b].segment(3, 3)));
+          Vec2 y
+              = RangeAndRangeRate(VecX(x_truth[a].head(3)), VecX(x_truth[b].head(3)),
+                                  VecX(x_truth[a].segment(3, 3)), VecX(x_truth[b].segment(3, 3)));
           (*pr)(a, b) = (*pr)(b, a) = y(0).val();
           (*prr)(a, b) = (*prr)(b, a) = y(1).val();
         }

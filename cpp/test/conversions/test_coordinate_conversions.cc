@@ -73,8 +73,7 @@ TEST_CASE("conversions.coordinate_conversions") {
     // Orthonormal, right-handed rotation.
     Mat3 I = R_e2c * R_e2c.transpose();
     for (int i = 0; i < 3; ++i)
-      for (int j = 0; j < 3; ++j)
-        REQUIRE_THAT(I(i, j).val(), WithinAbs(i == j ? 1.0 : 0.0, 1e-9));
+      for (int j = 0; j < 3; ++j) REQUIRE_THAT(I(i, j).val(), WithinAbs(i == j ? 1.0 : 0.0, 1e-9));
     REQUIRE_THAT(R_e2c.determinant().val(), WithinAbs(1.0, 1e-9));
 
     // The two directions are inverses, i.e. transposes of one another.

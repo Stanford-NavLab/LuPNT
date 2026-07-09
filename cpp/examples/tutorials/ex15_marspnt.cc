@@ -29,32 +29,32 @@ using namespace lupnt;
 
 namespace {
 
-// East-North-Up basis at a geodetic (lat, lon) on a sphere; rows are E, N, U.
-Eigen::Matrix3d EnuBasis(double lat, double lon) {
-  const double cl = std::cos(lat), sl = std::sin(lat);
-  const double co = std::cos(lon), so = std::sin(lon);
-  Eigen::Matrix3d R;
-  R.row(0) << -so, co, 0.0;
-  R.row(1) << -sl * co, -sl * so, cl;
-  R.row(2) << cl * co, cl * so, sl;
-  return R;
-}
-
-// Classical Walker-delta elements [a,e,i,RAAN,argp,M] for T sats, P planes,
-// relative phasing F (columns match ClassicalToCart's COE layout).
-std::vector<Vec6> WalkerElements(int T, int P, int F, double a, double e, double inc) {
-  const int spp = T / P;
-  std::vector<Vec6> coes;
-  for (int p = 0; p < P; ++p) {
-    const double raan = p * 2.0 * M_PI / P;
-    for (int s = 0; s < spp; ++s) {
-      double M = s * 2.0 * M_PI / spp + p * 2.0 * M_PI * F / T;
-      M = std::fmod(M, 2.0 * M_PI);
-      coes.emplace_back(a, e, inc, raan, 0.0, M);
-    }
+  // East-North-Up basis at a geodetic (lat, lon) on a sphere; rows are E, N, U.
+  Eigen::Matrix3d EnuBasis(double lat, double lon) {
+    const double cl = std::cos(lat), sl = std::sin(lat);
+    const double co = std::cos(lon), so = std::sin(lon);
+    Eigen::Matrix3d R;
+    R.row(0) << -so, co, 0.0;
+    R.row(1) << -sl * co, -sl * so, cl;
+    R.row(2) << cl * co, cl * so, sl;
+    return R;
   }
-  return coes;
-}
+
+  // Classical Walker-delta elements [a,e,i,RAAN,argp,M] for T sats, P planes,
+  // relative phasing F (columns match ClassicalToCart's COE layout).
+  std::vector<Vec6> WalkerElements(int T, int P, int F, double a, double e, double inc) {
+    const int spp = T / P;
+    std::vector<Vec6> coes;
+    for (int p = 0; p < P; ++p) {
+      const double raan = p * 2.0 * M_PI / P;
+      for (int s = 0; s < spp; ++s) {
+        double M = s * 2.0 * M_PI / spp + p * 2.0 * M_PI * F / T;
+        M = std::fmod(M, 2.0 * M_PI);
+        coes.emplace_back(a, e, inc, raan, 0.0, M);
+      }
+    }
+    return coes;
+  }
 
 }  // namespace
 
@@ -62,17 +62,16 @@ int main() {
   std::cout << std::fixed;
 
   // --- Mars constants from LuPNT's body model --------------------------------
-  const Body mars_pm = Body::Mars();          // point-mass, for GM / R
-  const double GM_MARS = mars_pm.GM.val();    // [m^3/s^2]
-  const double R_MARS = mars_pm.R.val();      // [m]  mean volumetric radius
+  const Body mars_pm = Body::Mars();        // point-mass, for GM / R
+  const double GM_MARS = mars_pm.GM.val();  // [m^3/s^2]
+  const double R_MARS = mars_pm.R.val();    // [m]  mean volumetric radius
 
   // Mars sidereal rotation period, from the IAU prime-meridian rate LuPNT uses.
-  const double W_DOT_MARS = 350.89198226;                    // [deg/day]
+  const double W_DOT_MARS = 350.89198226;                     // [deg/day]
   const double SIDEREAL_DAY = 360.0 / W_DOT_MARS * SECS_DAY;  // [s]
 
   std::cout << std::setprecision(4);
-  std::cout << "GM_MARS       = " << std::scientific << GM_MARS << " m^3/s^2\n"
-            << std::fixed;
+  std::cout << "GM_MARS       = " << std::scientific << GM_MARS << " m^3/s^2\n" << std::fixed;
   std::cout << "R_MARS        = " << R_MARS / 1e3 << " km\n";
   std::cout << "Sidereal day  = " << SIDEREAL_DAY / 3600.0 << " h   (Mars: 24.6229 h)\n";
 
@@ -109,7 +108,8 @@ int main() {
   // --- 2. Mars-equatorial frame -> MARS_CI -----------------------------------
   // Rotation whose z-axis is the Mars pole (from the body-fixed frame), x-axis
   // the node of the Mars equator on the ICRF equator.
-  const Vec3 pole_r = ConvertFrame(t0, Vec3(0.0, 0.0, 1.0), Frame::MARS_FIXED, Frame::MARS_CI, true);
+  const Vec3 pole_r
+      = ConvertFrame(t0, Vec3(0.0, 0.0, 1.0), Frame::MARS_FIXED, Frame::MARS_CI, true);
   Eigen::Vector3d pole(pole_r.x().val(), pole_r.y().val(), pole_r.z().val());
   pole.normalize();
   Eigen::Vector3d xeq = Eigen::Vector3d::UnitZ().cross(pole).normalized();
@@ -138,9 +138,9 @@ int main() {
     const Eigen::Vector3d v_ci = R_eq2ci * v_eq;
     rv0[k] << r_ci.x(), r_ci.y(), r_ci.z(), v_ci.x(), v_ci.y(), v_ci.z();
   }
-  std::cout << "\nWalker " << N_SAT << "/" << N_PLANES << "/" << F_WALKER << " constellation: "
-            << N_PLANES << " planes x " << SATS_PER_PLANE << " sats, i = " << INC * DEG
-            << " deg, alt " << ALT / 1e3 << " km\n";
+  std::cout << "\nWalker " << N_SAT << "/" << N_PLANES << "/" << F_WALKER
+            << " constellation: " << N_PLANES << " planes x " << SATS_PER_PLANE
+            << " sats, i = " << INC * DEG << " deg, alt " << ALT / 1e3 << " km\n";
   std::cout << "  orbital period " << PERIOD / 3600.0 << " h  vs Martian day "
             << SIDEREAL_DAY / 3600.0 << " h\n";
 
@@ -155,8 +155,8 @@ int main() {
   std::vector<Eigen::MatrixXd> pos_fixed(N_SAT);
   for (int k = 0; k < N_SAT; ++k) {
     const MatX6 rv_ci = dyn.Propagate(rv0[k], tfs);
-    const MatX3 r_fixed = ConvertFrame(tfs, MatX3(rv_ci.leftCols(3)), Frame::MARS_CI,
-                                       Frame::MARS_FIXED, true);
+    const MatX3 r_fixed
+        = ConvertFrame(tfs, MatX3(rv_ci.leftCols(3)), Frame::MARS_CI, Frame::MARS_FIXED, true);
     pos_fixed[k] = r_fixed.cast<double>();
   }
   std::cout << "Propagated " << N_SAT << " satellites over " << T_SIM / SIDEREAL_DAY << " sols ("
@@ -176,9 +176,10 @@ int main() {
     for (double lo_deg : lon_g) {
       const double lat = la_deg * RAD, lon = lo_deg * RAD;
       const Eigen::Matrix3d Renu = EnuBasis(lat, lon);
-      const Eigen::Vector3d r_user =
-          R_MARS * Eigen::Vector3d(std::cos(lat) * std::cos(lon), std::cos(lat) * std::sin(lon),
-                                   std::sin(lat));
+      const Eigen::Vector3d r_user
+          = R_MARS
+            * Eigen::Vector3d(std::cos(lat) * std::cos(lon), std::cos(lat) * std::sin(lon),
+                              std::sin(lat));
       std::vector<double> pdop_t;
       for (int tt = 0; tt < N_T; ++tt) {
         std::vector<Eigen::Vector3d> los_enu;
@@ -207,8 +208,8 @@ int main() {
     }
   }
   std::sort(all_median_pdop.begin(), all_median_pdop.end());
-  const double global_median_pdop =
-      all_median_pdop.empty() ? std::nan("") : all_median_pdop[all_median_pdop.size() / 2];
+  const double global_median_pdop
+      = all_median_pdop.empty() ? std::nan("") : all_median_pdop[all_median_pdop.size() / 2];
   std::cout << "\nService volume (" << lat_g.size() << "x" << lon_g.size()
             << " lat/lon grid, 5 deg mask):\n";
   std::cout << "  global median PDOP               : " << global_median_pdop << "\n";
@@ -219,9 +220,10 @@ int main() {
   // --- 5. Single-point positioning at Jezero Crater --------------------------
   const double JEZERO_LAT = 18.44 * RAD, JEZERO_LON = 77.45 * RAD;
   const Eigen::Matrix3d Renu = EnuBasis(JEZERO_LAT, JEZERO_LON);
-  const Eigen::Vector3d r_user =
-      R_MARS * Eigen::Vector3d(std::cos(JEZERO_LAT) * std::cos(JEZERO_LON),
-                               std::cos(JEZERO_LAT) * std::sin(JEZERO_LON), std::sin(JEZERO_LAT));
+  const Eigen::Vector3d r_user
+      = R_MARS
+        * Eigen::Vector3d(std::cos(JEZERO_LAT) * std::cos(JEZERO_LON),
+                          std::cos(JEZERO_LAT) * std::sin(JEZERO_LON), std::sin(JEZERO_LAT));
   const double SIGMA = 8.0;  // [m] pseudorange noise
   RandomEngine::SetSeed(42);
 
@@ -271,7 +273,8 @@ int main() {
   };
   auto pct = [](std::vector<double> v, double p) {
     std::sort(v.begin(), v.end());
-    return v.empty() ? std::nan("") : v[std::min<size_t>(v.size() - 1, size_t(p / 100.0 * v.size()))];
+    return v.empty() ? std::nan("")
+                     : v[std::min<size_t>(v.size() - 1, size_t(p / 100.0 * v.size()))];
   };
   std::cout << "\nPositioning at Jezero Crater (18.44 N, 77.45 E), " << SIGMA
             << " m pseudorange noise:\n";

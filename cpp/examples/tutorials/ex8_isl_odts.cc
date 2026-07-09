@@ -99,8 +99,9 @@ int main() {
   const int n_sat = static_cast<int>(res.satellite_names.size());
   std::cout << "Constellation: ";
   for (const std::string& n : res.satellite_names) std::cout << n << " ";
-  std::cout << "\n" << n_sat << " satellites, " << (n_sat - 1) << " crosslinks each, " << N
-            << " epochs, " << n_sat << " parallel filters\n\n";
+  std::cout << "\n"
+            << n_sat << " satellites, " << (n_sat - 1) << " crosslinks each, " << N << " epochs, "
+            << n_sat << " parallel filters\n\n";
 
   // Per-satellite own position/clock error at the final epoch. est[j][:, 8*j:8*j+8]
   // is filter j's own state (global sat order).

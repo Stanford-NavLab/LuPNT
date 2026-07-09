@@ -1,7 +1,7 @@
-#include "lupnt/measurements/measurement.h"
 #include "lupnt/measurements/measurement_utils.h"
 
 #include "lupnt/core/constants.h"
+#include "lupnt/measurements/measurement.h"
 
 namespace lupnt {
 

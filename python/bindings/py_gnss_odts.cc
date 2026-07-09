@@ -243,8 +243,7 @@ void InitGnssOdts(py::module& m) {
       .def_readwrite("run_progress_interval_epochs",
                      &LunarGnssODTSConfig::run_progress_interval_epochs,
                      "Epochs between live EKF progress prints during Run; 0 = automatic")
-      .def_readwrite("debug_print_matrix_epochs",
-                     &LunarGnssODTSConfig::debug_print_matrix_epochs,
+      .def_readwrite("debug_print_matrix_epochs", &LunarGnssODTSConfig::debug_print_matrix_epochs,
                      "Print STM and measurement-Jacobian diagnostics for the first N filter epochs")
       .def_readwrite("debug_print_matrix_max_rows",
                      &LunarGnssODTSConfig::debug_print_matrix_max_rows,

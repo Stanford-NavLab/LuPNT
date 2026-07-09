@@ -65,16 +65,15 @@ TEST_CASE("environment.forces") {
   }
 
   SECTION("AccelerationPointMass matches the direct-plus-indirect closed form") {
-    Vec3 r(7000.0e3, 1500.0e3, -800.0e3);        // spacecraft w.r.t. central body
-    Vec3 s(384400.0e3, 120000.0e3, 60000.0e3);   // third body (e.g. Moon) w.r.t. central body
+    Vec3 r(7000.0e3, 1500.0e3, -800.0e3);       // spacecraft w.r.t. central body
+    Vec3 s(384400.0e3, 120000.0e3, 60000.0e3);  // third body (e.g. Moon) w.r.t. central body
     Real GM = GM_MOON;
 
     Vec3 d = r - s;
     Vec3 expected = -GM * (d / pow(d.norm(), 3) + s / pow(s.norm(), 3));
     Vec3 actual = AccelerationPointMass(r, s, GM);
 
-    for (int i = 0; i < 3; ++i)
-      REQUIRE_THAT(actual(i).val(), WithinAbs(expected(i).val(), 1e-18));
+    for (int i = 0; i < 3; ++i) REQUIRE_THAT(actual(i).val(), WithinAbs(expected(i).val(), 1e-18));
   }
 
   SECTION("AccelerationSolarRadiation points away from the Sun with inverse-square magnitude") {
@@ -102,8 +101,7 @@ TEST_CASE("environment.forces") {
     Vec3 actual = AccelarationGravityField<Real>(r, GM, R_ref, CS, 0, 0);
     Vec3 expected = -GM * r / pow(r.norm(), 3);
 
-    for (int i = 0; i < 3; ++i)
-      REQUIRE_THAT(actual(i).val(), WithinRel(expected(i).val(), 1e-9));
+    for (int i = 0; i < 3; ++i) REQUIRE_THAT(actual(i).val(), WithinRel(expected(i).val(), 1e-9));
   }
 
   SECTION("DensityHarrisPriester is positive and decreases with altitude") {

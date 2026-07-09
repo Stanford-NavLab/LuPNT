@@ -13,13 +13,12 @@
 
 #include <cspice/SpiceUsr.h>
 
-#include "lupnt/conversions/frame_converter.h"  // Frame enum + IsPlanet*Frame predicates
-
 #include <cmath>
 #include <functional>
 #include <optional>
 #include <vector>
 
+#include "lupnt/conversions/frame_converter.h"  // Frame enum + IsPlanet*Frame predicates
 #include "lupnt/conversions/state_conversions.h"
 #include "lupnt/conversions/time_conversions.h"
 #include "lupnt/core/constants.h"
@@ -860,9 +859,7 @@ namespace lupnt {
     }
   }  // namespace
 
-  bool HasIauOrientation(BodyId body) {
-    return IauOrientationTable().count(body) > 0;
-  }
+  bool HasIauOrientation(BodyId body) { return IauOrientationTable().count(body) > 0; }
 
   bool IsPlanetFixedFrame(Frame frame) {
     switch (frame) {
@@ -890,9 +887,7 @@ namespace lupnt {
     }
   }
 
-  bool IsPlanetFrame(Frame frame) {
-    return IsPlanetFixedFrame(frame) || IsPlanetCiFrame(frame);
-  }
+  bool IsPlanetFrame(Frame frame) { return IsPlanetFixedFrame(frame) || IsPlanetCiFrame(frame); }
 
   Mat3 RotBodyCiToFixed(Real t_tdb, BodyId body, Mat3* R_dot) {
     auto it = IauOrientationTable().find(body);

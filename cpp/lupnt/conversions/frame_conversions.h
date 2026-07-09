@@ -474,26 +474,26 @@ namespace lupnt {
   /// @param t_tdb  Epoch [s, TDB since J2000]
   /// @param body   Planet body id (Mercury..Neptune)
   /// @param R_dot  Optional out: d/dt of the rotation matrix [1/s]
-  Mat3 RotBodyCiToFixed(Real t_tdb, BodyId body, Mat3 *R_dot = nullptr);
+  Mat3 RotBodyCiToFixed(Real t_tdb, BodyId body, Mat3* R_dot = nullptr);
 
   /// @brief Translate a planet-centered inertial (ICRF-aligned) state to the
   /// SSB-centered ICRF hub, by adding the planet's ICRF ephemeris state.
-  Vec6 PlanetCiToIcrf(Real t_tdb, const Vec6 &rv_ci, BodyId body);
+  Vec6 PlanetCiToIcrf(Real t_tdb, const Vec6& rv_ci, BodyId body);
   /// @brief Vec3 (position-only) overload of PlanetCiToIcrf().
-  Vec3 PlanetCiToIcrf(Real t_tdb, const Vec3 &r_ci, BodyId body);
+  Vec3 PlanetCiToIcrf(Real t_tdb, const Vec3& r_ci, BodyId body);
   /// @brief Inverse of PlanetCiToIcrf(): SSB-centered ICRF -> planet-centered
   /// inertial (ICRF-aligned).
-  Vec6 IcrfToPlanetCi(Real t_tdb, const Vec6 &rv_icrf, BodyId body);
+  Vec6 IcrfToPlanetCi(Real t_tdb, const Vec6& rv_icrf, BodyId body);
   /// @brief Vec3 (position-only) overload of IcrfToPlanetCi().
-  Vec3 IcrfToPlanetCi(Real t_tdb, const Vec3 &r_icrf, BodyId body);
+  Vec3 IcrfToPlanetCi(Real t_tdb, const Vec3& r_icrf, BodyId body);
   /// @brief Rotate a planet-centered inertial state into the body-fixed frame
   /// (applies RotBodyCiToFixed and, for a Vec6, its derivative).
-  Vec6 BodyCiToFixed(Real t_tdb, const Vec6 &rv_ci, BodyId body);
+  Vec6 BodyCiToFixed(Real t_tdb, const Vec6& rv_ci, BodyId body);
   /// @brief Vec3 (position-only) overload of BodyCiToFixed().
-  Vec3 BodyCiToFixed(Real t_tdb, const Vec3 &r_ci, BodyId body);
+  Vec3 BodyCiToFixed(Real t_tdb, const Vec3& r_ci, BodyId body);
   /// @brief Inverse of BodyCiToFixed(): body-fixed -> planet-centered inertial.
-  Vec6 BodyFixedToCi(Real t_tdb, const Vec6 &rv_fixed, BodyId body);
+  Vec6 BodyFixedToCi(Real t_tdb, const Vec6& rv_fixed, BodyId body);
   /// @brief Vec3 (position-only) overload of BodyFixedToCi().
-  Vec3 BodyFixedToCi(Real t_tdb, const Vec3 &r_fixed, BodyId body);
+  Vec3 BodyFixedToCi(Real t_tdb, const Vec3& r_fixed, BodyId body);
 
 }  // namespace lupnt
