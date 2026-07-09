@@ -52,7 +52,7 @@ def build_config():
     cfg.seed = 42
     cfg.monte_carlo_runs = 1
     cfg.start_epoch_utc = (
-        "2023-01-01T02:00:00"  # COD MGEX SP3 (Galileo); offset fits its 1-day span
+        "2026-01-01T02:00:00"  # COD MGEX SP3 (Galileo); offset fits its 1-day span
     )
     cfg.dt_s = 1.0
     cfg.ephemeris_dt_s = 30.0
@@ -86,6 +86,18 @@ def build_config():
     cfg.constellation.auto_select_sp3 = True
     cfg.constellation.use_all_gps = True
     cfg.constellation.include_galileo = True
+
+    # --- Broadcast (BRDC) transmitter ephemeris for the receiver model ---
+    # Truth keeps the precise SP3 transmitter states; the filter (receiver) measurement model
+    # is fed the broadcast position/clock, evaluated live from the RINEX-nav parameters at each
+    # transmit epoch. The injected broadcast-minus-precise error is debiased first: the per-
+    # constellation systematic clock offset and (for QZSS) the per-satellite radial orbit offset
+    # are removed (Montenbruck & Steigenberger, J. Navigation, 2018). BRDC files must cover the
+    # epoch (download alongside the SP3, e.g. via pylupnt.interfaces.gnss_file_loader.BRDCLoader).
+    cfg.constellation.brdc_directory = str((DATA_DIR / "ephemeris" / "gnsslibpy" / "brdc").resolve())
+    cfg.constellation.use_broadcast_ephemeris = True
+    cfg.constellation.debias_broadcast_clock = True
+    cfg.constellation.debias_qzss_radial = True
 
     # --- Sidelobe link budget ---
     cfg.design.receiver_params.Bp = 1.0

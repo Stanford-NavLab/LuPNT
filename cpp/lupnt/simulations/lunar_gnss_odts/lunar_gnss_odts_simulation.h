@@ -58,6 +58,23 @@ namespace lupnt {
     bool include_galileo = false;
     std::vector<int> gps_prns;
     std::vector<int> galileo_prns;
+
+    // Broadcast (RINEX-nav / BRDC) transmitter ephemeris. When `use_broadcast_ephemeris`
+    // is true, the truth measurements keep the precise SP3 transmitter states, but the
+    // *filter* (receiver) measurement model is fed the broadcast transmitter position and
+    // clock -- i.e. the debiased broadcast-minus-precise error is injected as an unmodeled
+    // measurement error, exactly as a real receiver would experience it. Directory is
+    // scanned for RINEX-nav files (`*_MN.rnx`) covering the epoch; explicit `brdc_files`
+    // override the scan.
+    std::filesystem::path brdc_directory;
+    std::vector<std::filesystem::path> brdc_files;
+    bool use_broadcast_ephemeris = false;
+    // Remove the per-constellation systematic clock offset (median over all satellites and
+    // epochs of precise-minus-broadcast) from the injected clock error -- see Montenbruck &
+    // Steigenberger, "Performance evaluation of the CNAV broadcast ephemeris", J. Nav. 2018.
+    bool debias_broadcast_clock = true;
+    // Remove the per-satellite median radial (precise-minus-broadcast) orbit offset for QZSS.
+    bool debias_qzss_radial = true;
   };
 
   struct LunarGnssODTSConfig {

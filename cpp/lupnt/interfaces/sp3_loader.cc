@@ -400,13 +400,19 @@ namespace lupnt {
       const int num_coeffs = std::min(12, std::max(2, static_cast<int>(epochs.size())));
 
       // Fit Chebyshev only for position (x, y, z); clock uses linear interpolation
-      // at query time to avoid ringing / Gibbs-like jumps at day boundaries.
+      // at query time to avoid ringing / Gibbs-like jumps at day boundaries. Sample the
+      // tabulated positions with a local high-order Lagrange interpolant (the standard SP3
+      // interpolation) rather than a linear one: a GPS/Galileo arc is strongly curved over the
+      // 5-min product interval, so linear sampling incurs kilometre-level chord error that the
+      // Chebyshev fit would faithfully reproduce.
+      const int lagrange_order = std::min<int>(10, std::max<int>(2, static_cast<int>(epochs.size())));
       pos_cheby_[sat] = FitChebyshevModel(
-          [&epochs, &pc](double t) {
+          [&epochs, &pc, lagrange_order](double t) {
+            LagrangeInterpolator interp(epochs, t, lagrange_order);
             VecXd sample(3);
             for (int k = 0; k < 3; ++k) {
               VecXd col = pc.col(k);
-              sample(k) = LinearInterp1d(epochs, col, t);
+              sample(k) = interp.Interpolate(col);
             }
             return sample;
           },

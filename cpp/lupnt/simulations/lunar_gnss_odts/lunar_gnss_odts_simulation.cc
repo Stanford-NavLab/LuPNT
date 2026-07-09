@@ -73,7 +73,7 @@ namespace lupnt {
     std::string LinkCacheFingerprint(const LunarGnssODTSConfig& cfg) {
       std::ostringstream oss;
       oss << std::setprecision(17);
-      AppendFingerprintField(oss, "version", 16);
+      AppendFingerprintField(oss, "version", 17);  // 17: high-order (Lagrange) SP3 interpolation
       AppendFingerprintField(oss, "seed", cfg.seed);
       AppendFingerprintField(oss, "duration_s", cfg.duration_s);
       AppendFingerprintField(oss, "dt_s", cfg.dt_s);
@@ -460,6 +460,137 @@ namespace lupnt {
       ResolveAutoSelectSp3Files(cfg);
       return cfg;
     }
+
+    // Resolve the RINEX-nav (BRDC) files: an explicit list, else every `*.rnx`/`*.nav` file in
+    // brdc_directory. The RinexNavLoader picks, per epoch, the navigation message with the
+    // closest time-of-ephemeris, so passing the whole directory is safe.
+    std::vector<std::filesystem::path> ResolveBrdcFiles(const ConstellationSourceConfig& c) {
+      if (!c.brdc_files.empty()) return c.brdc_files;
+      std::vector<std::filesystem::path> files;
+      if (c.brdc_directory.empty() || !std::filesystem::is_directory(c.brdc_directory)) return files;
+      for (const auto& entry : std::filesystem::directory_iterator(c.brdc_directory)) {
+        if (!entry.is_regular_file()) continue;
+        const std::string ext = entry.path().extension().string();
+        const std::string name = entry.path().filename().string();
+        if (ext == ".rnx" || ext == ".nav" || name.find("_MN.") != std::string::npos)
+          files.push_back(entry.path());
+      }
+      std::sort(files.begin(), files.end());
+      return files;
+    }
+
+    // Broadcast (RINEX-nav) transmitter-ephemeris error model for the ODTS filter. The truth
+    // measurements keep the precise SP3 transmitter states, while the filter (receiver) model
+    // is fed the broadcast position and clock -- evaluated live from the loaded navigation
+    // message parameters at each signal transmit epoch, exactly as a real receiver decodes and
+    // propagates the broadcast message. The injected broadcast-minus-precise error is debiased:
+    // a per-constellation systematic clock offset (median over all satellites and epochs of
+    // broadcast-minus-precise clock) and, for QZSS, a per-satellite median radial orbit offset
+    // are removed (see Montenbruck & Steigenberger, J. Navigation, 2018).
+    class BroadcastEphemerisError {
+     public:
+      BroadcastEphemerisError(const std::vector<std::filesystem::path>& sp3_files,
+                              const std::vector<std::filesystem::path>& brdc_files,
+                              const std::filesystem::path& antex_file,
+                              const std::vector<std::pair<GnssConst, int>>& sats,
+                              double t_start_tai, double t_end_tai, double sample_dt_s,
+                              bool debias_clock, bool debias_qzss_radial)
+          : sp3_(sp3_files),
+            brdc_(brdc_files),
+            antex_(antex_file),
+            debias_clock_(debias_clock),
+            debias_qzss_radial_(debias_qzss_radial) {
+        // Debiasing pass: sample precise and broadcast over the ephemeris window and reduce to
+        // a per-constellation clock median and a per-QZSS-satellite radial-orbit median. A
+        // coarse sampling is sufficient: these systematic offsets are near-constant in time.
+        std::map<GnssConst, std::vector<double>> clock_diffs;                   // brdc - sp3 [s]
+        std::map<std::pair<GnssConst, int>, std::vector<double>> radial_diffs;  // (brdc-sp3).r_hat
+        const double span = std::max(t_end_tai - t_start_tai, 0.0);
+        const int n = std::max(2, static_cast<int>(span / std::max(sample_dt_s, 1.0)) + 1);
+        for (const auto& [gc, prn] : sats) {
+          for (int k = 0; k < n; k++) {
+            const double t = t_start_tai + span * k / (n - 1);
+            Vec3 dr, r_brdc;
+            Real dc;
+            if (!RawDelta(gc, prn, GnssFreq::L1, Real(t), dr, dc, r_brdc)) continue;
+            clock_diffs[gc].push_back(dc.val());
+            if (gc == GnssConst::QZSS)
+              radial_diffs[{gc, prn}].push_back(dr.dot(r_brdc.normalized()).val());
+          }
+        }
+        for (auto& [gc, v] : clock_diffs) clock_median_[gc] = Median(v);
+        for (auto& [key, v] : radial_diffs) radial_median_[key] = Median(v);
+      }
+
+      // Debiased broadcast-minus-precise transmitter error at transmit epoch `t_tai`. `dr_eci`
+      // is the position delta [m] to add to the SP3 tx_state -- identical in any celestial-
+      // inertial frame that shares J2000 axes (e.g. MOON_CI), since it is a difference of two
+      // positions. `dc_s` is the clock delta [s]. Returns false if the satellite has no
+      // broadcast message (then the filter keeps the precise SP3 state, i.e. no injected error).
+      bool GetDebiasedDelta(GnssConst gc, int prn, GnssFreq freq, Real t_tai, Vec3& dr_eci,
+                            Real& dc_s) const {
+        Vec3 r_brdc;
+        if (!RawDelta(gc, prn, freq, t_tai, dr_eci, dc_s, r_brdc)) return false;
+        if (debias_clock_) {
+          auto it = clock_median_.find(gc);
+          if (it != clock_median_.end()) dc_s -= it->second;
+        }
+        if (debias_qzss_radial_ && gc == GnssConst::QZSS) {
+          auto it = radial_median_.find({gc, prn});
+          if (it != radial_median_.end()) dr_eci -= Real(it->second) * r_brdc.normalized();
+        }
+        return true;
+      }
+
+     private:
+      // Raw broadcast-minus-precise delta (no debiasing), both antenna-phase-center, in ECI.
+      // Also returns the broadcast position `r_brdc_eci` (for the QZSS radial direction).
+      bool RawDelta(GnssConst gc, int prn, GnssFreq freq, Real t_tai, Vec3& dr_eci, Real& dc_s,
+                    Vec3& r_brdc_eci) const {
+        const std::string sat_id = AntexLoader::SatId(gc, prn);
+        if (!brdc_.HasSatellite(sat_id)) return false;
+        Vec6 rv_sp3_ecef, rv_brdc_ecef, tmp;
+        Real clk_sp3, clk_brdc;
+        try {
+          rv_sp3_ecef = sp3_.GetPosVel(sat_id, t_tai);
+          sp3_.GetPosVelClock(sat_id, t_tai, tmp, clk_sp3);
+          brdc_.GetPosVelClock(sat_id, t_tai, rv_brdc_ecef, clk_brdc);
+        } catch (const std::exception&) {
+          return false;  // outside the ephemeris span, or no covering nav message
+        }
+        // Precise SP3 center-of-mass -> antenna phase center, matching the constellation build.
+        const Vec3d pos_sp3_ecef(rv_sp3_ecef(0).val(), rv_sp3_ecef(1).val(), rv_sp3_ecef(2).val());
+        const Vec3d pco = antex_.HasPco(gc, prn, freq, t_tai) ? antex_.GetPco(gc, prn, freq, t_tai)
+                                                              : Vec3d::Zero();
+        const Vec3d pos_sp3_apc = AntexLoader::ApplyPcoCorrectionEcef(t_tai, pos_sp3_ecef, pco);
+        Vec6 sp3_apc_ecef;
+        sp3_apc_ecef << Real(pos_sp3_apc(0)), Real(pos_sp3_apc(1)), Real(pos_sp3_apc(2)),
+            rv_sp3_ecef(3), rv_sp3_ecef(4), rv_sp3_ecef(5);
+
+        const Real t_tdb = ConvertTime(t_tai, Time::TAI, Time::TDB);
+        const Vec6 rv_sp3_eci = ConvertFrame(t_tdb, sp3_apc_ecef, Frame::ECEF, Frame::ECI, false);
+        const Vec6 rv_brdc_eci = ConvertFrame(t_tdb, rv_brdc_ecef, Frame::ECEF, Frame::ECI, false);
+        r_brdc_eci = rv_brdc_eci.head(3);
+        dr_eci = rv_brdc_eci.head(3) - rv_sp3_eci.head(3);
+        dc_s = clk_brdc - clk_sp3;
+        return true;
+      }
+
+      static double Median(std::vector<double> v) {
+        if (v.empty()) return 0.0;
+        std::sort(v.begin(), v.end());
+        const size_t m = v.size() / 2;
+        return v.size() % 2 == 1 ? v[m] : 0.5 * (v[m - 1] + v[m]);
+      }
+
+      Sp3Loader sp3_;
+      RinexNavLoader brdc_;
+      AntexLoader antex_;
+      bool debias_clock_;
+      bool debias_qzss_radial_;
+      std::map<GnssConst, double> clock_median_;
+      std::map<std::pair<GnssConst, int>, double> radial_median_;
+    };
 
     bool EstimateSrp(const LunarGnssODTSConfig& cfg) { return cfg.estimate_srp_coefficient; }
 
@@ -1674,6 +1805,32 @@ namespace lupnt {
         Logger::Info("Running EKF over " + std::to_string(n_epochs) + " epochs (mc "
                          + std::to_string(context_.mc_index) + ")",
                      "LunarGnssODTS");
+
+        // Broadcast-ephemeris injection: build the live broadcast (RINEX-nav) transmitter-error
+        // model once. Truth keeps the precise SP3 transmitter states; the filter measurement
+        // model is fed the debiased broadcast position/clock (see BroadcastEphemerisError).
+        broadcast_error_.reset();
+        if (context_.cfg.constellation.use_broadcast_ephemeris) {
+          std::set<std::pair<GnssConst, int>> sat_set;
+          for (const auto& epoch : context_.precomputed)
+            for (const auto& ch : epoch.channels) sat_set.emplace(ch.gnss_const, ch.prn);
+          const std::vector<std::pair<GnssConst, int>> sats(sat_set.begin(), sat_set.end());
+          const std::vector<std::filesystem::path> brdc_files
+              = ResolveBrdcFiles(context_.cfg.constellation);
+          LUPNT_CHECK(!brdc_files.empty(),
+                      "use_broadcast_ephemeris is set but no BRDC (RINEX-nav) files were found; "
+                      "set constellation.brdc_directory (or brdc_files)",
+                      "LunarGnssODTS");
+          const auto [t_start_tai, t_end_tai] = EphemerisWindowTai(context_.cfg);
+          broadcast_error_ = std::make_shared<BroadcastEphemerisError>(
+              context_.cfg.constellation.sp3_files, brdc_files,
+              context_.cfg.constellation.antex_file, sats, t_start_tai, t_end_tai,
+              /*sample_dt_s=*/300.0, context_.cfg.constellation.debias_broadcast_clock,
+              context_.cfg.constellation.debias_qzss_radial);
+          Logger::Info("Broadcast-ephemeris injection enabled (" + std::to_string(sats.size())
+                           + " satellites, " + std::to_string(brdc_files.size()) + " BRDC files)",
+                       "LunarGnssODTS");
+        }
       }
 
       void Step(Real) override {
@@ -1711,6 +1868,35 @@ namespace lupnt {
         truth_primary = FilterByTangentAltitude(truth_primary, t_tdb, rx_mci,
                                                 context_.cfg.tdcp_min_tangent_altitude_m);
         std::vector<GnssChannel> filter_primary = MakeFilterChannels(truth_primary, context_.cfg);
+
+        // Feed the filter (receiver) measurement model the broadcast transmitter ephemeris,
+        // evaluated live from the navigation-message parameters at each signal transmit epoch;
+        // the truth channels keep the precise SP3 states. The debiased broadcast-minus-precise
+        // error (per satellite) is thus injected as an unmodeled measurement error. Cache per
+        // satellite within the epoch so the pseudorange and TDCP channel sets share one eval.
+        if (broadcast_error_) {
+          std::map<std::pair<GnssConst, int>, std::pair<Vec3, Real>> cache;
+          auto inject = [&](std::vector<GnssChannel>& chans) {
+            for (auto& ch : chans) {
+              const std::pair<GnssConst, int> key{ch.gnss_const, ch.prn};
+              auto it = cache.find(key);
+              if (it == cache.end()) {
+                Vec3 dr;
+                Real dc;
+                const Real t_tx_tai
+                    = ConvertTime(ch.transmit_time, ch.transmit_time_scale, Time::TAI);
+                if (!broadcast_error_->GetDebiasedDelta(ch.gnss_const, ch.prn, ch.frequency,
+                                                        t_tx_tai, dr, dc))
+                  continue;  // no broadcast message -> leave this satellite on the precise state
+                it = cache.emplace(key, std::make_pair(dr, dc)).first;
+              }
+              ch.tx_state.head(3) += it->second.first;
+              ch.tx_clock_bias_s += it->second.second;
+            }
+          };
+          inject(filter_channels);
+          inject(filter_primary);
+        }
 
         if (k > 0) filter_->Predict(context_.times_tdb(k));
 
@@ -1866,6 +2052,7 @@ namespace lupnt {
       std::ofstream trajectory_;
       std::vector<GnssChannel> previous_truth_primary_;
       std::vector<GnssChannel> previous_filter_primary_;
+      std::shared_ptr<BroadcastEphemerisError> broadcast_error_;
       LunarGnssODTSSummary summary_;
       double pos_err2_sum_ = 0.0;
       double vel_err2_sum_ = 0.0;
@@ -2059,6 +2246,19 @@ namespace lupnt {
     cfg.constellation.gps_prns = ReadYaml(constellation, "gps_prns", cfg.constellation.gps_prns);
     cfg.constellation.galileo_prns
         = ReadYaml(constellation, "galileo_prns", cfg.constellation.galileo_prns);
+    cfg.constellation.brdc_directory = ResolvePath(
+        config_dir, ReadYaml<std::string>(constellation, "brdc_directory",
+                                          cfg.constellation.brdc_directory.string()));
+    cfg.constellation.brdc_files
+        = ReadPathVector(constellation, "brdc_files", cfg.constellation.brdc_files, config_dir);
+    cfg.constellation.use_broadcast_ephemeris
+        = ReadYaml(constellation, "use_broadcast_ephemeris",
+                   cfg.constellation.use_broadcast_ephemeris);
+    cfg.constellation.debias_broadcast_clock
+        = ReadYaml(constellation, "debias_broadcast_clock",
+                   cfg.constellation.debias_broadcast_clock);
+    cfg.constellation.debias_qzss_radial
+        = ReadYaml(constellation, "debias_qzss_radial", cfg.constellation.debias_qzss_radial);
 
     const YAML::Node plasma = root["plasma"];
     cfg.plasma.simulate_truth = ReadYaml(plasma, "simulate_truth", cfg.plasma.simulate_truth);

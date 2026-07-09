@@ -129,7 +129,31 @@ void InitGnssOdts(py::module& m) {
       .def_readwrite("use_all_gps", &ConstellationSourceConfig::use_all_gps)
       .def_readwrite("include_galileo", &ConstellationSourceConfig::include_galileo)
       .def_readwrite("gps_prns", &ConstellationSourceConfig::gps_prns)
-      .def_readwrite("galileo_prns", &ConstellationSourceConfig::galileo_prns);
+      .def_readwrite("galileo_prns", &ConstellationSourceConfig::galileo_prns)
+      .def_property(
+          "brdc_directory",
+          [](const ConstellationSourceConfig& c) { return c.brdc_directory.string(); },
+          [](ConstellationSourceConfig& c, const std::string& s) {
+            c.brdc_directory = std::filesystem::path(s);
+          },
+          "Directory scanned for RINEX-nav (BRDC) files when use_broadcast_ephemeris is set")
+      .def_property(
+          "brdc_files",
+          [](const ConstellationSourceConfig& c) { return PathsToStrings(c.brdc_files); },
+          [](ConstellationSourceConfig& c, const std::vector<std::string>& v) {
+            c.brdc_files = StringsToPaths(v);
+          },
+          "Explicit RINEX-nav file list (overrides brdc_directory scan)")
+      .def_readwrite("use_broadcast_ephemeris",
+                     &ConstellationSourceConfig::use_broadcast_ephemeris,
+                     "Feed the filter (receiver) model the broadcast transmitter ephemeris "
+                     "while truth keeps precise SP3; injects the debiased broadcast error")
+      .def_readwrite("debias_broadcast_clock",
+                     &ConstellationSourceConfig::debias_broadcast_clock,
+                     "Remove the per-constellation median broadcast-minus-precise clock offset")
+      .def_readwrite("debias_qzss_radial", &ConstellationSourceConfig::debias_qzss_radial,
+                     "Remove the per-QZSS-satellite median radial broadcast-minus-precise orbit "
+                     "offset");
 
   // ---- LunarGnssODTSConfig -------------------------------------------------------
 
