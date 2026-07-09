@@ -1197,8 +1197,8 @@ namespace lupnt {
 
   public:
     /// @brief Construct a zero-initialized 2-state clock state (bias, drift),
-    /// in frame MOON_CI. Used e.g. as `Transmission::clk_tx`, the
-    /// transmitter clock-bias/drift state carried by a measurement.
+    /// in frame MOON_CI. Used e.g. as a transmitter clock-bias/drift state
+    /// carried by a measurement.
     ClockState2() : State() { Init(); }
 
     /// @brief Construct a zero-initialized 2-state clock state of the given

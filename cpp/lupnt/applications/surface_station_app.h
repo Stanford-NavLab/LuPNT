@@ -2,7 +2,7 @@
 
 #include "lupnt/applications/application.h"
 #include "lupnt/core/config.h"
-#include "lupnt/filters/filter.h"
+#include "lupnt/numerics/filters/filter.h"
 
 namespace lupnt {
 
@@ -11,7 +11,7 @@ namespace lupnt {
   ///
   /// Currently a minimal skeleton (Setup()/Step() only log debug messages); intended to be
   /// extended to drive `filter_` over the station's tracking measurements, analogous to how
-  /// RoverApp drives its filter.
+  /// LanderNavApp drives its filter.
   class SurfaceStationApp : public Application {
   protected:
     Ptr<Filter> filter_;

@@ -1,7 +1,7 @@
 #include <lupnt/conversions/frame_converter.h>
-#include <lupnt/data/kernels.h>
 #include <lupnt/dynamics/numerical_orbit_dynamics.h>
 #include <lupnt/environment/forces.h>
+#include <lupnt/interfaces/kernels.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>

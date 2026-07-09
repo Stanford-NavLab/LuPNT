@@ -227,11 +227,11 @@ namespace lupnt {
   /// @return   J0(x)
   /// @note https://en.wikipedia.org/wiki/Bessel_function
   template <typename T> T J0Bessel(T x) {
-    // double J0 = 0.0;
+    // J0(x) = sum_{k>=0} (-1)^k (x/2)^{2k} / (k!)^2; term ratio t_k/t_{k-1} = -x^2/(4 k^2).
     T y = 1.0;
     T sum = 1.0;
     for (int i = 1; i < 10; i++) {
-      y = y * x * x / (4 * i * i);
+      y = -y * x * x / (4 * i * i);
       sum += y;
     }
     return sum;
@@ -244,11 +244,12 @@ namespace lupnt {
   /// @return   J1(x)
   /// @note https://en.wikipedia.org/wiki/Bessel_function
   template <typename T> T J1Bessel(T x) {
-    // double J1 = 0.0;
-    T y = 1.0;
-    T sum = 1.0;
+    // J1(x) = sum_{k>=0} (-1)^k (x/2)^{2k+1} / (k! (k+1)!); first term x/2,
+    // term ratio t_k/t_{k-1} = -x^2 / (4 k (k+1)).
+    T y = x / 2;
+    T sum = y;
     for (int i = 1; i < 10; i++) {
-      y = y * x / (2 * i * (2 * i + 1));
+      y = -y * x * x / (4 * i * (i + 1));
       sum += y;
     }
     return sum;

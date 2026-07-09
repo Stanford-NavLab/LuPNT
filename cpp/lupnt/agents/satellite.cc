@@ -4,7 +4,7 @@
 #include "lupnt/core/constants.h"
 #include "lupnt/core/definitions.h"
 #include "lupnt/core/logger.h"
-#include "lupnt/core/simulation.h"
+#include "lupnt/simulations/simulation.h"
 #include "lupnt/states/state.h"
 
 namespace lupnt {

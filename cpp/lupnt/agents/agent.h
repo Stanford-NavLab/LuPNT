@@ -109,12 +109,21 @@ namespace lupnt {
     /// @return     The matching device
     Ptr<Device> GetDevice(const std::string& name) const;
 
+    /// @brief Create and attach this agent's `Application` from the
+    /// `application:` block of a config node (if present). Factored out of the
+    /// `Agent(Config&)` constructor so agents that don't chain to it (e.g.
+    /// `GroundStation`, which builds itself via `ConfigureFromConfig`) can still
+    /// opt into an application. Requires `name_` to already be set.
+    void CreateApplication(Config& config);
+
     /// @brief Get the `Application` attached to this agent (e.g. an LNSS,
     /// rover, or surface-station application), if any.
     Ptr<Application> GetApplication() const { return application_; }
     /// @brief Attach an `Application` to this agent, called during
-    /// construction (from the `application:` section of the config).
-    void SetApplication(Ptr<Application> app) { application_ = app; }
+    /// construction (from the `application:` section of the config). Wires the
+    /// application's back-pointer to this agent so it can reach the owning
+    /// agent/simulation from its `Setup`/`Step`/`Log`.
+    void SetApplication(Ptr<Application> app);
 
     /// @brief Perform one-time setup before the simulation starts: schedules
     /// a periodic `Step` callback with the simulation event scheduler (if

@@ -1,19 +1,19 @@
-#include <lupnt/simulations/GroundStationODTS/ground_station_odts_simulation.h>
+#include <lupnt/simulations/ground_station_odts/ground_station_odts_simulation.h>
 
 #include "py_pybind11.h"
 
 void InitGroundStationOdts(py::module& m) {
   py::class_<GroundStationOdtsStationConfig>(m, "GroundStationOdtsStationConfig")
       .def(py::init<>())
-      .def(py::init([](std::string name, double latitude_deg, double longitude_deg,
-                       double altitude_m) {
-             GroundStationOdtsStationConfig cfg;
-             cfg.name = std::move(name);
-             cfg.latitude_deg = latitude_deg;
-             cfg.longitude_deg = longitude_deg;
-             cfg.altitude_m = altitude_m;
-             return cfg;
-           }),
+      .def(py::init(
+               [](std::string name, double latitude_deg, double longitude_deg, double altitude_m) {
+                 GroundStationOdtsStationConfig cfg;
+                 cfg.name = std::move(name);
+                 cfg.latitude_deg = latitude_deg;
+                 cfg.longitude_deg = longitude_deg;
+                 cfg.altitude_m = altitude_m;
+                 return cfg;
+               }),
            py::arg("name"), py::arg("latitude_deg"), py::arg("longitude_deg"),
            py::arg("altitude_m"))
       .def_readwrite("name", &GroundStationOdtsStationConfig::name)
@@ -53,15 +53,18 @@ void InitGroundStationOdts(py::module& m) {
       .def_readwrite("use_range_rate", &GroundStationOdtsConfig::use_range_rate)
       .def_readwrite("range_sigma_m", &GroundStationOdtsConfig::range_sigma_m)
       .def_readwrite("range_rate_sigma_mps", &GroundStationOdtsConfig::range_rate_sigma_mps)
-      .def_readwrite("initial_position_sigma_m",
-                     &GroundStationOdtsConfig::initial_position_sigma_m)
+      .def_readwrite("initial_position_sigma_m", &GroundStationOdtsConfig::initial_position_sigma_m)
       .def_readwrite("initial_velocity_sigma_mps",
                      &GroundStationOdtsConfig::initial_velocity_sigma_mps)
       .def_readwrite("batch_max_iterations", &GroundStationOdtsConfig::batch_max_iterations)
       .def_readwrite("batch_convergence_tol", &GroundStationOdtsConfig::batch_convergence_tol)
       .def_readwrite("batch_use_weights", &GroundStationOdtsConfig::batch_use_weights)
-      .def_readwrite("batch_use_initialization",
-                     &GroundStationOdtsConfig::batch_use_initialization);
+      .def_readwrite("batch_use_initialization", &GroundStationOdtsConfig::batch_use_initialization)
+      .def_readwrite("batch_use_analytic_jacobian",
+                     &GroundStationOdtsConfig::batch_use_analytic_jacobian)
+      .def_readwrite("run_srif", &GroundStationOdtsConfig::run_srif)
+      .def_readwrite("srif_use_process_noise", &GroundStationOdtsConfig::srif_use_process_noise)
+      .def_readwrite("srif_accel_psd", &GroundStationOdtsConfig::srif_accel_psd);
 
   py::class_<GroundStationOdtsResults>(m, "GroundStationOdtsResults")
       .def(py::init<>())
@@ -75,8 +78,7 @@ void InitGroundStationOdts(py::module& m) {
       .def_readonly("obs_range_rate_true_mps", &GroundStationOdtsResults::obs_range_rate_true_mps)
       .def_readonly("obs_range_m", &GroundStationOdtsResults::obs_range_m)
       .def_readonly("obs_range_rate_mps", &GroundStationOdtsResults::obs_range_rate_mps)
-      .def_readonly("iteration_state_estimate",
-                    &GroundStationOdtsResults::iteration_state_estimate)
+      .def_readonly("iteration_state_estimate", &GroundStationOdtsResults::iteration_state_estimate)
       .def_readonly("iteration_correction_norm",
                     &GroundStationOdtsResults::iteration_correction_norm)
       .def_readonly("iteration_weighted_rms", &GroundStationOdtsResults::iteration_weighted_rms)
@@ -91,7 +93,13 @@ void InitGroundStationOdts(py::module& m) {
       .def_readonly("covariance", &GroundStationOdtsResults::covariance)
       .def_readonly("converged", &GroundStationOdtsResults::converged)
       .def_readonly("num_iterations", &GroundStationOdtsResults::num_iterations)
-      .def_readonly("estimated_state", &GroundStationOdtsResults::estimated_state);
+      .def_readonly("estimated_state", &GroundStationOdtsResults::estimated_state)
+      .def_readonly("estimated_covariance", &GroundStationOdtsResults::estimated_covariance)
+      .def_readonly("srif_filtered_state", &GroundStationOdtsResults::srif_filtered_state)
+      .def_readonly("srif_filtered_covariance", &GroundStationOdtsResults::srif_filtered_covariance)
+      .def_readonly("srif_smoothed_state", &GroundStationOdtsResults::srif_smoothed_state)
+      .def_readonly("srif_smoothed_covariance",
+                    &GroundStationOdtsResults::srif_smoothed_covariance);
 
   py::class_<GroundStationOdtsSimulation>(m, "GroundStationOdtsSimulation")
       .def(py::init<GroundStationOdtsConfig>(), py::arg("config"))

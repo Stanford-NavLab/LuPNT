@@ -17,17 +17,40 @@ import matplotlib.transforms as transforms
 from .. import _pylupnt as _pnt
 
 ###patch start###
+# Cosmetically shrink the 3D axis panes by inset-ing the coordinate limits. matplotlib changed
+# `Axis._get_coord_info`'s signature/return between versions (<=3.8: `(self, renderer)` -> 6-tuple;
+# >=3.9: `(self)` -> `(mins, maxs, tc, highs)`), so dispatch on the installed signature instead of
+# assuming the old one (which raised `TypeError: _get_coord_info_new() missing ... 'renderer'` and
+# broke *all* 3D rendering on matplotlib >= 3.9).
+import inspect
+
 from mpl_toolkits.mplot3d.axis3d import Axis
 
 if not hasattr(Axis, "_get_coord_info_old"):
-
-    def _get_coord_info_new(self, renderer):
-        mins, maxs, centers, deltas, tc, highs = self._get_coord_info_old(renderer)
-        mins += deltas / 4
-        maxs -= deltas / 4
-        return mins, maxs, centers, deltas, tc, highs
-
     Axis._get_coord_info_old = Axis._get_coord_info
+    try:
+        _n_params = len(inspect.signature(Axis._get_coord_info_old).parameters)
+    except (TypeError, ValueError):
+        _n_params = 1
+
+    if _n_params >= 2:  # old matplotlib API: (self, renderer) -> 6-tuple
+
+        def _get_coord_info_new(self, renderer):
+            mins, maxs, centers, deltas, tc, highs = self._get_coord_info_old(renderer)
+            mins = mins + deltas / 4
+            maxs = maxs - deltas / 4
+            return mins, maxs, centers, deltas, tc, highs
+
+    else:  # matplotlib >= 3.9: (self) -> (mins, maxs, tc, highs)
+
+        def _get_coord_info_new(self):
+            info = self._get_coord_info_old()
+            mins, maxs = info[0], info[1]
+            deltas = maxs - mins
+            mins = mins + deltas / 4
+            maxs = maxs - deltas / 4
+            return (mins, maxs) + tuple(info[2:])
+
     Axis._get_coord_info = _get_coord_info_new
 ###patch end###
 

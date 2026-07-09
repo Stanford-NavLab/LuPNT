@@ -1,6 +1,6 @@
 #include <lupnt/core/constants.h>
 #include <lupnt/core/file.h>
-#include <lupnt/data/eop.h>
+#include <lupnt/interfaces/eop.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>

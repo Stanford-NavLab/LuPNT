@@ -74,12 +74,12 @@ namespace lupnt {
     VecXd GetThetaVector() { return theta_; }
 
   private:
-    int n_dim_ = 0;           // Number of dimensions (0=omni, 1, or 2)
-    std::string name_;        // Name (e.g., Block-IIR_ACE)
-    double phi_max_ = 90.0;   // Maximum off-boresight angle [deg]
-    MatXd gain_;        // Gain pattern [dB]
-    VecXd phi_;         // Phi angles [deg]
-    VecXd theta_;       // Theta angles [deg]
+    int n_dim_ = 0;          // Number of dimensions (0=omni, 1, or 2)
+    std::string name_;       // Name (e.g., Block-IIR_ACE)
+    double phi_max_ = 90.0;  // Maximum off-boresight angle [deg]
+    MatXd gain_;             // Gain pattern [dB]
+    VecXd phi_;              // Phi angles [deg]
+    VecXd theta_;            // Theta angles [deg]
 
     /// @brief Normalize a raw 1D/2D antenna pattern table (from
     /// `LoadAntennaPattern`) into LuPNT's phi in [-180,180] deg,

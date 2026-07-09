@@ -1,4 +1,5 @@
-#include <lupnt/measurements/measurements.h>
+#include <lupnt/measurements/measurement.h>
+#include <lupnt/measurements/measurement_utils.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>

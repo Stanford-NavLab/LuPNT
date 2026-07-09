@@ -46,18 +46,18 @@ __all__ = [
     "update_kp",
     "update_kp_table",
     "convert_to_csv",
-    # constants
-    "RE",
-    "C",
-    "PI",
-    "SECS_DAY",
-    "RAD2DEG",
-    "DEG2RAD",
-    "TECU",
-    "GM_EARTH",
+    # Frequency constants (same objects as the core _pylupnt symbols).
     "freq_L1",
     "freq_L2",
     "freq_L5",
+    # NOTE: the generic physics constants RE / C / PI / SECS_DAY / RAD2DEG /
+    # DEG2RAD / TECU / GM_EARTH are deliberately NOT listed in __all__. They are
+    # the km-based pecsim values (C_PLASMA, GM_EARTH_PLASMA, ...). When they were
+    # in __all__, the top-level package __init__'s `_try_import` merged them into
+    # the `pylupnt` namespace via globals().update, shadowing the SI core
+    # constants (e.g. making `pylupnt.C == 299792.458` km/s instead of the SI
+    # `299792458` m/s, and `pylupnt.GM_EARTH == 398600.4418` km³/s²). Access the
+    # plasma values explicitly instead: `pylupnt.plasma.C`, `pylupnt.plasma.RE`.
 ]
 
 # Re-export the pybind11 symbols that live in the top-level _pylupnt module

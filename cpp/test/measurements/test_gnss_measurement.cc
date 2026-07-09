@@ -78,7 +78,7 @@ TEST_CASE("measurements.gnss_measurement.single_channel") {
     REQUIRE_THAT(value.carrier_phase_cycles.val(), WithinAbs(expected_phase, 1.0e-8));
     REQUIRE_THAT(value.carrier_integer_cycles.val(), WithinAbs(12.0, 1.0e-12));
 
-    VecXd y = measurement.Compute(user_state, nullptr, options);
+    VecXd y = measurement.ComputeVector(user_state, nullptr, options);
     REQUIRE(y.size() == 3);
     REQUIRE_THAT(y(0), WithinAbs(expected_range, 1.0e-8));
     REQUIRE_THAT(y(1), WithinAbs(expected_doppler, 1.0e-8));
@@ -128,7 +128,7 @@ TEST_CASE("measurements.gnss_measurement.single_channel") {
     REQUIRE_THAT(value.carrier_integer_cycles.val(), WithinAbs(42.0, 1.0e-12));
 
     MatXd H;
-    VecXd y = measurement.Compute(user_state, &H, options);
+    VecXd y = measurement.ComputeVector(user_state, &H, options);
     REQUIRE(y.size() == 3);
     REQUIRE(H.rows() == 3);
     REQUIRE(H.cols() == 9);
@@ -141,7 +141,7 @@ TEST_CASE("measurements.gnss_measurement.single_channel") {
     options.clock_bias_unit = ClockBiasUnit::SECONDS;
 
     MatXd H;
-    measurement.Compute(user_state, &H, options);
+    measurement.ComputeVector(user_state, &H, options);
     Real lambda = channel.Wavelength();
 
     REQUIRE(H.rows() == 3);
@@ -326,21 +326,21 @@ TEST_CASE("measurements.gnss_measurements.visibility") {
   Vec3 r_sat(26560e3, 0.0, 0.0);
 
   Vec3 r_rx_visible(R_EARTH + 500e3, 0.0, 0.0);
-  REQUIRE(GNSSMeasurements::ComputeVisibility(r_rx_visible, r_sat, R_earth));
+  REQUIRE(ComputeVisibility(r_rx_visible, r_sat, R_earth));
 
   Vec3 r_rx_occluded(-(R_EARTH + 500e3), 0.0, 0.0);
-  REQUIRE_FALSE(GNSSMeasurements::ComputeVisibility(r_rx_occluded, r_sat, R_earth));
+  REQUIRE_FALSE(ComputeVisibility(r_rx_occluded, r_sat, R_earth));
 
   Vec3 r_surface(R_EARTH, 0.0, 0.0);
   Vec3 r_zenith_sat(26560e3, 0.0, 0.0);
-  REQUIRE(GNSSMeasurements::ComputeVisibility(r_surface, r_zenith_sat, R_earth));
+  REQUIRE(ComputeVisibility(r_surface, r_zenith_sat, R_earth));
 
   Vec3 r_far_side_sat(-26560e3, 0.0, 0.0);
-  REQUIRE_FALSE(GNSSMeasurements::ComputeVisibility(r_surface, r_far_side_sat, R_earth));
+  REQUIRE_FALSE(ComputeVisibility(r_surface, r_far_side_sat, R_earth));
 
   Vec3 r_lunar_receiver(390000e3, 0.0, 0.0);
   Vec3 r_gps_near_side(26560e3, 0.0, 0.0);
   Vec3 r_gps_far_side(-26560e3, 0.0, 0.0);
-  REQUIRE(GNSSMeasurements::ComputeVisibility(r_lunar_receiver, r_gps_near_side, R_earth));
-  REQUIRE_FALSE(GNSSMeasurements::ComputeVisibility(r_lunar_receiver, r_gps_far_side, R_earth));
+  REQUIRE(ComputeVisibility(r_lunar_receiver, r_gps_near_side, R_earth));
+  REQUIRE_FALSE(ComputeVisibility(r_lunar_receiver, r_gps_far_side, R_earth));
 }

@@ -10,11 +10,11 @@
 #include <vector>
 
 #include "lupnt/core/error.h"
-#include "lupnt/data/eop.h"
-#include "lupnt/data/kernels.h"
-#include "lupnt/data/tai_utc.h"
 #include "lupnt/environment/body.h"
 #include "lupnt/environment/solar_system.h"
+#include "lupnt/interfaces/eop.h"
+#include "lupnt/interfaces/kernels.h"
+#include "lupnt/interfaces/tai_utc.h"
 #include "lupnt/numerics/cheby_fit.h"
 #include "lupnt/numerics/math_utils.h"
 

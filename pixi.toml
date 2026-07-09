@@ -17,7 +17,8 @@ cmake-format = "*"
 python-build = "*"
 
 # Python
-python = "3.12.*"
+python = "3.11.*"
+numpy = "<2.0.0"
 pybind11 = "*"
 mypy = "*"
 
@@ -44,6 +45,7 @@ doxygen = "*"
 pandoc = "*"
 
 [pypi-dependencies]
+bpy = "==4.5.11"
 fastapi = "*"
 h5py = "*"
 ipykernel = "*"
@@ -57,7 +59,6 @@ pre-commit = "*"
 pymoo = "*"
 pytest = "*"
 requests = "*"
-rerun-sdk = "==0.24.0"
 scikit-learn = "*"
 sphinx = "*"
 sphinx-rtd-theme = "*"
@@ -94,11 +95,32 @@ build-py      = { cmd = "cmake -S python/bindings -B build-py         -GNinja -D
 build-py-debug  = { cmd = "cmake -S python/bindings -B build-py-debug   -GNinja -DCMAKE_BUILD_TYPE=Debug          && cmake --build build-py-debug   --target pylupnt-dev" }
 build-py-reldbg = { cmd = "cmake -S python/bindings -B build-py-reldbg  -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo && cmake --build build-py-reldbg  --target pylupnt-dev" }
 build-docs    = { cmd = "python docs/make_docs.py", depends-on = ["build-py"] }
+# Register a Jupyter kernel that runs the pixi env's Python *and* bakes in the activation
+# env vars (PYTHONPATH -> python/, LUPNT_DATA_PATH, ...). VS Code / Jupyter launch the
+# kernel's interpreter directly without pixi activation, so without these the kernel can't
+# `import pylupnt` or find LuPNT_data. The helper derives all paths from the repo layout,
+# so it is correct per-machine and works on both macOS and Linux/WSL. Re-run after moving
+# the repo or switching machines.
+install-kernel = { cmd = "python scripts/install_kernel.py", depends-on = ["build-py"] }
 configure-test-cpp = { cmd = "cmake -S cpp/test -B build-cpp-test-pixi -GNinja -DCMAKE_BUILD_TYPE=Release" }
 build-test-cpp = { cmd = "cmake --build build-cpp-test-pixi --target lupnt_tests", depends-on = ["configure-test-cpp"] }
 test-cpp       = { cmd = "ctest --test-dir build-cpp-test-pixi --output-on-failure", depends-on = ["build-test-cpp"] }
 test-cpp-ci    = { cmd = "ctest --test-dir build-cpp-test-pixi --output-on-failure -E 'data.eop_latest_iers|devices.space_comms|agents.gnss_constellation.setup_from_files|interfaces.antex_loader|interfaces.rinex_nav_loader|interfaces.sp3_loader|measurements.gnss_measurements.visibility|states.tle'", depends-on = ["build-test-cpp"] }
 test-py        = { cmd = "pytest python/test", depends-on = ["build-py"] }
+# Execute every python/examples/ex*.ipynb end-to-end and report a pass/fail summary.
+# Outputs are not written back to the source notebooks. Forward extra args after `--`,
+# e.g. `pixi run run-notebooks -- --only ex1 --timeout 600`.
+run-notebooks  = { cmd = "python scripts/run_example_notebooks.py", depends-on = ["build-py", "install-kernel"] }
+# Execute every python/examples/ex*.ipynb and write the cell outputs back IN PLACE, so the
+# rendered docs (nbsphinx_execute = "never") show real results. Use before building the docs
+# after example/API changes. Forward extra args after `--`, e.g.
+# `pixi run render-notebooks -- --only ex1 ex4` or `-- --allow-errors`.
+render-notebooks = { cmd = "python scripts/execute_notebooks_inplace.py", depends-on = ["build-py", "install-kernel"] }
+# One-shot tutorial refresh: render notebooks in place (stages the interactive Plotly/Cesium
+# HTML into build/doc_assets/ for lupnt-doc-assets) and THEN optimize the embedded PNGs.
+# Order matters — a render regenerates full-size figures, so the optimize step must run after.
+# Follow with `bash scripts/publish_doc_assets.sh` to push the interactive assets.
+render-tutorials = { cmd = "python scripts/execute_notebooks_inplace.py && python scripts/optimize_notebook_images.py", depends-on = ["build-py", "install-kernel"] }
 test           = { depends-on = ["test-cpp", "test-py"] }
 build-examples = { cmd = "cmake -S cpp/examples -B build-examples-pixi -GNinja -DCMAKE_BUILD_TYPE=Release && cmake --build build-examples-pixi --target all_examples" }
 format-check   = { cmd = "python scripts/check_format.py" }

@@ -151,8 +151,12 @@ namespace lupnt {
         Vec6 rv_sp3_ecef = sp3.GetPosVel(sat_id, t);
         Vec3d pos_sp3_ecef(rv_sp3_ecef(0).val(), rv_sp3_ecef(1).val(), rv_sp3_ecef(2).val());
 
-        // Antenna phase-center offset (NEU, meters) -> apply correction in ECEF
-        Vec3d pco_neu_m = antex.GetPco(gnss_const_, prn, freq, t);
+        // Antenna phase-center offset (NEU, meters) -> apply correction in ECEF. ANTEX omits
+        // frequencies a satellite does not transmit (e.g. L5 on older GPS blocks); fall back to
+        // a zero offset there -- such links are dropped later by the C/N0 threshold anyway.
+        Vec3d pco_neu_m = antex.HasPco(gnss_const_, prn, freq, t)
+                              ? antex.GetPco(gnss_const_, prn, freq, t)
+                              : Vec3d::Zero();
         Vec3d pos_corrected_ecef = AntexLoader::ApplyPcoCorrectionEcef(t, pos_sp3_ecef, pco_neu_m);
 
         // Retain the (uncorrected) SP3 velocity -- the PCO is constant in the

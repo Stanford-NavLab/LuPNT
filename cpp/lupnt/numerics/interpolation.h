@@ -35,8 +35,8 @@ namespace lupnt {
   /// @brief Lagrange-polynomial interpolator for evaluating one or more tabulated functions
   /// at a fixed query point `xi`, using a fixed-order local polynomial centered near `xi`.
   ///
-  /// Used by the EOP (`GetEopData`, lupnt/data/eop.cc) and IAU SOFA constants
-  /// (`GetIauSofaData`, lupnt/data/iau_sofa.cc) loaders to interpolate tabulated
+  /// Used by the EOP (`GetEopData`, lupnt/interfaces/eop.cc) and IAU SOFA constants
+  /// (`GetIauSofaData`, lupnt/interfaces/iau_sofa.cc) loaders to interpolate tabulated
   /// Earth-orientation/precession-nutation series to an arbitrary epoch: constructing the
   /// interpolator once selects the `order`+1 table points nearest `xi` and precomputes the
   /// Lagrange weights, and `Interpolate` is then called once per data column (e.g.

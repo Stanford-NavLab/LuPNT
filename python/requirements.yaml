@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   # Core scientific packages with native dependencies (conda)
-  - python=3.10
+  - python=3.11
   - numpy<2.0.0
   - scipy
   - matplotlib
@@ -43,6 +43,7 @@ dependencies:
     - kornia
 
     # Computer vision and 3D
+    - bpy==4.5.11
     - open3d-python
     - gsplat
     - viser

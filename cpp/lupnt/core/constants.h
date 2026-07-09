@@ -311,7 +311,7 @@ namespace lupnt {
   /// `ScalePositionForCoordinateScale`, and `ScaleStateForCoordinateScale` (and exposed
   /// to Python as `coordinate_scale_ratio`) to convert ephemeris positions/states
   /// produced in `CoordinateScale::TDB` (e.g. by `GetBodyPosVel`/`GetBodyPos` in
-  /// `lupnt/data/kernels.cc`) into another requested coordinate scale.
+  /// `lupnt/interfaces/kernels.cc`) into another requested coordinate scale.
   ///
   /// @param from Source coordinate scale
   /// @param to   Target coordinate scale
@@ -344,7 +344,7 @@ namespace lupnt {
 
   /// @brief Rescale a Cartesian position vector from one `CoordinateScale` to another.
   ///
-  /// Called by `GetBodyPos(..., units, scale)` in `lupnt/data/kernels.cc` to convert a
+  /// Called by `GetBodyPos(..., units, scale)` in `lupnt/interfaces/kernels.cc` to convert a
   /// TDB-scale ephemeris position into the requested `CoordinateScale` before unit
   /// conversion.
   ///
@@ -363,7 +363,7 @@ namespace lupnt {
   /// leaving the velocity unchanged (velocities are invariant under IAU coordinate
   /// scale changes because length and coordinate time scale by the same factor).
   ///
-  /// Called by `GetBodyPosVel(..., units, scale)` in `lupnt/data/kernels.cc` to convert
+  /// Called by `GetBodyPosVel(..., units, scale)` in `lupnt/interfaces/kernels.cc` to convert
   /// a TDB-scale ephemeris state into the requested `CoordinateScale` before unit
   /// conversion.
   ///

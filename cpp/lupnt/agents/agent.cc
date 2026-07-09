@@ -5,8 +5,8 @@
 #include "lupnt/core/constants.h"
 #include "lupnt/core/definitions.h"
 #include "lupnt/core/logger.h"
-#include "lupnt/core/simulation.h"
 #include "lupnt/devices/device.h"
+#include "lupnt/simulations/simulation.h"
 #include "lupnt/states/state.h"
 
 namespace lupnt {
@@ -39,17 +39,26 @@ namespace lupnt {
     }
 
     // Application
+    CreateApplication(config);
+  }
+
+  void Agent::CreateApplication(Config& config) {
     if (config["application"]) {
       // Name
       Config app_config(config["application"]);
       auto app_class = app_config["class"].as<std::string>();
       if (!app_config["name"]) app_config["name"] = "application";
       app_config["name"] = name_ + "/" + app_config["name"].as<std::string>();
-      // Create
+      // Create (SetApplication also wires the app's agent_ back-pointer to this agent)
       SetApplication(AssetFactory<Application, Config&>::Create(app_class, app_config));
     } else {
       Logger::Debug(fmt::format("No application found for agent {}", name_), "Agent");
     }
+  }
+
+  void Agent::SetApplication(Ptr<Application> app) {
+    application_ = app;
+    if (application_) application_->SetAgent(this);
   }
 
   void Agent::AddDevice(Ptr<Device> device) {
@@ -143,6 +152,10 @@ namespace lupnt {
     for (auto& [device_name, device] : devices_) {
       device->Setup();
     }
+
+    // Application: initialize the attached application (schedules its periodic
+    // Step and any one-time solve). Runs after devices so the app can reach them.
+    if (application_) application_->Setup();
 
     // Precompute
     // if (sim_ && precompute_ > 0.0 && dynamics_) {

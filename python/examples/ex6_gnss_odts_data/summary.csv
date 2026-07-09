@@ -1,2 +1,0 @@
-mc,epochs,final_position_error_m,final_velocity_error_mps,final_clock_bias_error_m,final_clock_drift_error_mps,final_srp_coeff_error_m2_kg,rms_position_error_m,rms_velocity_error_mps
-0,181,2.374006785850e+01,3.383181644178e-02,1.166611551585e+01,1.498947663803e-03,nan,1.370181926496e+01,1.423691409885e-01

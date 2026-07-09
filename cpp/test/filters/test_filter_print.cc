@@ -1,4 +1,4 @@
-#include <lupnt/filters/filter_print.h>
+#include <lupnt/numerics/filters/filter_print.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>

@@ -394,7 +394,7 @@ namespace lupnt {
   /// EOP-based polar motion and sidereal rotation (RotPolarMotion /
   /// RotSideralMotion / RotSideralMotionDot) for Earth, where the EOP
   /// (x_pole, y_pole, UT1-UTC, LOD) come from the loaded IERS EOP table (see
-  /// lupnt/data/eop.h); and static, pre-extracted DE Chebyshev "lunar mantle
+  /// lupnt/interfaces/eop.h); and static, pre-extracted DE Chebyshev "lunar mantle
   /// libration" coefficients for the Moon (see GetLunarMantleData). Those
   /// can disagree with SPICE's high-accuracy binary-PCK-based orientation
   /// (which `lupnt::spice::LoadSpiceKernel` now downloads automatically --
@@ -456,5 +456,44 @@ namespace lupnt {
   /// @brief True if a SPICE-fitted lunar orientation (MOON_CI<->MOON_PA)
   /// model covering `t_tdb` is currently active.
   bool HasFittedLunarOrientation(Real t_tdb);
+
+  // ---------------------------------------------------------------------------
+  // Solar-system planet body orientation (generic IAU model). Declared here as
+  // BodyId-keyed helpers; the Frame-keyed predicates and the ConvertFrame wiring
+  // live in frame_converter.h (which owns the Frame enum).
+  // ---------------------------------------------------------------------------
+
+  /// @brief True if an IAU orientation model is available for `body`
+  /// (Mercury..Neptune).
+  bool HasIauOrientation(BodyId body);
+
+  /// @brief Rotation matrix from a planet-centered inertial frame (ICRF-aligned)
+  /// to that planet's body-fixed frame at `t_tdb`, from the IAU linear orientation
+  /// model. If `R_dot` is non-null it receives the exact time derivative (used to
+  /// rotate velocities), dominated by the prime-meridian spin rate.
+  /// @param t_tdb  Epoch [s, TDB since J2000]
+  /// @param body   Planet body id (Mercury..Neptune)
+  /// @param R_dot  Optional out: d/dt of the rotation matrix [1/s]
+  Mat3 RotBodyCiToFixed(Real t_tdb, BodyId body, Mat3 *R_dot = nullptr);
+
+  /// @brief Translate a planet-centered inertial (ICRF-aligned) state to the
+  /// SSB-centered ICRF hub, by adding the planet's ICRF ephemeris state.
+  Vec6 PlanetCiToIcrf(Real t_tdb, const Vec6 &rv_ci, BodyId body);
+  /// @brief Vec3 (position-only) overload of PlanetCiToIcrf().
+  Vec3 PlanetCiToIcrf(Real t_tdb, const Vec3 &r_ci, BodyId body);
+  /// @brief Inverse of PlanetCiToIcrf(): SSB-centered ICRF -> planet-centered
+  /// inertial (ICRF-aligned).
+  Vec6 IcrfToPlanetCi(Real t_tdb, const Vec6 &rv_icrf, BodyId body);
+  /// @brief Vec3 (position-only) overload of IcrfToPlanetCi().
+  Vec3 IcrfToPlanetCi(Real t_tdb, const Vec3 &r_icrf, BodyId body);
+  /// @brief Rotate a planet-centered inertial state into the body-fixed frame
+  /// (applies RotBodyCiToFixed and, for a Vec6, its derivative).
+  Vec6 BodyCiToFixed(Real t_tdb, const Vec6 &rv_ci, BodyId body);
+  /// @brief Vec3 (position-only) overload of BodyCiToFixed().
+  Vec3 BodyCiToFixed(Real t_tdb, const Vec3 &r_ci, BodyId body);
+  /// @brief Inverse of BodyCiToFixed(): body-fixed -> planet-centered inertial.
+  Vec6 BodyFixedToCi(Real t_tdb, const Vec6 &rv_fixed, BodyId body);
+  /// @brief Vec3 (position-only) overload of BodyFixedToCi().
+  Vec3 BodyFixedToCi(Real t_tdb, const Vec3 &r_fixed, BodyId body);
 
 }  // namespace lupnt

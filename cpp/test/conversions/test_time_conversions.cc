@@ -1,6 +1,6 @@
 #include <lupnt/conversions/time_conversions.h>
-#include <lupnt/data/kernels.h>
 #include <lupnt/environment/body.h>
+#include <lupnt/interfaces/kernels.h>
 
 #include <array>
 #include <catch2/catch_test_macros.hpp>

@@ -5,6 +5,7 @@
 #include "lupnt/core/asset_factory.h"
 #include "lupnt/core/logger.h"
 #include "lupnt/measurements/measurement.h"
+#include "lupnt/measurements/measurement_utils.h"
 #include "lupnt/numerics/math_utils.h"
 
 namespace lupnt {

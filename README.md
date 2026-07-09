@@ -1,8 +1,13 @@
-# LuPNT
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/lupnt_logo_horizontal_dark.svg">
+    <img alt="LuPNT — Lunar Positioning, Navigation and Timing" src="assets/lupnt_logo_horizontal.svg" width="520">
+  </picture>
+</p>
 
 [![MacOS](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/macos.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/macos.yml)
 [![Ubuntu](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/ubuntu.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/ubuntu.yml)
-[![Style](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/style.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/style.yml)P
+[![Style](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/style.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/style.yml)
 [![Install](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/install.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/install.yml)
 [![Python](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/python.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/python.yml)
 [![Examples](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/examples.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/examples.yml)
@@ -33,16 +38,27 @@ If using this project in your own work please cite the following:
 
 ## Features
 
+LuPNT is organized as a **config-driven, agent-based simulation framework**. *Agents*
+(satellites, ground stations, rovers, landers, surface stations, constellations) host
+*Applications* — the mission and navigation-filter logic — and run together on a shared,
+event-scheduled *Simulation*. Agents, their devices, dynamics, and applications are all
+assembled from YAML configuration, so new scenarios are described in config rather than code.
+
 | Module | Description |
 |--------|-------------|
-| **Dynamics** | Two-body, N-body, and high-fidelity force models (gravity, drag, SRP) for Earth and lunar orbits |
+| **Agents & Applications** | Config-driven agents (satellite, ground station, rover, lander, surface station, constellation) that host navigation/mission **Applications** — ODTS, ISL, surface-rover and lander navigation, ephemeris/almanac generation — built from YAML via an asset factory |
+| **Simulations** | Event-scheduled `Simulation` engine plus end-to-end scenario drivers (ground-station & inter-satellite ODTS, lunar GNSS ODTS, lander/surface navigation, ephemeris fitting) |
+| **Devices & sensors** | Clocks, IMUs, cameras, GNSS receivers, and communication devices attached to agents |
+| **Dynamics** | Two-body, N-body, and high-fidelity force models (gravity, drag, SRP) for Earth, lunar, and arbitrary central-body orbits |
 | **Environment** | Gravity fields, atmosphere, solar system bodies, occultation, and plasma/ionosphere models |
 | **Plasma** | GCPM v2.4 plasmasphere + IRI ionosphere electron density; GNSS ray-tracing with TEC and signal delay for cislunar links (via integrated pecsim) |
-| **GNSS** | GPS/GNSS signal generation, SP3/ANTEX-backed constellations, and space-user ranging |
+| **GNSS** | GPS/GNSS signal generation, SP3/ANTEX-backed constellations, yaw-steering/attitude models, and space-user ranging |
 | **Measurements** | Pseudorange, Doppler, and carrier-phase measurement models with light-time, Shapiro, and optional plasma corrections |
-| **Filters** | Extended Kalman Filter (EKF), Unscented Kalman Filter (UKF), and batch least-squares estimators |
-| **Conversions** | Reference frame transformations (ECI, ECEF, LVLH, Moon-centered) and time system utilities |
+| **Filters & States** | Extended Kalman Filter (EKF), Unscented Kalman Filter (UKF), square-root information filter (SRIF)/smoother, and batch least-squares estimators over composable state/joint-state abstractions |
+| **Interfaces** | Data loaders and I/O: SP3, ANTEX, RINEX nav, TLE, SPICE kernels, EOP/TAI-UTC, LOLA DEM and crater data, plus Cesium and Matplotlib export |
+| **Conversions** | Reference frame transformations (ECI, ECEF, LVLH, Moon-centered, generic body-fixed/inertial) and time system utilities |
 | **Numerics** | Numerical integration (RK4, Euler), Nelder-Mead optimizer, and matrix utilities |
+| **Visualization** | Matplotlib/Plotly plotting plus interactive 3-D [CesiumJS](https://cesium.com/platform/cesiumjs/) scenes of constellations and surface assets (`pnt.plot.CesiumScene`) |
 | **Python bindings** | Full `pylupnt` Python package exposing the C++ library via pybind11 |
 
 ---
@@ -53,24 +69,34 @@ If using this project in your own work please cite the following:
 LuPNT/
 ├── cpp/
 │   ├── lupnt/                  # C++ library source
-│   │   ├── agents/             # Agent/satellite abstractions
-│   │   ├── conversions/        # Frame and unit conversions
-│   │   ├── core/               # Logging, constants, math utils
+│   │   ├── agents/             # Agents: satellite, ground station, rover, lander, surface station, constellations
+│   │   ├── applications/       # Per-agent mission/nav logic (ODTS, ISL, lander/rover nav, ephemeris/almanac gen)
+│   │   ├── simulations/        # Event-scheduled Simulation engine + scenario drivers
+│   │   ├── devices/            # Agent devices: clock, IMU, camera, GNSS receiver, comms
 │   │   ├── dynamics/           # Orbital dynamics and propagators
 │   │   ├── environment/        # Gravity, atmosphere, solar system, plasma
 │   │   │   └── plasma/         # GCPM v2.4 + IRI + ray-tracer (pecsim)
-│   │   ├── filters/            # Navigation filters (EKF, UKF, …)
 │   │   ├── measurements/       # Measurement models
+│   │   ├── states/             # State / joint-state / parameter abstractions
+│   │   ├── transmission/       # Signal transmission modeling
+│   │   ├── interfaces/         # Data loaders & I/O (SP3, ANTEX, RINEX, TLE, SPICE, EOP, DEM, Cesium, matplotlib)
+│   │   ├── conversions/        # Frame and unit conversions
+│   │   ├── core/               # Logging, constants, config, math utils
 │   │   └── numerics/           # Numerical methods
 │   └── examples/               # C++ example programs
+│       ├── tutorials/          # Tutorial counterparts to the Python notebooks
+│       ├── simulations/        # Full scenario applications
 │       ├── environment/        # Plasma, solar system examples
 │       ├── dynamics/           # Orbit propagation examples
 │       └── …
+├── configs/                    # YAML scenario configuration (agents, applications, dynamics, environments, datasets)
 ├── python/
 │   ├── pylupnt/                # Python package (installed in-place)
 │   │   ├── plasma/             # pylupnt.plasma sub-module
 │   │   ├── plot/               # Plotting utilities
+│   │   ├── interfaces/         # Python-side data interfaces
 │   │   └── _pylupnt.so         # Compiled pybind11 extension
+│   ├── examples/               # Tutorial notebooks (ex1–ex16) — see python/examples/README.md
 │   └── bindings/               # pybind11 binding source files
 ├── projects/                   # Research project notebooks and scripts
 │   ├── GNSS_Filtering/         # Staged lunar GNSS filtering simulation
@@ -83,6 +109,37 @@ LuPNT/
 │       └── tle/
 └── pixi.toml                   # Reproducible environment and task definitions
 ```
+
+---
+
+## Tutorials & Examples
+
+A progressive set of Jupyter notebooks in [`python/examples/`](python/examples/README.md) teaches
+the `pylupnt` API and reproduces LuPNT's core navigation workflows — from single-orbit propagation
+up to full orbit-determination filters, constellation design, optical navigation, and non-lunar
+(Mars / LEO) PNT. See the [examples README](python/examples/README.md) for the full index and
+per-notebook details.
+
+| # | Example | Theme |
+|---|---------|-------|
+| 1 | [Propagating an ELFO orbit](python/examples/ex1_propagate_orbit.ipynb) | Fundamentals — elements, frames, force models |
+| 2 | [Relativistic time conversions](python/examples/ex2_time_conversions.ipynb) | Fundamentals — TT/TCG/TCB/TDB/TCL/LT |
+| 3 | [GNSS interface tutorial](python/examples/ex3_gnss_interface.ipynb) | Earth-GNSS data — TLEs, antenna gain, SP3 vs. broadcast |
+| 4 | [Plasmasphere & ionosphere](python/examples/ex4_plasmasphere.ipynb) | GCPM v2.4 electron density, TEC, ray-traced signal delay |
+| 5 | [GNSS measurement simulation](python/examples/ex5_gnss_measurement_sim.ipynb) | Lunar-receiver visibility and C/N₀ from precise ephemerides |
+| 6 | [Sidelobe pseudorange/Doppler/TDCP ODTS](python/examples/ex6_gnss_odts.ipynb) | Weak-signal EKF for position, velocity, clock, and SRP |
+| 7 | [Ground-station orbit determination](python/examples/ex7_groundstation_odts.ipynb) | DSN batch least squares + SRIF/smoother |
+| 8 | [Distributed ISL ODTS](python/examples/ex8_isl_odts.ipynb) | 5 parallel consider-state EKFs + surface-station timing |
+| 9 | [Ephemeris & almanac fitting](python/examples/ex9_ephemeris.ipynb) | Compressing trajectories into broadcast navigation models |
+| 10 | [Surface rover navigation](python/examples/ex10_surface_rover.ipynb) | IMU + LCRNS pseudoranges + DEM error-state EKF |
+| 11 | [Lunar lander navigation](python/examples/ex11_lander_navigation.ipynb) | Powered-descent MEKF: IMU, altimeter, craters, LunaNet |
+| 12 | [Constellation design](python/examples/ex12_constellation_design.ipynb) | ELFO Walker layout, PDOP/coverage/EIRP, phasing optimization |
+| 13 | [Cesium visualization](python/examples/ex13_cesium.ipynb) | Interactive 3-D CesiumJS scenes of constellations & stations |
+| 14 | [Optical navigation](python/examples/ex14_opnav.ipynb) | Lunar-horizon image processing → EKF position fixes |
+| 15 | [Mars PNT](python/examples/ex15_marspnt.ipynb) | Beyond the Moon — Mars gravity, frames, Walker constellation |
+| 16 | [LEO PNT](python/examples/ex16_leopnt.ipynb) | Earth LEO constellation with Harris-Priester atmospheric drag |
+
+C++ tutorial counterparts live in [`cpp/examples/tutorials/`](cpp/examples/tutorials/).
 
 ---
 
@@ -229,7 +286,44 @@ PECSIMPY_BASE_PATH=$PWD/data/LuPNT_data/plasma \
 
 ### Jupyter notebooks
 
-Select the **`lupnt (pixi)`** kernel in Jupyter. The kernel has `LUPNT_DATA_PATH`, `LUPNT_OUTPUT_PATH`, `PECSIMPY_BASE_PATH`, and `PYTHONPATH` pre-configured so all notebooks in `projects/` work out of the box.
+First register the Jupyter kernel (once per machine, and after moving the repo):
+
+```bash
+pixi run install-kernel
+```
+
+Then select the **`LuPNT (pixi)`** kernel in Jupyter / VS Code. `install-kernel` bakes
+`PYTHONPATH`, `LUPNT_DATA_PATH`, `LUPNT_OUTPUT_PATH`, and `PECSIMPY_BASE_PATH` into the
+kernelspec (derived from the repo layout, so it is correct on both macOS and Linux/WSL) —
+VS Code and Jupyter launch the kernel's interpreter *without* pixi activation, so these must
+live in the kernelspec itself for `import pylupnt` and the `projects/` notebooks to work out
+of the box. If the picker only shows the bare pixi interpreter (no env vars), re-run the task.
+
+### Interactive Cesium visualization
+
+`pnt.plot.CesiumScene` renders constellations, relay satellites, and surface stations as an
+interactive 3-D [CesiumJS](https://cesium.com/platform/cesiumjs/) scene — inline in Jupyter
+and as a standalone `.html` you can open in any browser or host to share. See
+[`python/examples/ex13_cesium.ipynb`](python/examples/ex13_cesium.ipynb) for a full tutorial
+(GNSS + lunar relay constellations + surface stations).
+
+```python
+import pylupnt as pnt
+from datetime import datetime
+
+scene = pnt.plot.CesiumScene(body="MOON", name="Lunar relays", epoch=datetime(2027, 3, 1))
+scene.add_trajectory("SV-1", t_tdb, rv_mci, frame_in=pnt.MOON_CI)  # inertial -> Moon-fixed
+scene.add_station("Shackleton", lat=-89.9, lon=0.0)                # degrees
+scene.show()                                                       # writes ./cesium_scenes/*.html
+```
+
+**Do I need a Cesium ion account?** **No.** Scenes are fully self-contained: the central body
+(Earth or Moon) is drawn as an ellipsoid textured with LuPNT's own surface imagery, embedded
+directly in the generated HTML — no ion access token, login, or billing. The only thing
+fetched at view time is the CesiumJS library from a public CDN (`cdn.jsdelivr.net`), so an
+internet connection is needed to view a scene. (If you already have an ion token and want
+streamed high-resolution terrain/imagery, you can edit the generated `.html`, but nothing
+here requires it.)
 
 ### Running tests
 
@@ -255,33 +349,6 @@ If you don't have Earthdata Login set up, use `pixi run test-cpp-ci` instead —
 command CI runs and excludes the tests above.
 
 More details are in [cpp/test/README.md](cpp/test/README.md).
-
-### GNSS filtering example
-
-The lunar GNSS filtering project under
-[`projects/GNSS_Filtering/`](projects/GNSS_Filtering/README.md) demonstrates
-the current high-fidelity workflow:
-
-1. Precompute receiver-GNSS links in C++ from SP3/ANTEX data.
-2. Precompute ionospheric/plasmaspheric delays in Python with process-parallel
-   GCPM ray tracing.
-3. Run the C++ Monte Carlo filter with light-time, Shapiro delay, relativistic
-   clock dynamics, OCXO clock noise, and optional SRP coefficient estimation.
-4. Post-process plasma delays, tracked satellites, and RTN state errors with
-   covariance bounds.
-
-Run the full staged pipeline with:
-
-```bash
-pixi run run-gnss-pipeline
-```
-
-To skip the expensive GCPM batch when the delay table already exists, or when
-using a no-plasma config:
-
-```bash
-pixi run run-gnss-pipeline --skip-delays
-```
 
 ### Optional: Orekit / GMAT cross-validation (developers)
 

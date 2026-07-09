@@ -6,6 +6,7 @@
 #include "lupnt/core/logger.h"
 #include "lupnt/devices/device.h"
 #include "lupnt/measurements/measurement.h"
+#include "lupnt/measurements/measurement_utils.h"
 
 namespace lupnt {
 

@@ -71,3 +71,11 @@ def __getattr__(name):
         if name in globals():
             return globals()[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+# Lander descent-guidance trajectory generators (pure numpy; scipy/cvxpy are imported only
+# inside the convex solver). Exposed as a submodule: `pylupnt.lander_guidance.zem_zev_trajectory`.
+try:
+    from . import lander_guidance  # noqa: F401
+except Exception as e:  # pragma: no cover - keep `import pylupnt` robust
+    Logger.warn(f"Skipping .lander_guidance: {e}", name="PyLuPNT")

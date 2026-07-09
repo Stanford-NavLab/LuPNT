@@ -37,6 +37,9 @@ namespace pecsim {
     std::string integ_method = "Euler";      // Integration method ("RK4" or "Euler")
     std::string correction_method = "grid";  // Correction method ("grid" or "newton")
     double kp = -1;                          // Kp index for the ionosphere model
+    double rz12 = -1.0;                      // IRI R12 (Rz12) sunspot index: >0 uses the value
+                                             // (0<R12<=200); -1 historical/projected (+storm
+                                             // model); -2 historical/projected (no storm model)
     bool use_fortran_gcpm = true;            // Use Fortran for ray tracing
     double corr_tol = 1.0;                   // Correction tolerance [m] for ray tracing
     bool compute_higher_order = true;        // Compute second-order delays

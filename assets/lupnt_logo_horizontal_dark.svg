@@ -1,0 +1,58 @@
+<svg width="1180" height="360" viewBox="0 0 1180 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="LuPNT — Lunar Positioning, Navigation and Timing Simulator">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="48" x2="448" y2="464" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B1026"/>
+      <stop offset="1" stop-color="#1B2450"/>
+    </linearGradient>
+    <linearGradient id="moon" x1="150" y1="150" x2="320" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FDFEFF"/>
+      <stop offset="1" stop-color="#AEBBD6"/>
+    </linearGradient>
+    <linearGradient id="orbit" x1="70" y1="140" x2="440" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E4636B"/>
+      <stop offset="1" stop-color="#8C1515"/>
+    </linearGradient>
+    <radialGradient id="sat" cx="0.5" cy="0.4" r="0.7">
+      <stop offset="0" stop-color="#FFE9B0"/>
+      <stop offset="1" stop-color="#F5A623"/>
+    </radialGradient>
+    <mask id="crescent3">
+      <rect width="512" height="512" fill="black"/>
+      <circle cx="232" cy="262" r="132" fill="white"/>
+      <circle cx="302" cy="228" r="130" fill="black"/>
+    </mask>
+    <clipPath id="badge3">
+      <rect x="32" y="32" width="448" height="448" rx="108"/>
+    </clipPath>
+  </defs>
+
+  <g transform="translate(10,30) scale(0.58)">
+    <rect x="32" y="32" width="448" height="448" rx="108" fill="url(#bg)"/>
+    <g clip-path="url(#badge3)">
+      <ellipse cx="256" cy="256" rx="205" ry="92" fill="none" stroke="url(#orbit)" stroke-width="10"
+               transform="rotate(-28 256 256)" opacity="0.9"/>
+      <circle cx="232" cy="262" r="132" fill="url(#moon)" mask="url(#crescent3)"/>
+      <g stroke="#FFD98A" stroke-width="4" stroke-linecap="round" opacity="0.85">
+        <line x1="309" y1="138" x2="441" y2="193"/>
+        <line x1="441" y1="193" x2="384" y2="278"/>
+        <line x1="384" y1="278" x2="267" y2="353"/>
+      </g>
+      <g stroke="#FFC65C" stroke-width="7" stroke-linecap="round" fill="none">
+        <path d="M316.8 156.4 A20 20 0 0 1 289.0 139.0" opacity="0.9"/>
+        <path d="M321.9 168.4 A33 33 0 0 1 276.0 139.7" opacity="0.6"/>
+        <path d="M327.0 180.3 A46 46 0 0 1 263.1 140.4" opacity="0.35"/>
+      </g>
+      <g fill="url(#sat)" stroke="#0B1026" stroke-width="3">
+        <circle cx="309" cy="138" r="14"/>
+        <circle cx="441" cy="193" r="14"/>
+        <circle cx="384" cy="278" r="14"/>
+        <circle cx="267" cy="353" r="14"/>
+      </g>
+    </g>
+  </g>
+
+  <text x="320" y="205" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="170" font-weight="700" letter-spacing="-4">
+    <tspan fill="#E4636B">Lu</tspan><tspan fill="#F4F6FB">PNT</tspan>
+  </text>
+  <text x="324" y="268" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="30" font-weight="400" letter-spacing="1.5" fill="#AEBBD6">Lunar Positioning, Navigation &amp; Timing Simulator</text>
+</svg>

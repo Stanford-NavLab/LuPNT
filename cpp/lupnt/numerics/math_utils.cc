@@ -442,7 +442,9 @@ namespace lupnt {
     Eigen::JacobiSVD<MatXd> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
     double tol = 1e-6;
     MatXd S = svd.singularValues();
-    MatXd S_inv = MatXd::Zero(S.rows(), S.cols());
+    // `S` is a k x 1 column of singular values; the reciprocal-diagonal matrix must be
+    // k x k so `V * S_inv * U^T` is conformable (Zero(S.rows(), S.cols()) would be k x 1).
+    MatXd S_inv = MatXd::Zero(S.rows(), S.rows());
     for (int i = 0; i < S.rows(); i++) {
       if (S(i) > tol) {
         S_inv(i, i) = 1.0 / S(i);
@@ -487,7 +489,7 @@ namespace lupnt {
     VecX v(n * (n + 1) / 2);
     for (int i = 0; i < n; i++) {
       for (int j = 0; j <= i; j++) {
-        v(i * (n + 1) / 2 + j) = x(i, j);
+        v(i * (i + 1) / 2 + j) = x(i, j);
       }
     }
     return v;

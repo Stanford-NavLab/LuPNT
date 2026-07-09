@@ -22,7 +22,7 @@
  * `projects/Plasmasphere_Delay_Datagen/generate_antenna_pco.ipynb` and used
  * by `GnssConstellation::SetupSatelliteStatesFromFiles`.
  *
- * Also registers the `GnssConst` / `GnssFreq` enums (`lupnt/devices/space_comms.h`)
+ * Also registers the `GnssConst` / `GnssFreq` enums (`lupnt/devices/gnss_device.h`)
  * needed as parameter/return types by `AntexLoader::GetPco`.
  *
  * Paths are accepted as plain strings (and converted to `std::filesystem::path`
@@ -339,7 +339,11 @@ void InitGnss(py::module& m) {
       .def_readwrite("b", &GnssReceiverParams::b, "Front-end bandwidth factor")
       .def_readwrite("Bn", &GnssReceiverParams::Bn, "Code loop noise bandwidth [Hz]")
       .def_readwrite("Bf", &GnssReceiverParams::Bf, "Frequency loop noise bandwidth [Hz]")
-      .def_readwrite("D", &GnssReceiverParams::D, "Early-to-late correlator spacing [chip]");
+      .def_readwrite("D", &GnssReceiverParams::D, "Early-to-late correlator spacing [chip]")
+      .def_readwrite("L_ad", &GnssReceiverParams::L_ad, "A/D converter loss [dB]")
+      .def_readwrite("L_pol", &GnssReceiverParams::L_pol, "Polarization loss [dB]")
+      .def_readwrite("L_atm", &GnssReceiverParams::L_atm, "Atmospheric loss [dB]")
+      .def_readwrite("T_eff", &GnssReceiverParams::T_eff, "Effective noise temperature [K]");
 
   // ---- GnssOccludingBody -----------------------------------------------------
 
@@ -405,8 +409,7 @@ void InitGnss(py::module& m) {
       .def_readwrite("receive_time", &GnssChannel::receive_time)
       .def_readwrite("transmit_time", &GnssChannel::transmit_time)
       .def_property(
-          "tx_state",
-          [](const GnssChannel& ch) -> VecXd { return ch.tx_state.cast<double>(); },
+          "tx_state", [](const GnssChannel& ch) -> VecXd { return ch.tx_state.cast<double>(); },
           [](GnssChannel& ch, const VecXd& v) { ch.tx_state = v.cast<Real>(); },
           "Transmitter ECI state [r; v] [m, m/s] at transmit epoch")
       .def_readwrite("tx_clock_bias_s", &GnssChannel::tx_clock_bias_s)
@@ -445,9 +448,8 @@ void InitGnss(py::module& m) {
           [](GnssConstellation& gc, const std::vector<std::string>& sp3_paths,
              const std::string& antex_path, const VecXd& t_tai, GnssFreq freq,
              const std::vector<int>& prns) {
-            gc.SetupSatelliteStatesFromFiles(ToPaths(sp3_paths),
-                                              std::filesystem::path(antex_path),
-                                              t_tai.cast<Real>(), freq, prns);
+            gc.SetupSatelliteStatesFromFiles(ToPaths(sp3_paths), std::filesystem::path(antex_path),
+                                             t_tai.cast<Real>(), freq, prns);
           },
           py::arg("sp3_paths"), py::arg("antex_path"), py::arg("t_tai"),
           py::arg("freq") = GnssFreq::L1, py::arg("prns") = std::vector<int>{},
@@ -507,8 +509,7 @@ void InitGnss(py::module& m) {
       .def("set_occluding_bodies", &GNSSMeasurements::SetOccludingBodies, py::arg("bodies"))
       .def("set_receiver_params", &GNSSMeasurements::SetReceiverParams, py::arg("params"))
       .def("set_receiver_antenna", &GNSSMeasurements::SetReceiverAntenna, py::arg("antenna"))
-      .def("set_cn0_threshold", &GNSSMeasurements::SetCN0Threshold,
-           py::arg("cn0_threshold_dbhz"),
+      .def("set_cn0_threshold", &GNSSMeasurements::SetCN0Threshold, py::arg("cn0_threshold_dbhz"),
            "Set both acquisition and tracking CN0 thresholds to the same value [dBHz]")
       .def("reset_tracking", &GNSSMeasurements::ResetTracking,
            "Clear the internal tracking state; all satellites must re-acquire on next call")

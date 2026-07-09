@@ -10,5 +10,7 @@ be tested against the same specification.
    :maxdepth: 1
 
    dynamics
+   integration
+   filters
    frame_conversions
    gnss_measurements

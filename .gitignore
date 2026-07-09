@@ -14,6 +14,7 @@ CMakeUserPresets.json
 
 # Python
 **/__pycache__/
+**/**/__pycache__/
 *.py[cod]
 *.so
 *.egg*
@@ -24,6 +25,8 @@ CMakeUserPresets.json
 **/.cache/
 **/.mypy_cache/
 **/.ipynb_checkpoints/
+
+# Python-example outputs now live under output/python_examples/ (covered by **/*output*/ below).
 
 # Project
 /data/
@@ -43,6 +46,9 @@ CMakeUserPresets.json
 /python/examples/ex_constellation_optimization/data/*
 /python/examples/ex_constellation_optimization/figs/*
 
+# Generated CesiumScene .html scenes (pnt.plot.CesiumScene.show/save)
+**/cesium_scenes/
+
 # Third party
 **/*orekit-data*/
 **/*cpm_modules*/
@@ -51,6 +57,9 @@ CMakeUserPresets.json
 .DS_Store
 *.mp4
 *.dylib
+__MACOSX/
+*/__MACOSX/
+*/*/__MACOSX/
 
 # Data
 LuPNT_data/*
@@ -58,6 +67,15 @@ projects/Constellation_Optimization/data/*
 projects/Constellation_Optimization/figs/*
 projects/Ephemeris/data/*
 projects/Ephemeris/figures/*
+*.zip
 
 # pixi
 .pixi/
+
+# Generated documentation — produced by `pixi run build-docs` (Exhale/Doxygen +
+# autosummary + Sphinx) and never versioned. `docs/_build/` and `build/docs/`
+# are already covered by the `**/*build*/` rule above; the rest are listed here.
+docs/cpp_api/
+docs/python_api/
+docs/_out/
+docs/_preview/

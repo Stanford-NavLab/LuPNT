@@ -478,7 +478,7 @@ namespace pecsim {
                               ? std::min(step_size, min_adaptive_step_p)
                               : step_size;
     int n_steps = static_cast<int>(sf / alloc_step_p) + 2;
-    int sidx = 0;           // Step index for debugging output
+    int sidx = 0;               // Step index for debugging output
     bool cutoff_hit_p = false;  // Set true when the ray exits via the cutoff radius
     Vec3d pos_now, dir_now;
     double r = 0.0;           // Geocentric radial distance
@@ -671,9 +671,9 @@ namespace pecsim {
     pp.dist_to_line = VecXd::Zero(n_steps);
     pp.dir_start = dir;
 
-    bool cutoff_hit = false;          // Set to true when the ray exits the cutoff radius
-    bool debug_integ = false;         // Debug flag for RK4 steps
-    if (debug) debug_integ = true;    // Enable detailed debug output for the first step
+    bool cutoff_hit = false;        // Set to true when the ray exits the cutoff radius
+    bool debug_integ = false;       // Debug flag for RK4 steps
+    if (debug) debug_integ = true;  // Enable detailed debug output for the first step
     int sidx = 0;
 
     double r = 0.0;          // Geocentric radial distance
@@ -887,6 +887,20 @@ namespace pecsim {
     double cutoff_r = config.cutoff_r;               // Cutoff radius for the ray tracing
     std::string integ_method = config.integ_method;  // Integration method for ray tracing
     double kp = config.kp;  // Kp index for the ionosphere model (default is 0.0)
+
+    // Apply the configured R12 (Rz12) sunspot index to the active IRI model. rz12 < 0 keeps
+    // IRI's historical/projected R12; a positive value (0 < R12 <= 200) is used directly.
+    if (get_iri_model() == IRIModel::IRI_2007) {
+      IRI2007Option opt;
+      opt.R12 = config.rz12;
+      opt.update_jf_2007();
+      set_iri2007_option(opt);
+    } else if (get_iri_model() == IRIModel::IRI_2020) {
+      IRI2020Option opt;
+      opt.R12 = config.rz12;
+      opt.update_jf_2020();
+      set_iri2020_option(opt);
+    }
 
     // Compute direction and distance
     Vec3d dir = (x2 - x1).normalized();

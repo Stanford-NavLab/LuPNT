@@ -231,3 +231,29 @@ TEST_CASE("conversions.frame_conversions.spice_fit") {
 
   ClearFrameConversionFit();
 }
+
+TEST_CASE("conversions.frame_conversions.planet_frame_predicates") {
+  // The predicates recognise the generic-IAU planet frames (Mercury..Neptune),
+  // and deliberately exclude Earth (GCRF/ITRF) and the Moon, which have their own
+  // dedicated frame machinery.
+  SECTION("planet body-fixed frames") {
+    REQUIRE(IsPlanetFixedFrame(Frame::MARS_FIXED));
+    REQUIRE(IsPlanetFixedFrame(Frame::JUPITER_FIXED));
+    REQUIRE(IsPlanetFixedFrame(Frame::NEPTUNE_FIXED));
+    REQUIRE_FALSE(IsPlanetFixedFrame(Frame::MARS_CI));
+    REQUIRE_FALSE(IsPlanetFixedFrame(Frame::ITRF));
+    REQUIRE_FALSE(IsPlanetFixedFrame(Frame::GCRF));
+  }
+  SECTION("planet inertial frames") {
+    REQUIRE(IsPlanetCiFrame(Frame::MARS_CI));
+    REQUIRE(IsPlanetCiFrame(Frame::VENUS_CI));
+    REQUIRE_FALSE(IsPlanetCiFrame(Frame::MARS_FIXED));
+    REQUIRE_FALSE(IsPlanetCiFrame(Frame::GCRF));
+  }
+  SECTION("IsPlanetFrame is the union of fixed and inertial") {
+    REQUIRE(IsPlanetFrame(Frame::MARS_FIXED));
+    REQUIRE(IsPlanetFrame(Frame::MARS_CI));
+    REQUIRE_FALSE(IsPlanetFrame(Frame::GCRF));
+    REQUIRE_FALSE(IsPlanetFrame(Frame::MOON_CI));
+  }
+}

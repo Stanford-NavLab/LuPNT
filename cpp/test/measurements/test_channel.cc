@@ -1,4 +1,4 @@
-#include <lupnt/devices/comms.h>
+#include <lupnt/devices/comm_devices.h>
 #include <lupnt/measurements/channel.h>
 
 #include <catch2/catch_test_macros.hpp>

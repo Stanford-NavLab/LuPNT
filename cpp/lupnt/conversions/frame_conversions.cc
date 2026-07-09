@@ -13,6 +13,8 @@
 
 #include <cspice/SpiceUsr.h>
 
+#include "lupnt/conversions/frame_converter.h"  // Frame enum + IsPlanet*Frame predicates
+
 #include <cmath>
 #include <functional>
 #include <optional>
@@ -22,9 +24,9 @@
 #include "lupnt/conversions/time_conversions.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/core/logger.h"
-#include "lupnt/data/eop.h"
-#include "lupnt/data/iau_sofa.h"
-#include "lupnt/data/kernels.h"
+#include "lupnt/interfaces/eop.h"
+#include "lupnt/interfaces/iau_sofa.h"
+#include "lupnt/interfaces/kernels.h"
 #include "lupnt/interfaces/spice.h"
 #include "lupnt/numerics/cheby_fit.h"
 #include "lupnt/numerics/math_utils.h"
@@ -142,7 +144,7 @@ namespace lupnt {
   // 2006/2000A precession-nutation + EOP-based polar motion/sidereal
   // rotation for Earth -- see RotPrecessionNutation/RotPolarMotion/
   // RotSideralMotion above, with EOP (x_pole, y_pole, UT1-UTC, LOD) coming
-  // from the loaded IERS EOP table, see lupnt/data/eop.h; static,
+  // from the loaded IERS EOP table, see lupnt/interfaces/eop.h; static,
   // pre-extracted DE Chebyshev "lunar mantle libration" angles for the
   // Moon -- see GetLunarMantleData in kernels.cc). These can disagree with
   // SPICE's high-accuracy binary PCK-based orientation
@@ -826,6 +828,138 @@ namespace lupnt {
     Mat3d B_moon
         = RotX(-0.2785 * RAD_ARCSEC) * RotY(-78.6944 * RAD_ARCSEC) * RotZ(-67.8526 * RAD_ARCSEC);
     return B_moon;
+  }
+
+  // ===========================================================================
+  // Solar-system planet frames (generic IAU body orientation)
+  // ===========================================================================
+  namespace {
+    // IAU linear orientation model, per body. Pole right ascension/declination
+    // vary linearly with T (Julian centuries past J2000, TT); the prime meridian
+    // W varies linearly with d (days past J2000, TT). Values from the IAU Working
+    // Group on Cartographic Coordinates and Rotational Elements (2009/2015);
+    // small periodic terms (e.g. for Mars/Neptune) are omitted -- the linear
+    // model is accurate to well under a degree over multi-decade spans.
+    struct IauOrientation {
+      double ra0, ra0_T;    // pole RA:  ra0  + ra0_T  * T   [deg]
+      double dec0, dec0_T;  // pole Dec: dec0 + dec0_T * T   [deg]
+      double w0, w_dot;     // prime meridian: w0 + w_dot * d [deg]
+    };
+
+    const std::map<BodyId, IauOrientation>& IauOrientationTable() {
+      static const std::map<BodyId, IauOrientation> kTable = {
+          {BodyId::MERCURY, {281.0103, -0.0328, 61.4155, -0.0049, 329.5988, 6.1385108}},
+          {BodyId::VENUS, {272.76, 0.0, 67.16, 0.0, 160.20, -1.4813688}},
+          {BodyId::MARS, {317.68143, -0.1061, 52.88650, -0.0609, 176.630, 350.89198226}},
+          {BodyId::JUPITER, {268.056595, -0.006499, 64.495303, 0.002413, 284.95, 870.5360000}},
+          {BodyId::SATURN, {40.589, -0.036, 83.537, -0.004, 38.90, 810.7939024}},
+          {BodyId::URANUS, {257.311, 0.0, -15.175, 0.0, 203.81, -501.1600928}},
+          {BodyId::NEPTUNE, {299.36, 0.0, 43.46, 0.0, 249.978, 541.1397757}},
+      };
+      return kTable;
+    }
+  }  // namespace
+
+  bool HasIauOrientation(BodyId body) {
+    return IauOrientationTable().count(body) > 0;
+  }
+
+  bool IsPlanetFixedFrame(Frame frame) {
+    switch (frame) {
+      case Frame::MERCURY_FIXED:
+      case Frame::VENUS_FIXED:
+      case Frame::MARS_FIXED:
+      case Frame::JUPITER_FIXED:
+      case Frame::SATURN_FIXED:
+      case Frame::URANUS_FIXED:
+      case Frame::NEPTUNE_FIXED: return true;
+      default: return false;
+    }
+  }
+
+  bool IsPlanetCiFrame(Frame frame) {
+    switch (frame) {
+      case Frame::MERCURY_CI:
+      case Frame::VENUS_CI:
+      case Frame::MARS_CI:
+      case Frame::JUPITER_CI:
+      case Frame::SATURN_CI:
+      case Frame::URANUS_CI:
+      case Frame::NEPTUNE_CI: return true;
+      default: return false;
+    }
+  }
+
+  bool IsPlanetFrame(Frame frame) {
+    return IsPlanetFixedFrame(frame) || IsPlanetCiFrame(frame);
+  }
+
+  Mat3 RotBodyCiToFixed(Real t_tdb, BodyId body, Mat3* R_dot) {
+    auto it = IauOrientationTable().find(body);
+    LUPNT_CHECK(it != IauOrientationTable().end(),
+                fmt::format("No IAU orientation model for body {}", static_cast<int>(body)),
+                "FrameConverter");
+    const IauOrientation& o = it->second;
+
+    Real t_tt = ConvertTime(t_tdb, Time::TDB, Time::TT);
+    Real d = TimeToJd(t_tt) - JD_J2000_TT;  // days past J2000 (TT)
+    Real T = d / 36525.0;                   // Julian centuries past J2000 (TT)
+
+    Real ra = (o.ra0 + o.ra0_T * T) * RAD;
+    Real dec = (o.dec0 + o.dec0_T * T) * RAD;
+    Real W = (o.w0 + o.w_dot * d) * RAD;
+
+    // ICRF -> body-fixed: R = Rz(W) * Rx(pi/2 - dec) * Rz(pi/2 + ra)
+    Mat3 Rx_pole = RotX(M_PI / 2 - dec);
+    Mat3 Rz_node = RotZ(M_PI / 2 + ra);
+    Mat3 R = RotZ(W) * Rx_pole * Rz_node;
+    if (R_dot != nullptr) {
+      // Only the prime-meridian spin contributes appreciably (pole rates are
+      // ~1e-2 deg/century -> negligible for velocity rotation).
+      Real w_dot = o.w_dot * RAD / SECS_DAY;  // [rad/s]
+      *R_dot = RotZdot(W, w_dot) * Rx_pole * Rz_node;
+    }
+    return R;
+  }
+
+  Vec6 PlanetCiToIcrf(Real t_tdb, const Vec6& rv_ci, BodyId body) {
+    return rv_ci + GetBodyPosVel(t_tdb, body, Frame::ICRF);
+  }
+  Vec3 PlanetCiToIcrf(Real t_tdb, const Vec3& r_ci, BodyId body) {
+    return r_ci + GetBodyPos(t_tdb, body, Frame::ICRF);
+  }
+  Vec6 IcrfToPlanetCi(Real t_tdb, const Vec6& rv_icrf, BodyId body) {
+    return rv_icrf - GetBodyPosVel(t_tdb, body, Frame::ICRF);
+  }
+  Vec3 IcrfToPlanetCi(Real t_tdb, const Vec3& r_icrf, BodyId body) {
+    return r_icrf - GetBodyPos(t_tdb, body, Frame::ICRF);
+  }
+
+  Vec6 BodyCiToFixed(Real t_tdb, const Vec6& rv_ci, BodyId body) {
+    Mat3 R_dot;
+    Mat3 R = RotBodyCiToFixed(t_tdb, body, &R_dot);
+    Vec3 r_ci = rv_ci.head(3);
+    Vec3 v_ci = rv_ci.tail(3);
+    Vec6 rv_fixed;
+    rv_fixed << R * r_ci, R * v_ci + R_dot * r_ci;
+    return rv_fixed;
+  }
+  Vec3 BodyCiToFixed(Real t_tdb, const Vec3& r_ci, BodyId body) {
+    return RotBodyCiToFixed(t_tdb, body) * r_ci;
+  }
+  Vec6 BodyFixedToCi(Real t_tdb, const Vec6& rv_fixed, BodyId body) {
+    Mat3 R_dot;
+    Mat3 R = RotBodyCiToFixed(t_tdb, body, &R_dot);
+    Vec3 r_fixed = rv_fixed.head(3);
+    Vec3 v_fixed = rv_fixed.tail(3);
+    Vec3 r_ci = R.transpose() * r_fixed;
+    Vec3 v_ci = R.transpose() * (v_fixed - R_dot * r_ci);
+    Vec6 rv_ci;
+    rv_ci << r_ci, v_ci;
+    return rv_ci;
+  }
+  Vec3 BodyFixedToCi(Real t_tdb, const Vec3& r_fixed, BodyId body) {
+    return RotBodyCiToFixed(t_tdb, body).transpose() * r_fixed;
   }
 
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 43

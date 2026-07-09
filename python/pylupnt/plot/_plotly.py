@@ -41,6 +41,22 @@ RADII = {
     _pnt.EARTH: _pnt.R_EARTH,
 }
 
+# Additional solar-system bodies: register a surface texture and mean radius when
+# both a topo image and a body model are available. The radius is read from the
+# body model (planet radii are not all exposed as top-level constants). Failures
+# are non-fatal so plotting still imports on a partial data install.
+for _body_id, _texture, _make_body in (
+    (_pnt.MARS, "mars_surface.jpg", getattr(_pnt.Body, "Mars", None)),
+    (_pnt.VENUS, "venus_surface.jpg", getattr(_pnt.Body, "Venus", None)),
+):
+    try:
+        _path = os.path.join(LUPNT_DATA_PATH, "topo", _texture)
+        if _make_body is not None and os.path.exists(_path):
+            IMAGES[_body_id] = np.asarray(Image.open(_path))
+            RADII[_body_id] = _make_body().R
+    except Exception:
+        pass
+
 
 def set_view(fig: go.Figure, azimuth: float, elevation: float, zoom: float = 1.0):
     eye = np.zeros(3) * 0.5
@@ -118,16 +134,32 @@ def plot_body(
     r_body: np.ndarray = None,
     alpha: float = 0.2,
     scale: float = 6,
+    n_colors: int = 32,
+    n_training_pixels: int = 10000,
 ) -> go.Figure:
     """
     Plot a celestial body
 
+    The body is drawn as a spherical ``Mesh3d`` whose surface is coloured from the
+    body's texture. Two knobs control how fine it looks:
+
+    * ``size_factor`` sets the mesh resolution -- the texture is subsampled by this
+      stride, so a *smaller* value gives a *finer* grid (and more triangles). The
+      shipped Earth/Moon textures are 512x1024, so ``size_factor=2`` or ``3`` looks
+      noticeably smoother than the default ``5``.
+    * ``n_colors`` sets the surface colour fidelity (the texture is colour-quantized
+      to this many colours via k-means). The default of 32 can look posterized; try
+      ``96``-``128`` for a richer image. Increase ``n_training_pixels`` alongside it
+      so the palette is well fit.
+
     Args:
         body (int): celestial body
-        size_factor (int): size factor
+        size_factor (int): mesh stride; smaller = finer grid (more triangles)
         R_b2frame (np.ndarray): rotation matrix from body to frame
         r_b2s (np.ndarray): vector from body to sun in the frame
         alpha (float): light intensity
+        n_colors (int): number of colours in the surface colour quantization
+        n_training_pixels (int): pixels sampled to fit the colour palette
     """
     img = IMAGES[body]
     radius = RADII[body]
@@ -146,7 +178,7 @@ def plot_body(
         xyz = xyz @ R_b2frame.T
 
     I, J, K, tri_color_intensity, pl_colorscale = mesh_data(
-        reduced_img, n_colors=32, n_training_pixels=10000
+        reduced_img, n_colors=n_colors, n_training_pixels=n_training_pixels
     )
 
     r_body = r_body / 10**scale

@@ -115,14 +115,12 @@ namespace lupnt {
     return G_max - 12.0 * phi.square() / pow(hpbw, 2);
   }
 
-  Real clamp(Real x, Real min, Real max) {
-    return std::max(min, std::min(max, x));
-  }
+  Real clamp(Real x, Real min, Real max) { return std::max(min, std::min(max, x)); }
 
-  bool ComputeVisibility(const Vec3& r1, const Vec3& r2, Real R_body,
-                         const Vec3& r_body, const Real min_alt, const Real min_elev_deg) {
+  bool ComputeVisibility(const Vec3& r1, const Vec3& r2, Real R_body, const Vec3& r_body,
+                         const Real min_alt, const Real min_elev_deg) {
     Real min_r = R_body + min_alt;
-    Real min_elev_rad = min_elev_deg * DEG;
+    Real min_elev_rad = min_elev_deg * RAD;
 
     Real r1body_norm = (r1 - r_body).norm();
     Real r2body_norm = (r2 - r_body).norm();
@@ -156,7 +154,6 @@ namespace lupnt {
     Real theta2 = asin(clamp(R_body / r1body_norm, -1.0, 1.0));
     Real r1_to_horizon = sqrt(r1body_norm * r1body_norm - R_body * R_body);
     if (theta1 < theta2 && r_norm > r1_to_horizon) return false;
-
 
     return true;
   }

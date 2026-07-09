@@ -4,7 +4,7 @@
 
 #include "lupnt/core/asset_factory.h"
 #include "lupnt/core/logger.h"
-#include "lupnt/devices/comms.h"
+#include "lupnt/devices/comm_devices.h"
 #include "lupnt/devices/device.h"
 
 namespace lupnt {

@@ -299,9 +299,13 @@ class SP3Loader:
             interp_z = CubicSpline(epochs_ref, positions[:, 2])
             if np.sum(valid_clk) >= 2:
                 from scipy.interpolate import interp1d
+
                 interp_clock = interp1d(
-                    epochs_ref[valid_clk], positions[valid_clk, 3],
-                    kind="linear", bounds_error=False, fill_value=np.nan
+                    epochs_ref[valid_clk],
+                    positions[valid_clk, 3],
+                    kind="linear",
+                    bounds_error=False,
+                    fill_value=np.nan,
                 )
             else:
                 interp_clock = None
@@ -311,16 +315,24 @@ class SP3Loader:
             interp_z = BarycentricInterpolator(epochs_ref, positions[:, 2])
             if np.sum(valid_clk) >= 2:
                 from scipy.interpolate import interp1d
+
                 interp_clock = interp1d(
-                    epochs_ref[valid_clk], positions[valid_clk, 3],
-                    kind="linear", bounds_error=False, fill_value=np.nan
+                    epochs_ref[valid_clk],
+                    positions[valid_clk, 3],
+                    kind="linear",
+                    bounds_error=False,
+                    fill_value=np.nan,
                 )
             else:
                 interp_clock = None
         else:
             raise ValueError(f"Unsupported interpolation type: {interp_type}")
 
-        clock = interp_clock(epoch) if interp_clock is not None else np.full_like(np.asarray(epoch, dtype=float), np.nan)
+        clock = (
+            interp_clock(epoch)
+            if interp_clock is not None
+            else np.full_like(np.asarray(epoch, dtype=float), np.nan)
+        )
 
         # range of epochs
         min_epoch = np.min(epochs_ref)

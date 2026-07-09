@@ -172,7 +172,23 @@ void InitDynamics(py::module &m) {
       .def("set_use_relativity", &NBodyDynamics::SetUseRelativity, py::arg("use_relativity"))
       .def("get_units", &NBodyDynamics::GetUnits)
       .def("set_units", &NBodyDynamics::SetUnits, py::arg("units"))
-      .def("set_autodiff", &NBodyDynamics::SetAutodiff);
+      .def("set_autodiff", &NBodyDynamics::SetAutodiff)
+      .def(
+          "compute_accelerations",
+          [](NBodyDynamics &dyn, double t, const VecXd &x, bool decompose_gravity) -> py::dict {
+            std::map<std::string, Vec3> acc
+                = dyn.ComputeAccelerations(Real(t), x.cast<Real>().eval(), decompose_gravity);
+            py::dict out;
+            for (const auto &kv : acc) {
+              out[py::str(kv.first)] = kv.second.cast<double>().eval();
+            }
+            return out;
+          },
+          py::arg("t"), py::arg("x"), py::arg("decompose_gravity") = false,
+          "Return a dict mapping force-term name to its Vec3 acceleration "
+          "contribution at state x and epoch t (configured frame/units). When "
+          "decompose_gravity is True, gravity-field bodies are resolved into "
+          "individual spherical-harmonic terms (e.g. 'MOON_J2', 'MOON_C22').");
 
   // Body
   py::class_<Body>(m, "Body")

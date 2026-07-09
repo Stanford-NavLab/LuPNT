@@ -7,8 +7,8 @@
 #include "lupnt/core/definitions.h"
 #include "lupnt/core/event.h"
 #include "lupnt/core/logger.h"
-#include "lupnt/core/simulation.h"
 #include "lupnt/measurements/channel.h"
+#include "lupnt/simulations/simulation.h"
 
 namespace lupnt {
 

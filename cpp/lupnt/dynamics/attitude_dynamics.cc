@@ -3,7 +3,7 @@
 #include "lupnt/conversions/attitude_conversions.h"
 #include "lupnt/conversions/frame_converter.h"
 #include "lupnt/core/asset_factory.h"
-#include "lupnt/data/kernels.h"
+#include "lupnt/interfaces/kernels.h"
 #include "lupnt/states/state.h"
 
 namespace lupnt {

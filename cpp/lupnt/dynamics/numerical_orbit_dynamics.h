@@ -1,4 +1,3 @@
-
 /**
  * @file numerical_orbit_dynamics.h
  * @brief Header file for numerical orbit dynamics
@@ -6,6 +5,9 @@
  */
 
 #pragma once
+
+#include <map>
+#include <string>
 
 #include "lupnt/dynamics/dynamics.h"
 #include "lupnt/environment/body.h"
@@ -164,6 +166,33 @@ namespace lupnt {
      * @return Time derivative of the state in the configured unit system.
      */
     VecX ComputeRates(Real t, const State& x) const override;
+
+    /**
+     * @brief Decompose the total acceleration into individual force-model terms.
+     *
+     * Returns the acceleration contribution of each force in the configured
+     * frame and unit system. Keys follow the pattern:
+     *   - "<BODY>_gravity"      central (point-mass) gravity of the body
+     *   - "<BODY>_nonspherical" higher-order (non-central) gravity field harmonics
+     *                           (only when decompose_gravity is false)
+     *   - "<BODY>_J<n>"         zonal harmonic of degree n (e.g. "MOON_J2")
+     *   - "<BODY>_C<n><m>"      tesseral/sectorial harmonic of degree n, order m
+     *                           (e.g. "MOON_C22"); only when decompose_gravity is true
+     *   - "srp"                 solar radiation pressure
+     *   - "drag"                atmospheric drag
+     *   - "relativity"          post-Newtonian relativistic correction
+     * where <BODY> is the upper-case body name (e.g. "MOON", "EARTH", "SUN").
+     * The sum of all returned terms equals the acceleration part of ComputeRates.
+     *
+     * @param t TDB epoch in seconds.
+     * @param x Cartesian state in the configured frame and unit system.
+     * @param decompose_gravity When true, resolve each gravity-field body into its
+     *        individual spherical-harmonic (n, m) contributions instead of a single
+     *        aggregate "<BODY>_nonspherical" term.
+     * @return Map from force-term name to its Vec3 acceleration contribution.
+     */
+    std::map<std::string, Vec3> ComputeAccelerations(Real t, const State& x,
+                                                     bool decompose_gravity = false) const;
 
     // Modifiers
     /**

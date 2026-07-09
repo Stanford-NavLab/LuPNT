@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "lupnt/applications/ephemeris.h"
+#include "lupnt/applications/lunanet_ephemeris.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/core/definitions.h"
 

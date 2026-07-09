@@ -1,0 +1,69 @@
+# Agent-based ground-station orbit determination scenario.
+#
+# A single ELFO target satellite (`sat`) is tracked in range and range-rate by a
+# Deep Space Network ground-station agent (`DSS14`). The station runs a
+# `GroundStationOdtsApp`, which accumulates measurements over the arc and then
+# recovers the satellite's epoch state with the analytic batch filter.
+#
+# This mirrors the physics of the monolithic `GroundStationOdtsSimulation` /
+# ex7 notebook, but as first-class agents + an application, so more ground
+# stations or target satellites can be added simply by listing more agents.
+#
+# Run with the ex_ground_station_odts_app example (or the generic ex_sim loader).
+
+name: ground_station_odts
+epoch: "2026-01-01T00:00:00"
+duration: "36:00:00"          # 36 h (~2.7 ELFO orbits)
+log_level: INFO
+
+agents:
+  # ---- Target: ELFO satellite (same frozen orbit as Example 1/7) ----
+  sat:
+    class: Satellite
+    frequency: 0.0033333333333333   # 1/300 Hz: log truth at the measurement cadence
+    dynamics:
+      class: NBodyDynamics
+      frame: MOON_CI
+      integrator: RKF45
+      dt: 10.0
+      max_iter: 1000
+      abstol: 1.0e-6
+      reltol: 1.0e-10
+      autodiff: true                # enable the analytic state-transition matrix
+      mass: 10.0                    # [kg]  } SRP: CR * area / mass
+      area: 0.02                    # [m^2] }
+      CR: 1.8
+      bodies:
+        - MOON: { n: 2, m: 2 }      # 2x2 lunar gravity
+        - EARTH: {}                 # Earth third body
+        - SUN: {}                   # Sun third body (+ SRP source)
+    initial_state:
+      class: ClassicalOE
+      frame: MOON_OP
+      a: 6541400.0                  # [m]
+      e: 0.6
+      i: 56.2                       # [deg]
+      Omega: 0.0
+      omega: 90.0
+      M: 0.0
+
+  # ---- Tracker: DSN 70 m ground station (Goldstone, DSS-14) ----
+  DSS14:
+    class: GroundStation
+    latitude_deg: 35.426456
+    longitude_deg: 243.110461
+    altitude_m: 1001.39
+    application:
+      class: GroundStationOdtsApp
+      frequency: 0.0033333333333333   # 1/300 Hz measurement cadence
+      target: sat
+      elevation_mask_deg: 10.0
+      use_range: true
+      use_range_rate: true
+      range_sigma_m: 10.0
+      range_rate_sigma_mps: 1.0e-3
+      seed: 42
+      initial_position_sigma_m: 2000.0
+      initial_velocity_sigma_mps: 0.5
+      batch_max_iterations: 10
+      batch_convergence_tol: 1.0e-3

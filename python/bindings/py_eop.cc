@@ -1,4 +1,4 @@
-#include <lupnt/data/eop.h>
+#include <lupnt/interfaces/eop.h>
 
 #include <filesystem>
 #include <string>

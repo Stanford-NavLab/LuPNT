@@ -3,6 +3,7 @@
 #include "lupnt/devices/device.h"
 #include "lupnt/dynamics/imu_dynamics.h"
 #include "lupnt/measurements/measurement.h"
+#include "lupnt/measurements/measurement_utils.h"
 #include "lupnt/states/state.h"
 
 namespace lupnt {

@@ -22,8 +22,22 @@ void InitFrameConverter(py::module &m) {
       .value("MOON_PA", Frame::MOON_PA)
       .value("MOON_ME", Frame::MOON_ME)
       .value("MOON_OP", Frame::MOON_OP)
-      .value("MARS_FIXED", Frame::MARS_FIXED)
+      // Solar-system planet body-fixed frames
+      .value("MERCURY_FIXED", Frame::MERCURY_FIXED)
       .value("VENUS_FIXED", Frame::VENUS_FIXED)
+      .value("MARS_FIXED", Frame::MARS_FIXED)
+      .value("JUPITER_FIXED", Frame::JUPITER_FIXED)
+      .value("SATURN_FIXED", Frame::SATURN_FIXED)
+      .value("URANUS_FIXED", Frame::URANUS_FIXED)
+      .value("NEPTUNE_FIXED", Frame::NEPTUNE_FIXED)
+      // Solar-system planet-centered inertial frames
+      .value("MERCURY_CI", Frame::MERCURY_CI)
+      .value("VENUS_CI", Frame::VENUS_CI)
+      .value("MARS_CI", Frame::MARS_CI)
+      .value("JUPITER_CI", Frame::JUPITER_CI)
+      .value("SATURN_CI", Frame::SATURN_CI)
+      .value("URANUS_CI", Frame::URANUS_CI)
+      .value("NEPTUNE_CI", Frame::NEPTUNE_CI)
       .export_values();
 
   // Vec6 = func(real, Vec6)

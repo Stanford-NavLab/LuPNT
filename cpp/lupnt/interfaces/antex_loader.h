@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "lupnt/core/definitions.h"
-#include "lupnt/devices/space_comms.h"
+#include "lupnt/devices/gnss_device.h"
 
 namespace lupnt {
 
@@ -61,6 +61,11 @@ namespace lupnt {
     /// directly (e.g. `"G01"`, `"E05"`) instead of a `GnssFreq` enum value.
     Vec3d GetPco(const std::string& gnss_letter, int prn, const std::string& antex_freq_code,
                  Real t_tai) const;
+
+    /// @brief True if a PCO is available for this satellite/frequency at `t_tai`.
+    /// ANTEX files legitimately omit frequencies a satellite does not transmit (e.g. L5 on
+    /// older GPS blocks), so callers can fall back to a zero offset instead of throwing.
+    bool HasPco(GnssConst gnss_const, int prn, GnssFreq freq, Real t_tai) const;
 
     /// @brief List the ANTEX frequency codes available for satellite `prn`
     /// of constellation `gnss_const` at epoch `t_tai` (e.g. `{"G01","G02","G05"}`).

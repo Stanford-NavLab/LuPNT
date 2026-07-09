@@ -344,9 +344,8 @@ namespace lupnt {
         double z = std::stod(line.substr(32, 14)) * 1000.0;  // km -> m
         double clock_us = std::stod(line.substr(46, 14));
         // Store sentinel (999999.999999 µs) as NaN; valid biases are << 1 s.
-        double clock = (clock_us > kSp3ClockSentinelUs)
-                           ? std::numeric_limits<double>::quiet_NaN()
-                           : clock_us * 1e-6;
+        double clock = (clock_us > kSp3ClockSentinelUs) ? std::numeric_limits<double>::quiet_NaN()
+                                                        : clock_us * 1e-6;
 
         new_epochs[sv].push_back(current_epoch.val());
         new_pos_clock[sv].push_back({x, y, z, clock});
@@ -476,7 +475,7 @@ namespace lupnt {
       }
     }
     if (valid_ep.size() >= 2) {
-      VecXd vep  = Eigen::Map<VecXd>(valid_ep.data(),  static_cast<int>(valid_ep.size()));
+      VecXd vep = Eigen::Map<VecXd>(valid_ep.data(), static_cast<int>(valid_ep.size()));
       VecXd vclk = Eigen::Map<VecXd>(valid_clk.data(), static_cast<int>(valid_clk.size()));
       clock_bias_s = LinearInterp1d(vep, vclk, t);
     } else {

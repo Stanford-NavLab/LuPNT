@@ -4,10 +4,10 @@
 
 #include "lupnt/agents/satellite.h"
 #include "lupnt/conversions/state_conversions.h"
-#include "lupnt/devices/comms.h"
+#include "lupnt/devices/comm_devices.h"
 #include "lupnt/dynamics/numerical_orbit_dynamics.h"
+#include "lupnt/interfaces/tle.h"
 #include "lupnt/states/state.h"
-#include "lupnt/states/tle.h"
 
 namespace lupnt {
 

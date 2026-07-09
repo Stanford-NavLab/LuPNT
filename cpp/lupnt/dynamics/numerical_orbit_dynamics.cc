@@ -22,10 +22,10 @@
 #include "lupnt/core/definitions.h"
 #include "lupnt/core/error.h"
 #include "lupnt/core/logger.h"
-#include "lupnt/data/kernels.h"
 #include "lupnt/environment/body.h"
 #include "lupnt/environment/forces.h"
 #include "lupnt/environment/solar_system.h"
+#include "lupnt/interfaces/kernels.h"
 #include "lupnt/interfaces/yaml.h"
 
 namespace lupnt {
@@ -105,6 +105,15 @@ namespace lupnt {
       IntegratorType integ
           = enum_cast<IntegratorType>(config["integrator"].as<std::string>()).value();
       SetIntegrator(integ);
+    }
+    // Optional adaptive-integrator tolerances / iteration cap. Applied only if at least one
+    // key is present, so the integrator's built-in defaults are otherwise preserved.
+    if (config["abstol"] || config["reltol"] || config["max_iter"]) {
+      IntegratorParams defaults;
+      int max_iter = config["max_iter"].as<int>(defaults.max_iter);
+      double abstol = config["abstol"].as<double>(defaults.abstol);
+      double reltol = config["reltol"].as<double>(defaults.reltol);
+      SetIntegratorParams(IntegratorParams(max_iter, abstol, reltol));
     }
     // if (config["params"]) SetParams(config["params"].as<DynamicsParam>());
   }
@@ -568,5 +577,116 @@ namespace lupnt {
     Vec6 rv_dot;
     rv_dot << v, a;
     return rv_dot;
+  }
+
+  std::map<std::string, Vec3> NBodyDynamics::ComputeAccelerations(Real t, const State& rv,
+                                                                  bool decompose_gravity) const {
+    Real t_tdb = t + GetLupntEpoch();
+    LUPNT_CHECK(frame_ != Frame::UNDEFINED, "Frame not set", "NBodyDynamics");
+
+    Vec3 r = rv.head(3);
+    Vec3 v = rv.tail(3);
+
+    std::map<std::string, Vec3> acc;
+
+    bool has_relativity_center = false;
+    Real min_relativity_distance = std::numeric_limits<double>::infinity();
+    Vec3 r_relativity_center = Vec3::Zero();
+    Vec3 v_relativity_center = Vec3::Zero();
+    Real GM_relativity_center = 0.0;
+
+    Vec3 a_srp = Vec3::Zero();
+    Vec3 a_drag = Vec3::Zero();
+
+    for (const auto& body : bodies_) {
+      if (use_relativity_ && body.id != BodyId::SUN && body.id != BodyId::SSB) {
+        Vec6 rv_body = GetBodyPosVel(t_tdb, body.id, frame_, units_);
+        Vec3 r_rel = r - rv_body.head(3);
+        Real distance = r_rel.norm();
+        if (!has_relativity_center || distance.val() < min_relativity_distance.val()) {
+          has_relativity_center = true;
+          min_relativity_distance = distance;
+          r_relativity_center = rv_body.head(3);
+          v_relativity_center = rv_body.tail(3);
+          GM_relativity_center = body.GM;
+        }
+      }
+
+      if (body.use_gravity_field) {
+        auto& grav = body.gravity_field;
+        Vec3 r_si = PositionToSI(r, units_);
+        Vec3 r_bf = PositionFromSI(ConvertFrame(t_tdb, r_si, frame_, body.fixed_frame), units_);
+        // The central (point-mass) term corresponds to the C(0,0)=1 coefficient.
+        Real r_bf_norm = r_bf.norm();
+        Vec3 a_bf_central = -grav.GM * r_bf / pow(r_bf_norm, 3);
+        auto [R_bf_to_frame, translation]
+            = GetFrameRotationTranslation(t_tdb, body.fixed_frame, frame_);
+        (void)translation;
+        acc[body.name + "_gravity"] = R_bf_to_frame * a_bf_central;
+
+        if (decompose_gravity) {
+          // The gravity-field acceleration is linear in the spherical-harmonic
+          // coefficients, so the contribution of a single (n, m) harmonic is
+          // recovered by evaluating the field with a coefficient matrix in which
+          // only that (n, m) pair (C_nm, and S_nm for m>0) is retained.
+          for (int m = 0; m <= grav.m; m++) {
+            for (int n = std::max(m, 1); n <= grav.n; n++) {
+              MatX CS_iso = MatX::Zero(grav.CS.rows(), grav.CS.cols());
+              CS_iso(n, m) = grav.CS(n, m);                      // C_nm
+              if (m >= 1) CS_iso(m - 1, n) = grav.CS(m - 1, n);  // S_nm
+              Vec3 a_bf_nm
+                  = AccelarationGravityField<Real>(r_bf, grav.GM, grav.R, CS_iso, grav.n, grav.m);
+              std::string key = (m == 0) ? body.name + "_J" + std::to_string(n)
+                                         : body.name + "_C" + std::to_string(n) + std::to_string(m);
+              acc[key] = R_bf_to_frame * a_bf_nm;
+            }
+          }
+        } else {
+          Vec3 a_bf
+              = AccelarationGravityField<Real>(r_bf, grav.GM, grav.R, grav.CS, grav.n, grav.m);
+          acc[body.name + "_nonspherical"] = R_bf_to_frame * (a_bf - a_bf_central);
+        }
+      } else {
+        Vec3 r_body = GetBodyPos(t_tdb, body.id, frame_, units_);
+        acc[body.name + "_gravity"] = AccelerationPointMass(r, r_body, body.GM);
+      }
+
+      // Solar radiation pressure
+      if (use_srp_ && body.id != BodyId::SUN) {
+        Vec3 r_sun = GetBodyPos(t_tdb, body.id, BodyId::SUN, frame_, units_);
+        PhysicalConstants constants = GetPhysicalConstants(units_);
+        a_srp
+            += Illumination(r, r_sun, body.R)
+               * AccelerationSolarRadiation(r, r_sun, GetSrpCoeff(), constants.P_SUN, constants.AU);
+      }
+
+      // Atmospheric drag
+      if (use_drag_ && body.id == BodyId::EARTH) {
+        Real tt = ConvertTime(t_tdb, Time::TDB, Time::TT);
+        Real mjd_tt = TimeToMjd(tt);
+        MatX3 Rot = NutationMatrix(mjd_tt) * PrecessionMatrix(MJD_J2000_TT, mjd_tt);
+        Vec6 rv_si = StateToSI(rv, units_);
+        Real bcoeff_si = units_.ToSI(GetDragCoeff().val(), 2, 0, -1);
+        Vec3 a_drag_si = AccelerationDrag(mjd_tt, rv_si, Rot, bcoeff_si);
+        a_drag += AccelerationFromSI(a_drag_si, units_);
+      }
+    }
+
+    if (use_srp_) acc["srp"] = a_srp;
+    if (use_drag_) acc["drag"] = a_drag;
+
+    if (use_relativity_) {
+      PhysicalConstants constants = GetPhysicalConstants(units_);
+      Vec6 rv_sun = GetBodyPosVel(t_tdb, BodyId::SUN, frame_, units_);
+      Vec3 a_rel = AccelerationRelativisticCorrection(r - rv_sun.head(3), v - rv_sun.tail(3),
+                                                      constants.GM_SUN, constants.C);
+      if (has_relativity_center) {
+        a_rel += AccelerationRelativisticCorrection(
+            r - r_relativity_center, v - v_relativity_center, GM_relativity_center, constants.C);
+      }
+      acc["relativity"] = a_rel;
+    }
+
+    return acc;
   }
 };  // namespace lupnt

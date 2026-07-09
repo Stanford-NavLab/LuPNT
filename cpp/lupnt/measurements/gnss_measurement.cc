@@ -8,7 +8,7 @@
 #include "lupnt/conversions/time_conversions.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/core/error.h"
-#include "lupnt/devices/space_comms.h"
+#include "lupnt/devices/gnss_device.h"
 #include "lupnt/measurements/comms_utils.h"
 #include "lupnt/numerics/interpolation.h"
 #include "lupnt/numerics/math_utils.h"
@@ -82,11 +82,8 @@ namespace lupnt {
       return rv_tx;
     }
 
-    Real LinkBudget(Real P_tx_dbw, Real G_tx_db, Real G_rx_db, Real range_m, GnssFreq freq) {
-      constexpr double L_ad = 0.6;      // [dB] A/D converter loss
-      constexpr double L_pol = 1.0;     // [dB] Polarization loss
-      constexpr double L_atm = 0.0;     // [dB] Atmospheric loss
-      constexpr double T_eff = 167.98;  // [K] Effective noise temperature
+    Real LinkBudget(Real P_tx_dbw, Real G_tx_db, Real G_rx_db, Real range_m, GnssFreq freq,
+                    const GnssReceiverParams& rx_params) {
       constexpr double k_B = 1.38e-23;  // [J/K] Boltzmann constant
 
       auto it = GNSS_FREQ_MAP.find(freq);
@@ -96,8 +93,8 @@ namespace lupnt {
       Real L_fs = FreeSpacePathLoss(range_m, freq_Hz);
       double kb_db = 10.0 * std::log10(k_B);
 
-      return P_tx_dbw + G_tx_db + G_rx_db - L_atm - L_fs - L_ad - L_pol - kb_db
-             - 10.0 * std::log10(T_eff);
+      return P_tx_dbw + G_tx_db + G_rx_db - rx_params.L_atm - L_fs - rx_params.L_ad
+             - rx_params.L_pol - kb_db - 10.0 * log10(rx_params.T_eff);
     }
 
     double GnssFrequencyHz(GnssFreq freq) {
@@ -162,9 +159,10 @@ namespace lupnt {
     return y;
   }
 
-  GnssMeasurement::GnssMeasurement(const GnssChannel& channel) : channel_(channel) {
-    timestamp = channel.receive_time;
-  }
+  GnssMeasurement::GnssMeasurement(const GnssChannel& channel) : channel_(channel) {}
+
+  GnssMeasurement::GnssMeasurement(const GnssChannel& channel, GnssMeasurementOptions options)
+      : channel_(channel), options_(std::move(options)) {}
 
   Real GnssMeasurement::ClockBiasToMeters(Real bias, ClockBiasUnit unit) {
     return ClockDynamics::BiasUnitsToSeconds(bias, unit) * C;
@@ -234,8 +232,8 @@ namespace lupnt {
     return value;
   }
 
-  VecXd GnssMeasurement::Compute(const State& user_state, MatXd* H,
-                                 const GnssMeasurementOptions& options) const {
+  VecXd GnssMeasurement::ComputeVector(const State& user_state, MatXd* H,
+                                       const GnssMeasurementOptions& options) const {
     GnssMeasurementValue value = ComputeValue(user_state, options);
     VecXd y = value.AsVector(options.observables);
 
@@ -294,20 +292,16 @@ namespace lupnt {
     return y;
   }
 
-  FilterMeasurementFunction GnssMeasurement::CreateFunction(
-      const GnssMeasurementOptions& options) const {
-    return [measurement = *this, options](const State& x, MatXd* H, MatXd* R) {
-      VecXd y = measurement.Compute(x, H, options);
-      if (R != nullptr) {
-        R->setZero(y.size(), y.size());
-        for (int i = 0; i < y.size(); i++) {
-          Real sigma = OneIfFinitePositive(
-              ObservableSigma(measurement.GetChannel(), options.observables[i]));
-          (*R)(i, i) = (sigma * sigma).val();
-        }
-      }
-      return y;
-    };
+  MeasData GnssMeasurement::Compute(const State& x, MatXd* H) const {
+    MeasData md;
+    md.timestamp = channel_.receive_time;
+    md.value = ComputeVector(x, H, options_);
+    md.covariance = MatXd::Zero(md.value.size(), md.value.size());
+    for (int i = 0; i < md.value.size(); i++) {
+      Real sigma = OneIfFinitePositive(ObservableSigma(channel_, options_.observables[i]));
+      md.covariance(i, i) = (sigma * sigma).val();
+    }
+    return md;
   }
 
   std::vector<GNSSMeasurementsEpoch> GnssMeasurement::Precompute(
@@ -521,7 +515,7 @@ namespace lupnt {
     Real G_rx = rx_antenna_.ComputeGain(0.0, phi_rx);
     Real P_tx = constellation->GetTransmitPowerDbw(channel.prn, channel.frequency);
 
-    return LinkBudget(P_tx, G_tx, G_rx, range, channel.frequency);
+    return LinkBudget(P_tx, G_tx, G_rx, range, channel.frequency, rx_params_);
   }
 
   Real GNSSMeasurements::ComputeSigmaRange(Real cn0_dbhz, GnssFreq freq) const {
@@ -594,9 +588,9 @@ namespace lupnt {
       for (int prn : constellation->GetPrns()) {
         if (constellation->IsFaultPrn(prn)) continue;
 
-        GnssChannel channel = BuildChannelForPrn(prn, receive_time, user_state,
-                                                 compute_ionosphere_plasma_delay, constellation,
-                                                 frequency);
+        GnssChannel channel
+            = BuildChannelForPrn(prn, receive_time, user_state, compute_ionosphere_plasma_delay,
+                                 constellation, frequency);
         Vec3 r_tx = channel.tx_state.head(3);
 
         if (options_.apply_visibility) {
@@ -658,7 +652,7 @@ namespace lupnt {
     for (int i = 0; i < static_cast<int>(channels.size()); i++) {
       GnssMeasurement measurement(channels[i]);
       MatXd H_i;
-      VecXd y_i = measurement.Compute(user_state, H != nullptr ? &H_i : nullptr, options_);
+      VecXd y_i = measurement.ComputeVector(user_state, H != nullptr ? &H_i : nullptr, options_);
       epoch.values.segment(i * n_obs, n_obs) = y_i;
       if (H != nullptr) epoch.jacobian.block(i * n_obs, 0, n_obs, user_state.size()) = H_i;
 

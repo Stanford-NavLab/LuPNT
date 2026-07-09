@@ -131,6 +131,11 @@ namespace lupnt {
     Real altitude_m = ReadRequiredReal(config, {"altitude_m", "altitude"});
     ConfigureFromData(MakeGroundStationData(GetName(), latitude_deg.val(), longitude_deg.val(),
                                             altitude_m.val(), body_id));
+
+    // Optional onboard application (e.g. GroundStationOdtsApp). GroundStation builds
+    // itself via ConfigureFromConfig rather than the Agent(Config&) constructor, so it
+    // must opt into application creation explicitly.
+    CreateApplication(config);
   }
 
   void GroundStation::ConfigureFromData(const spice::GroundStationSpiceData& gs_data) {

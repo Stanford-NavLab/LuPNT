@@ -1,6 +1,6 @@
 // lupnt
 #include <lupnt/core/constants.h>
-#include <lupnt/data/kernels.h>
+#include <lupnt/interfaces/kernels.h>
 #include <lupnt/numerics/math_utils.h>
 
 // pybind11

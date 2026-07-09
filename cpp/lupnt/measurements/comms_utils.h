@@ -120,7 +120,7 @@ namespace lupnt {
   /// @return       True if `r1` and `r2` have an unobstructed line of sight
   ///                (subject to the elevation mask)
   bool ComputeVisibility(const Vec3& r1, const Vec3& r2, Real R_body,
-                                const Vec3& r_body = Vec3::Zero(), const Real min_alt=10e3, 
-                                const Real min_elev_deg=5.0);
+                         const Vec3& r_body = Vec3::Zero(), const Real min_alt = 10e3,
+                         const Real min_elev_deg = 5.0);
 
 }  // namespace lupnt

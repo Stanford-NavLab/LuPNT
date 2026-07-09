@@ -9,8 +9,17 @@
 namespace lupnt {
   namespace {
     Real ClampUnit(Real x) {
-      if (x.val() > 1.0) return 1.0;
-      if (x.val() < -1.0) return -1.0;
+      // Clamp to [-1, 1] for the asin/acos calls in ShadowFunction. When the argument
+      // saturates we return a constant *strictly inside* the domain (±(1 - kEps))
+      // rather than exactly ±1: under autodiff asin'/acos' diverge at ±1, and
+      // returning exactly ±1 yields 0/0 = NaN in the derivative (the value is
+      // unaffected). Returning a strictly-interior constant keeps the derivative
+      // finite (it is zero there, since the return no longer depends on x). This is
+      // what lets the state-transition matrix be formed analytically over arcs that
+      // graze a shadow boundary. The value shift is < 1e-9 and irrelevant.
+      constexpr double kEps = 1e-12;
+      if (x.val() >= 1.0) return 1.0 - kEps;
+      if (x.val() <= -1.0) return -1.0 + kEps;
       return x;
     }
 
@@ -323,7 +332,11 @@ namespace lupnt {
 
     Real x = (c * c + a * a - b * b) / (2.0 * c);
     Real y2 = a * a - x * x;
-    Real y = sqrt(Max(y2, 0.0));
+    // Floor y2 by a tiny positive constant (not 0): on the penumbra boundary y2 -> 0,
+    // where sqrt'(0) is infinite and sqrt(Max(y2, 0)) produces a NaN derivative under
+    // autodiff. The constant floor keeps the derivative finite; the value shift is
+    // negligible.
+    Real y = sqrt(Max(y2, 1e-20));
 
     Real occulted_area
         = a * a * acos(ClampUnit(x / a)) + b * b * acos(ClampUnit((c - x) / b)) - c * y;

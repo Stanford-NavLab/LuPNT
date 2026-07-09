@@ -11,7 +11,7 @@ namespace lupnt {
   class Agent;
 
   /// @brief Base class for top-level simulation "application" logic attached to an Agent
-  /// (e.g. RoverApp, SurfaceStationApp) -- the part of an agent that runs its navigation
+  /// (e.g. LanderNavApp, SurfaceStationApp) -- the part of an agent that runs its navigation
   /// filter / mission logic on a periodic schedule.
   ///
   /// An Application is created and owned by an Agent (see the Agent(Config&) constructor,
@@ -29,7 +29,7 @@ namespace lupnt {
     /// Called via AssetFactory<Application, Config&>::Create from the Agent(Config&)
     /// constructor when an agent's config contains an `application:` block. Reads the
     /// optional `name` (defaults to GetId()) and `frequency` [Hz] entries and stores the
-    /// full config for use by derived-class constructors (e.g. RoverApp reads
+    /// full config for use by derived-class constructors (e.g. LanderNavApp reads
     /// `dynamics`/`filter` sub-configs from it).
     ///
     /// @param config YAML configuration node for this application (must outlive derived
@@ -42,7 +42,7 @@ namespace lupnt {
     /// Base implementation: if GetFrequency() > 0, schedules `Step(t)` on the owning
     /// agent's Simulation at Event::Priority::APPLICATION, starting at t=0 with period
     /// 1/GetFrequency() seconds; otherwise logs a warning that no frequency is set.
-    /// Derived classes (e.g. RoverApp::Setup, SurfaceStationApp::Setup) override this to
+    /// Derived classes (e.g. LanderNavApp::Setup, SurfaceStationApp::Setup) override this to
     /// additionally initialize their Filter's time/state/covariance and dynamics/process
     /// noise callbacks before (optionally) calling the base behavior.
     virtual void Setup();
@@ -50,7 +50,7 @@ namespace lupnt {
     /// @brief Run one simulation step of this application's mission logic at time `t`.
     ///
     /// Pure virtual: derived classes implement the actual filter predict/update cycle
-    /// here (e.g. RoverApp::Step computes a control input and logs state; the LNSS
+    /// here (e.g. LanderNavApp::Step computes a control input and logs state; the LNSS
     /// application's Step would run the GNSS measurement-update). Invoked periodically
     /// by the Simulation event scheduled in Setup(), at the application's configured
     /// frequency.
@@ -62,7 +62,7 @@ namespace lupnt {
     ///
     /// Base implementation only emits a debug message. Called once after Setup() and
     /// thereafter from Agent::Log(t) (which forwards to `application_->Log(time)` each
-    /// time the owning agent logs). Derived classes (e.g. RoverApp::Log) override this to
+    /// time the owning agent logs). Derived classes (e.g. LanderNavApp::Log) override this to
     /// additionally log their Filter's state/covariance and any error metrics.
     ///
     /// @param t Current simulation time [s, since simulation epoch]

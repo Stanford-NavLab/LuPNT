@@ -3,7 +3,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "lupnt/core/logger.h"
-#include "lupnt/core/simulation.h"
+#include "lupnt/simulations/simulation.h"
 
 using namespace lupnt;
 

@@ -24,6 +24,7 @@ A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timi
 
     introduction
     development
+    pages/new_simulation
     builddocs
     pages/sp3_download
     pages/cross_validation

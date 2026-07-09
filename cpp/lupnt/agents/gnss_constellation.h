@@ -30,7 +30,7 @@
 
 #include "lupnt/agents/constellation.h"
 #include "lupnt/agents/gnss_attitude.h"
-#include "lupnt/devices/space_comms.h"
+#include "lupnt/devices/gnss_device.h"
 #include "lupnt/measurements/antenna.h"
 #include "lupnt/numerics/cheby_fit.h"
 
@@ -46,6 +46,12 @@ namespace lupnt {
     Real Bn = 0.7;   // [Hz] Code loop noise bandwidth
     Real Bf = 0.2;   // [Hz] Frequency loop noise bandwidth
     Real D = 0.1;    // [chip] Early-to-late correlator spacing
+
+    // Link-budget terms used by GNSSMeasurements::ComputeCN0 (link-budget / CN0 estimation).
+    Real L_ad = 0.6;      // [dB] A/D converter loss
+    Real L_pol = 1.0;     // [dB] Polarization loss
+    Real L_atm = 0.0;     // [dB] Atmospheric loss
+    Real T_eff = 167.98;  // [K] Effective noise temperature
   };
 
   /// @brief A spherical body that can occlude the line of sight between a

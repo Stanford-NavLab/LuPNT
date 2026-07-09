@@ -2,7 +2,7 @@
 // range/range-rate filtering problem.
 #include <lupnt/lupnt.h>
 
-#include "lupnt/filters/filter_utils.h"
+#include "lupnt/numerics/filters/filter_utils.h"
 
 using namespace lupnt;
 

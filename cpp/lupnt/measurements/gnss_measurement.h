@@ -10,9 +10,10 @@
 #include "lupnt/dynamics/clock_dynamics.h"
 #include "lupnt/environment/plasma/gcpm/iri_interface.h"
 #include "lupnt/environment/plasma/tec/raytrace.h"
-#include "lupnt/filters/filter.h"
 #include "lupnt/measurements/measurement.h"
+#include "lupnt/measurements/measurement_utils.h"
 #include "lupnt/numerics/cheby_fit.h"
+#include "lupnt/numerics/filters/filter.h"
 
 namespace lupnt {
 
@@ -60,7 +61,7 @@ namespace lupnt {
     Vec3 shapiro_body_position = Vec3::Zero();
     bool apply_visibility = true;
     bool apply_cn0_threshold = true;
-    Real cn0_threshold_dbhz = 15.0;          // Deprecated: use acq/tracking below
+    Real cn0_threshold_dbhz = 15.0;              // Deprecated: use acq/tracking below
     Real cn0_acquisition_threshold_dbhz = 22.0;  // Min CN0 to acquire a new satellite [dBHz]
     Real cn0_tracking_threshold_dbhz = 20.0;     // Min CN0 to maintain an existing lock [dBHz]
     bool apply_ionosphere_plasma_delay = false;
@@ -206,25 +207,45 @@ namespace lupnt {
 
   class GNSSMeasurements;
 
-  class GnssMeasurement : public Measurement {
+  /// @brief Single-channel GNSS measurement model (`Measurement` subclass).
+  ///
+  /// Its `Config` is `GnssMeasurementOptions` (observable selection, state-index layout,
+  /// clock-bias unit, frame, and light-time/relativity/Shapiro/plasma correction settings),
+  /// stored as a member and consumed by the `Measurement` interface methods
+  /// (`Compute`/`CreateFunction`). The explicit-config overloads
+  /// `ComputeValue`/`ComputeVector` remain available for callers (e.g. the Lunar-GNSS ODTS
+  /// combined/TDCP model) that vary the config per invocation.
+  class GnssMeasurement : public MeasurementClone<GnssMeasurement> {
   public:
+    /// @brief The measurement model's configuration type (observable selection, state
+    /// mapping, correction settings). Alias of `GnssMeasurementOptions`.
+    using Config = GnssMeasurementOptions;
+
     GnssMeasurement() = default;
 
     /// @brief Construct a single-channel GNSS measurement from a (typically
-    /// precomputed) GnssChannel, copying `channel.receive_time` into the
-    /// `Measurement::timestamp` field.
+    /// precomputed) GnssChannel.
     ///
     /// Used by GNSSMeasurements::ComputeFromChannels to wrap each transmitter
     /// channel built by `BuildChannels` before computing its
     /// pseudorange/Doppler/carrier-phase observables.
     explicit GnssMeasurement(const GnssChannel& channel);
 
+    /// @brief Construct from a channel and an explicit measurement config.
+    GnssMeasurement(const GnssChannel& channel, GnssMeasurementOptions options);
+
     /// @brief Replace the GNSS channel (transmitter ephemeris, clock, and
-    /// delay terms) used by ComputeValue()/Compute().
+    /// delay terms) used by ComputeValue()/ComputeVector().
     void SetChannel(const GnssChannel& channel) { channel_ = channel; }
 
     /// @brief Get the GNSS channel currently associated with this measurement.
     const GnssChannel& GetChannel() const { return channel_; }
+
+    /// @brief Replace the measurement config used by the `Measurement` interface methods.
+    void SetOptions(const GnssMeasurementOptions& options) { options_ = options; }
+
+    /// @brief Get the measurement config currently in use.
+    const GnssMeasurementOptions& GetOptions() const { return options_; }
 
     /// @brief Compute the pseudorange, Doppler, and carrier-phase values
     /// implied by a user (receiver) state and this measurement's channel.
@@ -256,9 +277,8 @@ namespace lupnt {
     /// @brief Compute the GNSS measurement vector (and, optionally, its
     /// Jacobian) for the observables selected in `options`.
     ///
-    /// This is the `FilterMeasurementFunction`-compatible entry point used by
-    /// the EKF/UKF measurement-update step (directly, or via CreateFunction())
-    /// to evaluate `y = h(x)` and `H = dh/dx` for one GNSS channel. Internally
+    /// The explicit-config workhorse behind the `Measurement` interface: it
+    /// evaluates `y = h(x)` and `H = dh/dx` for one GNSS channel. Internally
     /// calls ComputeValue() for `y`, and (if `H` is requested) differentiates
     /// the range/range-rate/carrier-phase model analytically with respect to
     /// receiver position, velocity, clock bias/drift, and carrier-integer
@@ -271,24 +291,17 @@ namespace lupnt {
     /// @param options    Same options as ComputeValue()
     /// @return Measurement vector `y`, one entry per `options.observables`
     ///         [m, Hz, or cycles depending on entry]
-    VecXd Compute(const State& user_state, MatXd* H = nullptr,
-                  const GnssMeasurementOptions& options = {}) const;
+    VecXd ComputeVector(const State& user_state, MatXd* H = nullptr,
+                        const GnssMeasurementOptions& options = {}) const;
 
-    /// @brief Wrap Compute() (and the per-observable noise sigmas stored on
-    /// the channel) into a `FilterMeasurementFunction`.
+    /// @brief `Measurement` interface: predict `z = h(x)`, `R`, and (if `H != nullptr`) the
+    /// analytic Jacobian `H = dh/dx`, using the stored config `GetOptions()`.
     ///
-    /// The returned closure captures a copy of this measurement (channel +
-    /// options) and is suitable for direct use as a filter's measurement
-    /// model, e.g. via `Filter::SetMeasurementFunction`. The diagonal `R`
-    /// covariance is built from `GetChannel()`'s
-    /// `sigma_pseudorange_m`/`sigma_doppler_hz`/`sigma_carrier_phase_cycles`
-    /// (each defaulted to 1 if not finite/positive).
-    ///
-    /// @param options Observable selection and correction settings to bind
-    ///                 into the returned function
-    /// @return Function `(x, H, R) -> y` computing the GNSS measurement,
-    ///         Jacobian, and noise covariance for this channel
-    FilterMeasurementFunction CreateFunction(const GnssMeasurementOptions& options = {}) const;
+    /// The diagonal `R` covariance is built from `GetChannel()`'s
+    /// `sigma_pseudorange_m`/`sigma_doppler_hz`/`sigma_carrier_phase_cycles` (each defaulted
+    /// to 1 if not finite/positive). `CreateFunction()` (inherited) wraps this into a
+    /// `FilterMeasurementFunction` for direct use with the `Filter` family.
+    MeasData Compute(const State& x, MatXd* H = nullptr) const override;
 
     /// @brief Batch-compute a `GNSSMeasurementsEpoch` (channels + values [+
     /// Jacobians]) for each given receive time / user state pair.
@@ -314,6 +327,7 @@ namespace lupnt {
 
   private:
     GnssChannel channel_;
+    GnssMeasurementOptions options_;  ///< config consumed by the `Measurement` interface
 
     /// @brief Convert a receiver clock bias from `unit` to an equivalent
     /// pseudorange offset, via `ClockDynamics::BiasUnitsToSeconds(bias, unit) * C`.
@@ -497,7 +511,6 @@ namespace lupnt {
     /// reverting ComputeIonospherePlasmaDelay() to the custom model (if any)
     /// or `options_.default_ionosphere_plasma_delay_m`.
     void ClearIonospherePlasmaRayTraceOptions() { ionosphere_plasma_raytrace_options_.reset(); }
-
 
     /// @brief Build the set of visible, above-CN0-threshold GNSS channels for
     /// every PRN in the constellation at a receiver epoch/state.

@@ -50,7 +50,7 @@ namespace lupnt {
   public:
     /// @brief Construct a Cesium-based 3D visualization server.
     ///
-    /// Created by `Simulation::Init` (see `lupnt/core/simulation.h`,
+    /// Created by `Simulation::Init` (see `lupnt/simulations/simulation.h`,
     /// `GetCesiumViewer`) when the simulation config enables Cesium output;
     /// agents (e.g. `Satellite`) then call `AddEntity` each step to stream
     /// their trajectory to the served CZML viewer. Requires the

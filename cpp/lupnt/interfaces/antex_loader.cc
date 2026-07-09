@@ -19,7 +19,7 @@
 #include "lupnt/conversions/time_conversions.h"
 #include "lupnt/core/error.h"
 #include "lupnt/core/file.h"
-#include "lupnt/data/kernels.h"
+#include "lupnt/interfaces/kernels.h"
 
 namespace lupnt {
 
@@ -306,6 +306,18 @@ namespace lupnt {
     std::string freq_name = ToUpper(std::string(enum_name(freq)));
     std::string code = FreqToAntexCode(gnss_letter, freq_name);
     return GetPco(gnss_letter, prn, code, t_tai);
+  }
+
+  bool AntexLoader::HasPco(GnssConst gnss_const, int prn, GnssFreq freq, Real t_tai) const {
+    if (!HasSatellite(gnss_const, prn)) return false;
+    std::string gnss_letter = GnssLetter(gnss_const);
+    std::string freq_name = ToUpper(std::string(enum_name(freq)));
+    std::string code = ToUpper(FreqToAntexCode(gnss_letter, freq_name));
+    std::ostringstream ss;
+    ss << ToUpper(gnss_letter) << std::setfill('0') << std::setw(2) << prn;
+    const SatAntennaEntry& entry = SelectEntry(ss.str(), t_tai.val());
+    auto it = entry.freqs.find(code);
+    return it != entry.freqs.end() && it->second.has_pco;
   }
 
   // PCO -> ECEF correction *****************************************************

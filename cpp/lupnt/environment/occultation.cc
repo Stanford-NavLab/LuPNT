@@ -13,8 +13,8 @@
 
 #include "lupnt/conversions/frame_converter.h"
 #include "lupnt/core/constants.h"
-#include "lupnt/data/kernels.h"
 #include "lupnt/environment/body.h"
+#include "lupnt/interfaces/kernels.h"
 
 namespace lupnt {
 

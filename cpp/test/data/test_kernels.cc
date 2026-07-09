@@ -1,6 +1,6 @@
 #include <lupnt/conversions/time_conversions.h>
 #include <lupnt/core/constants.h>
-#include <lupnt/data/kernels.h>
+#include <lupnt/interfaces/kernels.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>

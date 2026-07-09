@@ -36,9 +36,22 @@ namespace lupnt {
       {Frame::MOON_CI, BodyId::MOON},
       {Frame::MOON_PA, BodyId::MOON},
       {Frame::MOON_OP, BodyId::MOON},
-      // Solar System
-      {Frame::MARS_FIXED, BodyId::MARS},
+      // Solar System -- body-fixed frames
+      {Frame::MERCURY_FIXED, BodyId::MERCURY},
       {Frame::VENUS_FIXED, BodyId::VENUS},
+      {Frame::MARS_FIXED, BodyId::MARS},
+      {Frame::JUPITER_FIXED, BodyId::JUPITER},
+      {Frame::SATURN_FIXED, BodyId::SATURN},
+      {Frame::URANUS_FIXED, BodyId::URANUS},
+      {Frame::NEPTUNE_FIXED, BodyId::NEPTUNE},
+      // Solar System -- planet-centered inertial frames
+      {Frame::MERCURY_CI, BodyId::MERCURY},
+      {Frame::VENUS_CI, BodyId::VENUS},
+      {Frame::MARS_CI, BodyId::MARS},
+      {Frame::JUPITER_CI, BodyId::JUPITER},
+      {Frame::SATURN_CI, BodyId::SATURN},
+      {Frame::URANUS_CI, BodyId::URANUS},
+      {Frame::NEPTUNE_CI, BodyId::NEPTUNE},
   };
 
   BodyId GetFrameCenter(Frame frame) {
@@ -64,8 +77,20 @@ namespace lupnt {
       case Frame::MOON_PA: os << "MOON_PA"; break;
       case Frame::MOON_ME: os << "MOON_ME"; break;
       case Frame::MOON_OP: os << "MOON_OP"; break;
-      case Frame::MARS_FIXED: os << "MARS_FIXED"; break;
+      case Frame::MERCURY_FIXED: os << "MERCURY_FIXED"; break;
       case Frame::VENUS_FIXED: os << "VENUS_FIXED"; break;
+      case Frame::MARS_FIXED: os << "MARS_FIXED"; break;
+      case Frame::JUPITER_FIXED: os << "JUPITER_FIXED"; break;
+      case Frame::SATURN_FIXED: os << "SATURN_FIXED"; break;
+      case Frame::URANUS_FIXED: os << "URANUS_FIXED"; break;
+      case Frame::NEPTUNE_FIXED: os << "NEPTUNE_FIXED"; break;
+      case Frame::MERCURY_CI: os << "MERCURY_CI"; break;
+      case Frame::VENUS_CI: os << "VENUS_CI"; break;
+      case Frame::MARS_CI: os << "MARS_CI"; break;
+      case Frame::JUPITER_CI: os << "JUPITER_CI"; break;
+      case Frame::SATURN_CI: os << "SATURN_CI"; break;
+      case Frame::URANUS_CI: os << "URANUS_CI"; break;
+      case Frame::NEPTUNE_CI: os << "NEPTUNE_CI"; break;
       default: throw std::runtime_error("Frame not implemented");
     }
     return os;
@@ -88,9 +113,54 @@ namespace lupnt {
   /// ICRF -- GCRF -- MI -- OP
   ///       /  |  \  /
   ///     SER GSE EMR
+  ///
+  /// The solar-system planets hang off the ICRF (SSB) hub: each <PLANET>_CI is
+  /// ICRF-aligned and centered on the planet, and <PLANET>_FIXED co-rotates with
+  /// it via the IAU orientation model (see frame_conversions.cc).
+
+  /// @brief Convert to/from a planet <PLANET>_CI / <PLANET>_FIXED frame by routing
+  /// through the SSB-centered ICRF hub. Handles the case where the *other* endpoint
+  /// is itself a (possibly different) planet frame, an Earth/Moon frame, or ICRF.
+  template <int N>
+  Vec<N> ConvertPlanetFrame(Real t_tdb, const Vec<N>& rv_in, Frame frame_in, Frame frame_out) {
+    // Fast path: both frames belong to the same planet -> a pure rotation about
+    // the shared center. Avoids round-tripping through the SSB (~1e11 m), which
+    // would otherwise lose precision on the small body-relative state.
+    if (IsPlanetFrame(frame_in) && IsPlanetFrame(frame_out)
+        && GetFrameCenter(frame_in) == GetFrameCenter(frame_out)) {
+      BodyId body = GetFrameCenter(frame_in);
+      bool in_fixed = IsPlanetFixedFrame(frame_in);
+      bool out_fixed = IsPlanetFixedFrame(frame_out);
+      if (in_fixed == out_fixed) return rv_in;  // CI<->CI or FIXED<->FIXED (same body)
+      if (out_fixed) return BodyCiToFixed(t_tdb, rv_in, body);
+      return BodyFixedToCi(t_tdb, rv_in, body);
+    }
+    // 1) Bring the input to the ICRF hub.
+    Vec<N> rv_icrf;
+    if (IsPlanetCiFrame(frame_in)) {
+      rv_icrf = PlanetCiToIcrf(t_tdb, rv_in, GetFrameCenter(frame_in));
+    } else if (IsPlanetFixedFrame(frame_in)) {
+      Vec<N> rv_ci = BodyFixedToCi(t_tdb, rv_in, GetFrameCenter(frame_in));
+      rv_icrf = PlanetCiToIcrf(t_tdb, rv_ci, GetFrameCenter(frame_in));
+    } else {
+      rv_icrf = ConvertFrame(t_tdb, rv_in, frame_in, Frame::ICRF);  // non-planet endpoint
+    }
+    // 2) Emit from the ICRF hub to the requested output.
+    if (IsPlanetCiFrame(frame_out)) {
+      return IcrfToPlanetCi(t_tdb, rv_icrf, GetFrameCenter(frame_out));
+    } else if (IsPlanetFixedFrame(frame_out)) {
+      Vec<N> rv_ci = IcrfToPlanetCi(t_tdb, rv_icrf, GetFrameCenter(frame_out));
+      return BodyCiToFixed(t_tdb, rv_ci, GetFrameCenter(frame_out));
+    }
+    return ConvertFrame(t_tdb, rv_icrf, Frame::ICRF, frame_out);  // non-planet endpoint
+  }
+
   template <int N>
   Vec<N> ConvertFrameBase(Real t_tdb, const Vec<N>& rv_in, Frame frame_in, Frame frame_out) {
     if (frame_in == frame_out) return rv_in;
+    // Solar-system planet CI/FIXED frames (generic IAU orientation, ICRF hub).
+    if (IsPlanetFrame(frame_in) || IsPlanetFrame(frame_out))
+      return ConvertPlanetFrame(t_tdb, rv_in, frame_in, frame_out);
     switch (frame_in) {
       // Earth ***************
       case Frame::ICRF:

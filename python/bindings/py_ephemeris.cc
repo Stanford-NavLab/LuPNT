@@ -1,9 +1,9 @@
 /**
  * @file py_ephemeris.cc
  * @brief Python bindings for `lupnt::CartesianEphemeris`/`lupnt::Almanac`
- *        (`lupnt/applications/ephemeris.h`, `lupnt/applications/almanac.h`) and
+ *        (`lupnt/applications/lunanet_ephemeris.h`, `lupnt/applications/lunanet_almanac.h`) and
  *        `lupnt::EphemerisSimulation`
- *        (`lupnt/simulations/Ephemeris/ephemeris_simulation.h`).
+ *        (`lupnt/simulations/ephemeris/ephemeris_simulation.h`).
  *
  * Config/result/options structs are plain `double`-valued (no `lupnt::Real`), so
  * they bind directly via `def_readwrite`/`def_readonly` with pybind11's built-in
@@ -37,7 +37,9 @@ void InitEphemeris(py::module& m) {
       .def(py::init<>())
       .def_readwrite("poly_order", &EphemerisFitOptions::poly_order)
       .def_readwrite("use_keplerian_baseline", &EphemerisFitOptions::use_keplerian_baseline)
-      .def_readwrite("gm", &EphemerisFitOptions::gm);
+      .def_readwrite("gm", &EphemerisFitOptions::gm)
+      .def_readwrite("frame", &EphemerisFitOptions::frame)
+      .def_readwrite("num_fourier_terms", &EphemerisFitOptions::num_fourier_terms);
 
   py::class_<CartesianEphemeris>(m, "CartesianEphemeris")
       .def(py::init<>())
@@ -56,7 +58,10 @@ void InitEphemeris(py::module& m) {
   py::class_<AlmanacFitOptions>(m, "AlmanacFitOptions")
       .def(py::init<>())
       .def_readwrite("poly_order", &AlmanacFitOptions::poly_order)
-      .def_readwrite("gm", &AlmanacFitOptions::gm);
+      .def_readwrite("num_fourier_terms", &AlmanacFitOptions::num_fourier_terms)
+      .def_readwrite("gm", &AlmanacFitOptions::gm)
+      .def_readwrite("sidereal_period_s", &AlmanacFitOptions::sidereal_period_s)
+      .def_readwrite("frame", &AlmanacFitOptions::frame);
 
   py::class_<Almanac>(m, "Almanac")
       .def(py::init<>())
@@ -98,7 +103,12 @@ void InitEphemeris(py::module& m) {
       .def_readwrite("cartesian_poly_order", &EphemerisSimulationConfig::cartesian_poly_order)
       .def_readwrite("cartesian_use_keplerian_baseline",
                      &EphemerisSimulationConfig::cartesian_use_keplerian_baseline)
+      .def_readwrite("cartesian_num_fourier_terms",
+                     &EphemerisSimulationConfig::cartesian_num_fourier_terms)
       .def_readwrite("almanac_poly_order", &EphemerisSimulationConfig::almanac_poly_order)
+      .def_readwrite("almanac_num_fourier_terms",
+                     &EphemerisSimulationConfig::almanac_num_fourier_terms)
+      .def_readwrite("output_frame", &EphemerisSimulationConfig::output_frame)
       .def_readwrite("datasize_precision_m", &EphemerisSimulationConfig::datasize_precision_m);
 
   py::class_<EphemerisWindowResult>(m, "EphemerisWindowResult")
@@ -125,4 +135,47 @@ void InitEphemeris(py::module& m) {
            py::return_value_policy::reference_internal)
       .def("get_almanac_results", &EphemerisSimulation::GetAlmanacResults,
            py::return_value_policy::reference_internal);
+
+  // ---- EphemerisGenApp (LunaNet nav-message generation sub-app) ------------------
+
+  py::class_<BroadcastMessage>(m, "BroadcastMessage")
+      .def(py::init<>())
+      .def_readonly("t_generated_s", &BroadcastMessage::t_generated_s)
+      .def_readonly("t_start_s", &BroadcastMessage::t_start_s)
+      .def_readonly("t_end_s", &BroadcastMessage::t_end_s)
+      .def_readonly("frame", &BroadcastMessage::frame)
+      .def_readonly("params", &BroadcastMessage::params);
+
+  py::class_<EphemerisGenConfig>(m, "EphemerisGenConfig")
+      .def(py::init<>())
+      .def_readwrite("generate_ephemeris", &EphemerisGenConfig::generate_ephemeris)
+      .def_readwrite("generate_almanac", &EphemerisGenConfig::generate_almanac)
+      .def_readwrite("ephemeris_options", &EphemerisGenConfig::ephemeris_options)
+      .def_readwrite("ephemeris_window_s", &EphemerisGenConfig::ephemeris_window_s)
+      .def_readwrite("ephemeris_refresh_s", &EphemerisGenConfig::ephemeris_refresh_s)
+      .def_readwrite("almanac_options", &EphemerisGenConfig::almanac_options)
+      .def_readwrite("almanac_window_s", &EphemerisGenConfig::almanac_window_s)
+      .def_readwrite("almanac_refresh_s", &EphemerisGenConfig::almanac_refresh_s)
+      .def_readwrite("ephemeris_fit_samples", &EphemerisGenConfig::ephemeris_fit_samples)
+      .def_readwrite("almanac_fit_samples", &EphemerisGenConfig::almanac_fit_samples)
+      .def_readwrite("output_frame", &EphemerisGenConfig::output_frame);
+
+  py::class_<EphemerisGenApp>(m, "EphemerisGenApp")
+      .def(py::init<>())
+      .def(py::init<EphemerisGenConfig>(), py::arg("config"))
+      .def("generate_ephemeris_from_arc", &EphemerisGenApp::GenerateEphemerisFromArc,
+           py::arg("t_gen_s"), py::arg("t_s"), py::arg("rv"),
+           py::return_value_policy::reference_internal)
+      .def("generate_almanac_from_arc", &EphemerisGenApp::GenerateAlmanacFromArc,
+           py::arg("t_gen_s"), py::arg("t_s"), py::arg("rv"),
+           py::return_value_policy::reference_internal)
+      .def("get_ephemeris_messages", &EphemerisGenApp::GetEphemerisMessages,
+           py::return_value_policy::reference_internal)
+      .def("get_almanac_messages", &EphemerisGenApp::GetAlmanacMessages,
+           py::return_value_policy::reference_internal)
+      .def("latest_ephemeris", &EphemerisGenApp::LatestEphemeris, py::arg("t_s"),
+           py::return_value_policy::reference_internal)
+      .def("latest_almanac", &EphemerisGenApp::LatestAlmanac, py::arg("t_s"),
+           py::return_value_policy::reference_internal)
+      .def("get_config", &EphemerisGenApp::GetConfig, py::return_value_policy::reference_internal);
 }

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "lupnt/core/definitions.h"
+#include "lupnt/interfaces/tle.h"
 #include "lupnt/numerics/vector_macros.h"
 #include "lupnt/states/state.h"
-#include "lupnt/states/tle.h"
 
 namespace lupnt {
 

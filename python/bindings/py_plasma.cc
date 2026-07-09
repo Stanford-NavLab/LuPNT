@@ -159,6 +159,7 @@ static void bind_tec(py::module& m) {
       .def_readwrite("integ_method", &RayTraceConfig::integ_method)
       .def_readwrite("correction_method", &RayTraceConfig::correction_method)
       .def_readwrite("kp", &RayTraceConfig::kp)
+      .def_readwrite("rz12", &RayTraceConfig::rz12)
       .def_readwrite("use_fortran_gcpm", &RayTraceConfig::use_fortran_gcpm)
       .def_readwrite("corr_tol", &RayTraceConfig::corr_tol)
       .def_readwrite("compute_higher_order", &RayTraceConfig::compute_higher_order)

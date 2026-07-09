@@ -30,6 +30,11 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_theme = "furo"
 html_title = "LuPNT"
 html_static_path = ["_static"]
+html_favicon = "_static/lupnt_mark.svg"
+html_theme_options = {
+    "light_logo": "lupnt_logo_horizontal.svg",
+    "dark_logo": "lupnt_logo_horizontal_dark.svg",
+}
 
 autodoc_default_options = {
     "members": True,
@@ -56,13 +61,17 @@ exhale_args = {
 PROJECT_NAME = LuPNT
 INPUT = {REPO_ROOT / "cpp" / "lupnt"}
 RECURSIVE = YES
-FILE_PATTERNS = *.h *.cc
+# Document only public headers. Implementation files (*.cc) hold internal
+# anonymous-namespace helpers that Doxygen would otherwise surface as
+# `lupnt::@<number>` namespaces in the API; the public API lives in the headers.
+FILE_PATTERNS = *.h
 EXCLUDE_PATTERNS = */environment/plasma/fortran/*
 GENERATE_XML = YES
 GENERATE_HTML = NO
 GENERATE_LATEX = NO
 XML_OUTPUT = xml
 EXTRACT_ALL = YES
+EXTRACT_ANON_NSPACES = NO
 HIDE_UNDOC_MEMBERS = NO
 HIDE_UNDOC_CLASSES = NO
 QUIET = YES

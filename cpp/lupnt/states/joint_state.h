@@ -14,7 +14,7 @@
 
 #include "lupnt/core/definitions.h"
 #include "lupnt/dynamics/dynamics.h"
-#include "lupnt/filters/filter.h"
+#include "lupnt/numerics/filters/filter.h"
 #include "lupnt/states/state.h"
 
 namespace lupnt {

@@ -80,6 +80,15 @@ namespace lupnt {
   /// @return       NAIF body identifier for the frame's origin
   BodyId GetFrameCenter(Frame frame);
 
+  /// @brief True if `frame` is a solar-system planet body-fixed frame (e.g.
+  /// `MARS_FIXED`).
+  bool IsPlanetFixedFrame(Frame frame);
+  /// @brief True if `frame` is a solar-system planet-centered inertial frame
+  /// (e.g. `MARS_CI`), i.e. ICRF-aligned axes centered on the planet.
+  bool IsPlanetCiFrame(Frame frame);
+  /// @brief True if `frame` is either a planet `*_CI` or `*_FIXED` frame.
+  bool IsPlanetFrame(Frame frame);
+
   extern std::map<std::pair<Frame, Frame>, std::function<Vec6(Real, const Vec6 &rv)>>
       frame_conversions;
 

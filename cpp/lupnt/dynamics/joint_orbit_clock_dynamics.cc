@@ -6,9 +6,9 @@
 #include "lupnt/core/asset_factory.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/core/error.h"
-#include "lupnt/data/kernels.h"
 #include "lupnt/devices/clock.h"
 #include "lupnt/environment/solar_system.h"
+#include "lupnt/interfaces/kernels.h"
 
 namespace lupnt {
 

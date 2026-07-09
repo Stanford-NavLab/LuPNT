@@ -4,9 +4,9 @@
 #include "lupnt/core/asset_factory.h"
 #include "lupnt/core/error.h"
 #include "lupnt/core/logger.h"
-#include "lupnt/core/simulation.h"
 #include "lupnt/devices/device.h"
 #include "lupnt/interfaces/yaml.h"
+#include "lupnt/simulations/simulation.h"
 
 namespace lupnt {
 

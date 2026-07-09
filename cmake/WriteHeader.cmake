@@ -13,12 +13,17 @@ function(write_header dir)
       # Format the directory name for a comment
       string(REGEX REPLACE "^${dir}/" "" subdir_name ${subdir})
       file(APPEND ${dir}/lupnt.h "\n// ${subdir_name}\n")
-      # Find all .h files in the current subdirectory
+      # Find all .h files under this top-level subdirectory, recursing into nested subdirectories
+      # (e.g. numerics/filters/) so their headers are grouped under the top-level category.
       file(
-        GLOB HEADER_FILES
+        GLOB_RECURSE HEADER_FILES
         RELATIVE ${dir}/${subdir}
         ${dir}/${subdir}/*.h
       )
+      # `plasma` is a self-contained, vendored module included directly by its consumers via
+      # explicit paths (and defines symbols that clash with the top-level core/ headers); keep it
+      # out of the umbrella header.
+      list(FILTER HEADER_FILES EXCLUDE REGEX "(^|/)plasma/")
       list(SORT HEADER_FILES)
       foreach(file ${HEADER_FILES})
         # Create relative include path

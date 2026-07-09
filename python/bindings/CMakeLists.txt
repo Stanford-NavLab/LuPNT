@@ -43,11 +43,18 @@ target_link_libraries(_pylupnt PRIVATE lupnt::lupnt TBB::tbb TBB::tbbmalloc)
 # Ensure the linker searches your env’s lib dir (fixes -ltbb)
 target_link_directories(_pylupnt PRIVATE "$ENV{CONDA_PREFIX}/lib")
 
-# if MACOS
+# Embed a relative RPATH so the extension finds liblupnt / libiri2007_lib (both SHARED, copied to
+# python/lib/, one dir up from python/pylupnt/) without needing (DY)LD_LIBRARY_PATH -- @loader_path
+# on macOS, the equivalent $ORIGIN on Linux/WSL.
 if(APPLE)
   set_target_properties(
     _pylupnt PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE
                         INSTALL_RPATH "@loader_path;@loader_path/../lib;$ENV{CONDA_PREFIX}/lib"
+  )
+elseif(UNIX)
+  set_target_properties(
+    _pylupnt PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE
+                        INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib;$ENV{CONDA_PREFIX}/lib"
   )
 endif()
 set_target_properties(_pylupnt PROPERTIES CXX_STANDARD 20)

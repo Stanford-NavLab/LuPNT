@@ -81,12 +81,18 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 # Enable Position Independent Code for linking into shared libraries
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-# Embed @loader_path in RPATH so that libiri2007_lib.dylib (SHARED) is found next to liblupnt.dylib
-# when deployed to python/lib/
+# Embed a relative RPATH so libiri2007_lib (SHARED) is found next to liblupnt when both are deployed
+# to python/lib/ -- @loader_path on macOS, the equivalent $ORIGIN on Linux/WSL. Without this the
+# extension only loads if the libs happen to be on the (DY)LD_LIBRARY_PATH.
 if(APPLE)
   set_target_properties(
     ${PROJECT_NAME} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE INSTALL_RPATH
                                                              "@loader_path;$ENV{CONDA_PREFIX}/lib"
+  )
+elseif(UNIX)
+  set_target_properties(
+    ${PROJECT_NAME} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE INSTALL_RPATH
+                                                             "$ORIGIN;$ENV{CONDA_PREFIX}/lib"
   )
 endif()
 

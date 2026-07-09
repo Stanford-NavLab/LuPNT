@@ -72,3 +72,32 @@ TEST_CASE("filters.udu.update_matches_ekf_for_linear_measurement") {
   REQUIRE_THAT((ekf.GetState() - udu.GetState()).norm().val(), WithinAbs(0.0, 1.0e-10));
   REQUIRE_THAT((ekf.GetCovariance() - udu.GetCovariance()).norm(), WithinAbs(0.0, 1.0e-10));
 }
+
+TEST_CASE("filters.udu.predict_with_process_noise_mapping") {
+  // Correlated (dense) process noise supplied through a mapping matrix G with a diagonal q,
+  // as required by the UDU filter (Q_full = G diag(q) G^T). The predicted covariance must
+  // equal F P F^T + G diag(q) G^T. With F = I this is P0 + Q_full.
+  State x0(2);
+  x0 << 0.0, 0.0;
+  MatXd P0(2, 2);
+  P0 << 4.0, 0.5, 0.5, 2.0;
+
+  MatXd G(2, 2);
+  G << 1.0, 0.4, 0.0, 1.0;  // unit-upper mapping -> dense process noise
+  VecXd q(2);
+  q << 0.5, 0.2;
+  MatXd Q_full = G * q.asDiagonal() * G.transpose();
+  REQUIRE(std::abs(Q_full(0, 1)) > 1.0e-6);  // genuinely off-diagonal
+
+  UDUEKF udu;
+  udu.SetState(x0);
+  udu.SetCovariance(P0);
+  udu.SetDynamicsFunction(IdentityDynamics());
+  udu.SetProcessNoiseFunction([q](const State&, Real, Real) { return MatXd(q.asDiagonal()); });
+  udu.SetProcessNoiseMappingMatrix(G);
+
+  udu.Predict(1.0);
+
+  MatXd P_expected = P0 + Q_full;  // F = I
+  REQUIRE_THAT((udu.GetCovariance() - P_expected).norm(), WithinAbs(0.0, 1.0e-10));
+}

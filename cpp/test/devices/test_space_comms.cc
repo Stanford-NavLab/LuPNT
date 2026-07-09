@@ -1,4 +1,4 @@
-#include <lupnt/devices/space_comms.h>
+#include <lupnt/devices/gnss_device.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>

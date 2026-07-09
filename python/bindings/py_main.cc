@@ -25,6 +25,8 @@ void InitIslOdts(py::module& m);
 void InitGroundStationOdts(py::module& m);
 void InitEphemeris(py::module& m);
 void InitGnssOdts(py::module& m);
+void InitSurfaceNav(py::module& m);
+void InitLanderNav(py::module& m);
 
 PYBIND11_MODULE(_pylupnt, m) {
   InitAutodiff(m);
@@ -49,4 +51,6 @@ PYBIND11_MODULE(_pylupnt, m) {
   InitGroundStationOdts(m);
   InitEphemeris(m);
   InitGnssOdts(m);
+  InitSurfaceNav(m);
+  InitLanderNav(m);
 }
