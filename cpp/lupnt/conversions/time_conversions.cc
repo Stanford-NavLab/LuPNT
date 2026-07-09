@@ -857,9 +857,7 @@ namespace lupnt {
       VecX val(1);
       bool ok = false;
 #pragma omp critical
-      {
-        ok = s_lt_minus_tt_fit.has_value() && s_lt_minus_tt_fit->Eval(t_tdb, &val, nullptr);
-      }
+      { ok = s_lt_minus_tt_fit.has_value() && s_lt_minus_tt_fit->Eval(t_tdb, &val, nullptr); }
       if (ok) return val(0);
     }
 
@@ -1074,17 +1072,13 @@ namespace lupnt {
     }
 
 #pragma omp critical
-    {
-      s_lt_minus_tt_fit = std::move(model);
-    }
+    { s_lt_minus_tt_fit = std::move(model); }
   }
 
   /// @brief Clear the TL−TT Chebyshev fit, reverting to direct integration.
   void ClearLtMinusTtFit() {
 #pragma omp critical
-    {
-      s_lt_minus_tt_fit.reset();
-    }
+    { s_lt_minus_tt_fit.reset(); }
   }
 
   /// @brief Return true if the TL−TT Chebyshev fit covers epoch t_tdb.

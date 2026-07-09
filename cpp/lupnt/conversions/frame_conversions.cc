@@ -366,9 +366,7 @@ namespace lupnt {
       SpiceDouble et = t_tdb;
       double xform[6][6];
 #pragma omp critical
-      {
-        sxform_c(from_frame.c_str(), to_frame.c_str(), et, xform);
-      }
+      { sxform_c(from_frame.c_str(), to_frame.c_str(), et, xform); }
       Mat3d R;
       for (int i = 0; i < 3; i++)
         for (int j = 0; j < 3; j++) R(i, j) = xform[i][j];

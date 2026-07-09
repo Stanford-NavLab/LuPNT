@@ -34,6 +34,10 @@ nlohmann_json = "*"
 spdlog = "*"
 yaml-cpp = "*"
 libjpeg-turbo = "*"
+# Pin libjxl to 0.11.x: conda-forge's image stack (libtiff/opencv/gdal) links
+# libjxl.so.0.11; letting the solver pick 0.12 breaks `import pylupnt` on Linux
+# with "libjxl.so.0.11: cannot open shared object file".
+libjxl = "0.11.*"
 libtiff = "*"
 gdal = "*"
 libopencv = "*"
