@@ -467,7 +467,8 @@ namespace lupnt {
     std::vector<std::filesystem::path> ResolveBrdcFiles(const ConstellationSourceConfig& c) {
       if (!c.brdc_files.empty()) return c.brdc_files;
       std::vector<std::filesystem::path> files;
-      if (c.brdc_directory.empty() || !std::filesystem::is_directory(c.brdc_directory)) return files;
+      if (c.brdc_directory.empty() || !std::filesystem::is_directory(c.brdc_directory))
+        return files;
       for (const auto& entry : std::filesystem::directory_iterator(c.brdc_directory)) {
         if (!entry.is_regular_file()) continue;
         const std::string ext = entry.path().extension().string();
@@ -488,7 +489,7 @@ namespace lupnt {
     // broadcast-minus-precise clock) and, for QZSS, a per-satellite median radial orbit offset
     // are removed (see Montenbruck & Steigenberger, J. Navigation, 2018).
     class BroadcastEphemerisError {
-     public:
+    public:
       BroadcastEphemerisError(const std::vector<std::filesystem::path>& sp3_files,
                               const std::vector<std::filesystem::path>& brdc_files,
                               const std::filesystem::path& antex_file,
@@ -542,7 +543,7 @@ namespace lupnt {
         return true;
       }
 
-     private:
+    private:
       // Raw broadcast-minus-precise delta (no debiasing), both antenna-phase-center, in ECI.
       // Also returns the broadcast position `r_brdc_eci` (for the QZSS radial direction).
       bool RawDelta(GnssConst gc, int prn, GnssFreq freq, Real t_tai, Vec3& dr_eci, Real& dc_s,
@@ -2246,17 +2247,15 @@ namespace lupnt {
     cfg.constellation.gps_prns = ReadYaml(constellation, "gps_prns", cfg.constellation.gps_prns);
     cfg.constellation.galileo_prns
         = ReadYaml(constellation, "galileo_prns", cfg.constellation.galileo_prns);
-    cfg.constellation.brdc_directory = ResolvePath(
-        config_dir, ReadYaml<std::string>(constellation, "brdc_directory",
-                                          cfg.constellation.brdc_directory.string()));
+    cfg.constellation.brdc_directory
+        = ResolvePath(config_dir, ReadYaml<std::string>(constellation, "brdc_directory",
+                                                        cfg.constellation.brdc_directory.string()));
     cfg.constellation.brdc_files
         = ReadPathVector(constellation, "brdc_files", cfg.constellation.brdc_files, config_dir);
-    cfg.constellation.use_broadcast_ephemeris
-        = ReadYaml(constellation, "use_broadcast_ephemeris",
-                   cfg.constellation.use_broadcast_ephemeris);
-    cfg.constellation.debias_broadcast_clock
-        = ReadYaml(constellation, "debias_broadcast_clock",
-                   cfg.constellation.debias_broadcast_clock);
+    cfg.constellation.use_broadcast_ephemeris = ReadYaml(constellation, "use_broadcast_ephemeris",
+                                                         cfg.constellation.use_broadcast_ephemeris);
+    cfg.constellation.debias_broadcast_clock = ReadYaml(constellation, "debias_broadcast_clock",
+                                                        cfg.constellation.debias_broadcast_clock);
     cfg.constellation.debias_qzss_radial
         = ReadYaml(constellation, "debias_qzss_radial", cfg.constellation.debias_qzss_radial);
 

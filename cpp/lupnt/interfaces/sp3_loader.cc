@@ -405,7 +405,8 @@ namespace lupnt {
       // interpolation) rather than a linear one: a GPS/Galileo arc is strongly curved over the
       // 5-min product interval, so linear sampling incurs kilometre-level chord error that the
       // Chebyshev fit would faithfully reproduce.
-      const int lagrange_order = std::min<int>(10, std::max<int>(2, static_cast<int>(epochs.size())));
+      const int lagrange_order
+          = std::min<int>(10, std::max<int>(2, static_cast<int>(epochs.size())));
       pos_cheby_[sat] = FitChebyshevModel(
           [&epochs, &pc, lagrange_order](double t) {
             LagrangeInterpolator interp(epochs, t, lagrange_order);

@@ -144,12 +144,10 @@ void InitGnssOdts(py::module& m) {
             c.brdc_files = StringsToPaths(v);
           },
           "Explicit RINEX-nav file list (overrides brdc_directory scan)")
-      .def_readwrite("use_broadcast_ephemeris",
-                     &ConstellationSourceConfig::use_broadcast_ephemeris,
+      .def_readwrite("use_broadcast_ephemeris", &ConstellationSourceConfig::use_broadcast_ephemeris,
                      "Feed the filter (receiver) model the broadcast transmitter ephemeris "
                      "while truth keeps precise SP3; injects the debiased broadcast error")
-      .def_readwrite("debias_broadcast_clock",
-                     &ConstellationSourceConfig::debias_broadcast_clock,
+      .def_readwrite("debias_broadcast_clock", &ConstellationSourceConfig::debias_broadcast_clock,
                      "Remove the per-constellation median broadcast-minus-precise clock offset")
       .def_readwrite("debias_qzss_radial", &ConstellationSourceConfig::debias_qzss_radial,
                      "Remove the per-QZSS-satellite median radial broadcast-minus-precise orbit "
