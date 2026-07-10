@@ -13,9 +13,11 @@ noisy observations of the target), and a ``GroundStationManager`` agent runs the
 orbit from a perturbed initial guess with an iterative batch (weighted
 least-squares) filter plus a square-root information filter / smoother, whose
 design matrix is built analytically from the autodiff state-transition matrix.
-The truth target and the estimator share the one force model in the ``world:``
-block, so the driver just builds the ``Simulation`` from the YAML and calls
-``Run()``.
+By default the truth target and the estimator share the one force model in the
+``world:`` block, so the driver just builds the ``Simulation`` from the YAML and
+calls ``Run()``. The manager app also accepts an optional ``filter_dynamics:``
+block (or per-filter ``batch_dynamics:`` / ``sequential_dynamics:``) to run the
+batch and/or sequential filter at a deliberately different fidelity than truth.
 
 Mirrors :doc:`../Python/ex7_groundstation_odts`.
 

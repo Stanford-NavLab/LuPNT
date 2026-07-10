@@ -47,6 +47,11 @@ apps**, and even a heavyweight Monte-Carlo engine can live inside a single app
   exchanging state over the ``Publish`` / ``Subscribe`` bus (distributed ISL:
   ``Spacecraft`` + ``SatelliteOdtsApp``, plus ``SurfaceStation`` +
   ``StationBeaconSensor`` → ``SurfaceStationManager`` + ``GroundOdtsApp``).
+* **Several apps on one platform** — one physical agent hosts multiple apps in an
+  ``applications:`` list, run in order and sharing the agent's truth state (lander
+  descent: a guidance ``LanderGncApp`` that owns the truth trajectory + a
+  navigation ``LanderNavApp`` MEKF that reads it, resolved via
+  ``GetApplicationByName``).
 
 The building blocks
 -------------------
@@ -68,19 +73,24 @@ The building blocks
      - The shared, **read-only** physical environment built from the top-level
        ``world:`` block: epoch, integration ``frame``, and a force model.
        ``MakeDynamics()`` hands out a fresh ``NBodyDynamics`` from that one force
-       model (so truth and estimator share the same physics), and it exposes a
-       point-mass ``Gravity()`` plus an optional DEM/terrain service for surface
-       scenarios. It never propagates agents — it only *provides* the environment.
+       model (so truth and estimator share the same physics by default), and it
+       exposes a point-mass ``Gravity()``, an optional DEM/terrain service for
+       surface scenarios, and an optional ``plasma:`` block (the shared
+       ionosphere/plasmasphere signal-delay environment, read by the GNSS ODTS
+       app). It never propagates agents — it only *provides* the environment.
    * - **Agent**
      - ``Agent`` → ``AgentWithDynamics`` (``agents/agent.h``)
      - A platform (satellite, ground station, rover, lander, surface station).
-       Owns a ``Dynamics``, ``Devices``, a ``State``, and hosts **one**
-       ``Application``. Answers ``GetStateAt(t)`` for measurement geometry.
+       Owns a ``Dynamics``, ``Devices``, a ``State``, and hosts **one or more**
+       ``Application`` s (an ``application:`` map, or an ``applications:`` list run
+       in order). Answers ``GetStateAt(t)`` for measurement geometry.
    * - **Application**
      - ``Application`` (``applications/application.h``)
      - The mission / navigation logic run per step. Builds ``Measurement`` s and
-       runs a ``Filter``. Compose several via the sub-app pattern
-       (``LunaNetSatApp`` + ``LunaNetSubApp``).
+       runs a ``Filter``. Compose several on one agent by listing them under
+       ``applications:`` (e.g. a lander's guidance ``LanderGncApp`` + navigation
+       ``LanderNavApp``), or via the sub-app pattern (``LunaNetSatApp`` +
+       ``LunaNetSubApp``).
    * - **Device**
      - ``Device`` (``devices/device.h``)
      - A sensor / component on an agent (``Clock``, ``Imu``, ``Camera``,
@@ -184,11 +194,19 @@ coarser model — a lower-fidelity ``world: force_model:`` consumed by
 custom app, simply build two ``Dynamics`` objects (one for the truth grid, one for
 ``filter_``) instead of sharing ``dynamics_``.
 
+An estimator app can expose the filter model as config, too. ``GroundStationManagerApp``
+(ex7) accepts an optional ``filter_dynamics:`` block (an ``NBodyDynamics``-style force
+model applied to **both** its batch and its sequential SRIF/smoother filters), or
+``batch_dynamics:`` / ``sequential_dynamics:`` to set each estimator independently.
+Absent, both inherit the shared ``world: force_model:`` (truth == filter, the default).
+
 Agent — a platform
 ~~~~~~~~~~~~~~~~~~~
 
 ``Agent`` owns ``name_``, a back-pointer to the ``Simulation``, a ``State``, a
-map of ``Devices``, and a single ``Application``. Its pure-virtual
+map of ``Devices``, and one or more ``Application`` s (an ``application:`` map or an
+``applications:`` list; retrieve with ``GetApplication()`` /
+``GetApplications()`` / ``GetApplicationByName("...")``). Its pure-virtual
 ``Cart6 GetStateAt(Real t) const`` is the contract every agent must answer:
 *"where am I at time t?"* — used by measurement models for light-time geometry.
 
@@ -196,9 +214,14 @@ Almost every physical agent derives from ``AgentWithDynamics``, which adds a
 ``Ptr<Dynamics>``, an ``AttitudeDynamics``, and a ``Cart6 state_``. Its
 ``Step(t)`` calls ``Propagate(t)`` (integrating the dynamics in place) then
 ``Log(t)``. Concrete agents (all registered with the factory except ``Lander``):
-``Satellite``, ``GroundStation``, ``Rover``, ``SurfaceStation``, ``Lander``.
-``Constellation`` / ``GnssConstellation`` are group generators built from the
-``constellations:`` config block.
+``Satellite``, ``Spacecraft`` (orbit + clock 8-state truth), ``GroundStation``,
+``Rover``, ``SurfaceStation``, ``Lander``. Group generators:
+``Constellation`` / ``GnssConstellation`` (from the ``constellations:`` block) and
+``LunarNavConstellation`` — a single ``agents:`` entry that expands into **N child
+``Spacecraft``** so a scenario need not declare one agent per navigation satellite,
+from either an explicit ``satellites:`` list or a symmetric ``walker:`` spec
+(``n_planes``, ``sats_per_plane``, frozen ELFO ``a/e/i/omega``); the surface-rover
+example (ex10) sources its relay truth from it via ``GetSatelliteStateAt(j, t)``.
 
 Application — the mission logic
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -206,23 +229,27 @@ Application — the mission logic
 ``Application`` holds a back-pointer to its owning ``Agent``. ``Setup()``
 schedules a periodic ``Step(t)`` (at ``APPLICATION`` priority) and seeds the
 filter state/covariance; the pure-virtual ``Step(Real t)`` runs one
-predict/update cycle. An agent hosts **at most one** application; compose several
-pieces of logic with the **sub-app pattern**: ``LunaNetSatApp`` holds a
-``std::vector<Ptr<LunaNetSubApp>>`` and fans its ``Step`` out to each sub-app
-(e.g. ``IslOdtsApp`` and ``EphemerisGenApp``).
+predict/update cycle. An agent can host **several** applications (an
+``applications:`` list, run in insertion order and resolved by
+``GetApplicationByName``); you can also compose logic *within* one app via the
+**sub-app pattern**: ``LunaNetSatApp`` holds a ``std::vector<Ptr<LunaNetSubApp>>``
+and fans its ``Step`` out to each sub-app (e.g. ``IslOdtsApp`` and
+``EphemerisGenApp``).
 
 Concrete apps (all factory-registered): the **sensor / estimator split** for
 ground-station OD — ``GroundStationTrackingApp`` on each ``GroundStation``
 (a sensor: visibility-gated range / range-rate, pushed to the manager) feeding a
 ``GroundStationManagerApp`` on a ``GroundStationManager`` agent (the centralized
-batch + SRIF/smoother estimator); ``LunarGnssOdtsApp`` (GNSS ODTS); the distributed
-``SatelliteOdtsApp`` (per-satellite onboard filter) with ``StationBeaconSensor`` →
-``GroundOdtsApp`` (the centralized station-only ground filter); ``EphemerisApp`` /
-``LunaNetSatApp`` (sub-app host) + ``IslOdtsApp`` / ``EphemerisGenApp`` (sub-apps);
-``SurfaceStationApp``; and the self-driving error-state INS apps
-``SurfaceRoverNavApp`` and ``LanderNavApp`` (a thin ``Rover`` / ``Lander`` agent
-hosts them and they precompute the truth trajectory and synthesize their own
-measurements from the shared ``World`` each ``Step``).
+batch + SRIF/smoother estimator, with configurable filter dynamics); ``LunarGnssOdtsApp``
+(GNSS ODTS); the distributed ``SatelliteOdtsApp`` (per-satellite onboard filter) with
+``StationBeaconSensor`` → ``GroundOdtsApp`` (the centralized station-only ground filter);
+``EphemerisApp`` / ``LunaNetSatApp`` (sub-app host) + ``IslOdtsApp`` / ``EphemerisGenApp``
+(sub-apps); ``SurfaceStationApp``; the surface-rover INS ``SurfaceRoverNavApp`` (which
+sources its relay truth from a ``LunarNavConstellation`` agent); and the lander, whose
+descent is split across **two apps on one ``Lander`` agent** — a guidance ``LanderGncApp``
+that owns the truth trajectory and writes the lander state, and a navigation
+``LanderNavApp`` (error-state INS MEKF) that reads that truth to synthesize its
+IMU / altimeter / crater / LunaNet measurements each ``Step``.
 
 Device, Measurement, Dynamics, State
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -462,13 +489,19 @@ only choice, and three shapes recur:
   ``Simulation::Publish`` / ``Subscribe`` bus. **Template:** ``Spacecraft`` +
   ``SatelliteOdtsApp`` with ``SurfaceStation`` + ``StationBeaconSensor``, driven
   by ``configs/isl_odts_distributed.yaml``.
+* **Several apps on one platform.** One physical agent hosts multiple
+  ``applications:``, run in order and sharing the agent's truth state. **Template:**
+  a ``Lander`` hosting a guidance ``LanderGncApp`` (owns the descent truth) + a
+  navigation ``LanderNavApp`` MEKF that resolves the guidance app via
+  ``GetApplicationByName``, driven by ``configs/lander_nav.yaml``.
 * **Heavyweight engine inside one app.** An existing batch/Monte-Carlo engine can
   be called straight from a single app's ``Step`` — e.g. ``LunarGnssOdtsApp``
   invokes ``RunLunarGnssODTSMonteCarlo`` — so no rewrite of the numerics is needed.
 
 Because ``Simulation(config)`` runs ``Setup()`` in its constructor, any state a
-host must inject after construction (e.g. a lander reference trajectory) should be
-applied through a lazy ``Initialize`` inside the app's first ``Step``.
+host must inject after construction (e.g. the lander guidance app's reference
+trajectory) should be applied through a lazy ``Initialize`` inside the app's first
+``Step``.
 
 Reference files
 ---------------
