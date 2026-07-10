@@ -7,9 +7,9 @@
  *
  * @copyright Copyright (c) 2025
  */
-#include "lupnt/agents/gnss_attitude.h"
+#include "lupnt/attitude/gnss_attitude.h"
 
-#include "lupnt/agents/gnss_yaw_steering.h"
+#include "lupnt/attitude/gnss_yaw_steering.h"
 #include "lupnt/numerics/math_utils.h"
 
 namespace lupnt {

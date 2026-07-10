@@ -98,6 +98,7 @@ namespace lupnt {
       AppendFingerprintField(oss, "design_name", cfg.design.name);
       AppendFingerprintField(oss, "setup_transmitters", cfg.design.setup_transmitters);
       AppendFingerprintField(oss, "receiver_antenna_name", cfg.design.receiver_antenna_name);
+      AppendFingerprintField(oss, "tx_yaw_dedicated", cfg.design.tx_yaw_dedicated);
       AppendFingerprintField(oss, "apply_cn0_threshold", cfg.design.apply_cn0_threshold);
       AppendFingerprintField(oss, "cn0_threshold_dbhz", cfg.design.cn0_threshold_dbhz);
       AppendFingerprintField(oss, "cn0_acquisition_threshold_dbhz",
@@ -1027,6 +1028,9 @@ namespace lupnt {
       options.cn0_acquisition_threshold_dbhz = acq;
       options.cn0_tracking_threshold_dbhz = trk;
       options.apply_ionosphere_plasma_delay = truth_model && cfg.plasma.simulate_truth;
+      options.tx_yaw_model = cfg.design.tx_yaw_dedicated
+                                 ? GnssMeasurementOptions::TxYawModel::DEDICATED
+                                 : GnssMeasurementOptions::TxYawModel::NOMINAL;
       return options;
     }
 
@@ -2066,9 +2070,15 @@ namespace lupnt {
     LunarGnssODTSSummary RunOneMonteCarlo(const LunarGnssODTSConfig& cfg, int mc_index, Real t0_tdb,
                                           const VecXd& elapsed_s, const VecXd& times_tdb,
                                           const VecXd& receiver_clock_s,
-                                          std::vector<GNSSMeasurementsEpoch> precomputed) {
-      std::vector<State> truth_states
-          = BuildTruthStates(cfg, t0_tdb, elapsed_s, times_tdb, true, cfg.seed + 1000 + mc_index);
+                                          std::vector<GNSSMeasurementsEpoch> precomputed,
+                                          const std::vector<State>* receiver_truth = nullptr) {
+      // Truth trajectory: use the physical receiver `Spacecraft`'s self-propagated truth when
+      // the hosting app provides it (agent-driven path); otherwise build it internally from the
+      // config (legacy struct API / standalone). Both land on the same absolute TDB epochs.
+      std::vector<State> truth_states = receiver_truth
+                                            ? *receiver_truth
+                                            : BuildTruthStates(cfg, t0_tdb, elapsed_s, times_tdb,
+                                                               true, cfg.seed + 1000 + mc_index);
 
       LunarGnssODTSRuntimeContext context{cfg,       mc_index,         t0_tdb,       elapsed_s,
                                           times_tdb, receiver_clock_s, truth_states, precomputed};
@@ -2146,6 +2156,7 @@ namespace lupnt {
           = ReadYaml(link, "receiver_antenna", cfg.design.receiver_antenna_name);
       cfg.design.use_cn0_measurement_sigmas
           = ReadYaml(link, "use_cn0_measurement_sigmas", cfg.design.use_cn0_measurement_sigmas);
+      cfg.design.tx_yaw_dedicated = ReadYaml(link, "tx_yaw_dedicated", cfg.design.tx_yaw_dedicated);
 
       const YAML::Node meas = node["measurement_noise"];
       cfg.pseudorange_sigma_m = ReadYaml(meas, "pseudorange_sigma_m", cfg.pseudorange_sigma_m);
@@ -2403,7 +2414,8 @@ namespace lupnt {
     return ParseLunarGnssODTSConfig(root, config_dir);
   }
 
-  std::vector<LunarGnssODTSSummary> RunLunarGnssODTSMonteCarlo(const LunarGnssODTSConfig& cfg) {
+  std::vector<LunarGnssODTSSummary> RunLunarGnssODTSMonteCarlo(
+      const LunarGnssODTSConfig& cfg, const std::vector<State>* receiver_truth) {
     ClearPreviousOutputs(cfg);
     RequireDelayTable(cfg);
 
@@ -2416,8 +2428,13 @@ namespace lupnt {
     VecXd ephem_times_tdb = ShiftTimes(t0_tdb, ephem_elapsed_s);
     VecXd ephem_times_tai = ConvertTimeVector(ephem_times_tdb, Time::TDB, Time::TAI);
 
+    // Receiver truth: prefer the physical Spacecraft's self-propagated grid (agent-driven);
+    // else build the nominal (noiseless) trajectory internally. The link geometry only needs
+    // the orbit, so a noisy-clock agent grid gives identical links.
     std::vector<State> nominal_truth_states
-        = BuildTruthStates(cfg, t0_tdb, elapsed_s, times_tdb, false, cfg.seed, "Truth trajectory");
+        = receiver_truth ? *receiver_truth
+                         : BuildTruthStates(cfg, t0_tdb, elapsed_s, times_tdb, false, cfg.seed,
+                                            "Truth trajectory");
     std::vector<GNSSMeasurementsEpoch> precomputed;
     const std::string link_fingerprint = LinkCacheFingerprint(cfg);
     if (LinkCacheMatchesConfig(cfg, link_fingerprint)) {
@@ -2443,8 +2460,8 @@ namespace lupnt {
     std::vector<LunarGnssODTSSummary> summaries;
     summaries.reserve(cfg.monte_carlo_runs);
     for (int mc = 0; mc < cfg.monte_carlo_runs; ++mc) {
-      summaries.push_back(
-          RunOneMonteCarlo(cfg, mc, t0_tdb, elapsed_s, times_tdb, receiver_clock_s, precomputed));
+      summaries.push_back(RunOneMonteCarlo(cfg, mc, t0_tdb, elapsed_s, times_tdb, receiver_clock_s,
+                                           precomputed, receiver_truth));
     }
     WriteSummary(cfg, summaries);
     return summaries;
@@ -2452,6 +2469,10 @@ namespace lupnt {
 
   int LunarGnssODTSPrecomputeEpochCount(const LunarGnssODTSConfig& cfg) {
     return static_cast<int>(BuildReceiverAppSchedule(cfg).size());
+  }
+
+  VecXd LunarGnssODTSReceiverElapsedTimes(const LunarGnssODTSConfig& cfg) {
+    return ElapsedTimesFromSchedule(BuildReceiverAppSchedule(cfg));
   }
 
   bool LunarGnssODTSLinkCacheValid(const LunarGnssODTSConfig& cfg) {

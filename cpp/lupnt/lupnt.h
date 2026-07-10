@@ -4,17 +4,13 @@
 #include "lupnt/agents/agent.h"
 #include "lupnt/agents/constellation.h"
 #include "lupnt/agents/ephemeris_manager.h"
-#include "lupnt/agents/gnss_attitude.h"
 #include "lupnt/agents/gnss_constellation.h"
-#include "lupnt/agents/gnss_yaw_steering.h"
 #include "lupnt/agents/ground_station.h"
 #include "lupnt/agents/ground_station_manager.h"
-#include "lupnt/agents/isl_odts_manager.h"
-#include "lupnt/agents/isl_satellite.h"
 #include "lupnt/agents/lander.h"
-#include "lupnt/agents/lunar_gnss_manager.h"
 #include "lupnt/agents/rover.h"
 #include "lupnt/agents/satellite.h"
+#include "lupnt/agents/spacecraft.h"
 #include "lupnt/agents/surface_station.h"
 #include "lupnt/agents/surface_station_manager.h"
 
@@ -32,10 +28,14 @@
 #include "lupnt/applications/lunar_gnss_odts/lunar_gnss_odts_app.h"
 #include "lupnt/applications/lunar_sat_odts/ground_odts_app.h"
 #include "lupnt/applications/lunar_sat_odts/isl_odts_app.h"
-#include "lupnt/applications/lunar_sat_odts/isl_odts_coordinator_app.h"
 #include "lupnt/applications/lunar_sat_odts/satellite_odts_app.h"
+#include "lupnt/applications/lunar_sat_odts/station_beacon_sensor.h"
 #include "lupnt/applications/lunar_station/surface_station_app.h"
 #include "lupnt/applications/rover/surface_rover_nav_app.h"
+
+// attitude
+#include "lupnt/attitude/gnss_attitude.h"
+#include "lupnt/attitude/gnss_yaw_steering.h"
 
 // conversions
 #include "lupnt/conversions/anomaly_conversions.h"
@@ -146,7 +146,6 @@
 
 // simulations
 #include "lupnt/simulations/ephemeris/ephemeris_simulation.h"
-#include "lupnt/simulations/isl_odts/isl_odts_simulation.h"
 #include "lupnt/simulations/lunar_gnss_odts/lunar_gnss_odts_simulation.h"
 #include "lupnt/simulations/simulation.h"
 #include "lupnt/simulations/world.h"

@@ -15,8 +15,8 @@ namespace lupnt {
   /// Typical use: an onboard filter that estimates its own agent's state from a
   /// relative measurement to another agent, while "considering" that other
   /// agent's own (broadcast/prior) state and uncertainty without claiming
-  /// estimation authority over it, e.g. `IslOdtsSimulation`
-  /// (`lupnt/simulations/isl_odts/isl_odts_simulation.h`).
+  /// estimation authority over it, e.g. the distributed ISL onboard filter
+  /// (`lupnt/applications/lunar_sat_odts/satellite_odts_app.h`).
   class SchmidtEKF : public EKF {
   public:
     SchmidtEKF() = default;

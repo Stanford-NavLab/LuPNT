@@ -1,10 +1,10 @@
 # Fully DISTRIBUTED ISL ODTS scenario (Example 8, distributed variant).
-# Each satellite is an `IslSatellite` agent self-propagating its orbit+clock truth and
+# Each satellite is a `Spacecraft` agent self-propagating its orbit+clock truth and
 # hosting a `SatelliteOdtsApp`: it generates its OWN crosslink + station-aiding
 # measurements (pulling neighbour/station truth via the agent graph), runs its onboard
 # Schmidt-EKF, and exchanges consider-states with neighbours over the Publish/Subscribe
 # bus (one-interval latency). A `SurfaceStationManager` hosts the centralized ground
-# filter (`GroundOdtsApp`) as a baseline. Generated from configs/isl_odts.yaml.
+# filter (`GroundOdtsApp`) as a baseline.
 
 name: isl_odts_distributed
 epoch: '2027-03-01T00:00:00'
@@ -27,7 +27,7 @@ world:
     - SUN: {}
 agents:
   SV-1:
-    class: IslSatellite
+    class: Spacecraft
     frequency: 0.016666666666666666
     initial_state:
       r0_m:
@@ -40,14 +40,9 @@ agents:
       - -91.059
       clock_bias_s: 0.0
       clock_drift_sps: 0.0
-    truth:
-      moon_gravity_degree: 16
-      moon_gravity_order: 16
-      include_earth: true
-      include_sun: true
-      use_relativity: true
-      integration_step_s: 60.0
-      clock_seed: 1042
+    clock:
+      model: OCXO
+      seed: 1042
     application:
       class: SatelliteOdtsApp
       frequency: 0.016666666666666666
@@ -102,7 +97,7 @@ agents:
       exchange_use_covariance_intersection: false
       exchange_ci_weight: -1.0
   SV-2:
-    class: IslSatellite
+    class: Spacecraft
     frequency: 0.016666666666666666
     initial_state:
       r0_m:
@@ -115,14 +110,9 @@ agents:
       - 16.575
       clock_bias_s: 1.0e-05
       clock_drift_sps: 1.0e-10
-    truth:
-      moon_gravity_degree: 16
-      moon_gravity_order: 16
-      include_earth: true
-      include_sun: true
-      use_relativity: true
-      integration_step_s: 60.0
-      clock_seed: 2042
+    clock:
+      model: OCXO
+      seed: 2042
     application:
       class: SatelliteOdtsApp
       frequency: 0.016666666666666666
@@ -162,7 +152,7 @@ agents:
       exchange_use_covariance_intersection: false
       exchange_ci_weight: -1.0
   SV-3:
-    class: IslSatellite
+    class: Spacecraft
     frequency: 0.016666666666666666
     initial_state:
       r0_m:
@@ -175,14 +165,9 @@ agents:
       - -313.828
       clock_bias_s: -6.0e-06
       clock_drift_sps: -8.0e-11
-    truth:
-      moon_gravity_degree: 16
-      moon_gravity_order: 16
-      include_earth: true
-      include_sun: true
-      use_relativity: true
-      integration_step_s: 60.0
-      clock_seed: 3042
+    clock:
+      model: OCXO
+      seed: 3042
     application:
       class: SatelliteOdtsApp
       frequency: 0.016666666666666666
@@ -222,7 +207,7 @@ agents:
       exchange_use_covariance_intersection: false
       exchange_ci_weight: -1.0
   SV-4:
-    class: IslSatellite
+    class: Spacecraft
     frequency: 0.016666666666666666
     initial_state:
       r0_m:
@@ -235,14 +220,9 @@ agents:
       - 235.264
       clock_bias_s: 4.0e-06
       clock_drift_sps: 5.0e-11
-    truth:
-      moon_gravity_degree: 16
-      moon_gravity_order: 16
-      include_earth: true
-      include_sun: true
-      use_relativity: true
-      integration_step_s: 60.0
-      clock_seed: 4042
+    clock:
+      model: OCXO
+      seed: 4042
     application:
       class: SatelliteOdtsApp
       frequency: 0.016666666666666666
@@ -282,7 +262,7 @@ agents:
       exchange_use_covariance_intersection: false
       exchange_ci_weight: -1.0
   SV-5:
-    class: IslSatellite
+    class: Spacecraft
     frequency: 0.016666666666666666
     initial_state:
       r0_m:
@@ -295,14 +275,9 @@ agents:
       - -264.381
       clock_bias_s: -8.0e-06
       clock_drift_sps: -3.0e-11
-    truth:
-      moon_gravity_degree: 16
-      moon_gravity_order: 16
-      include_earth: true
-      include_sun: true
-      use_relativity: true
-      integration_step_s: 60.0
-      clock_seed: 5042
+    clock:
+      model: OCXO
+      seed: 5042
     application:
       class: SatelliteOdtsApp
       frequency: 0.016666666666666666
@@ -352,7 +327,6 @@ agents:
       - SV-3
       - SV-4
       - SV-5
-      stations: *id001
       seed: 42
       dt_s: 60.0
       duration_s: 21600.0
@@ -371,3 +345,51 @@ agents:
       pseudorange_sigma_m: 1.0
       central_process_accel_sigma_mps2: 1.0e-06
       central_outlier_threshold: 3.0
+  GS-South:
+    class: SurfaceStation
+    dynamics: {class: StaticDynamics}
+    application:
+      class: StationBeaconSensor
+      frequency: 0.016666666666666666
+      manager: gs_manager
+      satellites: [SV-1, SV-2, SV-3, SV-4, SV-5]
+      latitude_deg: -89.9
+      longitude_deg: 0.0
+      altitude_m: 0.0
+      elevation_mask_deg: 5.0
+      pseudorange_sigma_m: 1.0
+      enable_station_doppler: true
+      station_doppler_sigma_mps: 0.001
+      seed: 42
+  GS-SE:
+    class: SurfaceStation
+    dynamics: {class: StaticDynamics}
+    application:
+      class: StationBeaconSensor
+      frequency: 0.016666666666666666
+      manager: gs_manager
+      satellites: [SV-1, SV-2, SV-3, SV-4, SV-5]
+      latitude_deg: -40.0
+      longitude_deg: 120.0
+      altitude_m: 0.0
+      elevation_mask_deg: 5.0
+      pseudorange_sigma_m: 1.0
+      enable_station_doppler: true
+      station_doppler_sigma_mps: 0.001
+      seed: 42
+  GS-SW:
+    class: SurfaceStation
+    dynamics: {class: StaticDynamics}
+    application:
+      class: StationBeaconSensor
+      frequency: 0.016666666666666666
+      manager: gs_manager
+      satellites: [SV-1, SV-2, SV-3, SV-4, SV-5]
+      latitude_deg: -40.0
+      longitude_deg: -120.0
+      altitude_m: 0.0
+      elevation_mask_deg: 5.0
+      pseudorange_sigma_m: 1.0
+      enable_station_doppler: true
+      station_doppler_sigma_mps: 0.001
+      seed: 42

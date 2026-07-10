@@ -15,7 +15,7 @@ namespace lupnt {
 
   /// @brief Coordinator application for the ephemeris/almanac datasize-accuracy study
   /// (Example 9), hosted on a thin `EphemerisManager` agent (mirroring ex8's
-  /// `IslOdtsCoordinatorApp` on an `IslOdtsManager`).
+  /// `SurfaceStationManager` hosting a `GroundOdtsApp`).
   ///
   /// Its single scheduled `Step` runs the whole body of the (former) monolithic
   /// `EphemerisSimulation::Run()`, in the exact same computation order so the numerics are

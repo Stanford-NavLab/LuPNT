@@ -11,7 +11,7 @@ namespace lupnt {
   /// propagating a lunar-satellite truth trajectory, fitting the `CartesianEphemeris` /
   /// `Almanac` broadcast models over a sweep of fitting-window lengths, and sizing the
   /// broadcast bit budget. Having no state of its own, its `GetStateAt` returns a zero state
-  /// (mirroring `IslOdtsManager`/`SurfaceStationManager`).
+  /// (mirroring `SurfaceStationManager`).
   class EphemerisManager : public Agent {
   public:
     EphemerisManager() = default;

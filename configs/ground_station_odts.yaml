@@ -41,22 +41,9 @@ agents:
   sat:
     class: Satellite
     frequency: 0.0033333333333333   # 1/300 Hz: log truth at the measurement cadence
-    dynamics:                       # matches world.force_model (the shared physics)
-      class: NBodyDynamics
-      frame: MOON_CI
-      integrator: RKF45
-      dt: 10.0
-      max_iter: 1000
-      abstol: 1.0e-6
-      reltol: 1.0e-10
-      autodiff: false               # truth needs no STM; the estimator uses the World's autodiff dynamics
-      mass: 10.0
-      area: 0.02
-      CR: 1.8
-      bodies:
-        - MOON: { n: 2, m: 2 }
-        - EARTH: {}
-        - SUN: {}
+    # No `dynamics:` block -> the satellite inherits the shared `world.force_model`
+    # as its truth dynamics (STM disabled). Declare a per-agent `dynamics:` block
+    # only to override the common physics for this agent.
     initial_state:
       class: ClassicalOE
       frame: MOON_OP

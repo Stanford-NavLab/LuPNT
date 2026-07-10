@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <limits>
 
-#include "lupnt/agents/isl_satellite.h"
+#include "lupnt/agents/spacecraft.h"
 #include "lupnt/dynamics/clock_dynamics.h"
 #include "lupnt/dynamics/numerical_orbit_dynamics.h"
 #include "lupnt/lupnt.h"
@@ -109,8 +109,8 @@ namespace lupnt {
   void SatelliteOdtsApp::Setup() {
     LUPNT_CHECK(agent_, "Agent not set", "SatelliteOdtsApp");
     Simulation* sim = agent_->GetSimulation();
-    self_ = dynamic_cast<IslSatellite*>(agent_);
-    LUPNT_CHECK(self_, "SatelliteOdtsApp must run on an IslSatellite", "SatelliteOdtsApp");
+    self_ = dynamic_cast<Spacecraft*>(agent_);
+    LUPNT_CHECK(self_, "SatelliteOdtsApp must run on an Spacecraft", "SatelliteOdtsApp");
     sat_name_ = agent_->GetName();
 
     // Subscribe to the constellation posterior bus (buffers neighbour broadcasts).
@@ -135,15 +135,15 @@ namespace lupnt {
     epoch0_ = GetLupntEpoch();
     rng_.seed(static_cast<unsigned int>(seed_) + std::hash<std::string>{}(sat_name_) % 100000u);
 
-    // Resolve neighbours (auto-discover other IslSatellites if not listed) and stations.
+    // Resolve neighbours (auto-discover other Spacecrafts if not listed) and stations.
     if (neighbor_names_.empty()) {
       // Not provided: nothing to auto-discover here without a registry; require explicit config.
       LUPNT_CHECK(false, "SatelliteOdtsApp requires a `neighbors:` list", "SatelliteOdtsApp");
     }
     neighbors_.clear();
     for (const auto& nm : neighbor_names_) {
-      auto* nb = dynamic_cast<IslSatellite*>(sim->GetAgent(nm));
-      LUPNT_CHECK(nb, fmt::format("neighbour `{}` is not an IslSatellite", nm), "SatelliteOdtsApp");
+      auto* nb = dynamic_cast<Spacecraft*>(sim->GetAgent(nm));
+      LUPNT_CHECK(nb, fmt::format("neighbour `{}` is not an Spacecraft", nm), "SatelliteOdtsApp");
       neighbors_.push_back(nb);
     }
     // Normalize neighbour names to the resolved (simulation-prefixed) agent names, so they match

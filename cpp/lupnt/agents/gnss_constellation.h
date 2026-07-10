@@ -29,7 +29,7 @@
 #include <vector>
 
 #include "lupnt/agents/constellation.h"
-#include "lupnt/agents/gnss_attitude.h"
+#include "lupnt/attitude/gnss_attitude.h"
 #include "lupnt/devices/gnss_device.h"
 #include "lupnt/measurements/antenna.h"
 #include "lupnt/numerics/cheby_fit.h"
@@ -228,7 +228,7 @@ namespace lupnt {
     /// cross-track direction (toward the Sun), and `ex` completes the right
     /// -handed triad. Mirrors the attitude computation in
     /// `GNSSMeas.setup_measurements`. Delegates to `GnssAttitude::Compute`
-    /// (see `lupnt/agents/gnss_attitude.h`).
+    /// (see `lupnt/attitude/gnss_attitude.h`).
     static void ComputeAttitude(const Vec3& r_sat_eci, const Vec3& r_sun_eci, Vec3& ex, Vec3& ey,
                                 Vec3& ez) {
       GnssAttitude::Compute(r_sat_eci, r_sun_eci, ex, ey, ez);
@@ -242,7 +242,7 @@ namespace lupnt {
     /// `ComputeAttitude` overload above (both describe the same Sun-pointing
     /// nominal attitude), but makes the dependency on the implemented
     /// yaw-steering law explicit. Delegates to `GnssAttitude::Compute`
-    /// (see `lupnt/agents/gnss_attitude.h`).
+    /// (see `lupnt/attitude/gnss_attitude.h`).
     static void ComputeAttitude(const Vec3& r_sat_eci, const Vec3& v_sat_eci, const Vec3& r_sun_eci,
                                 Vec3& ex, Vec3& ey, Vec3& ez) {
       GnssAttitude::Compute(r_sat_eci, v_sat_eci, r_sun_eci, ex, ey, ez);

@@ -81,6 +81,12 @@ namespace lupnt {
     return dynamics;
   }
 
+  Ptr<NBodyDynamics> World::MakeTruthDynamics() const {
+    auto dynamics = MakeDynamics();
+    dynamics->SetAutodiff(false);  // truth propagation needs no state-transition matrix
+    return dynamics;
+  }
+
   Vec3d World::Gravity(const Vec3d& r) const {
     double rn = r.norm();
     return (rn > 0.0) ? Vec3d(-gm_ / (rn * rn * rn) * r) : Vec3d(Vec3d::Zero());

@@ -28,10 +28,29 @@ namespace lupnt {
   };
 
   struct GnssMeasurementOptions {
+    /// Transmitter body-frame (yaw-steering) model used when computing the C/N0
+    /// off-boresight angles for the transmitter antenna gain.
+    enum class TxYawModel {
+      /// Canonical Sun-pointing nominal yaw steering (`GnssAttitude::Compute`).
+      NOMINAL,
+      /// Block-specific *dedicated* eclipse yaw-steering law, evaluated continuously
+      /// from geometry: GPS uses `GnssYawSteering::Gps3EclipseYawAngle`, Galileo uses
+      /// `GalileoIovEclipseYawAngle`; other systems fall back to nominal. These laws
+      /// differ from nominal only near the orbit noon/midnight singularity (small
+      /// `beta`), where the real satellite rate-limits its yaw. Evaluated everywhere
+      /// the geometry applies (no maneuver-window state machine), so it is an
+      /// approximation of the true eclipse-season attitude, not a maneuver schedule.
+      DEDICATED,
+    };
+
     std::vector<GnssObservable> observables
         = {GnssObservable::PSEUDORANGE, GnssObservable::DOPPLER, GnssObservable::CARRIER_PHASE};
     GnssMeasurementStateIndices indices;
     ClockBiasUnit clock_bias_unit = ClockBiasUnit::SECONDS;
+
+    /// Transmitter yaw-steering model for the C/N0 antenna-gain geometry. Default
+    /// `NOMINAL` reproduces the canonical Sun-pointing frame bit-for-bit.
+    TxYawModel tx_yaw_model = TxYawModel::NOMINAL;
 
     /// Epochs passed to `GNSSMeasurements::Compute` / `Precompute` are
     /// receiver signal-reception epochs in this time scale.

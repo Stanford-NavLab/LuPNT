@@ -70,6 +70,13 @@ namespace lupnt {
     /// [m^2], mass [kg]) for a specific spacecraft.
     Ptr<NBodyDynamics> MakeDynamics(double cr, double area_m2, double mass_kg) const;
 
+    /// @brief Construct a **truth** dynamics model for the shared force model with
+    /// the state-transition matrix disabled (`autodiff = false`) — truth
+    /// propagation needs no STM. This is what a physical agent uses when it
+    /// inherits the common `world:` force model instead of declaring its own
+    /// `dynamics:` block. (The STM-carrying `MakeDynamics()` is for estimators.)
+    Ptr<NBodyDynamics> MakeTruthDynamics() const;
+
     /// @brief Central-body gravitational parameter GM [m^3/s^2].
     double GetGM() const { return gm_; }
     /// @brief Point-mass central-body gravitational acceleration at position `r`

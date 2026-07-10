@@ -41,11 +41,12 @@ apps**, and even a heavyweight Monte-Carlo engine can live inside a single app
   manager app that estimates (ground-station ODTS:
   ``GroundStationTrackingApp`` → ``GroundStationManagerApp``).
 * **Single coordinator app** — one manager agent hosts an app that runs the
-  whole thing itself (centralized ISL: ``IslOdtsCoordinatorApp``).
+  whole estimator itself (centralized ground ODTS: ``SurfaceStationManager`` +
+  ``GroundOdtsApp``, a single EKF over the surface-station beacons).
 * **Fully distributed** — every platform is its own agent running its own app,
   exchanging state over the ``Publish`` / ``Subscribe`` bus (distributed ISL:
-  ``IslSatellite`` + ``SatelliteOdtsApp``, ``SurfaceStationManager`` +
-  ``GroundOdtsApp``).
+  ``Spacecraft`` + ``SatelliteOdtsApp``, plus ``SurfaceStation`` +
+  ``StationBeaconSensor`` → ``SurfaceStationManager`` + ``GroundOdtsApp``).
 
 The building blocks
 -------------------
@@ -145,7 +146,7 @@ realistic OD study usually should) run the estimator against a deliberately
 mismodeled truth:
 
 * **Truth** is whatever propagates the physical agent. A self-propagating
-  ``AgentWithDynamics`` (``Satellite``, ``IslSatellite``, ...) integrates its own
+  ``AgentWithDynamics`` (``Satellite``, ``Spacecraft``, ...) integrates its own
   ``dynamics:`` block; an app reads that truth through ``GetStateAt(t)`` /
   ``World::GetStateAt(name, t)`` (which just forwards to ``agent->GetStateAt(t)``).
 * **Filter** dynamics are built *inside* the estimator ``Application`` — either by
@@ -158,18 +159,22 @@ matches ``world: force_model:`` and have the app build its filter from
 ``World::MakeDynamics()`` — this is exactly what ex7 does
 (``configs/ground_station_odts.yaml``).
 
-*Different models (mismatch).* Configure the two sides separately. The ISL ODTS
-apps expose explicit truth/filter fidelity knobs on the same app so the truth is
-propagated at one gravity resolution and the EKF runs at another
-(``configs/isl_odts.yaml``):
+*Different models (mismatch).* Configure the two sides separately: the **truth**
+force model lives on the physical agent (or the shared ``world:`` block), while the
+**filter** fidelity is an app knob. In the ISL ODTS scenario the truth is propagated
+from ``world: force_model:`` — inherited by every ``Spacecraft`` — at a high gravity
+resolution, and each ``SatelliteOdtsApp`` runs its EKF at a lower one
+(``configs/isl_odts_distributed.yaml``):
 
 .. code-block:: yaml
 
+   world:
+     force_model:
+       gravity: {body: MOON, n: 16, m: 16}   # truth propagated at 16x16 lunar gravity
+   # ... every Spacecraft inherits that truth force model; the onboard app filters coarser:
    application:
-     class: IslOdtsCoordinatorApp
-     moon_gravity_degree_truth: 16     # truth propagated at 16x16 lunar gravity
-     moon_gravity_order_truth: 16
-     moon_gravity_degree_filter: 8     # EKF runs at 8x8  -> intentional mismatch
+     class: SatelliteOdtsApp
+     moon_gravity_degree_filter: 8           # EKF runs at 8x8 -> intentional mismatch
      moon_gravity_order_filter: 8
 
 More generally: give the truth agent a high-fidelity ``dynamics:`` block (more
@@ -210,9 +215,9 @@ Concrete apps (all factory-registered): the **sensor / estimator split** for
 ground-station OD — ``GroundStationTrackingApp`` on each ``GroundStation``
 (a sensor: visibility-gated range / range-rate, pushed to the manager) feeding a
 ``GroundStationManagerApp`` on a ``GroundStationManager`` agent (the centralized
-batch + SRIF/smoother estimator); ``LunarGnssOdtsApp`` (GNSS ODTS),
-``IslOdtsCoordinatorApp`` (centralized ISL) and the distributed ``SatelliteOdtsApp``
-(per-satellite onboard filter) + ``GroundOdtsApp``; ``EphemerisApp`` /
+batch + SRIF/smoother estimator); ``LunarGnssOdtsApp`` (GNSS ODTS); the distributed
+``SatelliteOdtsApp`` (per-satellite onboard filter) with ``StationBeaconSensor`` →
+``GroundOdtsApp`` (the centralized station-only ground filter); ``EphemerisApp`` /
 ``LunaNetSatApp`` (sub-app host) + ``IslOdtsApp`` / ``EphemerisGenApp`` (sub-apps);
 ``SurfaceStationApp``; and the self-driving error-state INS apps
 ``SurfaceRoverNavApp`` and ``LanderNavApp`` (a thin ``Rover`` / ``Lander`` agent
@@ -376,7 +381,7 @@ Authoring a new simulation
    both truth and estimator dynamics derive from it.
 #. **Reuse existing classes.** List ``agents:`` with already-registered
    ``class:`` values (``Satellite``, ``GroundStation``, ``GroundStationManager``,
-   ``Rover``, ``SurfaceStation``, ``IslSatellite``, ...), each with a
+   ``Rover``, ``SurfaceStation``, ``Spacecraft``, ...), each with a
    ``dynamics:`` block (e.g. ``NBodyDynamics``), ``devices:``, and an
    ``application:`` block. Launch with ``pnt.Simulation(config)``.
 #. **New Application** (the most common extension) — subclass ``Application``,
@@ -446,14 +451,16 @@ more factory-registered ``Application`` s driven by ``pnt.Simulation(config)``
 (there is no ``Simulation`` subclass). How you spread the work across apps is the
 only choice, and three shapes recur:
 
-* **Centralized coordinator.** One manager agent hosts an app that runs every
-  filter itself. **Template:** ``IslOdtsCoordinatorApp`` on an ``IslOdtsManager``
-  agent (``applications/lunar_sat_odts/isl_odts_coordinator_app.{h,cc}``), driven
-  by ``configs/isl_odts.yaml``.
+* **Centralized coordinator.** One manager agent hosts an app that runs the whole
+  estimator itself. **Template:** ``SurfaceStationManager`` + ``GroundOdtsApp``
+  (``applications/lunar_sat_odts/ground_odts_app.{h,cc}``) — a single EKF over the
+  surface-station beacons — or ``GroundStationManager`` + ``GroundStationManagerApp``
+  (ex7), driven by ``configs/isl_odts_distributed.yaml`` /
+  ``configs/ground_station_odts.yaml``.
 * **Fully distributed.** Each platform is its own agent hosting its own app that
   generates its measurements, runs its own filter, and exchanges state over the
-  ``Simulation::Publish`` / ``Subscribe`` bus. **Template:** ``IslSatellite`` +
-  ``SatelliteOdtsApp`` and ``SurfaceStationManager`` + ``GroundOdtsApp``, driven
+  ``Simulation::Publish`` / ``Subscribe`` bus. **Template:** ``Spacecraft`` +
+  ``SatelliteOdtsApp`` with ``SurfaceStation`` + ``StationBeaconSensor``, driven
   by ``configs/isl_odts_distributed.yaml``.
 * **Heavyweight engine inside one app.** An existing batch/Monte-Carlo engine can
   be called straight from a single app's ``Step`` — e.g. ``LunarGnssOdtsApp``

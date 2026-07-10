@@ -82,3 +82,10 @@ try:
     from . import lander_guidance  # noqa: F401
 except Exception as e:  # pragma: no cover - keep `import pylupnt` robust
     Logger.warn(f"Skipping .lander_guidance: {e}", name="PyLuPNT")
+
+# Monte-Carlo driver: run N independent pnt.Simulation trials in parallel (multiprocessing),
+# one distinct top-level `seed` per trial. Pure Python; exposed as `pnt.run_monte_carlo`.
+try:
+    from .montecarlo import run_monte_carlo  # noqa: F401
+except Exception as e:  # pragma: no cover
+    Logger.warn(f"Skipping .montecarlo: {e}", name="PyLuPNT")

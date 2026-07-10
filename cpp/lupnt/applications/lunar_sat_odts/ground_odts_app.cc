@@ -4,7 +4,7 @@
 #include <limits>
 #include <tuple>
 
-#include "lupnt/agents/isl_satellite.h"
+#include "lupnt/agents/spacecraft.h"
 #include "lupnt/dynamics/clock_dynamics.h"
 #include "lupnt/dynamics/numerical_orbit_dynamics.h"
 #include "lupnt/lupnt.h"
@@ -72,7 +72,17 @@ namespace lupnt {
 
   void GroundOdtsApp::Setup() {
     LUPNT_CHECK(agent_, "Agent not set", "GroundOdtsApp");
-    Application::Setup();
+    Initialize();  // eager: builds sat_index_ so the station sensors can resolve indices at setup
+    // Run each epoch AFTER the station sensors' Steps (APPLICATION priority), so this filter
+    // consumes the observations they pushed. DEVICE priority (1) pops after APPLICATION (0).
+    if (frequency_ > 0.0)
+      agent_->GetSimulation()->Schedule(
+          0.0, [this](Real t) { Step(t); }, frequency_, Event::Priority::DEVICE);
+  }
+
+  int GroundOdtsApp::SatIndex(const std::string& sat_name) const {
+    auto it = sat_index_.find(sat_name);
+    return (it != sat_index_.end()) ? it->second : -1;
   }
 
   void GroundOdtsApp::Initialize() {
@@ -84,28 +94,14 @@ namespace lupnt {
                 "GroundOdtsApp");
     sats_.clear();
     for (const auto& sn : sat_names_) {
-      auto* s = dynamic_cast<IslSatellite*>(sim->GetAgent(sn));
-      LUPNT_CHECK(s, fmt::format("`{}` is not an IslSatellite", sn), "GroundOdtsApp");
+      auto* s = dynamic_cast<Spacecraft*>(sim->GetAgent(sn));
+      LUPNT_CHECK(s, fmt::format("`{}` is not an Spacecraft", sn), "GroundOdtsApp");
       sats_.push_back(s);
     }
     n_sat_ = static_cast<int>(sats_.size());
     n_state_ = kSub * n_sat_;
-
-    stations_bf_.clear();
-    station_mask_deg_.clear();
-    if (config_["stations"]) {
-      for (const auto& s : config_["stations"]) {
-        Config sc(s);
-        State lla(3);
-        VecX v(3);
-        v << sc["latitude_deg"].as<Real>(), sc["longitude_deg"].as<Real>(),
-            sc["altitude_m"].as<Real>(0.0);
-        lla = v;
-        State cart = LatLonAltToCart(lla, R_MOON, 0.0);
-        stations_bf_.push_back(Vec3(cart.head(3)));
-        station_mask_deg_.push_back(sc["elevation_mask_deg"].as<double>(5.0));
-      }
-    }
+    sat_index_.clear();
+    for (int j = 0; j < n_sat_; ++j) sat_index_[sat_names_[j]] = j;
 
     const int N = static_cast<int>(std::floor(duration_s_ / dt_s_ + 1.0e-9)) + 1;
     t_grid_.resize(N);
@@ -186,44 +182,23 @@ namespace lupnt {
   }
 
   void GroundOdtsApp::Step(Real t) {
-    if (!initialized_) {
-      Initialize();
-      initialized_ = true;
-    }
     int k = static_cast<int>(std::lround(t.val() / dt_s_));
     if (k < 1 || k >= static_cast<int>(t_grid_.size())) return;
     Real epoch_abs = epoch0_ + t;
 
+    (void)epoch_abs;
     ekf_->Predict(t);
 
-    // Gather all visible station->satellite pseudoranges (+ Doppler) this epoch.
+    // Consume the station->satellite observations the `StationBeaconSensor`s pushed for this
+    // epoch (they run at APPLICATION priority; this filter Step runs later at DEVICE priority).
     std::vector<std::tuple<Vec3d, Vec3d, int>> meas;  // (r_station, v_station, sat_idx)
     std::vector<double> pr_obs, dp_obs;
-    for (size_t s = 0; s < stations_bf_.size(); ++s) {
-      Vec6 st6;
-      st6 << stations_bf_[s], Vec3::Zero();
-      Vec6 st_mci = ConvertFrame(epoch_abs, st6, Frame::MOON_PA, Frame::MOON_CI);
-      Vec3d rst = Vec3(st_mci.head(3)).cast<double>();
-      Vec3d vst = Vec3(st_mci.tail(3)).cast<double>();
-      for (int j = 0; j < n_sat_; ++j) {
-        VecXd xj = sats_[j]->GetTruthStateAt(t).cast<double>();
-        Vec6 xt;
-        xt << xj.head(3).cast<Real>(), xj.segment(3, 3).cast<Real>();
-        Vec6 xt_bf = ConvertFrame(epoch_abs, xt, Frame::MOON_CI, Frame::MOON_PA);
-        Cart3 r_sat_bf(Vec3(xt_bf.head(3)), Frame::MOON_PA);
-        Cart3 r_gs_bf(stations_bf_[s], Frame::MOON_PA);
-        State aer = CartToAzElRange(r_sat_bf, r_gs_bf);
-        if ((aer(1) * DEG).val() <= station_mask_deg_[s]) continue;
-        Vec3d rj = xj.head(3), vj = xj.segment(3, 3);
-        double bj = xj(6), dj = xj(7);
-        double pr = (rj - rst).norm() + C * bj + SampleNormal(0.0, pseudorange_sigma_m_).val();
-        Vec3d u = (rj - rst) / (rj - rst).norm();
-        double dp = u.dot(vj - vst) + C * dj + SampleNormal(0.0, station_doppler_sigma_mps_).val();
-        meas.emplace_back(rst, vst, j);
-        pr_obs.push_back(pr);
-        dp_obs.push_back(dp);
-      }
+    for (const auto& m : inbox_) {
+      meas.emplace_back(m.station_mci, m.station_vel_mci, m.sat_index);
+      pr_obs.push_back(m.pseudorange_m);
+      dp_obs.push_back(m.has_doppler ? m.doppler_mps : 0.0);
     }
+    inbox_.clear();
 
     const int np = static_cast<int>(meas.size());
     if (np > 0) {

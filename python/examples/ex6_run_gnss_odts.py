@@ -1,8 +1,8 @@
 """Run the ex6 lunar GNSS ODTS EKF via the agent-based ``pnt.Simulation`` and export results.
 
 This is the standalone equivalent of the notebook cell that runs the EKF in
-``ex6_gnss_odts.ipynb``. It drives the thin agent-based architecture: a ``LunarGnssManager``
-coordinator agent hosts a ``LunarGnssOdtsApp`` whose scheduled step runs the whole Monte-Carlo
+``ex6_gnss_odts.ipynb``. It drives the agent-based architecture: a physical ``receiver`` Spacecraft
+hosts a ``LunarGnssOdtsApp`` whose scheduled step runs the whole Monte-Carlo
 ODTS body (numerically bit-identical to the former ``LunarGnssODTSSimulation``).
 
 Run the slower precompute stages first (they build the Stage 1 link cache + Stage 2 plasma
@@ -70,7 +70,7 @@ def main():
     import pylupnt as pnt
 
     scen = load_scenario()
-    app_block = scen["agents"]["gnss_manager"]["application"]
+    app_block = scen["agents"]["receiver"]["application"]
     if args.progress_epochs is not None:
         if args.progress_epochs < 0:
             parser.error("--progress-epochs must be >= 0")
@@ -99,7 +99,7 @@ def main():
     log(f"sim.run() took {time.time() - t0:.1f} s")
     log()
 
-    app = sim.get_agent("gnss_manager").get_application()
+    app = sim.get_agent("receiver").get_application()
     summaries = app.get_summaries()
     app_cfg = app.get_config()
     if not summaries:

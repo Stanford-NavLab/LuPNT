@@ -8,8 +8,8 @@
  *
  * @copyright Copyright (c) 2025
  *
- * Exposes `lupnt::GnssAttitude` (`lupnt/agents/gnss_attitude.h`),
- * `lupnt::GnssYawSteering` (`lupnt/agents/gnss_yaw_steering.h` -- the GPS/
+ * Exposes `lupnt::GnssAttitude` (`lupnt/attitude/gnss_attitude.h`),
+ * `lupnt::GnssYawSteering` (`lupnt/attitude/gnss_yaw_steering.h` -- the GPS/
  * Galileo/BDS-3 yaw-attitude steering laws of Cheng et al. (2025),
  * https://doi.org/10.1016/j.asr.2024.10.064),
  * `lupnt::Sp3Loader` (`lupnt/interfaces/sp3_loader.h`),
@@ -144,7 +144,7 @@ void InitGnss(py::module& m) {
 
   // ---- GnssYawSteering ------------------------------------------------------
   // Stateless yaw-attitude steering laws (Cheng et al., 2025,
-  // https://doi.org/10.1016/j.asr.2024.10.064); see `lupnt/agents/gnss_yaw_steering.h`
+  // https://doi.org/10.1016/j.asr.2024.10.064); see `lupnt/attitude/gnss_yaw_steering.h`
   // for the equation each static method mirrors. Exposed as `staticmethod`s on
   // a non-instantiable class, mirroring `AntexLoader`'s static helpers.
 

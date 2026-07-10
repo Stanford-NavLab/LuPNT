@@ -8,7 +8,7 @@
  *        receiver determines its own orbit + clock from cislunar GNSS sidelobe
  *        pseudorange, Doppler, and (optionally) TDCP measurements, run through a UDU EKF
  *        (or UDU stochastic-cloning EKF when TDCP is enabled). Drive it from a
- *        `pnt.Simulation` (a `LunarGnssManager` agent hosts the app).
+ *        `pnt.Simulation` (a physical `Spacecraft` receiver hosts the app).
  *
  * Config/summary structs mix `std::filesystem::path` and plain scalar members.
  * Path-valued fields are exposed as plain strings, converted to
@@ -73,7 +73,12 @@ void InitGnssOdts(py::module& m) {
       .def_readwrite("receiver_antenna_name", &DesignConfig::receiver_antenna_name,
                      "Receiver antenna gain-pattern name for link-budget/CN0 computation; "
                      "empty uses omni 0 dB")
-      .def_readwrite("use_cn0_measurement_sigmas", &DesignConfig::use_cn0_measurement_sigmas);
+      .def_readwrite("use_cn0_measurement_sigmas", &DesignConfig::use_cn0_measurement_sigmas)
+      .def_readwrite("tx_yaw_dedicated", &DesignConfig::tx_yaw_dedicated,
+                     "If True, the transmitter CN0 antenna-gain geometry uses the block-specific "
+                     "dedicated eclipse yaw-steering law (GPS/Galileo) rather than the nominal "
+                     "Sun-pointing frame; approximation (no maneuver windows), default nominal "
+                     "is bit-identical");
 
   // ---- PlasmaDelayConfig ---------------------------------------------------------
 
@@ -294,7 +299,7 @@ void InitGnssOdts(py::module& m) {
       .def_readonly("rms_velocity_error_mps", &LunarGnssODTSSummary::rms_velocity_error_mps);
 
   // ---- LunarGnssOdtsApp (agent-based) --------------------------------------------
-  // The coordinator app hosted on a `LunarGnssManager` agent. Retrieve it from a
+  // The app hosted on the physical `Spacecraft` receiver. Retrieve it from a
   // `pnt.Simulation` via `sim.get_agent("gnss_manager").get_application()` (downcasts here),
   // then read its per-seed `LunarGnssODTSSummary` list; the full time series live in the
   // trajectory_mc<N>.csv / summary.csv outputs under config.output_dir.

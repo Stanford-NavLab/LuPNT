@@ -24,6 +24,10 @@ namespace lupnt {
     bool apply_cn0_threshold = false;
     bool setup_transmitters = false;
     bool use_cn0_measurement_sigmas = false;
+    // If true, the transmitter C/N0 antenna-gain geometry uses the block-specific *dedicated*
+    // eclipse yaw-steering law (GPS/Galileo) instead of the canonical nominal Sun-pointing
+    // frame. Approximation (no maneuver-window state machine); default nominal is bit-identical.
+    bool tx_yaw_dedicated = false;
     // Receiver antenna gain pattern for link-budget/C/N0 computation. Empty means omni (0 dB).
     std::string receiver_antenna_name = "moongpsr";
   };
@@ -200,6 +204,16 @@ namespace lupnt {
   void PrecomputeLunarGnssODTSLinks(const LunarGnssODTSConfig& config);
   void PrecomputeLunarGnssODTSLinksRange(const LunarGnssODTSConfig& config, int epoch_begin,
                                          int epoch_end);
-  std::vector<LunarGnssODTSSummary> RunLunarGnssODTSMonteCarlo(const LunarGnssODTSConfig& config);
+  /// @brief Run the GNSS ODTS Monte-Carlo body. When `receiver_truth` is non-null it is used
+  /// as the receiver's truth trajectory (the physical `Spacecraft` agent's self-propagated
+  /// grid, agent-driven path); otherwise the trajectory is built internally from the config
+  /// (legacy struct / standalone path). Both must be sampled on the receiver time grid
+  /// returned by `LunarGnssODTSReceiverElapsedTimes`.
+  std::vector<LunarGnssODTSSummary> RunLunarGnssODTSMonteCarlo(
+      const LunarGnssODTSConfig& config, const std::vector<State>* receiver_truth = nullptr);
+
+  /// @brief Elapsed times [s] of the receiver's ODTS epochs (from the receiver-app schedule),
+  /// so a host agent can sample its truth on exactly the grid the engine expects.
+  VecXd LunarGnssODTSReceiverElapsedTimes(const LunarGnssODTSConfig& config);
 
 }  // namespace lupnt

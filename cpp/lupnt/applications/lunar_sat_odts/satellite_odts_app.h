@@ -12,7 +12,7 @@
 
 namespace lupnt {
 
-  class IslSatellite;
+  class Spacecraft;
 
   /// @brief One satellite's broadcast posterior (own 8-state mean + 8x8 covariance),
   /// published over the simulation's pub/sub bus each exchange epoch and consumed by the
@@ -24,14 +24,15 @@ namespace lupnt {
     MatXd cov;       // [8 x 8]
   };
 
-  /// @brief Onboard distributed ISL ODTS flight application, hosted on an `IslSatellite`.
+  /// @brief Onboard distributed ISL ODTS flight application, hosted on a `Spacecraft`.
   ///
-  /// This is the *distributed* counterpart of the centralized `IslOdtsCoordinatorApp`: instead
-  /// of one node running all N filters, each satellite runs its own. On each scheduled `Step`
+  /// This is the *distributed* onboard filter: instead of one ground node running all N filters,
+  /// each satellite runs its own (the centralized station-only alternative is the
+  /// `SurfaceStationManager`'s `GroundOdtsApp`). On each scheduled `Step`
   /// this app:
   ///   1. generates its OWN two-way crosslink measurements to every neighbour satellite by
   ///      pulling their truth (orbit + clock) via the agent graph
-  ///      (`IslSatellite::GetTruthStateAt`),
+  ///      (`Spacecraft::GetTruthStateAt`),
   ///   2. generates its surface-station aiding pseudoranges/Doppler (pulling station truth),
   ///   3. runs its onboard Schmidt-EKF (`IslOdtsApp`), and
   ///   4. at `consider_exchange_interval_s`, broadcasts its own posterior over the pub/sub bus
@@ -90,14 +91,14 @@ namespace lupnt {
     double consider_exchange_interval_s_ = 600.0;
     bool exchange_use_covariance_intersection_ = false;
     double exchange_ci_weight_ = -1.0;
-    std::vector<std::string> neighbor_names_;  // explicit; else auto-discover other IslSatellites
+    std::vector<std::string> neighbor_names_;  // explicit; else auto-discover other Spacecrafts
     std::vector<std::string> station_names_;
 
     // --- Resolved / runtime ---
     bool initialized_ = false;
-    IslSatellite* self_ = nullptr;
+    Spacecraft* self_ = nullptr;
     std::string sat_name_;
-    std::vector<IslSatellite*> neighbors_;                   // block b (1..) -> neighbor
+    std::vector<Spacecraft*> neighbors_;                     // block b (1..) -> neighbor
     std::vector<std::pair<Vec3, std::string>> stations_bf_;  // (MOON_PA pos, name); + mask below
     std::vector<double> station_mask_deg_;
     Ptr<IslOdtsApp> filter_;

@@ -18,8 +18,8 @@ namespace lupnt {
   LunarGnssODTSConfig ConfigToLunarGnssODTSConfig(Config& config);
 
   /// @brief Coordinator application for the lunar-orbiting GNSS ODTS scenario (Example 6),
-  /// hosted on a thin `LunarGnssManager` agent (mirroring ex8's `IslOdtsCoordinatorApp` on an
-  /// `IslOdtsManager`).
+  /// hosted on a physical `Spacecraft` receiver agent, which owns the truth orbit+clock and whose
+  /// self-propagated truth the engine reads.
   ///
   /// This wraps the (numerics-preserving) free-function ODTS engine. Its scheduled `Step`
   /// runs the entire GNSS Monte-Carlo body once, lazily, in the exact same computation and

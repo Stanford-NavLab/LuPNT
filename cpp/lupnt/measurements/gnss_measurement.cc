@@ -3,7 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
-#include "lupnt/agents/gnss_attitude.h"
+#include "lupnt/attitude/gnss_attitude.h"
+#include "lupnt/attitude/gnss_yaw_steering.h"
 #include "lupnt/conversions/frame_converter.h"
 #include "lupnt/conversions/time_conversions.h"
 #include "lupnt/core/constants.h"
@@ -505,7 +506,30 @@ namespace lupnt {
     Vec3 u_tx2rx_gcrf = (r_rx_gcrf - rv_tx_gcrf.head(3)).normalized();
 
     Vec3 ex, ey, ez;
-    GnssAttitude::Compute(rv_tx_gcrf.head(3), Vec3(rv_tx_gcrf.tail(3)), r_sun_gcrf, ex, ey, ez);
+    if (options_.tx_yaw_model == GnssMeasurementOptions::TxYawModel::DEDICATED) {
+      // Block-specific dedicated eclipse yaw law, evaluated continuously from geometry.
+      const Vec3 r_tx_g = rv_tx_gcrf.head(3);
+      const Vec3 v_tx_g = rv_tx_gcrf.tail(3);
+      Real beta = GnssYawSteering::BetaAngle(r_tx_g, v_tx_g, r_sun_gcrf);
+      Real mu = GnssYawSteering::OrbitAngle(r_tx_g, v_tx_g, r_sun_gcrf);
+      Real phi_nom = GnssYawSteering::NominalYawAngle(beta, mu);
+      Real phi_ded;
+      switch (channel.gnss_const) {
+        case GnssConst::GALILEO:
+          phi_ded = GnssYawSteering::GalileoIovEclipseYawAngle(GnssYawSteering::OrbitNoonAngle(mu),
+                                                               beta, phi_nom);
+          break;
+        case GnssConst::GPS:
+          phi_ded = GnssYawSteering::Gps3EclipseYawAngle(beta, mu, phi_nom);
+          break;
+        default:
+          phi_ded = phi_nom;  // no dedicated law for this system -> nominal
+          break;
+      }
+      GnssAttitude::ComputeFromYawAngle(r_tx_g, v_tx_g, phi_ded, ex, ey, ez);
+    } else {
+      GnssAttitude::Compute(rv_tx_gcrf.head(3), Vec3(rv_tx_gcrf.tail(3)), r_sun_gcrf, ex, ey, ez);
+    }
     Real phi_tx = safe_acos(u_tx2rx_gcrf.dot(ez));
     Real theta_tx = atan2(u_tx2rx_gcrf.dot(ey), u_tx2rx_gcrf.dot(ex));
     Real phi_rx = safe_acos(u_rx2body.dot(u_rx2tx));

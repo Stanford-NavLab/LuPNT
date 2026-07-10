@@ -11,7 +11,7 @@ namespace lupnt {
   /// filter -- a single EKF estimating every satellite's orbit + clock from the surface
   /// stations' one-way pseudoranges alone (no inter-satellite links), as a baseline against the
   /// satellites' distributed onboard filters. Having no state of its own, its `GetStateAt`
-  /// returns a zero state (mirroring `GroundStationManager`/`IslOdtsManager`).
+  /// returns a zero state (mirroring `GroundStationManager`).
   class SurfaceStationManager : public Agent {
   public:
     SurfaceStationManager() = default;

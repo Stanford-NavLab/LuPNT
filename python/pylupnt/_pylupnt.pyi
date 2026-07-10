@@ -442,6 +442,7 @@ class DesignConfig:
     receiver_antenna_name: str
     receiver_params: GnssReceiverParams
     setup_transmitters: bool
+    tx_yaw_dedicated: bool
     use_cn0_measurement_sigmas: bool
     def __init__(self) -> None: ...
 
@@ -916,128 +917,6 @@ class IntegratorType:
     def name(self) -> str: ...
     @property
     def value(self) -> int: ...
-
-class IslLinkBudgetConfig:
-    enabled: bool
-    frequency_hz: float
-    rx_gain_dbi: float
-    system_noise_temp_k: float
-    tx_gain_dbi: float
-    tx_power_dbw: float
-    def __init__(self) -> None: ...
-
-class IslOdtsConfig:
-    central_outlier_threshold: float
-    central_process_accel_sigma_mps2: float
-    consider_clock_bias_sigma_s: float
-    consider_clock_drift_sigma_sps: float
-    consider_exchange_interval_s: float
-    consider_position_sigma_m: float
-    consider_velocity_sigma_mps: float
-    dt_s: float
-    duration_s: float
-    enable_centralized_ground_filter: bool
-    enable_station_doppler: bool
-    enable_two_way_frequency_transfer: bool
-    enable_two_way_time_transfer: bool
-    exchange_ci_weight: float
-    exchange_use_covariance_intersection: bool
-    frequency_transfer_sigma_mps: float
-    include_earth: bool
-    include_sun: bool
-    initial_clock_bias_sigma_s: float
-    initial_clock_drift_sigma_sps: float
-    initial_position_sigma_m: float
-    initial_velocity_sigma_mps: float
-    integration_step_s: float
-    link_budget: IslLinkBudgetConfig
-    moon_gravity_degree_filter: int
-    moon_gravity_degree_truth: int
-    moon_gravity_order_filter: int
-    moon_gravity_order_truth: int
-    process_accel_sigma_mps2: float
-    range_rate_sigma_mps: float
-    range_sigma_m: float
-    satellites: list[IslOdtsSatelliteConfig]
-    seed: int
-    start_epoch_utc: str
-    station_doppler_sigma_mps: float
-    surface_station: IslSurfaceStationConfig
-    surface_stations: list[IslSurfaceStationConfig]
-    time_transfer_sigma_m: float
-    use_relativity: bool
-    def __init__(self) -> None: ...
-
-class IslOdtsCoordinatorApp(Application):
-    def __init__(self, *args, **kwargs) -> None: ...
-    def get_config(self) -> IslOdtsConfig: ...
-    @overload
-    def get_results(self) -> IslOdtsResults: ...
-    @overload
-    def get_results(self) -> Any: ...
-
-class IslOdtsResults:
-    def __init__(self) -> None: ...
-    @property
-    def cn0_dbhz(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']: ...
-    @property
-    def cov_central_full(self) -> list[typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']]: ...
-    @property
-    def cov_diag(self) -> list[typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']]: ...
-    @property
-    def cov_own_full(self) -> list[typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']]: ...
-    @property
-    def est(self) -> list[typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']]: ...
-    @property
-    def est_central(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']: ...
-    @property
-    def range_obs_m(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']: ...
-    @property
-    def range_rate_obs_mps(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']: ...
-    @property
-    def range_rate_true_mps(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']: ...
-    @property
-    def range_resid_m(self) -> list[typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']]: ...
-    @property
-    def range_true_m(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']: ...
-    @property
-    def satellite_names(self) -> list[str]: ...
-    @property
-    def station_pos_mci(self) -> list[typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']]: ...
-    @property
-    def station_pr_obs_m(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']: ...
-    @property
-    def station_pr_resid_m(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']: ...
-    @property
-    def station_pr_true_m(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']: ...
-    @property
-    def station_visible(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']: ...
-    @property
-    def t_s(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, 1]']: ...
-    @property
-    def time_transfer_obs_m(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']: ...
-    @property
-    def time_transfer_true_m(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']: ...
-    @property
-    def truth_states(self) -> list[typing.Annotated[numpy.typing.NDArray[numpy.float64], '[m, n]']]: ...
-
-class IslOdtsSatelliteConfig:
-    clock_bias_s: float
-    clock_drift_sps: float
-    name: str
-    r0_m: typing.Annotated[numpy.typing.NDArray[numpy.float64], '[3, 1]']
-    v0_mps: typing.Annotated[numpy.typing.NDArray[numpy.float64], '[3, 1]']
-    def __init__(self) -> None: ...
-
-class IslSurfaceStationConfig:
-    altitude_m: float
-    elevation_mask_deg: float
-    enabled: bool
-    latitude_deg: float
-    longitude_deg: float
-    name: str
-    pseudorange_sigma_m: float
-    def __init__(self) -> None: ...
 
 class J2KeplerianDynamics(NumericalOrbitDynamics):
     def __init__(self, GM: typing.SupportsFloat | typing.SupportsIndex, J2: typing.SupportsFloat | typing.SupportsIndex, R_body: typing.SupportsFloat | typing.SupportsIndex) -> None: ...

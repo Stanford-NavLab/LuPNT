@@ -10,7 +10,7 @@
  * See `gnss_yaw_steering.h` for the reference (Cheng et al., 2025) and the
  * equation numbers each function mirrors.
  */
-#include "lupnt/agents/gnss_yaw_steering.h"
+#include "lupnt/attitude/gnss_yaw_steering.h"
 
 #include "lupnt/core/constants.h"
 #include "lupnt/numerics/math_utils.h"

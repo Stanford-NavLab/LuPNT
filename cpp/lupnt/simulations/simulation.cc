@@ -92,6 +92,30 @@ namespace lupnt {
         Config agent_config(agent_item.second);
         if (!agent_config["name"]) agent_config["name"] = agent_item.first.as<std::string>();
         agent_config["name"] = name_ + "/" + agent_config["name"].as<std::string>();
+
+        // Inherit the shared world force model as the agent's TRUTH dynamics when the
+        // agent declares no `dynamics:` block, so common orbit physics is written once
+        // under `world:` instead of duplicated on every physical agent. Orbit agents
+        // (Satellite/Spacecraft) consume it; fixed agents (ground/surface stations,
+        // which use a StaticDynamics) and managers ignore the injected block.
+        if (config_["world"] && config_["world"]["force_model"] && !agent_config["dynamics"]) {
+          Config world_dyn(config_["world"]["force_model"]);
+          if (!world_dyn["class"]) world_dyn["class"] = "NBodyDynamics";
+          if (!world_dyn["frame"] && config_["world"]["frame"])
+            world_dyn["frame"] = config_["world"]["frame"];
+          world_dyn["autodiff"] = false;  // truth needs no state-transition matrix
+          agent_config["dynamics"] = world_dyn;
+        }
+
+        // Propagate a top-level Monte-Carlo `seed:` as the default for the agent and
+        // its application, so one scenario-level knob controls the run's RNG (a
+        // Monte-Carlo trial is one `pnt.Simulation` run at a distinct top-level seed).
+        if (config_["seed"]) {
+          if (!agent_config["seed"]) agent_config["seed"] = config_["seed"];
+          if (agent_config["application"] && !agent_config["application"]["seed"])
+            agent_config["application"]["seed"] = config_["seed"];
+        }
+
         std::string agent_class = agent_config["class"].as<std::string>();
         Logger::Debug(
             fmt::format("Creating {} {}", agent_class, agent_config["name"].as<std::string>()),
