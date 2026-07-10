@@ -13,6 +13,8 @@
 
 namespace lupnt {
 
+  class LanderGncApp;  // co-hosted guidance app that owns the descent truth trajectory
+
   /// @brief Onboard tuning for `LanderNavApp` (Kalibr IMU noise densities + measurement /
   /// clock process noise). Mirrors the surface-rover tuning but adds the altimeter and
   /// crater-bearing measurement noise.
@@ -41,8 +43,7 @@ namespace lupnt {
   struct LanderNavConfig {
     int seed = 42;
     std::string start_epoch_utc = "2027-03-01T00:00:00";
-    double duration_s = 300.0;  ///< total descent arc [s].
-    double dt_s = 0.5;          ///< IMU / filter / measurement step [s].
+    double dt_s = 0.5;  ///< IMU / filter / measurement step [s] (must match the guidance app).
 
     // Site / DEM (site/half_width used only by the legacy free function; the agent-based app
     // takes the DEM from the shared `World`. `dem_max_res_m` is also the terrain-slope FD step).
@@ -51,22 +52,10 @@ namespace lupnt {
     double dem_half_width_m = 4000.0;
     double dem_max_res_m = 20.0;
 
-    // ---- Lander descent truth (local ENU tangent plane) -----------------------
-    double descent_start_east_m = -2500.0;
-    double descent_start_north_m = 400.0;
-    double descent_end_east_m = 0.0;
-    double descent_end_north_m = 0.0;
-    double descent_start_alt_m = 2000.0;
-    double descent_end_alt_m = 15.0;
-    double descent_heading_deg = 0.0;
+    // ---- Lander clock truth (estimated online by the filter) ------------------
+    // The descent truth trajectory itself is owned by the co-hosted `LanderGncApp`.
     double lander_clock_bias_s = 1.0e-6;
     double lander_clock_drift_sps = 1.0e-11;
-
-    /// Optional externally-supplied reference (truth) trajectory, `N x 3` rows of local
-    /// East-North-Up position [m] about the DEM site center (U is height above the site datum).
-    /// When non-empty it overrides the built-in smoothstep descent and defines `N`. Populate via
-    /// `LanderNavApp::SetReferenceTrajectoryEnu` (e.g. `pylupnt.lander_guidance` output).
-    MatXd ref_traj_enu;
 
     // ---- IMU (Kalibr noise model) --------------------------------------------
     double accel_noise_density = 3.4e-4;
@@ -167,12 +156,6 @@ namespace lupnt {
 
     /// @brief Construct a self-driving app from the `application:` block of a `Lander` agent.
     explicit LanderNavApp(Config& config);
-
-    /// @brief Supply an externally-generated reference (truth) trajectory, `N x 3` rows of local
-    /// East-North-Up position [m] about the DEM site center (U = height above the site datum).
-    /// Overrides the built-in smoothstep descent and sets the epoch count `N`. Call before the
-    /// `Simulation` runs (i.e. before `Setup`).
-    void SetReferenceTrajectoryEnu(const MatXd& ref_traj_enu) { cfg_.ref_traj_enu = ref_traj_enu; }
 
     /// @brief Precompute descent truth, crater map, relay orbits, and the perturbed initial
     /// estimate (same RNG draw order as the legacy `RunLanderNav`), seed the filter, log epoch 0,
@@ -286,11 +269,10 @@ namespace lupnt {
     Vec3d r_center_pa_ = Vec3d::Zero();
     Vec3d up_hat_pa_ = Vec3d::UnitZ();
 
-    std::vector<double> Ee_, Nn_, Uu_, Alt_;
-    std::vector<Vec3d> r_truth_, v_truth_;
-    std::vector<Mat3d> R_truth_;
-    std::vector<Vec3d> f_body_truth_, w_body_truth_;
-    std::vector<Vec3d> ba_truth_k_, bg_truth_k_;
+    // The descent truth trajectory is owned by the co-hosted guidance app; read through this
+    // handle (resolved in InitScenario). The nav app owns only the sensor/filter state below.
+    LanderGncApp* gnc_ = nullptr;
+    std::vector<Vec3d> ba_truth_k_, bg_truth_k_;  // truth IMU biases (this app's sensor model)
     std::vector<std::vector<Vec3d>> sat_pa_;
     std::vector<double> sise_bias_;
     std::vector<Vec3d> crater_pa_;

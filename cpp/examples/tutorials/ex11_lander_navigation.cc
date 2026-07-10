@@ -25,7 +25,8 @@ using namespace lupnt;
 static double FinalPosError(Config cfg) {
   Simulation sim(cfg);
   sim.Run();
-  auto* app = dynamic_cast<LanderNavApp*>(sim.GetAgent("Lander")->GetApplication().get());
+  auto* app = dynamic_cast<LanderNavApp*>(
+      sim.GetAgent("Lander")->GetApplicationByName("LanderNavApp").get());
   const VecXd& e = app->pos_err_norm();
   return e(e.size() - 1);
 }
@@ -36,7 +37,8 @@ int main(int argc, char** argv) {
   Config cfg = YAML::LoadFile(config_path);
   Simulation sim(cfg);
   sim.Run();
-  auto* app = dynamic_cast<LanderNavApp*>(sim.GetAgent("Lander")->GetApplication().get());
+  auto* app = dynamic_cast<LanderNavApp*>(
+      sim.GetAgent("Lander")->GetApplicationByName("LanderNavApp").get());
 
   const int N = static_cast<int>(app->time_series().size());
   std::cout << "Site: " << app->site_id() << " (" << app->site_name() << ")\n";

@@ -62,7 +62,12 @@ void InitSimulation(py::module& m) {
   py::class_<Agent, std::shared_ptr<Agent>>(m, "Agent")
       .def("get_name", &Agent::GetName)
       .def("get_application", &Agent::GetApplication,
-           "The Application hosted by this agent (downcasts to the concrete app type)")
+           "The primary Application hosted by this agent (the first one; downcasts to the "
+           "concrete app type)")
+      .def("get_applications", &Agent::GetApplications,
+           "All Applications hosted by this agent, in order (for multi-application agents)")
+      .def("get_application_by_name", &Agent::GetApplicationByName, py::arg("name"),
+           "The hosted Application whose name ends with `name` (e.g. \"LanderNavApp\"), or None")
       .def(
           "get_state_at",
           [](const Agent& a, double t) { return a.GetStateAt(t).cast<double>().eval(); },

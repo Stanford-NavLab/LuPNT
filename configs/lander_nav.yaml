@@ -27,66 +27,73 @@ world:
 agents:
   Lander:
     class: Lander
-    application:
-      class: LanderNavApp
-      seed: 42
-      start_epoch_utc: "2027-03-01T00:00:00"
-      duration_s: 300.0
-      dt_s: 0.5
-      dem_max_res_m: 20.0       # terrain-slope FD step; must match world.dem.max_res_m
+    # Two applications run on the one Lander agent, in order: the guidance/control app owns the
+    # descent truth trajectory (and writes the lander's truth state each epoch), then the
+    # navigation app reads that truth to synthesize measurements and runs the MEKF.
+    applications:
+      # ---- Guidance / control: powered-descent truth trajectory ----------------
+      - class: LanderGncApp
+        duration_s: 300.0
+        dt_s: 0.5
+        # Powered descent truth (local ENU tangent plane about the DEM site center)
+        descent_start_east_m: -2500.0
+        descent_start_north_m: 400.0
+        descent_end_east_m: 0.0
+        descent_end_north_m: 0.0
+        descent_start_alt_m: 2000.0
+        descent_end_alt_m: 15.0
+        descent_heading_deg: 0.0
 
-      # Powered descent truth (local ENU tangent plane about the DEM site center)
-      descent_start_east_m: -2500.0
-      descent_start_north_m: 400.0
-      descent_end_east_m: 0.0
-      descent_end_north_m: 0.0
-      descent_start_alt_m: 2000.0
-      descent_end_alt_m: 15.0
-      descent_heading_deg: 0.0
-      lander_clock_bias_s: 1.0e-6
-      lander_clock_drift_sps: 1.0e-11
+      # ---- Navigation: error-state INS MEKF ------------------------------------
+      - class: LanderNavApp
+        seed: 42
+        start_epoch_utc: "2027-03-01T00:00:00"
+        dt_s: 0.5
+        dem_max_res_m: 20.0       # terrain-slope FD step; must match world.dem.max_res_m
+        lander_clock_bias_s: 1.0e-6
+        lander_clock_drift_sps: 1.0e-11
 
-      # IMU (Kalibr noise model), truth biases
-      accel_noise_density: 3.4e-4
-      accel_bias_rw: 1.0e-4
-      gyro_noise_density: 3.4e-6
-      gyro_bias_rw: 1.0e-6
-      accel_bias0: 1.0e-2
-      gyro_bias0: 5.0e-4
+        # IMU (Kalibr noise model), truth biases
+        accel_noise_density: 3.4e-4
+        accel_bias_rw: 1.0e-4
+        gyro_noise_density: 3.4e-6
+        gyro_bias_rw: 1.0e-6
+        accel_bias0: 1.0e-2
+        gyro_bias0: 5.0e-4
 
-      # Radar altimeter
-      enable_altimeter: true
-      altimeter_sigma_m: 2.0
-      altimeter_max_range_m: 3000.0
+        # Radar altimeter
+        enable_altimeter: true
+        altimeter_sigma_m: 2.0
+        altimeter_max_range_m: 3000.0
 
-      # Crater-landmark camera (terrain-relative navigation)
-      enable_craters: true
-      n_craters: 60
-      crater_field_radius_m: 3000.0
-      camera_fov_deg: 30.0
-      max_craters_per_epoch: 6
-      crater_sigma_arcsec: 120.0
+        # Crater-landmark camera (terrain-relative navigation)
+        enable_craters: true
+        n_craters: 60
+        crater_field_radius_m: 3000.0
+        camera_fov_deg: 30.0
+        max_craters_per_epoch: 6
+        crater_sigma_arcsec: 120.0
 
-      # LunaNet / LANS pseudoranges
-      enable_lunanet: true
-      elevation_mask_deg: 5.0
-      pseudorange_sigma_m: 1.0
-      sise_m: 3.0
+        # LunaNet / LANS pseudoranges
+        enable_lunanet: true
+        elevation_mask_deg: 5.0
+        pseudorange_sigma_m: 1.0
+        sise_m: 3.0
 
-      # Filter initialization & tuning
-      init_pos_sigma_m: 100.0
-      init_vel_sigma_mps: 1.0
-      init_att_sigma_deg: 2.0
-      init_accel_bias_sigma: 2.0e-2
-      init_gyro_bias_sigma: 1.0e-3
-      init_clock_bias_sigma_s: 1.0e-6
-      init_clock_drift_sigma_sps: 1.0e-9
-      filter_bias_rw_scale: 3.0
+        # Filter initialization & tuning
+        init_pos_sigma_m: 100.0
+        init_vel_sigma_mps: 1.0
+        init_att_sigma_deg: 2.0
+        init_accel_bias_sigma: 2.0e-2
+        init_gyro_bias_sigma: 1.0e-3
+        init_clock_bias_sigma_s: 1.0e-6
+        init_clock_drift_sigma_sps: 1.0e-9
+        filter_bias_rw_scale: 3.0
 
-      # NASA LCRNS Reference Constellation 3.1 initial states, Frame.MOON_CI [m], [m/s]
-      satellites:
-        - { name: SV-1, r0_m: [-198931.445, 386023.132, 3458355.412], v0_mps: [-1539.867, 22.243, -91.059] }
-        - { name: SV-2, r0_m: [1089980.598, -2260918.271, -18984562.823], v0_mps: [280.301, -4.049, 16.575] }
-        - { name: SV-3, r0_m: [9187665.852, -260470.721, -8543222.759], v0_mps: [273.629, 417.588, -313.828] }
-        - { name: SV-4, r0_m: [6484019.002, 14329883.921, -7966345.594], v0_mps: [-258.433, 33.951, 235.264] }
-        - { name: SV-5, r0_m: [-5074242.314, 14473022.751, -8638530.033], v0_mps: [-229.931, -26.926, -264.381] }
+        # NASA LCRNS Reference Constellation 3.1 initial states, Frame.MOON_CI [m], [m/s]
+        satellites:
+          - { name: SV-1, r0_m: [-198931.445, 386023.132, 3458355.412], v0_mps: [-1539.867, 22.243, -91.059] }
+          - { name: SV-2, r0_m: [1089980.598, -2260918.271, -18984562.823], v0_mps: [280.301, -4.049, 16.575] }
+          - { name: SV-3, r0_m: [9187665.852, -260470.721, -8543222.759], v0_mps: [273.629, 417.588, -313.828] }
+          - { name: SV-4, r0_m: [6484019.002, 14329883.921, -7966345.594], v0_mps: [-258.433, 33.951, 235.264] }
+          - { name: SV-5, r0_m: [-5074242.314, 14473022.751, -8638530.033], v0_mps: [-229.931, -26.926, -264.381] }

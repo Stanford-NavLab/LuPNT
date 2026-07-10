@@ -58,10 +58,19 @@ def series_frame(app) -> pd.DataFrame:
     return pd.DataFrame(d)
 
 
+def _app_of_class(agent_cfg, cls):
+    """The application config dict of the given class in the Lander's `applications:` list."""
+    for a in agent_cfg["applications"]:
+        if a.get("class") == cls:
+            return a
+    raise KeyError(cls)
+
+
 def run(cfg, pnt):
     sim = pnt.Simulation(yaml.safe_load(yaml.safe_dump(cfg)))
     sim.run()
-    return sim.get_agent("Lander").get_application()
+    # The Lander hosts a LanderGncApp (guidance) + LanderNavApp (nav); the results are on nav.
+    return sim.get_agent("Lander").get_application_by_name("LanderNavApp")
 
 
 def main() -> None:
@@ -82,11 +91,12 @@ def main() -> None:
         cfg = yaml.safe_load(f)
     if args.duration:
         cfg["duration"] = args.duration
-        cfg["agents"]["Lander"]["application"]["duration_s"] = _hms_to_s(args.duration)
+        _app_of_class(cfg["agents"]["Lander"], "LanderGncApp")["duration_s"] = _hms_to_s(
+            args.duration)
 
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
-    acfg = cfg["agents"]["Lander"]["application"]
+    acfg = _app_of_class(cfg["agents"]["Lander"], "LanderNavApp")
 
     print(f"Running lander nav (all sensors): duration={cfg['duration']}")
     app = run(cfg, pnt)
@@ -107,7 +117,7 @@ def main() -> None:
     rows = []
     for label, over in abl:
         c = yaml.safe_load(yaml.safe_dump(cfg))
-        c["agents"]["Lander"]["application"].update(over)
+        _app_of_class(c["agents"]["Lander"], "LanderNavApp").update(over)
         a = run(c, pnt)
         pe = float(np.asarray(a.pos_err_norm()).reshape(-1)[-1])
         rows.append({"config": label, "final_pos_err_norm_m": pe})

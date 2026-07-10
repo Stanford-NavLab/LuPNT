@@ -25,12 +25,17 @@ namespace py = pybind11;
 using namespace lupnt;
 
 void InitLanderNav(py::module& m) {
-  py::class_<LanderNavApp, Application, std::shared_ptr<LanderNavApp>>(m, "LanderNavApp")
-      .def("set_reference_trajectory_enu", &LanderNavApp::SetReferenceTrajectoryEnu,
+  // Guidance/control app: owns the descent truth trajectory (and the reference-trajectory hook).
+  py::class_<LanderGncApp, Application, std::shared_ptr<LanderGncApp>>(m, "LanderGncApp")
+      .def("set_reference_trajectory_enu", &LanderGncApp::SetReferenceTrajectoryEnu,
            py::arg("ref_traj_enu"),
            "Supply an [N x 3] ENU reference (truth) trajectory [m] about the DEM site center "
            "(U = height above the site datum). Overrides the built-in smoothstep descent and "
            "sets N; call before sim.run().")
+      .def("traj_enu_truth", &LanderGncApp::traj_enu_truth, "[N x 3] truth (East, North, Up) [m]")
+      .def("alt_truth", &LanderGncApp::alt_truth, "[N] truth height above terrain [m]");
+
+  py::class_<LanderNavApp, Application, std::shared_ptr<LanderNavApp>>(m, "LanderNavApp")
       .def("site_id", &LanderNavApp::site_id)
       .def("site_name", &LanderNavApp::site_name)
       .def("dem_x", &LanderNavApp::dem_x)

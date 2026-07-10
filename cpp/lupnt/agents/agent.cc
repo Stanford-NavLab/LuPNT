@@ -45,14 +45,14 @@ namespace lupnt {
   void Agent::CreateApplication(Config& config) {
     if (config["applications"]) {
       // Multiple applications on one agent, run in list order (e.g. Lander: guidance then nav).
-      int i = 0;
       for (const auto& app_item : config["applications"]) {
         Config app_config(app_item);
         auto app_class = app_config["class"].as<std::string>();
-        if (!app_config["name"]) app_config["name"] = fmt::format("application{}", i);
+        // Default each app's name to its class (so GetApplicationByName("LanderNavApp") works);
+        // give sibling apps of the same class explicit `name:` fields to disambiguate.
+        if (!app_config["name"]) app_config["name"] = app_class;
         app_config["name"] = name_ + "/" + app_config["name"].as<std::string>();
         AddApplication(AssetFactory<Application, Config&>::Create(app_class, app_config));
-        ++i;
       }
     } else if (config["application"]) {
       // Name

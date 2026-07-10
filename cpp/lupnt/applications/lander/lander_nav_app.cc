@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "lupnt/agents/agent.h"
+#include "lupnt/applications/lander/lander_gnc_app.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/core/error.h"
 #include "lupnt/lupnt.h"
@@ -53,12 +54,6 @@ namespace lupnt {
       Vec3d w(R(2, 1) - R(1, 2), R(0, 2) - R(2, 0), R(1, 0) - R(0, 1));
       if (th < 1e-9) return 0.5 * w;
       return (th / (2.0 * std::sin(th))) * w;
-    }
-
-    // Smoothstep S(tau) = tau^2 (3 - 2 tau), clamped to [0, 1].
-    double SmoothStep(double tau) {
-      tau = std::clamp(tau, 0.0, 1.0);
-      return tau * tau * (3.0 - 2.0 * tau);
     }
 
     Vec3d ParseVec3(const Config& node) {
@@ -229,16 +224,8 @@ namespace lupnt {
     LanderNavConfig c;
     c.seed = config["seed"].as<int>(c.seed);
     c.start_epoch_utc = config["start_epoch_utc"].as<std::string>(c.start_epoch_utc);
-    c.duration_s = config["duration_s"].as<double>(c.duration_s);
     c.dt_s = config["dt_s"].as<double>(c.dt_s);
     c.dem_max_res_m = config["dem_max_res_m"].as<double>(c.dem_max_res_m);
-    c.descent_start_east_m = config["descent_start_east_m"].as<double>(c.descent_start_east_m);
-    c.descent_start_north_m = config["descent_start_north_m"].as<double>(c.descent_start_north_m);
-    c.descent_end_east_m = config["descent_end_east_m"].as<double>(c.descent_end_east_m);
-    c.descent_end_north_m = config["descent_end_north_m"].as<double>(c.descent_end_north_m);
-    c.descent_start_alt_m = config["descent_start_alt_m"].as<double>(c.descent_start_alt_m);
-    c.descent_end_alt_m = config["descent_end_alt_m"].as<double>(c.descent_end_alt_m);
-    c.descent_heading_deg = config["descent_heading_deg"].as<double>(c.descent_heading_deg);
     c.lander_clock_bias_s = config["lander_clock_bias_s"].as<double>(c.lander_clock_bias_s);
     c.lander_clock_drift_sps
         = config["lander_clock_drift_sps"].as<double>(c.lander_clock_drift_sps);
@@ -299,21 +286,23 @@ namespace lupnt {
     LUPNT_CHECK(world && world->HasTerrain(),
                 "LanderNavApp requires a World with a `dem:` terrain block", "LanderNavApp::Setup");
 
+    // The co-hosted guidance app owns the descent truth trajectory; ensure it is built and take
+    // the epoch grid (N, dt) + per-epoch truth from it.
+    gnc_ = dynamic_cast<LanderGncApp*>(agent_->GetApplicationByName("LanderGncApp").get());
+    LUPNT_CHECK(gnc_, "LanderNavApp requires a co-hosted LanderGncApp on the same Lander agent",
+                "LanderNavApp::Setup");
+    gnc_->EnsureInitialized();
+    N_ = gnc_->N();
+    dt_ = gnc_->dt();
+
     rng_.seed(cfg_.seed);
     nd_.reset();
     ud_.reset();
 
-    dt_ = cfg_.dt_s;
     n_sat_ = static_cast<int>(cfg_.satellites.size());
     crater_sigma_rad_ = cfg_.crater_sigma_arcsec * RAD / 3600.0;
     const double dt = dt_;
     const double sqrt_dt = std::sqrt(dt);
-
-    const bool use_ref_traj = cfg_.ref_traj_enu.rows() > 0;
-    LUPNT_CHECK(!use_ref_traj || cfg_.ref_traj_enu.cols() == 3,
-                "ref_traj_enu must have 3 columns (East, North, Up)", "LanderNavApp::Setup");
-    N_ = use_ref_traj ? static_cast<int>(cfg_.ref_traj_enu.rows())
-                      : std::max(2, static_cast<int>(std::round(cfg_.duration_s / cfg_.dt_s)) + 1);
 
     // ---- 1. Local ENU terrain frame (from the shared World) -------------------
     const LunarDem& dem = world->GetDem();
@@ -326,16 +315,6 @@ namespace lupnt {
     auto EnuToPa
         = [&](double E, double Nn, double U) -> Vec3d { return world->EnuToWorld(E, Nn, U); };
     auto Elevation = [&](double E, double Nn) -> double { return world->GetElevation(E, Nn); };
-    auto BodyToPa = [&](double hdg) -> Mat3d {
-      Vec3d xb(std::cos(hdg), std::sin(hdg), 0.0);
-      Vec3d zb(0.0, 0.0, 1.0);
-      Vec3d yb = zb.cross(xb);
-      Mat3d R_body2enu;
-      R_body2enu.col(0) = xb;
-      R_body2enu.col(1) = yb;
-      R_body2enu.col(2) = zb;
-      return R_enu2pa_ * R_body2enu;
-    };
 
     // ---- 2. Synthetic crater-landmark map (scattered on the terrain) ----------
     n_crat_ = cfg_.enable_craters ? std::max(0, cfg_.n_craters) : 0;
@@ -351,55 +330,8 @@ namespace lupnt {
       res_.crater_enu(j, 1) = Nn;
     }
 
-    // ---- 3. Descent truth: ENU path, Moon-fixed pos/vel/accel, attitude/rate ---
-    const double hdg = cfg_.descent_heading_deg * RAD;
-    Ee_.assign(N_, 0.0);
-    Nn_.assign(N_, 0.0);
-    Uu_.assign(N_, 0.0);
-    Alt_.assign(N_, 0.0);
-    r_truth_.assign(N_, Vec3d::Zero());
-    v_truth_.assign(N_, Vec3d::Zero());
-    R_truth_.assign(N_, Mat3d::Identity());
-    for (int k = 0; k < N_; ++k) {
-      if (use_ref_traj) {
-        Ee_[k] = cfg_.ref_traj_enu(k, 0);
-        Nn_[k] = cfg_.ref_traj_enu(k, 1);
-        Uu_[k] = cfg_.ref_traj_enu(k, 2);
-        Alt_[k] = Uu_[k] - Elevation(Ee_[k], Nn_[k]);
-      } else {
-        double tau = (cfg_.duration_s > 0.0) ? (k * dt / cfg_.duration_s) : 1.0;
-        double s = SmoothStep(tau);
-        Ee_[k]
-            = cfg_.descent_start_east_m + (cfg_.descent_end_east_m - cfg_.descent_start_east_m) * s;
-        Nn_[k] = cfg_.descent_start_north_m
-                 + (cfg_.descent_end_north_m - cfg_.descent_start_north_m) * s;
-        Alt_[k]
-            = cfg_.descent_start_alt_m + (cfg_.descent_end_alt_m - cfg_.descent_start_alt_m) * s;
-        Uu_[k] = Elevation(Ee_[k], Nn_[k]) + Alt_[k];
-      }
-      R_truth_[k] = BodyToPa(hdg);
-    }
-    for (int k = 0; k < N_; ++k) r_truth_[k] = EnuToPa(Ee_[k], Nn_[k], Uu_[k]);
-    for (int k = 0; k < N_; ++k) {
-      int kp = std::min(k + 1, N_ - 1), km = std::max(k - 1, 0);
-      double span = (kp - km) * dt;
-      v_truth_[k]
-          = (span > 0.0) ? Vec3d((r_truth_[kp] - r_truth_[km]) / span) : Vec3d(Vec3d::Zero());
-    }
-    f_body_truth_.assign(N_, Vec3d::Zero());
-    w_body_truth_.assign(N_, Vec3d::Zero());
-    for (int k = 0; k < N_; ++k) {
-      int kp = std::min(k + 1, N_ - 1), km = std::max(k - 1, 0);
-      double span = (kp - km) * dt;
-      Vec3d a_total
-          = (span > 0.0) ? Vec3d((v_truth_[kp] - v_truth_[km]) / span) : Vec3d(Vec3d::Zero());
-      f_body_truth_[k] = R_truth_[k].transpose() * (a_total - world->Gravity(r_truth_[k]));
-      Mat3d Rdot
-          = (span > 0.0) ? Mat3d((R_truth_[kp] - R_truth_[km]) / span) : Mat3d(Mat3d::Zero());
-      Mat3d Wx = R_truth_[k].transpose() * Rdot;
-      w_body_truth_[k] = Vec3d(Wx(2, 1), Wx(0, 2), Wx(1, 0));
-    }
-
+    // ---- 3. Truth IMU biases (this app's IMU sensor error model; the descent truth trajectory
+    //          itself is owned by the co-hosted LanderGncApp) ---------------------------------
     Vec3d ba_truth = Gauss3(cfg_.accel_bias0);
     Vec3d bg_truth = Gauss3(cfg_.gyro_bias0);
     ba_truth_k_.assign(N_, Vec3d::Zero());
@@ -450,11 +382,11 @@ namespace lupnt {
     params_.altimeter_sigma_m = cfg_.altimeter_sigma_m;
     params_.crater_sigma_rad = crater_sigma_rad_;
 
-    Vec3d r0 = r_truth_[0] + Gauss3(cfg_.init_pos_sigma_m);
-    Vec3d v0 = v_truth_[0] + Gauss3(cfg_.init_vel_sigma_mps);
+    Vec3d r0 = gnc_->TruthPos(0) + Gauss3(cfg_.init_pos_sigma_m);
+    Vec3d v0 = gnc_->TruthVel(0) + Gauss3(cfg_.init_vel_sigma_mps);
     Vec3d att_err0 = Gauss3(cfg_.init_att_sigma_deg * RAD);
     Mat3d dR0 = Mat3d::Identity() - Skew3d(att_err0);
-    Mat3d R0 = dR0 * R_truth_[0];
+    Mat3d R0 = dR0 * gnc_->TruthAtt(0);
     double cb0 = ClockBiasTruth(0) + Gauss(cfg_.init_clock_bias_sigma_s);
     double cd0 = cfg_.lander_clock_drift_sps + Gauss(cfg_.init_clock_drift_sigma_sps);
 
@@ -501,13 +433,7 @@ namespace lupnt {
     res_.alt_est = VecXd::Zero(N_);
     for (int j = 0; j < n_sat_; ++j) res_.satellite_names.push_back(cfg_.satellites[j].name);
 
-    auto* lander = dynamic_cast<AgentWithDynamics*>(agent_);
-    if (lander) {
-      Vec6 rv;
-      rv << r_truth_[0].cast<Real>(), v_truth_[0].cast<Real>();
-      lander->SetTime(0.0);
-      lander->SetState(Cart6(rv, Frame::MOON_PA));
-    }
+    // (The host lander's truth state is written by the co-hosted LanderGncApp each epoch.)
     LogEpoch(0);
   }
 
@@ -522,27 +448,22 @@ namespace lupnt {
     const double dt = dt_;
     const double sqrt_dt = std::sqrt(dt);
 
-    auto* lander = dynamic_cast<AgentWithDynamics*>(agent_);
-    if (lander) {
-      Vec6 rv;
-      rv << r_truth_[k].cast<Real>(), v_truth_[k].cast<Real>();
-      lander->SetTime(k * dt);
-      lander->SetState(Cart6(rv, Frame::MOON_PA));
-    }
+    // The host lander's truth state is written by the co-hosted LanderGncApp; this app reads that
+    // guidance truth to synthesize its noisy measurements and runs the MEKF.
 
     // Simulate the IMU (Kalibr: bias + white noise) over [k-1, k] and predict.
     SurfaceImuMeasurement imu;
-    imu.accel
-        = f_body_truth_[k - 1] + ba_truth_k_[k - 1] + Gauss3(cfg_.accel_noise_density / sqrt_dt);
+    imu.accel = gnc_->SpecificForce(k - 1) + ba_truth_k_[k - 1]
+                + Gauss3(cfg_.accel_noise_density / sqrt_dt);
     imu.gyro
-        = w_body_truth_[k - 1] + bg_truth_k_[k - 1] + Gauss3(cfg_.gyro_noise_density / sqrt_dt);
+        = gnc_->AngularRate(k - 1) + bg_truth_k_[k - 1] + Gauss3(cfg_.gyro_noise_density / sqrt_dt);
     Predict(imu, dt);
 
     // LunaNet (LANS) pseudorange updates for visible satellites.
     if (cfg_.enable_lunanet) {
       std::vector<SurfaceLansMeasurement> lans;
       for (int j = 0; j < n_sat_; ++j) {
-        Vec3d los = sat_pa_[k][j] - r_truth_[k];
+        Vec3d los = sat_pa_[k][j] - gnc_->TruthPos(k);
         double range = los.norm();
         double sin_el = (range > 0.0) ? (los.dot(up_hat_pa_) / range) : -1.0;
         if (sin_el < std::sin(cfg_.elevation_mask_deg * RAD)) continue;
@@ -560,10 +481,10 @@ namespace lupnt {
 
     // Radar altimeter: height above the terrain directly below (nadir), if within range.
     World* world = agent_->GetWorld();
-    if (cfg_.enable_altimeter && Alt_[k] <= cfg_.altimeter_max_range_m) {
+    if (cfg_.enable_altimeter && gnc_->Altitude(k) <= cfg_.altimeter_max_range_m) {
       LanderAltimeterMeasurement m;
       m.sigma_m = cfg_.altimeter_sigma_m;
-      m.altitude_m = Alt_[k] + Gauss(cfg_.altimeter_sigma_m);
+      m.altitude_m = gnc_->Altitude(k) + Gauss(cfg_.altimeter_sigma_m);
       Vec3d enu = R_pa2enu_ * (r_ - r_center_pa_);
       double E = enu(0), Ne = enu(1), U = enu(2);
       double alt_pred = U - world->GetElevation(E, Ne);
@@ -580,7 +501,7 @@ namespace lupnt {
       double cos_fov = std::cos(cfg_.camera_fov_deg * RAD);
       std::vector<std::pair<double, int>> cands;
       for (int j = 0; j < n_crat_; ++j) {
-        Vec3d los = crater_pa_[j] - r_truth_[k];
+        Vec3d los = crater_pa_[j] - gnc_->TruthPos(k);
         double range = los.norm();
         if (range <= 0.0) continue;
         Vec3d u_n = los / range;
@@ -593,9 +514,9 @@ namespace lupnt {
       std::vector<LanderCraterMeasurement> craters;
       for (int i = 0; i < n_use; ++i) {
         int j = cands[i].second;
-        Vec3d los = crater_pa_[j] - r_truth_[k];
+        Vec3d los = crater_pa_[j] - gnc_->TruthPos(k);
         Vec3d u_n = los / los.norm();
-        Vec3d u_body = R_truth_[k].transpose() * u_n + Gauss3(crater_sigma_rad_);
+        Vec3d u_body = gnc_->TruthAtt(k).transpose() * u_n + Gauss3(crater_sigma_rad_);
         LanderCraterMeasurement m;
         m.r_crater = crater_pa_[j];
         m.los_body = u_body.normalized();
@@ -614,12 +535,12 @@ namespace lupnt {
     const MatXd& P = P_;
     Vec3d r_est = r_;
     Vec3d v_est = v_;
-    Vec3d err_pa = r_truth_[k] - r_est;
+    Vec3d err_pa = gnc_->TruthPos(k) - r_est;
     Vec3d err_enu = R_pa2enu_ * err_pa;
     res_.time_s(k) = k * dt_;
     res_.pos_err_enu.row(k) = err_enu.transpose();
     res_.pos_err_norm(k) = err_pa.norm();
-    res_.vel_err_norm(k) = (v_truth_[k] - v_est).norm();
+    res_.vel_err_norm(k) = (gnc_->TruthVel(k) - v_est).norm();
     Mat3d P_enu = R_pa2enu_ * P.block<3, 3>(0, 0) * R_enu2pa_;
     for (int i = 0; i < 3; ++i) res_.pos_sigma_enu(k, i) = std::sqrt(std::max(0.0, P_enu(i, i)));
     res_.clock_bias_err(k) = ClockBiasTruth(k) - cb_;
@@ -629,7 +550,7 @@ namespace lupnt {
     Vec3d bg_err = bg_truth_k_[k] - bg_;
     res_.accel_bias_err.row(k) = ba_err.transpose();
     res_.gyro_bias_err.row(k) = bg_err.transpose();
-    Vec3d att_err = LogSO3(R_truth_[k] * q_b2n_.toRotationMatrix().transpose());
+    Vec3d att_err = LogSO3(gnc_->TruthAtt(k) * q_b2n_.toRotationMatrix().transpose());
     res_.att_err_deg.row(k) = (att_err / RAD).transpose();
     res_.att_quat_est.row(k) = quaternion().transpose();
     for (int i = 0; i < 3; ++i) {
@@ -639,9 +560,9 @@ namespace lupnt {
     }
 
     Vec3d enu_est = R_pa2enu_ * (r_est - r_center_pa_);
-    res_.traj_enu_truth.row(k) = Vec3d(Ee_[k], Nn_[k], Uu_[k]).transpose();
+    res_.traj_enu_truth.row(k) = gnc_->EnuTruth(k).transpose();
     res_.traj_enu_est.row(k) = enu_est.transpose();
-    res_.alt_truth(k) = Alt_[k];
+    res_.alt_truth(k) = gnc_->Altitude(k);
     res_.alt_est(k) = enu_est(2) - world->GetElevation(enu_est(0), enu_est(1));
   }
 
