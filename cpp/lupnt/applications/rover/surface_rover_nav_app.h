@@ -11,6 +11,8 @@
 
 namespace lupnt {
 
+  class LunarNavConstellation;  // relay-satellite provider agent (queried for truth states)
+
   /// @brief Onboard tuning for `SurfaceRoverNavApp` (Kalibr IMU noise densities + measurement/
   /// clock process noise).
   ///
@@ -75,8 +77,12 @@ namespace lupnt {
     double accel_bias0 = 1.0e-2;          ///< truth initial accel bias 1-sigma/axis [m/s^2].
     double gyro_bias0 = 5.0e-4;           ///< truth initial gyro bias 1-sigma/axis [rad/s].
 
-    // ---- LCRNS constellation --------------------------------------------------
-    std::vector<LcrnsSatConfig> satellites;  ///< relay satellites (e.g. 5).
+    // ---- Navigation constellation ---------------------------------------------
+    /// Name of a `LunarNavConstellation` agent in the scenario to source the relay-satellite
+    /// truth states from. When set, the app queries that agent each epoch instead of propagating
+    /// the relays itself (`satellites` is then unused / a legacy fallback).
+    std::string constellation_name;
+    std::vector<LcrnsSatConfig> satellites;  ///< legacy in-app relay list (if no constellation).
     double elevation_mask_deg = 5.0;         ///< local-horizon mask for visibility [deg].
     double pseudorange_sigma_m = 1.0;        ///< receiver pseudorange noise 1-sigma [m].
     double sise_m = 3.0;                     ///< per-satellite signal-in-space error 1-sigma [m].
@@ -276,6 +282,7 @@ namespace lupnt {
     // Local ENU tangent frame (from the World), Moon-fixed geometry.
     int N_ = 0;
     int n_sat_ = 0;
+    LunarNavConstellation* nav_ = nullptr;  // relay provider (resolved in InitScenario), or null
     double dt_ = 1.0;
     double ds_ = 1.0;  // DEM finite-difference step [m]
     Mat3d R_enu2pa_ = Mat3d::Identity();

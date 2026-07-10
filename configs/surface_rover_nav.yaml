@@ -27,6 +27,27 @@ world:
     max_res_m: 20.0
 
 agents:
+  # The LCRNS relay constellation is its own agent: one `LunarNavConstellation` entry stands in
+  # for all five navigation satellites (each a self-propagating orbit truth), so the rover no
+  # longer propagates the relays itself -- it resolves this agent and queries it each epoch.
+  LuNaNet:
+    class: LunarNavConstellation
+    # Shared truth dynamics inherited by every satellite: point-mass Moon (two-body).
+    dynamics:
+      class: NBodyDynamics
+      frame: MOON_CI
+      integrator: RKF45
+      dt: 60.0
+      bodies:
+        - MOON: {}            # {} -> point-mass gravity (no spherical harmonics)
+    # NASA LCRNS Reference Constellation 3.1 initial states, Frame.MOON_CI [m], [m/s]
+    satellites:
+      - { name: SV-1, r0_m: [-198931.445, 386023.132, 3458355.412], v0_mps: [-1539.867, 22.243, -91.059] }
+      - { name: SV-2, r0_m: [1089980.598, -2260918.271, -18984562.823], v0_mps: [280.301, -4.049, 16.575] }
+      - { name: SV-3, r0_m: [9187665.852, -260470.721, -8543222.759], v0_mps: [273.629, 417.588, -313.828] }
+      - { name: SV-4, r0_m: [6484019.002, 14329883.921, -7966345.594], v0_mps: [-258.433, 33.951, 235.264] }
+      - { name: SV-5, r0_m: [-5074242.314, 14473022.751, -8638530.033], v0_mps: [-229.931, -26.926, -264.381] }
+
   Rover:
     class: Rover
     application:
@@ -36,6 +57,7 @@ agents:
       duration_s: 1800.0
       dt_s: 1.0
       dem_max_res_m: 20.0       # terrain-slope FD step; must match world.dem.max_res_m
+      constellation: LuNaNet    # resolve relay-satellite truth from the LunarNavConstellation agent
 
       # Rover truth path (local ENU tangent plane about the DEM site center)
       rover_start_east_m: 0.0
@@ -70,11 +92,3 @@ agents:
       dem_sigma_m: 5.0
       filter_bias_rw_scale: 3.0
       enable_dem_constraint: true
-
-      # NASA LCRNS Reference Constellation 3.1 initial states, Frame.MOON_CI [m], [m/s]
-      satellites:
-        - { name: SV-1, r0_m: [-198931.445, 386023.132, 3458355.412], v0_mps: [-1539.867, 22.243, -91.059] }
-        - { name: SV-2, r0_m: [1089980.598, -2260918.271, -18984562.823], v0_mps: [280.301, -4.049, 16.575] }
-        - { name: SV-3, r0_m: [9187665.852, -260470.721, -8543222.759], v0_mps: [273.629, 417.588, -313.828] }
-        - { name: SV-4, r0_m: [6484019.002, 14329883.921, -7966345.594], v0_mps: [-258.433, 33.951, 235.264] }
-        - { name: SV-5, r0_m: [-5074242.314, 14473022.751, -8638530.033], v0_mps: [-229.931, -26.926, -264.381] }

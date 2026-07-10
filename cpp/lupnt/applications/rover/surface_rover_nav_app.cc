@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "lupnt/agents/agent.h"
+#include "lupnt/agents/lunar_nav_constellation.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/core/error.h"
 #include "lupnt/lupnt.h"
@@ -90,16 +91,22 @@ namespace lupnt {
     c.filter_bias_rw_scale = config["filter_bias_rw_scale"].as<double>(c.filter_bias_rw_scale);
     c.enable_dem_constraint = config["enable_dem_constraint"].as<bool>(c.enable_dem_constraint);
 
-    LUPNT_CHECK(config["satellites"], "SurfaceRoverNavApp requires a `satellites` list",
-                "SurfaceRoverNavApp");
-    for (const auto& item : config["satellites"]) {
-      Config s(item);
-      LcrnsSatConfig sat;
-      sat.name = s["name"].as<std::string>(std::string("SV"));
-      sat.r0_m = ParseVec3(Config(s["r0_m"]));
-      sat.v0_mps = ParseVec3(Config(s["v0_mps"]));
-      c.satellites.push_back(sat);
+    // Relay-satellite source: prefer a `LunarNavConstellation` agent (queried each epoch); fall
+    // back to a legacy in-app `satellites:` list propagated internally.
+    c.constellation_name = config["constellation"].as<std::string>(std::string(""));
+    if (config["satellites"]) {
+      for (const auto& item : config["satellites"]) {
+        Config s(item);
+        LcrnsSatConfig sat;
+        sat.name = s["name"].as<std::string>(std::string("SV"));
+        sat.r0_m = ParseVec3(Config(s["r0_m"]));
+        sat.v0_mps = ParseVec3(Config(s["v0_mps"]));
+        c.satellites.push_back(sat);
+      }
     }
+    LUPNT_CHECK(!c.constellation_name.empty() || !c.satellites.empty(),
+                "SurfaceRoverNavApp requires a `constellation:` agent name or a `satellites:` list",
+                "SurfaceRoverNavApp");
     cfg_ = c;
   }
 
@@ -242,7 +249,16 @@ namespace lupnt {
 
     N_ = std::max(2, static_cast<int>(std::round(cfg_.duration_s / cfg_.dt_s)) + 1);
     dt_ = cfg_.dt_s;
-    n_sat_ = static_cast<int>(cfg_.satellites.size());
+    // Resolve the relay-satellite provider: a LunarNavConstellation agent if named, else the
+    // legacy in-app satellite list.
+    nav_ = nullptr;
+    if (!cfg_.constellation_name.empty()) {
+      nav_ = dynamic_cast<LunarNavConstellation*>(
+          agent_->GetSimulation()->GetAgent(cfg_.constellation_name));
+      LUPNT_CHECK(nav_, "SurfaceRoverNavApp `constellation:` names no LunarNavConstellation agent",
+                  "SurfaceRoverNavApp");
+    }
+    n_sat_ = nav_ ? nav_->NumSatellites() : static_cast<int>(cfg_.satellites.size());
     const double dt = dt_;
     const double sqrt_dt = std::sqrt(dt);
 
@@ -327,28 +343,43 @@ namespace lupnt {
       bg_truth_k_[k] = bg_truth;
     }
 
-    // ---- 3. Propagate LCRNS truth orbits (Keplerian) --------------------------
+    // ---- 3. Relay truth positions on the rover's grid, Moon-fixed [m] ---------
     const Real t0_tdb = ConvertTime(GregorianToTime(cfg_.start_epoch_utc), Time::UTC, Time::TDB);
-    CartesianTwoBodyDynamics sat_dyn(GM_MOON);
-    sat_dyn.SetTimeStep(dt);
-    std::vector<Vec6> sat_ci(n_sat_);
-    for (int j = 0; j < n_sat_; ++j)
-      sat_ci[j]
-          = (Vec6() << cfg_.satellites[j].r0_m.cast<Real>(), cfg_.satellites[j].v0_mps.cast<Real>())
-                .finished();
     sat_pa_.assign(N_, std::vector<Vec3d>(n_sat_));
-    for (int k = 0; k < N_; ++k) {
-      Real tk = t0_tdb + k * dt;
-      if (k > 0) {
-        Real tkm1 = t0_tdb + (k - 1) * dt;
+    if (nav_) {
+      // Query the LunarNavConstellation agent (sim-relative time) and rotate MOON_CI -> MOON_PA
+      // at the absolute epoch of each rover step.
+      for (int k = 0; k < N_; ++k) {
+        Real t_rel = k * dt;
+        Real tk = t0_tdb + t_rel;
         for (int j = 0; j < n_sat_; ++j) {
-          Cart6 st = sat_dyn.Propagate(Cart6(sat_ci[j], Frame::MOON_CI), tkm1, tk, nullptr);
-          sat_ci[j] = st.head(6);
+          Cart6 st_ci = nav_->GetSatelliteStateAt(j, t_rel);
+          Vec6 rv_pa = ConvertFrame(tk, Vec6(st_ci.head(6)), Frame::MOON_CI, Frame::MOON_PA);
+          sat_pa_[k][j] = rv_pa.head(3).cast<double>();
         }
       }
-      for (int j = 0; j < n_sat_; ++j) {
-        Vec6 rv_pa = ConvertFrame(tk, sat_ci[j], Frame::MOON_CI, Frame::MOON_PA);
-        sat_pa_[k][j] = rv_pa.head(3).cast<double>();
+    } else {
+      // Legacy: propagate the in-app satellite list as two-body Keplerian orbits.
+      CartesianTwoBodyDynamics sat_dyn(GM_MOON);
+      sat_dyn.SetTimeStep(dt);
+      std::vector<Vec6> sat_ci(n_sat_);
+      for (int j = 0; j < n_sat_; ++j)
+        sat_ci[j] = (Vec6() << cfg_.satellites[j].r0_m.cast<Real>(),
+                     cfg_.satellites[j].v0_mps.cast<Real>())
+                        .finished();
+      for (int k = 0; k < N_; ++k) {
+        Real tk = t0_tdb + k * dt;
+        if (k > 0) {
+          Real tkm1 = t0_tdb + (k - 1) * dt;
+          for (int j = 0; j < n_sat_; ++j) {
+            Cart6 st = sat_dyn.Propagate(Cart6(sat_ci[j], Frame::MOON_CI), tkm1, tk, nullptr);
+            sat_ci[j] = st.head(6);
+          }
+        }
+        for (int j = 0; j < n_sat_; ++j) {
+          Vec6 rv_pa = ConvertFrame(tk, sat_ci[j], Frame::MOON_CI, Frame::MOON_PA);
+          sat_pa_[k][j] = rv_pa.head(3).cast<double>();
+        }
       }
     }
 
@@ -411,7 +442,8 @@ namespace lupnt {
     res_.rover_track_enu_truth = MatXd::Zero(N_, 2);
     res_.rover_track_enu_est = MatXd::Zero(N_, 2);
     res_.rover_alt_truth = VecXd::Zero(N_);
-    for (int j = 0; j < n_sat_; ++j) res_.satellite_names.push_back(cfg_.satellites[j].name);
+    for (int j = 0; j < n_sat_; ++j)
+      res_.satellite_names.push_back(nav_ ? nav_->SatelliteName(j) : cfg_.satellites[j].name);
 
     // Epoch 0: seed the host agent's truth state and log the initial estimate/covariance.
     auto* rover = dynamic_cast<AgentWithDynamics*>(agent_);
