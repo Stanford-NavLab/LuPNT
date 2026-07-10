@@ -22,7 +22,6 @@ dependencies:
   - pytest
   - munch
   - nbformat
-  - opencv
   - compilers
 
   # Development tools
@@ -33,30 +32,15 @@ dependencies:
   - pip
   - pip:
     # Deep learning and ML
-    - torch
-    - torchvision
-    - pytorch-lightning
-    - pytorch-msssim
-    - transformers
-    - timm
-    - segmentation-models-pytorch
-    - kornia
 
     # Computer vision and 3D
     - bpy==4.5.11
-    - open3d-python
-    - gsplat
-    - viser
-    - nerfstudio
 
     # Optimization and math
     - cvxpy
-    - opt-einsum
     - mathutils
 
     # Data processing
-    - rasterio
-    - plyfile
     - requests
 
     # Visualization

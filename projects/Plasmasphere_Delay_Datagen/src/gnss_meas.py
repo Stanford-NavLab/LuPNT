@@ -10,8 +10,8 @@ import os
 import requests
 from datetime import datetime
 import copy
-from pylupnt.interfaces.gnss_file_loader import SP3Loader, BRDCLoader
-from pylupnt.interfaces.gnss_utils import datetime_to_tai
+from src.interfaces.gnss_file_loader import SP3Loader, BRDCLoader
+from src.interfaces.gnss_utils import datetime_to_tai
 from pylupnt import Logger
 
 

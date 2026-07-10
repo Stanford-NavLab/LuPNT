@@ -5,7 +5,7 @@ Example 8: Inter-Satellite-Link + GNSS ODTS
 
 A five-satellite lunar relay/navigation constellation (NASA LCRNS Reference
 Constellation 3.1) where one hub satellite maintains a two-way crosslink to each
-of the other four. ``IslOdtsSimulation`` propagates every satellite's truth
+of the other four. The ``IslOdtsCoordinatorApp`` propagates every satellite's truth
 trajectory, simulates two-way range/Doppler crosslink measurements, and runs an
 onboard Schmidt-EKF on the hub — estimating its own ``[r, v, clock_bias,
 clock_drift]`` while carrying each neighbour as a consider state. Optional

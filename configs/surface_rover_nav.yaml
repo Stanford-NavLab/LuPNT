@@ -1,0 +1,80 @@
+# Agent-based lunar surface-rover navigation scenario (Example 10).
+#
+# A rover near the lunar south pole fuses a full strapdown IMU (accelerometer +
+# gyroscope, Kalibr noise model), LCRNS / LANS pseudoranges from a five-satellite
+# relay constellation, and a LOLA-DEM altitude constraint, with the IMU biases
+# estimated online. The rover is a thin `Rover` agent hosting a `SurfaceRoverNavApp`
+# (an error-state strapdown-INS EKF). The app precomputes the driving-arc truth
+# trajectory and synthesizes the measurements each epoch from the shared `World`
+# (terrain, gravity, ENU tangent frame), then runs the predict/update cycle.
+#
+# The shared physical environment lives in the top-level `world:` block: frame,
+# point-mass gravity, and the LOLA DEM site (loaded / cached from NASA PGDA).
+
+name: surface_rover_nav
+epoch: "2027-03-01T00:00:00"
+duration: "00:30:00"          # 1800 s (matches application.duration_s)
+log_level: INFO
+
+# ---- Shared, read-only environment -------------------------------------------
+world:
+  frame: MOON_PA
+  gravity: { body: MOON }
+  dem:
+    site_lat_deg: -89.45      # Site01 "Connecting Ridge" near the south pole
+    site_lon_deg: 222.8
+    half_width_m: 4000.0
+    max_res_m: 20.0
+
+agents:
+  Rover:
+    class: Rover
+    application:
+      class: SurfaceRoverNavApp
+      seed: 42
+      start_epoch_utc: "2027-03-01T00:00:00"
+      duration_s: 1800.0
+      dt_s: 1.0
+      dem_max_res_m: 20.0       # terrain-slope FD step; must match world.dem.max_res_m
+
+      # Rover truth path (local ENU tangent plane about the DEM site center)
+      rover_start_east_m: 0.0
+      rover_start_north_m: -250.0
+      rover_speed_mps: 2.0
+      rover_heading_deg: 0.0
+      rover_turn_rate_dps: 0.6
+      rover_clock_bias_s: 1.0e-6
+      rover_clock_drift_sps: 1.0e-11
+
+      # IMU (Kalibr noise model), truth biases
+      accel_noise_density: 3.4e-4
+      accel_bias_rw: 1.0e-4
+      gyro_noise_density: 3.4e-6
+      gyro_bias_rw: 1.0e-6
+      accel_bias0: 1.0e-2
+      gyro_bias0: 5.0e-4
+
+      # LCRNS / LANS pseudoranges
+      elevation_mask_deg: 5.0
+      pseudorange_sigma_m: 1.0
+      sise_m: 3.0
+
+      # Filter initialization & tuning
+      init_pos_sigma_m: 50.0
+      init_vel_sigma_mps: 0.1
+      init_att_sigma_deg: 2.0
+      init_accel_bias_sigma: 2.0e-2
+      init_gyro_bias_sigma: 1.0e-3
+      init_clock_bias_sigma_s: 1.0e-6
+      init_clock_drift_sigma_sps: 1.0e-9
+      dem_sigma_m: 5.0
+      filter_bias_rw_scale: 3.0
+      enable_dem_constraint: true
+
+      # NASA LCRNS Reference Constellation 3.1 initial states, Frame.MOON_CI [m], [m/s]
+      satellites:
+        - { name: SV-1, r0_m: [-198931.445, 386023.132, 3458355.412], v0_mps: [-1539.867, 22.243, -91.059] }
+        - { name: SV-2, r0_m: [1089980.598, -2260918.271, -18984562.823], v0_mps: [280.301, -4.049, 16.575] }
+        - { name: SV-3, r0_m: [9187665.852, -260470.721, -8543222.759], v0_mps: [273.629, 417.588, -313.828] }
+        - { name: SV-4, r0_m: [6484019.002, 14329883.921, -7966345.594], v0_mps: [-258.433, 33.951, 235.264] }
+        - { name: SV-5, r0_m: [-5074242.314, 14473022.751, -8638530.033], v0_mps: [-229.931, -26.926, -264.381] }

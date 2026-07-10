@@ -340,6 +340,6 @@ Model Boundaries
   models fit the supplied epochs directly.
 * Almanac velocity is analytic two-body (not finite-differenced); ephemeris
   velocity is the analytic derivative of the Chebyshev/Fourier bases.
-* The bit-budget/quantization analysis lives in ``EphemerisSimulation``, not
+* The bit-budget/quantization analysis lives in ``EphemerisApp``, not
   in the model classes; ``EphemerisGenApp`` stores unquantized
   double-precision parameters.

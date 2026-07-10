@@ -10,9 +10,14 @@
 //   * Almanac            -- a coarse, long-validity model (Algorithm 2 of
 //     Iiyama & Gao) for whole-constellation acquisition.
 //
-// `EphemerisSimulation` fits both models over a sweep of fitting-window lengths,
-// evaluating RMS / 95th-percentile RTN position and velocity error and the
-// minimum broadcast bit budget needed to stay within a position tolerance.
+// The scenario is built from a single YAML file: a thin `EphemerisManager`
+// coordinator agent hosts an `EphemerisApp`, and the shared environment (frame +
+// a truth force model) lives in the top-level `world:` block. `Simulation` runs
+// the event loop; the app's single scheduled step propagates the truth trajectory
+// and, for each fitting-window length, fits both models over several windows,
+// evaluating RMS / 95th-percentile RTN position and velocity error and the minimum
+// broadcast bit budget needed to stay within a position tolerance. The per-window
+// results are read off the app's `GetResults()`.
 
 #include <iomanip>
 #include <iostream>
@@ -34,34 +39,20 @@ static void PrintTable(const std::string& title, const std::vector<EphemerisWind
   }
 }
 
-int main() {
-  EphemerisSimulationConfig config;
-  config.start_epoch_utc = "2027-01-01T00:00:00";
-  config.duration_days = 3.0;
-  config.sample_dt_s = 60.0;
+int main(int argc, char** argv) {
+  const std::string config_path = argc > 1 ? argv[1] : "configs/ephemeris.yaml";
 
-  // Truth force model: high-fidelity 20x20 lunar field + Earth/Sun third bodies.
-  config.moon_gravity_degree = 20;
-  config.moon_gravity_order = 20;
-  config.include_earth = true;
-  config.include_sun = true;
-
-  // Fit and broadcast in the rotating Moon principal-axis frame (per Iiyama & Gao).
-  config.output_frame = Frame::MOON_PA;
-
-  // Sweep of fitting-window lengths and the required position accuracy.
-  config.fit_window_minutes = {60.0, 120.0, 240.0, 480.0};
-  config.num_windows = 6;
-  config.datasize_precision_m = 0.01;
-
-  EphemerisSimulation sim(config);
-  sim.Setup();
+  Config cfg = YAML::LoadFile(config_path);
+  Simulation sim(cfg);
   sim.Run();
+  auto* app = dynamic_cast<EphemerisApp*>(sim.GetAgent("EphemerisManager")->GetApplication().get());
+  LUPNT_CHECK(app, "EphemerisManager agent has no EphemerisApp", "ex9");
+  const EphemerisResults& res = app->GetResults();
 
-  std::cout << "Ephemeris/Almanac fit study over " << config.duration_days << " days, "
-            << "output frame MOON_PA\n";
-  PrintTable("CartesianEphemeris (precise, short-validity):", sim.GetCartesianResults());
-  PrintTable("Almanac (coarse, long-validity):", sim.GetAlmanacResults());
+  std::cout << "Ephemeris/Almanac fit study over " << app->GetConfig().duration_days << " days, "
+            << "output frame " << enum_name(app->GetConfig().output_frame) << "\n";
+  PrintTable("CartesianEphemeris (precise, short-validity):", res.cartesian_results);
+  PrintTable("Almanac (coarse, long-validity):", res.almanac_results);
 
   return 0;
 }

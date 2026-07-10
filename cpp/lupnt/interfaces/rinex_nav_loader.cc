@@ -9,11 +9,17 @@
  */
 #include "lupnt/interfaces/rinex_nav_loader.h"
 
+#include <fmt/format.h>
+
 #include <algorithm>
+#include <array>
+#include <cctype>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <system_error>
 
 #include "lupnt/conversions/time_conversions.h"
 #include "lupnt/core/error.h"
@@ -54,6 +60,147 @@ namespace lupnt {
       gps_week = std::floor(delta_days / 7.0);
       sec_week = delta - gps_week * 7.0 * 86400.0;
     }
+
+    // --- BRDC download helpers (mirror Sp3Loader::DownloadFileForEpoch) --------
+
+    std::string ShellQuote(const std::string& s) {
+      std::string out = "'";
+      for (char c : s) {
+        if (c == '\'') {
+          out += "'\\''";
+        } else {
+          out += c;
+        }
+      }
+      out += "'";
+      return out;
+    }
+
+    bool IsTruthyEnv(const char* value) {
+      if (value == nullptr) return false;
+      std::string s(value);
+      std::transform(s.begin(), s.end(), s.begin(),
+                     [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+      return !(s.empty() || s == "0" || s == "false" || s == "off" || s == "no");
+    }
+
+    bool IsBrdcDownloadDisabled() { return IsTruthyEnv(std::getenv("LUPNT_SKIP_BRDC_DOWNLOAD")); }
+
+    bool RunShellCommand(const std::string& cmd) { return std::system(cmd.c_str()) == 0; }
+
+    bool LooksLikeHtml(const std::filesystem::path& filepath) {
+      std::ifstream file(filepath, std::ios::binary);
+      if (!file.is_open()) return false;
+
+      std::string head(256, '\0');
+      file.read(head.data(), static_cast<std::streamsize>(head.size()));
+      head.resize(static_cast<size_t>(file.gcount()));
+
+      auto first = std::find_if_not(head.begin(), head.end(),
+                                    [](unsigned char c) { return std::isspace(c) != 0; });
+      std::string trimmed(first, head.end());
+      std::transform(trimmed.begin(), trimmed.end(), trimmed.begin(),
+                     [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+      return trimmed.rfind("<!doctype html", 0) == 0 || trimmed.rfind("<html", 0) == 0;
+    }
+
+    bool DownloadToFileEarthdata(const std::string& url, const std::filesystem::path& dest_path) {
+      if (IsBrdcDownloadDisabled()) return false;
+
+      std::filesystem::path tmp_path = dest_path;
+      tmp_path += ".part";
+      std::error_code ec;
+      std::filesystem::remove(tmp_path, ec);
+      std::filesystem::create_directories(dest_path.parent_path(), ec);
+
+      const bool has_env_auth = std::getenv("EARTHDATA_USERNAME") != nullptr
+                                && std::getenv("EARTHDATA_PASSWORD") != nullptr;
+      std::string auth_arg;
+      if (has_env_auth) auth_arg = "-u \"$EARTHDATA_USERNAME:$EARTHDATA_PASSWORD\" ";
+
+      std::string cmd = fmt::format(
+          "curl -fsSL --netrc-optional {}--connect-timeout 10 --max-time 600 -o {} {}", auth_arg,
+          ShellQuote(tmp_path.string()), ShellQuote(url));
+
+      bool ok = RunShellCommand(cmd) && std::filesystem::exists(tmp_path)
+                && std::filesystem::file_size(tmp_path) > 0;
+      if (!ok) {
+        std::filesystem::remove(tmp_path, ec);
+        return false;
+      }
+      std::filesystem::rename(tmp_path, dest_path, ec);
+      if (ec) {
+        ec.clear();
+        std::filesystem::copy_file(tmp_path, dest_path,
+                                   std::filesystem::copy_options::overwrite_existing, ec);
+        std::filesystem::remove(tmp_path, ec);
+      }
+      return !ec;
+    }
+
+    void GunzipToFile(const std::filesystem::path& gzip_path,
+                      const std::filesystem::path& dest_path) {
+      std::filesystem::path tmp_path = dest_path;
+      tmp_path += ".part";
+      std::error_code ec;
+      std::filesystem::remove(tmp_path, ec);
+
+      std::string cmd = fmt::format("gzip -dc {} > {}", ShellQuote(gzip_path.string()),
+                                    ShellQuote(tmp_path.string()));
+      LUPNT_CHECK(RunShellCommand(cmd) && std::filesystem::exists(tmp_path)
+                      && std::filesystem::file_size(tmp_path) > 0,
+                  "Failed to decompress BRDC gzip file: " + gzip_path.string(), "RinexNavLoader");
+
+      std::filesystem::rename(tmp_path, dest_path, ec);
+      if (ec) {
+        ec.clear();
+        std::filesystem::copy_file(tmp_path, dest_path,
+                                   std::filesystem::copy_options::overwrite_existing, ec);
+        std::filesystem::remove(tmp_path, ec);
+      }
+      LUPNT_CHECK(!ec, "Failed to write decompressed BRDC file: " + dest_path.string(),
+                  "RinexNavLoader");
+    }
+
+    int DayOfYear(int year, int month, int day) {
+      static constexpr std::array<int, 12> kMonthStartsCommon
+          = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+      bool leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+      return kMonthStartsCommon.at(static_cast<size_t>(month - 1)) + day
+             + (leap && month > 2 ? 1 : 0);
+    }
+
+    struct BrdcProductInfo {
+      int year = 0;
+      int doy = 0;
+      std::string filename;         // uncompressed ".rnx"
+      std::string zipped_filename;  // ".rnx.gz"
+      std::string url_primary;      // .../daily/YYYY/DDD/YYp/<gz>
+      std::string url_fallback;     // .../daily/YYYY/brdc/<gz>
+    };
+
+    BrdcProductInfo BuildBrdcProductInfo(Real epoch, Time time_scale) {
+      // Derive the calendar day the same way Sp3Loader does (via GPS time), so
+      // SP3 and BRDC pick the same daily product for a given query epoch.
+      const Real t_gps = ConvertTime(epoch, time_scale, Time::GPS);
+      auto [year, month, day, hour, minute, second] = MjdToGregorian(TimeToMjd(t_gps));
+      (void)hour;
+      (void)minute;
+      (void)second;
+
+      BrdcProductInfo info;
+      info.year = year;
+      info.doy = DayOfYear(year, month, day);
+      const std::string yy = fmt::format("{:02d}", info.year % 100);
+
+      info.filename = fmt::format("BRDC00IGS_R_{:04d}{:03d}0000_01D_MN.rnx", info.year, info.doy);
+      info.zipped_filename = info.filename + ".gz";
+      const std::string base = "https://cddis.nasa.gov/archive/gnss/data/daily";
+      info.url_primary = fmt::format("{}/{:04d}/{:03d}/{}p/{}", base, info.year, info.doy, yy,
+                                     info.zipped_filename);
+      info.url_fallback = fmt::format("{}/{:04d}/brdc/{}", base, info.year, info.zipped_filename);
+      return info;
+    }
   }  // namespace
 
   // Constructors ***************************************************************
@@ -62,6 +209,58 @@ namespace lupnt {
 
   RinexNavLoader::RinexNavLoader(const std::vector<std::filesystem::path>& filepaths) {
     for (const auto& filepath : filepaths) LoadFile(filepath);
+  }
+
+  // Download helpers ***********************************************************
+
+  std::string RinexNavLoader::FilenameForEpoch(Real epoch, Time time_scale) {
+    return BuildBrdcProductInfo(epoch, time_scale).filename;
+  }
+
+  std::filesystem::path RinexNavLoader::DownloadFileForEpoch(
+      Real epoch, Time time_scale, const std::filesystem::path& cache_dir) {
+    const BrdcProductInfo info = BuildBrdcProductInfo(epoch, time_scale);
+    const std::filesystem::path brdc_dir
+        = cache_dir.empty() ? (GetOutputDir("gnss_files") / "brdc") : cache_dir;
+    const std::filesystem::path rnx_path = brdc_dir / info.filename;
+
+    if (std::filesystem::exists(rnx_path)) return rnx_path;
+
+    const std::filesystem::path gzip_path = brdc_dir / info.zipped_filename;
+    if (!std::filesystem::exists(gzip_path)) {
+      // CDDIS hosts BRDC under two layouts; try the dated one first, then the
+      // per-year `brdc/` alias (mirrors BRDCLoader.load_brdc).
+      bool ok = DownloadToFileEarthdata(info.url_primary, gzip_path);
+      if (ok && LooksLikeHtml(gzip_path)) {
+        std::error_code ec;
+        std::filesystem::remove(gzip_path, ec);
+        ok = false;
+      }
+      if (!ok) {
+        std::error_code ec;
+        std::filesystem::remove(gzip_path, ec);
+        ok = DownloadToFileEarthdata(info.url_fallback, gzip_path);
+      }
+      LUPNT_CHECK(ok,
+                  "Failed to download BRDC file from CDDIS. Configure Earthdata credentials with "
+                  "~/.netrc or EARTHDATA_USERNAME/EARTHDATA_PASSWORD, then retry. URLs: "
+                      + info.url_primary + " , " + info.url_fallback,
+                  "RinexNavLoader");
+    }
+
+    if (LooksLikeHtml(gzip_path)) {
+      std::error_code ec;
+      std::filesystem::remove(gzip_path, ec);
+      LUPNT_CHECK(false,
+                  "CDDIS returned an Earthdata Login HTML page instead of the requested BRDC file. "
+                  "Configure Earthdata credentials with ~/.netrc or EARTHDATA_USERNAME/"
+                  "EARTHDATA_PASSWORD, then retry. URL: "
+                      + info.url_primary,
+                  "RinexNavLoader");
+    }
+
+    GunzipToFile(gzip_path, rnx_path);
+    return rnx_path;
   }
 
   // Loading ********************************************************************

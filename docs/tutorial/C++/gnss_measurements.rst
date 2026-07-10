@@ -199,23 +199,3 @@ observables:
        Real plasma_m = channel.ionosphere_plasma_delay_m;
      }
 
-End-to-End Project Script
--------------------------------------------------------------------
-
-The release-facing GNSS filtering example is under
-``projects/GNSS_Filtering`` and is implemented by the core
-``LunarGnssODTSSimulation`` under ``cpp/lupnt/simulations/LunarGnssODTS``. It
-builds the LuPNT simulation executable, precomputes links, optionally
-precomputes GCPM delays, runs the Monte Carlo filter, and generates plots:
-
-.. code-block:: bash
-
-   pixi run run-gnss-pipeline
-
-Skip the delay batch only when the configured delay table already exists, or
-when using a config with ``plasma.simulate_truth: false``:
-
-.. code-block:: bash
-
-   pixi run run-gnss-pipeline --skip-delays
-   }

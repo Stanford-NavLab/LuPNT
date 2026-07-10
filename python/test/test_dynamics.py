@@ -1,212 +1,98 @@
-# import pylupnt as pnt
-# import numpy as np
-# import pytest
+"""Unit tests for the `pylupnt` orbit-dynamics bindings:
+`KeplerianDynamics`, `CartesianTwoBodyDynamics`, `JToCartTwoBodyDynamics`,
+`J2KeplerianDynamics`.
+
+Propagation over a time grid uses the ``propagate(x0, tfs)`` overload, where
+``tfs`` is the vector of absolute epochs (its first element is the start).
+"""
+
+import numpy as np
+import pylupnt as pnt
+import pytest
+
+ABS_TOL = 1e-6
+GM = pnt.GM_MOON
+R_BODY = pnt.R_MOON
+
+# A moderately eccentric lunar orbit: [a, e, i, RAAN, argp, M] (SI + radians).
+COE0 = np.array([5740e3, 0.3, np.radians(54.9), 0.0, np.radians(86.3), 0.0])
+
+T0 = pnt.convert_time(pnt.gregorian_to_time(2026, 1, 1, 0, 0, 0), pnt.Time.TDB, pnt.Time.TAI)
+TFS = T0 + np.linspace(0.0, 3 * pnt.SECS_HOUR, 5)
 
 
-# ABS_TOL = 1e-6
-# REL_TOL = 1e-6
+def _specific_energy(rv):
+    return 0.5 * np.dot(rv[3:], rv[3:]) - GM / np.linalg.norm(rv[:3])
 
 
-# def get_classical_oe():
-#     a = 5740e3  # [m] Semi-major axis
-#     e = 0.58  # [-] Eccentricity
-#     i = 54.9 * pnt.RAD  # [rad] Inclination
-#     O = 0.00 * pnt.RAD  # [rad] Right Ascension of Ascending Node
-#     w = 86.3 * pnt.RAD  # [rad] Argument of Perigee
-#     M = 0.00 * pnt.RAD  # [rad] True Anomaly
-
-#     coe = np.array([a, e, i, O, w, M])
-#     return coe
+# ---------------------------------------------------------------------------
+# Keplerian vs Cartesian two-body agreement
+# ---------------------------------------------------------------------------
 
 
-# def get_classical_oe_mat(n):
-#     coe = get_classical_oe()
-#     coe_mat = np.tile(coe, (n, 1))
-#     coe_mat[:, 5] = np.linspace(0, 2 * np.pi, n)
-#     return coe_mat
+def test_keplerian_matches_cartesian_two_body():
+    rv0 = np.asarray(pnt.classical_to_cart(COE0, GM))
+
+    kep = pnt.KeplerianDynamics(GM)
+    cart = pnt.CartesianTwoBodyDynamics(GM)
+    cart.set_time_step(10.0)
+
+    coe_prop = np.asarray(kep.propagate(COE0, TFS))
+    rv_prop = np.asarray(cart.propagate(rv0, TFS))
+    assert coe_prop.shape == (len(TFS), 6)
+    assert rv_prop.shape == (len(TFS), 6)
+
+    # Cartesian RK4 two-body, converted back to elements, matches the analytic
+    # Keplerian propagation (semi-major axis to sub-mm over the arc).
+    coe_from_rv = np.asarray(pnt.cart_to_classical(rv_prop, GM))
+    np.testing.assert_allclose(coe_from_rv[:, 0], coe_prop[:, 0], atol=1e-3)
+    np.testing.assert_allclose(coe_from_rv[:, 1], coe_prop[:, 1], atol=1e-6)
+    np.testing.assert_allclose(coe_from_rv[:, 2], coe_prop[:, 2], atol=1e-6)
 
 
-# def test_twobody_dynamics():
-#     # Constants
-#     N_sat = 3  # Number of satellites
-#     J2 = 0  # [-] J2 coefficient
-#     GM = pnt.GM_MOON  # [km^3/s^2] Gravitational parameter
-#     R_body = pnt.R_MOON  # [m] Radius of the central body
-
-#     # Time
-#     N_steps = 4
-#     dt = 10  # [s] Integration time step
-#     Dt = 6 * pnt.SECS_HOUR  # [s] Total integration time
-#     t0 = pnt.gregorian2time(2024, 6, 1, 12, 45, 30)  # [s] Start time, TAI
-#     tspan = np.linspace(0, Dt, N_steps)  # [s] Time span
-#     tfs = t0 + tspan  # [s] Times, TAI
-
-#     # Dynamics
-#     dyn_kep = pnt.KeplerianDynamics(GM)
-#     dyn_cart = pnt.CartesianTwoBodyDynamics(GM, pnt.IntegratorType.RK4)
-#     dyn_cart_j2 = pnt.JToCartTwoBodyDynamics(GM, J2, R_body, pnt.IntegratorType.RK4)
-#     dyn_kep_j2 = pnt.J2KeplerianDynamics(GM, J2, R_body, pnt.IntegratorType.RK4)
-
-#     # Time step
-#     dyn_cart.set_time_step(dt)
-#     dyn_cart_j2.set_time_step(dt)
-#     dyn_kep_j2.set_time_step(dt)
-
-#     # Vec6
-#     coe_vec = get_classical_oe()
-#     rv_vec = pnt.classical_to_cart(coe_vec, GM)
-#     coe_j2_vec = coe_vec
-#     rv_j2_vec = rv_vec
-
-#     # States
-#     coe_state = pnt.ClassicalOE(coe_vec)
-#     coe_j2_state = pnt.ClassicalOE(coe_j2_vec)
-#     rv_state = pnt.CartesianState(rv_vec)
-#     rv_j2_state = pnt.CartesianState(rv_j2_vec)
-
-#     # ************************************************************************************************
-#     # Multple times
-#     # ************************************************************************************************
-
-#     # (N_steps x 6)
-#     for shape in ("array", "column", "row"):
-#         if shape == "array":
-#             coe_prop = dyn_kep.propagate(coe_vec, t0, tfs)
-#             coe_j2_prop = dyn_kep_j2.propagate(coe_j2_vec, t0, tfs)
-#             rv_prop = dyn_cart.propagate(rv_vec, t0, tfs)
-#             rv_j2_prop = dyn_cart_j2.propagate(rv_j2_vec, t0, tfs)
-#         elif shape == "column":
-#             coe_prop = dyn_kep.propagate(coe_vec.reshape(6, 1), t0, tfs)
-#             coe_j2_prop = dyn_kep_j2.propagate(coe_j2_vec.reshape(6, 1), t0, tfs)
-#             rv_prop = dyn_cart.propagate(rv_vec.reshape(6, 1), t0, tfs)
-#             rv_j2_prop = dyn_cart_j2.propagate(rv_j2_vec.reshape(6, 1), t0, tfs)
-#         elif shape == "row":
-#             coe_prop = dyn_kep.propagate(coe_vec.reshape(1, 6), t0, tfs)
-#             coe_j2_prop = dyn_kep_j2.propagate(coe_j2_vec.reshape(1, 6), t0, tfs)
-#             rv_prop = dyn_cart.propagate(rv_vec.reshape(1, 6), t0, tfs)
-#             rv_j2_prop = dyn_cart_j2.propagate(rv_j2_vec.reshape(1, 6), t0, tfs)
-
-#     coe_j2_prop[:, 5] = pnt.wrap2pi(coe_j2_prop[:, 5])
-
-#     # Check rows
-#     assert coe_prop.shape[0] == N_steps
-#     assert coe_j2_prop.shape[0] == N_steps
-#     assert rv_prop.shape[0] == N_steps
-#     assert rv_j2_prop.shape[0] == N_steps
-
-#     # Check values
-#     np.testing.assert_allclose(coe_prop, coe_j2_prop, atol=ABS_TOL)
-#     np.testing.assert_allclose(coe_prop, pnt.cart_to_classical(rv_prop, GM), atol=ABS_TOL)
-#     np.testing.assert_allclose(coe_prop, pnt.cart_to_classical(rv_j2_prop, GM), atol=ABS_TOL)
-
-#     # (N_steps x 6)
-#     coe_prop = dyn_kep.propagate(coe_vec, t0, tfs)
-#     coe_j2_prop = dyn_kep_j2.propagate(coe_j2_vec, t0, tfs)
-#     rv_prop = dyn_cart.propagate(rv_vec, t0, tfs)
-#     rv_j2_prop = dyn_cart_j2.propagate(rv_j2_vec, t0, tfs)
-
-#     coe_j2_prop[:, 5] = pnt.wrap2pi(coe_j2_prop[:, 5])
-
-#     # Check rows
-#     assert coe_prop.shape[0] == N_steps
-#     assert coe_j2_prop.shape[0] == N_steps
-#     assert rv_prop.shape[0] == N_steps
-#     assert rv_j2_prop.shape[0] == N_steps
-
-#     # Check values
-#     np.testing.assert_allclose(coe_prop, coe_j2_prop, atol=ABS_TOL)
-#     np.testing.assert_allclose(coe_prop, pnt.cart_to_classical(rv_prop, GM), atol=ABS_TOL)
-#     np.testing.assert_allclose(coe_prop, pnt.cart_to_classical(rv_j2_prop, GM), atol=ABS_TOL)
-
-#     # ************************************************************************************************
-#     # Multple vectors
-#     # ************************************************************************************************
-
-#     # (N_sat x 6)
-#     coe_prop_sat = get_classical_oe_mat(N_sat)
-#     coe_j2_prop_sat = coe_prop_sat
-#     rv_matx6 = pnt.classical_to_cart(coe_prop_sat, GM)
-#     rv_j2_prop_sat = pnt.classical_to_cart(coe_prop_sat, GM)
-
-#     # Check times
-#     np.testing.assert_allclose(t0, tfs[0], atol=ABS_TOL)
-
-#     # Propagate loop
-#     for i in range(1, N_steps):
-#         coe_prop_sat = dyn_kep.propagate(coe_prop_sat, tfs[i - 1], tfs[i])
-#         coe_j2_prop_sat = dyn_kep_j2.propagate(coe_j2_prop_sat, tfs[i - 1], tfs[i])
-#         rv_matx6 = dyn_cart.propagate(rv_matx6, tfs[i - 1], tfs[i])
-#         rv_j2_prop_sat = dyn_cart_j2.propagate(rv_j2_prop_sat, tfs[i - 1], tfs[i])
-
-#         coe_j2_prop_sat[:, 5] = pnt.wrap2pi(coe_j2_prop_sat[:, 5])
-
-#         # Check values
-#         np.testing.assert_allclose(coe_prop_sat[0], coe_prop[i], atol=ABS_TOL)
-#         np.testing.assert_allclose(coe_prop_sat, coe_j2_prop_sat, atol=ABS_TOL)
-#         np.testing.assert_allclose(coe_prop_sat, pnt.cart_to_classical(rv_matx6, GM), atol=ABS_TOL)
-#         np.testing.assert_allclose(
-#             coe_prop_sat, pnt.cart_to_classical(rv_j2_prop_sat, GM), atol=ABS_TOL
-#         )
-
-#     # ************************************************************************************************
-#     # Vectors
-#     # ************************************************************************************************
-
-#     for shape in ("array", "column", "row"):
-#         coe_vec_prop = coe_vec
-#         coe_j2_vec_prop = coe_j2_vec
-#         rv_vec_prop = rv_vec
-#         rv_j2_vec_prop = rv_j2_vec
-
-#         for i in range(1, N_steps):
-#             if shape == "array":
-#                 coe_vec_prop = dyn_kep.propagate(coe_vec_prop, tfs[i - 1], tfs[i])
-#                 coe_j2_vec_prop = dyn_kep_j2.propagate(coe_j2_vec_prop, tfs[i - 1], tfs[i])
-#                 rv_vec_prop = dyn_cart.propagate(rv_vec_prop, tfs[i - 1], tfs[i])
-#                 rv_j2_vec_prop = dyn_cart_j2.propagate(rv_j2_vec_prop, tfs[i - 1], tfs[i])
-#             elif shape == "column":
-#                 coe_vec_prop = dyn_kep.propagate(coe_vec_prop.reshape(6, 1), tfs[i - 1], tfs[i])
-#                 coe_j2_vec_prop = dyn_kep_j2.propagate(
-#                     coe_j2_vec_prop.reshape(6, 1), tfs[i - 1], tfs[i]
-#                 )
-#                 rv_vec_prop = dyn_cart.propagate(rv_vec_prop.reshape(6, 1), tfs[i - 1], tfs[i])
-#                 rv_j2_vec_prop = dyn_cart_j2.propagate(
-#                     rv_j2_vec_prop.reshape(6, 1), tfs[i - 1], tfs[i]
-#                 )
-#             elif shape == "row":
-#                 coe_vec_prop = dyn_kep.propagate(coe_vec_prop.reshape(1, 6), tfs[i - 1], tfs[i])
-#                 coe_j2_vec_prop = dyn_kep_j2.propagate(
-#                     coe_j2_vec_prop.reshape(1, 6), tfs[i - 1], tfs[i]
-#                 )
-#                 rv_vec_prop = dyn_cart.propagate(rv_vec_prop.reshape(1, 6), tfs[i - 1], tfs[i])
-#                 rv_j2_vec_prop = dyn_cart_j2.propagate(
-#                     rv_j2_vec_prop.reshape(1, 6), tfs[i - 1], tfs[i]
-#                 )
-
-#             # coe_state = pnt.KeplerianDynamics.propagate(coe_state, tfs[i - 1], tfs[i])
-#             # coe_j2_state = pnt.J2KeplerianDynamics.propagate(
-#             #     coe_j2_state, tfs[i - 1], tfs[i]
-#             # )
-#             # rv_state = pnt.CartesianTwoBodyDynamics.propagate(
-#             #     rv_state, tfs[i - 1], tfs[i]
-#             # )
-#             # rv_j2_state = pnt.JToCartTwoBodyDynamics.propagate(
-#             #     rv_j2_state, tfs[i - 1], tfs[i]
-#             # )
-
-#             coe_j2_vec_prop[5] = pnt.wrap2pi(coe_j2_vec_prop[5])
-
-#             # Check values
-#             np.testing.assert_allclose(coe_vec_prop, coe_prop[i], atol=ABS_TOL)
-#             np.testing.assert_allclose(coe_vec_prop, coe_j2_vec_prop, atol=ABS_TOL)
-#             np.testing.assert_allclose(
-#                 coe_vec_prop, pnt.cart_to_classical(rv_vec_prop, GM), atol=ABS_TOL
-#             )
-#             np.testing.assert_allclose(
-#                 coe_vec_prop, pnt.cart_to_classical(rv_j2_vec_prop, GM), atol=ABS_TOL
-#             )
+def test_two_body_conserves_shape_elements():
+    kep = pnt.KeplerianDynamics(GM)
+    coe_prop = np.asarray(kep.propagate(COE0, TFS))
+    # a, e, i, RAAN, argp are constant under unperturbed two-body motion.
+    for col in range(5):
+        np.testing.assert_allclose(coe_prop[:, col], COE0[col], atol=1e-6)
 
 
-# if __name__ == "__main__":
-#     np.set_printoptions(precision=3, suppress=True)
-#     test_twobody_dynamics()
+def test_cartesian_two_body_conserves_energy():
+    rv0 = np.asarray(pnt.classical_to_cart(COE0, GM))
+    cart = pnt.CartesianTwoBodyDynamics(GM)
+    cart.set_time_step(5.0)
+    rv_prop = np.asarray(cart.propagate(rv0, TFS))
+    e0 = _specific_energy(rv0)
+    for rv in rv_prop:
+        assert abs(_specific_energy(rv) - e0) / abs(e0) < 1e-8
+
+
+# ---------------------------------------------------------------------------
+# J2 dynamics
+# ---------------------------------------------------------------------------
+
+
+def test_j2_zero_reduces_to_two_body():
+    rv0 = np.asarray(pnt.classical_to_cart(COE0, GM))
+    cart = pnt.CartesianTwoBodyDynamics(GM)
+    cart.set_time_step(10.0)
+    j2 = pnt.JToCartTwoBodyDynamics(GM, 0.0, R_BODY)
+    j2.set_time_step(10.0)
+
+    rv_two_body = np.asarray(cart.propagate(rv0, TFS))
+    rv_j2_zero = np.asarray(j2.propagate(rv0, TFS))
+    np.testing.assert_allclose(rv_j2_zero, rv_two_body, atol=1e-3)
+
+
+def test_j2_nonzero_perturbs_orbit():
+    rv0 = np.asarray(pnt.classical_to_cart(COE0, GM))
+    cart = pnt.CartesianTwoBodyDynamics(GM)
+    cart.set_time_step(10.0)
+    j2 = pnt.JToCartTwoBodyDynamics(GM, 2.03e-4, R_BODY)  # lunar J2 ~2e-4
+    j2.set_time_step(10.0)
+
+    rv_two_body = np.asarray(cart.propagate(rv0, TFS))
+    rv_j2 = np.asarray(j2.propagate(rv0, TFS))
+    # A non-zero J2 measurably deflects the trajectory by the end of the arc.
+    assert np.linalg.norm(rv_j2[-1, :3] - rv_two_body[-1, :3]) > 1.0

@@ -15,12 +15,12 @@
  * `lupnt::Sp3Loader` (`lupnt/interfaces/sp3_loader.h`),
  * `lupnt::AntexLoader` (`lupnt/interfaces/antex_loader.h`), and
  * `lupnt::RinexNavLoader` (`lupnt/interfaces/rinex_nav_loader.h`) to Python.
- * These are the C++ counterparts of `pylupnt.interfaces.gnss_file_loader`
- * (`SP3Loader`/`BRDCLoader`) and `pylupnt.interfaces.antex_file_loader`
- * (`ANTEXLoader`); together they implement the SP3/ANTEX phase-center-offset
- * (PCO) correction workflow demonstrated in
- * `projects/Plasmasphere_Delay_Datagen/generate_antenna_pco.ipynb` and used
- * by `GnssConstellation::SetupSatelliteStatesFromFiles`.
+ * These are the C++ counterparts of the legacy Python SP3/BRDC/ANTEX loaders
+ * (`SP3Loader`/`BRDCLoader`/`ANTEXLoader`, now living under
+ * `projects/Plasmasphere_Delay_Datagen/src/interfaces/`); together they
+ * implement the SP3/ANTEX phase-center-offset (PCO) correction workflow
+ * demonstrated in `projects/Plasmasphere_Delay_Datagen/generate_antenna_pco.ipynb`
+ * and used by `GnssConstellation::SetupSatelliteStatesFromFiles`.
  *
  * Also registers the `GnssConst` / `GnssFreq` enums (`lupnt/devices/gnss_device.h`)
  * needed as parameter/return types by `AntexLoader::GetPco`.
@@ -245,7 +245,28 @@ void InitGnss(py::module& m) {
       .def("get_pos_vel", &Sp3Loader::GetPosVel, py::arg("sat_id"), py::arg("t_tai"),
            "Interpolated ECEF position/velocity [m, m/s] only")
       .def("get_time_span", &Sp3Loader::GetTimeSpan, py::arg("sat_id"),
-           "Time span [TAI seconds] covered by the loaded ephemeris for `sat_id`: (t_min, t_max)");
+           "Time span [TAI seconds] covered by the loaded ephemeris for `sat_id`: (t_min, t_max)")
+      .def_static(
+          "download_file_for_epoch",
+          [](Real epoch, Time time_scale, const std::string& cache_dir) {
+            return Sp3Loader::DownloadFileForEpoch(epoch, time_scale,
+                                                   cache_dir.empty()
+                                                       ? std::filesystem::path()
+                                                       : std::filesystem::path(cache_dir))
+                .string();
+          },
+          py::arg("epoch"), py::arg("time_scale") = Time::UTC, py::arg("cache_dir") = std::string(),
+          "Download/cache the COD MGEX final SP3 product covering `epoch` (in `time_scale` "
+          "seconds) "
+          "from NASA CDDIS and return the local uncompressed .SP3 path. Needs Earthdata "
+          "credentials "
+          "(~/.netrc or EARTHDATA_USERNAME/EARTHDATA_PASSWORD). Cache defaults to "
+          "output/gnss_files/sp3.")
+      .def_static("filename_for_epoch", &Sp3Loader::FilenameForEpoch, py::arg("epoch"),
+                  py::arg("time_scale") = Time::UTC,
+                  "SP3 filename covering `epoch`, e.g. 'COD0MGXFIN_20260140000_01D_05M_ORB.SP3'")
+      .def_static("url_for_epoch", &Sp3Loader::UrlForEpoch, py::arg("epoch"),
+                  py::arg("time_scale") = Time::UTC, "CDDIS download URL for the SP3 product");
 
   // ---- AntexLoader ---------------------------------------------------------
 
@@ -328,7 +349,24 @@ void InitGnss(py::module& m) {
           "via Keplerian propagation of the closest navigation message; "
           "returns (rv_ecef, clock_corr_s)")
       .def("get_pos_vel", &RinexNavLoader::GetPosVel, py::arg("sat_id"), py::arg("t_tai"),
-           "Broadcast-ephemeris ECEF position/velocity [m, m/s] only");
+           "Broadcast-ephemeris ECEF position/velocity [m, m/s] only")
+      .def_static(
+          "download_file_for_epoch",
+          [](Real epoch, Time time_scale, const std::string& cache_dir) {
+            return RinexNavLoader::DownloadFileForEpoch(epoch, time_scale,
+                                                        cache_dir.empty()
+                                                            ? std::filesystem::path()
+                                                            : std::filesystem::path(cache_dir))
+                .string();
+          },
+          py::arg("epoch"), py::arg("time_scale") = Time::UTC, py::arg("cache_dir") = std::string(),
+          "Download/cache the BRDC00IGS broadcast-ephemeris RINEX nav file covering `epoch` "
+          "(in `time_scale` seconds) from NASA CDDIS and return the local uncompressed .rnx path. "
+          "Needs Earthdata credentials (~/.netrc or EARTHDATA_USERNAME/EARTHDATA_PASSWORD). "
+          "Cache defaults to output/gnss_files/brdc.")
+      .def_static("filename_for_epoch", &RinexNavLoader::FilenameForEpoch, py::arg("epoch"),
+                  py::arg("time_scale") = Time::UTC,
+                  "BRDC filename covering `epoch`, e.g. 'BRDC00IGS_R_20260140000_01D_MN.rnx'");
 
   // ---- GnssReceiverParams ----------------------------------------------------
 

@@ -63,6 +63,9 @@ __MACOSX/
 
 # Data
 LuPNT_data/*
+*/LuPNT_data/*
+*/*/LuPNT_data/*
+*/*/*/LuPNT_data/*
 projects/Constellation_Optimization/data/*
 projects/Constellation_Optimization/figs/*
 projects/Ephemeris/data/*

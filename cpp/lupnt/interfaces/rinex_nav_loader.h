@@ -32,6 +32,7 @@
 #include <string>
 #include <vector>
 
+#include "lupnt/core/constants.h"
 #include "lupnt/core/definitions.h"
 
 namespace lupnt {
@@ -53,6 +54,24 @@ namespace lupnt {
 
     /// @brief Parse an additional RINEX nav file and merge its messages in.
     void LoadFile(const std::filesystem::path& filepath);
+
+    /// @brief Build the CDDIS BRDC filename covering `epoch`, e.g.
+    /// `BRDC00IGS_R_20260140000_01D_MN.rnx` (uncompressed).
+    static std::string FilenameForEpoch(Real epoch, Time time_scale = Time::UTC);
+
+    /// @brief Download/cache the multi-GNSS broadcast-ephemeris ("BRDC") RINEX
+    /// nav file covering `epoch`, then return the uncompressed `.rnx` path.
+    ///
+    /// The default cache directory is `GetOutputDir("gnss_files") / "brdc"`.
+    /// Mirrors `Sp3Loader::DownloadFileForEpoch`: downloads use
+    /// `curl -L --netrc-optional`, so credentials can be supplied via `~/.netrc`
+    /// or the `EARTHDATA_USERNAME`/`EARTHDATA_PASSWORD` environment variables.
+    /// The daily product is tried at both CDDIS layouts
+    /// (`.../daily/YYYY/DDD/YYp/` then `.../daily/YYYY/brdc/`). Throws if CDDIS
+    /// returns an Earthdata Login HTML page.
+    static std::filesystem::path DownloadFileForEpoch(Real epoch, Time time_scale = Time::UTC,
+                                                      const std::filesystem::path& cache_dir
+                                                      = std::filesystem::path());
 
     /// @brief Identifiers of all satellites with navigation messages loaded
     /// so far (e.g. `{"G01", "G02", ..., "E11", ...}`); GLONASS excluded.

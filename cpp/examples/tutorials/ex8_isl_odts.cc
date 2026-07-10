@@ -3,97 +3,38 @@
 // C++ counterpart of python/examples/ex8_isl_odts.ipynb.
 //
 // A five-satellite lunar relay/navigation constellation (NASA LCRNS Reference
-// Constellation 3.1), fully cross-linked. `IslOdtsSimulation` propagates every
-// satellite's truth trajectory, simulates two-way range/Doppler crosslink
-// measurements between every pair, and runs one onboard Schmidt-EKF per
-// satellite in parallel: each estimates its own [r, v, clock_bias, clock_drift]
-// while carrying the others as consider states. A lunar surface station serves
-// the satellites one at a time (round-robin) with a one-way pseudorange, adding
-// absolute position and clock observability. Every consider_exchange_interval_s
-// the filters swap their own estimate (mean + covariance) to refresh each
-// other's consider blocks.
+// Constellation 3.1), fully cross-linked, plus a small southern surface-station
+// beacon network. The scenario is built from a single YAML file: a thin
+// `IslOdtsManager` coordinator agent hosts an `IslOdtsCoordinatorApp`, and the
+// shared environment (frame + truth force model) lives in the top-level `world:`
+// block. `Simulation` runs the event loop; each scheduled epoch the coordinator app
+// propagates every satellite's truth trajectory, simulates two-way range/Doppler +
+// time/frequency-transfer crosslinks between every pair, runs one onboard Schmidt-EKF
+// per satellite in parallel (each estimating its own [r, v, clock_bias, clock_drift]
+// while carrying the others as consider states), serves a one-way surface-station
+// pseudorange/Doppler to visible satellites, runs a centralized ground filter, and
+// periodically exchanges consider-state between the parallel filters. The per-epoch
+// truth/estimate/covariance series are read off the coordinator app's `GetResults()`.
 
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <string>
 
 #include "lupnt/lupnt.h"
 
 using namespace lupnt;
 
-int main() {
-  // --- NASA LCRNS Reference Constellation 3.1 (Ryden & Volle, GSFC), Table 2 --
-  // Cartesian initial states in the Moon-centred ICRF (== Frame::MOON_CI), [km].
-  // SV-1 is the hub. Clock offsets are representative (not in the reference doc).
-  struct LcrnsRow {
-    const char* name;
-    Vec3d r_km, v_kmps;
-    double clock_bias_s, clock_drift_sps;
-  };
-  const std::vector<LcrnsRow> lcrns = {
-      {"SV-1", {-198.931445, 386.023132, 3458.355412}, {-1.539867, 0.022243, -0.091059}, 0.0, 0.0},
-      {"SV-2",
-       {1089.980598, -2260.918271, -18984.562823},
-       {0.280301, -0.004049, 0.016575},
-       10e-6,
-       1e-10},
-      {"SV-3",
-       {9187.665852, -260.470721, -8543.222759},
-       {0.273629, 0.417588, -0.313828},
-       -6e-6,
-       -8e-11},
-      {"SV-4",
-       {6484.019002, 14329.883921, -7966.345594},
-       {-0.258433, 0.033951, 0.235264},
-       4e-6,
-       5e-11},
-      {"SV-5",
-       {-5074.242314, 14473.022751, -8638.530033},
-       {-0.229931, -0.026926, -0.264381},
-       -8e-6,
-       -3e-11},
-  };
+int main(int argc, char** argv) {
+  const std::string config_path = argc > 1 ? argv[1] : "configs/isl_odts.yaml";
 
-  IslOdtsConfig config;
-  config.seed = 42;
-  config.start_epoch_utc = "2027-03-01T00:00:00";
-  config.duration_s = 6.0 * 3600.0;
-  config.dt_s = 60.0;
-  for (const LcrnsRow& s : lcrns) {
-    IslOdtsSatelliteConfig sat;
-    sat.name = s.name;
-    sat.r0_m = s.r_km * 1e3;
-    sat.v0_mps = s.v_kmps * 1e3;
-    sat.clock_bias_s = s.clock_bias_s;
-    sat.clock_drift_sps = s.clock_drift_sps;
-    config.satellites.push_back(sat);
-  }
-
-  config.moon_gravity_degree_truth = 16;
-  config.moon_gravity_order_truth = 16;
-
-  // Two-way crosslink measurement noise.
-  config.range_sigma_m = 1.0;
-  config.range_rate_sigma_mps = 1.0e-3;
-
-  // Each filter knows its own state to ~200 m but has only a coarse ~500 m broadcast
-  // prior of its neighbors -- the gap the inter-agent exchange closes.
-  config.initial_position_sigma_m = 200.0;
-  config.consider_position_sigma_m = 500.0;
-  config.consider_velocity_sigma_mps = 0.05;
-  config.consider_clock_bias_sigma_s = 1.0e-6;
-  config.consider_clock_drift_sigma_sps = 1.0e-9;
-
-  // Rotating lunar surface station (near the south pole) + 10-min filter exchange.
-  config.surface_station.enabled = true;
-  config.surface_station.latitude_deg = -89.9;
-  config.surface_station.pseudorange_sigma_m = 5.0;
-  config.consider_exchange_interval_s = 600.0;
-
-  IslOdtsSimulation sim(config);
-  sim.Setup();
+  Config cfg = YAML::LoadFile(config_path);
+  Simulation sim(cfg);
   sim.Run();
-  const IslOdtsResults& res = sim.GetResults();
+  auto* app
+      = dynamic_cast<IslOdtsCoordinatorApp*>(sim.GetAgent("IslManager")->GetApplication().get());
+  LUPNT_CHECK(app, "IslManager agent has no IslOdtsCoordinatorApp", "ex8");
+  const IslOdtsResults& res = app->GetResults();
 
   const int N = static_cast<int>(res.t_s.size());
   const int n_sat = static_cast<int>(res.satellite_names.size());
@@ -114,11 +55,23 @@ int main() {
               << " m,  clock-bias err : " << clk_err * C << " m (range-equiv)\n";
   }
 
-  // Surface-station rotation summary.
-  int served_count = 0;
+  // Surface-station beacon coverage: satellite-epochs with at least one station in view.
+  int visible_count = 0;
   for (int k = 0; k < N; ++k)
-    if (res.served_sat_idx(k) >= 0) served_count++;
-  std::cout << "\nStation served " << served_count << " / " << (N - 1) << " epochs\n";
+    for (int j = 0; j < n_sat; ++j)
+      if (res.station_visible(k, j) > 0.0) visible_count++;
+  std::cout << "\nStation beacon coverage: " << visible_count << " / " << (N * n_sat)
+            << " satellite-epochs in view\n";
+
+  // Centralized ground-filter final position error (station pseudoranges only, no ISL).
+  if (res.est_central.size() > 0) {
+    std::cout << "Centralized ground filter (no ISL) final own pos err:\n";
+    for (int j = 0; j < n_sat; ++j) {
+      const Vec3d r_true = res.truth_states[j].row(N - 1).head(3).transpose();
+      const Vec3d r_est = res.est_central.row(N - 1).segment(8 * j, 3).transpose();
+      std::cout << "  " << res.satellite_names[j] << " : " << (r_est - r_true).norm() << " m\n";
+    }
+  }
 
   return 0;
 }

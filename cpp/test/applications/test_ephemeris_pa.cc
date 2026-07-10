@@ -1,5 +1,5 @@
-#include <lupnt/applications/lunanet_almanac.h>
-#include <lupnt/applications/lunanet_ephemeris.h>
+#include <lupnt/applications/ephemeris/lunanet_almanac.h>
+#include <lupnt/applications/ephemeris/lunanet_ephemeris.h>
 #include <lupnt/conversions/state_conversions.h>
 #include <lupnt/core/constants.h>
 

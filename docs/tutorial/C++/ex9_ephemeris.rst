@@ -6,9 +6,11 @@ Example 9: Ephemeris and Almanac Fitting
 Study the accuracy-vs-broadcast-datasize trade-off of two lunar-satellite orbit
 models fit to a numerically propagated truth trajectory: a precise, short-validity
 ``CartesianEphemeris`` (Chebyshev) and a coarse, long-validity ``Almanac``
-(Algorithm 2 of Iiyama & Gao). ``EphemerisSimulation`` fits both over a sweep of
-fitting-window lengths, reporting RMS / 95th-percentile RTN position and velocity
-error and the minimum broadcast bit budget for a target position accuracy.
+(Algorithm 2 of Iiyama & Gao). The scenario is built from ``configs/ephemeris.yaml``
+(a thin ``EphemerisManager`` agent hosting an ``EphemerisApp``) and run with
+``Simulation``; the app fits both models over a sweep of fitting-window lengths,
+reporting RMS / 95th-percentile RTN position and velocity error and the minimum
+broadcast bit budget for a target position accuracy.
 
 Mirrors :doc:`../Python/ex9_ephemeris`.
 

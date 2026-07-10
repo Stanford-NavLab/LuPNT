@@ -1,6 +1,6 @@
 #include <lupnt/agents/satellite.h>
-#include <lupnt/applications/ephemeris_gen_app.h>
-#include <lupnt/applications/lunanet_sat_app.h>
+#include <lupnt/applications/ephemeris/ephemeris_gen_app.h>
+#include <lupnt/applications/ephemeris/lunanet_sat_app.h>
 #include <lupnt/dynamics/surface_dynamics.h>
 
 #include <catch2/catch_test_macros.hpp>

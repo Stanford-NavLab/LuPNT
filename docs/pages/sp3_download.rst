@@ -83,24 +83,30 @@ and TAI epoch coverage parsed from the file.
 Use From Python
 -------------------------------------------------------------------
 
-The Python loader accepts either explicit filenames or target epochs. When
-target epochs are provided, it automatically computes the CDDIS product name,
-downloads missing files, and parses the SP3 contents.
+The Python API is the C++ loader exposed through pybind11 (``pnt.Sp3Loader``).
+Its static ``download_file_for_epoch`` helper computes the CDDIS product name,
+downloads and caches missing files (under ``output/gnss_files/sp3``), and returns
+the local path; the constructor then parses one or more files.
 
 .. code-block:: python
 
-   from datetime import datetime, timezone
-
    import pylupnt as pnt
 
-   loader = pnt.SP3Loader(
-       target_dt=datetime(2025, 1, 1, tzinfo=timezone.utc),
-       sim_t=0,
-       dt_timesys=pnt.UTC,
+   # A TAI epoch whose daily product we want.
+   t_tai = pnt.convert_time(
+       pnt.gregorian_to_time(2025, 1, 1, 0, 0, 0), pnt.Time.TDB, pnt.Time.TAI
    )
 
-   print(loader.filenames)
-   print(loader.sats[:8])
+   # Download + cache the COD MGEX SP3 (Earthdata Login required), then parse it.
+   sp3_path = pnt.Sp3Loader.download_file_for_epoch(t_tai, pnt.Time.TAI)
+   sp3 = pnt.Sp3Loader(sp3_path)
+
+   print(sp3.get_satellites()[:8])
+   rv_ecef, clock_bias_s = sp3.get_pos_vel_clock("G01", t_tai)  # ECEF [m, m/s], bias [s]
+
+The broadcast-ephemeris counterpart is ``pnt.RinexNavLoader`` (with the same
+``download_file_for_epoch`` helper), and antenna phase-center offsets come from
+``pnt.AntexLoader``.
 
 Use From C++
 -------------------------------------------------------------------

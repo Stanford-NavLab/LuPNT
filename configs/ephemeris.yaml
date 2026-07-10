@@ -1,0 +1,78 @@
+# Agent-based lunar ephemeris/almanac datasize-accuracy study (Example 9).
+#
+# A single thin `EphemerisManager` coordinator agent hosts an `EphemerisApp`: the app
+# propagates an Elliptical Lunar Frozen Orbit (ELFO) truth trajectory, fits the precise
+# short-validity `CartesianEphemeris` and the coarse long-validity `Almanac` broadcast
+# models over a sweep of fitting-window lengths, and sizes the broadcast bit budget needed
+# to keep the worst-case position error under a tolerance. It mirrors ex8's
+# `IslOdtsCoordinatorApp` on an `IslOdtsManager`.
+#
+# The shared physical environment (frame + a truth force model, for documentation and the
+# `GetStateAt` facade) lives in the top-level `world:` block; the app builds its own truth
+# dynamics app-internally. `ex9_run_ephemeris.py` drives this file, running one sweep for
+# the ephemeris (short windows / 1-day arc) and one for the almanac (long windows / 30-day
+# arc) by overriding `duration_days` / `sample_dt_s` / `fit_window_minutes`.
+
+name: ephemeris
+epoch: "2027-01-01T00:00:00"
+duration: "24:00:00"          # the study is one-shot (a single Step at t = 0)
+log_level: INFO
+
+# ---- Shared, read-only environment -------------------------------------------
+world:
+  frame: MOON_CI
+  force_model:                # truth force model (Moon 8x8 + Earth/Sun), for the facade
+    integrator: RKF45
+    dt: 30.0
+    max_iter: 20
+    abstol: 1.0e-6
+    reltol: 1.0e-10
+    autodiff: false
+    bodies:
+      - MOON: { n: 8, m: 8 }
+      - EARTH: {}
+      - SUN: {}
+
+agents:
+  # ---- Coordinator: navigation-message generation / study node ----
+  EphemerisManager:
+    class: EphemerisManager
+    application:
+      class: EphemerisApp
+      start_epoch_utc: "2027-01-01T00:00:00"
+
+      # Elliptical Lunar Frozen Orbit (ELFO), classical elements in MOON_OP.
+      orbit:
+        a_m: 6541400.0
+        ecc: 0.6
+        inc_rad: 0.980875     # 56.2 deg
+        raan_rad: 0.0
+        argp_rad: 1.5707963   # 90 deg
+        m0_rad: 0.0
+        coe_frame: MOON_OP
+      propagate_frame: MOON_CI
+
+      # Ephemeris sweep by default: short (<= 2 h) windows on a 1-day truth arc.
+      duration_days: 1.0
+      sample_dt_s: 60.0
+      fit_window_minutes: [30.0, 60.0, 120.0]
+      num_windows: 4
+
+      # Truth force model (matches the world block above).
+      moon_gravity_degree: 8
+      moon_gravity_order: 8
+      include_earth: true
+      include_sun: true
+      use_relativity: false
+      integration_step_s: 30.0
+
+      # Broadcast model settings.
+      cartesian_poly_order: 6
+      cartesian_use_keplerian_baseline: true
+      cartesian_num_fourier_terms: 0
+      almanac_poly_order: 1
+      almanac_num_fourier_terms: 1
+
+      # Fit and broadcast in the rotating Moon principal-axis frame (per Iiyama & Gao).
+      output_frame: MOON_PA
+      datasize_precision_m: 0.05

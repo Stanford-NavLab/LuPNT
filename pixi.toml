@@ -129,13 +129,4 @@ test           = { depends-on = ["test-cpp", "test-py"] }
 build-examples = { cmd = "cmake -S cpp/examples -B build-examples-pixi -GNinja -DCMAKE_BUILD_TYPE=Release && cmake --build build-examples-pixi --target all_examples" }
 format-check   = { cmd = "python scripts/check_format.py" }
 install-test   = { cmd = "cmake -S cpp -B build-install-pixi -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PIXI_PROJECT_ROOT/install && cmake --build build-install-pixi --target install && test -f $PIXI_PROJECT_ROOT/install/lib/cmake/lupnt/lupntConfig.cmake && test -d $PIXI_PROJECT_ROOT/install/include/lupnt-0.1.0" }
-build-gnss-filtering = { cmd = "cmake -B build-gnss-filtering -GNinja -DCMAKE_BUILD_TYPE=Release && cmake --build build-gnss-filtering --target ex_lunar_gnss_odts" }
-download-sp3-example = { cmd = "python python/examples/ex_gnss/download_sp3_epochs.py", depends-on = ["build-py"] }
 download-gnss-test-data = { cmd = "python scripts/download_gnss_test_fixtures.py", depends-on = ["build-py"] }
-download-sp3-example-cpp = { cmd = "cmake --build build --target ex_download_sp3_epochs && ./build/examples/ex_download_sp3_epochs", depends-on = ["build"] }
-precompute-gnss-links = { cmd = "./build-gnss-filtering/examples/ex_lunar_gnss_odts --config projects/GNSS_Filtering/gnss_filtering_config.yaml --precompute", depends-on = ["build-gnss-filtering"] }
-precompute-gnss-delays = { cmd = "python projects/GNSS_Filtering/precompute_delays.py projects/GNSS_Filtering/gnss_filtering_config.yaml", depends-on = ["precompute-gnss-links"] }
-run-gnss-monte-carlo = { cmd = "./build-gnss-filtering/examples/ex_lunar_gnss_odts --config projects/GNSS_Filtering/gnss_filtering_config.yaml --run", depends-on = ["build-gnss-filtering"] }
-run-gnss-filtering = { cmd = "bash projects/GNSS_Filtering/run_pipeline.sh --no-plot" }
-run-gnss-pipeline = { cmd = "bash projects/GNSS_Filtering/run_pipeline.sh" }
-plot-gnss-filtering = { cmd = "python projects/GNSS_Filtering/plot_gnss_filtering_results.py" }

@@ -91,42 +91,29 @@ namespace lupnt {
     double vel_p95_mps = 0.0;
   };
 
-  /// @brief Studies the position/velocity fit-accuracy vs. broadcast-datasize
-  /// trade-off of `CartesianEphemeris` (precise, short-validity) and `Almanac`
-  /// (coarse, long-validity) orbit models -- both in `lupnt/applications/` -- fit
-  /// to a numerically propagated lunar orbit truth trajectory.
-  ///
-  /// For each `fit_window_minutes` entry, `num_windows` windows are sampled across
-  /// the truth trajectory; each ephemeris/almanac model is fit and evaluated
-  /// (RMS/95th-percentile RTN position and velocity error) on every window, and
-  /// the minimum per-parameter broadcast resolution (bit count) needed to keep the
-  /// position accuracy within `datasize_precision_m` is found by bisection --
-  /// mirroring the accuracy/datasize trade-off studies used to size GNSS broadcast
-  /// ephemeris/almanac message formats.
-  class EphemerisSimulation : public Simulation {
-  public:
-    explicit EphemerisSimulation(EphemerisSimulationConfig config);
+  /// @brief Full result payload of an ephemeris datasize/accuracy sweep, exposed by
+  /// `EphemerisApp::GetResults()` (identical layout to the former
+  /// `EphemerisSimulation`'s individual accessors). All series are in SI units, in
+  /// `EphemerisSimulationConfig::output_frame`.
+  struct EphemerisResults {
+    VecXd t_truth_s;  // Elapsed time since start_epoch_utc [s], size [N]
+    MatXd rv_truth;   // Truth Cartesian states [N x 6] in output_frame
 
-    void Setup() override;
-    void Run() override;
-
-    const EphemerisSimulationConfig& GetConfig() const { return config_; }
-    const VecXd& GetTruthTimes() const { return t_truth_s_; }
-    const MatXd& GetTruthStates() const { return rv_truth_; }
-    const std::vector<EphemerisWindowResult>& GetCartesianResults() const {
-      return cartesian_results_;
-    }
-    const std::vector<EphemerisWindowResult>& GetAlmanacResults() const { return almanac_results_; }
-
-  private:
-    EphemerisSimulationConfig config_;
-    bool setup_complete_ = false;
-
-    VecXd t_truth_s_;  // Elapsed time since start_epoch_utc [s]
-    MatXd rv_truth_;   // Truth Cartesian states [N x 6] in propagate_frame
-
-    std::vector<EphemerisWindowResult> cartesian_results_;
-    std::vector<EphemerisWindowResult> almanac_results_;
+    /// One entry per `EphemerisSimulationConfig::fit_window_minutes` value.
+    std::vector<EphemerisWindowResult> cartesian_results;
+    std::vector<EphemerisWindowResult> almanac_results;
   };
+
+  // The ephemeris/almanac datasize-accuracy study is driven by `EphemerisApp`
+  // (applications/ephemeris/ephemeris_app.h) on a thin `EphemerisManager` agent, via
+  // `pnt.Simulation(...)`. The `EphemerisSimulationConfig`/`EphemerisResults` structs above
+  // are the shared config/result payloads consumed by that app: for each
+  // `fit_window_minutes` entry, `num_windows` windows are sampled across a numerically
+  // propagated lunar-orbit truth trajectory; each ephemeris/almanac model is fit and
+  // evaluated (RMS/95th-percentile RTN position and velocity error) on every window, and the
+  // minimum per-parameter broadcast resolution (bit count) needed to keep the position
+  // accuracy within `datasize_precision_m` is found by bisection -- mirroring the
+  // accuracy/datasize trade-off studies used to size GNSS broadcast ephemeris/almanac
+  // message formats.
 
 }  // namespace lupnt

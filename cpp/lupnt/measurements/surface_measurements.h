@@ -1,10 +1,22 @@
 #pragma once
 
+#include <string>
+
 #include "lupnt/core/definitions.h"
 #include "lupnt/measurements/measurement.h"
 #include "lupnt/measurements/measurement_utils.h"
 
 namespace lupnt {
+
+  /// @brief Initial Cartesian state of one LCRNS / LunaNet relay satellite, defined at the
+  /// scenario start epoch in the Moon-centered inertial frame (`Frame::MOON_CI`), e.g. taken
+  /// from the NASA LCRNS reference constellation. Shared by the surface-rover and lander
+  /// navigation applications (relays are propagated as Keplerian orbits app-internally).
+  struct LcrnsSatConfig {
+    std::string name = "SV";
+    Vec3d r0_m = Vec3d::Zero();    ///< initial position [m], Frame::MOON_CI.
+    Vec3d v0_mps = Vec3d::Zero();  ///< initial velocity [m/s], Frame::MOON_CI.
+  };
 
   /// Error-state dimension of the surface-navigation INS filter:
   /// `[dr(3), dv(3), dtheta(3), db_a(3), db_g(3), d(clock_bias), d(clock_drift)]`.

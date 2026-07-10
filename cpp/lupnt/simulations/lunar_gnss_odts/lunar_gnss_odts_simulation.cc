@@ -2185,10 +2185,8 @@ namespace lupnt {
     }
   }  // namespace
 
-  LunarGnssODTSConfig LoadLunarGnssODTSConfig(const std::filesystem::path& path) {
-    YAML::Node root = YAML::LoadFile(path.string());
-    std::filesystem::path config_dir
-        = path.has_parent_path() ? path.parent_path() : std::filesystem::current_path();
+  LunarGnssODTSConfig ParseLunarGnssODTSConfig(const Config& root,
+                                               const std::filesystem::path& config_dir) {
     LunarGnssODTSConfig cfg;
 
     const YAML::Node sim = root["simulation"];
@@ -2394,6 +2392,17 @@ namespace lupnt {
     return cfg;
   }
 
+  void ResolveLunarGnssODTSConfigForRun(LunarGnssODTSConfig& cfg) {
+    ResolveAutoSelectSp3Files(cfg);
+  }
+
+  LunarGnssODTSConfig LoadLunarGnssODTSConfig(const std::filesystem::path& path) {
+    YAML::Node root = YAML::LoadFile(path.string());
+    std::filesystem::path config_dir
+        = path.has_parent_path() ? path.parent_path() : std::filesystem::current_path();
+    return ParseLunarGnssODTSConfig(root, config_dir);
+  }
+
   std::vector<LunarGnssODTSSummary> RunLunarGnssODTSMonteCarlo(const LunarGnssODTSConfig& cfg) {
     ClearPreviousOutputs(cfg);
     RequireDelayTable(cfg);
@@ -2525,36 +2534,6 @@ namespace lupnt {
     std::vector<GNSSMeasurementsEpoch> precomputed
         = PrecomputeConstellationChannels(link_cfg, constellations, receive_times, truth_states);
     WriteLinksCsv(cfg, precomputed, truth_states, epoch_begin);
-  }
-
-  LunarGnssODTSSimulation::LunarGnssODTSSimulation(std::filesystem::path config_path)
-      : config_path_(std::move(config_path)) {
-    Setup();
-  }
-
-  LunarGnssODTSSimulation::LunarGnssODTSSimulation(LunarGnssODTSConfig config)
-      : config_(std::move(config)) {
-    Setup();
-  }
-
-  void LunarGnssODTSSimulation::Setup() {
-    if (setup_complete_) return;
-    if (!config_path_.empty()) {
-      config_ = LoadLunarGnssODTSConfig(config_path_);  // resolves auto-select SP3 internally
-    } else {
-      ResolveAutoSelectSp3Files(config_);  // struct/Python config path
-    }
-    setup_complete_ = true;
-  }
-
-  void LunarGnssODTSSimulation::Precompute() {
-    Setup();
-    PrecomputeLunarGnssODTSLinks(config_);
-  }
-
-  void LunarGnssODTSSimulation::Run() {
-    Setup();
-    summaries_ = RunLunarGnssODTSMonteCarlo(config_);
   }
 
 }  // namespace lupnt

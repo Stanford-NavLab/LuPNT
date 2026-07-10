@@ -4,12 +4,18 @@ Example 7: Ground-Station Orbit Determination
 =============================================
 
 A lunar satellite is tracked by the three 70 m Deep Space Network antennas
-(Goldstone, Canberra, Madrid) via two-way range and range-rate.
-``GroundStationOdtsSimulation`` propagates the truth trajectory, runs an
-elevation-mask visibility analysis, simulates noisy measurements over the
-visible passes, and recovers the orbit from a perturbed initial guess with an
-iterative batch (weighted least-squares) filter whose design matrix is built
-analytically from the autodiff state-transition matrix.
+(Goldstone, Canberra, Madrid) via two-way range and range-rate. The whole
+scenario lives in ``configs/ground_station_odts.yaml`` and is run by the generic
+agent-based engine: each antenna is a ``GroundStation`` agent running a
+``GroundStationTrackingApp`` (a sensor that generates its own visibility-gated,
+noisy observations of the target), and a ``GroundStationManager`` agent runs the
+``GroundStationManagerApp`` that aggregates those observations and recovers the
+orbit from a perturbed initial guess with an iterative batch (weighted
+least-squares) filter plus a square-root information filter / smoother, whose
+design matrix is built analytically from the autodiff state-transition matrix.
+The truth target and the estimator share the one force model in the ``world:``
+block, so the driver just builds the ``Simulation`` from the YAML and calls
+``Run()``.
 
 Mirrors :doc:`../Python/ex7_groundstation_odts`.
 

@@ -24,6 +24,7 @@
 namespace lupnt {
 
   class Simulation;
+  class World;
   class Channel;
   class Application;
   class Device;
@@ -76,6 +77,11 @@ namespace lupnt {
     /// `Simulation::AddAgent` so that `GetSimulation`/`Setup` can access the
     /// event scheduler and Cesium viewer.
     void SetSimulation(Simulation* sim) { sim_ = sim; }
+
+    /// @brief Get the shared `World` (read-only environment) from the owning
+    /// simulation, or nullptr if the scenario defined no `world:` block. Returns
+    /// the same object as `GetSimulation()->GetWorld()`.
+    World* GetWorld() const;
 
     /// @brief Get the agent's current simulation time [s].
     Real GetTime() const { return time_; }

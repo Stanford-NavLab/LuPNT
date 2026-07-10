@@ -182,6 +182,18 @@ namespace lupnt {
   };
 
   LunarGnssODTSConfig LoadLunarGnssODTSConfig(const std::filesystem::path& path);
+  /// @brief Parse a `LunarGnssODTSConfig` from an already-loaded YAML node (the shared body
+  /// of `LoadLunarGnssODTSConfig`). `root` must carry the same section layout as the
+  /// scenario file (`simulation:`, `pipeline:`, `truth:`, `constellation:`, `plasma:`,
+  /// `dynamics:`, `measurements:`, `filter:`, `receiver_app:`, `design:`); relative paths are
+  /// resolved against `base_dir`. Used by the agent-based `LunarGnssOdtsApp` to read its
+  /// config from an `application:` block.
+  LunarGnssODTSConfig ParseLunarGnssODTSConfig(const Config& root,
+                                               const std::filesystem::path& base_dir);
+  /// @brief Resolve a struct-built config for running: auto-select the SP3 products covering
+  /// the epoch window when `constellation.auto_select_sp3` is set and no explicit files are
+  /// given (matches the struct/Python config path of the former `LunarGnssODTSSimulation`).
+  void ResolveLunarGnssODTSConfigForRun(LunarGnssODTSConfig& cfg);
   int LunarGnssODTSPrecomputeEpochCount(const LunarGnssODTSConfig& config);
   bool LunarGnssODTSLinkCacheValid(const LunarGnssODTSConfig& config);
   void FinalizeLunarGnssODTSLinkCache(const LunarGnssODTSConfig& config);
@@ -189,24 +201,5 @@ namespace lupnt {
   void PrecomputeLunarGnssODTSLinksRange(const LunarGnssODTSConfig& config, int epoch_begin,
                                          int epoch_end);
   std::vector<LunarGnssODTSSummary> RunLunarGnssODTSMonteCarlo(const LunarGnssODTSConfig& config);
-
-  class LunarGnssODTSSimulation : public Simulation {
-  public:
-    explicit LunarGnssODTSSimulation(std::filesystem::path config_path);
-    explicit LunarGnssODTSSimulation(LunarGnssODTSConfig config);
-
-    void Setup() override;
-    void Precompute() override;
-    void Run() override;
-
-    const LunarGnssODTSConfig& GetConfig() const { return config_; }
-    const std::vector<LunarGnssODTSSummary>& GetSummaries() const { return summaries_; }
-
-  private:
-    std::filesystem::path config_path_;
-    LunarGnssODTSConfig config_;
-    bool setup_complete_ = false;
-    std::vector<LunarGnssODTSSummary> summaries_;
-  };
 
 }  // namespace lupnt

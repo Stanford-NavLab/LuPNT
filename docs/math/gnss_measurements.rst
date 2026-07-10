@@ -494,11 +494,10 @@ Japan for QZSS; the lunar receive antenna has a peak gain of 14 dBi with a
 omni pattern (:math:`G\equiv 0`), and off-pattern directions return ``NaN``,
 which acts as an implicit sidelobe cutoff.
 
-The Python-side pattern loader is
-``python/pylupnt/interfaces/antex_file_loader.py`` (``ANTEXLoader``); the C++
-counterpart ``cpp/lupnt/interfaces/antex_loader.{h,cc}`` (``AntexLoader``)
-parses the same IGS ANTEX (``.atx``) files but exposes the antenna
-phase-center offsets (see below) rather than the gain pattern.
+IGS ANTEX (``.atx``) files are parsed by
+``cpp/lupnt/interfaces/antex_loader.{h,cc}`` (``AntexLoader``, exposed to Python
+as ``pnt.AntexLoader``), which exposes the antenna phase-center offsets (see
+below) rather than the gain pattern.
 
 Precise (SP3) and Broadcast (BRDC) Ephemeris
 -------------------------------------------------------------------
@@ -511,9 +510,8 @@ transmitter position, velocity, and clock are obtained.
 Precise SP3 ephemeris
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``cpp/lupnt/interfaces/sp3_loader.{h,cc}`` (``Sp3Loader``, the C++ counterpart
-of ``pylupnt.interfaces.gnss_file_loader.SP3Loader``) parses IGS SP3
-precise-ephemeris files.  SP3 tabulates satellite **center-of-mass** ECEF
+``cpp/lupnt/interfaces/sp3_loader.{h,cc}`` (``Sp3Loader``, exposed to Python as
+``pnt.Sp3Loader``) parses IGS SP3 precise-ephemeris files.  SP3 tabulates satellite **center-of-mass** ECEF
 positions and clock bias at a fixed cadence; ``Sp3Loader::GetPosVelClock``
 returns an interpolated position/velocity/clock from a per-satellite
 piecewise Chebyshev fit, with velocity taken as the analytic derivative of the
@@ -556,8 +554,8 @@ satellite "IJK" rotation:
 Broadcast BRDC ephemeris
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``cpp/lupnt/interfaces/rinex_nav_loader.{h,cc}`` (``RinexNavLoader``, the C++
-counterpart of ``BRDCLoader``) parses RINEX V3 navigation ("BRDC") files and
+``cpp/lupnt/interfaces/rinex_nav_loader.{h,cc}`` (``RinexNavLoader``, exposed to
+Python as ``pnt.RinexNavLoader``) parses RINEX V3 navigation ("BRDC") files and
 evaluates the transmitter state by **Keplerian propagation of the broadcast
 navigation message** nearest the requested epoch (GPS / Galileo / BeiDou /
 QZSS; GLONASS, which uses tabulated state vectors, is intentionally
@@ -660,10 +658,10 @@ clock terms, and batch plasma simulation ordered explicitly, and avoids an
 online raytrace that would be overwritten by the batch result.
 
 In the staged Lunar GNSS ODTS scenario, this contract is implemented with an
-explicit file boundary: ``LunarGnssODTSSimulation::Precompute`` writes all
+explicit file boundary: ``LunarGnssOdtsApp::Precompute`` writes all
 light-time-corrected links with zero plasma delay, ``precompute_delays.py``
 fills the delay terms with GCPM/IRI ray tracing (see
-:doc:`ionosphere_plasmasphere`), and ``LunarGnssODTSSimulation::Run`` merges the
+:doc:`ionosphere_plasmasphere`), and ``LunarGnssOdtsApp::Step`` merges the
 delay file back into the truth channels before generating pseudorange,
 Doppler, and optional TDCP measurements. TDCP is represented as a carrier-range
 difference in meters and is processed by the UDU stochastic-cloning filter

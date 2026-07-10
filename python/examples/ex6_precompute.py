@@ -250,8 +250,11 @@ def precompute_links(cfg, n_workers=None, threads_per_worker=1):
 
     t0 = time.time()
     if n_workers == 1:
-        sim = pnt.LunarGnssODTSSimulation(cfg)
-        sim.precompute()
+        # Full-range link precompute + cache-metadata write (the former
+        # LunarGnssODTSSimulation.precompute()), via the retained free functions.
+        _invalidate_link_dependents(cfg)
+        pnt.precompute_lunar_gnss_odts_links_range(cfg, 0, n_epochs)
+        pnt.finalize_lunar_gnss_odts_link_cache(cfg)
         print(f"Stage 1: precompute() took {time.time() - t0:.1f} s")
     else:
         ranges = _chunk_ranges(n_epochs, n_workers)

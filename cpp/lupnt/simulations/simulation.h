@@ -14,9 +14,9 @@
 #include "lupnt/core/event.h"
 #include "lupnt/interfaces/cesium.h"
 #include "lupnt/measurements/channel.h"
+#include "lupnt/simulations/world.h"
 
 namespace lupnt {
-  // class Environment;  // TODO: Implement Environment class
 
   class Simulation : public Object<Simulation> {
   private:
@@ -31,8 +31,7 @@ namespace lupnt {
     std::unordered_map<std::string, Ptr<Agent>> agents_;
     std::unordered_map<std::string, Ptr<Channel>> channels_;
     std::unordered_map<std::string, Ptr<Constellation>> constellations_;
-    // std::unordered_map<std::string, Ptr<Environment>> environments_;  // TODO: Implement
-    // Environment
+    Ptr<World> world_;  // shared read-only environment (built from the `world:` config block)
     Ptr<CesiumViewer> cesium_viewer_;
 
   public:
@@ -58,6 +57,16 @@ namespace lupnt {
 
     Channel* GetChannel(const std::string& name);
     Agent* GetAgent(const std::string& name);
+
+    /// @brief Get the shared read-only environment (epoch, frame, force model,
+    /// truth facade), or nullptr if the scenario defined no `world:` block.
+    World* GetWorld() const { return world_.get(); }
+    /// @brief Set the shared environment and register this simulation with it so
+    /// its `GetStateAt` truth facade can resolve agents by name.
+    void SetWorld(Ptr<World> world) {
+      world_ = std::move(world);
+      if (world_) world_->SetSimulation(this);
+    }
 
     CesiumViewer* GetCesiumViewer() { return cesium_viewer_.get(); }
   };

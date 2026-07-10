@@ -41,9 +41,10 @@ Python: :doc:`../Python/ex6_gnss_odts` — sidelobe pseudorange + TDCP orbit
 determination and timing with an EKF, including a GCPM/IRI plasmaspheric-delay
 ray-trace stage.
 
-The release-facing C++ implementation is the ``LunarGnssODTSSimulation`` under
-``cpp/lupnt/applications/LunarGnssODTS``, driven by the ``ex_lunar_gnss_odts``
-executable and the staged pipeline it runs:
+The release-facing C++ implementation is the ``LunarGnssOdtsApp`` under
+``cpp/lupnt/applications/lunar_gnss_odts``, driven from a YAML config by
+``pnt.Simulation`` (see ``python/examples/ex6_run_gnss_odts.py``) and the staged
+pipeline it runs:
 
 .. code-block:: bash
 

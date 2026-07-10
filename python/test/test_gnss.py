@@ -22,10 +22,11 @@ def _gnss_files_dir():
     """Directory containing the downloaded SP3/BRDC GNSS test files.
 
     `pnt.get_data_path()` resolves to `<project_root>/data/LuPNT_data`; the
-    real GNSS files (produced by `pylupnt.interfaces.gnss_file_loader`) live
-    under `<project_root>/output/gnss_files`, i.e. two directories up from
-    the data path (see `cpp/test/interfaces/test_sp3_loader.cc` for the C++
-    equivalent of this derivation).
+    real GNSS files (downloaded by `scripts/download_gnss_test_fixtures.py` via
+    `pnt.Sp3Loader`/`pnt.RinexNavLoader`) live under
+    `<project_root>/output/gnss_files`, i.e. two directories up from the data
+    path (see `cpp/test/interfaces/test_sp3_loader.cc` for the C++ equivalent
+    of this derivation).
     """
     project_root = os.path.dirname(os.path.dirname(pnt.get_data_path()))
     return os.path.join(project_root, "output", "gnss_files")
@@ -44,6 +45,66 @@ def test_gnss_enums():
     for name in ("L1", "L2", "L5", "E1", "E6", "E5", "E5a", "E5b"):
         assert hasattr(pnt.GnssFreq, name)
     assert pnt.GnssFreq.L1 != pnt.GnssFreq.L2
+
+
+# ---------------------------------------------------------------------------
+# Antenna
+# ---------------------------------------------------------------------------
+
+
+def test_antenna_gain_pattern():
+    try:
+        antenna = pnt.Antenna("Block-IIF_ACE")
+    except Exception as exc:  # pragma: no cover - env dependent
+        pytest.skip(f"Antenna pattern data unavailable: {exc}")
+
+    # Boresight (theta=0) gain is a finite dB value and near the pattern peak.
+    g0 = float(antenna.compute_gain(0.0, 0.0))
+    assert np.isfinite(g0)
+
+    theta = np.linspace(0.0, np.radians(20.0), 15)
+    gains = np.asarray(antenna.compute_gain(theta, 0.0))
+    assert gains.shape == theta.shape
+    assert np.all(np.isfinite(gains))
+    # Peak gain occurs at/near boresight for a nadir-pointing GNSS antenna.
+    assert g0 >= np.max(gains) - 1e-6
+
+    gain_matrix = np.asarray(antenna.get_gain_matrix())
+    assert gain_matrix.ndim == 2
+    n_theta = np.asarray(antenna.get_theta_vector()).shape[0]
+    n_phi = np.asarray(antenna.get_phi_vector()).shape[0]
+    # The gain grid is indexed by the (theta, phi) sample vectors, in either order.
+    assert set(gain_matrix.shape) == {n_theta, n_phi}
+
+
+# ---------------------------------------------------------------------------
+# GnssConstellation
+# ---------------------------------------------------------------------------
+
+
+def test_gnss_constellation_basic():
+    const = pnt.GnssConstellation(pnt.GnssConst.GPS)
+    assert const.get_gnss_const() == pnt.GnssConst.GPS
+    # Freshly constructed: no satellite states loaded yet.
+    assert const.get_num_satellites() == 0
+    assert const.get_prns() == []
+
+
+def test_gnss_constellation_set_states():
+    const = pnt.GnssConstellation(pnt.GnssConst.GPS)
+    t_tai = pnt.convert_time(pnt.gregorian_to_time(2026, 1, 1, 0, 0, 0), pnt.Time.TDB, pnt.Time.TAI)
+    t_grid = t_tai + np.arange(3) * 300.0
+    prns = [1, 2]
+    # Two satellites on trivial straight-line ECI grids [N x 6].
+    states = [
+        np.tile(np.array([26.56e6, 0, 0, 0, 3.9e3, 0], dtype=float), (3, 1)),
+        np.tile(np.array([0, 26.56e6, 0, -3.9e3, 0, 0], dtype=float), (3, 1)),
+    ]
+    const.set_satellite_states(prns, t_grid, states)
+    assert const.get_num_satellites() == 2
+    assert sorted(const.get_prns()) == prns
+    rv = np.asarray(const.get_satellite_state_eci(1, t_grid[0]))
+    assert rv.shape[0] == 6
 
 
 # ---------------------------------------------------------------------------
@@ -469,6 +530,61 @@ def test_sp3_loader():
     t3_min, t3_max = loader_multi.get_time_span(sat_id)
     assert t3_min == pytest.approx(t2_min, abs=1e-6)
     assert t3_max == pytest.approx(t2_max, abs=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# SP3 / RINEX CDDIS download helpers (filename / URL builders)
+# ---------------------------------------------------------------------------
+
+
+def _tai(y, mo, d, h=12, mi=0, s=0.0):
+    t = pnt.gregorian_to_time(y, mo, d, h, mi, s)
+    return pnt.convert_time(t, pnt.Time.TDB, pnt.Time.TAI)
+
+
+def test_sp3_download_helpers_filename_and_url():
+    """Sp3Loader static builders map an epoch to the COD MGEX product name/URL."""
+    t = _tai(2026, 1, 14)
+    fname = pnt.Sp3Loader.filename_for_epoch(t, pnt.Time.TAI)
+    assert fname == "COD0MGXFIN_20260140000_01D_05M_ORB.SP3"
+
+    url = pnt.Sp3Loader.url_for_epoch(t, pnt.Time.TAI)
+    assert url.startswith("https://cddis.nasa.gov/archive/gnss/products/")
+    assert url.endswith("COD0MGXFIN_20260140000_01D_05M_ORB.SP3.gz")
+
+    # The default time scale is UTC; a UTC-built epoch resolves to the same day.
+    t_utc = pnt.gregorian_to_time(2026, 1, 15, 0, 0, 0)
+    assert pnt.Sp3Loader.filename_for_epoch(t_utc) == "COD0MGXFIN_20260150000_01D_05M_ORB.SP3"
+
+
+def test_rinex_download_helper_filename():
+    """RinexNavLoader static builder maps an epoch to the BRDC product name."""
+    t = _tai(2026, 1, 14)
+    fname = pnt.RinexNavLoader.filename_for_epoch(t, pnt.Time.TAI)
+    assert fname == "BRDC00IGS_R_20260140000_01D_MN.rnx"
+
+
+def test_download_file_for_epoch_returns_cached_path():
+    """When the product is already cached, download_file_for_epoch returns that
+    path without hitting the network (so it runs offline once fixtures exist)."""
+    sp3_file = os.path.join(
+        _gnss_files_dir(), "sp3", "COD0MGXFIN_20260140000_01D_05M_ORB.SP3"
+    )
+    if not os.path.isfile(sp3_file):
+        pytest.skip(f"SP3 fixture not cached at {sp3_file}")
+
+    t = _tai(2026, 1, 14)
+    path = pnt.Sp3Loader.download_file_for_epoch(t, pnt.Time.TAI)
+    assert os.path.isfile(path)
+    assert os.path.basename(path) == "COD0MGXFIN_20260140000_01D_05M_ORB.SP3"
+
+    brdc_file = os.path.join(
+        _gnss_files_dir(), "brdc", "BRDC00IGS_R_20260140000_01D_MN.rnx"
+    )
+    if os.path.isfile(brdc_file):
+        bpath = pnt.RinexNavLoader.download_file_for_epoch(t, pnt.Time.TAI)
+        assert os.path.isfile(bpath)
+        assert os.path.basename(bpath) == "BRDC00IGS_R_20260140000_01D_MN.rnx"
 
 
 # ---------------------------------------------------------------------------

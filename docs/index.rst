@@ -56,7 +56,6 @@ A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timi
     python_api/pylupnt
     python_api/pylupnt.plot
     python_api/pylupnt.core.pylupnt_utils
-    python_api/pylupnt.interfaces.gnss_utils
     python_api/pylupnt.plasma.kp_loader
 
 ..
@@ -65,7 +64,6 @@ A C++/Python Library for Lunar Communications, Positioning, Navigation, and Timi
     MAKE_DOCS/python_api/pylupnt
     MAKE_DOCS/python_api/pylupnt.plot python_only
     MAKE_DOCS/python_api/pylupnt.core.pylupnt_utils python_only
-    MAKE_DOCS/python_api/pylupnt.interfaces.gnss_utils python_only
     MAKE_DOCS/python_api/pylupnt.plasma.kp_loader python_only
 
 .. _cpp_api_index:

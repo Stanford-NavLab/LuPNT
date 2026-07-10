@@ -1,0 +1,373 @@
+# Fully DISTRIBUTED ISL ODTS scenario (Example 8, distributed variant).
+# Each satellite is an `IslSatellite` agent self-propagating its orbit+clock truth and
+# hosting a `SatelliteOdtsApp`: it generates its OWN crosslink + station-aiding
+# measurements (pulling neighbour/station truth via the agent graph), runs its onboard
+# Schmidt-EKF, and exchanges consider-states with neighbours over the Publish/Subscribe
+# bus (one-interval latency). A `SurfaceStationManager` hosts the centralized ground
+# filter (`GroundOdtsApp`) as a baseline. Generated from configs/isl_odts.yaml.
+
+name: isl_odts_distributed
+epoch: '2027-03-01T00:00:00'
+duration: 06:00:00
+log_level: WARNING
+world:
+  frame: MOON_CI
+  force_model:
+    integrator: RKF45
+    dt: 60.0
+    max_iter: 20
+    abstol: 1.0e-12
+    reltol: 1.0e-12
+    autodiff: false
+    bodies:
+    - MOON:
+        n: 16
+        m: 16
+    - EARTH: {}
+    - SUN: {}
+agents:
+  SV-1:
+    class: IslSatellite
+    frequency: 0.016666666666666666
+    initial_state:
+      r0_m:
+      - -198931.445
+      - 386023.132
+      - 3458355.412
+      v0_mps:
+      - -1539.867
+      - 22.243
+      - -91.059
+      clock_bias_s: 0.0
+      clock_drift_sps: 0.0
+    truth:
+      moon_gravity_degree: 16
+      moon_gravity_order: 16
+      include_earth: true
+      include_sun: true
+      use_relativity: true
+      integration_step_s: 60.0
+      clock_seed: 1042
+    application:
+      class: SatelliteOdtsApp
+      frequency: 0.016666666666666666
+      neighbors:
+      - SV-2
+      - SV-3
+      - SV-4
+      - SV-5
+      stations: &id001
+      - name: GS-South
+        latitude_deg: -89.9
+        longitude_deg: 0.0
+        altitude_m: 0.0
+        elevation_mask_deg: 5.0
+      - name: GS-SE
+        latitude_deg: -40.0
+        longitude_deg: 120.0
+        altitude_m: 0.0
+        elevation_mask_deg: 5.0
+      - name: GS-SW
+        latitude_deg: -40.0
+        longitude_deg: -120.0
+        altitude_m: 0.0
+        elevation_mask_deg: 5.0
+      seed: 42
+      dt_s: 60.0
+      duration_s: 21600.0
+      moon_gravity_degree_filter: 8
+      moon_gravity_order_filter: 8
+      include_earth: true
+      include_sun: true
+      use_relativity: true
+      integration_step_s: 60.0
+      range_sigma_m: 1.0
+      range_rate_sigma_mps: 0.001
+      enable_two_way_time_transfer: true
+      time_transfer_sigma_m: 1.0
+      enable_two_way_frequency_transfer: true
+      frequency_transfer_sigma_mps: 0.001
+      enable_station_doppler: true
+      station_doppler_sigma_mps: 0.001
+      process_accel_sigma_mps2: 1.0e-08
+      initial_position_sigma_m: 200.0
+      initial_velocity_sigma_mps: 0.1
+      initial_clock_bias_sigma_s: 1.0e-06
+      initial_clock_drift_sigma_sps: 1.0e-09
+      consider_position_sigma_m: 500.0
+      consider_velocity_sigma_mps: 0.05
+      consider_clock_bias_sigma_s: 1.0e-06
+      consider_clock_drift_sigma_sps: 1.0e-09
+      consider_exchange_interval_s: 600.0
+      exchange_use_covariance_intersection: false
+      exchange_ci_weight: -1.0
+  SV-2:
+    class: IslSatellite
+    frequency: 0.016666666666666666
+    initial_state:
+      r0_m:
+      - 1089980.598
+      - -2260918.271
+      - -18984562.823
+      v0_mps:
+      - 280.301
+      - -4.049
+      - 16.575
+      clock_bias_s: 1.0e-05
+      clock_drift_sps: 1.0e-10
+    truth:
+      moon_gravity_degree: 16
+      moon_gravity_order: 16
+      include_earth: true
+      include_sun: true
+      use_relativity: true
+      integration_step_s: 60.0
+      clock_seed: 2042
+    application:
+      class: SatelliteOdtsApp
+      frequency: 0.016666666666666666
+      neighbors:
+      - SV-1
+      - SV-3
+      - SV-4
+      - SV-5
+      stations: *id001
+      seed: 42
+      dt_s: 60.0
+      duration_s: 21600.0
+      moon_gravity_degree_filter: 8
+      moon_gravity_order_filter: 8
+      include_earth: true
+      include_sun: true
+      use_relativity: true
+      integration_step_s: 60.0
+      range_sigma_m: 1.0
+      range_rate_sigma_mps: 0.001
+      enable_two_way_time_transfer: true
+      time_transfer_sigma_m: 1.0
+      enable_two_way_frequency_transfer: true
+      frequency_transfer_sigma_mps: 0.001
+      enable_station_doppler: true
+      station_doppler_sigma_mps: 0.001
+      process_accel_sigma_mps2: 1.0e-08
+      initial_position_sigma_m: 200.0
+      initial_velocity_sigma_mps: 0.1
+      initial_clock_bias_sigma_s: 1.0e-06
+      initial_clock_drift_sigma_sps: 1.0e-09
+      consider_position_sigma_m: 500.0
+      consider_velocity_sigma_mps: 0.05
+      consider_clock_bias_sigma_s: 1.0e-06
+      consider_clock_drift_sigma_sps: 1.0e-09
+      consider_exchange_interval_s: 600.0
+      exchange_use_covariance_intersection: false
+      exchange_ci_weight: -1.0
+  SV-3:
+    class: IslSatellite
+    frequency: 0.016666666666666666
+    initial_state:
+      r0_m:
+      - 9187665.852
+      - -260470.721
+      - -8543222.759
+      v0_mps:
+      - 273.629
+      - 417.588
+      - -313.828
+      clock_bias_s: -6.0e-06
+      clock_drift_sps: -8.0e-11
+    truth:
+      moon_gravity_degree: 16
+      moon_gravity_order: 16
+      include_earth: true
+      include_sun: true
+      use_relativity: true
+      integration_step_s: 60.0
+      clock_seed: 3042
+    application:
+      class: SatelliteOdtsApp
+      frequency: 0.016666666666666666
+      neighbors:
+      - SV-1
+      - SV-2
+      - SV-4
+      - SV-5
+      stations: *id001
+      seed: 42
+      dt_s: 60.0
+      duration_s: 21600.0
+      moon_gravity_degree_filter: 8
+      moon_gravity_order_filter: 8
+      include_earth: true
+      include_sun: true
+      use_relativity: true
+      integration_step_s: 60.0
+      range_sigma_m: 1.0
+      range_rate_sigma_mps: 0.001
+      enable_two_way_time_transfer: true
+      time_transfer_sigma_m: 1.0
+      enable_two_way_frequency_transfer: true
+      frequency_transfer_sigma_mps: 0.001
+      enable_station_doppler: true
+      station_doppler_sigma_mps: 0.001
+      process_accel_sigma_mps2: 1.0e-08
+      initial_position_sigma_m: 200.0
+      initial_velocity_sigma_mps: 0.1
+      initial_clock_bias_sigma_s: 1.0e-06
+      initial_clock_drift_sigma_sps: 1.0e-09
+      consider_position_sigma_m: 500.0
+      consider_velocity_sigma_mps: 0.05
+      consider_clock_bias_sigma_s: 1.0e-06
+      consider_clock_drift_sigma_sps: 1.0e-09
+      consider_exchange_interval_s: 600.0
+      exchange_use_covariance_intersection: false
+      exchange_ci_weight: -1.0
+  SV-4:
+    class: IslSatellite
+    frequency: 0.016666666666666666
+    initial_state:
+      r0_m:
+      - 6484019.002
+      - 14329883.921
+      - -7966345.594
+      v0_mps:
+      - -258.433
+      - 33.951
+      - 235.264
+      clock_bias_s: 4.0e-06
+      clock_drift_sps: 5.0e-11
+    truth:
+      moon_gravity_degree: 16
+      moon_gravity_order: 16
+      include_earth: true
+      include_sun: true
+      use_relativity: true
+      integration_step_s: 60.0
+      clock_seed: 4042
+    application:
+      class: SatelliteOdtsApp
+      frequency: 0.016666666666666666
+      neighbors:
+      - SV-1
+      - SV-2
+      - SV-3
+      - SV-5
+      stations: *id001
+      seed: 42
+      dt_s: 60.0
+      duration_s: 21600.0
+      moon_gravity_degree_filter: 8
+      moon_gravity_order_filter: 8
+      include_earth: true
+      include_sun: true
+      use_relativity: true
+      integration_step_s: 60.0
+      range_sigma_m: 1.0
+      range_rate_sigma_mps: 0.001
+      enable_two_way_time_transfer: true
+      time_transfer_sigma_m: 1.0
+      enable_two_way_frequency_transfer: true
+      frequency_transfer_sigma_mps: 0.001
+      enable_station_doppler: true
+      station_doppler_sigma_mps: 0.001
+      process_accel_sigma_mps2: 1.0e-08
+      initial_position_sigma_m: 200.0
+      initial_velocity_sigma_mps: 0.1
+      initial_clock_bias_sigma_s: 1.0e-06
+      initial_clock_drift_sigma_sps: 1.0e-09
+      consider_position_sigma_m: 500.0
+      consider_velocity_sigma_mps: 0.05
+      consider_clock_bias_sigma_s: 1.0e-06
+      consider_clock_drift_sigma_sps: 1.0e-09
+      consider_exchange_interval_s: 600.0
+      exchange_use_covariance_intersection: false
+      exchange_ci_weight: -1.0
+  SV-5:
+    class: IslSatellite
+    frequency: 0.016666666666666666
+    initial_state:
+      r0_m:
+      - -5074242.314
+      - 14473022.751
+      - -8638530.033
+      v0_mps:
+      - -229.931
+      - -26.926
+      - -264.381
+      clock_bias_s: -8.0e-06
+      clock_drift_sps: -3.0e-11
+    truth:
+      moon_gravity_degree: 16
+      moon_gravity_order: 16
+      include_earth: true
+      include_sun: true
+      use_relativity: true
+      integration_step_s: 60.0
+      clock_seed: 5042
+    application:
+      class: SatelliteOdtsApp
+      frequency: 0.016666666666666666
+      neighbors:
+      - SV-1
+      - SV-2
+      - SV-3
+      - SV-4
+      stations: *id001
+      seed: 42
+      dt_s: 60.0
+      duration_s: 21600.0
+      moon_gravity_degree_filter: 8
+      moon_gravity_order_filter: 8
+      include_earth: true
+      include_sun: true
+      use_relativity: true
+      integration_step_s: 60.0
+      range_sigma_m: 1.0
+      range_rate_sigma_mps: 0.001
+      enable_two_way_time_transfer: true
+      time_transfer_sigma_m: 1.0
+      enable_two_way_frequency_transfer: true
+      frequency_transfer_sigma_mps: 0.001
+      enable_station_doppler: true
+      station_doppler_sigma_mps: 0.001
+      process_accel_sigma_mps2: 1.0e-08
+      initial_position_sigma_m: 200.0
+      initial_velocity_sigma_mps: 0.1
+      initial_clock_bias_sigma_s: 1.0e-06
+      initial_clock_drift_sigma_sps: 1.0e-09
+      consider_position_sigma_m: 500.0
+      consider_velocity_sigma_mps: 0.05
+      consider_clock_bias_sigma_s: 1.0e-06
+      consider_clock_drift_sigma_sps: 1.0e-09
+      consider_exchange_interval_s: 600.0
+      exchange_use_covariance_intersection: false
+      exchange_ci_weight: -1.0
+  gs_manager:
+    class: SurfaceStationManager
+    application:
+      class: GroundOdtsApp
+      frequency: 0.016666666666666666
+      satellites:
+      - SV-1
+      - SV-2
+      - SV-3
+      - SV-4
+      - SV-5
+      stations: *id001
+      seed: 42
+      dt_s: 60.0
+      duration_s: 21600.0
+      moon_gravity_degree_filter: 8
+      moon_gravity_order_filter: 8
+      include_earth: true
+      include_sun: true
+      use_relativity: true
+      integration_step_s: 60.0
+      station_doppler_sigma_mps: 0.001
+      enable_station_doppler: true
+      initial_position_sigma_m: 200.0
+      initial_velocity_sigma_mps: 0.1
+      initial_clock_bias_sigma_s: 1.0e-06
+      initial_clock_drift_sigma_sps: 1.0e-09
+      pseudorange_sigma_m: 1.0
+      central_process_accel_sigma_mps2: 1.0e-06
+      central_outlier_threshold: 3.0

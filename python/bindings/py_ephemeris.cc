@@ -1,16 +1,21 @@
 /**
  * @file py_ephemeris.cc
  * @brief Python bindings for `lupnt::CartesianEphemeris`/`lupnt::Almanac`
- *        (`lupnt/applications/lunanet_ephemeris.h`, `lupnt/applications/lunanet_almanac.h`) and
- *        `lupnt::EphemerisSimulation`
- *        (`lupnt/simulations/ephemeris/ephemeris_simulation.h`).
+ *        (`lupnt/applications/ephemeris/lunanet_ephemeris.h`,
+ * `lupnt/applications/ephemeris/lunanet_almanac.h`), the ephemeris/almanac datasize-accuracy study
+ * config/result structs
+ *        (`lupnt/simulations/ephemeris/ephemeris_simulation.h`), and the agent-based
+ *        `lupnt::EphemerisApp` (`lupnt/applications/ephemeris/ephemeris_app.h`).
  *
  * Config/result/options structs are plain `double`-valued (no `lupnt::Real`), so
  * they bind directly via `def_readwrite`/`def_readonly` with pybind11's built-in
  * Eigen<->NumPy conversion, following the `IslOdtsConfig`/`IslOdtsResults` pattern
  * in `py_isl_odts.cc`.
  */
+#include <lupnt/applications/ephemeris/ephemeris_app.h>
 #include <lupnt/lupnt.h>
+
+#include <memory>
 
 #include "py_pybind11.h"
 
@@ -73,7 +78,7 @@ void InitEphemeris(py::module& m) {
       .def("param_names", &Almanac::ParamNames)
       .def("get_options", &Almanac::GetOptions, py::return_value_policy::reference_internal);
 
-  // ---- EphemerisSimulation -------------------------------------------------------
+  // ---- Ephemeris study config/results (EphemerisApp) -----------------------------
 
   py::class_<EphemerisOrbitConfig>(m, "EphemerisOrbitConfig")
       .def(py::init<>())
@@ -121,20 +126,27 @@ void InitEphemeris(py::module& m) {
       .def_readonly("pos_p95_m", &EphemerisWindowResult::pos_p95_m)
       .def_readonly("vel_p95_mps", &EphemerisWindowResult::vel_p95_mps);
 
-  py::class_<EphemerisSimulation>(m, "EphemerisSimulation")
+  py::class_<EphemerisResults>(m, "EphemerisResults")
+      .def(py::init<>())
+      .def_readonly("t_truth_s", &EphemerisResults::t_truth_s,
+                    "Elapsed time since start_epoch_utc [s], size [N]")
+      .def_readonly("rv_truth", &EphemerisResults::rv_truth,
+                    "Truth Cartesian states [N x 6] in output_frame")
+      .def_readonly("cartesian_results", &EphemerisResults::cartesian_results,
+                    "List of EphemerisWindowResult, one per fit_window_minutes value "
+                    "(CartesianEphemeris)")
+      .def_readonly("almanac_results", &EphemerisResults::almanac_results,
+                    "List of EphemerisWindowResult, one per fit_window_minutes value (Almanac)");
+
+  // ---- EphemerisApp (agent-based coordinator) --------------------------------------
+  // Hosted on an `EphemerisManager` agent. Retrieve it from a `pnt.Simulation` via
+  // `sim.get_agent("EphemerisManager").get_application()` (downcasts here), then read its
+  // `EphemerisResults`.
+  py::class_<EphemerisApp, Application, std::shared_ptr<EphemerisApp>>(m, "EphemerisApp")
       .def(py::init<EphemerisSimulationConfig>(), py::arg("config"))
-      .def("setup", &EphemerisSimulation::Setup)
-      .def("run", &EphemerisSimulation::Run)
-      .def("get_config", &EphemerisSimulation::GetConfig,
-           py::return_value_policy::reference_internal)
-      .def("get_truth_times", &EphemerisSimulation::GetTruthTimes,
-           py::return_value_policy::reference_internal)
-      .def("get_truth_states", &EphemerisSimulation::GetTruthStates,
-           py::return_value_policy::reference_internal)
-      .def("get_cartesian_results", &EphemerisSimulation::GetCartesianResults,
-           py::return_value_policy::reference_internal)
-      .def("get_almanac_results", &EphemerisSimulation::GetAlmanacResults,
-           py::return_value_policy::reference_internal);
+      .def("get_config", &EphemerisApp::GetConfig, py::return_value_policy::reference_internal)
+      .def("get_results", &EphemerisApp::GetResults, py::return_value_policy::reference_internal,
+           "Full EphemerisResults (truth trajectory + per-window Cartesian/Almanac results)");
 
   // ---- EphemerisGenApp (LunaNet nav-message generation sub-app) ------------------
 

@@ -1,0 +1,105 @@
+# Agent-based distributed ISL + lunar-surface-station ODTS scenario (Example 8).
+#
+# A five-satellite lunar relay/navigation constellation (NASA LCRNS Reference
+# Constellation 3.1), fully cross-linked, plus a small southern surface-station beacon
+# network. A single thin `IslOdtsManager` coordinator agent hosts an
+# `IslOdtsCoordinatorApp`: the app owns the whole per-epoch ODTS body -- truth
+# propagation (per-satellite orbit + clock), two-way crosslink range / Doppler /
+# time- / frequency-transfer synthesis, elevation-gated surface-station one-way
+# pseudorange / Doppler beacons, the N parallel onboard Schmidt-EKF filters, the
+# centralized ground filter, and the periodic consider-state exchange. It mirrors the
+# ex7 `GroundStationManagerApp` (a coordinator aggregating from a constellation) and the
+# ex10 `SurfaceRoverNavApp` (an app-internal constellation).
+#
+# The shared physical environment lives in the top-level `world:` block (frame + a truth
+# force model, for documentation and the `GetStateAt` facade); the coordinator builds its
+# own truth (higher-order) and reduced-order onboard-filter dynamics app-internally, as a
+# real distributed constellation would.
+
+name: isl_odts
+epoch: "2027-03-01T00:00:00"
+duration: "06:00:00"          # 6 h (matches application.duration_s)
+log_level: INFO
+
+# ---- Shared, read-only environment -------------------------------------------
+world:
+  frame: MOON_CI
+  force_model:                # truth force model (Moon 16x16 + Earth/Sun), for the facade
+    integrator: RKF45
+    dt: 60.0
+    max_iter: 20
+    abstol: 1.0e-12
+    reltol: 1.0e-12
+    autodiff: false
+    bodies:
+      - MOON: { n: 16, m: 16 }
+      - EARTH: {}
+      - SUN: {}
+
+agents:
+  # ---- Coordinator: constellation-level ODTS processing node ----
+  IslManager:
+    class: IslOdtsManager
+    application:
+      class: IslOdtsCoordinatorApp
+      seed: 42
+      start_epoch_utc: "2027-03-01T00:00:00"
+      duration_s: 21600.0
+      dt_s: 60.0
+      integration_step_s: 60.0
+
+      # Force model (truth vs reduced-order onboard filter)
+      moon_gravity_degree_truth: 16
+      moon_gravity_order_truth: 16
+      moon_gravity_degree_filter: 8
+      moon_gravity_order_filter: 8
+      include_earth: true
+      include_sun: true
+      use_relativity: true
+
+      # Two-way crosslink measurement noise + time/frequency transfer
+      range_sigma_m: 1.0
+      range_rate_sigma_mps: 1.0e-3
+      enable_two_way_time_transfer: true
+      time_transfer_sigma_m: 1.0
+      enable_two_way_frequency_transfer: true
+      frequency_transfer_sigma_mps: 1.0e-3
+
+      # Surface-station beacon Doppler + centralized ground filter
+      enable_station_doppler: true
+      station_doppler_sigma_mps: 1.0e-3
+      enable_centralized_ground_filter: true
+      central_process_accel_sigma_mps2: 1.0e-6
+      central_outlier_threshold: 3.0
+
+      # Consider-state exchange (naive overwrite by default; set
+      # exchange_use_covariance_intersection: true for the consistent CI variant)
+      consider_exchange_interval_s: 600.0
+      exchange_use_covariance_intersection: false
+      exchange_ci_weight: -1.0
+
+      # Onboard filter initialization / tuning
+      initial_position_sigma_m: 200.0
+      initial_velocity_sigma_mps: 0.1
+      initial_clock_bias_sigma_s: 1.0e-6
+      initial_clock_drift_sigma_sps: 1.0e-9
+      consider_position_sigma_m: 500.0
+      consider_velocity_sigma_mps: 0.05
+      consider_clock_bias_sigma_s: 1.0e-6
+      consider_clock_drift_sigma_sps: 1.0e-9
+      process_accel_sigma_mps2: 1.0e-8
+
+      # NASA LCRNS Reference Constellation 3.1 initial states, Frame.MOON_CI [m], [m/s].
+      # SV-1 is the crosslink-geometry reporting reference. Clock offsets are representative.
+      satellites:
+        - { name: SV-1, r0_m: [-198931.445, 386023.132, 3458355.412], v0_mps: [-1539.867, 22.243, -91.059], clock_bias_s: 0.0, clock_drift_sps: 0.0 }
+        - { name: SV-2, r0_m: [1089980.598, -2260918.271, -18984562.823], v0_mps: [280.301, -4.049, 16.575], clock_bias_s: 10.0e-6, clock_drift_sps: 1.0e-10 }
+        - { name: SV-3, r0_m: [9187665.852, -260470.721, -8543222.759], v0_mps: [273.629, 417.588, -313.828], clock_bias_s: -6.0e-6, clock_drift_sps: -8.0e-11 }
+        - { name: SV-4, r0_m: [6484019.002, 14329883.921, -7966345.594], v0_mps: [-258.433, 33.951, 235.264], clock_bias_s: 4.0e-6, clock_drift_sps: 5.0e-11 }
+        - { name: SV-5, r0_m: [-5074242.314, 14473022.751, -8638530.033], v0_mps: [-229.931, -26.926, -264.381], clock_bias_s: -8.0e-6, clock_drift_sps: -3.0e-11 }
+
+      # Southern surface-station beacon network (one-way pseudorange + Doppler each)
+      surface_stations:
+        - { name: GS-South, latitude_deg: -89.9, longitude_deg: 0.0, altitude_m: 0.0, pseudorange_sigma_m: 1.0, elevation_mask_deg: 5.0 }
+        - { name: GS-SE, latitude_deg: -40.0, longitude_deg: 120.0, altitude_m: 0.0, pseudorange_sigma_m: 1.0, elevation_mask_deg: 5.0 }
+        - { name: GS-SW, latitude_deg: -40.0, longitude_deg: -120.0, altitude_m: 0.0, pseudorange_sigma_m: 1.0, elevation_mask_deg: 5.0 }

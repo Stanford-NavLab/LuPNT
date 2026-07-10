@@ -59,10 +59,13 @@ def _try_import(module):
 # `core` is cheap (utilities used throughout pylupnt) and stays eager.
 _try_import("core")
 
-# interfaces/plot/plasma pull in heavy optional deps (plotly, sklearn,
-# scipy, pandas) that most users of the core C++ bindings never touch. Import them
-# lazily, on first attribute access, instead of paying their cost at `import pylupnt`.
-_lazy_submodules = ["interfaces", "plot", "plasma"]
+# plot/plasma pull in heavy optional deps (plotly, sklearn, scipy, pandas) that
+# most users of the core C++ bindings never touch. Import them lazily, on first
+# attribute access, instead of paying their cost at `import pylupnt`.
+# (GNSS SP3/BRDC/ANTEX file parsing now lives in the C++ bindings -- pnt.Sp3Loader
+# / pnt.RinexNavLoader / pnt.AntexLoader; the old Python `interfaces` package moved
+# to projects/Plasmasphere_Delay_Datagen/src/interfaces.)
+_lazy_submodules = ["plot", "plasma"]
 
 
 def __getattr__(name):

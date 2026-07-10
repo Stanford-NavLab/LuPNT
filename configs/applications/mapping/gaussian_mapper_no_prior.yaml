@@ -1,4 +1,0 @@
-gaussian_mapper:
-  class: GaussianMapper
-  inherit_from: applications/gaussian_mapper.yaml
-  use_prior: False

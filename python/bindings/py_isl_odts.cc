@@ -14,7 +14,11 @@
  * and `IslOdtsResults.satellite_names`/`.truth_states` (std::vector<...>) rely on
  * pybind11/stl.h for Python list<->std::vector conversion.
  */
+#include <lupnt/applications/lunar_sat_odts/ground_odts_app.h>
+#include <lupnt/applications/lunar_sat_odts/satellite_odts_app.h>
 #include <lupnt/lupnt.h>
+
+#include <memory>
 
 #include "py_pybind11.h"
 
@@ -84,6 +88,16 @@ void InitIslOdts(py::module& m) {
       .def_readwrite("consider_exchange_interval_s", &IslOdtsConfig::consider_exchange_interval_s,
                      "Interval [s] at which the parallel filters exchange own estimate "
                      "(mean + covariance) to refresh each other's consider blocks; <=0 disables")
+      .def_readwrite("exchange_use_covariance_intersection",
+                     &IslOdtsConfig::exchange_use_covariance_intersection,
+                     "If True (default), fuse each broadcast neighbor estimate into the "
+                     "consider block with Covariance Intersection (consistent under the "
+                     "unknown inter-filter correlation); if False, overwrite the block and "
+                     "zero its cross-covariance (optimistic, kept for comparison)")
+      .def_readwrite("exchange_ci_weight", &IslOdtsConfig::exchange_ci_weight,
+                     "Fixed CI weight w in [0,1] on the local consider block (1-w on the "
+                     "broadcast); negative (default) selects w per block by minimizing the "
+                     "fused-block covariance trace")
       .def_readwrite("moon_gravity_degree_truth", &IslOdtsConfig::moon_gravity_degree_truth)
       .def_readwrite("moon_gravity_order_truth", &IslOdtsConfig::moon_gravity_order_truth)
       .def_readwrite("moon_gravity_degree_filter", &IslOdtsConfig::moon_gravity_degree_filter)
@@ -102,7 +116,42 @@ void InitIslOdts(py::module& m) {
       .def_readwrite("consider_clock_bias_sigma_s", &IslOdtsConfig::consider_clock_bias_sigma_s)
       .def_readwrite("consider_clock_drift_sigma_sps",
                      &IslOdtsConfig::consider_clock_drift_sigma_sps)
-      .def_readwrite("process_accel_sigma_mps2", &IslOdtsConfig::process_accel_sigma_mps2);
+      .def_readwrite("process_accel_sigma_mps2", &IslOdtsConfig::process_accel_sigma_mps2)
+      .def_readwrite("surface_stations", &IslOdtsConfig::surface_stations,
+                     "List of surface-station beacons; if non-empty it overrides the single "
+                     "surface_station (each station exchanges a one-way pseudorange with every "
+                     "satellite above its elevation mask)")
+      .def_readwrite("enable_two_way_time_transfer", &IslOdtsConfig::enable_two_way_time_transfer,
+                     "If True, each crosslink also measures the range-equivalent clock-bias "
+                     "difference C*(b_i - b_j), making the constellation's relative clocks "
+                     "observable (two-way ranging alone is clock-free)")
+      .def_readwrite("time_transfer_sigma_m", &IslOdtsConfig::time_transfer_sigma_m,
+                     "Two-way time-transfer noise 1-sigma [m] (comparable to the ranging noise)")
+      .def_readwrite("enable_two_way_frequency_transfer",
+                     &IslOdtsConfig::enable_two_way_frequency_transfer,
+                     "If True, each crosslink also measures the clock-DRIFT difference "
+                     "C*(d_i - d_j) (rate companion to the time transfer), making relative "
+                     "clock drift observable")
+      .def_readwrite("frequency_transfer_sigma_mps", &IslOdtsConfig::frequency_transfer_sigma_mps,
+                     "Two-way frequency-transfer noise 1-sigma [m/s]")
+      .def_readwrite("enable_station_doppler", &IslOdtsConfig::enable_station_doppler,
+                     "If True, the surface-station beacon links also provide one-way Doppler "
+                     "(pseudorange-rate), adding velocity + clock-drift observability")
+      .def_readwrite("station_doppler_sigma_mps", &IslOdtsConfig::station_doppler_sigma_mps,
+                     "One-way station Doppler noise 1-sigma [m/s]")
+      .def_readwrite("enable_centralized_ground_filter",
+                     &IslOdtsConfig::enable_centralized_ground_filter,
+                     "If True, also run a centralized EKF on the ground that estimates every "
+                     "satellite's orbit+clock from the station pseudoranges only (no ISL)")
+      .def_readwrite("central_process_accel_sigma_mps2",
+                     &IslOdtsConfig::central_process_accel_sigma_mps2,
+                     "Process-noise sigma [m/s^2] for the centralized ground filter (usually "
+                     "much larger than the ISL filters' value; range-only ground tracking is "
+                     "weakly observable and diverges if over-confident)")
+      .def_readwrite("central_outlier_threshold", &IslOdtsConfig::central_outlier_threshold,
+                     "Normalized-residual outlier-rejection threshold [sigma] for the "
+                     "centralized filter (rejects large linearized residuals from fast "
+                     "perilune passes to keep the EKF stable; large value disables)");
 
   // ---- IslOdtsResults ----------------------------------------------------------
   // Time series, row k <-> t_s[k]. truth_states[j] columns:
@@ -123,6 +172,9 @@ void InitIslOdts(py::module& m) {
                     "in global sat order (own block at columns 8*j:8*j+8)")
       .def_readonly("cov_diag", &IslOdtsResults::cov_diag,
                     "List [n_sat] of [N x 8*n_sat] covariance diagonals, same layout as est")
+      .def_readonly("cov_own_full", &IslOdtsResults::cov_own_full,
+                    "List [n_sat] of [N x 64]; row k is satellite j's own 8x8 covariance "
+                    "row-major flattened (reshape to (N,8,8)) -- for NEES consistency checks")
       .def_readonly("range_true_m", &IslOdtsResults::range_true_m)
       .def_readonly("range_rate_true_mps", &IslOdtsResults::range_rate_true_mps)
       .def_readonly("range_obs_m", &IslOdtsResults::range_obs_m)
@@ -131,24 +183,57 @@ void InitIslOdts(py::module& m) {
                     "List [n_sat] of [N x n_links]; range_resid_m[j] = filter j's pre-fit "
                     "crosslink range residuals to its neighbors")
       .def_readonly("cn0_dbhz", &IslOdtsResults::cn0_dbhz)
-      .def_readonly("served_sat_idx", &IslOdtsResults::served_sat_idx,
-                    "[N] global index of the satellite served by the station (-1 if none)")
-      .def_readonly("station_pr_true_m", &IslOdtsResults::station_pr_true_m,
-                    "[N] truth station pseudorange, NaN when the station is idle")
-      .def_readonly("station_pr_obs_m", &IslOdtsResults::station_pr_obs_m,
-                    "[N] noisy station pseudorange observation, NaN when idle")
-      .def_readonly("station_pr_resid_m", &IslOdtsResults::station_pr_resid_m,
-                    "[N] served filter's pre-fit station pseudorange residual, NaN when idle")
+      .def_readonly("time_transfer_true_m", &IslOdtsResults::time_transfer_true_m,
+                    "[N x n_links] two-way time-transfer truth C*(b_0 - b_{i+1}); NaN if disabled")
+      .def_readonly("time_transfer_obs_m", &IslOdtsResults::time_transfer_obs_m,
+                    "[N x n_links] noisy two-way time-transfer observation; NaN if disabled")
       .def_readonly("station_pos_mci", &IslOdtsResults::station_pos_mci,
-                    "[N x 3] station inertial position [m], Frame.MOON_CI");
+                    "List [n_station] of [N x 3] station inertial positions [m], Frame.MOON_CI")
+      .def_readonly("station_visible", &IslOdtsResults::station_visible,
+                    "[N x n_sat] number of stations that see each satellite each epoch")
+      .def_readonly("station_pr_true_m", &IslOdtsResults::station_pr_true_m,
+                    "[N x n_sat] truth station pseudorange per satellite (first visible "
+                    "station), NaN where no station sees it")
+      .def_readonly("station_pr_obs_m", &IslOdtsResults::station_pr_obs_m,
+                    "[N x n_sat] noisy station pseudorange per satellite, NaN if not visible")
+      .def_readonly("station_pr_resid_m", &IslOdtsResults::station_pr_resid_m,
+                    "[N x n_sat] onboard filter's pre-fit station pseudorange residual per "
+                    "satellite, NaN if not visible")
+      .def_readonly("est_central", &IslOdtsResults::est_central,
+                    "[N x 8*n_sat] centralized ground filter estimate, [r,v,cb,cd] per "
+                    "satellite in global order (zeros if the centralized filter is disabled)")
+      .def_readonly("cov_central_full", &IslOdtsResults::cov_central_full,
+                    "List [n_sat] of [N x 64]; centralized filter's own 8x8 covariance per "
+                    "satellite, row-major flattened (reshape to (N,8,8))");
 
-  // ---- IslOdtsSimulation -------------------------------------------------------
+  // ---- IslOdtsCoordinatorApp ---------------------------------------------------
+  // The agent-based coordinator hosted on an `IslOdtsManager` agent. Retrieve it from a
+  // `pnt.Simulation` via `sim.get_agent("IslManager").get_application()` (downcasts here),
+  // then read its time-series `IslOdtsResults`.
+  py::class_<IslOdtsCoordinatorApp, Application, std::shared_ptr<IslOdtsCoordinatorApp>>(
+      m, "IslOdtsCoordinatorApp")
+      .def("get_config", &IslOdtsCoordinatorApp::GetConfig,
+           py::return_value_policy::reference_internal)
+      .def("get_results", &IslOdtsCoordinatorApp::GetResults,
+           py::return_value_policy::reference_internal,
+           "Time-series IslOdtsResults, identical layout to IslOdtsSimulation.get_results()");
 
-  py::class_<IslOdtsSimulation>(m, "IslOdtsSimulation")
-      .def(py::init<IslOdtsConfig>(), py::arg("config"))
-      .def("setup", &IslOdtsSimulation::Setup)
-      .def("run", &IslOdtsSimulation::Run)
-      .def("get_config", &IslOdtsSimulation::GetConfig, py::return_value_policy::reference_internal)
-      .def("get_results", &IslOdtsSimulation::GetResults,
-           py::return_value_policy::reference_internal);
+  // ---- Distributed variant: per-satellite onboard app + ground-segment app ----
+  py::class_<SatelliteOdtsApp, Application, std::shared_ptr<SatelliteOdtsApp>>(m,
+                                                                               "SatelliteOdtsApp")
+      .def("sat_name", &SatelliteOdtsApp::SatName)
+      .def("neighbor_names", &SatelliteOdtsApp::NeighborNames)
+      .def("time_grid", &SatelliteOdtsApp::TimeGrid)
+      .def("truth_state", &SatelliteOdtsApp::TruthState, "[N x 8] own truth [r,v,cb,cd]")
+      .def("own_estimate", &SatelliteOdtsApp::OwnEstimate, "[N x 8] own onboard estimate")
+      .def("own_cov_diag", &SatelliteOdtsApp::OwnCovDiag, "[N x 8] own covariance diagonal")
+      .def("own_cov_full", &SatelliteOdtsApp::OwnCovFull, "[N x 64] own 8x8 covariance (row-major)")
+      .def("num_anchors_total", &SatelliteOdtsApp::NumAnchorsTotal);
+
+  py::class_<GroundOdtsApp, Application, std::shared_ptr<GroundOdtsApp>>(m, "GroundOdtsApp")
+      .def("satellite_names", &GroundOdtsApp::SatelliteNames)
+      .def("time_grid", &GroundOdtsApp::TimeGrid)
+      .def("est_central", &GroundOdtsApp::EstCentral, "[N x 8*n_sat] centralized ground estimate")
+      .def("cov_central_full", &GroundOdtsApp::CovCentralFull,
+           "n_sat x [N x 64] per-satellite 8x8 covariance (row-major)");
 }

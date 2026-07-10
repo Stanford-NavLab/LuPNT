@@ -56,6 +56,8 @@ namespace lupnt {
     }
   }
 
+  World* Agent::GetWorld() const { return sim_ ? sim_->GetWorld() : nullptr; }
+
   void Agent::SetApplication(Ptr<Application> app) {
     application_ = app;
     if (application_) application_->SetAgent(this);

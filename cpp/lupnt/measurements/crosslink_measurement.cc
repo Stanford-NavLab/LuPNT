@@ -7,14 +7,20 @@
 namespace lupnt {
 
   int IslCrosslinkMeasurement::NumRows() const {
-    return 2 * config_.n_links + static_cast<int>(config_.anchor_pos_mci.size());
+    const int n_anchor = static_cast<int>(config_.anchor_pos_mci.size());
+    return 2 * config_.n_links + n_anchor + (config_.include_anchor_doppler ? n_anchor : 0)
+           + (config_.include_time_transfer ? config_.n_links : 0)
+           + (config_.include_frequency_transfer ? config_.n_links : 0);
   }
 
   VecX IslCrosslinkMeasurement::Model(const VecX& x) const {
     const int n_links = config_.n_links;
     const int sub = config_.sub_state_size;
     const int n_anchor = static_cast<int>(config_.anchor_pos_mci.size());
-    const int m = 2 * n_links + n_anchor;
+    const int n_ad = config_.include_anchor_doppler ? n_anchor : 0;
+    const int n_tt = config_.include_time_transfer ? n_links : 0;
+    const int n_ft = config_.include_frequency_transfer ? n_links : 0;
+    const int m = 2 * n_links + n_anchor + n_ad + n_tt + n_ft;
 
     VecX y(m);
     VecX r0 = x.segment(config_.idx_position, 3);
@@ -27,10 +33,35 @@ namespace lupnt {
     }
 
     const Vec3 r_hub = x.segment(config_.idx_position, 3);
-    const Real b_hub = x(config_.idx_clock_bias);  // hub clock bias [s]
+    const Vec3 v_hub = x.segment(config_.idx_velocity, 3);
+    const Real b_hub = x(config_.idx_clock_bias);   // hub clock bias [s]
+    const Real d_hub = x(config_.idx_clock_drift);  // hub clock drift [s/s]
     for (int ad = 0; ad < n_anchor; ++ad) {
       const Vec3 ra = config_.anchor_pos_mci[ad].cast<Real>();
       y(2 * n_links + ad) = (r_hub - ra).norm() + C * b_hub;
+    }
+
+    // One-way anchor Doppler (pseudorange-rate) rows: u . (v_hub - v_anchor) + C * d_hub.
+    for (int ad = 0; ad < n_ad; ++ad) {
+      const Vec3 ra = config_.anchor_pos_mci[ad].cast<Real>();
+      const Vec3 va = config_.anchor_vel_mci[ad].cast<Real>();
+      const Vec3 dr = r_hub - ra;
+      const Vec3 u = dr / dr.norm();
+      y(2 * n_links + n_anchor + ad) = u.dot(v_hub - va) + C * d_hub;
+    }
+
+    // Two-way time-transfer rows: range-equivalent clock-bias difference between the hub
+    // and each linked satellite, C * (b_hub - b_link_i).
+    for (int i = 0; i < n_tt; ++i) {
+      const Real b_link = x(sub * (i + 1) + config_.idx_clock_bias);
+      y(2 * n_links + n_anchor + n_ad + i) = C * (b_hub - b_link);
+    }
+
+    // Two-way frequency-transfer rows: range-rate-equivalent clock-drift difference,
+    // C * (d_hub - d_link_i).
+    for (int i = 0; i < n_ft; ++i) {
+      const Real d_link = x(sub * (i + 1) + config_.idx_clock_drift);
+      y(2 * n_links + n_anchor + n_ad + n_tt + i) = C * (d_hub - d_link);
     }
     return y;
   }
@@ -46,6 +77,21 @@ namespace lupnt {
     for (int ad = 0; ad < n_anchor; ++ad) {
       R(2 * n_links + ad, 2 * n_links + ad)
           = config_.sigma_pseudorange_m * config_.sigma_pseudorange_m;
+    }
+    const int n_ad = config_.include_anchor_doppler ? n_anchor : 0;
+    for (int ad = 0; ad < n_ad; ++ad) {
+      const int r = 2 * n_links + n_anchor + ad;
+      R(r, r) = config_.sigma_anchor_doppler_mps * config_.sigma_anchor_doppler_mps;
+    }
+    const int n_tt = config_.include_time_transfer ? n_links : 0;
+    for (int i = 0; i < n_tt; ++i) {
+      const int r = 2 * n_links + n_anchor + n_ad + i;
+      R(r, r) = config_.sigma_time_transfer_m * config_.sigma_time_transfer_m;
+    }
+    const int n_ft = config_.include_frequency_transfer ? n_links : 0;
+    for (int i = 0; i < n_ft; ++i) {
+      const int r = 2 * n_links + n_anchor + n_ad + n_tt + i;
+      R(r, r) = config_.sigma_frequency_transfer_mps * config_.sigma_frequency_transfer_mps;
     }
     return R;
   }

@@ -1,0 +1,155 @@
+# Agent-based lunar GNSS sidelobe ODTS scenario (Example 6).
+#
+# A single lunar-orbiting receiver (ELFO, a=6541.4 km, e=0.6) determines its own orbit and
+# clock from cislunar GPS+Galileo sidelobe pseudorange / Doppler / TDCP measurements, run
+# through a UDU EKF (UDU stochastic-cloning EKF when TDCP is on). A single thin
+# `LunarGnssManager` coordinator agent hosts a `LunarGnssOdtsApp`: the app owns the whole
+# pipeline -- receiver truth trajectory, cislunar GNSS link geometry / CN0, optional
+# plasmasphere delay, and the Monte-Carlo EKF -- mirroring ex8's `IslOdtsCoordinatorApp`
+# on an `IslOdtsManager`. The heavy engine (`RunLunarGnssODTSMonteCarlo`) is unchanged, so
+# the numerics are preserved bit-for-bit relative to the former `LunarGnssODTSSimulation`.
+#
+# The shared physical environment lives in the top-level `world:` block (frame + a truth
+# force model, for documentation and the `GetStateAt` facade); the app builds its own truth
+# and reduced-order filter dynamics internally, as the former monolith did.
+#
+# Data/output paths below are relative and are resolved / overridden by the run script
+# (python/examples/ex6_run_gnss_odts.py) to this repo's data + output directories.
+
+name: lunar_gnss_odts
+epoch: "2026-01-01T02:00:00"
+duration: "14:00:00"          # >= one ELFO period; the app runs on a single t=0 event
+log_level: INFO
+
+# ---- Shared, read-only environment -------------------------------------------
+world:
+  frame: MOON_CI
+  force_model:                # truth force model (Moon 20x20 + Earth/Sun), for the facade
+    integrator: RKF45
+    dt: 30.0
+    max_iter: 20
+    abstol: 1.0e-12
+    reltol: 1.0e-12
+    autodiff: false
+    bodies:
+      - MOON: { n: 20, m: 20 }
+      - EARTH: {}
+      - SUN: {}
+
+agents:
+  # ---- Coordinator: receiver ground/processing node ----
+  gnss_manager:
+    class: LunarGnssManager
+    application:
+      class: LunarGnssOdtsApp
+
+      # -- Timing: one full ELFO orbital period, processed at 1 Hz --
+      simulation:
+        seed: 42
+        monte_carlo_runs: 1
+        start_epoch_utc: "2026-01-01T02:00:00"
+        duration_s: 47474.87548235426   # 2*pi*sqrt(a^3/GM_MOON), a=6541.4 km, GM_MOON=4902800118000
+        dt_s: 1.0
+        ephemeris_dt_s: 30.0
+        output_dir: output/python_examples/ex6_gnss_odts_data
+        precompute_progress_interval_s: 5.0
+        run_progress_interval_epochs: 1000
+        debug_print_matrix_epochs: 3
+        debug_print_matrix_max_rows: 8
+        precompute_num_threads: 0
+
+      pipeline:
+        links_file: output/python_examples/ex6_gnss_odts_data/precomputed_links.csv
+        delays_file: output/python_examples/ex6_gnss_odts_data/precomputed_delays.csv
+
+      receiver_app:
+        rate_hz: 1.0
+
+      # -- Truth receiver orbit: ELFO --
+      truth:
+        receiver_a_m: 6541400.0
+        receiver_ecc: 0.6
+        receiver_inc_rad: 1.1431906600562858    # 65.5 deg (65.5 * pi/180)
+        receiver_raan_rad: 1.0471975511965976   # 60.0 deg
+        receiver_argp_rad: 1.5707963267948966   # 90.0 deg
+        receiver_mean_anomaly_rad: 0.0
+        clock_bias_s: 2.0e-6
+        clock_drift_sps: 1.0e-10
+        clock_model: OCXO
+        use_three_state_clock_truth: false
+        clock_drift_rate_sps2: 0.0
+
+      # -- GPS + Galileo; auto-select the SP3 covering the epoch --
+      constellation:
+        sp3_directory: data/LuPNT_data/ephemeris/gnsslibpy/sp3
+        antex_file: data/LuPNT_data/gnss/igs20.atx
+        auto_select_sp3: true
+        use_all_gps: true
+        include_galileo: true
+        brdc_directory: data/LuPNT_data/ephemeris/gnsslibpy/brdc
+        use_broadcast_ephemeris: true
+        debias_broadcast_clock: true
+        debias_qzss_radial: true
+
+      # -- Sidelobe link budget (design "custom" section) --
+      design:
+        custom:
+          receiver_tracking:
+            carrier_loop_bandwidth_hz: 1.0     # Bp
+            integration_time_s: 0.02           # T
+            front_end_bandwidth_factor: 2.0    # b
+            code_loop_bandwidth_hz: 0.7        # Bn
+            frequency_loop_bandwidth_hz: 0.2   # Bf
+            early_late_spacing_chips: 0.1      # D
+          link_budget:
+            setup_transmitters: true
+            receiver_antenna: moongpsr
+            apply_cn0_threshold: true
+            cn0_acquisition_threshold_dbhz: 22.0
+            cn0_tracking_threshold_dbhz: 20.0
+            use_cn0_measurement_sigmas: true
+
+      # -- Force model: 20x20 Moon gravity truth / 18x18 filter, Earth+Sun, relativity --
+      dynamics:
+        moon_gravity_degree_truth: 20
+        moon_gravity_order_truth: 20
+        moon_gravity_degree_filter: 18
+        moon_gravity_order_filter: 18
+        include_earth: true
+        include_sun: true
+        use_relativity: true
+        use_srp_truth: true
+        srp_coeff_truth_m2_kg: 2.0e-3
+        use_srp_filter: true
+
+      # -- Measurements: ionosphere-free (L1+L5) pseudorange + TDCP (L1), C/N0 noise --
+      measurements:
+        use_pseudorange: true
+        use_doppler: true
+        use_tdcp: true
+        use_ionosphere_free: true
+        filter_pseudorange_noise_inflation_m: 10.0
+        filter_tdcp_noise_inflation_m: 0.05
+        pseudorange_min_tangent_altitude_m: 1000.0
+        tdcp_min_tangent_altitude_m: 4000.0
+
+      # -- Plasmaspheric delay: GCPM/IRI2007 ray trace, truth-only --
+      plasma:
+        simulate_truth: true
+        model_in_filter: false
+        raytrace:
+          kp: 3.0
+          rz12: 50.0
+
+      # -- Filter tuning --
+      filter:
+        estimate_srp_coefficient: true
+        initial_srp_coeff_m2_kg: 1.0e-3
+        initial_position_sigma_m: 100.0
+        initial_velocity_sigma_mps: 0.1
+        initial_clock_bias_sigma_s: 1.0e-6
+        initial_clock_drift_sigma_sps: 1.0e-11
+        initial_srp_coeff_sigma_m2_kg: 1.0e-3
+        process_accel_sigma_mps2: 1.0e-9
+        process_srp_coeff_sigma_m2_kg_sqrt_s: 1.0e-9
+        integration_step_s: 20.0

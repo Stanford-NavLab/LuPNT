@@ -1,4 +1,4 @@
-#include <lupnt/applications/surface_station_app.h>
+#include <lupnt/applications/lunar_station/surface_station_app.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>

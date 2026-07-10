@@ -1,9 +1,0 @@
-segmentation:
-  class: UnetPlusPlus
-  checkpoint: ./pretrained/segmentation/LuSNAR_UnetPlusPlus.pth
-
-  encoder_name: resnet18
-  encoder_weights: imagenet
-  in_channels: 3
-  classes: 7
-  input_size: [512, 512]

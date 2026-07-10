@@ -1,11 +1,14 @@
 /**
  * @file py_gnss_odts.cc
- * @brief Python bindings for `lupnt::LunarGnssODTSSimulation`
- *        (`lupnt/simulations/lunar_gnss_odts/lunar_gnss_odts_simulation.h`) -- a
- *        lunar-orbiting receiver orbit determination and time synchronization
- *        (ODTS) simulation driven by cislunar GNSS sidelobe pseudorange,
- *        Doppler, and (optionally) TDCP measurements, run through a UDU EKF
- *        (or UDU stochastic-cloning EKF when TDCP is enabled).
+ * @brief Python bindings for the lunar GNSS ODTS scenario -- the config/summary structs
+ *        and free-function link precompute helpers in
+ *        `lupnt/simulations/lunar_gnss_odts/lunar_gnss_odts_simulation.h`, plus the
+ *        agent-based `lupnt::LunarGnssOdtsApp`
+ *        (`lupnt/applications/lunar_gnss_odts/lunar_gnss_odts_app.h`). A lunar-orbiting
+ *        receiver determines its own orbit + clock from cislunar GNSS sidelobe
+ *        pseudorange, Doppler, and (optionally) TDCP measurements, run through a UDU EKF
+ *        (or UDU stochastic-cloning EKF when TDCP is enabled). Drive it from a
+ *        `pnt.Simulation` (a `LunarGnssManager` agent hosts the app).
  *
  * Config/summary structs mix `std::filesystem::path` and plain scalar members.
  * Path-valued fields are exposed as plain strings, converted to
@@ -13,6 +16,7 @@
  * `Sp3Loader`/`AntexLoader`/`GnssConstellation` in `py_gnss.cc`. All other
  * fields bind directly via `def_readwrite`/`def_readonly`.
  */
+#include <lupnt/applications/lunar_gnss_odts/lunar_gnss_odts_app.h>
 #include <lupnt/lupnt.h>
 
 #include <filesystem>
@@ -289,27 +293,21 @@ void InitGnssOdts(py::module& m) {
       .def_readonly("rms_position_error_m", &LunarGnssODTSSummary::rms_position_error_m)
       .def_readonly("rms_velocity_error_mps", &LunarGnssODTSSummary::rms_velocity_error_mps);
 
-  // ---- LunarGnssODTSSimulation ---------------------------------------------------
-  // Setup/Precompute/Run write CSVs directly (links_file, delays_file, and
-  // output_dir/trajectory_mc<N>.csv + summary.csv); Precompute only builds link
-  // geometry/CN0 with zeroed delay columns -- the ionosphere/plasmasphere delay
-  // table (delays_file) must be produced separately (e.g. with pnt.trace_ray, see
-  // projects/GNSS_Filtering/precompute_delays.py) before Run() when
-  // plasma.simulate_truth is true.
-
-  py::class_<LunarGnssODTSSimulation>(m, "LunarGnssODTSSimulation")
-      .def(py::init<LunarGnssODTSConfig>(), py::arg("config"))
-      .def("setup", &LunarGnssODTSSimulation::Setup)
-      .def("precompute", &LunarGnssODTSSimulation::Precompute,
+  // ---- LunarGnssOdtsApp (agent-based) --------------------------------------------
+  // The coordinator app hosted on a `LunarGnssManager` agent. Retrieve it from a
+  // `pnt.Simulation` via `sim.get_agent("gnss_manager").get_application()` (downcasts here),
+  // then read its per-seed `LunarGnssODTSSummary` list; the full time series live in the
+  // trajectory_mc<N>.csv / summary.csv outputs under config.output_dir.
+  py::class_<LunarGnssOdtsApp, Application, std::shared_ptr<LunarGnssOdtsApp>>(m,
+                                                                               "LunarGnssOdtsApp")
+      .def("precompute", &LunarGnssOdtsApp::Precompute,
            "Build receiver truth trajectory and GNSS link/CN0 geometry, writing "
-           "config.links_file with zeroed delay columns")
-      .def("run", &LunarGnssODTSSimulation::Run,
-           "Run the Monte Carlo UDU EKF (or UDU stochastic-cloning EKF when use_tdcp is "
-           "true), writing trajectory_mc<N>.csv and summary.csv under config.output_dir")
-      .def("get_config", &LunarGnssODTSSimulation::GetConfig,
-           py::return_value_policy::reference_internal)
-      .def("get_summaries", &LunarGnssODTSSimulation::GetSummaries,
-           py::return_value_policy::reference_internal);
+           "config.links_file (optional; the EKF Step computes links in-memory otherwise)")
+      .def("get_config", &LunarGnssOdtsApp::GetConfig, py::return_value_policy::reference_internal)
+      .def("get_summaries", &LunarGnssOdtsApp::GetSummaries,
+           py::return_value_policy::reference_internal,
+           "Per-seed LunarGnssODTSSummary list; the full time series live in the "
+           "trajectory_mc<N>.csv outputs");
 
   m.def("lunar_gnss_odts_precompute_epoch_count", &LunarGnssODTSPrecomputeEpochCount,
         py::arg("config"), "Return the number of receiver epochs used by GNSS link precompute");

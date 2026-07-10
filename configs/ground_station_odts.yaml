@@ -1,27 +1,47 @@
-# Agent-based ground-station orbit determination scenario.
+# Agent-based ground-station orbit determination scenario (Example 7).
 #
-# A single ELFO target satellite (`sat`) is tracked in range and range-rate by a
-# Deep Space Network ground-station agent (`DSS14`). The station runs a
-# `GroundStationOdtsApp`, which accumulates measurements over the arc and then
-# recovers the satellite's epoch state with the analytic batch filter.
+# An ELFO target satellite (`sat`) is tracked in range and range-rate by the three
+# Deep Space Network complexes -- Goldstone (`DSS14`), Canberra (`DSS43`), Madrid
+# (`DSS63`). Each station is a `GroundStation` agent running a
+# `GroundStationTrackingApp` (a sensor: it generates its own visibility-gated
+# observations of the target). The observations are pushed to a `GroundStationManager`
+# agent (`gs_manager`), whose `GroundStationManagerApp` aggregates them and runs the
+# centralized batch + SRIF/smoother orbit-determination filter.
 #
-# This mirrors the physics of the monolithic `GroundStationOdtsSimulation` /
-# ex7 notebook, but as first-class agents + an application, so more ground
-# stations or target satellites can be added simply by listing more agents.
-#
-# Run with the ex_ground_station_odts_app example (or the generic ex_sim loader).
+# The shared physical environment lives in the top-level `world:` block: epoch,
+# integration frame, and force model. The target and the estimator share this one
+# force model, so there is no truth/filter model mismatch. Add more stations or
+# targets simply by listing more agents.
 
 name: ground_station_odts
 epoch: "2026-01-01T00:00:00"
 duration: "36:00:00"          # 36 h (~2.7 ELFO orbits)
 log_level: INFO
 
+# ---- Shared, read-only environment -------------------------------------------
+world:
+  frame: MOON_CI
+  force_model:                # NBodyDynamics-style force model (2x2 Moon + Earth/Sun + SRP)
+    integrator: RKF45
+    dt: 10.0
+    max_iter: 1000
+    abstol: 1.0e-6
+    reltol: 1.0e-10
+    autodiff: true            # analytic state-transition matrix for the estimator
+    mass: 10.0                # [kg]  } SRP: CR * area / mass
+    area: 0.02                # [m^2] }
+    CR: 1.8
+    bodies:
+      - MOON: { n: 2, m: 2 }
+      - EARTH: {}
+      - SUN: {}
+
 agents:
-  # ---- Target: ELFO satellite (same frozen orbit as Example 1/7) ----
+  # ---- Target: ELFO satellite (same frozen orbit as Example 1) ----
   sat:
     class: Satellite
     frequency: 0.0033333333333333   # 1/300 Hz: log truth at the measurement cadence
-    dynamics:
+    dynamics:                       # matches world.force_model (the shared physics)
       class: NBodyDynamics
       frame: MOON_CI
       integrator: RKF45
@@ -29,14 +49,14 @@ agents:
       max_iter: 1000
       abstol: 1.0e-6
       reltol: 1.0e-10
-      autodiff: true                # enable the analytic state-transition matrix
-      mass: 10.0                    # [kg]  } SRP: CR * area / mass
-      area: 0.02                    # [m^2] }
+      autodiff: false               # truth needs no STM; the estimator uses the World's autodiff dynamics
+      mass: 10.0
+      area: 0.02
       CR: 1.8
       bodies:
-        - MOON: { n: 2, m: 2 }      # 2x2 lunar gravity
-        - EARTH: {}                 # Earth third body
-        - SUN: {}                   # Sun third body (+ SRP source)
+        - MOON: { n: 2, m: 2 }
+        - EARTH: {}
+        - SUN: {}
     initial_state:
       class: ClassicalOE
       frame: MOON_OP
@@ -47,23 +67,71 @@ agents:
       omega: 90.0
       M: 0.0
 
-  # ---- Tracker: DSN 70 m ground station (Goldstone, DSS-14) ----
+  # ---- Estimator: ground-segment manager (centralized OD filter) ----
+  gs_manager:
+    class: GroundStationManager
+    application:
+      class: GroundStationManagerApp
+      target: sat
+      obs_interval_s: 300.0         # uniform grid for the time-series outputs
+      seed: 42
+      initial_position_sigma_m: 2000.0
+      initial_velocity_sigma_mps: 0.5
+      batch_max_iterations: 10
+      batch_convergence_tol: 1.0e-3
+      run_srif: true
+      srif_use_process_noise: true
+      srif_accel_psd: 3.0e-13
+
+  # ---- Trackers: DSN 70 m ground stations ----
+  # (yaml-cpp does not support merge keys, so each tracking app is written out in full.)
   DSS14:
     class: GroundStation
     latitude_deg: 35.426456
     longitude_deg: 243.110461
     altitude_m: 1001.39
     application:
-      class: GroundStationOdtsApp
+      class: GroundStationTrackingApp
       frequency: 0.0033333333333333   # 1/300 Hz measurement cadence
       target: sat
+      manager: gs_manager
       elevation_mask_deg: 10.0
       use_range: true
       use_range_rate: true
       range_sigma_m: 10.0
       range_rate_sigma_mps: 1.0e-3
       seed: 42
-      initial_position_sigma_m: 2000.0
-      initial_velocity_sigma_mps: 0.5
-      batch_max_iterations: 10
-      batch_convergence_tol: 1.0e-3
+
+  DSS43:
+    class: GroundStation
+    latitude_deg: -35.402424
+    longitude_deg: 148.981267
+    altitude_m: 688.867
+    application:
+      class: GroundStationTrackingApp
+      frequency: 0.0033333333333333
+      target: sat
+      manager: gs_manager
+      elevation_mask_deg: 10.0
+      use_range: true
+      use_range_rate: true
+      range_sigma_m: 10.0
+      range_rate_sigma_mps: 1.0e-3
+      seed: 42
+
+  DSS63:
+    class: GroundStation
+    latitude_deg: 40.431210
+    longitude_deg: 355.751991
+    altitude_m: 864.816
+    application:
+      class: GroundStationTrackingApp
+      frequency: 0.0033333333333333
+      target: sat
+      manager: gs_manager
+      elevation_mask_deg: 10.0
+      use_range: true
+      use_range_rate: true
+      range_sigma_m: 10.0
+      range_rate_sigma_mps: 1.0e-3
+      seed: 42

@@ -99,7 +99,6 @@ LuPNT/
 │   ├── examples/               # Tutorial notebooks (ex1–ex16) — see python/examples/README.md
 │   └── bindings/               # pybind11 binding source files
 ├── projects/                   # Research project notebooks and scripts
-│   ├── GNSS_Filtering/         # Staged lunar GNSS filtering simulation
 │   ├── Plasma_Examples/        # GCPM, IRI, and ray-tracing Jupyter notebooks
 │   └── …
 ├── data/

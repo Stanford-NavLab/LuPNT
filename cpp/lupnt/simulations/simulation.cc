@@ -64,6 +64,15 @@ namespace lupnt {
           "Simulation");
     }
 
+    // World (shared read-only environment). Built after the epoch is set (World
+    // reads GetLupntEpoch()) and before agents, so agents/apps can pull the shared
+    // force model and truth facade from it during their own Setup().
+    if (config_["world"]) {
+      Config world_config(config_["world"]);
+      SetWorld(MakePtr<World>(world_config));
+      Logger::Debug("World created", "Simulation");
+    }
+
     // Channels
     if (config_["channels"]) {
       Logger::Debug(fmt::format("Creating {} channels", config_["channels"].size()), "Simulation");

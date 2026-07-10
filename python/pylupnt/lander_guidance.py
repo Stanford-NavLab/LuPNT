@@ -3,11 +3,15 @@
 Each generator returns a :class:`LanderTrajectory` sampled on the same time grid the C++
 simulation uses (``N = round(T / dt) + 1`` epochs), in the **local East-North-Up frame** about
 the DEM tile center, in meters (``U`` is height above the site datum). Feed the position array
-into ``pnt.LanderNavConfig.ref_traj_enu`` to make it the truth trajectory:
+into the lander app via ``set_reference_trajectory_enu`` (before ``sim.run()``) to make it the
+truth trajectory:
 
     from pylupnt import lander_guidance as lg
     traj = lg.zem_zev_trajectory(r0, v0, rf, vf, T=300.0, dt=0.5)
-    cfg.ref_traj_enu = traj.r          # (N, 3) ENU meters
+    sim = pnt.Simulation("configs/lander_nav.yaml")
+    app = sim.get_agent("Lander").get_application()
+    app.set_reference_trajectory_enu(traj.r)   # (N, 3) ENU meters
+    sim.run()
 
 Three sources are provided:
 

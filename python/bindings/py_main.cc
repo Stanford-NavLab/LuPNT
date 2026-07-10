@@ -22,6 +22,7 @@ void InitPlasma(py::module& m);
 void InitGnss(py::module& m);
 void InitEop(py::module& m);
 void InitIslOdts(py::module& m);
+void InitSimulation(py::module& m);
 void InitGroundStationOdts(py::module& m);
 void InitEphemeris(py::module& m);
 void InitGnssOdts(py::module& m);
@@ -47,6 +48,7 @@ PYBIND11_MODULE(_pylupnt, m) {
   InitPlasma(m);
   InitGnss(m);
   InitEop(m);
+  InitSimulation(m);
   InitIslOdts(m);
   InitGroundStationOdts(m);
   InitEphemeris(m);
