@@ -13,31 +13,39 @@ configuration through a string-keyed asset factory.
 This page maps those building blocks and their relationships, then gives the
 minimal recipe for authoring a new scenario.
 
-Two kinds of "simulation"
--------------------------
+One engine, one path
+--------------------
 
-Every scenario is built from a YAML config by the same generic event-driven
-engine, ``lupnt::Simulation`` (``cpp/lupnt/simulations/simulation.{h,cc}``).
+**Every** scenario in LuPNT is built from a YAML config by the same generic
+event-driven engine, ``lupnt::Simulation`` (``cpp/lupnt/simulations/simulation.{h,cc}``).
 Agents, applications, devices, and dynamics are assembled by name through
-factories, and a top-level ``world:`` block defines the shared read-only
-environment (epoch, integration frame, force model) that both the truth agents
-and the estimators draw from. The two things that vary are *how much logic lives
-in config vs. code* and *how you launch the config*:
-
-* **Path A — config-driven (preferred).** Describe the scenario entirely in
-  YAML with already-registered ``class:`` values, and put any new mission /
-  navigation logic in an ``Application`` that self-drives from the ``world:``
-  block. This is how the ground-station ODTS, GNSS ODTS, ISL ODTS, ephemeris,
-  surface-rover and lander scenarios all work now (see ``configs/*.yaml``).
-* **Path B — in-code driver.** For a tightly-coupled estimator you may still
-  wire the agents/apps together in a small C++ or Python driver, but it is run
-  by the *same* engine — there is no separate monolithic ``Simulation``
-  subclass with a hand-written ``Run()`` loop anymore.
+factories; a top-level ``world:`` block defines the shared read-only environment
+(epoch, integration frame, force model) that both the truth agents and the
+estimators draw from; and any new mission / navigation logic goes into a
+factory-registered ``Application`` that self-drives from the ``world:`` block.
+There is no longer a "monolithic" alternative — nothing subclasses ``Simulation``
+or hand-writes a ``Run()`` loop; the ground-station ODTS, GNSS ODTS, ISL ODTS
+(centralized *and* distributed), ephemeris, surface-rover and lander scenarios
+all run this one way (see ``configs/*.yaml``).
 
 Launch a config from Python with ``pnt.Simulation(yaml_or_dict)`` (the pattern
 used by every ``python/examples/exN_run_*.py`` script) or from a small C++
-driver such as the tutorials under ``cpp/examples/tutorials/``. Both share the
-same building blocks.
+driver such as the tutorials under ``cpp/examples/tutorials/`` (which just build a
+``Simulation`` from the YAML and call ``Run()``).
+
+The only real design choice is **how you decompose the per-epoch logic across
+apps**, and even a heavyweight Monte-Carlo engine can live inside a single app
+(``LunarGnssOdtsApp`` calls ``RunLunarGnssODTSMonteCarlo`` from its ``Step``):
+
+* **Sensor / estimator split** — separate sensor apps push observations to a
+  manager app that estimates (ground-station ODTS:
+  ``GroundStationTrackingApp`` → ``GroundStationManagerApp``).
+* **Single coordinator app** — one manager agent hosts an app that runs the
+  whole thing itself (centralized ISL: ``IslOdtsCoordinatorApp``).
+* **Fully distributed** — every platform is its own agent running its own app,
+  exchanging state over the ``Publish`` / ``Subscribe`` bus (distributed ISL:
+  ``IslSatellite`` + ``SatelliteOdtsApp``, ``SurfaceStationManager`` +
+  ``GroundOdtsApp``).
 
 The building blocks
 -------------------
@@ -317,11 +325,8 @@ Run it from Python (the pattern in every ``exN_run_*.py`` script):
 Authoring a new simulation
 --------------------------
 
-Path A — config-driven (preferred)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Use this when the scenario fits the agent model. **Template:**
-``configs/ground_station_odts.yaml`` + ``python/examples/ex7_run_odts.py``.
+**Template:** ``configs/ground_station_odts.yaml`` +
+``python/examples/ex7_run_odts.py``.
 
 #. **Add the shared environment.** Write a ``world:`` block (``frame`` +
    ``force_model``, or a ``gravity:`` / ``dem:`` block for surface scenarios);
@@ -389,13 +394,14 @@ The skeleton of the two most common extensions — a new ``Application`` and a n
      }
    };
 
-Path B — tightly-coupled logic in one Application
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Decomposing tightly-coupled logic
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Use this for tightly-coupled estimators, error-state INS, or distributed
-filters. Rather than a separate ``Simulation`` subclass, the whole per-epoch body
-lives in a single factory-registered ``Application`` that is still driven by the
-generic engine (``pnt.Simulation(config)``). Two shapes recur:
+For a tightly-coupled estimator, error-state INS, or distributed filter, the same
+config-driven path still applies — the whole per-epoch body simply lives in one or
+more factory-registered ``Application`` s driven by ``pnt.Simulation(config)``
+(there is no ``Simulation`` subclass). How you spread the work across apps is the
+only choice, and three shapes recur:
 
 * **Centralized coordinator.** One manager agent hosts an app that runs every
   filter itself. **Template:** ``IslOdtsCoordinatorApp`` on an ``IslOdtsManager``
@@ -406,6 +412,9 @@ generic engine (``pnt.Simulation(config)``). Two shapes recur:
   ``Simulation::Publish`` / ``Subscribe`` bus. **Template:** ``IslSatellite`` +
   ``SatelliteOdtsApp`` and ``SurfaceStationManager`` + ``GroundOdtsApp``, driven
   by ``configs/isl_odts_distributed.yaml``.
+* **Heavyweight engine inside one app.** An existing batch/Monte-Carlo engine can
+  be called straight from a single app's ``Step`` — e.g. ``LunarGnssOdtsApp``
+  invokes ``RunLunarGnssODTSMonteCarlo`` — so no rewrite of the numerics is needed.
 
 Because ``Simulation(config)`` runs ``Setup()`` in its constructor, any state a
 host must inject after construction (e.g. a lander reference trajectory) should be
