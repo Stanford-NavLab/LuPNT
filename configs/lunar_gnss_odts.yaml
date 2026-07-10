@@ -4,6 +4,8 @@ duration: '14:00:00'
 log_level: INFO
 world:
   frame: MOON_CI
+  # Shared TRUTH force model. Each `bodies` entry is `BODY: {n: <degree>, m: <order>}` for a
+  # spherical-harmonic gravity field; omit n/m (or use `{}`) for point-mass (central) gravity.
   force_model:
     integrator: RKF45
     dt: 30.0
@@ -12,11 +14,18 @@ world:
     reltol: 1.0e-12
     autodiff: false
     bodies:
-    - MOON:
-        n: 20
-        m: 20
-    - EARTH: {}
-    - SUN: {}
+    - MOON: {n: 20, m: 20}   # 20x20 lunar gravity field
+    - EARTH: {}              # third body, point-mass (no spherical harmonics)
+    - SUN: {}                # third body, point-mass (no spherical harmonics)
+  # Ionosphere/plasmasphere signal-delay environment (a shared truth property, so it lives here
+  # under `world:` rather than in the receiver app). simulate_truth adds it to the truth signal;
+  # model_in_filter toggles whether the onboard filter models it.
+  plasma:
+    simulate_truth: true
+    model_in_filter: false
+    raytrace:
+      kp: 3.0
+      rz12: 50.0
 agents:
   receiver:
     class: Spacecraft
@@ -117,12 +126,6 @@ agents:
         filter_tdcp_noise_inflation_m: 0.05
         pseudorange_min_tangent_altitude_m: 1000.0
         tdcp_min_tangent_altitude_m: 4000.0
-      plasma:
-        simulate_truth: true
-        model_in_filter: false
-        raytrace:
-          kp: 3.0
-          rz12: 50.0
       filter:
         estimate_srp_coefficient: true
         initial_srp_coeff_m2_kg: 0.001

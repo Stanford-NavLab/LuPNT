@@ -2196,6 +2196,40 @@ namespace lupnt {
     }
   }  // namespace
 
+  void ParsePlasmaDelayConfig(const Config& plasma, PlasmaDelayConfig& cfg) {
+    // No `plasma:` block present (e.g. it now lives under `world:`): leave defaults untouched.
+    if (!plasma || !plasma.IsMap()) return;
+    cfg.simulate_truth = ReadYaml(plasma, "simulate_truth", cfg.simulate_truth);
+    cfg.model_in_filter = ReadYaml(plasma, "model_in_filter", cfg.model_in_filter);
+    const YAML::Node raytrace = plasma["raytrace"];
+    cfg.raytrace_step_size_km = ReadYaml(raytrace, "step_size_km", cfg.raytrace_step_size_km);
+    cfg.raytrace_correction = ReadYaml(raytrace, "correction", cfg.raytrace_correction);
+    cfg.raytrace_fine_correction
+        = ReadYaml(raytrace, "fine_correction", cfg.raytrace_fine_correction);
+    cfg.raytrace_straight_ray = ReadYaml(raytrace, "straight_ray", cfg.raytrace_straight_ray);
+    cfg.raytrace_compute_higher_order
+        = ReadYaml(raytrace, "compute_higher_order", cfg.raytrace_compute_higher_order);
+    cfg.raytrace_use_adaptive_step
+        = ReadYaml(raytrace, "use_adaptive_step", cfg.raytrace_use_adaptive_step);
+    cfg.raytrace_use_fortran_gcpm
+        = ReadYaml(raytrace, "use_fortran_gcpm", cfg.raytrace_use_fortran_gcpm);
+    cfg.raytrace_cutoff_radius_re
+        = ReadYaml(raytrace, "cutoff_radius_re", cfg.raytrace_cutoff_radius_re);
+    cfg.raytrace_gradient_step_km
+        = ReadYaml(raytrace, "gradient_step_km", cfg.raytrace_gradient_step_km);
+    cfg.raytrace_correction_tolerance_m
+        = ReadYaml(raytrace, "correction_tolerance_m", cfg.raytrace_correction_tolerance_m);
+    cfg.raytrace_kp = ReadYaml(raytrace, "kp", cfg.raytrace_kp);
+    cfg.raytrace_rz12 = ReadYaml(raytrace, "rz12", cfg.raytrace_rz12);
+    cfg.raytrace_integrator = ReadYaml(raytrace, "integrator", cfg.raytrace_integrator);
+    cfg.raytrace_correction_method
+        = ReadYaml(raytrace, "correction_method", cfg.raytrace_correction_method);
+    cfg.filter_pseudorange_noise_inflation_m = ReadYaml(
+        plasma, "filter_pseudorange_noise_inflation_m", cfg.filter_pseudorange_noise_inflation_m);
+    cfg.filter_doppler_noise_inflation_hz = ReadYaml(plasma, "filter_doppler_noise_inflation_hz",
+                                                     cfg.filter_doppler_noise_inflation_hz);
+  }
+
   LunarGnssODTSConfig ParseLunarGnssODTSConfig(const Config& root,
                                                const std::filesystem::path& config_dir) {
     LunarGnssODTSConfig cfg;
@@ -2268,41 +2302,10 @@ namespace lupnt {
     cfg.constellation.debias_qzss_radial
         = ReadYaml(constellation, "debias_qzss_radial", cfg.constellation.debias_qzss_radial);
 
-    const YAML::Node plasma = root["plasma"];
-    cfg.plasma.simulate_truth = ReadYaml(plasma, "simulate_truth", cfg.plasma.simulate_truth);
-    cfg.plasma.model_in_filter = ReadYaml(plasma, "model_in_filter", cfg.plasma.model_in_filter);
-    const YAML::Node raytrace = plasma["raytrace"];
-    cfg.plasma.raytrace_step_size_km
-        = ReadYaml(raytrace, "step_size_km", cfg.plasma.raytrace_step_size_km);
-    cfg.plasma.raytrace_correction
-        = ReadYaml(raytrace, "correction", cfg.plasma.raytrace_correction);
-    cfg.plasma.raytrace_fine_correction
-        = ReadYaml(raytrace, "fine_correction", cfg.plasma.raytrace_fine_correction);
-    cfg.plasma.raytrace_straight_ray
-        = ReadYaml(raytrace, "straight_ray", cfg.plasma.raytrace_straight_ray);
-    cfg.plasma.raytrace_compute_higher_order
-        = ReadYaml(raytrace, "compute_higher_order", cfg.plasma.raytrace_compute_higher_order);
-    cfg.plasma.raytrace_use_adaptive_step
-        = ReadYaml(raytrace, "use_adaptive_step", cfg.plasma.raytrace_use_adaptive_step);
-    cfg.plasma.raytrace_use_fortran_gcpm
-        = ReadYaml(raytrace, "use_fortran_gcpm", cfg.plasma.raytrace_use_fortran_gcpm);
-    cfg.plasma.raytrace_cutoff_radius_re
-        = ReadYaml(raytrace, "cutoff_radius_re", cfg.plasma.raytrace_cutoff_radius_re);
-    cfg.plasma.raytrace_gradient_step_km
-        = ReadYaml(raytrace, "gradient_step_km", cfg.plasma.raytrace_gradient_step_km);
-    cfg.plasma.raytrace_correction_tolerance_m
-        = ReadYaml(raytrace, "correction_tolerance_m", cfg.plasma.raytrace_correction_tolerance_m);
-    cfg.plasma.raytrace_kp = ReadYaml(raytrace, "kp", cfg.plasma.raytrace_kp);
-    cfg.plasma.raytrace_rz12 = ReadYaml(raytrace, "rz12", cfg.plasma.raytrace_rz12);
-    cfg.plasma.raytrace_integrator
-        = ReadYaml(raytrace, "integrator", cfg.plasma.raytrace_integrator);
-    cfg.plasma.raytrace_correction_method
-        = ReadYaml(raytrace, "correction_method", cfg.plasma.raytrace_correction_method);
-    cfg.plasma.filter_pseudorange_noise_inflation_m
-        = ReadYaml(plasma, "filter_pseudorange_noise_inflation_m",
-                   cfg.plasma.filter_pseudorange_noise_inflation_m);
-    cfg.plasma.filter_doppler_noise_inflation_hz = ReadYaml(
-        plasma, "filter_doppler_noise_inflation_hz", cfg.plasma.filter_doppler_noise_inflation_hz);
+    // Plasma is a shared truth-environment property declared under `world: plasma:`; the app
+    // reads it from the World in Setup(). This app-block parse remains for back-compat (a
+    // `plasma:` block directly under `application:`), and is a no-op when absent.
+    ParsePlasmaDelayConfig(root["plasma"], cfg.plasma);
 
     const YAML::Node dynamics = root["dynamics"];
     cfg.moon_gravity_degree_truth

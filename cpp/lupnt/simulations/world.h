@@ -77,6 +77,14 @@ namespace lupnt {
     /// `dynamics:` block. (The STM-carrying `MakeDynamics()` is for estimators.)
     Ptr<NBodyDynamics> MakeTruthDynamics() const;
 
+    /// @brief The raw `plasma:` config block (ionosphere/plasmasphere signal-delay
+    /// environment), if provided. This is a shared truth-environment property, so it
+    /// lives under `world:` rather than in an individual receiver's application block;
+    /// the GNSS ODTS app reads it from here. Requires `HasPlasma()`.
+    const Config& GetPlasma() const { return plasma_; }
+    /// @brief Whether a `plasma:` block was provided under `world:`.
+    bool HasPlasma() const { return has_plasma_; }
+
     /// @brief Central-body gravitational parameter GM [m^3/s^2].
     double GetGM() const { return gm_; }
     /// @brief Point-mass central-body gravitational acceleration at position `r`
@@ -116,6 +124,10 @@ namespace lupnt {
     // Orbital force model.
     bool has_force_model_ = false;
     Config force_model_;  // NBodyDynamics-style force-model block
+
+    // Ionosphere/plasmasphere signal-delay environment (shared truth property).
+    bool has_plasma_ = false;
+    Config plasma_;  // `plasma:` block; schema consumed by the GNSS ODTS app
 
     // Point-mass gravity (surface INS).
     double gm_ = 0.0;  // set from `gravity.body` (default MOON) in the constructor

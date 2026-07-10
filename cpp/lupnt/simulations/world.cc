@@ -32,6 +32,13 @@ namespace lupnt {
       force_model_ = world_config["force_model"];
     }
 
+    // Ionosphere/plasmasphere signal-delay environment (optional; a shared truth
+    // property read by the GNSS ODTS app, hence under `world:` not the receiver app).
+    if (world_config["plasma"]) {
+      has_plasma_ = true;
+      plasma_ = world_config["plasma"];
+    }
+
     // Central-body point-mass gravity for surface INS (optional; defaults to Moon).
     gm_ = GM_MOON;
     if (world_config["gravity"] && world_config["gravity"]["body"]) {

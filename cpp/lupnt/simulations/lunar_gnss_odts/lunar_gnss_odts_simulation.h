@@ -194,6 +194,11 @@ namespace lupnt {
   /// config from an `application:` block.
   LunarGnssODTSConfig ParseLunarGnssODTSConfig(const Config& root,
                                                const std::filesystem::path& base_dir);
+  /// @brief Parse a `plasma:` block (simulate_truth / model_in_filter / raytrace params) into
+  /// `cfg`. Shared by the app-block parser and the `world:`-level plasma environment so the
+  /// ionosphere/plasmasphere model can be declared once under `world:` (its natural home as a
+  /// shared truth property). A null node leaves `cfg` at its defaults.
+  void ParsePlasmaDelayConfig(const Config& plasma, PlasmaDelayConfig& cfg);
   /// @brief Resolve a struct-built config for running: auto-select the SP3 products covering
   /// the epoch window when `constellation.auto_select_sp3` is set and no explicit files are
   /// given (matches the struct/Python config path of the former `LunarGnssODTSSimulation`).

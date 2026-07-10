@@ -7,6 +7,7 @@
 #include "lupnt/core/asset_factory.h"
 #include "lupnt/lupnt.h"
 #include "lupnt/simulations/simulation.h"
+#include "lupnt/simulations/world.h"
 
 namespace lupnt {
 
@@ -27,6 +28,12 @@ namespace lupnt {
 
   void LunarGnssOdtsApp::Setup() {
     LUPNT_CHECK(agent_, "Agent not set", "LunarGnssOdtsApp");
+    // Plasma is a shared truth-environment property: prefer the `world: plasma:` block over any
+    // legacy `application: plasma:` block (parsed into cfg_ at construction). The World holds the
+    // raw node; parse it into the config so the truth-generation + filter paths see it.
+    if (World* world = agent_->GetWorld(); world && world->HasPlasma()) {
+      ParsePlasmaDelayConfig(world->GetPlasma(), cfg_.plasma);
+    }
     // Defer the heavy engine to the first Step (a single event); the base Run() drains it.
     Simulation* sim = agent_->GetSimulation();
     sim->Schedule(
