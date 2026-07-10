@@ -70,6 +70,18 @@ agents:
       srif_use_process_noise: true
       srif_accel_psd: 3.0e-13
 
+      # Optional filter-dynamics override. Without these, both estimators inherit the shared
+      # `world.force_model` (truth == filter). Provide `filter_dynamics:` (an NBodyDynamics-style
+      # force-model block) to run BOTH the batch and the sequential filter at a different fidelity
+      # than truth, or `batch_dynamics:` / `sequential_dynamics:` to set each independently, e.g.:
+      # filter_dynamics:
+      #   frame: MOON_CI
+      #   integrator: RKF45
+      #   bodies:
+      #     - MOON: { n: 8, m: 8 }   # coarser than the 16x16 truth in world.force_model
+      #     - EARTH: {}
+      #     - SUN: {}
+
   # ---- Trackers: DSN 70 m ground stations ----
   # (yaml-cpp does not support merge keys, so each tracking app is written out in full.)
   DSS14:

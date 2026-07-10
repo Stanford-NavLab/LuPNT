@@ -38,6 +38,21 @@ namespace lupnt {
     run_srif_ = config["run_srif"].as<bool>(run_srif_);
     srif_use_process_noise_ = config["srif_use_process_noise"].as<bool>(srif_use_process_noise_);
     srif_accel_psd_ = config["srif_accel_psd"].as<double>(srif_accel_psd_);
+
+    // Optional per-filter dynamics overrides (an `NBodyDynamics`-style force-model block). When
+    // absent, the filters inherit the shared `world.force_model` (truth == filter).
+    if (config["filter_dynamics"]) {
+      filter_dyn_node_ = config["filter_dynamics"];
+      has_filter_dyn_ = true;
+    }
+    if (config["batch_dynamics"]) {
+      batch_dyn_node_ = config["batch_dynamics"];
+      has_batch_dyn_ = true;
+    }
+    if (config["sequential_dynamics"]) {
+      srif_dyn_node_ = config["sequential_dynamics"];
+      has_srif_dyn_ = true;
+    }
   }
 
   int GroundStationManagerApp::RegisterStation(const std::string& station_name) {
@@ -63,7 +78,23 @@ namespace lupnt {
                 "GroundStationManagerApp");
 
     epoch0_ = GetLupntEpoch();
-    dynamics_ = world->MakeDynamics();  // shared force model (truth == filter)
+    dynamics_ = world->MakeDynamics();  // shared world force model (also supplies GetFrame)
+
+    // Resolve each estimator's dynamics: an explicit per-filter override, else the shared
+    // `filter_dynamics`, else the world force model (unchanged default -> truth == filter).
+    auto build = [&](const Config& node) -> Ptr<NBodyDynamics> {
+      Config cfg = node;
+      auto dyn = MakePtr<NBodyDynamics>(cfg);
+      dyn->SetFrame(world->GetFrame());
+      dyn->SetAutodiff(true);  // the filter needs its analytic state-transition matrix
+      return dyn;
+    };
+    batch_dynamics_ = has_batch_dyn_    ? build(batch_dyn_node_)
+                      : has_filter_dyn_ ? build(filter_dyn_node_)
+                                        : dynamics_;
+    srif_dynamics_ = has_srif_dyn_     ? build(srif_dyn_node_)
+                     : has_filter_dyn_ ? build(filter_dyn_node_)
+                                       : dynamics_;
 
     // Uniform epoch grid over the whole arc, [0, duration] at obs_interval_s.
     const double duration = sim->GetDuration().val();
@@ -111,12 +142,12 @@ namespace lupnt {
     auto PropagateGridStm = [&](const VecXd& x0, MatX6& grid, std::vector<Mat6d>& stm_cum) {
       grid.resize(n_epochs, 6);
       stm_cum.assign(n_epochs, Mat6d::Identity());
-      State x = Cart6(x0.cast<Real>(), dynamics_->GetFrame());
+      State x = Cart6(x0.cast<Real>(), batch_dynamics_->GetFrame());
       grid.row(0) = x.transpose();
       Mat6d phi = Mat6d::Identity();
       for (int i = 1; i < n_epochs; ++i) {
         MatXd stm_seg;
-        x = dynamics_->Propagate(x, t_grid_(i - 1), t_grid_(i), nullptr, &stm_seg);
+        x = batch_dynamics_->Propagate(x, t_grid_(i - 1), t_grid_(i), nullptr, &stm_seg);
         phi = stm_seg * phi;
         stm_cum[i] = phi;
         grid.row(i) = x.transpose();
@@ -124,10 +155,10 @@ namespace lupnt {
     };
     auto PropagateGrid = [&](const VecXd& x0) -> MatX6 {
       MatX6 grid(n_epochs, 6);
-      State x = Cart6(x0.cast<Real>(), dynamics_->GetFrame());
+      State x = Cart6(x0.cast<Real>(), batch_dynamics_->GetFrame());
       grid.row(0) = x.transpose();
       for (int i = 1; i < n_epochs; ++i) {
-        x = dynamics_->Propagate(x, t_grid_(i - 1), t_grid_(i), nullptr);
+        x = batch_dynamics_->Propagate(x, t_grid_(i - 1), t_grid_(i), nullptr);
         grid.row(i) = x.transpose();
       }
       return grid;
@@ -285,7 +316,7 @@ namespace lupnt {
     srif.SetDynamicsFunction(
         [&](const State& x, Real t0, Real tf, const State* /*u*/, MatXd* F) -> State {
           MatXd stm;
-          State xf = dynamics_->Propagate(x, t0, tf, nullptr, &stm);
+          State xf = srif_dynamics_->Propagate(x, t0, tf, nullptr, &stm);
           if (F) *F = stm;
           return xf;
         });
@@ -296,7 +327,7 @@ namespace lupnt {
       return CwnaProcessNoise((tf - t0).val(), psd);
     });
 
-    srif.SetState(Cart6(x0_est_.cast<Real>(), dynamics_->GetFrame()));
+    srif.SetState(Cart6(x0_est_.cast<Real>(), srif_dynamics_->GetFrame()));
     MatXd P0 = MatXd::Zero(n_state, n_state);
     for (int j = 0; j < 3; ++j) P0(j, j) = initial_position_sigma_m_ * initial_position_sigma_m_;
     for (int j = 3; j < 6; ++j)

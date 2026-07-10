@@ -113,9 +113,16 @@ namespace lupnt {
     bool srif_use_process_noise_ = true;
     double srif_accel_psd_ = 3.0e-13;
 
+    // Optional filter-dynamics overrides (else the shared world force model). `filter_dynamics`
+    // applies to both estimators; `batch_dynamics` / `sequential_dynamics` override one each.
+    Config filter_dyn_node_, batch_dyn_node_, srif_dyn_node_;
+    bool has_filter_dyn_ = false, has_batch_dyn_ = false, has_srif_dyn_ = false;
+
     // Resolved at Setup
-    Ptr<NBodyDynamics> dynamics_;  // shared force model from World::MakeDynamics
-    Real epoch0_ = 0.0;            // absolute TDB epoch of sim time t = 0
+    Ptr<NBodyDynamics> dynamics_;        // world force model (default; also supplies GetFrame)
+    Ptr<NBodyDynamics> batch_dynamics_;  // dynamics for the batch filter
+    Ptr<NBodyDynamics> srif_dynamics_;   // dynamics for the sequential SRIF/smoother
+    Real epoch0_ = 0.0;                  // absolute TDB epoch of sim time t = 0
     std::vector<std::string> station_names_;
 
     // Aggregated observations
