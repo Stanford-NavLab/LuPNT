@@ -104,6 +104,12 @@ namespace lupnt {
     Real sin_15deg = sind(15.0);
     Real sin_5p8deg = sind(5.8);
 
+    // The rate-limited law is defined ONLY inside the collinearity region; outside it
+    // (|s_x| >= gamma_x, i.e. away from the noon/midnight turn, or |beta| >= beta_0) the
+    // satellite follows nominal yaw steering. Evaluated continuously, so this gate is
+    // what keeps the yaw nominal away from the turns.
+    if (abs(sx) >= sin_15deg || abs(beta) >= 5.8 * RAD) return phi_nom;
+
     Real sgn = Sign(1.0, phi_nom);
     Real g = cos(PI * abs(sx) / sin_15deg);  // Eq. (17)
     // Eq. (18): IOV-type modified Sun-vector y-component
@@ -128,12 +134,22 @@ namespace lupnt {
     Vec3 S = GalileoSunVector(eta, beta);
     Real Sx = S.x(), Sy = S.y(), Sz = S.z();
 
-    Real sgn = Sign(1.0, phi_nom);
     Real sin_2deg = sind(2.0);
     Real sin_15deg = sind(15.0);
-    // Eq. (11): modified Sun-vector y-component
-    Real Sy_p
-        = (sin_2deg * sgn + Sy) / 2.0 + (sin_2deg * sgn - Sy) / 2.0 * cos(PI * abs(Sx) / sin_15deg);
+    // Defined ONLY inside the collinearity region (Galileo IOV: |S_x| < gamma_x = sin 15 deg
+    // and |beta| < gamma_y = 2 deg); outside it the satellite follows nominal yaw steering.
+    if (abs(Sx) >= sin_15deg || abs(beta) >= 2.0 * RAD) return phi_nom;
+
+    Real sgn = Sign(1.0, phi_nom);
+    // Eq. (11): modified Sun-vector y-component. The target term carries a minus sign
+    // relative to Cheng et al. Eq. (11) to match lupnt's Sun-vector convention, which is
+    // negated w.r.t. the paper so the nominal law (`GalileoIovNominalYawAngle`) reduces
+    // exactly to Kouba Eq. (1). With this sign the rate-limited slew follows the nominal
+    // hemisphere (short-way turn), matching the paper's Fig. 2; algebraically this whole
+    // branch is identical to the GPS-III/Montenbruck IOV form `atan2(s*_y, s_x)` with
+    // gamma_y = sin 2 deg (verified numerically).
+    Real Sy_p = (-sin_2deg * sgn + Sy) / 2.0
+                + (-sin_2deg * sgn - Sy) / 2.0 * cos(PI * abs(Sx) / sin_15deg);
 
     Real denom = sqrt(1.0 - Sz * Sz);
     return atan2(-Sy_p / denom, -Sx / denom);  // Eq. (10)
