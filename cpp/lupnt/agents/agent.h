@@ -49,8 +49,12 @@ namespace lupnt {
     // Devices
     std::map<std::string, Ptr<Device>> devices_;
 
-    // Application
+    // Applications. `applications_` is the source of truth (Setup/Log fan out to all, in
+    // order); `application_` aliases the first one for the single-application back-compat API.
+    // A `Lander` carrying a guidance/control app and a navigation app is the canonical
+    // multi-application agent.
     Ptr<Application> application_;
+    std::vector<Ptr<Application>> applications_;
 
   public:
     Agent() = default;
@@ -115,21 +119,29 @@ namespace lupnt {
     /// @return     The matching device
     Ptr<Device> GetDevice(const std::string& name) const;
 
-    /// @brief Create and attach this agent's `Application` from the
-    /// `application:` block of a config node (if present). Factored out of the
-    /// `Agent(Config&)` constructor so agents that don't chain to it (e.g.
-    /// `GroundStation`, which builds itself via `ConfigureFromConfig`) can still
-    /// opt into an application. Requires `name_` to already be set.
+    /// @brief Create and attach this agent's `Application`(s) from the config. Reads either an
+    /// `applications:` sequence (multiple apps run on this one agent, in list order — e.g. a
+    /// `Lander` hosting a guidance/control app then a navigation app) or a single `application:`
+    /// map (back-compat). Factored out of the `Agent(Config&)` constructor so agents that don't
+    /// chain to it (e.g. `GroundStation`) can still opt in. Requires `name_` to be set.
     void CreateApplication(Config& config);
 
-    /// @brief Get the `Application` attached to this agent (e.g. an LNSS,
-    /// rover, or surface-station application), if any.
+    /// @brief Get the primary `Application` attached to this agent (the first one, for the
+    /// single-application API), or nullptr if none. Use `GetApplications()` for all of them.
     Ptr<Application> GetApplication() const { return application_; }
-    /// @brief Attach an `Application` to this agent, called during
-    /// construction (from the `application:` section of the config). Wires the
-    /// application's back-pointer to this agent so it can reach the owning
-    /// agent/simulation from its `Setup`/`Step`/`Log`.
+    /// @brief All applications attached to this agent, in the order they were added.
+    const std::vector<Ptr<Application>>& GetApplications() const { return applications_; }
+    /// @brief Look up an attached application whose (agent-prefixed) name ends with `name`,
+    /// or nullptr if none matches. Lets a multi-application agent's consumers fetch a specific
+    /// app (e.g. `GetApplicationByName("LanderNavApp")`).
+    Ptr<Application> GetApplicationByName(const std::string& name) const;
+    /// @brief Set the agent's SOLE application (clears any others), wiring its back-pointer.
+    /// Back-compat single-application setter.
     void SetApplication(Ptr<Application> app);
+    /// @brief Attach an ADDITIONAL application to this agent (appended after any existing ones).
+    /// The first application added becomes the primary `GetApplication()`. Wires the app's
+    /// back-pointer so it can reach the owning agent/simulation from `Setup`/`Step`/`Log`.
+    void AddApplication(Ptr<Application> app);
 
     /// @brief Perform one-time setup before the simulation starts: schedules
     /// a periodic `Step` callback with the simulation event scheduler (if

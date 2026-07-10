@@ -43,7 +43,18 @@ namespace lupnt {
   }
 
   void Agent::CreateApplication(Config& config) {
-    if (config["application"]) {
+    if (config["applications"]) {
+      // Multiple applications on one agent, run in list order (e.g. Lander: guidance then nav).
+      int i = 0;
+      for (const auto& app_item : config["applications"]) {
+        Config app_config(app_item);
+        auto app_class = app_config["class"].as<std::string>();
+        if (!app_config["name"]) app_config["name"] = fmt::format("application{}", i);
+        app_config["name"] = name_ + "/" + app_config["name"].as<std::string>();
+        AddApplication(AssetFactory<Application, Config&>::Create(app_class, app_config));
+        ++i;
+      }
+    } else if (config["application"]) {
       // Name
       Config app_config(config["application"]);
       auto app_class = app_config["class"].as<std::string>();
@@ -59,8 +70,31 @@ namespace lupnt {
   World* Agent::GetWorld() const { return sim_ ? sim_->GetWorld() : nullptr; }
 
   void Agent::SetApplication(Ptr<Application> app) {
+    applications_.clear();
     application_ = app;
-    if (application_) application_->SetAgent(this);
+    if (app) {
+      app->SetAgent(this);
+      applications_.push_back(app);
+    }
+  }
+
+  void Agent::AddApplication(Ptr<Application> app) {
+    if (!app) return;
+    app->SetAgent(this);
+    applications_.push_back(app);
+    if (!application_) application_ = app;  // first app is the primary GetApplication()
+  }
+
+  Ptr<Application> Agent::GetApplicationByName(const std::string& name) const {
+    for (const auto& app : applications_) {
+      const std::string& n = app->GetName();
+      if (n == name
+          || (n.size() >= name.size()
+              && n.compare(n.size() - name.size(), name.size(), name) == 0)) {
+        return app;
+      }
+    }
+    return nullptr;
   }
 
   void Agent::AddDevice(Ptr<Device> device) {
@@ -155,9 +189,9 @@ namespace lupnt {
       device->Setup();
     }
 
-    // Application: initialize the attached application (schedules its periodic
-    // Step and any one-time solve). Runs after devices so the app can reach them.
-    if (application_) application_->Setup();
+    // Applications: initialize each attached application in order (schedules their periodic
+    // Steps and any one-time solve). Runs after devices so an app can reach them.
+    for (auto& app : applications_) app->Setup();
 
     // Precompute
     // if (sim_ && precompute_ > 0.0 && dynamics_) {
@@ -267,8 +301,8 @@ namespace lupnt {
     // }
     DataLogger::Log(fmt::format("{}/control", name_), control_);
 
-    // Application
-    if (application_) application_->Log(time);
+    // Applications
+    for (auto& app : applications_) app->Log(time);
   }
 
   void AgentWithDynamics::LogCesium() {}
