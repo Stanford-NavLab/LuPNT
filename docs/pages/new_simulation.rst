@@ -128,13 +128,56 @@ block *before* any agents, and every agent can reach it with
 ``Agent::GetWorld()``. The World holds the epoch, the integration ``frame``, and
 one force-model ``Config``; ``MakeDynamics()`` returns a fresh ``NBodyDynamics``
 built from that force model (autodiff on, so the estimator gets an analytic STM).
-Because the truth agent and the estimator both derive their dynamics from the
-*same* World force model, there is no truth/filter model mismatch. For surface
-scenarios the ``world:`` block also accepts a point-mass ``gravity:`` body and a
-``dem:`` terrain block (``World::GetElevation``, ``EnuToWorld``,
+An app that reuses ``MakeDynamics()`` for *both* the truth grid and the filter has
+no truth/filter model mismatch by construction; when you want a mismatch you set
+the two sides separately (see `Different dynamics for truth and filter`_ below).
+For surface scenarios the ``world:`` block also accepts a point-mass ``gravity:``
+body and a ``dem:`` terrain block (``World::GetElevation``, ``EnuToWorld``,
 ``SiteCenterWorld``). The World is **read-only**: it provides the environment and
 a truth facade, but each ``AgentWithDynamics`` still self-propagates via its own
 ``dynamics_``.
+
+Different dynamics for truth and filter
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Truth and filter dynamics are **independent knobs**, so you can (and for a
+realistic OD study usually should) run the estimator against a deliberately
+mismodeled truth:
+
+* **Truth** is whatever propagates the physical agent. A self-propagating
+  ``AgentWithDynamics`` (``Satellite``, ``IslSatellite``, ...) integrates its own
+  ``dynamics:`` block; an app reads that truth through ``GetStateAt(t)`` /
+  ``World::GetStateAt(name, t)`` (which just forwards to ``agent->GetStateAt(t)``).
+* **Filter** dynamics are built *inside* the estimator ``Application`` — either by
+  reusing the shared ``World::MakeDynamics()`` (the ``world: force_model:`` block)
+  or from app-specific config. Whatever the filter uses also supplies its STM, so
+  keep ``autodiff: true`` on that model.
+
+*Same model (no mismatch).* Give the target agent a ``dynamics:`` block that
+matches ``world: force_model:`` and have the app build its filter from
+``World::MakeDynamics()`` — this is exactly what ex7 does
+(``configs/ground_station_odts.yaml``).
+
+*Different models (mismatch).* Configure the two sides separately. The ISL ODTS
+apps expose explicit truth/filter fidelity knobs on the same app so the truth is
+propagated at one gravity resolution and the EKF runs at another
+(``configs/isl_odts.yaml``):
+
+.. code-block:: yaml
+
+   application:
+     class: IslOdtsCoordinatorApp
+     moon_gravity_degree_truth: 16     # truth propagated at 16x16 lunar gravity
+     moon_gravity_order_truth: 16
+     moon_gravity_degree_filter: 8     # EKF runs at 8x8  -> intentional mismatch
+     moon_gravity_order_filter: 8
+
+More generally: give the truth agent a high-fidelity ``dynamics:`` block (more
+third bodies, higher gravity degree/order, SRP, drag) and point the filter at a
+coarser model — a lower-fidelity ``world: force_model:`` consumed by
+``World::MakeDynamics()``, or a separate app-level filter config as above. In a
+custom app, simply build two ``Dynamics`` objects (one for the truth grid, one for
+``filter_``) instead of sharing ``dynamics_``.
 
 Agent — a platform
 ~~~~~~~~~~~~~~~~~~~
