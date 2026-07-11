@@ -2391,17 +2391,29 @@ namespace lupnt {
         = ReadYaml(dynamics, "moon_gravity_degree_truth", cfg.moon_gravity_degree_truth);
     cfg.moon_gravity_order_truth
         = ReadYaml(dynamics, "moon_gravity_order_truth", cfg.moon_gravity_order_truth);
-    cfg.moon_gravity_degree_filter
-        = ReadYaml(dynamics, "moon_gravity_degree_filter", cfg.moon_gravity_degree_filter);
-    cfg.moon_gravity_order_filter
-        = ReadYaml(dynamics, "moon_gravity_order_filter", cfg.moon_gravity_order_filter);
+    // Filter force model: unified `force_model:` block (bodies list) shared with world/agents;
+    // legacy scalar keys remain as a fallback. Truth gravity is the receiver Spacecraft's own
+    // dynamics (and its degree still feeds the link-cache fingerprint), so it is untouched here.
+    if (dynamics["force_model"]) {
+      const ForceModelSpec fm = ParseForceModelSpec(dynamics["force_model"]);
+      cfg.moon_gravity_degree_filter = fm.moon_degree;
+      cfg.moon_gravity_order_filter = fm.moon_order;
+      cfg.include_earth = fm.include_earth;
+      cfg.include_sun = fm.include_sun;
+      cfg.use_relativity = fm.relativity;
+    } else {
+      cfg.moon_gravity_degree_filter
+          = ReadYaml(dynamics, "moon_gravity_degree_filter", cfg.moon_gravity_degree_filter);
+      cfg.moon_gravity_order_filter
+          = ReadYaml(dynamics, "moon_gravity_order_filter", cfg.moon_gravity_order_filter);
+      cfg.include_earth = ReadYaml(dynamics, "include_earth", cfg.include_earth);
+      cfg.include_sun = ReadYaml(dynamics, "include_sun", cfg.include_sun);
+      cfg.use_relativity = ReadYaml(dynamics, "use_relativity", cfg.use_relativity);
+    }
     cfg.moon_gravity_degree_constellation = ReadYaml(dynamics, "moon_gravity_degree_constellation",
                                                      cfg.moon_gravity_degree_constellation);
     cfg.moon_gravity_order_constellation = ReadYaml(dynamics, "moon_gravity_order_constellation",
                                                     cfg.moon_gravity_order_constellation);
-    cfg.include_earth = ReadYaml(dynamics, "include_earth", cfg.include_earth);
-    cfg.include_sun = ReadYaml(dynamics, "include_sun", cfg.include_sun);
-    cfg.use_relativity = ReadYaml(dynamics, "use_relativity", cfg.use_relativity);
     cfg.use_srp_truth = ReadYaml(dynamics, "use_srp_truth", cfg.use_srp_truth);
     cfg.use_srp_filter = ReadYaml(dynamics, "use_srp_filter", cfg.use_srp_filter);
     cfg.srp_coeff_truth_m2_kg

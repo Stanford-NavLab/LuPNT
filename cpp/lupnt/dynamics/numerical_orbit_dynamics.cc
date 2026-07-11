@@ -408,6 +408,41 @@ namespace lupnt {
     this->SetParams(default_params);
   };
 
+  ForceModelSpec ParseForceModelSpec(const Config& force_model) {
+    ForceModelSpec spec;
+    if (force_model["bodies"]) {
+      for (const auto& body_config : force_model["bodies"]) {
+        for (const auto& body : body_config) {
+          const std::string body_name = body.first.as<std::string>();
+          auto id = enum_cast<BodyId>(body_name);
+          LUPNT_CHECK(id.has_value(),
+                      fmt::format("Invalid body name in force_model: {}", body_name), "ForceModel");
+          switch (id.value()) {
+            case BodyId::MOON:
+              spec.moon_degree = body.second["n"].as<int>(0);
+              spec.moon_order = body.second["m"].as<int>(0);
+              break;
+            case BodyId::EARTH: spec.include_earth = true; break;
+            case BodyId::SUN: spec.include_sun = true; break;
+            default: break;
+          }
+        }
+      }
+    }
+    // Accept both spellings so the shared style matches world/agent (`relativity`) and the
+    // per-example filter/truth blocks that historically used `use_relativity`.
+    if (force_model["relativity"]) spec.relativity = force_model["relativity"].as<bool>();
+    if (force_model["use_relativity"]) spec.relativity = force_model["use_relativity"].as<bool>();
+    // SRP ballistic coefficient (optional).
+    if (force_model["CR"]) {
+      spec.has_srp = true;
+      spec.srp_cr = force_model["CR"].as<double>();
+      spec.srp_area_m2 = force_model["area"].as<double>(spec.srp_area_m2);
+      spec.srp_mass_kg = force_model["mass"].as<double>(spec.srp_mass_kg);
+    }
+    return spec;
+  }
+
   NBodyDynamics::NBodyDynamics(Config& dynamics_config) : NumericalDynamics(dynamics_config) {
     SetODE([this](Real t, const VecX& x) { return ComputeRates(t, x); });
     Logger::Debug("Creating", "NBodyDynamics");

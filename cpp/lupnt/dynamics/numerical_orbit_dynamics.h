@@ -25,6 +25,35 @@ namespace lupnt {
   };
 
   /**
+   * @brief Scalar force-model parameters parsed from a unified `force_model:` block.
+   *
+   * Every scenario specifies its orbit force model the same way -- a `bodies:` list plus
+   * optional `relativity` and SRP (`mass`/`area`/`CR`) -- whether it is the shared
+   * `world.force_model`, an agent's `dynamics:`, or an estimator's filter/truth dynamics.
+   * `ParseForceModelSpec` reads that block into these scalars so the per-example dynamics
+   * builders (which need specific integrator tolerances / clock coupling) can be fed from
+   * one consistent config surface. `moon_degree`/`moon_order` come from the MOON body entry;
+   * `include_earth`/`include_sun` from the presence of those bodies.
+   */
+  struct ForceModelSpec {
+    int moon_degree = 0;
+    int moon_order = 0;
+    bool include_earth = false;
+    bool include_sun = false;
+    bool relativity = false;
+    bool has_srp = false;
+    double srp_cr = 1.0;
+    double srp_area_m2 = 0.0;
+    double srp_mass_kg = 1.0;
+  };
+
+  /**
+   * @brief Parse a unified `force_model:` YAML block (bodies list + `relativity` + SRP)
+   *        into a `ForceModelSpec`. Accepts both `relativity` and `use_relativity`.
+   */
+  ForceModelSpec ParseForceModelSpec(const Config& force_model);
+
+  /**
    * @class NumericalOrbitDynamics
    * @brief Class for numerical orbit dynamics.
    *

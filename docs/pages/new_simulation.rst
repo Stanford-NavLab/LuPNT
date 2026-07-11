@@ -169,6 +169,14 @@ matches ``world: force_model:`` and have the app build its filter from
 ``World::MakeDynamics()`` — this is exactly what ex7 does
 (``configs/ground_station_odts.yaml``).
 
+*One force-model schema everywhere.* Every place that specifies an orbit force model —
+the shared ``world: force_model:``, a physical agent's ``dynamics:``, and an estimator's
+filter force model — uses the **same** ``force_model: { integrator, autodiff, bodies: [...] }``
+block: a ``bodies:`` list of ``BODY: { n, m }`` (omit ``n``/``m`` or use ``{}`` for point-mass),
+plus optional ``relativity`` and SRP (``mass``/``area``/``CR``). There is no separate
+``moon_gravity_degree_*`` / ``include_earth`` dialect — filters and agents read the identical
+schema (parsed by ``ParseForceModelSpec``).
+
 *Different models (mismatch).* Configure the two sides separately: the **truth**
 force model lives on the physical agent (or the shared ``world:`` block), while the
 **filter** fidelity is an app knob. In the ISL ODTS scenario the truth is propagated
@@ -179,13 +187,21 @@ resolution, and each ``SatelliteOdtsApp`` runs its EKF at a lower one
 .. code-block:: yaml
 
    world:
-     force_model:
-       gravity: {body: MOON, n: 16, m: 16}   # truth propagated at 16x16 lunar gravity
-   # ... every Spacecraft inherits that truth force model; the onboard app filters coarser:
+     force_model:                            # truth propagated at 16x16 lunar gravity
+       bodies:
+         - MOON: { n: 16, m: 16 }
+         - EARTH: {}
+         - SUN: {}
+   # ... every Spacecraft inherits that truth force model; the onboard app filters coarser
+   # using the SAME force_model schema:
    application:
      class: SatelliteOdtsApp
-     moon_gravity_degree_filter: 8           # EKF runs at 8x8 -> intentional mismatch
-     moon_gravity_order_filter: 8
+     force_model:                            # EKF runs at 8x8 -> intentional mismatch
+       bodies:
+         - MOON: { n: 8, m: 8 }
+         - EARTH: {}
+         - SUN: {}
+       relativity: true
 
 More generally: give the truth agent a high-fidelity ``dynamics:`` block (more
 third bodies, higher gravity degree/order, SRP, drag) and point the filter at a

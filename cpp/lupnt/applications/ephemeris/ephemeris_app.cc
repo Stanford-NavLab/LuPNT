@@ -200,11 +200,21 @@ namespace lupnt {
     c.duration_days = config["duration_days"].as<double>(c.duration_days);
     c.sample_dt_s = config["sample_dt_s"].as<double>(c.sample_dt_s);
 
-    c.moon_gravity_degree = config["moon_gravity_degree"].as<int>(c.moon_gravity_degree);
-    c.moon_gravity_order = config["moon_gravity_order"].as<int>(c.moon_gravity_order);
-    c.include_earth = config["include_earth"].as<bool>(c.include_earth);
-    c.include_sun = config["include_sun"].as<bool>(c.include_sun);
-    c.use_relativity = config["use_relativity"].as<bool>(c.use_relativity);
+    // Unified `force_model:` block (bodies list); falls back to the legacy scalar keys.
+    if (config["force_model"]) {
+      const ForceModelSpec fm = ParseForceModelSpec(config["force_model"]);
+      c.moon_gravity_degree = fm.moon_degree;
+      c.moon_gravity_order = fm.moon_order;
+      c.include_earth = fm.include_earth;
+      c.include_sun = fm.include_sun;
+      c.use_relativity = fm.relativity;
+    } else {
+      c.moon_gravity_degree = config["moon_gravity_degree"].as<int>(c.moon_gravity_degree);
+      c.moon_gravity_order = config["moon_gravity_order"].as<int>(c.moon_gravity_order);
+      c.include_earth = config["include_earth"].as<bool>(c.include_earth);
+      c.include_sun = config["include_sun"].as<bool>(c.include_sun);
+      c.use_relativity = config["use_relativity"].as<bool>(c.use_relativity);
+    }
     c.integration_step_s = config["integration_step_s"].as<double>(c.integration_step_s);
 
     if (config["fit_window_minutes"]) {

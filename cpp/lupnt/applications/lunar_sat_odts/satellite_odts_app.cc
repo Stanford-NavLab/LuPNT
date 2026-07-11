@@ -69,11 +69,21 @@ namespace lupnt {
     seed_ = gi("seed", seed_);
     dt_s_ = g("dt_s", dt_s_);
     duration_s_ = g("duration_s", duration_s_);
-    moon_gravity_degree_filter_ = gi("moon_gravity_degree_filter", moon_gravity_degree_filter_);
-    moon_gravity_order_filter_ = gi("moon_gravity_order_filter", moon_gravity_order_filter_);
-    include_earth_ = gb("include_earth", include_earth_);
-    include_sun_ = gb("include_sun", include_sun_);
-    use_relativity_ = gb("use_relativity", use_relativity_);
+    // Filter force model: unified `force_model:` block (bodies list), scalar keys as fallback.
+    if (config["force_model"]) {
+      const ForceModelSpec fm = ParseForceModelSpec(config["force_model"]);
+      moon_gravity_degree_filter_ = fm.moon_degree;
+      moon_gravity_order_filter_ = fm.moon_order;
+      include_earth_ = fm.include_earth;
+      include_sun_ = fm.include_sun;
+      use_relativity_ = fm.relativity;
+    } else {
+      moon_gravity_degree_filter_ = gi("moon_gravity_degree_filter", moon_gravity_degree_filter_);
+      moon_gravity_order_filter_ = gi("moon_gravity_order_filter", moon_gravity_order_filter_);
+      include_earth_ = gb("include_earth", include_earth_);
+      include_sun_ = gb("include_sun", include_sun_);
+      use_relativity_ = gb("use_relativity", use_relativity_);
+    }
     integration_step_s_ = g("integration_step_s", integration_step_s_);
     range_sigma_m_ = g("range_sigma_m", range_sigma_m_);
     range_rate_sigma_mps_ = g("range_rate_sigma_mps", range_rate_sigma_mps_);

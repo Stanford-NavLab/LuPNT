@@ -70,11 +70,12 @@ agents:
       seed: 42
       dt_s: 60.0
       duration_s: 21600.0
-      moon_gravity_degree_filter: 8
-      moon_gravity_order_filter: 8
-      include_earth: true
-      include_sun: true
-      use_relativity: true
+      force_model:              # filter force model (same `bodies:` style as world/agents)
+        bodies:
+          - MOON: { n: 8, m: 8 }
+          - EARTH: {}
+          - SUN: {}
+        relativity: true
       integration_step_s: 60.0
       range_sigma_m: 1.0
       range_rate_sigma_mps: 0.001
@@ -125,11 +126,12 @@ agents:
       seed: 42
       dt_s: 60.0
       duration_s: 21600.0
-      moon_gravity_degree_filter: 8
-      moon_gravity_order_filter: 8
-      include_earth: true
-      include_sun: true
-      use_relativity: true
+      force_model:              # filter force model (same `bodies:` style as world/agents)
+        bodies:
+          - MOON: { n: 8, m: 8 }
+          - EARTH: {}
+          - SUN: {}
+        relativity: true
       integration_step_s: 60.0
       range_sigma_m: 1.0
       range_rate_sigma_mps: 0.001
@@ -180,11 +182,12 @@ agents:
       seed: 42
       dt_s: 60.0
       duration_s: 21600.0
-      moon_gravity_degree_filter: 8
-      moon_gravity_order_filter: 8
-      include_earth: true
-      include_sun: true
-      use_relativity: true
+      force_model:              # filter force model (same `bodies:` style as world/agents)
+        bodies:
+          - MOON: { n: 8, m: 8 }
+          - EARTH: {}
+          - SUN: {}
+        relativity: true
       integration_step_s: 60.0
       range_sigma_m: 1.0
       range_rate_sigma_mps: 0.001
@@ -235,11 +238,12 @@ agents:
       seed: 42
       dt_s: 60.0
       duration_s: 21600.0
-      moon_gravity_degree_filter: 8
-      moon_gravity_order_filter: 8
-      include_earth: true
-      include_sun: true
-      use_relativity: true
+      force_model:              # filter force model (same `bodies:` style as world/agents)
+        bodies:
+          - MOON: { n: 8, m: 8 }
+          - EARTH: {}
+          - SUN: {}
+        relativity: true
       integration_step_s: 60.0
       range_sigma_m: 1.0
       range_rate_sigma_mps: 0.001
@@ -290,11 +294,12 @@ agents:
       seed: 42
       dt_s: 60.0
       duration_s: 21600.0
-      moon_gravity_degree_filter: 8
-      moon_gravity_order_filter: 8
-      include_earth: true
-      include_sun: true
-      use_relativity: true
+      force_model:              # filter force model (same `bodies:` style as world/agents)
+        bodies:
+          - MOON: { n: 8, m: 8 }
+          - EARTH: {}
+          - SUN: {}
+        relativity: true
       integration_step_s: 60.0
       range_sigma_m: 1.0
       range_rate_sigma_mps: 0.001
@@ -330,11 +335,12 @@ agents:
       seed: 42
       dt_s: 60.0
       duration_s: 21600.0
-      moon_gravity_degree_filter: 8
-      moon_gravity_order_filter: 8
-      include_earth: true
-      include_sun: true
-      use_relativity: true
+      force_model:              # filter force model (same `bodies:` style as world/agents)
+        bodies:
+          - MOON: { n: 8, m: 8 }
+          - EARTH: {}
+          - SUN: {}
+        relativity: true
       integration_step_s: 60.0
       station_doppler_sigma_mps: 0.001
       enable_station_doppler: true

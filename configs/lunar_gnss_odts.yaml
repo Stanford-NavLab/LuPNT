@@ -111,11 +111,14 @@ agents:
             # yaw-steering law (GPS/Galileo); false (default) = nominal Sun-pointing frame.
             tx_yaw_dedicated: false
       dynamics:
-        moon_gravity_degree_filter: 18
-        moon_gravity_order_filter: 18
-        include_earth: true
-        include_sun: true
-        use_relativity: true
+        # Filter force model, same `force_model:` style as the world block + receiver agent.
+        # 18x18 lunar gravity (reduced vs the 20x20 truth on the receiver Spacecraft).
+        force_model:
+          bodies:
+            - MOON: { n: 18, m: 18 }
+            - EARTH: {}
+            - SUN: {}
+          relativity: true
         use_srp_filter: true
       measurements:
         use_pseudorange: true

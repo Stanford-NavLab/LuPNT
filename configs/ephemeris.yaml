@@ -58,12 +58,13 @@ agents:
       fit_window_minutes: [30.0, 60.0, 120.0]
       num_windows: 4
 
-      # Truth force model (matches the world block above).
-      moon_gravity_degree: 8
-      moon_gravity_order: 8
-      include_earth: true
-      include_sun: true
-      use_relativity: false
+      # Truth force model (same `force_model:` style as the world block above).
+      force_model:
+        bodies:
+          - MOON: { n: 8, m: 8 }
+          - EARTH: {}
+          - SUN: {}
+        relativity: false
       integration_step_s: 30.0
 
       # Broadcast model settings.
