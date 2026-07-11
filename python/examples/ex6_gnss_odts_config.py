@@ -29,7 +29,6 @@ DATA_DIR = (_REPO / "data" / "LuPNT_data").resolve()
 if (DATA_DIR / "ephemeris").is_dir():
     os.environ["LUPNT_DATA_PATH"] = str(DATA_DIR)
 
-import numpy as np  # noqa: E402
 import yaml  # noqa: E402
 import pylupnt as pnt  # noqa: E402
 
@@ -49,33 +48,82 @@ PLASMA_DELAY_DT_S = 120.0
 PLASMA_DELAY_PROGRESS_RAYS = 10
 
 
+def _truth_from_yaml():
+    """Read the receiver's TRUTH (orbit + clock + force model) and the run timing from
+    ``configs/lunar_gnss_odts.yaml`` -- the single source of truth.
+
+    In the agent-based scenario this truth is declared once, on the physical ``receiver``
+    Spacecraft (its ``initial_state:``/``dynamics:`` blocks) and the app ``simulation:`` block.
+    Deriving build_config()'s struct fields from the same YAML (instead of a hand-kept copy)
+    means the standalone precompute and the agent EKF run can never drift out of the shared
+    link-cache fingerprint.
+    """
+    scen = yaml.safe_load(open(CONFIG_YAML))
+    rx = scen["agents"]["receiver"]
+    init, dyn = rx["initial_state"], rx["dynamics"]
+    sim = rx["application"]["simulation"]
+    # bodies: a list of single-key maps, e.g. [{MOON: {n: 20, m: 20}}, {EARTH: {}}, {SUN: {}}]
+    bodies = {next(iter(b)): (b[next(iter(b))] or {}) for b in dyn.get("bodies", [])}
+    moon = bodies.get("MOON", {})
+    mass, area, cr = float(dyn.get("mass", 1.0)), float(dyn.get("area", 0.0)), float(dyn.get("CR", 0.0))
+    return dict(
+        start_epoch_utc=scen.get("epoch", sim.get("start_epoch_utc")),
+        seed=int(sim.get("seed", 42)),
+        dt_s=float(sim["dt_s"]),
+        ephemeris_dt_s=float(sim["ephemeris_dt_s"]),
+        receiver_rate_hz=float(rx["application"]["receiver_app"]["rate_hz"]),
+        duration_s=float(sim["duration_s"]),
+        receiver_a_m=float(init["a"]),
+        receiver_ecc=float(init["e"]),
+        receiver_inc_rad=float(init["i"]) * pnt.RAD,
+        receiver_raan_rad=float(init["Omega"]) * pnt.RAD,
+        receiver_argp_rad=float(init["omega"]) * pnt.RAD,
+        receiver_mean_anomaly_rad=float(init["M"]) * pnt.RAD,
+        clock_bias_s=float(init.get("clock_bias_s", 0.0)),
+        clock_drift_sps=float(init.get("clock_drift_sps", 0.0)),
+        moon_gravity_degree_truth=int(moon.get("n", 0)),
+        moon_gravity_order_truth=int(moon.get("m", 0)),
+        include_earth="EARTH" in bodies,
+        include_sun="SUN" in bodies,
+        use_relativity=bool(dyn.get("use_relativity", False)),
+        use_srp_truth=area > 0.0,
+        srp_coeff_truth_m2_kg=(cr * area / mass) if mass else 0.0,
+    )
+
+
 def build_config():
-    """Build the ex6 ``LunarGnssODTSConfig`` (identical for the notebook and the script)."""
+    """Build the ex6 ``LunarGnssODTSConfig`` (identical for the notebook and the script).
+
+    The truth orbit/clock/force-model + run timing are read from ``configs/lunar_gnss_odts.yaml``
+    (see ``_truth_from_yaml``) so this struct config and the agent-run config share one source and
+    stay fingerprint-compatible; only the constellation, sidelobe, and filter-only tunings are set
+    here.
+    """
     OUTPUT_DIR.mkdir(exist_ok=True)
     cfg = pnt.LunarGnssODTSConfig()
+    _T = _truth_from_yaml()
 
-    # --- Timing: one full ELFO orbital period, processed at 1 Hz ---
-    cfg.seed = 42
+    # --- Timing + truth receiver orbit/clock: read from the YAML (single source) ---
     cfg.monte_carlo_runs = 1
-    cfg.start_epoch_utc = (
-        "2026-01-01T02:00:00"  # COD MGEX SP3 (Galileo); offset fits its 1-day span
-    )
-    cfg.dt_s = 1.0
-    cfg.ephemeris_dt_s = 30.0
-    cfg.receiver_app.rate_hz = 1.0
+    cfg.start_epoch_utc = _T["start_epoch_utc"]  # COD MGEX SP3 (Galileo); offset fits its 1-day span
+    cfg.seed = _T["seed"]
+    cfg.dt_s = _T["dt_s"]
+    cfg.ephemeris_dt_s = _T["ephemeris_dt_s"]
+    cfg.receiver_app.rate_hz = _T["receiver_rate_hz"]
+    cfg.duration_s = _T["duration_s"]  # one full ELFO orbital period
     cfg.output_dir = str(OUTPUT_DIR)
     cfg.links_file = str(OUTPUT_DIR / "precomputed_links.csv")
     cfg.delays_file = str(OUTPUT_DIR / "precomputed_delays.csv")
 
-    # --- Truth receiver orbit: ELFO (a=6541.4 km, e=0.6) ---
-    cfg.receiver_a_m = 6541.4e3
-    cfg.receiver_ecc = 0.6
-    cfg.receiver_inc_rad = 65.5 * pnt.RAD
-    cfg.receiver_raan_rad = 60.0 * pnt.RAD
-    cfg.receiver_argp_rad = 90.0 * pnt.RAD
-    cfg.receiver_mean_anomaly_rad = 0.0
-    cfg.clock_bias_s = 2.0e-6
-    cfg.clock_drift_sps = 1.0e-10
+    # Truth receiver ELFO orbit + clock (from the `receiver` Spacecraft's initial_state).
+    cfg.receiver_a_m = _T["receiver_a_m"]
+    cfg.receiver_ecc = _T["receiver_ecc"]
+    cfg.receiver_inc_rad = _T["receiver_inc_rad"]
+    cfg.receiver_raan_rad = _T["receiver_raan_rad"]
+    cfg.receiver_argp_rad = _T["receiver_argp_rad"]
+    cfg.receiver_mean_anomaly_rad = _T["receiver_mean_anomaly_rad"]
+    cfg.clock_bias_s = _T["clock_bias_s"]
+    cfg.clock_drift_sps = _T["clock_drift_sps"]
     # Receiver clock model (truth + filter). Options: OCXO, USO, CSAC, MINI_RAFS, RAFS, DSAC
     # (noise coefficients per model in ClockDynamics::GetClockValues).
     cfg.clock_model = "OCXO"
@@ -83,7 +131,6 @@ def build_config():
     # while the filter keeps its 2-state model (unmodeled clock aging). Off by default.
     cfg.use_three_state_clock_truth = False
     cfg.clock_drift_rate_sps2 = 0.0  # initial truth drift-rate [s/s^2] (3-state truth only)
-    cfg.duration_s = float(2.0 * np.pi * np.sqrt(cfg.receiver_a_m**3 / pnt.GM_MOON))
 
     # --- GPS + Galileo constellation; auto-select the covering SP3 for the epoch ---
     sp3_dir = (DATA_DIR / "ephemeris" / "gnsslibpy" / "sp3").resolve()
@@ -124,16 +171,19 @@ def build_config():
     # low Sun-beta, where sidelobe reception is most affected. See ex3 for the attitude laws.
     cfg.design.tx_yaw_dedicated = False
 
-    # --- Force model: 20x20 Moon gravity truth / 18x18 filter, Earth+Sun, relativity ---
-    cfg.moon_gravity_degree_truth, cfg.moon_gravity_order_truth = 20, 20
+    # --- Force model: Moon gravity truth (from the receiver Spacecraft's dynamics), 18x18
+    #     filter, Earth+Sun, relativity ---
+    cfg.moon_gravity_degree_truth = _T["moon_gravity_degree_truth"]
+    cfg.moon_gravity_order_truth = _T["moon_gravity_order_truth"]
     cfg.moon_gravity_degree_filter, cfg.moon_gravity_order_filter = 18, 18
-    cfg.include_earth = True
-    cfg.include_sun = True
-    cfg.use_relativity = True
+    cfg.include_earth = _T["include_earth"]
+    cfg.include_sun = _T["include_sun"]
+    cfg.use_relativity = _T["use_relativity"]
 
-    # --- Solar radiation pressure: perturb truth and estimate the coefficient ---
-    cfg.use_srp_truth = True
-    cfg.srp_coeff_truth_m2_kg = 2.0e-3
+    # --- Solar radiation pressure: perturb truth (Cr*A/m from the Spacecraft dynamics) and
+    #     estimate the coefficient ---
+    cfg.use_srp_truth = _T["use_srp_truth"]
+    cfg.srp_coeff_truth_m2_kg = _T["srp_coeff_truth_m2_kg"]
     cfg.use_srp_filter = True
     cfg.estimate_srp_coefficient = True
     cfg.initial_srp_coeff_m2_kg = 1.0e-3

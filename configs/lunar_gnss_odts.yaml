@@ -57,7 +57,7 @@ agents:
       a: 6541400.0
       e: 0.6
       i: 65.5
-      Omega: 59.99999999999999
+      Omega: 60.0
       omega: 90.0
       M: 0.0
       clock_bias_s: 2.0e-06
