@@ -197,7 +197,9 @@ def build_config():
     cfg.use_tdcp = True
     cfg.use_ionosphere_free = True
     cfg.filter_pseudorange_noise_inflation_m = 10.0
-    cfg.filter_tdcp_noise_inflation_m = 0.05
+    # 0.20 m covers the uncancelled single-frequency plasma-delay change so TDCP stays
+    # consistent (see the YAML config + notebook section 7c); mirrors the YAML.
+    cfg.filter_tdcp_noise_inflation_m = 0.20
     cfg.pseudorange_min_tangent_altitude_m = 1000.0
     cfg.tdcp_min_tangent_altitude_m = 4000.0
 
@@ -212,7 +214,7 @@ def build_config():
     cfg.initial_velocity_sigma_mps = 0.1
     cfg.initial_clock_bias_sigma_s = 1.0e-6
     cfg.initial_clock_drift_sigma_sps = 1.0e-11
-    cfg.process_accel_sigma_mps2 = 1.0e-9
+    cfg.process_accel_sigma_mps2 = 1.0e-8  # mirrors the YAML filter block
     cfg.integration_step_s = 20.0
 
     # --- Diagnostics / performance ---

@@ -120,7 +120,9 @@ agents:
       measurements:
         use_pseudorange: true
         use_doppler: false
-        use_tdcp: false
+        # TDCP on by default: with the 0.20 m inflation below it is consistent and improves
+        # accuracy over pseudorange-only (see notebook section 7c/7d). Set false to compare.
+        use_tdcp: true
         use_ionosphere_free: true
         # TDCP mode. Default (false) = single-frequency (GPS L1 / Galileo E1) carrier phase.
         # Unlike the pseudorange it then gets NO ionosphere-free cancellation: the truth carrier
