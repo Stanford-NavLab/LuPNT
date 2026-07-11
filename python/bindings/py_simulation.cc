@@ -74,6 +74,33 @@ public:
   }
 };
 
+// Trampoline so a Measurement model can be authored in pure Python: the pure-virtual
+// Compute(x) dispatches to a Python `compute(self, x)` that returns ``(z, H, R)`` --- the
+// predicted observable, its Jacobian dh/dx, and the noise covariance --- as numpy arrays.
+// Applying the model to a truth state (from an agent/device) and adding noise generates an
+// observation; applying it to the filter state predicts one. Clone() shares the Python object
+// (models are read-only) so a filter's CreateFunction() closure keeps dispatching to Python.
+class PyMeasurement : public Measurement {
+public:
+  using Measurement::Measurement;
+  MeasData Compute(const State& x, MatXd* H = nullptr) const override {
+    py::gil_scoped_acquire gil;
+    py::function f = py::get_override(this, "compute");
+    if (!f) throw std::runtime_error("Measurement subclass must implement compute(self, x)");
+    py::tuple t = py::reinterpret_steal<py::tuple>(f(x.cast<double>().eval()).release());
+    MeasData md;
+    md.value = t[0].cast<VecXd>();
+    if (H) *H = t[1].cast<MatXd>();
+    md.covariance = t[2].cast<MatXd>();
+    return md;
+  }
+  Ptr<Measurement> Clone() const override {
+    py::gil_scoped_acquire gil;
+    auto holder = std::make_shared<py::object>(py::cast(this));
+    return std::shared_ptr<Measurement>(holder, const_cast<PyMeasurement*>(this));
+  }
+};
+
 // Recursively convert a YAML::Node to a native Python object (dict / list / int / float /
 // bool / str) for handing an app's config block to a Python-authored Application. Scalars are
 // typed via yaml-cpp (int, then float -- which correctly parses scientific notation like
@@ -158,6 +185,25 @@ void InitSimulation(py::module& m) {
            "Base Setup: schedules Step() at get_frequency() Hz. Call via super().setup() from a "
            "Python subclass to keep that scheduling.")
       .def("log", &Application::Log, py::arg("t"));
+
+  // ---- Measurement: polymorphic model base (subclassable from Python via PyMeasurement) ----
+  // Subclass and implement ``compute(self, x) -> (z, H, R)`` (numpy). ``evaluate(x)`` runs the
+  // model through the C++ base (the same path a Filter uses), so the same Python class both
+  // generates observations (apply to a truth state, add noise) and predicts them (apply to the
+  // filter state).
+  py::class_<Measurement, PyMeasurement, std::shared_ptr<Measurement>>(m, "Measurement")
+      .def(py::init<>())
+      .def(
+          "evaluate",
+          [](const Measurement& meas, const VecXd& x) {
+            State s(x.cast<Real>().eval());
+            MatXd H;
+            MeasData md = meas.Compute(s, &H);
+            return py::make_tuple(md.value, H, md.covariance);
+          },
+          py::arg("x"),
+          "Evaluate the measurement model at state x (numpy [r; v; ...]); returns "
+          "(z, H = dh/dx, R). Dispatches to a Python subclass's compute(self, x).");
 
   // ---- Agent: polymorphic base (subclassable from Python via PyAgent) ----
   py::class_<Agent, PyAgent, std::shared_ptr<Agent>>(m, "Agent")

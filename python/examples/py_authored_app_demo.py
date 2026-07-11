@@ -1,12 +1,20 @@
-"""Authoring a new Application entirely in Python.
+"""Authoring a new Application AND Measurement entirely in Python.
 
-Demonstrates pylupnt's Python-authoring hooks: subclass ``pnt.Application``, register it with
-``pnt.register_application(name, cls)``, and reference it by ``class:`` in a scenario config --
-the C++ ``pnt.Simulation`` instantiates and drives it. Here the app is a full angles-only
-orbit-determination EKF (numpy), whose filter dynamics are a pylupnt ``NBodyDynamics`` built and
-propagated (with STM) from Python via ``dyn.propagate_stm``. The observer estimates its own orbit
-from unit line-of-sight bearings to a known-ephemeris target; results are stored on ``self`` and
-read back after ``sim.run()``. Converges to a few metres over the 6 h arc.
+Demonstrates pylupnt's Python-authoring hooks:
+
+* subclass ``pnt.Measurement`` and implement ``compute(self, x) -> (z, H, R)`` -- the observable
+  model. Applied to a truth state (from the target agent/"device") plus noise it *generates* an
+  observation; applied to the filter state it *predicts* one (``measurement.evaluate(x)`` runs it
+  through the C++ base, the same path a Filter uses).
+* subclass ``pnt.Application``, register it with ``pnt.register_application(name, cls)``, and
+  reference it by ``class:`` in a scenario config -- the C++ ``pnt.Simulation`` instantiates and
+  drives it. Here it is a full angles-only orbit-determination EKF (numpy), whose filter dynamics
+  are a pylupnt ``NBodyDynamics`` built and propagated with STM from Python (``propagate_stm``).
+
+The observer estimates its own orbit from unit line-of-sight bearings to a known-ephemeris target;
+results are stored on ``self`` and read back after ``sim.run()``. Converges to a few metres over
+the 6 h arc.  (An analytic-ephemeris ``pnt.Agent`` subclass + ``pnt.register_agent`` is the third
+Python-authoring hook -- see the docstrings there.)
 
 Run:  pixi run python python/examples/py_authored_app_demo.py
 """
@@ -15,6 +23,19 @@ import sys, os
 import numpy as np
 sys.path.insert(0, "python"); os.environ["LUPNT_DATA_PATH"] = os.path.abspath("data/LuPNT_data")
 import yaml, pylupnt as pnt
+
+
+class BearingMeasurement(pnt.Measurement):
+    """Unit line-of-sight (bearing) to a known target position, authored in Python."""
+    def __init__(self, sigma_rad):
+        pnt.Measurement.__init__(self)
+        self.sigma = sigma_rad
+        self.target = np.zeros(3)          # set per-epoch to the target truth position
+
+    def compute(self, x):                  # z = h(x), H = dh/dx, R
+        d = self.target - x[:3]; rn = np.linalg.norm(d); u = d / rn
+        H = np.zeros((3, 6)); H[:, :3] = -(np.eye(3) - np.outer(u, u)) / rn
+        return u, H, self.sigma**2 * np.eye(3)
 
 
 def make_dyn():
@@ -40,9 +61,10 @@ class PyAnglesOdtsApp(pnt.Application):
     def setup(self):
         pnt.Application.setup(self)
         self.dyn = make_dyn()
+        self.meas = BearingMeasurement(self.sigma)          # a Python-authored Measurement
 
     def step(self, t):
-        if not self._init:                                   # capture initial truths once
+        if not self._init:                                  # capture initial truths once
             self.obs = np.asarray(self.get_agent().get_state_at(0.0))
             self.tgt = np.asarray(self.get_agent().get_world().get_state_at(self.target, 0.0))
             self.x = self.obs + np.r_[self.rng.normal(0, self.p0, 3), self.rng.normal(0, self.v0, 3)]
@@ -50,7 +72,7 @@ class PyAnglesOdtsApp(pnt.Application):
             self._init, self._t = True, t
             self._log(t); return
         dt = t - self._t
-        # propagate the truth references and the estimate consistently with the same model
+        # predict: propagate the truth references and the estimate with the same pylupnt model
         self.obs = np.asarray(self.dyn.propagate_stm(self.obs, float(self._t), float(t))[0]).ravel()
         self.tgt = np.asarray(self.dyn.propagate_stm(self.tgt, float(self._t), float(t))[0]).ravel()
         xf, F = self.dyn.propagate_stm(self.x, float(self._t), float(t))
@@ -59,11 +81,11 @@ class PyAnglesOdtsApp(pnt.Application):
         Q = q * np.block([[dt**3 / 3 * np.eye(3), dt**2 / 2 * np.eye(3)],
                           [dt**2 / 2 * np.eye(3), dt * np.eye(3)]])
         self.P = F @ self.P @ F.T + Q
-        r = self.x[:3]; d = self.tgt[:3] - r; rn = np.linalg.norm(d); u = d / rn
-        H = np.zeros((3, 6)); H[:, :3] = -(np.eye(3) - np.outer(u, u)) / rn
-        u_t = self.tgt[:3] - self.obs[:3]; u_t = u_t / np.linalg.norm(u_t)
-        z = u_t + self.rng.normal(0, self.sigma, 3)
-        R = self.sigma**2 * np.eye(3)
+        # update: the SAME Python Measurement generates the observation (truth) and predicts it (est)
+        self.meas.target = self.tgt[:3]
+        z_true, _, R = self.meas.evaluate(self.obs)
+        z = z_true + self.rng.normal(0, self.sigma, 3)
+        u, H, _ = self.meas.evaluate(self.x)
         S = H @ self.P @ H.T + R
         K = self.P @ H.T @ np.linalg.inv(S)
         self.x = self.x + K @ (z - u)
@@ -76,14 +98,15 @@ class PyAnglesOdtsApp(pnt.Application):
         self.truth.append(self.obs.copy()); self.sig.append(np.sqrt(np.diag(self.P)))
 
 
-pnt.register_application("PyAnglesOdtsApp", PyAnglesOdtsApp)
-cfg = yaml.safe_load(open("configs/sat_bearing_odts.yaml"))
-a = dict(cfg["agents"]["observer"]["application"]); a["class"] = "PyAnglesOdtsApp"
-a["process_accel_sigma_mps2"] = 1e-6; a.pop("monte_carlo_runs", None)
-cfg["agents"]["observer"]["application"] = a
-sim = pnt.Simulation(cfg); sim.run()
-app = sim.get_agent("observer").get_application()
-est = np.array(app.est); truth = np.array(app.truth)
-perr = np.linalg.norm(est[:, :3] - truth[:, :3], axis=1)
-print(f"PY-EKF steps={len(perr)} init={perr[0]:.1f} final={perr[-1]:.1f} "
-      f"RMS(last20%)={np.sqrt(np.mean(perr[int(0.8*len(perr)):]**2)):.1f} m")
+if __name__ == "__main__":
+    pnt.register_application("PyAnglesOdtsApp", PyAnglesOdtsApp)
+    cfg = yaml.safe_load(open("configs/sat_bearing_odts.yaml"))
+    a = dict(cfg["agents"]["observer"]["application"]); a["class"] = "PyAnglesOdtsApp"
+    a["process_accel_sigma_mps2"] = 1e-6; a.pop("monte_carlo_runs", None)
+    cfg["agents"]["observer"]["application"] = a
+    sim = pnt.Simulation(cfg); sim.run()
+    app = sim.get_agent("observer").get_application()
+    est = np.array(app.est); truth = np.array(app.truth)
+    perr = np.linalg.norm(est[:, :3] - truth[:, :3], axis=1)
+    print(f"PY-EKF steps={len(perr)} init={perr[0]:.1f} final={perr[-1]:.1f} "
+          f"RMS(last20%)={np.sqrt(np.mean(perr[int(0.8*len(perr)):]**2)):.1f} m")

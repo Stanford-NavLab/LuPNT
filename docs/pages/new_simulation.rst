@@ -531,10 +531,30 @@ implement ``get_state_at(self, t)`` returning a numpy ``[r; v]`` 6-vector, and r
 
    pnt.register_agent("PyEphemeris", PyEphemeris)   # config: {class: PyEphemeris, radius_m: 2.0e6}
 
-**Measurements** are computed inside a Python ``Application`` directly in numpy — the predicted
-observable and its Jacobian, as in the EKF demo (the unit line-of-sight ``u`` and
-``H = -(I - u u^T)/|d|``). New ``Dynamics`` classes, and a formal factory-registered
-``Measurement`` type, remain C++.
+**Authoring a new Measurement in Python.** An observable model is a ``pnt.Measurement`` subclass
+implementing ``compute(self, x) -> (z, H, R)`` (the predicted observable, its Jacobian
+``H = dh/dx``, and the noise ``R``, all numpy). ``measurement.evaluate(x)`` runs it through the
+C++ base — the same path a filter uses — so the *same* Python class both **generates** an
+observation (apply it to a truth state from the target agent/device, add noise) and **predicts**
+one (apply it to the filter state):
+
+.. code-block:: python
+
+   class BearingMeasurement(pnt.Measurement):
+       def __init__(self, sigma_rad):
+           pnt.Measurement.__init__(self); self.sigma = sigma_rad; self.target = np.zeros(3)
+       def compute(self, x):
+           d = self.target - x[:3]; rn = np.linalg.norm(d); u = d / rn
+           H = np.zeros((3, 6)); H[:, :3] = -(np.eye(3) - np.outer(u, u)) / rn
+           return u, H, self.sigma**2 * np.eye(3)
+
+   m = BearingMeasurement(np.radians(2 / 3600)); m.target = tgt_truth[:3]
+   z = m.evaluate(obs_truth)[0] + rng.normal(0, m.sigma, 3)   # generate from the target's truth
+   u, Hx, R = m.evaluate(self.x)                              # predict at the filter state
+
+The angles-only demo (``python/examples/py_authored_app_demo.py``) uses exactly this. So new
+**Applications, Agents, and Measurements** are all authorable in pure Python; new ``Dynamics``
+classes remain C++ (reuse ``pnt.NBodyDynamics`` from Python).
 
 The skeleton of the two most common extensions — a new ``Application`` and a new
 ``Measurement`` — is:
