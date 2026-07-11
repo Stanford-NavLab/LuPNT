@@ -65,7 +65,9 @@ namespace lupnt {
     double rover_start_north_m = -250.0;     ///< start North offset from tile center [m].
     double rover_speed_mps = 2.0;            ///< horizontal ground speed [m/s].
     double rover_heading_deg = 0.0;          ///< initial heading (0=E, 90=N) [deg].
-    double rover_turn_rate_dps = 0.6;        ///< heading rate [deg/s].
+    double rover_turn_rate_dps = 0.6;        ///< constant heading rate [deg/s].
+    double rover_weave_amplitude_deg = 0.0;  ///< serpentine heading-weave amplitude [deg] (0=off).
+    double rover_weave_period_s = 300.0;     ///< serpentine heading-weave period [s].
     double rover_clock_bias_s = 1.0e-6;      ///< truth rover clock bias at t0 [s].
     double rover_clock_drift_sps = 1.0e-11;  ///< truth rover clock drift [s/s].
 

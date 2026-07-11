@@ -13,7 +13,7 @@
 
 name: surface_rover_nav
 epoch: "2027-03-01T00:00:00"
-duration: "00:30:00"          # 1800 s (matches application.duration_s)
+duration: "00:40:00"          # 2400 s (matches application.duration_s)
 log_level: INFO
 
 # ---- Shared, read-only environment -------------------------------------------
@@ -54,17 +54,19 @@ agents:
       class: SurfaceRoverNavApp
       seed: 42
       start_epoch_utc: "2027-03-01T00:00:00"
-      duration_s: 1800.0
+      duration_s: 2400.0
       dt_s: 1.0
       dem_max_res_m: 20.0       # terrain-slope FD step; must match world.dem.max_res_m
       constellation: LuNaNet    # resolve relay-satellite truth from the LunarNavConstellation agent
 
       # Rover truth path (local ENU tangent plane about the DEM site center)
-      rover_start_east_m: 0.0
-      rover_start_north_m: -250.0
-      rover_speed_mps: 2.0
-      rover_heading_deg: 0.0
-      rover_turn_rate_dps: 0.6
+      rover_start_east_m: -3000.0
+      rover_start_north_m: -3000.0
+      rover_speed_mps: 3.0
+      rover_heading_deg: 30.0        # mean traverse heading (NE across the DEM)
+      rover_turn_rate_dps: 0.0       # no net turn -> a long straight-ish traverse
+      rover_weave_amplitude_deg: 25.0  # serpentine weave: keeps attitude/IMU biases observable
+      rover_weave_period_s: 240.0      # while the mean heading covers a long terrain range
       rover_clock_bias_s: 1.0e-6
       rover_clock_drift_sps: 1.0e-11
 

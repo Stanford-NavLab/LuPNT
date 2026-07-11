@@ -67,6 +67,9 @@ namespace lupnt {
     c.rover_speed_mps = config["rover_speed_mps"].as<double>(c.rover_speed_mps);
     c.rover_heading_deg = config["rover_heading_deg"].as<double>(c.rover_heading_deg);
     c.rover_turn_rate_dps = config["rover_turn_rate_dps"].as<double>(c.rover_turn_rate_dps);
+    c.rover_weave_amplitude_deg
+        = config["rover_weave_amplitude_deg"].as<double>(c.rover_weave_amplitude_deg);
+    c.rover_weave_period_s = config["rover_weave_period_s"].as<double>(c.rover_weave_period_s);
     c.rover_clock_bias_s = config["rover_clock_bias_s"].as<double>(c.rover_clock_bias_s);
     c.rover_clock_drift_sps = config["rover_clock_drift_sps"].as<double>(c.rover_clock_drift_sps);
     c.accel_noise_density = config["accel_noise_density"].as<double>(c.accel_noise_density);
@@ -296,7 +299,14 @@ namespace lupnt {
     R_truth_.assign(N_, Mat3d::Identity());
     for (int k = 0; k < N_; ++k) {
       double t = k * dt;
-      Hdg[k] = (cfg_.rover_heading_deg + cfg_.rover_turn_rate_dps * t) * RAD;
+      // Heading = initial + constant turn + an optional sinusoidal "weave" (serpentine): the
+      // mean heading drives a long traverse across the terrain while the weave keeps a nonzero,
+      // sign-changing angular rate so the attitude and IMU biases stay observable.
+      double weave = (cfg_.rover_weave_period_s > 0.0)
+                         ? cfg_.rover_weave_amplitude_deg
+                               * std::sin(2.0 * PI * t / cfg_.rover_weave_period_s)
+                         : 0.0;
+      Hdg[k] = (cfg_.rover_heading_deg + cfg_.rover_turn_rate_dps * t + weave) * RAD;
       if (k == 0) {
         Ee_[0] = cfg_.rover_start_east_m;
         Nn_[0] = cfg_.rover_start_north_m;
