@@ -8,9 +8,9 @@
 # few-hour arc. (The ill-posed angles-only estimation of the target's RANGE is not attempted.)
 #
 # The estimator app (`PyAnglesOdtsApp`) and its bearing Measurement are authored in **Python**
-# (see python/examples/ex17_sat_bearing_odts.ipynb / py_authored_app_demo.py, which register
-# them with pnt.register_application before pnt.Simulation runs). This config therefore runs
-# from those Python entry points, not standalone.
+# (see python/examples/ex17_sat_bearing_odts.ipynb, which defines them and registers them with
+# pnt.register_application before pnt.Simulation runs). This config therefore runs from that
+# notebook, not standalone.
 #
 # The shared physical environment lives in the top-level `world:` block. Both spacecraft
 # omit a per-agent `dynamics:` block, so they inherit the shared `world.force_model` as
