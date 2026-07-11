@@ -1132,6 +1132,10 @@ namespace lupnt {
       std::string sat;      // e.g. "GPS PRN 18 L1" or "GPS PRN 18 L1+L5" for dual-frequency
       double iono_m = 0.0;  // ionosphere/plasma delay on the signal: per-channel for the current
                             // observables (ionosphere-free -> ~0), epoch-to-epoch change for TDCP.
+      // Range-direction transmitter ephemeris error: the (true SP3 - broadcast) transmitter
+      // position error projected onto the receiver->transmitter line of sight [m] -- i.e. the
+      // broadcast orbit error the pseudorange actually sees. NaN for TDCP rows.
+      double eph_range_err_m = std::numeric_limits<double>::quiet_NaN();
     };
 
     // Per-constellation dual-frequency pair for the ionosphere-free combination and TDCP:
@@ -1144,13 +1148,26 @@ namespace lupnt {
       return gnss_const == GnssConst::GALILEO ? GnssFreq::E5a : GnssFreq::L5;
     }
 
+    // Range-direction transmitter ephemeris error: the (true SP3 - broadcast) transmitter position
+    // error projected onto the receiver->transmitter line of sight [m] -- the broadcast orbit error
+    // the pseudorange actually sees. All positions are in MOON_CI (the measurement options frame),
+    // so this is a same-frame projection. `filter_ch` is the truth channel with the broadcast delta
+    // injected, so (truth_tx - filter_tx) is exactly the negated broadcast orbit error.
+    double LosEphError(const GnssChannel& truth_ch, const GnssChannel& filter_ch, const Vec3d& rx) {
+      Vec3d tx_true = truth_ch.tx_state.head(3).cast<double>();
+      Vec3d tx_eph = filter_ch.tx_state.head(3).cast<double>();
+      Vec3d los = (tx_true - rx).normalized();
+      return (tx_true - tx_eph).dot(los);
+    }
+
     // Descriptors are built from the *truth* channels/pairs so `iono_m` reflects the actual
     // signal delay (the filter channels have it zeroed unless plasma.model_in_filter). Truth and
     // filter channel sets share the same satellites in the same order, so the row order matches
     // the stacked measurement vector. `dual_frequency` labels the current-epoch (pseudorange/
     // Doppler) rows as the ionosphere-free L1+L5 / E1+E5a combination; TDCP is always L1/E1.
     std::vector<MeasRowDesc> MeasurementRowDescriptors(
-        const std::vector<GnssChannel>& channels, const GnssMeasurementOptions& current_options,
+        const std::vector<GnssChannel>& channels, const std::vector<GnssChannel>& filter_channels,
+        const Vec3d& rx_pos_moonci, const GnssMeasurementOptions& current_options,
         const std::vector<TdcpPair>& tdcp_pairs, bool dual_frequency) {
       auto sat_name = [](const GnssChannel& c, bool dual) {
         const std::string freq = dual ? GnssFreqName(PrimaryFrequency(c.gnss_const)) + "+"
@@ -1158,12 +1175,19 @@ namespace lupnt {
                                       : GnssFreqName(c.frequency);
         return GnssConstName(c.gnss_const) + " PRN " + std::to_string(c.prn) + " " + freq;
       };
+      auto eph_range_err = [&](std::size_t c) -> double {
+        return c < filter_channels.size()
+                   ? LosEphError(channels[c], filter_channels[c], rx_pos_moonci)
+                   : std::numeric_limits<double>::quiet_NaN();
+      };
       std::vector<MeasRowDesc> rows;
       rows.reserve(channels.size() * current_options.observables.size() + tdcp_pairs.size());
-      for (const auto& channel : channels)
+      for (std::size_t c = 0; c < channels.size(); ++c) {
+        const double eph = eph_range_err(c);
         for (const auto observable : current_options.observables)
-          rows.push_back({ObservableName(observable), sat_name(channel, dual_frequency),
-                          channel.ionosphere_plasma_delay_m.val()});
+          rows.push_back({ObservableName(observable), sat_name(channels[c], dual_frequency),
+                          channels[c].ionosphere_plasma_delay_m.val(), eph});
+      }
       for (const auto& pair : tdcp_pairs)
         rows.push_back(
             {"TDCP", sat_name(pair.current, false),
@@ -1175,6 +1199,8 @@ namespace lupnt {
     void PrintMatrixDiagnostics(int epoch_index, const LunarGnssODTSConfig& cfg,
                                 const Ptr<UDUEKF>& filter,
                                 const std::vector<GnssChannel>& truth_channels,
+                                const std::vector<GnssChannel>& filter_channels,
+                                const Vec3d& rx_pos_moonci,
                                 const GnssMeasurementOptions& current_options,
                                 const std::vector<TdcpPair>& truth_tdcp_pairs) {
       if (cfg.debug_print_matrix_epochs <= 0 || epoch_index >= cfg.debug_print_matrix_epochs)
@@ -1209,8 +1235,9 @@ namespace lupnt {
       // Per-measurement table. S = H P H^T + R is the innovation covariance (post-update S_).
       // `iono_m` is the ionosphere/plasma delay on the signal (from truth): ~0 for the
       // ionosphere-free pseudorange, and the small epoch-to-epoch change for TDCP.
-      const auto rows = MeasurementRowDescriptors(truth_channels, current_options, truth_tdcp_pairs,
-                                                  cfg.use_ionosphere_free);
+      const auto rows
+          = MeasurementRowDescriptors(truth_channels, filter_channels, rx_pos_moonci,
+                                      current_options, truth_tdcp_pairs, cfg.use_ionosphere_free);
       const MatXd S = filter->GetInnovationCov();
       const double kNaN = std::numeric_limits<double>::quiet_NaN();
       auto cell = [](double v) {
@@ -1223,15 +1250,16 @@ namespace lupnt {
       };
       oss << "measurements (" << n_rows << " rows):\n";
       oss << std::left << std::setw(4) << "#" << std::setw(13) << "type" << std::setw(16) << "sat"
-          << std::right << std::setw(13) << "iono_m" << std::setw(16) << "z_obs" << std::setw(16)
-          << "z_pred" << std::setw(14) << "dz" << std::setw(13) << "R_sqrt" << std::setw(13)
-          << "S_sqrt" << "\n";
+          << std::right << std::setw(13) << "iono_m" << std::setw(14) << "eph_los_m"
+          << std::setw(16) << "z_obs" << std::setw(16) << "z_pred" << std::setw(14) << "dz"
+          << std::setw(13) << "R_sqrt" << std::setw(13) << "S_sqrt" << "\n";
       for (int i = 0; i < n_rows; ++i) {
         const bool have = i < static_cast<int>(rows.size());
         const std::string type = have ? rows[i].type : "?";
         const std::string sat = have ? rows[i].sat : "?";
         oss << std::left << std::setw(4) << i << std::setw(13) << type << std::setw(16) << sat
-            << std::right << std::setw(13) << cell(have ? rows[i].iono_m : kNaN) << std::setw(16)
+            << std::right << std::setw(13) << cell(have ? rows[i].iono_m : kNaN) << std::setw(14)
+            << cell(have ? rows[i].eph_range_err_m : kNaN) << std::setw(16)
             << cell(i < z_obs.size() ? z_obs(i) : kNaN) << std::setw(16)
             << cell(i < z_pred.size() ? z_pred(i) : kNaN) << std::setw(14)
             << cell(i < dz.size() ? dz(i) : kNaN) << std::setw(13) << cell(diag_sqrt(R, i))
@@ -1793,6 +1821,14 @@ namespace lupnt {
                        "srp_coeff_est_m2_kg,srp_coeff_error_m2_kg,srp_coeff_3sigma_m2_kg,"
                        "num_channels,num_tracked_satellites,num_measurements\n";
 
+        // Per-satellite, per-epoch range-direction transmitter ephemeris (broadcast-vs-precise)
+        // residuals for the whole run, for distribution analysis (histogram). Deterministic, so
+        // identical across Monte-Carlo runs.
+        eph_residuals_.open(
+            context_.cfg.output_dir
+            / ("ephemeris_residuals_mc" + std::to_string(context_.mc_index) + ".csv"));
+        eph_residuals_ << "mc,epoch,t_s,gnss,prn,eph_los_m\n";
+
         summary_.monte_carlo_index = context_.mc_index;
         summary_.num_epochs = static_cast<int>(context_.times_tdb.size());
         pos_err2_sum_ = 0.0;
@@ -1936,8 +1972,20 @@ namespace lupnt {
         meas_cfg.filter_tdcp_noise_inflation_m = context_.cfg.filter_tdcp_noise_inflation_m;
         filter_->SetMeasurementFunction(LunarGnssCombinedMeasurement(meas_cfg).CreateFunction());
         filter_->Update(y_obs);
-        PrintMatrixDiagnostics(k, context_.cfg, filter_, truth_channels, truth_options_,
+        PrintMatrixDiagnostics(k, context_.cfg, filter_, truth_channels, filter_channels,
+                               context_.truth_states[k].head(3).cast<double>(), truth_options_,
                                truth_tdcp_pairs);
+
+        // Persist the per-satellite range-direction ephemeris residuals every epoch (for the
+        // distribution / histogram in the notebook).
+        if (eph_residuals_.is_open()) {
+          const Vec3d rx = context_.truth_states[k].head(3).cast<double>();
+          for (std::size_t c = 0; c < truth_channels.size() && c < filter_channels.size(); ++c)
+            eph_residuals_ << context_.mc_index << "," << k << "," << context_.elapsed_s(k) << ","
+                           << GnssConstName(truth_channels[c].gnss_const) << ","
+                           << truth_channels[c].prn << ","
+                           << LosEphError(truth_channels[c], filter_channels[c], rx) << "\n";
+        }
 
         State x_est = CurrentFilterState(filter_->GetState(), context_.cfg);
         Vec3d dr = (context_.truth_states[k].head(3) - x_est.head(3)).cast<double>();
@@ -2034,6 +2082,7 @@ namespace lupnt {
         summary_.rms_velocity_error_mps
             = std::sqrt(vel_err2_sum_ / static_cast<double>(context_.times_tdb.size()));
         trajectory_.close();
+        eph_residuals_.close();
 
         const double wall_s
             = std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time_).count();
@@ -2055,6 +2104,7 @@ namespace lupnt {
       GnssMeasurementOptions filter_carrier_options_;
       Ptr<UDUEKF> filter_;
       std::ofstream trajectory_;
+      std::ofstream eph_residuals_;
       std::vector<GnssChannel> previous_truth_primary_;
       std::vector<GnssChannel> previous_filter_primary_;
       std::shared_ptr<BroadcastEphemerisError> broadcast_error_;
