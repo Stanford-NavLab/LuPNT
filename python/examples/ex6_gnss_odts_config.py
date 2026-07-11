@@ -201,6 +201,34 @@ def load_scenario():
     c["sp3_directory"] = str((DATA_DIR / "ephemeris" / "gnsslibpy" / "sp3").resolve())
     c["antex_file"] = str((DATA_DIR / "gnss" / "igs20.atx").resolve())
     c["brdc_directory"] = str((DATA_DIR / "ephemeris" / "gnsslibpy" / "brdc").resolve())
+
+    # --- Link-cache fingerprint compatibility -------------------------------------------------
+    # The Stage 1/2 precompute (ex6_precompute.py) keys its link cache on a fingerprint of the
+    # TRUTH link geometry -- the receiver orbit + truth force model -- computed from build_config().
+    # In the agent-based scenario that truth is owned by the physical `receiver` Spacecraft (its
+    # `dynamics:`/`initial_state:` blocks), so the *application* block deliberately does not declare
+    # it. But the C++ fingerprint still reads a `truth:`/`dynamics:` block, so we mirror
+    # build_config()'s exact values here (identical doubles, same source) to reconstruct the cache
+    # key so the EKF run reuses the precompute cache. These do NOT drive the run -- the truth comes
+    # from the Spacecraft agent; they only reproduce the fingerprint.
+    ref = build_config()
+    t = app.setdefault("truth", {})
+    t["receiver_a_m"] = ref.receiver_a_m
+    t["receiver_ecc"] = ref.receiver_ecc
+    t["receiver_inc_rad"] = ref.receiver_inc_rad
+    t["receiver_raan_rad"] = ref.receiver_raan_rad
+    t["receiver_argp_rad"] = ref.receiver_argp_rad
+    t["receiver_mean_anomaly_rad"] = ref.receiver_mean_anomaly_rad
+    t["clock_bias_s"] = ref.clock_bias_s
+    t["clock_drift_sps"] = ref.clock_drift_sps
+    d = app.setdefault("dynamics", {})
+    d["moon_gravity_degree_truth"] = ref.moon_gravity_degree_truth
+    d["moon_gravity_order_truth"] = ref.moon_gravity_order_truth
+    d["include_earth"] = ref.include_earth
+    d["include_sun"] = ref.include_sun
+    d["use_relativity"] = ref.use_relativity
+    d["use_srp_truth"] = ref.use_srp_truth
+    d["srp_coeff_truth_m2_kg"] = ref.srp_coeff_truth_m2_kg
     return scen
 
 
