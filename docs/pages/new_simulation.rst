@@ -512,9 +512,29 @@ agent, builds a filter dynamics model, and stores results on ``self`` (``sim.get
    est = sim.get_agent("observer").get_application().est     # results read straight off self
 
 A complete, converging example — an angles-only OD EKF authored this way — is
-``python/examples/py_authored_app_demo.py``. New ``Dynamics`` and (batch-Jacobian)
-``Measurement`` classes are still authored in C++ and exposed through bindings; a Python
-``Application`` can host a numpy filter and compute its own measurements inline, as above.
+``python/examples/py_authored_app_demo.py``.
+
+**Authoring a new Agent in Python.** A physical platform (whose truth trajectory you define in
+Python — an analytic ephemeris, a scripted path) works the same way: subclass ``pnt.Agent``,
+implement ``get_state_at(self, t)`` returning a numpy ``[r; v]`` 6-vector, and register it with
+``pnt.register_agent(name, cls)``:
+
+.. code-block:: python
+
+   class PyEphemeris(pnt.Agent):
+       def __init__(self, config):
+           pnt.Agent.__init__(self)
+           self.a = config["radius_m"]; self.w = (pnt.GM_MOON / self.a**3) ** 0.5
+       def get_state_at(self, t):
+           c, s = np.cos(self.w * t), np.sin(self.w * t)
+           return np.array([self.a*c, self.a*s, 0, -self.a*self.w*s, self.a*self.w*c, 0])
+
+   pnt.register_agent("PyEphemeris", PyEphemeris)   # config: {class: PyEphemeris, radius_m: 2.0e6}
+
+**Measurements** are computed inside a Python ``Application`` directly in numpy — the predicted
+observable and its Jacobian, as in the EKF demo (the unit line-of-sight ``u`` and
+``H = -(I - u u^T)/|d|``). New ``Dynamics`` classes, and a formal factory-registered
+``Measurement`` type, remain C++.
 
 The skeleton of the two most common extensions — a new ``Application`` and a new
 ``Measurement`` — is:

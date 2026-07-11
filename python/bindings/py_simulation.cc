@@ -39,6 +39,41 @@ public:
   }
 };
 
+// Trampoline so an Agent (a physical platform) can be authored in pure Python: the pure-virtual
+// GetStateAt(t) dispatches to a Python `get_state_at(self, t)` returning a numpy [r; v] 6-vector;
+// Setup/Step/Log optionally dispatch to Python. Use for a truth trajectory defined in Python
+// (e.g. an analytic ephemeris). See `register_agent` below.
+class PyAgent : public Agent {
+public:
+  using Agent::Agent;
+  Cart6 GetStateAt(Real t) const override {
+    py::gil_scoped_acquire gil;
+    py::function f = py::get_override(static_cast<const Agent*>(this), "get_state_at");
+    if (!f) throw std::runtime_error("Agent subclass must implement get_state_at(self, t)");
+    VecXd v = f(t.val()).cast<VecXd>();
+    LUPNT_CHECK(v.size() == 6, "Agent.get_state_at must return a 6-vector [r; v]", "PyAgent");
+    Vec6 x6 = v.cast<Real>();
+    return Cart6(x6);
+  }
+  void Setup() override { PYBIND11_OVERRIDE_NAME(void, Agent, "setup", Setup); }
+  void Step(Real t) override {
+    py::gil_scoped_acquire gil;
+    py::function f = py::get_override(static_cast<const Agent*>(this), "step");
+    if (f)
+      f(t.val());
+    else
+      Agent::Step(t);
+  }
+  void Log(Real t) override {
+    py::gil_scoped_acquire gil;
+    py::function f = py::get_override(static_cast<const Agent*>(this), "log");
+    if (f)
+      f(t.val());
+    else
+      Agent::Log(t);
+  }
+};
+
 // Recursively convert a YAML::Node to a native Python object (dict / list / int / float /
 // bool / str) for handing an app's config block to a Python-authored Application. Scalars are
 // typed via yaml-cpp (int, then float -- which correctly parses scientific notation like
@@ -124,9 +159,11 @@ void InitSimulation(py::module& m) {
            "Python subclass to keep that scheduling.")
       .def("log", &Application::Log, py::arg("t"));
 
-  // ---- Agent: polymorphic base ----
-  py::class_<Agent, std::shared_ptr<Agent>>(m, "Agent")
+  // ---- Agent: polymorphic base (subclassable from Python via PyAgent) ----
+  py::class_<Agent, PyAgent, std::shared_ptr<Agent>>(m, "Agent")
+      .def(py::init<>())
       .def("get_name", &Agent::GetName)
+      .def("set_name", &Agent::SetName, py::arg("name"))
       .def("get_application", &Agent::GetApplication,
            "The primary Application hosted by this agent (the first one; downcasts to the "
            "concrete app type)")
@@ -194,4 +231,24 @@ void InitSimulation(py::module& m) {
       "The class is constructed as `cls(config_dict)`; subclass Step(t) (and optionally "
       "Setup()/Log(t)), read truth via get_agent().get_world().get_state_at(agent, t), and store "
       "results on self.");
+
+  // ---- Author agents in Python: register a Python Agent subclass with the asset factory ----
+  m.def(
+      "register_agent",
+      [](const std::string& name, py::object cls) {
+        AssetFactory<Agent, Config&>::Register(
+            name, [cls](Config& config) -> std::shared_ptr<Agent> {
+              py::gil_scoped_acquire gil;
+              py::object obj = cls(YamlToPy(config));
+              auto holder = std::shared_ptr<py::object>(new py::object(obj), [](py::object* p) {
+                py::gil_scoped_acquire g;
+                delete p;
+              });
+              return std::shared_ptr<Agent>(holder, obj.cast<Agent*>());
+            });
+      },
+      py::arg("name"), py::arg("cls"),
+      "Register a Python Agent subclass under `name` so a config `class: name` builds it. The "
+      "class is constructed as `cls(config_dict)` and must implement get_state_at(self, t) "
+      "returning a numpy [r; v] 6-vector (e.g. an analytic truth trajectory).");
 }
