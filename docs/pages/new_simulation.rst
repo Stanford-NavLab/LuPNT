@@ -473,16 +473,48 @@ scenario with an expensive shared precompute — via the engine's in-config
 ``monte_carlo_runs`` (one precompute, ``seed = base_seed + i`` per run). See
 ``python/examples/ex6_gnss_odts.ipynb`` §7d for both.
 
-**Authoring new classes.** New ``Application`` / ``Measurement`` / ``Dynamics`` / ``Agent``
-subclasses are currently written in **C++** (the recipe above) and exposed to Python through
-a pybind11 binding that surfaces each class's result accessors. Python subclassing of these
-base classes (overriding ``Step``/``Setup`` from Python) is **not** wired today — the base
-classes are bound without pybind11 trampolines, and the ``Agent`` truth-access surface a
-Python app would need (``GetStateAt`` and sibling-agent lookup) is not yet exposed. Enabling
-pure-Python authoring is a scoped enhancement: add trampoline classes (``PyApplication`` with
-``PYBIND11_OVERRIDE`` on the virtuals) plus a ``register_application(name, cls)`` factory hook,
-and bind the ``Agent`` state-access methods. Until then, prototype in Python by **composing
-existing classes**; add a new observable/estimator in C++.
+**Authoring a new Application in Python.** You can subclass ``pnt.Application`` in pure Python
+and have the C++ simulation drive it — no C++ build required. Register the class with
+``pnt.register_application(name, cls)`` and reference it by ``class: name`` in a config; the
+engine constructs it as ``cls(config_dict)`` (the ``application:`` block, as a dict) and calls
+its ``step(t)`` (and ``setup()`` / ``log(t)``) each epoch. The app reads truth through its host
+agent, builds a filter dynamics model, and stores results on ``self`` (``sim.get_agent(...)
+.get_application()`` hands the same Python object back):
+
+.. code-block:: python
+
+   import numpy as np, yaml, pylupnt as pnt
+
+   class MyOdtsApp(pnt.Application):
+       def __init__(self, config):
+           pnt.Application.__init__(self)
+           self.target = config["target"]
+           self.set_frequency(config.get("frequency", 1.0 / 60))
+           self.est = []
+       def setup(self):
+           pnt.Application.setup(self)          # base schedules step() at get_frequency()
+           self.dyn = pnt.NBodyDynamics()       # a filter force model, built in Python
+           for b in (pnt.Body.Moon(8, 8), pnt.Body.Earth(), pnt.Body.Sun()):
+               self.dyn.add_body(b)
+           self.dyn.set_frame(pnt.Frame.MOON_CI); self.dyn.set_autodiff(True)
+       def step(self, t):
+           world = self.get_agent().get_world()
+           r_obs = self.get_agent().get_state_at(t)             # this agent's truth [r; v]
+           r_tgt = world.get_state_at(self.target, t)           # any agent's truth by name
+           xf, F = self.dyn.propagate_stm(self.x, t0, t)        # predict with STM (numpy in/out)
+           # ... EKF update from a measurement computed in numpy; store on self ...
+           self.est.append(self.x.copy())
+
+   pnt.register_application("MyOdtsApp", MyOdtsApp)
+   cfg = yaml.safe_load(open("configs/sat_bearing_odts.yaml"))
+   cfg["agents"]["observer"]["application"] = {"class": "MyOdtsApp", "target": "target"}
+   sim = pnt.Simulation(cfg); sim.run()
+   est = sim.get_agent("observer").get_application().est     # results read straight off self
+
+A complete, converging example — an angles-only OD EKF authored this way — is
+``python/examples/py_authored_app_demo.py``. New ``Dynamics`` and (batch-Jacobian)
+``Measurement`` classes are still authored in C++ and exposed through bindings; a Python
+``Application`` can host a numpy filter and compute its own measurements inline, as above.
 
 The skeleton of the two most common extensions — a new ``Application`` and a new
 ``Measurement`` — is:

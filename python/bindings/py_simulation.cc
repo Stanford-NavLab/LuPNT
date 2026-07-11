@@ -13,6 +13,61 @@
 namespace py = pybind11;
 using namespace lupnt;
 
+// Trampoline so an Application subclass can be authored in pure Python: the C++ virtuals
+// dispatch to Python overrides. `Step` is pure-virtual (every app must implement it);
+// `Setup`/`Log` have base implementations (call `super().setup()` to keep the base's
+// frequency-based Step scheduling). See `register_application` below for the factory hook.
+class PyApplication : public Application {
+public:
+  using Application::Application;
+  void Setup() override { PYBIND11_OVERRIDE_NAME(void, Application, "setup", Setup); }
+  // Pass time as a plain Python float (t.val()), not a Real/autodiff object, so Python
+  // authors can do ordinary arithmetic on it.
+  void Step(Real t) override {
+    py::gil_scoped_acquire gil;
+    py::function f = py::get_override(static_cast<const Application*>(this), "step");
+    if (!f) throw std::runtime_error("Application subclass must implement step(self, t)");
+    f(t.val());
+  }
+  void Log(Real t) override {
+    py::gil_scoped_acquire gil;
+    py::function f = py::get_override(static_cast<const Application*>(this), "log");
+    if (f)
+      f(t.val());
+    else
+      Application::Log(t);
+  }
+};
+
+// Recursively convert a YAML::Node to a native Python object (dict / list / int / float /
+// bool / str) for handing an app's config block to a Python-authored Application. Scalars are
+// typed via yaml-cpp (int, then float -- which correctly parses scientific notation like
+// 1e-8 -- then bool, else str), avoiding the YAML 1.1 round-trip that pyyaml mis-reads.
+static py::object YamlToPy(const YAML::Node& node) {
+  switch (node.Type()) {
+    case YAML::NodeType::Map: {
+      py::dict d;
+      for (const auto& kv : node) d[py::str(kv.first.as<std::string>())] = YamlToPy(kv.second);
+      return d;
+    }
+    case YAML::NodeType::Sequence: {
+      py::list l;
+      for (const auto& e : node) l.append(YamlToPy(e));
+      return std::move(l);
+    }
+    case YAML::NodeType::Scalar: {
+      long long i;
+      if (YAML::convert<long long>::decode(node, i)) return py::int_(i);
+      double dbl;
+      if (YAML::convert<double>::decode(node, dbl)) return py::float_(dbl);
+      bool b;
+      if (YAML::convert<bool>::decode(node, b)) return py::bool_(b);
+      return py::str(node.Scalar());
+    }
+    default: return py::none();
+  }
+}
+
 // Framework-level agent-based simulation API: World, Application, Agent, Simulation.
 // Application/Agent are registered as polymorphic bases with shared_ptr holders so
 // that Agent::get_application() automatically downcasts to concrete Application
@@ -53,10 +108,21 @@ void InitSimulation(py::module& m) {
           py::arg("name"), py::arg("t"),
           "Truth state [r; v] of agent `name` at simulation time t [s], in the world frame");
 
-  // ---- Application: polymorphic base ----
-  py::class_<Application, std::shared_ptr<Application>>(m, "Application")
+  // ---- Application: polymorphic base (subclassable from Python via PyApplication) ----
+  py::class_<Application, PyApplication, std::shared_ptr<Application>>(m, "Application")
+      .def(py::init<>())
       .def("get_name", &Application::GetName)
-      .def("get_frequency", [](const Application& a) { return a.GetFrequency().val(); });
+      .def("set_name", &Application::SetName, py::arg("name"))
+      .def("get_frequency", [](const Application& a) { return a.GetFrequency().val(); })
+      .def(
+          "set_frequency", [](Application& a, double f) { a.SetFrequency(f); },
+          py::arg("frequency"))
+      .def("get_agent", &Application::GetAgent, py::return_value_policy::reference,
+           "The Agent that hosts this application (set by the simulation before Setup()).")
+      .def("setup", &Application::Setup,
+           "Base Setup: schedules Step() at get_frequency() Hz. Call via super().setup() from a "
+           "Python subclass to keep that scheduling.")
+      .def("log", &Application::Log, py::arg("t"));
 
   // ---- Agent: polymorphic base ----
   py::class_<Agent, std::shared_ptr<Agent>>(m, "Agent")
@@ -71,7 +137,10 @@ void InitSimulation(py::module& m) {
       .def(
           "get_state_at",
           [](const Agent& a, double t) { return a.GetStateAt(t).cast<double>().eval(); },
-          py::arg("t"), "Cartesian state [r; v] of this agent at simulation time t [s]");
+          py::arg("t"), "Cartesian state [r; v] of this agent at simulation time t [s]")
+      .def("get_world", &Agent::GetWorld, py::return_value_policy::reference,
+           "The shared World environment (use world.get_state_at(name, t) to read any agent's "
+           "truth state).");
 
   // ---- Simulation: holds agents, the world, and the event queue ----
   py::class_<Simulation>(m, "Simulation")
@@ -93,4 +162,36 @@ void InitSimulation(py::module& m) {
       .def("get_world", &Simulation::GetWorld, py::return_value_policy::reference_internal)
       .def("get_duration", [](Simulation& s) { return s.GetDuration().val(); })
       .def("get_time", [](Simulation& s) { return s.GetTime().val(); });
+
+  // ---- Author agents/apps in Python: register a Python subclass with the asset factory ----
+  // After `register_application("MyApp", MyApp)`, a config `application: {class: MyApp, ...}` is
+  // instantiated by calling `MyApp(config_dict)` (the `application:` block, as a dict). The
+  // returned Python object is held by the C++ simulation; `agent.get_application()` hands the
+  // SAME Python object back, so results stored on `self` are readable after `sim.run()`.
+  m.def(
+      "register_application",
+      [](const std::string& name, py::object cls) {
+        AssetFactory<Application, Config&>::Register(
+            name, [cls](Config& config) -> std::shared_ptr<Application> {
+              py::gil_scoped_acquire gil;
+              py::object cfg = YamlToPy(config);
+              py::object obj = cls(cfg);
+              // Keep the Python instance alive for the C++ simulation's lifetime, and tie the
+              // returned shared_ptr's lifetime to that Python object (so trampoline dispatch to
+              // the Python overrides keeps working). The Application is aliased out of it. The
+              // custom deleter re-acquires the GIL so the py::object is freed safely wherever the
+              // C++ shared_ptr is released.
+              auto holder = std::shared_ptr<py::object>(new py::object(obj), [](py::object* p) {
+                py::gil_scoped_acquire gil;
+                delete p;
+              });
+              Application* app = obj.cast<Application*>();
+              return std::shared_ptr<Application>(holder, app);
+            });
+      },
+      py::arg("name"), py::arg("cls"),
+      "Register a Python Application subclass under `name` so a config `class: name` builds it. "
+      "The class is constructed as `cls(config_dict)`; subclass Step(t) (and optionally "
+      "Setup()/Log(t)), read truth via get_agent().get_world().get_state_at(agent, t), and store "
+      "results on self.");
 }

@@ -95,7 +95,18 @@ void InitDynamics(py::module &m) {
             MatX xfs = dyn.Propagate(x0, tfs);
             return xfs.cast<double>();
           },
-          py::arg("x0"), py::arg("tfs"));
+          py::arg("x0"), py::arg("tfs"))
+      .def(
+          "propagate_stm",
+          [](Dynamics &dyn, const VecXd &x0, double t0, double tf) -> py::tuple {
+            State s(x0.cast<Real>().eval());
+            MatXd stm;
+            State xf = dyn.Propagate(s, Real(t0), Real(tf), nullptr, &stm);
+            return py::make_tuple(xf.cast<double>().eval(), stm);
+          },
+          py::arg("x0"), py::arg("t0"), py::arg("tf"),
+          "Propagate a numpy state vector [r; v] from t0 to tf, returning (state_tf, STM) as "
+          "numpy arrays -- convenient for a filter's predict step authored in Python.");
 
   // AnalyticalOrbitDynamics
   py::class_<AnalyticalDynamics, Dynamics>(m, "AnalyticalOrbitDynamics");
