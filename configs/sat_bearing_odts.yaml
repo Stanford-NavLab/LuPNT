@@ -2,11 +2,15 @@
 #
 # Two `Spacecraft` agents in lunar orbit. The OBSERVER measures the unit line-of-sight
 # (bearing) direction to the TARGET, whose orbit/ephemeris is treated as KNOWN. An EKF on
-# the observer (`AnglesOdtsApp`) estimates the observer's OWN orbit 6-state `[r, v]` (no
-# clock -- angles are clock-independent) from those bearings. Because the target position
-# is known, this is a well-posed landmark-style navigation problem that converges: the
-# observer's own orbit is recovered to the tens-of-meters level over a few-hour arc.
-# (The ill-posed angles-only estimation of the target's RANGE is deliberately NOT attempted.)
+# the observer estimates the observer's OWN orbit 6-state `[r, v]` (no clock -- angles are
+# clock-independent) from those bearings. Because the target position is known, this is a
+# well-posed landmark-style navigation problem that converges to the metres level over a
+# few-hour arc. (The ill-posed angles-only estimation of the target's RANGE is not attempted.)
+#
+# The estimator app (`PyAnglesOdtsApp`) and its bearing Measurement are authored in **Python**
+# (see python/examples/ex17_sat_bearing_odts.ipynb / py_authored_app_demo.py, which register
+# them with pnt.register_application before pnt.Simulation runs). This config therefore runs
+# from those Python entry points, not standalone.
 #
 # The shared physical environment lives in the top-level `world:` block. Both spacecraft
 # omit a per-agent `dynamics:` block, so they inherit the shared `world.force_model` as
@@ -61,7 +65,7 @@ agents:
       omega: 0.0
       M: 0.0
     application:
-      class: AnglesOdtsApp
+      class: PyAnglesOdtsApp        # authored in Python (see ex17 notebook)
       target: target
       frequency: 0.016666666666666666
       dt_s: 60.0                      # filter/record cadence
@@ -75,7 +79,7 @@ agents:
           - SUN: {}
         relativity: false
       integration_step_s: 60.0
-      process_accel_sigma_mps2: 1.0e-8
+      process_accel_sigma_mps2: 1.0e-6
       initial_position_sigma_m: 300.0     # a priori (e.g. from a coarse prior OD); larger draws
       initial_velocity_sigma_mps: 0.3     # can push the weakly-observable along-LOS mode nonlinear
       outlier_threshold: 1.0e6
