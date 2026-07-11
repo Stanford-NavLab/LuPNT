@@ -34,6 +34,7 @@ tooling that lives in the Python layer — so they have no C++ counterpart here.
     ex11_lander_navigation
     ex15_marspnt
     ex16_leopnt
+    ex17_sat_bearing_odts
 
 .. toctree::
     :maxdepth: 1

@@ -447,6 +447,43 @@ Authoring a new simulation
    ``REGISTER_FACTORY_CLASS(Agent, MyAgent)``. Reference: ``agents/satellite.cc``,
    ``agents/rover.cc``.
 
+Working in Python
+-----------------
+
+The whole simulation lifecycle is driven from Python — you **compose a scenario and
+run it**, reusing the registered C++ agent/app/measurement/dynamics classes. A scenario
+is just a ``dict`` (or a loaded YAML), so it can be built, mutated, and swept
+programmatically:
+
+.. code-block:: python
+
+   import copy, yaml, pylupnt as pnt
+
+   cfg = yaml.safe_load(open("configs/ground_station_odts.yaml"))
+   cfg["agents"]["gs_manager"]["application"]["filter"]["process_accel_sigma_mps2"] = 1e-8
+
+   sim = pnt.Simulation(cfg)                 # instantiates World + agents + apps from `class:` keys
+   sim.run()                                 # runs the event loop
+   app = sim.get_agent("gs_manager").get_application()
+   results = app.get_results()               # each app binds its own result accessors
+
+Monte-Carlo trials run at the simulation level via ``pnt.run_monte_carlo`` (parallel across
+processes; each trial deep-copies the config with a distinct top-level ``seed``), or — for a
+scenario with an expensive shared precompute — via the engine's in-config
+``monte_carlo_runs`` (one precompute, ``seed = base_seed + i`` per run). See
+``python/examples/ex6_gnss_odts.ipynb`` §7d for both.
+
+**Authoring new classes.** New ``Application`` / ``Measurement`` / ``Dynamics`` / ``Agent``
+subclasses are currently written in **C++** (the recipe above) and exposed to Python through
+a pybind11 binding that surfaces each class's result accessors. Python subclassing of these
+base classes (overriding ``Step``/``Setup`` from Python) is **not** wired today — the base
+classes are bound without pybind11 trampolines, and the ``Agent`` truth-access surface a
+Python app would need (``GetStateAt`` and sibling-agent lookup) is not yet exposed. Enabling
+pure-Python authoring is a scoped enhancement: add trampoline classes (``PyApplication`` with
+``PYBIND11_OVERRIDE`` on the virtuals) plus a ``register_application(name, cls)`` factory hook,
+and bind the ``Agent`` state-access methods. Until then, prototype in Python by **composing
+existing classes**; add a new observable/estimator in C++.
+
 The skeleton of the two most common extensions — a new ``Application`` and a new
 ``Measurement`` — is:
 

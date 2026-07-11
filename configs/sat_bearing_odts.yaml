@@ -1,0 +1,81 @@
+# Satellite-to-satellite ANGLES-ONLY orbit determination scenario.
+#
+# Two `Spacecraft` agents in lunar orbit. The OBSERVER measures the unit line-of-sight
+# (bearing) direction to the TARGET, whose orbit/ephemeris is treated as KNOWN. An EKF on
+# the observer (`AnglesOdtsApp`) estimates the observer's OWN orbit 6-state `[r, v]` (no
+# clock -- angles are clock-independent) from those bearings. Because the target position
+# is known, this is a well-posed landmark-style navigation problem that converges: the
+# observer's own orbit is recovered to the tens-of-meters level over a few-hour arc.
+# (The ill-posed angles-only estimation of the target's RANGE is deliberately NOT attempted.)
+#
+# The shared physical environment lives in the top-level `world:` block. Both spacecraft
+# omit a per-agent `dynamics:` block, so they inherit the shared `world.force_model` as
+# their truth dynamics (truth == filter physics).
+
+name: sat_bearing_odts
+epoch: "2027-03-01T00:00:00"
+duration: "06:00:00"            # 6 h (~3 observer revolutions)
+log_level: WARNING
+
+# ---- Shared, read-only environment -------------------------------------------
+world:
+  frame: MOON_CI
+  force_model:                  # NBodyDynamics-style force model (8x8 Moon + Earth/Sun)
+    integrator: RKF45
+    dt: 60.0
+    max_iter: 20
+    abstol: 1.0e-12
+    reltol: 1.0e-12
+    autodiff: false
+    bodies:
+      - MOON: { n: 8, m: 8 }
+      - EARTH: {}
+      - SUN: {}
+
+agents:
+  # ---- Target: elliptical satellite (KNOWN ephemeris) ----
+  target:
+    class: Spacecraft
+    frequency: 0.016666666666666666   # 1/60 Hz truth logging
+    initial_state:
+      class: ClassicalOE
+      frame: MOON_OP
+      a: 2500000.0                    # [m]  ~760 km mean altitude (close enough for strong bearing sensitivity)
+      e: 0.2
+      i: 70.0                         # [deg] (out-of-plane vs the observer -> LOS sweeps, good observability)
+      Omega: 60.0
+      omega: 30.0
+      M: 120.0
+
+  # ---- Observer: low circular satellite hosting the angles-only EKF ----
+  observer:
+    class: Spacecraft
+    frequency: 0.016666666666666666
+    initial_state:
+      class: ClassicalOE
+      frame: MOON_OP
+      a: 1837400.0                    # [m]  ~100 km altitude circular
+      e: 0.001
+      i: 30.0                         # [deg]
+      Omega: 0.0
+      omega: 0.0
+      M: 0.0
+    application:
+      class: AnglesOdtsApp
+      target: target
+      frequency: 0.016666666666666666
+      dt_s: 60.0                      # filter/record cadence
+      angle_sigma_arcsec: 2.0         # bearing noise 1-sigma [arcsec] (star-tracker class)
+      seed: 42
+      monte_carlo_runs: 10
+      force_model:                    # filter force model (same `bodies:` style as world)
+        bodies:
+          - MOON: { n: 8, m: 8 }
+          - EARTH: {}
+          - SUN: {}
+        relativity: false
+      integration_step_s: 60.0
+      process_accel_sigma_mps2: 1.0e-8
+      initial_position_sigma_m: 300.0     # a priori (e.g. from a coarse prior OD); larger draws
+      initial_velocity_sigma_mps: 0.3     # can push the weakly-observable along-LOS mode nonlinear
+      outlier_threshold: 1.0e6

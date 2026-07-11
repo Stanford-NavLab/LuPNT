@@ -16,6 +16,7 @@
 #include "lupnt/agents/surface_station_manager.h"
 
 // applications
+#include "lupnt/applications/angles_odts/angles_odts_app.h"
 #include "lupnt/applications/application.h"
 #include "lupnt/applications/ephemeris/ephemeris_app.h"
 #include "lupnt/applications/ephemeris/ephemeris_basis.h"
@@ -125,6 +126,7 @@
 #include "lupnt/measurements/lunar_gnss_combined_measurement.h"
 #include "lupnt/measurements/measurement.h"
 #include "lupnt/measurements/measurement_utils.h"
+#include "lupnt/measurements/sat_bearing_measurement.h"
 #include "lupnt/measurements/surface_measurements.h"
 
 // numerics
