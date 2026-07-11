@@ -1136,6 +1136,9 @@ namespace lupnt {
       // position error projected onto the receiver->transmitter line of sight [m] -- i.e. the
       // broadcast orbit error the pseudorange actually sees. NaN for TDCP rows.
       double eph_range_err_m = std::numeric_limits<double>::quiet_NaN();
+      // Broadcast transmitter clock error in range units [m], true - broadcast (the other half
+      // of the broadcast SISE). NaN for TDCP rows.
+      double eph_clock_err_m = std::numeric_limits<double>::quiet_NaN();
     };
 
     // Per-constellation dual-frequency pair for the ionosphere-free combination and TDCP:
@@ -1160,6 +1163,14 @@ namespace lupnt {
       return (tx_true - tx_eph).dot(los);
     }
 
+    // Broadcast transmitter clock error in range units [m], same (true - broadcast) sign
+    // convention as LosEphError: C * (precise - broadcast tx clock bias). This is the *other*
+    // half of the broadcast signal-in-space error the pseudorange sees (it enters rho as the
+    // c*dt_tx term); the debiasing removes only the per-constellation median, not this residual.
+    double ClockEphError(const GnssChannel& truth_ch, const GnssChannel& filter_ch) {
+      return C * (truth_ch.tx_clock_bias_s - filter_ch.tx_clock_bias_s).val();
+    }
+
     // Descriptors are built from the *truth* channels/pairs so `iono_m` reflects the actual
     // signal delay (the filter channels have it zeroed unless plasma.model_in_filter). Truth and
     // filter channel sets share the same satellites in the same order, so the row order matches
@@ -1175,18 +1186,17 @@ namespace lupnt {
                                       : GnssFreqName(c.frequency);
         return GnssConstName(c.gnss_const) + " PRN " + std::to_string(c.prn) + " " + freq;
       };
-      auto eph_range_err = [&](std::size_t c) -> double {
-        return c < filter_channels.size()
-                   ? LosEphError(channels[c], filter_channels[c], rx_pos_moonci)
-                   : std::numeric_limits<double>::quiet_NaN();
-      };
       std::vector<MeasRowDesc> rows;
       rows.reserve(channels.size() * current_options.observables.size() + tdcp_pairs.size());
+      const double kNaN = std::numeric_limits<double>::quiet_NaN();
       for (std::size_t c = 0; c < channels.size(); ++c) {
-        const double eph = eph_range_err(c);
+        const bool have_bc = c < filter_channels.size();
+        const double eph
+            = have_bc ? LosEphError(channels[c], filter_channels[c], rx_pos_moonci) : kNaN;
+        const double eph_clk = have_bc ? ClockEphError(channels[c], filter_channels[c]) : kNaN;
         for (const auto observable : current_options.observables)
           rows.push_back({ObservableName(observable), sat_name(channels[c], dual_frequency),
-                          channels[c].ionosphere_plasma_delay_m.val(), eph});
+                          channels[c].ionosphere_plasma_delay_m.val(), eph, eph_clk});
       }
       for (const auto& pair : tdcp_pairs)
         rows.push_back(
@@ -1251,15 +1261,17 @@ namespace lupnt {
       oss << "measurements (" << n_rows << " rows):\n";
       oss << std::left << std::setw(4) << "#" << std::setw(13) << "type" << std::setw(16) << "sat"
           << std::right << std::setw(13) << "iono_m" << std::setw(14) << "eph_los_m"
-          << std::setw(16) << "z_obs" << std::setw(16) << "z_pred" << std::setw(14) << "dz"
-          << std::setw(13) << "R_sqrt" << std::setw(13) << "S_sqrt" << "\n";
+          << std::setw(14) << "eph_clk_m" << std::setw(16) << "z_obs" << std::setw(16) << "z_pred"
+          << std::setw(14) << "dz" << std::setw(13) << "R_sqrt" << std::setw(13) << "S_sqrt"
+          << "\n";
       for (int i = 0; i < n_rows; ++i) {
         const bool have = i < static_cast<int>(rows.size());
         const std::string type = have ? rows[i].type : "?";
         const std::string sat = have ? rows[i].sat : "?";
         oss << std::left << std::setw(4) << i << std::setw(13) << type << std::setw(16) << sat
             << std::right << std::setw(13) << cell(have ? rows[i].iono_m : kNaN) << std::setw(14)
-            << cell(have ? rows[i].eph_range_err_m : kNaN) << std::setw(16)
+            << cell(have ? rows[i].eph_range_err_m : kNaN) << std::setw(14)
+            << cell(have ? rows[i].eph_clock_err_m : kNaN) << std::setw(16)
             << cell(i < z_obs.size() ? z_obs(i) : kNaN) << std::setw(16)
             << cell(i < z_pred.size() ? z_pred(i) : kNaN) << std::setw(14)
             << cell(i < dz.size() ? dz(i) : kNaN) << std::setw(13) << cell(diag_sqrt(R, i))
@@ -1827,7 +1839,7 @@ namespace lupnt {
         eph_residuals_.open(
             context_.cfg.output_dir
             / ("ephemeris_residuals_mc" + std::to_string(context_.mc_index) + ".csv"));
-        eph_residuals_ << "mc,epoch,t_s,gnss,prn,eph_los_m\n";
+        eph_residuals_ << "mc,epoch,t_s,gnss,prn,eph_los_m,eph_clk_m\n";
 
         summary_.monte_carlo_index = context_.mc_index;
         summary_.num_epochs = static_cast<int>(context_.times_tdb.size());
@@ -1984,7 +1996,8 @@ namespace lupnt {
             eph_residuals_ << context_.mc_index << "," << k << "," << context_.elapsed_s(k) << ","
                            << GnssConstName(truth_channels[c].gnss_const) << ","
                            << truth_channels[c].prn << ","
-                           << LosEphError(truth_channels[c], filter_channels[c], rx) << "\n";
+                           << LosEphError(truth_channels[c], filter_channels[c], rx) << ","
+                           << ClockEphError(truth_channels[c], filter_channels[c]) << "\n";
         }
 
         State x_est = CurrentFilterState(filter_->GetState(), context_.cfg);
