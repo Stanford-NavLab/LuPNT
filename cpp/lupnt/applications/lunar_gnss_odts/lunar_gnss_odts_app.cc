@@ -40,7 +40,18 @@ namespace lupnt {
         0.0, [this](Real t) { Step(t); }, Event::SINGLE_EVENT, Event::Priority::APPLICATION);
   }
 
-  void LunarGnssOdtsApp::Precompute() { PrecomputeLunarGnssODTSLinks(cfg_); }
+  void LunarGnssOdtsApp::Precompute() {
+    // The link precompute time-keeps in ABSOLUTE TDB (like RunAll), and the orbit propagation
+    // adds `GetLupntEpoch()` to its time argument. When this app is hosted in a `Simulation`
+    // (which sets the global epoch from the scenario `epoch:`), a cold recompute would then
+    // double-count the epoch and request ephemerides far outside the loaded kernels. Reset the
+    // epoch to 0 for the precompute (matching RunAll and the standalone struct path), then
+    // restore it so the rest of the run is unaffected.
+    Real saved_epoch = GetLupntEpoch();
+    SetLupntEpoch(0.0);
+    PrecomputeLunarGnssODTSLinks(cfg_);
+    SetLupntEpoch(saved_epoch);
+  }
 
   void LunarGnssOdtsApp::RunAll() {
     // Agent-driven truth: when hosted on a physical `Spacecraft`, sample its self-propagated
