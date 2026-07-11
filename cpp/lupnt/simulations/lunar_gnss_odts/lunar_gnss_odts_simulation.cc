@@ -1179,7 +1179,7 @@ namespace lupnt {
     std::vector<MeasRowDesc> MeasurementRowDescriptors(
         const std::vector<GnssChannel>& channels, const std::vector<GnssChannel>& filter_channels,
         const Vec3d& rx_pos_moonci, const GnssMeasurementOptions& current_options,
-        const std::vector<TdcpPair>& tdcp_pairs, bool dual_frequency) {
+        const std::vector<TdcpPair>& tdcp_pairs, bool dual_frequency, bool tdcp_dual_frequency) {
       auto sat_name = [](const GnssChannel& c, bool dual) {
         const std::string freq = dual ? GnssFreqName(PrimaryFrequency(c.gnss_const)) + "+"
                                             + GnssFreqName(SecondaryFrequency(c.gnss_const))
@@ -1200,7 +1200,7 @@ namespace lupnt {
       }
       for (const auto& pair : tdcp_pairs)
         rows.push_back(
-            {"TDCP", sat_name(pair.current, false),
+            {"TDCP", sat_name(pair.current, tdcp_dual_frequency),
              (pair.current.ionosphere_plasma_delay_m - pair.previous.ionosphere_plasma_delay_m)
                  .val()});
       return rows;
@@ -1245,9 +1245,9 @@ namespace lupnt {
       // Per-measurement table. S = H P H^T + R is the innovation covariance (post-update S_).
       // `iono_m` is the ionosphere/plasma delay on the signal (from truth): ~0 for the
       // ionosphere-free pseudorange, and the small epoch-to-epoch change for TDCP.
-      const auto rows
-          = MeasurementRowDescriptors(truth_channels, filter_channels, rx_pos_moonci,
-                                      current_options, truth_tdcp_pairs, cfg.use_ionosphere_free);
+      const auto rows = MeasurementRowDescriptors(
+          truth_channels, filter_channels, rx_pos_moonci, current_options, truth_tdcp_pairs,
+          cfg.use_ionosphere_free, cfg.tdcp_ionosphere_free);
       const MatXd S = filter->GetInnovationCov();
       const double kNaN = std::numeric_limits<double>::quiet_NaN();
       auto cell = [](double v) {
@@ -1439,6 +1439,15 @@ namespace lupnt {
         ifc.ionosphere_plasma_delay_m = a1 * d_1 - a2 * d_2;
         ifc.sigma_pseudorange_m
             = std::hypot(a1 * prim->sigma_pseudorange_m.val(), a2 * sec.sigma_pseudorange_m.val());
+        // Ionosphere-free carrier-phase sigma for TDCP: combine in range units (cycles x
+        // wavelength) and re-express in cycles of the primary wavelength (ifc keeps the primary
+        // frequency). Harmless to the pseudorange path, which ignores the carrier sigma.
+        const double lam1 = prim->Wavelength().val();
+        const double lam2 = sec.Wavelength().val();
+        const double sigma_carrier_if_m
+            = std::hypot(a1 * prim->sigma_carrier_phase_cycles.val() * lam1,
+                         a2 * sec.sigma_carrier_phase_cycles.val() * lam2);
+        ifc.sigma_carrier_phase_cycles = sigma_carrier_if_m / lam1;
         out.push_back(ifc);
       }
       std::sort(out.begin(), out.end(), [](const GnssChannel& a, const GnssChannel& b) {
@@ -1912,12 +1921,19 @@ namespace lupnt {
           ApplyMeasurementSigmas(filter_channels, context_.cfg, true);
         }
 
-        // TDCP channels use the primary frequency (GPS L1, Galileo E1), with their own
-        // tangent-altitude cutoff. These retain the ray-traced primary-frequency plasmaspheric
-        // delay, so truth TDCP carrier phase is simulated with the real delay change even when
-        // ionosphere-free pseudorange cancels the first-order delay. Carrier-phase sigmas stay
-        // at the C/N0 floor; filter-only TDCP inflation is added in TdcpCovariance.
-        std::vector<GnssChannel> truth_primary = SelectPrimaryFrequency(raw_truth_channels);
+        // TDCP carrier channels, with their own tangent-altitude cutoff. Two modes:
+        //  * single-frequency (default): GPS L1 / Galileo E1 carrier, which RETAINS the
+        //    ray-traced primary-frequency plasmaspheric delay -- so truth TDCP carrier phase is
+        //    simulated with the real delay change the filter does not model (requires a large
+        //    filter_tdcp_noise_inflation_m to stay consistent);
+        //  * ionosphere-free (tdcp_ionosphere_free): the L1+L5 / E1+E5a carrier combination,
+        //    which cancels that first-order delay to ~1 mm exactly as the IF pseudorange does,
+        //    so TDCP keeps its carrier-level precision.
+        // Carrier-phase sigmas stay at the C/N0 floor (IF-amplified in the IF case); the
+        // filter-only TDCP inflation is added in TdcpCovariance.
+        std::vector<GnssChannel> truth_primary
+            = context_.cfg.tdcp_ionosphere_free ? MakeIonosphereFreeChannels(raw_truth_channels)
+                                                : SelectPrimaryFrequency(raw_truth_channels);
         truth_primary = FilterByTangentAltitude(truth_primary, t_tdb, rx_mci,
                                                 context_.cfg.tdcp_min_tangent_altitude_m);
         std::vector<GnssChannel> filter_primary = MakeFilterChannels(truth_primary, context_.cfg);
@@ -2402,6 +2418,7 @@ namespace lupnt {
     cfg.carrier_phase_sigma_m = ReadYaml(meas, "carrier_phase_sigma_m", cfg.carrier_phase_sigma_m);
     cfg.tdcp_sigma_m = ReadYaml(meas, "tdcp_sigma_m", cfg.tdcp_sigma_m);
     cfg.use_ionosphere_free = ReadYaml(meas, "use_ionosphere_free", cfg.use_ionosphere_free);
+    cfg.tdcp_ionosphere_free = ReadYaml(meas, "tdcp_ionosphere_free", cfg.tdcp_ionosphere_free);
     cfg.filter_pseudorange_noise_inflation_m = ReadYaml(
         meas, "filter_pseudorange_noise_inflation_m", cfg.filter_pseudorange_noise_inflation_m);
     cfg.filter_tdcp_noise_inflation_m

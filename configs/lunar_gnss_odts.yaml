@@ -119,11 +119,33 @@ agents:
         use_srp_filter: true
       measurements:
         use_pseudorange: true
-        use_doppler: true
-        use_tdcp: true
+        use_doppler: false
+        use_tdcp: false
         use_ionosphere_free: true
+        # TDCP mode. Default (false) = single-frequency (GPS L1 / Galileo E1) carrier phase.
+        # Unlike the pseudorange it then gets NO ionosphere-free cancellation: the truth carrier
+        # retains the ray-traced plasmaspheric delay, whose epoch-to-epoch CHANGE (measured
+        # RMS 3.6 cm, p99 14 cm, tail to ~0.85 m over this 14 h arc) is a real error the filter
+        # (plasma model_in_filter: false) never models. Setting this true forms TDCP from the
+        # L1+L5 / E1+E5a ionosphere-free carrier combination, cancelling that delay to ~1 mm --
+        # BUT it then requires both frequencies on a satellite, which at this lunar geometry
+        # roughly halves TDCP coverage (5.4 -> 2.3 measurements/epoch, since far more satellites
+        # carry L1 than L1+L5). Because the consistency-limiting residual here is the
+        # frequency-INDEPENDENT broadcast-ephemeris + receiver-clock error (~0.15 m equivalent,
+        # which IF cannot cancel), the inflation needed for consistency already exceeds the 3.6 cm
+        # plasma, so cancelling plasma buys nothing while the coverage loss hurts: single-frequency
+        # TDCP @ 0.20 m wins here (pos RMS 39.6 vs 51.1 m, final 16.1 vs 19.7 m). Keep IF-TDCP for
+        # regimes where plasma dominates and dual-frequency coverage is good. See the ex6 notebook.
+        tdcp_ionosphere_free: false
         filter_pseudorange_noise_inflation_m: 10.0
-        filter_tdcp_noise_inflation_m: 0.05
+        # Filter-only TDCP measurement-sigma inflation [m]. At the raw carrier precision (~1 cm)
+        # the single-frequency EKF treats the unmodeled plasma-delay change as state error, chases
+        # it, and diverges (pos RMS 768 m, 25-49x overconfident). 0.20 m covers the plasma-delta
+        # distribution AND the broadcast/clock residual, restoring consistency (~1.6x, matching the
+        # pseudorange-only baseline) while improving accuracy (pos RMS 54.6 -> 39.6 m, final
+        # 23.2 -> 16.1 m). With tdcp_ionosphere_free the plasma is gone, but the broadcast/clock
+        # residual still sets a ~0.1-0.15 m floor.
+        filter_tdcp_noise_inflation_m: 0.20
         pseudorange_min_tangent_altitude_m: 1000.0
         tdcp_min_tangent_altitude_m: 4000.0
       filter:
@@ -134,6 +156,6 @@ agents:
         initial_clock_bias_sigma_s: 1.0e-06
         initial_clock_drift_sigma_sps: 1.0e-11
         initial_srp_coeff_sigma_m2_kg: 0.001
-        process_accel_sigma_mps2: 1.0e-09
+        process_accel_sigma_mps2: 1.0e-8
         process_srp_coeff_sigma_m2_kg_sqrt_s: 1.0e-09
         integration_step_s: 20.0

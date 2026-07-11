@@ -136,8 +136,16 @@ namespace lupnt {
     // carrier-phase C/N0 floor. The filter-only inflation is filter_tdcp_noise_inflation_m.
     double tdcp_sigma_m = 0.0;
 
-    // Dual-frequency ionosphere-free (L1+L5) pseudorange combination (TDCP stays L1).
+    // Dual-frequency ionosphere-free (L1+L5) pseudorange combination.
     bool use_ionosphere_free = false;
+    // Form TDCP from the dual-frequency ionosphere-free (L1+L5 / E1+E5a) carrier-phase
+    // combination instead of the raw single-frequency (L1/E1) carrier. Single-frequency TDCP
+    // retains the ray-traced plasmaspheric delay change (RMS ~3.6 cm, tail to ~0.85 m), which
+    // the filter does not model and which forces a large filter_tdcp_noise_inflation_m; the
+    // IF combination cancels that first-order delay (residual ~1 mm), so TDCP keeps its
+    // carrier-level precision and only a small inflation (broadcast/dynamics residual) is
+    // needed. Requires both frequencies tracked on a satellite (single-frequency sats drop).
+    bool tdcp_ionosphere_free = false;
     // Filter-only measurement-noise inflation added in quadrature on top of the
     // C/N0-derived sigmas (truth observations use the C/N0 sigmas only).
     double filter_pseudorange_noise_inflation_m = 0.0;
