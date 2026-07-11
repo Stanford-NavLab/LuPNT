@@ -512,7 +512,7 @@ agent, builds a filter dynamics model, and stores results on ``self`` (``sim.get
    est = sim.get_agent("observer").get_application().est     # results read straight off self
 
 A complete, converging example — an angles-only OD EKF authored this way — is Example 17,
-``python/examples/ex17_sat_bearing_odts.ipynb``.
+``python/examples/ex17_python_new_sim_example.ipynb``.
 
 **Authoring a new Agent in Python.** A physical platform (whose truth trajectory you define in
 Python — an analytic ephemeris, a scripted path) works the same way: subclass ``pnt.Agent``,
@@ -552,7 +552,7 @@ one (apply it to the filter state):
    z = m.evaluate(obs_truth)[0] + rng.normal(0, m.sigma, 3)   # generate from the target's truth
    u, Hx, R = m.evaluate(self.x)                              # predict at the filter state
 
-The angles-only Example 17 notebook (``python/examples/ex17_sat_bearing_odts.ipynb``) uses
+The angles-only Example 17 notebook (``python/examples/ex17_python_new_sim_example.ipynb``) uses
 exactly this. So new **Applications, Agents, and Measurements** are all authorable in pure
 Python; new ``Dynamics``
 classes remain C++ (reuse ``pnt.NBodyDynamics`` from Python).

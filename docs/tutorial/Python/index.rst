@@ -27,4 +27,4 @@ notebook; the source ``.ipynb`` can be run interactively from that folder.
     ex14_opnav
     ex15_marspnt
     ex16_leopnt
-    ex17_sat_bearing_odts
+    ex17_python_new_sim_example
