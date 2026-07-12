@@ -9,7 +9,7 @@
 
 namespace lupnt {
 
-  /// @brief Configuration for `Almanac::Fit`/`Eval`.
+  /// @brief Configuration for `LansAlmanac::Fit`/`Eval`.
   struct AlmanacFitOptions {
     /// Degree of the secular polynomial fit to every element's time history
     /// (a, e, i, node, mean-anomaly residual, argument-of-latitude correction) in
@@ -17,7 +17,7 @@ namespace lupnt {
     /// Default 1 (linear) -- the argument-of-latitude parameterization (Algorithm 2
     /// of Iiyama & Gao) stays well-conditioned near periapsis even at linear order,
     /// so a linear fit is preferred to save message size. This is a coarse
-    /// "GNSS-almanac-style" model, much lower accuracy than `CartesianEphemeris`,
+    /// "GNSS-almanac-style" model, much lower accuracy than `LansEphemeris`,
     /// intended for a long validity window / small broadcast size rather than
     /// precision.
     int poly_order = 1;
@@ -27,7 +27,7 @@ namespace lupnt {
     /// orbital mean motion (2*pi/T_orb) for the semi-major axis, and 4*pi/T_sid
     /// for the remaining (angular/eccentricity) elements -- capturing the periodic
     /// modulation that a low-order polynomial alone misses (per Iiyama & Gao,
-    /// "Ephemeris and Almanac Design for Lunar Navigation Satellites"). Default 1.
+    /// "Ephemeris and LansAlmanac Design for Lunar Navigation Satellites"). Default 1.
     int num_fourier_terms = 1;
 
     /// Gravitational parameter of the central body [m^3/s^2].
@@ -44,14 +44,14 @@ namespace lupnt {
     /// frame (`Frame::MOON_PA`) the osculating elements are computed in the
     /// Principal-Axis Inertial (PAI) frame (adding the omega x r velocity offset)
     /// and the reconstructed position/velocity is returned in MOON_PA (subtracting
-    /// it back) -- per Iiyama & Gao, "Ephemeris and Almanac Design for Lunar
+    /// it back) -- per Iiyama & Gao, "Ephemeris and LansAlmanac Design for Lunar
     /// Navigation Satellites". States passed to Fit/EvalError must already be
     /// expressed in this frame (convert e.g. from MOON_CI with `ConvertFrame`).
     Frame frame = Frame::MOON_CI;
   };
 
   /// @brief Coarse "almanac"-style orbit model (Algorithm 2 of Iiyama & Gao,
-  /// "Ephemeris and Almanac Design for Lunar Navigation Satellites"): each
+  /// "Ephemeris and LansAlmanac Design for Lunar Navigation Satellites"): each
   /// osculating element (a, e, i, node) is a low-order polynomial plus an
   /// element-specific Fourier term (orbital mean motion for a, sidereal harmonic
   /// for the rest); the mean anomaly is the nominal two-body drift (integrated
@@ -62,15 +62,15 @@ namespace lupnt {
   /// built directly from (a, e, i, node, u) with velocity by finite differencing.
   /// This mirrors the coarse, long-validity almanac broadcast by GNSS
   /// constellations (e.g. GPS almanac pages), as distinct from the precise,
-  /// short-validity `CartesianEphemeris`.
+  /// short-validity `LansEphemeris`.
   ///
   /// Used directly (via the Python bindings) and by `EphemerisSimulation`
   /// (`lupnt/simulations/ephemeris/ephemeris_simulation.h`) to compare
   /// almanac-style vs. ephemeris-style broadcast data-size/accuracy trade-offs.
-  class Almanac {
+  class LansAlmanac {
   public:
-    Almanac() = default;
-    explicit Almanac(AlmanacFitOptions options) : options_(options) {}
+    LansAlmanac() = default;
+    explicit LansAlmanac(AlmanacFitOptions options) : options_(options) {}
 
     /// @brief Fit this almanac model to a sampled trajectory.
     /// @param t_s  Sample epochs [s], strictly increasing.

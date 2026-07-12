@@ -19,7 +19,7 @@ namespace lupnt {
     Vec4d p95_vel_mps = Vec4d::Zero();  // [R, T, N, 3D] 95th-percentile |velocity error| [m/s]
   };
 
-  /// @brief Configuration for `CartesianEphemeris::Fit`/`Eval`.
+  /// @brief Configuration for `LansEphemeris::Fit`/`Eval`.
   struct EphemerisFitOptions {
     /// Order of the Chebyshev polynomial used to represent the position residual
     /// (and, through its analytic time derivative, the velocity residual) left
@@ -46,7 +46,7 @@ namespace lupnt {
     /// the velocity carries the corresponding -omega x r term -- so the osculating
     /// elements are effectively fit in the Principal-Axis Inertial (PAI) frame and
     /// the position/velocity output is in MOON_PA (per Iiyama & Gao, "Ephemeris
-    /// and Almanac Design for Lunar Navigation Satellites"). States passed to
+    /// and LansAlmanac Design for Lunar Navigation Satellites"). States passed to
     /// Fit/EvalError must already be expressed in this frame (convert e.g. from
     /// MOON_CI with `ConvertFrame` first).
     Frame frame = Frame::MOON_CI;
@@ -71,10 +71,10 @@ namespace lupnt {
   /// (`lupnt/simulations/ephemeris/ephemeris_simulation.h`) to study the
   /// position/velocity accuracy vs. parameter-count/datasize trade-off of
   /// broadcast-style ephemerides for lunar orbits.
-  class CartesianEphemeris {
+  class LansEphemeris {
   public:
-    CartesianEphemeris() = default;
-    explicit CartesianEphemeris(EphemerisFitOptions options) : options_(options) {}
+    LansEphemeris() = default;
+    explicit LansEphemeris(EphemerisFitOptions options) : options_(options) {}
 
     /// @brief Fit this ephemeris model to a sampled trajectory.
     /// @param t_s  Sample epochs [s], strictly increasing, relative to any fixed

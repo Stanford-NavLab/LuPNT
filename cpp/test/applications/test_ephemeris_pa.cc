@@ -13,13 +13,13 @@ using namespace lupnt;
 
 // These tests are self-contained (only ClassicalToCart, a pure Kepler function --
 // no gravity/ephemeris data files): the MOON_PA frame handling in
-// CartesianEphemeris/Almanac is an analytic rotation about +z at OMEGA_MOON, so a
+// LansEphemeris/LansAlmanac is an analytic rotation about +z at OMEGA_MOON, so a
 // synthetic two-body arc built the same way is reproduced by the fit.
 namespace {
   // Two-body arc expressed in a frame rotating about +z at `spin`: osculating
   // elements `coe_mid` (defined at the window midpoint) propagated in mean anomaly
   // and rigidly rotated by R_z(-spin*t_k). Independent construction of the model
-  // that CartesianEphemeris/Almanac use for Frame::MOON_PA.
+  // that LansEphemeris/LansAlmanac use for Frame::MOON_PA.
   std::pair<VecXd, MatXd> RotatingKeplerArc(const Vec6d& coe_mid, double gm, double spin, int n,
                                             double dt) {
     VecXd t_s(n);
@@ -61,7 +61,7 @@ TEST_CASE("applications.ephemeris.moon_pa_frame") {
   EphemerisFitOptions opt;
   opt.poly_order = 6;
   opt.frame = Frame::MOON_PA;
-  CartesianEphemeris eph(opt);
+  LansEphemeris eph(opt);
   const VecXd params = eph.Fit(t_s, rv_pa);
   const MatXd fit = eph.Eval(t_s, params);
 
@@ -87,7 +87,7 @@ TEST_CASE("applications.ephemeris.moon_ci_unchanged") {
 
   EphemerisFitOptions opt;  // frame defaults to MOON_CI
   opt.poly_order = 6;
-  CartesianEphemeris eph(opt);
+  LansEphemeris eph(opt);
   const MatXd fit = eph.Eval(t_s, eph.Fit(t_s, rv_ci));
   REQUIRE((fit.leftCols(3) - rv_ci.leftCols(3)).cwiseAbs().maxCoeff() < 1e-3);
   REQUIRE((fit.rightCols(3) - rv_ci.rightCols(3)).cwiseAbs().maxCoeff() < 1e-6);
@@ -117,7 +117,7 @@ TEST_CASE("applications.ephemeris.fourier_reduces_residual") {
     EphemerisFitOptions opt;
     opt.poly_order = 4;
     opt.num_fourier_terms = num_fourier;
-    CartesianEphemeris eph(opt);
+    LansEphemeris eph(opt);
     const MatXd fit = eph.Eval(t_s, eph.Fit(t_s, rv));
     return (fit.leftCols(3) - rv.leftCols(3)).cwiseAbs().maxCoeff();
   };
@@ -138,7 +138,7 @@ TEST_CASE("applications.almanac.moon_pa_frame") {
   AlmanacFitOptions opt;
   opt.poly_order = 2;
   opt.frame = Frame::MOON_PA;
-  Almanac alm(opt);
+  LansAlmanac alm(opt);
   const MatXd fit = alm.Eval(t_s, alm.Fit(t_s, rv_pa));
 
   // A pure two-body arc has (near-)constant osculating elements plus a linear node

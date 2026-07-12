@@ -86,8 +86,8 @@ namespace lupnt {
 
     // True if parameter `name` should be treated as a 2*pi-ranged, signed angle
     // for bit-allocation purposes (both the raw Keplerian angles used by
-    // CartesianEphemeris, and the Chebyshev coefficients of the corresponding
-    // time-varying elements used by Almanac -- a conservative approximation for
+    // LansEphemeris, and the Chebyshev coefficients of the corresponding
+    // time-varying elements used by LansAlmanac -- a conservative approximation for
     // the higher-order coefficients, which are typically small in magnitude).
     bool IsAngleParam(const std::string& name) {
       return name.rfind("i", 0) == 0 || name.rfind("raan", 0) == 0 || name.rfind("argp", 0) == 0
@@ -323,14 +323,14 @@ namespace lupnt {
     eph_opts.gm = GM_MOON;
     eph_opts.frame = cfg.output_frame;
     eph_opts.num_fourier_terms = cfg.cartesian_num_fourier_terms;
-    const CartesianEphemeris cart_eph(eph_opts);
+    const LansEphemeris cart_eph(eph_opts);
 
     AlmanacFitOptions alm_opts;
     alm_opts.poly_order = cfg.almanac_poly_order;
     alm_opts.num_fourier_terms = cfg.almanac_num_fourier_terms;
     alm_opts.gm = GM_MOON;
     alm_opts.frame = cfg.output_frame;
-    const Almanac almanac(alm_opts);
+    const LansAlmanac almanac(alm_opts);
 
     auto pbar = Logger::GetProgressBar(static_cast<int>(cfg.fit_window_minutes.size()),
                                        "Ephemeris datasize/accuracy sweep");

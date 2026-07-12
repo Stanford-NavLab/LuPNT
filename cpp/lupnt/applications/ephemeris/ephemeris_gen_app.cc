@@ -29,8 +29,8 @@ namespace lupnt {
     // (converted) arc in this frame and evaluate their output in it.
     config_.ephemeris_options.frame = config_.output_frame;
     config_.almanac_options.frame = config_.output_frame;
-    ephemeris_ = CartesianEphemeris(config_.ephemeris_options);
-    almanac_ = Almanac(config_.almanac_options);
+    ephemeris_ = LansEphemeris(config_.ephemeris_options);
+    almanac_ = LansAlmanac(config_.almanac_options);
     ephemeris_msgs_.clear();
     almanac_msgs_.clear();
     next_ephemeris_gen_s_ = 0.0;

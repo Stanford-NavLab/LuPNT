@@ -1,11 +1,11 @@
 .. _cpp_ex9_ephemeris:
 
-Example 9: Ephemeris and Almanac Fitting
+Example 9: Ephemeris and LansAlmanac Fitting
 ========================================
 
 Study the accuracy-vs-broadcast-datasize trade-off of two lunar-satellite orbit
 models fit to a numerically propagated truth trajectory: a precise, short-validity
-``CartesianEphemeris`` (Chebyshev) and a coarse, long-validity ``Almanac``
+``LansEphemeris`` (Chebyshev) and a coarse, long-validity ``LansAlmanac``
 (Algorithm 2 of Iiyama & Gao). The scenario is built from ``configs/ephemeris.yaml``
 (a thin ``EphemerisManager`` agent hosting an ``EphemerisApp``) and run with
 ``Simulation``; the app fits both models over a sweep of fitting-window lengths,

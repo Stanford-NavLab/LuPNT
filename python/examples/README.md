@@ -46,7 +46,7 @@ to full orbit-determination filters, constellation design, optical navigation, n
 |---|----------|----------------|
 | 7 | [ex7_groundstation_odts.ipynb](ex7_groundstation_odts.ipynb) | Earth-based tracking of a lunar satellite from three Deep Space Network complexes (Goldstone, Canberra, Madrid). Batch least squares with an analytic (STM-chained) design matrix, refined by a square-root information filter (SRIF) and smoother. |
 | 8 | [ex8_isl_odts.ipynb](ex8_isl_odts.ipynb) | **Distributed** onboard ODTS for the 5-satellite LCRNS Reference Constellation 3.1. Every satellite runs its own Schmidt (consider-state) EKF in parallel, fusing two-way crosslink range/range-rate and a one-way pseudorange from a rotating lunar surface station. |
-| 9 | [ex9_ephemeris.ipynb](ex9_ephemeris.ipynb) | Compress a numerically propagated trajectory into broadcast navigation models: `pnt.CartesianEphemeris` (Chebyshev residuals) vs. `pnt.Almanac` (element polynomials + Fourier terms), trading broadcast bits against fit error. |
+| 9 | [ex9_ephemeris.ipynb](ex9_ephemeris.ipynb) | Compress a numerically propagated trajectory into broadcast navigation models: `pnt.LansEphemeris` (Chebyshev residuals) vs. `pnt.LansAlmanac` (element polynomials + Fourier terms), trading broadcast bits against fit error. |
 
 ### Surface and terminal navigation
 

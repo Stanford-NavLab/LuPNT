@@ -53,7 +53,7 @@ TEST_CASE("applications.ephemeris_gen_app.explicit_arc") {
   REQUIRE(app.LatestEphemeris(1800.0) != nullptr);
   REQUIRE(app.LatestEphemeris(t_s(t_s.size() - 1) + 1.0e6) == nullptr);
 
-  // Almanac from the same arc appends to its own message list.
+  // LansAlmanac from the same arc appends to its own message list.
   app.GenerateAlmanacFromArc(0.0, t_s, rv);
   REQUIRE(app.GetAlmanacMessages().size() == 1);
 }

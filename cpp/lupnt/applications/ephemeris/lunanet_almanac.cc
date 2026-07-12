@@ -8,8 +8,8 @@
 
 namespace lupnt {
 
-  // Almanac representation following Algorithm 2 of Iiyama & Gao, "Ephemeris and
-  // Almanac Design for Lunar Navigation Satellites": each osculating element is a
+  // LansAlmanac representation following Algorithm 2 of Iiyama & Gao, "Ephemeris and
+  // LansAlmanac Design for Lunar Navigation Satellites": each osculating element is a
   // low-order polynomial plus an element-specific Fourier term, the argument of
   // periapsis is replaced by an argument-of-latitude correction u = nu + (poly +
   // Fourier) so that the reconstruction stays well-conditioned near periapsis of
@@ -115,18 +115,18 @@ namespace lupnt {
     }
   }  // namespace
 
-  VecXd Almanac::Fit(const VecXd& t_s, const MatXd& rv) const {
+  VecXd LansAlmanac::Fit(const VecXd& t_s, const MatXd& rv) const {
     const int n = static_cast<int>(t_s.size());
     const int poly = options_.poly_order;
     const int nf = std::max(0, options_.num_fourier_terms);
     const int seg = SegmentLen(poly, nf);
     LUPNT_CHECK(n >= seg, "Not enough samples to fit the requested polynomial/Fourier basis",
-                "Almanac");
-    LUPNT_CHECK(rv.rows() == n && rv.cols() == 6, "rv must be [N x 6]", "Almanac");
+                "LansAlmanac");
+    LUPNT_CHECK(rv.rows() == n && rv.cols() == 6, "rv must be [N x 6]", "LansAlmanac");
 
     const double t_ref = t_s(0);
     const double t_fit = t_s(n - 1) - t_s(0);
-    LUPNT_CHECK(t_fit > 0.0, "t_s must be strictly increasing", "Almanac");
+    LUPNT_CHECK(t_fit > 0.0, "t_s must be strictly increasing", "LansAlmanac");
     const VecXd t_k = t_s.array() - t_ref;
 
     const double spin = FrameSpinRate(options_.frame);
@@ -176,11 +176,11 @@ namespace lupnt {
     return params;
   }
 
-  MatXd Almanac::Eval(const VecXd& t_s, const VecXd& params) const {
+  MatXd LansAlmanac::Eval(const VecXd& t_s, const VecXd& params) const {
     const int n = static_cast<int>(t_s.size());
     const int seg = SegmentLen(options_.poly_order, std::max(0, options_.num_fourier_terms));
     LUPNT_CHECK(params.size() == kNumBaseParams + kNumElements * seg,
-                "params has the wrong size for this Almanac's options", "Almanac");
+                "params has the wrong size for this LansAlmanac's options", "LansAlmanac");
 
     // Reconstruct the Cartesian state from (a, e, i, node, argp = u_corr, M): the
     // argument-of-latitude correction u_corr is exactly the effective argument of
@@ -204,18 +204,18 @@ namespace lupnt {
     return out;
   }
 
-  EphemerisFitErrorStats Almanac::EvalError(const VecXd& t_s, const MatXd& rv_ref,
-                                            const VecXd& params) const {
+  EphemerisFitErrorStats LansAlmanac::EvalError(const VecXd& t_s, const MatXd& rv_ref,
+                                                const VecXd& params) const {
     return ComputeFitErrorStats(Eval(t_s, params), rv_ref);
   }
 
-  int Almanac::NumParams() const {
+  int LansAlmanac::NumParams() const {
     return kNumBaseParams
            + kNumElements
                  * SegmentLen(options_.poly_order, std::max(0, options_.num_fourier_terms));
   }
 
-  std::vector<std::string> Almanac::ParamNames() const {
+  std::vector<std::string> LansAlmanac::ParamNames() const {
     const int num_fourier = std::max(0, options_.num_fourier_terms);
     std::vector<std::string> names = {"t_ref", "t_fit", "a_ref"};
     for (const std::string elem : {"a", "e", "i", "raan", "M", "u"}) {

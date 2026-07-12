@@ -15,7 +15,7 @@ namespace lupnt {
   /// valid over a single fitting window.
   ///
   /// `params` is the fitted parameter vector of the corresponding model
-  /// (`CartesianEphemeris`/`Almanac`); see that model's `ParamNames()` for the
+  /// (`LansEphemeris`/`LansAlmanac`); see that model's `ParamNames()` for the
   /// layout. In a real routine these are the bits that would be downlinked and
   /// re-evaluated by a receiver over `[t_start_s, t_end_s]`.
   struct BroadcastMessage {
@@ -28,9 +28,9 @@ namespace lupnt {
 
   /// @brief Configuration for `EphemerisGenApp`.
   struct EphemerisGenConfig {
-    /// Generate a precise, short-validity broadcast ephemeris (`CartesianEphemeris`).
+    /// Generate a precise, short-validity broadcast ephemeris (`LansEphemeris`).
     bool generate_ephemeris = true;
-    /// Generate a coarse, long-validity broadcast almanac (`Almanac`).
+    /// Generate a coarse, long-validity broadcast almanac (`LansAlmanac`).
     bool generate_almanac = true;
 
     /// Short-validity ephemeris fit options and its validity window / refresh
@@ -70,7 +70,7 @@ namespace lupnt {
   /// `Step(t)`, when a refresh is due, it samples the owning agent's predicted
   /// state over the corresponding validity window (`Agent::GetStateAt`, i.e. it
   /// propagates its own orbit forward the way a real satellite would before
-  /// broadcasting) and fits a `CartesianEphemeris` / `Almanac`, appending the
+  /// broadcasting) and fits a `LansEphemeris` / `LansAlmanac`, appending the
   /// resulting `BroadcastMessage`.
   ///
   /// When no agent is attached (e.g. unit tests or offline generation) the same
@@ -104,8 +104,8 @@ namespace lupnt {
     const BroadcastMessage* LatestAlmanac(double t_s) const;
 
     const EphemerisGenConfig& GetConfig() const { return config_; }
-    const CartesianEphemeris& GetEphemerisModel() const { return ephemeris_; }
-    const Almanac& GetAlmanacModel() const { return almanac_; }
+    const LansEphemeris& GetEphemerisModel() const { return ephemeris_; }
+    const LansAlmanac& GetAlmanacModel() const { return almanac_; }
 
   private:
     // Sample the owning agent's predicted arc over [t_gen, t_gen + window] at
@@ -114,8 +114,8 @@ namespace lupnt {
     static const BroadcastMessage* Latest(const std::vector<BroadcastMessage>& msgs, double t_s);
 
     EphemerisGenConfig config_;
-    CartesianEphemeris ephemeris_;
-    Almanac almanac_;
+    LansEphemeris ephemeris_;
+    LansAlmanac almanac_;
     LunaNetSatApp* sat_app_ = nullptr;
 
     std::vector<BroadcastMessage> ephemeris_msgs_;

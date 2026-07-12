@@ -7,8 +7,8 @@ rather than in the notebook keeps the tutorial fast. This script builds a ``pnt.
 from ``configs/ephemeris.yaml`` -- a thin ``EphemerisManager`` agent hosting an
 ``EphemerisApp`` -- and runs it twice on the same ELFO orbit:
 
-    eph : short (<= 2 h) windows on a 1-day, 60-s truth arc   (keep CartesianEphemeris)
-    alm : long (<= 15 d) windows on a 30-day, 600-s truth arc (keep Almanac)
+    eph : short (<= 2 h) windows on a 1-day, 60-s truth arc   (keep LansEphemeris)
+    alm : long (<= 15 d) windows on a 30-day, 600-s truth arc (keep LansAlmanac)
 
 Each run's results are read from the coordinator app
 (``sim.get_agent("EphemerisManager").get_application().get_results()``) and written to one

@@ -8,8 +8,8 @@ namespace lupnt {
   ///
   /// A non-physical agent representing the navigation-message generation / ground processing
   /// node. It hosts an `EphemerisApp` (its `application:` block) that owns the whole study:
-  /// propagating a lunar-satellite truth trajectory, fitting the `CartesianEphemeris` /
-  /// `Almanac` broadcast models over a sweep of fitting-window lengths, and sizing the
+  /// propagating a lunar-satellite truth trajectory, fitting the `LansEphemeris` /
+  /// `LansAlmanac` broadcast models over a sweep of fitting-window lengths, and sizing the
   /// broadcast bit budget. Having no state of its own, its `GetStateAt` returns a zero state
   /// (mirroring `SurfaceStationManager`).
   class EphemerisManager : public Agent {

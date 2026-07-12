@@ -24,7 +24,7 @@ namespace lupnt {
   ///   2. optionally convert it from the inertial propagate frame to the rotating output
   ///      frame (e.g. `MOON_CI` -> `MOON_PA`),
   ///   3. for each `fit_window_minutes` entry, sample `num_windows` windows, fit and
-  ///      quantize the `CartesianEphemeris` / `Almanac` models, and size the broadcast bit
+  ///      quantize the `LansEphemeris` / `LansAlmanac` models, and size the broadcast bit
   ///      budget.
   ///
   /// The truth dynamics are built app-internally (exactly as the monolith did). Results are

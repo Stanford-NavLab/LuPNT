@@ -1,4 +1,4 @@
-Ephemeris and Almanac Design
+Ephemeris and LansAlmanac Design
 ===================================================================
 
 Purpose
@@ -6,13 +6,13 @@ Purpose
 
 This specification defines the mathematical contract for LuPNT's broadcast
 **navigation-message** models for lunar satellites: the precise,
-short-validity ``CartesianEphemeris`` and the coarse, long-validity
-``Almanac``, both in ``cpp/lupnt/applications/ephemeris/``.  It fixes the state
+short-validity ``LansEphemeris`` and the coarse, long-validity
+``LansAlmanac``, both in ``cpp/lupnt/applications/ephemeris/``.  It fixes the state
 representation, the fitting objective, the Chebyshev/Fourier bases and their
 evaluation, the almanac element set with its argument-of-latitude
 correction, and the bit-budget/quantization used to size a message against
 the LunaNet budget.  Algorithms follow the author's PhD thesis Chapters 7
-(ephemeris) and 8 (almanac) and Iiyama & Gao, "Ephemeris and Almanac Design
+(ephemeris) and 8 (almanac) and Iiyama & Gao, "Ephemeris and LansAlmanac Design
 for Lunar Navigation Satellites"; equations are cited inline, and each is
 tied to the implementing function.
 
@@ -54,7 +54,7 @@ fit adds the :math:`\omega\times r` offset to recover PAI velocity, and
 Ephemeris Representation
 -------------------------------------------------------------------
 
-``CartesianEphemeris`` (thesis section 7.2, Algorithm 3) models position as an
+``LansEphemeris`` (thesis section 7.2, Algorithm 3) models position as an
 osculating two-body Kepler baseline plus a Chebyshev residual and an
 optional Fourier residual, with velocity from the analytic time
 derivatives.  The eight base parameters are the reference epoch, fit span,
@@ -116,7 +116,7 @@ is the 8 base parameters, then per axis :math:`x,y,z` the
 Ephemeris Least-Squares Fitting
 -------------------------------------------------------------------
 
-``CartesianEphemeris::Fit`` (thesis section 7.3.1, Eqs. 7.5-7.7) fixes the
+``LansEphemeris::Fit`` (thesis section 7.3.1, Eqs. 7.5-7.7) fixes the
 osculating elements from the midpoint state (in PAI), subtracts the baseline
 to form the position residual :math:`\Delta r`, and solves one joint linear
 least-squares per axis over the stacked
@@ -150,10 +150,10 @@ least-squares per axis over the stacked
    then a linear solve for the residual), matching the thesis's fast/robust
    scheme rather than a joint nonlinear solve.
 
-Almanac Representation
+LansAlmanac Representation
 -------------------------------------------------------------------
 
-``Almanac`` (thesis section 8.1, Eq. 8.1; Iiyama & Gao Algorithm 2) fits each
+``LansAlmanac`` (thesis section 8.1, Eq. 8.1; Iiyama & Gao Algorithm 2) fits each
 osculating element directly as a low-order polynomial plus an
 element-specific Fourier term over a multi-day window.  For element
 :math:`\xi(t)` in normalized time :math:`s = t_k/t_\mathrm{fit}`:
@@ -211,10 +211,10 @@ Fourier coefficients.  With the defaults ``poly_order = 1``,
 :math:`[\beta_0,\beta_1,C_c,C_s]` -- the 24 fitted parameters of thesis
 section 8.1 (plus the 3 bookkeeping entries), versus 13 for a GPS almanac.
 
-Almanac Least-Squares Fitting
+LansAlmanac Least-Squares Fitting
 -------------------------------------------------------------------
 
-``Almanac::Fit`` (thesis section 8.2, Algorithm 4 fitting; Eqs. 8.2-8.6)
+``LansAlmanac::Fit`` (thesis section 8.2, Algorithm 4 fitting; Eqs. 8.2-8.6)
 computes unwrapped osculating elements from the (PAI) states, forms one
 design matrix per frequency family (``ElementBasis``), and solves each
 element by QR least squares:
@@ -334,12 +334,12 @@ Model Boundaries
 * Inputs to ``Fit``/``EvalError`` must already be in ``options.frame``;
   MOON_PA broadcasting requires the caller to ``ConvertFrame`` from MCI
   first.
-* ``CartesianEphemeris`` Fourier terms require the Keplerian baseline;
+* ``LansEphemeris`` Fourier terms require the Keplerian baseline;
   the almanac always carries the baseline (osculating elements are the
   representation).
 * Node placement (Lobatto vs. uniform) is a caller responsibility; the
   models fit the supplied epochs directly.
-* Almanac velocity is analytic two-body (not finite-differenced); ephemeris
+* LansAlmanac velocity is analytic two-body (not finite-differenced); ephemeris
   velocity is the analytic derivative of the Chebyshev/Fourier bases.
 * The bit-budget/quantization analysis lives in ``EphemerisApp``, not
   in the model classes; ``EphemerisGenApp`` stores unquantized

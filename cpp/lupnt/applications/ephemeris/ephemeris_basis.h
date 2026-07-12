@@ -1,8 +1,8 @@
 #pragma once
 /**
  * @file ephemeris_basis.h
- * @brief Internal numerics helpers shared by `CartesianEphemeris` (ephemeris.cc)
- * and `Almanac` (almanac.cc): a Chebyshev polynomial basis (and its time
+ * @brief Internal numerics helpers shared by `LansEphemeris` (ephemeris.cc)
+ * and `LansAlmanac` (almanac.cc): a Chebyshev polynomial basis (and its time
  * derivative), angle unwrapping, cumulative-trapezoid integration, the
  * Radial/Transverse/Normal (RTN) rotation matrix, and the RTN-decomposed
  * RMS/95th-percentile fit-error statistics both classes report from `EvalError`.
@@ -104,8 +104,8 @@ namespace lupnt {
 
   /// @brief RTN-decomposed RMS/95th-percentile position and velocity fit-error
   /// statistics between a fitted trajectory `rv_fit` and a reference trajectory
-  /// `rv_ref` (both [N x 6], same epochs), used by `CartesianEphemeris::EvalError`
-  /// and `Almanac::EvalError`.
+  /// `rv_ref` (both [N x 6], same epochs), used by `LansEphemeris::EvalError`
+  /// and `LansAlmanac::EvalError`.
   inline EphemerisFitErrorStats ComputeFitErrorStats(const MatXd& rv_fit, const MatXd& rv_ref) {
     const int n = static_cast<int>(rv_ref.rows());
     MatXd diff = rv_fit - rv_ref;

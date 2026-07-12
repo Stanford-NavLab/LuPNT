@@ -124,22 +124,21 @@ namespace lupnt {
     }
   }  // namespace
 
-  VecXd CartesianEphemeris::Fit(const VecXd& t_s, const MatXd& rv) const {
+  VecXd LansEphemeris::Fit(const VecXd& t_s, const MatXd& rv) const {
     const int n = static_cast<int>(t_s.size());
     const int order = options_.poly_order;
     const int num_fourier = std::max(0, options_.num_fourier_terms);
     LUPNT_CHECK(num_fourier == 0 || options_.use_keplerian_baseline,
-                "Fourier terms require use_keplerian_baseline", "CartesianEphemeris");
+                "Fourier terms require use_keplerian_baseline", "LansEphemeris");
     LUPNT_CHECK(n >= order + 2 * num_fourier + 2,
-                "Not enough samples to fit the requested Chebyshev/Fourier basis",
-                "CartesianEphemeris");
-    LUPNT_CHECK(rv.rows() == n && rv.cols() == 6, "rv must be [N x 6]", "CartesianEphemeris");
+                "Not enough samples to fit the requested Chebyshev/Fourier basis", "LansEphemeris");
+    LUPNT_CHECK(rv.rows() == n && rv.cols() == 6, "rv must be [N x 6]", "LansEphemeris");
 
     const double spin = FrameSpinRate(options_.frame);
     const int idx_mid = n / 2;
     const double t_ref = t_s(idx_mid);
     const double t_fit = t_s(n - 1) - t_s(0);
-    LUPNT_CHECK(t_fit > 0.0, "t_s must be strictly increasing", "CartesianEphemeris");
+    LUPNT_CHECK(t_fit > 0.0, "t_s must be strictly increasing", "LansEphemeris");
     const VecXd t_k = t_s.array() - t_ref;
 
     VecXd coe_ref;  // empty unless a Keplerian baseline is used
@@ -187,7 +186,7 @@ namespace lupnt {
     return params;
   }
 
-  MatXd CartesianEphemeris::Eval(const VecXd& t_s, const VecXd& params) const {
+  MatXd LansEphemeris::Eval(const VecXd& t_s, const VecXd& params) const {
     const int n = static_cast<int>(t_s.size());
     const int order = options_.poly_order;
     const int num_fourier = std::max(0, options_.num_fourier_terms);
@@ -195,8 +194,7 @@ namespace lupnt {
     const int cheb_len = order + 1;
     const int four_len = 2 * num_fourier;
     LUPNT_CHECK(params.size() == base + 3 * cheb_len + 3 * four_len,
-                "params has the wrong size for this CartesianEphemeris's options",
-                "CartesianEphemeris");
+                "params has the wrong size for this LansEphemeris's options", "LansEphemeris");
 
     const double spin = FrameSpinRate(options_.frame);
     const double t_ref = params(0);
@@ -225,18 +223,18 @@ namespace lupnt {
     return out;
   }
 
-  EphemerisFitErrorStats CartesianEphemeris::EvalError(const VecXd& t_s, const MatXd& rv_ref,
-                                                       const VecXd& params) const {
+  EphemerisFitErrorStats LansEphemeris::EvalError(const VecXd& t_s, const MatXd& rv_ref,
+                                                  const VecXd& params) const {
     return ComputeFitErrorStats(Eval(t_s, params), rv_ref);
   }
 
-  int CartesianEphemeris::NumParams() const {
+  int LansEphemeris::NumParams() const {
     const int num_fourier = std::max(0, options_.num_fourier_terms);
     return BaseParamCount(options_.use_keplerian_baseline) + 3 * (options_.poly_order + 1)
            + 3 * 2 * num_fourier;
   }
 
-  std::vector<std::string> CartesianEphemeris::ParamNames() const {
+  std::vector<std::string> LansEphemeris::ParamNames() const {
     std::vector<std::string> names = {"t_ref", "t_fit"};
     if (options_.use_keplerian_baseline) {
       for (const std::string s : {"a", "e", "i", "raan", "argp", "M_ref"}) names.push_back(s);

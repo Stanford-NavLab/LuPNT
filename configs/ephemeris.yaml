@@ -2,7 +2,7 @@
 #
 # A single thin `EphemerisManager` coordinator agent hosts an `EphemerisApp`: the app
 # propagates an Elliptical Lunar Frozen Orbit (ELFO) truth trajectory, fits the precise
-# short-validity `CartesianEphemeris` and the coarse long-validity `Almanac` broadcast
+# short-validity `LansEphemeris` and the coarse long-validity `LansAlmanac` broadcast
 # models over a sweep of fitting-window lengths, and sizes the broadcast bit budget needed
 # to keep the worst-case position error under a tolerance. It mirrors ex8's
 # `SurfaceStationManager` hosting a `GroundOdtsApp`.

@@ -1,6 +1,6 @@
 /**
  * @file py_ephemeris.cc
- * @brief Python bindings for `lupnt::CartesianEphemeris`/`lupnt::Almanac`
+ * @brief Python bindings for `lupnt::LansEphemeris`/`lupnt::LansAlmanac`
  *        (`lupnt/applications/ephemeris/lunanet_ephemeris.h`,
  * `lupnt/applications/ephemeris/lunanet_almanac.h`), the ephemeris/almanac datasize-accuracy study
  * config/result structs
@@ -39,10 +39,10 @@ void InitEphemeris(py::module& m) {
       .def_readonly("p95_vel_mps", &EphemerisFitErrorStats::p95_vel_mps,
                     "[R, T, N, 3D] 95th-percentile |velocity error| [m/s]");
 
-  // ---- CartesianEphemeris ------------------------------------------------------
+  // ---- LansEphemeris ------------------------------------------------------
 
   py::class_<EphemerisFitOptions>(m, "EphemerisFitOptions",
-                                  "Configuration for CartesianEphemeris.fit/eval.")
+                                  "Configuration for LansEphemeris.fit/eval.")
       .def(py::init<>(), "Default-construct with default fit options.")
       .def_readwrite("poly_order", &EphemerisFitOptions::poly_order,
                      "Chebyshev polynomial order for the position residual (velocity from its "
@@ -59,32 +59,31 @@ void InitEphemeris(py::module& m) {
                      "Fourier terms (harmonics of the argument of latitude) added to the residual "
                      "model; 0 = pure Chebyshev.");
 
-  py::class_<CartesianEphemeris>(
-      m, "CartesianEphemeris",
+  py::class_<LansEphemeris>(
+      m, "LansEphemeris",
       "Piecewise ephemeris model: an osculating two-body Kepler orbit plus a Chebyshev correction "
       "on the Cartesian position residual (GNSS broadcast-ephemeris style).")
       .def(py::init<>(), "Default-construct with default fit options.")
       .def(py::init<EphemerisFitOptions>(), py::arg("options"),
            "Construct with the given fit options.")
-      .def("fit", &CartesianEphemeris::Fit, py::arg("t_s"), py::arg("rv"),
+      .def("fit", &LansEphemeris::Fit, py::arg("t_s"), py::arg("rv"),
            "Fit the model to sampled states `rv` [N x 6] at epochs `t_s` [s]; returns the fitted "
            "parameter vector.")
-      .def("eval", &CartesianEphemeris::Eval, py::arg("t_s"), py::arg("params"),
+      .def("eval", &LansEphemeris::Eval, py::arg("t_s"), py::arg("params"),
            "Evaluate the fitted ephemeris `params` at epochs `t_s` [s]; returns states [N x 6].")
-      .def("eval_error", &CartesianEphemeris::EvalError, py::arg("t_s"), py::arg("rv_ref"),
+      .def("eval_error", &LansEphemeris::EvalError, py::arg("t_s"), py::arg("rv_ref"),
            py::arg("params"),
            "Fit-error statistics of `params` against reference states `rv_ref` at epochs `t_s`.")
-      .def("num_params", &CartesianEphemeris::NumParams,
+      .def("num_params", &LansEphemeris::NumParams,
            "Number of scalar parameters in the fitted vector.")
-      .def("param_names", &CartesianEphemeris::ParamNames,
+      .def("param_names", &LansEphemeris::ParamNames,
            "Human-readable name of each fitted parameter (same order as fit()).")
-      .def("get_options", &CartesianEphemeris::GetOptions,
-           py::return_value_policy::reference_internal,
+      .def("get_options", &LansEphemeris::GetOptions, py::return_value_policy::reference_internal,
            "The EphemerisFitOptions this model was constructed with.");
 
-  // ---- Almanac ------------------------------------------------------------------
+  // ---- LansAlmanac ------------------------------------------------------------------
 
-  py::class_<AlmanacFitOptions>(m, "AlmanacFitOptions", "Configuration for Almanac.fit/eval.")
+  py::class_<AlmanacFitOptions>(m, "AlmanacFitOptions", "Configuration for LansAlmanac.fit/eval.")
       .def(py::init<>(), "Default-construct with default fit options.")
       .def_readwrite("poly_order", &AlmanacFitOptions::poly_order,
                      "Secular polynomial degree fit to each element's time history (default 1 = "
@@ -100,24 +99,26 @@ void InitEphemeris(py::module& m) {
                      "Frame the input states and fitted output are represented in (e.g. MOON_CI, "
                      "MOON_PA).");
 
-  py::class_<Almanac>(
-      m, "Almanac",
+  py::class_<LansAlmanac>(
+      m, "LansAlmanac",
       "Coarse almanac-style orbit model (low-order polynomial + Fourier per osculating element); "
       "GNSS-almanac style, long validity / small size.")
       .def(py::init<>(), "Default-construct with default fit options.")
       .def(py::init<AlmanacFitOptions>(), py::arg("options"),
            "Construct with the given fit options.")
-      .def("fit", &Almanac::Fit, py::arg("t_s"), py::arg("rv"),
+      .def("fit", &LansAlmanac::Fit, py::arg("t_s"), py::arg("rv"),
            "Fit the model to sampled states `rv` [N x 6] at epochs `t_s` [s]; returns the fitted "
            "parameter vector.")
-      .def("eval", &Almanac::Eval, py::arg("t_s"), py::arg("params"),
+      .def("eval", &LansAlmanac::Eval, py::arg("t_s"), py::arg("params"),
            "Evaluate the fitted almanac `params` at epochs `t_s` [s]; returns states [N x 6].")
-      .def("eval_error", &Almanac::EvalError, py::arg("t_s"), py::arg("rv_ref"), py::arg("params"),
+      .def("eval_error", &LansAlmanac::EvalError, py::arg("t_s"), py::arg("rv_ref"),
+           py::arg("params"),
            "Fit-error statistics of `params` against reference states `rv_ref` at epochs `t_s`.")
-      .def("num_params", &Almanac::NumParams, "Number of scalar parameters in the fitted vector.")
-      .def("param_names", &Almanac::ParamNames,
+      .def("num_params", &LansAlmanac::NumParams,
+           "Number of scalar parameters in the fitted vector.")
+      .def("param_names", &LansAlmanac::ParamNames,
            "Human-readable name of each fitted parameter (same order as fit()).")
-      .def("get_options", &Almanac::GetOptions, py::return_value_policy::reference_internal,
+      .def("get_options", &LansAlmanac::GetOptions, py::return_value_policy::reference_internal,
            "The AlmanacFitOptions this model was constructed with.");
 
   // ---- Ephemeris study config/results (EphemerisApp) -----------------------------
@@ -168,18 +169,18 @@ void InitEphemeris(py::module& m) {
       .def_readwrite("num_windows", &EphemerisSimulationConfig::num_windows,
                      "Number of fitting windows sampled per fit_window_minutes entry.")
       .def_readwrite("cartesian_poly_order", &EphemerisSimulationConfig::cartesian_poly_order,
-                     "Chebyshev polynomial order for the CartesianEphemeris model.")
+                     "Chebyshev polynomial order for the LansEphemeris model.")
       .def_readwrite("cartesian_use_keplerian_baseline",
                      &EphemerisSimulationConfig::cartesian_use_keplerian_baseline,
-                     "Use a two-body Kepler baseline for the CartesianEphemeris model.")
+                     "Use a two-body Kepler baseline for the LansEphemeris model.")
       .def_readwrite("cartesian_num_fourier_terms",
                      &EphemerisSimulationConfig::cartesian_num_fourier_terms,
-                     "Fourier terms for the CartesianEphemeris model.")
+                     "Fourier terms for the LansEphemeris model.")
       .def_readwrite("almanac_poly_order", &EphemerisSimulationConfig::almanac_poly_order,
-                     "Secular polynomial degree for the Almanac model.")
+                     "Secular polynomial degree for the LansAlmanac model.")
       .def_readwrite("almanac_num_fourier_terms",
                      &EphemerisSimulationConfig::almanac_num_fourier_terms,
-                     "Fourier harmonics per element for the Almanac model.")
+                     "Fourier harmonics per element for the LansAlmanac model.")
       .def_readwrite("output_frame", &EphemerisSimulationConfig::output_frame,
                      "Frame the models are fit and evaluated in (defaults to propagate_frame; "
                      "e.g. MOON_PA).")
@@ -213,9 +214,10 @@ void InitEphemeris(py::module& m) {
                     "Truth Cartesian states [N x 6] in output_frame")
       .def_readonly("cartesian_results", &EphemerisResults::cartesian_results,
                     "List of EphemerisWindowResult, one per fit_window_minutes value "
-                    "(CartesianEphemeris)")
-      .def_readonly("almanac_results", &EphemerisResults::almanac_results,
-                    "List of EphemerisWindowResult, one per fit_window_minutes value (Almanac)");
+                    "(LansEphemeris)")
+      .def_readonly(
+          "almanac_results", &EphemerisResults::almanac_results,
+          "List of EphemerisWindowResult, one per fit_window_minutes value (LansAlmanac)");
 
   // ---- EphemerisApp (agent-based coordinator) --------------------------------------
   // Hosted on an `EphemerisManager` agent. Retrieve it from a `pnt.Simulation` via
@@ -230,7 +232,7 @@ void InitEphemeris(py::module& m) {
       .def("get_config", &EphemerisApp::GetConfig, py::return_value_policy::reference_internal,
            "The EphemerisSimulationConfig this app runs.")
       .def("get_results", &EphemerisApp::GetResults, py::return_value_policy::reference_internal,
-           "Full EphemerisResults (truth trajectory + per-window Cartesian/Almanac results)");
+           "Full EphemerisResults (truth trajectory + per-window Cartesian/LansAlmanac results)");
 
   // ---- EphemerisGenApp (LunaNet nav-message generation sub-app) ------------------
 
@@ -264,9 +266,9 @@ void InitEphemeris(py::module& m) {
       .def_readwrite("almanac_options", &EphemerisGenConfig::almanac_options,
                      "Fit options for the broadcast almanac.")
       .def_readwrite("almanac_window_s", &EphemerisGenConfig::almanac_window_s,
-                     "Almanac validity-window length [s].")
+                     "LansAlmanac validity-window length [s].")
       .def_readwrite("almanac_refresh_s", &EphemerisGenConfig::almanac_refresh_s,
-                     "Almanac refresh cadence [s] (<=0 = once per validity window).")
+                     "LansAlmanac refresh cadence [s] (<=0 = once per validity window).")
       .def_readwrite("ephemeris_fit_samples", &EphemerisGenConfig::ephemeris_fit_samples,
                      "Number of arc samples used to fit each ephemeris window.")
       .def_readwrite("almanac_fit_samples", &EphemerisGenConfig::almanac_fit_samples,

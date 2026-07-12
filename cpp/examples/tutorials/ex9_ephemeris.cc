@@ -1,13 +1,13 @@
-// Example 9: Ephemeris and Almanac Fitting
+// Example 9: Ephemeris and LansAlmanac Fitting
 // ------------------------------------------------------------------------------
 // C++ counterpart of python/examples/ex9_ephemeris.ipynb.
 //
 // Studies the accuracy-vs-broadcast-datasize trade-off of two lunar-satellite
 // orbit models fit to a numerically propagated truth trajectory:
 //
-//   * CartesianEphemeris -- a precise, short-validity Chebyshev model (the lunar
+//   * LansEphemeris -- a precise, short-validity Chebyshev model (the lunar
 //     analogue of a GNSS broadcast ephemeris record).
-//   * Almanac            -- a coarse, long-validity model (Algorithm 2 of
+//   * LansAlmanac            -- a coarse, long-validity model (Algorithm 2 of
 //     Iiyama & Gao) for whole-constellation acquisition.
 //
 // The scenario is built from a single YAML file: a thin `EphemerisManager`
@@ -49,10 +49,11 @@ int main(int argc, char** argv) {
   LUPNT_CHECK(app, "EphemerisManager agent has no EphemerisApp", "ex9");
   const EphemerisResults& res = app->GetResults();
 
-  std::cout << "Ephemeris/Almanac fit study over " << app->GetConfig().duration_days << " days, "
+  std::cout << "Ephemeris/LansAlmanac fit study over " << app->GetConfig().duration_days
+            << " days, "
             << "output frame " << enum_name(app->GetConfig().output_frame) << "\n";
-  PrintTable("CartesianEphemeris (precise, short-validity):", res.cartesian_results);
-  PrintTable("Almanac (coarse, long-validity):", res.almanac_results);
+  PrintTable("LansEphemeris (precise, short-validity):", res.cartesian_results);
+  PrintTable("LansAlmanac (coarse, long-validity):", res.almanac_results);
 
   return 0;
 }
