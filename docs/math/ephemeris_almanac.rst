@@ -7,7 +7,7 @@ Purpose
 This specification defines the mathematical contract for LuPNT's broadcast
 **navigation-message** models for lunar satellites: the precise,
 short-validity ``CartesianEphemeris`` and the coarse, long-validity
-``Almanac``, both in ``cpp/lupnt/applications/``.  It fixes the state
+``Almanac``, both in ``cpp/lupnt/applications/ephemeris/``.  It fixes the state
 representation, the fitting objective, the Chebyshev/Fourier bases and their
 evaluation, the almanac element set with its argument-of-latitude
 correction, and the bit-budget/quantization used to size a message against
@@ -25,7 +25,7 @@ Both models represent a sampled Cartesian trajectory
 strictly increasing, arbitrary fixed origin).  ``Fit`` returns a flat
 parameter vector; ``Eval`` reconstructs :math:`rv` at query epochs;
 ``EvalError`` returns RTN-decomposed RMS/95th-percentile statistics
-(``EphemerisFitErrorStats``, ``applications/ephemeris_basis.h``).
+(``EphemerisFitErrorStats``, ``applications/ephemeris/ephemeris_basis.h``).
 
 Three frames are used (thesis section 7.1.1).  The **MCI** frame is inertial
 (MOON_CI).  The **PA** frame (MOON_PA) rotates with the Moon's principal
@@ -257,7 +257,8 @@ Message Size and Bit Budget
 
 The broadcast cost is sized per parameter so that quantization keeps the
 position error under a tolerance (thesis section 7.3.2, Eqs. 7.8-7.12).  The
-implementation lives in ``simulations/ephemeris/ephemeris_simulation.cc``.
+implementation lives in ``applications/ephemeris/ephemeris_app.cc`` (the
+``EphemerisApp`` bit-budget helpers).
 For each parameter, ``SearchParamBits`` binary-searches the minimum number
 of fractional bits :math:`k` such that a :math:`2^{-k}` step changes the
 **worst-case** position over the window by less than the tolerance
@@ -270,7 +271,7 @@ of fractional bits :math:`k` such that a :math:`2^{-k}` step changes the
 
 .. code-block:: cpp
 
-   // ephemeris_simulation.cc :: SearchParamBits (worst-case over the window)
+   // ephemeris_app.cc :: SearchParamBits (worst-case over the window)
    const double eps = std::pow(2.0, -k);
    p(idx) += eps;  const MatXd plus  = eph.Eval(t_s, p);
    p(idx) -= 2*eps; const MatXd minus = eph.Eval(t_s, p);
@@ -293,7 +294,7 @@ bit (``RangeBits`` / ``IsAngleParam`` / ``IsEccentricityParam``).
 
 .. code-block:: cpp
 
-   // ephemeris_simulation.cc :: RangeBits
+   // ephemeris_app.cc :: RangeBits
    const int bits_range = range > 0.0
        ? std::max(1, (int)std::ceil(std::log2(range))) : 1;
    return bits_range + std::max(bits_frac, 0)
@@ -316,7 +317,7 @@ bit (``RangeBits`` / ``IsAngleParam`` / ``IsEccentricityParam``).
 Broadcast-Message Generation
 -------------------------------------------------------------------
 
-``EphemerisGenApp`` (``applications/ephemeris_gen_app.{h,cc}``) is the
+``EphemerisGenApp`` (``applications/ephemeris/ephemeris_gen_app.{h,cc}``) is the
 ``LunaNetSubApp`` that produces both message types from a satellite's own
 predicted arc.  On each ``Step(t)`` it refreshes the precise ephemeris
 (default 2-hour validity, ``ephemeris_window_s``) and the coarse almanac

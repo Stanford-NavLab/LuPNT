@@ -14,7 +14,7 @@ here feed the C/N0 threshold and the tracking-loop noise
 ``cpp/lupnt/measurements/comms_utils.{h,cc}`` (path loss, tracking-loop noise,
 visibility), ``cpp/lupnt/measurements/antenna.{h,cc}`` (gain patterns),
 ``cpp/lupnt/measurements/gnss_measurement.cc`` (the ``LinkBudget`` /
-``ComputeCN0`` glue), and ``cpp/lupnt/agents/gnss_attitude.*`` /
+``ComputeCN0`` glue), and ``cpp/lupnt/attitude/gnss_attitude.*`` /
 ``gnss_yaw_steering.*`` (transmitter boresight).  The reference model is the
 author's PhD thesis, Chapter 6.4.3 (link budget) and Chapter 3.3 (EIRP); the
 corresponding equations are cited inline.
@@ -274,7 +274,7 @@ Evaluating :math:`G_\mathrm{tx}` requires the transmitter body frame, because
 the off-boresight angles :math:`(\theta_\mathrm{tx}, \varphi_\mathrm{tx})` are
 defined in the GNSS satellite's yaw-steering attitude.
 ``GNSSMeasurements::ComputeCN0`` builds that frame with
-``GnssAttitude::Compute`` (``cpp/lupnt/agents/gnss_attitude.cc``) at the
+``GnssAttitude::Compute`` (``cpp/lupnt/attitude/gnss_attitude.cc``) at the
 transmit epoch, then projects the line of sight onto it:
 
 .. code-block:: cpp
@@ -322,7 +322,7 @@ Yaw-Steering Attitude Law
 The velocity-aware overload ``GnssAttitude::Compute(r, v, r_sun, ...)`` builds
 the same Sun-pointing frame through the documented **nominal yaw-steering
 law** (Kouba 2009; Cheng et al. 2025, Eq. 1), implemented in
-``cpp/lupnt/agents/gnss_yaw_steering.cc``.  The satellite-Sun-Earth geometry
+``cpp/lupnt/attitude/gnss_yaw_steering.cc``.  The satellite-Sun-Earth geometry
 is parameterized by the Sun elevation above the orbital plane :math:`\beta`
 and the orbit angle :math:`\mu` from the midnight point:
 

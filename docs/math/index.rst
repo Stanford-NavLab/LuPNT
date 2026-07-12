@@ -7,6 +7,11 @@ corrections, and observable equations explicit enough that implementations can
 be tested against the same specification.  Each page ties its algorithms to
 the implementing C++/Python code.
 
+These same contracts are honored by pure-Python model subclasses: Applications,
+Agents, and Measurements can be authored in Python (pybind11 trampolines) and
+registered into a YAML-driven ``Simulation`` via ``pnt.register_application`` /
+``pnt.register_agent``, as demonstrated by Example 17.
+
 .. toctree::
    :maxdepth: 1
    :caption: Fundamentals

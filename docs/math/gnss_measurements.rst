@@ -425,7 +425,7 @@ Transmitter Attitude and Yaw Steering
 
 The transmit gain :math:`G_\mathrm{tx}` is looked up in the GNSS satellite's
 yaw-steering body frame, computed by ``GnssAttitude::Compute``
-(``cpp/lupnt/agents/gnss_attitude.cc``).  ``ComputeCN0`` first transforms the
+(``cpp/lupnt/attitude/gnss_attitude.cc``).  ``ComputeCN0`` first transforms the
 transmitter state, receiver position, and Sun position from ``options.frame``
 into ``Frame::GCRF`` before building the attitude, so the gain pattern is
 evaluated in the same Earth-centered inertial frame the ANTEX data assume.
@@ -450,7 +450,7 @@ and the boresight angles of the transmitter-to-receiver line of sight
    = \operatorname{atan2}\!\big(\hat{u}^\mathsf{T} e_y,\ \hat{u}^\mathsf{T} e_x\big).
 
 The velocity-aware overload derives this same frame from the documented
-**nominal yaw-steering law** (``cpp/lupnt/agents/gnss_yaw_steering.cc ::
+**nominal yaw-steering law** (``cpp/lupnt/attitude/gnss_yaw_steering.cc ::
 NominalYawAngle``, Cheng et al. 2025, Eq. 1):
 
 .. code-block:: cpp
@@ -563,8 +563,8 @@ unsupported).  Broadcast ephemerides carry the real-time signal-in-space error
 (position and clock) relative to the precise product, and are used to inject
 realistic ephemeris/clock modeling errors into the measurement truth.  The
 LunaNet-style broadcast-message generation on the transmit side lives in
-``cpp/lupnt/applications/lunanet_ephemeris.*`` and ``ephemeris_gen_app.*``
-(specified in :doc:`ephemeris_almanac`).
+``cpp/lupnt/applications/ephemeris/lunanet_ephemeris.*`` and
+``ephemeris_gen_app.*`` (specified in :doc:`ephemeris_almanac`).
 
 .. note::
 
@@ -577,6 +577,69 @@ LunaNet-style broadcast-message generation on the transmit side lives in
    system-time-correction term; this affects only the satellite *clock*
    (sub-100 ns, i.e. sub-30 m range-equivalent) and has no effect on the
    broadcast position or velocity.
+
+Almanac constellation source (future-epoch scenarios)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The precise/broadcast paths above both require IGS products for the run epoch,
+which do not exist for a *future* mission epoch.  For those scenarios the Lunar
+GNSS ODTS driver (``constellation.source == "almanac"``,
+``cpp/lupnt/simulations/lunar_gnss_odts/lunar_gnss_odts_simulation.cc``)
+synthesizes each PRN's transmitter ephemeris instead of loading it:
+
+#. **Seed elements.** Each PRN's coarse Keplerian set is read from a YUMA GPS
+   almanac (``RinexNavLoader::LoadYumaFile``,
+   ``cpp/lupnt/interfaces/rinex_nav_loader.{h,cc}``) or, absent a YUMA file, from
+   the broadcast (BRDC) navigation message.  The seed Cartesian state is
+   evaluated at the almanac reference epoch (:math:`t_k=0`) in ECEF and rotated
+   to ECI.
+
+#. **GPS week-number rollover.** A YUMA almanac carries a mod-1024 week number,
+   so its raw reference epoch can land ~20 years from the intended date.  The
+   seed epoch is snapped to the 1024-week era nearest the run epoch,
+
+   .. math::
+
+      t_\mathrm{seed}
+      \leftarrow
+      t_\mathrm{seed}
+      +
+      \Delta_\mathrm{1024}\,
+      \operatorname{round}\!\left(
+        \frac{t_\mathrm{run} - t_\mathrm{seed}}{\Delta_\mathrm{1024}}
+      \right),
+      \qquad
+      \Delta_\mathrm{1024} = 1024 \times 7 \times 86400\ \text{s},
+
+   so the propagation span is the intended months, not decades.  A full-week
+   BRDC seed makes this a no-op.
+
+#. **Numerical propagation.** From the seed state each PRN is propagated over the
+   ephemeris grid under Earth gravity (a :math:`4\times4` field) plus Sun and
+   Moon third-body point masses (``CreateGnssEarthDynamics``), and the resulting
+   ECI states are handed to ``GnssConstellation::SetSatelliteStates`` exactly like
+   a precise/broadcast fit.
+
+Because no precise reference exists to difference against, the realistic
+broadcast **signal-in-space error** (SISE) is *modeled* rather than measured: the
+``SyntheticSISE`` transmitter-error model draws a per-PRN orbit error in the
+local orbital (radial / along-track / cross-track) frame and a clock error,
+
+.. math::
+
+   \delta r_\mathrm{ECI}
+   = \delta_R\,\hat r + \delta_A\,\hat t + \delta_C\,\hat c,
+   \qquad
+   \delta_{R,A,C} \sim \mathcal{N}\!\big(0,\ \sigma_{R,A,C}^2\big),
+   \qquad
+   \delta t \sim \mathcal{N}\!\big(0,\ \sigma_\mathrm{clk}^2\big),
+
+once per PRN from a seeded RNG, held fixed over the (short) arc — a first-order
+stand-in for the near-constant systematic error a real receiver sees.  The
+per-PRN magnitudes :math:`\sigma_R,\sigma_A,\sigma_C,\sigma_\mathrm{clk}` come
+from ``constellation.synthetic_sise_{radial,along,cross,clock}_m``, and the delta
+is injected through the same filter-transmitter code path
+(``BroadcastEphemerisError``) that the measured broadcast error uses.
 
 Jacobian Convention
 -------------------------------------------------------------------

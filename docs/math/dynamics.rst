@@ -16,6 +16,48 @@ The Cartesian rate assembly lives in
 the individual force-model accelerations live in
 ``cpp/lupnt/environment/forces.cc`` / ``forces.h``.
 
+Unified Force-Model Configuration
+-------------------------------------------------------------------
+
+Every scenario specifies its orbit force model with the same YAML ``force_model:``
+block, whether it is the shared truth model (``world.force_model``), an agent's
+``dynamics:``, or an estimator's filter/truth dynamics.  The block is a ``bodies:``
+list plus optional ``relativity`` and cannonball-SRP (``CR`` / ``area`` / ``mass``)
+entries:
+
+.. code-block:: yaml
+
+   force_model:
+     bodies:
+       - MOON: {n: 20, m: 20}   # spherical-harmonic gravity field to degree/order 20
+       - EARTH: {}              # third body, point-mass (empty {} = no harmonics)
+       - SUN: {}                # third body, point-mass
+     relativity: true           # Schwarzschild correction (see below)
+     CR: 1.0                    # SRP: enables cannonball SRP with B_SRP = CR * area / mass
+     area: 0.002
+     mass: 1.0
+
+Each ``bodies`` entry is ``BODY: {n: <degree>, m: <order>}`` for a
+spherical-harmonic gravity field; an empty ``{}`` (or omitted ``n``/``m``) selects
+point-mass gravity.  A body's presence in the list is what enables its
+contribution to the sum in `Total N-Body Acceleration`_ below.
+
+The same block feeds two consumers so that world, agent, and filter dynamics stay
+consistent:
+
+* ``NBodyDynamics(Config&)``
+  (``cpp/lupnt/dynamics/numerical_orbit_dynamics.cc``) constructs a full dynamics
+  object directly from the block — adding each body via ``Body::CreateBody``,
+  setting the SRP/drag ballistic coefficients from ``CR``/``CD``, ``area``,
+  ``mass``, and reading ``frame``, ``units``, ``autodiff``, and ``relativity``.
+* ``ParseForceModelSpec(const Config&)`` reads the same block into a lightweight
+  ``ForceModelSpec`` (``moon_degree``/``moon_order`` from the ``MOON`` entry,
+  ``include_earth``/``include_sun`` from the presence of those bodies, plus
+  ``relativity`` and the SRP scalars) so per-example dynamics builders that need
+  their own integrator tolerances or clock coupling can be fed from one
+  consistent config surface.  Both ``relativity`` and the legacy
+  ``use_relativity`` spelling are accepted.
+
 State, Epoch, Frame, and Unit Contract
 -------------------------------------------------------------------
 

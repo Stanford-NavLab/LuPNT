@@ -74,6 +74,7 @@ LuPNT/
 │   │   ├── environment/        # Gravity, atmosphere, solar system, plasma
 │   │   │   └── plasma/         # GCPM v2.4 + IRI + ray-tracer (pecsim)
 │   │   ├── measurements/       # Measurement models
+│   │   ├── attitude/           # GNSS transmitter attitude / yaw-steering laws
 │   │   ├── states/             # State / joint-state / parameter abstractions
 │   │   ├── transmission/       # Signal transmission modeling
 │   │   ├── interfaces/         # Data loaders & I/O (SP3, ANTEX, RINEX, TLE, SPICE, EOP, DEM, Cesium, matplotlib)
@@ -81,11 +82,7 @@ LuPNT/
 │   │   ├── core/               # Logging, constants, config, math utils
 │   │   └── numerics/           # Numerical methods
 │   └── examples/               # C++ example programs
-│       ├── tutorials/          # Tutorial counterparts to the Python notebooks
-│       ├── simulations/        # Full scenario applications
-│       ├── environment/        # Plasma, solar system examples
-│       ├── dynamics/           # Orbit propagation examples
-│       └── …
+│       └── tutorials/          # C++ counterparts to the Python notebooks (ex1–ex16)
 ├── configs/                    # YAML scenario configuration (agents, applications, dynamics, environments, datasets)
 ├── python/
 │   ├── pylupnt/                # Python package (installed in-place)
@@ -267,18 +264,20 @@ pixi run <command>
 
 ### Running C++ examples
 
-After building, examples are in `build/examples/`. Run any example with:
+After building, the C++ tutorial programs (one per source file in
+[`cpp/examples/tutorials/`](cpp/examples/tutorials/), the counterparts to the Python notebooks)
+are in `build/examples/`. Run any example with:
 ```bash
 # From inside pixi shell
-./build/examples/ex_plasma_gcpm
-./build/examples/ex_plasma_raytrace
+./build/examples/ex1_propagate_orbit
+./build/examples/ex4_plasmasphere
 ```
 
 Environment variables are set automatically inside `pixi shell`. Outside of it, set them explicitly:
 ```bash
 LUPNT_DATA_PATH=$PWD/data/LuPNT_data \
 PECSIMPY_BASE_PATH=$PWD/data/LuPNT_data/plasma \
-./build/examples/ex_plasma_gcpm
+./build/examples/ex4_plasmasphere
 ```
 
 ### Jupyter notebooks
