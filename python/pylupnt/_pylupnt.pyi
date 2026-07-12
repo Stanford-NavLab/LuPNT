@@ -401,6 +401,7 @@ class Config:
     def __setitem__(self, arg0: str, arg1: object) -> None: ...
 
 class ConstellationSourceConfig:
+    almanac_file: str
     antex_file: str
     auto_select_sp3: bool
     brdc_directory: str
@@ -410,8 +411,13 @@ class ConstellationSourceConfig:
     galileo_prns: list[int]
     gps_prns: list[int]
     include_galileo: bool
+    source: str
     sp3_directory: str
     sp3_files: list[str]
+    synthetic_sise_along_m: float
+    synthetic_sise_clock_m: float
+    synthetic_sise_cross_m: float
+    synthetic_sise_radial_m: float
     use_all_gps: bool
     use_broadcast_ephemeris: bool
     def __init__(self) -> None: ...

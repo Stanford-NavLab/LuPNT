@@ -55,6 +55,22 @@ namespace lupnt {
     /// @brief Parse an additional RINEX nav file and merge its messages in.
     void LoadFile(const std::filesystem::path& filepath);
 
+    /// @brief Parse a YUMA-format GPS almanac (e.g. from CelesTrak / USCG NAVCEN, a small
+    /// no-authentication text download) and merge its per-PRN orbital slots in as broadcast
+    /// navigation messages. YUMA carries only the coarse Keplerian set (e, toa, i, OMEGADOT,
+    /// sqrt_a, OMEGA0, omega, M0, af0, af1, week); the higher-order harmonic corrections and
+    /// delta_n / idot are set to zero. This is intended as an orbital-slot *seed* for numerical
+    /// propagation (see the lunar-GNSS ODTS `almanac` constellation source), not as a precise
+    /// broadcast product. Only GPS (`G`) satellites are produced.
+    void LoadYumaFile(const std::filesystem::path& filepath);
+
+    /// @brief Reference epoch [TAI seconds] of the most recent navigation message loaded for
+    /// `sat_id` (the freshest orbital slot). Used to pick the seed epoch at which the broadcast
+    /// Keplerian elements are converted to a Cartesian state for numerical propagation, so the
+    /// state is taken at the message's own time-of-ephemeris (t_k = 0) rather than
+    /// Keplerian-extrapolated far from it.
+    double GetLatestEpochTai(const std::string& sat_id) const;
+
     /// @brief Build the CDDIS BRDC filename covering `epoch`, e.g.
     /// `BRDC00IGS_R_20260140000_01D_MN.rnx` (uncompressed).
     static std::string FilenameForEpoch(Real epoch, Time time_scale = Time::UTC);

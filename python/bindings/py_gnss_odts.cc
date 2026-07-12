@@ -160,7 +160,26 @@ void InitGnssOdts(py::module& m) {
                      "Remove the per-constellation median broadcast-minus-precise clock offset")
       .def_readwrite("debias_qzss_radial", &ConstellationSourceConfig::debias_qzss_radial,
                      "Remove the per-QZSS-satellite median radial broadcast-minus-precise orbit "
-                     "offset");
+                     "offset")
+      .def_readwrite("source", &ConstellationSourceConfig::source,
+                     "Truth constellation source: 'sp3_brdc' (default, precise SP3 + BRDC error, "
+                     "past epochs only) or 'almanac' (seed Keplerian elements from a YUMA almanac "
+                     "or BRDC, numerically propagate with J2 + Sun/Moon -> runs at future epochs)")
+      .def_property(
+          "almanac_file",
+          [](const ConstellationSourceConfig& c) { return c.almanac_file.string(); },
+          [](ConstellationSourceConfig& c, const std::string& s) {
+            c.almanac_file = std::filesystem::path(s);
+          },
+          "YUMA almanac seed file for source=='almanac' (empty -> seed from the BRDC files)")
+      .def_readwrite("synthetic_sise_radial_m", &ConstellationSourceConfig::synthetic_sise_radial_m,
+                     "Almanac-mode modeled SISE: per-PRN radial orbit-error std [m]")
+      .def_readwrite("synthetic_sise_along_m", &ConstellationSourceConfig::synthetic_sise_along_m,
+                     "Almanac-mode modeled SISE: per-PRN along-track orbit-error std [m]")
+      .def_readwrite("synthetic_sise_cross_m", &ConstellationSourceConfig::synthetic_sise_cross_m,
+                     "Almanac-mode modeled SISE: per-PRN cross-track orbit-error std [m]")
+      .def_readwrite("synthetic_sise_clock_m", &ConstellationSourceConfig::synthetic_sise_clock_m,
+                     "Almanac-mode modeled SISE: per-PRN clock-error std [m]");
 
   // ---- LunarGnssODTSConfig -------------------------------------------------------
 

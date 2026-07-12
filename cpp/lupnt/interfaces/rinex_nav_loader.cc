@@ -399,10 +399,99 @@ namespace lupnt {
     }
   }
 
+  void RinexNavLoader::LoadYumaFile(const std::filesystem::path& filepath) {
+    LUPNT_CHECK(std::filesystem::exists(filepath),
+                "YUMA almanac file not found: " + filepath.string(), "RinexNavLoader");
+    std::ifstream file = OpenFile<std::ifstream>(filepath);
+
+    // YUMA blocks are "key: value" lines separated by a header line ("******** Week ...").
+    // Accumulate fields per block (keyed by a lowercase substring of the label) and flush on
+    // the next header / EOF. Only GPS satellites are produced.
+    std::map<std::string, double> f;
+    auto flush = [&]() {
+      if (f.empty()) return;
+      auto has = [&](const std::string& k) { return f.find(k) != f.end(); };
+      if (has("id") && has("sqrt")) {
+        int prn = static_cast<int>(std::llround(f["id"]));
+        NavMessage msg;
+        msg.ecc = f.count("eccentricity") ? f["eccentricity"] : 0.0;
+        msg.toe = f.count("applicability") ? f["applicability"] : 0.0;
+        msg.i0 = f.count("inclination") ? f["inclination"] : 0.0;
+        msg.omega_dot = f.count("ascen(r/s)") ? f["ascen(r/s)"] : 0.0;
+        msg.sqrt_a = f["sqrt"];
+        msg.omega0 = f.count("week(rad)") ? f["week(rad)"] : 0.0;
+        msg.omega = f.count("perigee") ? f["perigee"] : 0.0;
+        msg.m0 = f.count("anom") ? f["anom"] : 0.0;
+        msg.af0 = f.count("af0") ? f["af0"] : 0.0;
+        msg.af1 = f.count("af1") ? f["af1"] : 0.0;
+        msg.week = f.count("week") ? f["week"] : 0.0;
+        // Harmonic corrections, delta_n and idot are not carried by YUMA.
+        msg.epoch_tai = GpsEpochTai() + msg.week * kSecWeek + msg.toe;
+        if (prn > 0 && msg.sqrt_a > 0.0) nav_[SatId('G', prn)].push_back(msg);
+      }
+      f.clear();
+    };
+
+    std::string line;
+    while (std::getline(file, line)) {
+      const std::string trimmed = Trim(line);
+      if (trimmed.empty()) continue;
+      if (trimmed.rfind("****", 0) == 0) {  // block header
+        flush();
+        continue;
+      }
+      const size_t colon = trimmed.find(':');
+      if (colon == std::string::npos) continue;
+      std::string label = trimmed.substr(0, colon);
+      const std::string value = Trim(trimmed.substr(colon + 1));
+      std::transform(label.begin(), label.end(), label.begin(),
+                     [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+      double v = 0.0;
+      try {
+        v = std::stod(value);
+      } catch (...) {
+        continue;
+      }
+      // Store under a stable substring key that survives the exact-label wording, e.g.
+      // "Rate of Right Ascen(r/s)" -> match "ascen(r/s)"; "SQRT(A)  (m 1/2)" -> "sqrt".
+      auto keyed = [&](const std::string& needle, const std::string& key) {
+        if (label.find(needle) != std::string::npos) f[key] = v;
+      };
+      keyed("id", "id");
+      keyed("eccentricity", "eccentricity");
+      keyed("applicability", "applicability");
+      keyed("inclination", "inclination");
+      keyed("ascen(r/s)", "ascen(r/s)");
+      keyed("sqrt", "sqrt");
+      keyed("week(rad)", "week(rad)");
+      keyed("perigee", "perigee");
+      keyed("anom", "anom");
+      keyed("af0", "af0");
+      keyed("af1", "af1");
+      // Plain "week:" (no "(rad)") is the GPS week number; guard against the RAAN label.
+      if (label.find("week") != std::string::npos && label.find("rad") == std::string::npos)
+        f["week"] = v;
+    }
+    flush();
+
+    sats_.clear();
+    for (const auto& [sat, _] : nav_) sats_.push_back(sat);
+    std::sort(sats_.begin(), sats_.end());
+  }
+
   // Queries ********************************************************************
 
   bool RinexNavLoader::HasSatellite(const std::string& sat_id) const {
     return nav_.find(sat_id) != nav_.end();
+  }
+
+  double RinexNavLoader::GetLatestEpochTai(const std::string& sat_id) const {
+    auto it = nav_.find(sat_id);
+    LUPNT_CHECK(it != nav_.end() && !it->second.empty(),
+                "Satellite '" + sat_id + "' not found in navigation data", "RinexNavLoader");
+    double latest = it->second.front().epoch_tai;
+    for (const auto& msg : it->second) latest = std::max(latest, msg.epoch_tai);
+    return latest;
   }
 
   int RinexNavLoader::FindClosestMessage(const std::string& sat_id, double t_tai) const {

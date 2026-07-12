@@ -70,6 +70,16 @@ namespace lupnt {
       oss << "\n";
     }
 
+    // True for the `almanac` constellation source (seed elements + numerical propagation), false
+    // for the default `sp3_brdc` source (precise SP3 truth + BRDC broadcast error).
+    bool IsAlmanacSource(const LunarGnssODTSConfig& cfg) {
+      return cfg.constellation.source == "almanac";
+    }
+
+    // Forward declaration: resolve the RINEX-nav (BRDC) seed file list (defined below). Needed
+    // by the fingerprint when the almanac source seeds its truth from the BRDC files.
+    std::vector<std::filesystem::path> ResolveBrdcFiles(const ConstellationSourceConfig& c);
+
     std::string LinkCacheFingerprint(const LunarGnssODTSConfig& cfg) {
       std::ostringstream oss;
       oss << std::setprecision(17);
@@ -116,6 +126,25 @@ namespace lupnt {
       AppendFingerprintField(oss, "use_relativity", cfg.use_relativity);
       AppendFingerprintField(oss, "use_srp_truth", cfg.use_srp_truth);
       AppendFingerprintField(oss, "srp_coeff_truth_m2_kg", cfg.srp_coeff_truth_m2_kg);
+      // Almanac-source fields are appended ONLY for `source == almanac`, so the default
+      // `sp3_brdc` fingerprint string is byte-identical to before this feature existed and the
+      // existing precise-path precompute cache stays valid. (The seed BRDC/YUMA files and the
+      // synthetic-SISE magnitudes key the almanac cache.)
+      if (IsAlmanacSource(cfg)) {
+        AppendFingerprintField(oss, "source", cfg.constellation.source);
+        AppendFingerprintField(oss, "almanac_file",
+                               cfg.constellation.almanac_file.lexically_normal().string());
+        AppendFingerprintField(oss, "almanac_brdc_seed",
+                               PathListString(ResolveBrdcFiles(cfg.constellation)));
+        AppendFingerprintField(oss, "synthetic_sise_radial_m",
+                               cfg.constellation.synthetic_sise_radial_m);
+        AppendFingerprintField(oss, "synthetic_sise_along_m",
+                               cfg.constellation.synthetic_sise_along_m);
+        AppendFingerprintField(oss, "synthetic_sise_cross_m",
+                               cfg.constellation.synthetic_sise_cross_m);
+        AppendFingerprintField(oss, "synthetic_sise_clock_m",
+                               cfg.constellation.synthetic_sise_clock_m);
+      }
       return std::to_string(std::hash<std::string>{}(oss.str()));
     }
 
@@ -450,6 +479,9 @@ namespace lupnt {
     // products in sp3_directory that cover the run's ephemeris window. Runs for both the YAML
     // and the struct-based (Python) config paths so the notebook can rely on it too.
     void ResolveAutoSelectSp3Files(LunarGnssODTSConfig& cfg) {
+      // The almanac source builds its truth from seed elements + numerical propagation, so it
+      // needs no date-specific SP3 products -- skip the SP3 auto-selection entirely.
+      if (IsAlmanacSource(cfg)) return;
       if (!cfg.constellation.auto_select_sp3 || !cfg.constellation.sp3_files.empty()) return;
       const auto [t_start_tai, t_end_tai] = EphemerisWindowTai(cfg);
       cfg.constellation.sp3_files
@@ -489,7 +521,24 @@ namespace lupnt {
     // a per-constellation systematic clock offset (median over all satellites and epochs of
     // broadcast-minus-precise clock) and, for QZSS, a per-satellite median radial orbit offset
     // are removed (see Montenbruck & Steigenberger, J. Navigation, 2018).
-    class BroadcastEphemerisError {
+    // Common interface for the per-transmitter ephemeris/clock error injected into the FILTER
+    // measurement model each step (truth keeps its own transmitter states). `sp3_brdc` mode uses
+    // the measured broadcast-minus-precise error (BroadcastEphemerisError); `almanac` mode uses a
+    // modeled synthetic SISE (SyntheticSISE). `Step()` holds a pointer to this base and does not
+    // care which mode produced the delta.
+    class TransmitterErrorModel {
+    public:
+      virtual ~TransmitterErrorModel() = default;
+      // Debiased transmitter error at transmit epoch `t_tai`: position delta `dr_eci` [m] (a
+      // difference of positions -- identical in any J2000-axis celestial-inertial frame, e.g.
+      // MOON_CI) and clock delta `dc_s` [s], both added to the filter's transmitter state.
+      // Returns false to leave a satellite on its unmodified (precise/propagated) state.
+      virtual bool GetDebiasedDelta(GnssConst gc, int prn, GnssFreq freq, Real t_tai, Vec3& dr_eci,
+                                    Real& dc_s) const
+          = 0;
+    };
+
+    class BroadcastEphemerisError : public TransmitterErrorModel {
     public:
       BroadcastEphemerisError(const std::vector<std::filesystem::path>& sp3_files,
                               const std::vector<std::filesystem::path>& brdc_files,
@@ -530,7 +579,7 @@ namespace lupnt {
       // positions. `dc_s` is the clock delta [s]. Returns false if the satellite has no
       // broadcast message (then the filter keeps the precise SP3 state, i.e. no injected error).
       bool GetDebiasedDelta(GnssConst gc, int prn, GnssFreq freq, Real t_tai, Vec3& dr_eci,
-                            Real& dc_s) const {
+                            Real& dc_s) const override {
         Vec3 r_brdc;
         if (!RawDelta(gc, prn, freq, t_tai, dr_eci, dc_s, r_brdc)) return false;
         if (debias_clock_) {
@@ -592,6 +641,68 @@ namespace lupnt {
       bool debias_qzss_radial_;
       std::map<GnssConst, double> clock_median_;
       std::map<std::pair<GnssConst, int>, double> radial_median_;
+    };
+
+    // Modeled broadcast signal-in-space error for the `almanac` constellation source, where no
+    // precise reference exists to measure a broadcast-minus-precise error. Draws a per-PRN orbit
+    // error (radial / along-track / cross-track) and clock error once from a seeded zero-mean
+    // normal distribution and holds it fixed over the (short) arc -- a first-order stand-in for
+    // the near-constant systematic SISE a real receiver sees. The per-PRN local orbital (RTN)
+    // frame is built from the seed almanac state at its reference epoch, so the injected ECI
+    // delta reflects the requested radial/along/cross anisotropy (radial usually the smallest).
+    // Injected through the same filter-transmitter code path as BroadcastEphemerisError.
+    class SyntheticSISE : public TransmitterErrorModel {
+    public:
+      SyntheticSISE(const ConstellationSourceConfig& c,
+                    const std::vector<std::pair<GnssConst, int>>& sats, int seed) {
+        RinexNavLoader loader;
+        if (!c.almanac_file.empty()) {
+          loader.LoadYumaFile(c.almanac_file);
+        } else {
+          for (const auto& f : ResolveBrdcFiles(c)) loader.LoadFile(f);
+        }
+        std::mt19937_64 rng(static_cast<unsigned long long>(seed));
+        std::normal_distribution<double> unit(0.0, 1.0);
+        for (const auto& [gc, prn] : sats) {
+          const std::string sat_id = AntexLoader::SatId(gc, prn);
+          // Draw the error regardless of the RTN basis so the per-PRN RNG stream is stable.
+          const double dR = c.synthetic_sise_radial_m * unit(rng);
+          const double dA = c.synthetic_sise_along_m * unit(rng);
+          const double dC = c.synthetic_sise_cross_m * unit(rng);
+          const double dclk_m = c.synthetic_sise_clock_m * unit(rng);
+          if (!loader.HasSatellite(sat_id)) continue;
+          Vec3d rhat = Vec3d::UnitX(), that = Vec3d::UnitY(), chat = Vec3d::UnitZ();
+          try {
+            const double t_tai = loader.GetLatestEpochTai(sat_id);
+            const Vec6 rv_ecef = loader.GetPosVel(sat_id, Real(t_tai));
+            const Real t_tdb = ConvertTime(Real(t_tai), Time::TAI, Time::TDB);
+            const Vec6 rv_eci = ConvertFrame(t_tdb, rv_ecef, Frame::ECEF, Frame::ECI, false);
+            const Vec3d r = rv_eci.head(3).cast<double>();
+            const Vec3d v = rv_eci.tail(3).cast<double>();
+            if (r.norm() > 0 && (r.cross(v)).norm() > 0) {
+              rhat = r.normalized();
+              chat = r.cross(v).normalized();  // orbit normal (cross-track)
+              that = chat.cross(rhat);         // along-track (completes the triad)
+            }
+          } catch (const std::exception&) {
+            // No usable seed state -> fall back to a fixed inertial (x/y/z) basis.
+          }
+          const Vec3d dr = dR * rhat + dA * that + dC * chat;
+          delta_[{gc, prn}] = {dr, dclk_m / C};
+        }
+      }
+
+      bool GetDebiasedDelta(GnssConst gc, int prn, GnssFreq /*freq*/, Real /*t_tai*/, Vec3& dr_eci,
+                            Real& dc_s) const override {
+        auto it = delta_.find({gc, prn});
+        if (it == delta_.end()) return false;
+        dr_eci = it->second.first.cast<Real>();
+        dc_s = Real(it->second.second);
+        return true;
+      }
+
+    private:
+      std::map<std::pair<GnssConst, int>, std::pair<Vec3d, double>> delta_;  // (dr_eci [m], dc [s])
     };
 
     bool EstimateSrp(const LunarGnssODTSConfig& cfg) { return cfg.estimate_srp_coefficient; }
@@ -857,8 +968,176 @@ namespace lupnt {
       return {constellation, frequency};
     }
 
+    // ---- Almanac constellation source ---------------------------------------------------------
+    // Build the truth constellation for arbitrary (e.g. future) epochs without date-specific SP3
+    // products: seed each PRN's Keplerian elements from a YUMA almanac (or the BRDC files),
+    // convert to a Cartesian state at the seed's own reference epoch, then numerically propagate
+    // (Earth J2 + Sun + Moon third bodies, RK4) to the run's ephemeris grid. This captures the
+    // secular orbit-plane evolution (RAAN precession, etc.) a fixed-plane Keplerian model misses;
+    // the individual along-track phase is still an extrapolation, but the constellation geometry
+    // stays realistic -- all a capability demo needs.
+
+    // Earth-centered dynamics for propagating the MEO GNSS orbits. Earth degree/order 4 (J2 and a
+    // few more zonals/tesserals) plus Sun/Moon third bodies give the dominant secular plane drift
+    // (RAAN precession, etc.) that a fixed-plane Keplerian model misses. A fixed RK4 step keeps
+    // ~30-50 satellites over ~1 year tractable; the ~1% along-track/energy error over a year is
+    // irrelevant to a capability demo whose point is realistic constellation geometry, not a
+    // precise ephemeris. Cost is dominated by the number of integration steps (per-eval overhead),
+    // so the step is deliberately coarse for a smooth MEO orbit.
+    Ptr<NBodyDynamics> CreateGnssEarthDynamics() {
+      auto dyn = MakePtr<NBodyDynamics>();
+      dyn->SetFrame(Frame::GCRF);
+      dyn->AddBody(Body::Earth(4, 4));
+      dyn->AddBody(Body::Sun());
+      dyn->AddBody(Body::Moon());
+      dyn->SetIntegrator(IntegratorType::RK4);
+      // 1200 s (~36 RK4 steps per ~12 h MEO orbit) is the largest fixed step that stays
+      // numerically STABLE over the full ~1-year single seed->grid propagation segment: at 1500 s
+      // the orbit decays ~9 %/yr and at >=1800 s RK4 diverges outright (the state blows up to
+      // ~1e8 km, which then makes the downstream light-time solve query the ephemeris Chebyshev
+      // fit far out of range -> "interpolation time is out of range" crash). At 1200 s the
+      // along-track/energy error is ~2.5 %/yr -- far below the (deliberate) multi-month
+      // extrapolation error, so it is irrelevant to a geometry-only capability demo. Cost is
+      // dominated by the step count, so this is as coarse as stability allows (~10 s/sat/year).
+      dyn->SetTimeStep(1200.0);
+      return dyn;
+    }
+
+    // Propagate every seed PRN of `gnss_const` ONCE to the ephemeris grid (ECI). The orbit is
+    // frequency-independent, so both frequency channels of a constellation reuse this result --
+    // the numerical propagation is by far the dominant cost, so this halves (GPS) / quarters
+    // (GPS+Galileo) the almanac setup time versus propagating per frequency.
+    void PropagateAlmanacConstellation(GnssConst gnss_const, const std::vector<int>& prns_in,
+                                       const VecXd& ephem_times_tai, const RinexNavLoader& seed,
+                                       const AntexLoader& antex, std::vector<int>& built_prns,
+                                       std::vector<MatXd>& rv_eci_list) {
+      const std::string letter = AntexLoader::GnssLetter(gnss_const);
+      // PRN list: explicit, else every PRN of this constellation present in BOTH the seed almanac
+      // and the ANTEX file (so transmitter setup and PCO lookups succeed).
+      std::vector<int> prns = prns_in;
+      if (prns.empty()) {
+        for (const std::string& sat_id : seed.GetSatellites()) {
+          if (sat_id.size() == 3 && sat_id[0] == letter[0]) {
+            const int prn = std::stoi(sat_id.substr(1));
+            if (antex.HasSatellite(gnss_const, prn)) prns.push_back(prn);
+          }
+        }
+        std::sort(prns.begin(), prns.end());
+      }
+
+      // Ephemeris grid in TDB (the NBody time scale; the engine time-keeps in absolute TDB).
+      VecXd ephem_times_tdb = ConvertTimeVector(ephem_times_tai, Time::TAI, Time::TDB);
+      const int n_epochs = static_cast<int>(ephem_times_tdb.size());
+      auto dyn = CreateGnssEarthDynamics();
+      for (int prn : prns) {
+        const std::string sat_id = AntexLoader::SatId(gnss_const, prn);
+        if (!seed.HasSatellite(sat_id)) continue;
+        try {
+          // Seed Cartesian state at the almanac's reference epoch (t_k = 0), in ECI.
+          // Resolve the GPS week-number rollover: a YUMA almanac carries a mod-1024 week (e.g. a
+          // current file may read "week 379" for the real week 2427), so the raw reference epoch
+          // can land ~20 years off. Snap it to the 1024-week era nearest the run epoch so the
+          // propagation span is the intended months, not decades. (BRDC seeds carry a full week,
+          // so this is a no-op for them.)
+          double seed_tai = seed.GetLatestEpochTai(sat_id);
+          const double kGpsRolloverS = 1024.0 * 7.0 * 86400.0;
+          seed_tai += kGpsRolloverS * std::round((ephem_times_tai(0) - seed_tai) / kGpsRolloverS);
+          const Real seed_tdb = ConvertTime(Real(seed_tai), Time::TAI, Time::TDB);
+          const Vec6 rv_ecef_seed = seed.GetPosVel(sat_id, Real(seed_tai));
+          const Vec6 rv_eci_seed
+              = ConvertFrame(seed_tdb, rv_ecef_seed, Frame::ECEF, Frame::GCRF, false);
+
+          // Propagate from the seed epoch through the run grid in one sequence (row 0 = seed).
+          VecXd ts(n_epochs + 1);
+          ts(0) = seed_tdb.val();
+          ts.tail(n_epochs) = ephem_times_tdb;
+          const MatX traj = dyn->Propagate(Vec6(rv_eci_seed), ts.cast<Real>());
+
+          MatXd rv_eci(n_epochs, 6);
+          for (int k = 0; k < n_epochs; ++k) {
+            Vec6 rv_gcrf = traj.row(k + 1).transpose();
+            const Vec6 rv_eci_k
+                = ConvertFrame(Real(ephem_times_tdb(k)), rv_gcrf, Frame::GCRF, Frame::ECI, false);
+            for (int c = 0; c < 6; ++c) rv_eci(k, c) = rv_eci_k(c).val();
+          }
+          built_prns.push_back(prn);
+          rv_eci_list.push_back(rv_eci);
+        } catch (const std::exception& e) {
+          Logger::Warn("Almanac propagation failed for " + sat_id + " (" + e.what() + "); skipped",
+                       "LunarGnssODTS");
+        }
+      }
+      LUPNT_CHECK(!built_prns.empty(),
+                  "Almanac source produced no satellites for " + GnssConstName(gnss_const)
+                      + "; check the seed almanac/BRDC and ANTEX files",
+                  "LunarGnssODTS");
+    }
+
+    RuntimeConstellation MakeAlmanacRuntimeConstellation(GnssConst gnss_const, GnssFreq frequency,
+                                                         const LunarGnssODTSConfig& cfg,
+                                                         const VecXd& ephem_times_tai,
+                                                         const std::vector<int>& built_prns,
+                                                         const std::vector<MatXd>& rv_eci_list) {
+      auto constellation = MakePtr<GnssConstellation>(gnss_const);
+      constellation->SetSatelliteStates(built_prns, ephem_times_tai, rv_eci_list);
+      if (cfg.design.setup_transmitters) constellation->SetupTransmitters();
+      return {constellation, frequency};
+    }
+
+    std::vector<RuntimeConstellation> BuildAlmanacConstellations(const LunarGnssODTSConfig& cfg,
+                                                                 const VecXd& ephem_times_tai) {
+      Logger::Info(
+          "Setting up GNSS constellations from ALMANAC seed + numerical propagation "
+          "(J2 + Sun/Moon)...",
+          "LunarGnssODTS");
+      LUPNT_CHECK(std::filesystem::exists(cfg.constellation.antex_file),
+                  "GNSS ANTEX file not found: " + cfg.constellation.antex_file.string(),
+                  "LunarGnssODTS");
+      RinexNavLoader seed;
+      if (!cfg.constellation.almanac_file.empty()) {
+        LUPNT_CHECK(std::filesystem::exists(cfg.constellation.almanac_file),
+                    "Almanac (YUMA) file not found: " + cfg.constellation.almanac_file.string(),
+                    "LunarGnssODTS");
+        seed.LoadYumaFile(cfg.constellation.almanac_file);
+      } else {
+        const auto brdc_files = ResolveBrdcFiles(cfg.constellation);
+        LUPNT_CHECK(!brdc_files.empty(),
+                    "Almanac source needs a seed: set constellation.almanac_file (YUMA) or "
+                    "constellation.brdc_directory/brdc_files (BRDC)",
+                    "LunarGnssODTS");
+        for (const auto& f : brdc_files) seed.LoadFile(f);
+      }
+      AntexLoader antex(cfg.constellation.antex_file);
+
+      // Propagate each constellation's orbits once, then build both frequency channels from them.
+      std::vector<RuntimeConstellation> out;
+      std::vector<int> gps_prns;
+      std::vector<MatXd> gps_rv;
+      PropagateAlmanacConstellation(GnssConst::GPS, cfg.constellation.gps_prns, ephem_times_tai,
+                                    seed, antex, gps_prns, gps_rv);
+      out.push_back(MakeAlmanacRuntimeConstellation(GnssConst::GPS, GnssFreq::L1, cfg,
+                                                    ephem_times_tai, gps_prns, gps_rv));
+      out.push_back(MakeAlmanacRuntimeConstellation(GnssConst::GPS, GnssFreq::L5, cfg,
+                                                    ephem_times_tai, gps_prns, gps_rv));
+      if (cfg.constellation.include_galileo) {
+        std::vector<int> gal_prns;
+        std::vector<MatXd> gal_rv;
+        PropagateAlmanacConstellation(GnssConst::GALILEO, cfg.constellation.galileo_prns,
+                                      ephem_times_tai, seed, antex, gal_prns, gal_rv);
+        out.push_back(MakeAlmanacRuntimeConstellation(GnssConst::GALILEO, GnssFreq::E1, cfg,
+                                                      ephem_times_tai, gal_prns, gal_rv));
+        out.push_back(MakeAlmanacRuntimeConstellation(GnssConst::GALILEO, GnssFreq::E5a, cfg,
+                                                      ephem_times_tai, gal_prns, gal_rv));
+      }
+      Logger::Info(std::to_string(out.size()) + " GNSS constellation-frequency set(s) ready "
+                       + "(almanac source)",
+                   "LunarGnssODTS");
+      return out;
+    }
+
     std::vector<RuntimeConstellation> BuildConstellations(const LunarGnssODTSConfig& cfg,
                                                           const VecXd& ephem_times_tai) {
+      if (IsAlmanacSource(cfg)) return BuildAlmanacConstellations(cfg, ephem_times_tai);
       std::vector<RuntimeConstellation> out;
       Logger::Info(
           "Setting up GNSS constellations from SP3 (Chebyshev fit; grows with run "
@@ -1877,21 +2156,31 @@ namespace lupnt {
           for (const auto& epoch : context_.precomputed)
             for (const auto& ch : epoch.channels) sat_set.emplace(ch.gnss_const, ch.prn);
           const std::vector<std::pair<GnssConst, int>> sats(sat_set.begin(), sat_set.end());
-          const std::vector<std::filesystem::path> brdc_files
-              = ResolveBrdcFiles(context_.cfg.constellation);
-          LUPNT_CHECK(!brdc_files.empty(),
-                      "use_broadcast_ephemeris is set but no BRDC (RINEX-nav) files were found; "
-                      "set constellation.brdc_directory (or brdc_files)",
-                      "LunarGnssODTS");
-          const auto [t_start_tai, t_end_tai] = EphemerisWindowTai(context_.cfg);
-          broadcast_error_ = std::make_shared<BroadcastEphemerisError>(
-              context_.cfg.constellation.sp3_files, brdc_files,
-              context_.cfg.constellation.antex_file, sats, t_start_tai, t_end_tai,
-              /*sample_dt_s=*/300.0, context_.cfg.constellation.debias_broadcast_clock,
-              context_.cfg.constellation.debias_qzss_radial);
-          Logger::Info("Broadcast-ephemeris injection enabled (" + std::to_string(sats.size())
-                           + " satellites, " + std::to_string(brdc_files.size()) + " BRDC files)",
-                       "LunarGnssODTS");
+          if (IsAlmanacSource(context_.cfg)) {
+            // Almanac mode: no precise reference exists, so model the broadcast SISE instead of
+            // measuring brdc-minus-sp3. Injected through the same code path (Step()).
+            broadcast_error_ = std::make_shared<SyntheticSISE>(context_.cfg.constellation, sats,
+                                                               context_.cfg.seed);
+            Logger::Info("Synthetic SISE injection enabled (almanac source, "
+                             + std::to_string(sats.size()) + " satellites)",
+                         "LunarGnssODTS");
+          } else {
+            const std::vector<std::filesystem::path> brdc_files
+                = ResolveBrdcFiles(context_.cfg.constellation);
+            LUPNT_CHECK(!brdc_files.empty(),
+                        "use_broadcast_ephemeris is set but no BRDC (RINEX-nav) files were found; "
+                        "set constellation.brdc_directory (or brdc_files)",
+                        "LunarGnssODTS");
+            const auto [t_start_tai, t_end_tai] = EphemerisWindowTai(context_.cfg);
+            broadcast_error_ = std::make_shared<BroadcastEphemerisError>(
+                context_.cfg.constellation.sp3_files, brdc_files,
+                context_.cfg.constellation.antex_file, sats, t_start_tai, t_end_tai,
+                /*sample_dt_s=*/300.0, context_.cfg.constellation.debias_broadcast_clock,
+                context_.cfg.constellation.debias_qzss_radial);
+            Logger::Info("Broadcast-ephemeris injection enabled (" + std::to_string(sats.size())
+                             + " satellites, " + std::to_string(brdc_files.size()) + " BRDC files)",
+                         "LunarGnssODTS");
+          }
         }
       }
 
@@ -2136,7 +2425,7 @@ namespace lupnt {
       std::ofstream eph_residuals_;
       std::vector<GnssChannel> previous_truth_primary_;
       std::vector<GnssChannel> previous_filter_primary_;
-      std::shared_ptr<BroadcastEphemerisError> broadcast_error_;
+      std::shared_ptr<TransmitterErrorModel> broadcast_error_;
       LunarGnssODTSSummary summary_;
       double pos_err2_sum_ = 0.0;
       double vel_err2_sum_ = 0.0;
@@ -2352,6 +2641,18 @@ namespace lupnt {
     cfg.clock_drift_rate_sps2 = ReadYaml(truth, "clock_drift_rate_sps2", cfg.clock_drift_rate_sps2);
 
     const YAML::Node constellation = root["constellation"];
+    cfg.constellation.source = ReadYaml(constellation, "source", cfg.constellation.source);
+    cfg.constellation.almanac_file
+        = ResolvePath(config_dir, ReadYaml<std::string>(constellation, "almanac_file",
+                                                        cfg.constellation.almanac_file.string()));
+    cfg.constellation.synthetic_sise_radial_m = ReadYaml(constellation, "synthetic_sise_radial_m",
+                                                         cfg.constellation.synthetic_sise_radial_m);
+    cfg.constellation.synthetic_sise_along_m = ReadYaml(constellation, "synthetic_sise_along_m",
+                                                        cfg.constellation.synthetic_sise_along_m);
+    cfg.constellation.synthetic_sise_cross_m = ReadYaml(constellation, "synthetic_sise_cross_m",
+                                                        cfg.constellation.synthetic_sise_cross_m);
+    cfg.constellation.synthetic_sise_clock_m = ReadYaml(constellation, "synthetic_sise_clock_m",
+                                                        cfg.constellation.synthetic_sise_clock_m);
     cfg.constellation.sp3_directory
         = ResolvePath(config_dir, ReadYaml<std::string>(constellation, "sp3_directory",
                                                         cfg.constellation.sp3_directory.string()));
@@ -2482,7 +2783,7 @@ namespace lupnt {
                 "LunarGnssODTS");
     LUPNT_CHECK(cfg.receiver_ecc >= 0.0 && cfg.receiver_ecc < 1.0,
                 "ELFO eccentricity must be in [0, 1)", "LunarGnssODTS");
-    if (!cfg.constellation.auto_select_sp3) {
+    if (!IsAlmanacSource(cfg) && !cfg.constellation.auto_select_sp3) {
       LUPNT_CHECK(!cfg.constellation.sp3_files.empty(), "GNSS filtering requires SP3 files",
                   "LunarGnssODTS");
     }

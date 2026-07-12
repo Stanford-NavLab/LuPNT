@@ -54,6 +54,22 @@ namespace lupnt {
   };
 
   struct ConstellationSourceConfig {
+    // Truth constellation source. `sp3_brdc` (default): precise SP3 truth transmitter states +
+    // BRDC broadcast error, both date-specific -- the validated, high-fidelity path (past
+    // epochs only). `almanac`: seed each PRN's Keplerian elements from a YUMA almanac
+    // (`almanac_file`) or the BRDC files, convert to Cartesian, then numerically propagate
+    // (J2 + Sun/Moon third bodies) to the run grid. This runs at ARBITRARY (e.g. future)
+    // epochs without date-specific SP3/BRDC truth files -- a lower-fidelity capability demo:
+    // the constellation geometry (planes/inclination/altitude) is realistic while the
+    // individual along-track phase is an extrapolation. The precise broadcast error is
+    // unavailable, so a modeled synthetic SISE (below) is injected instead.
+    std::string source = "sp3_brdc";
+    // Optional YUMA almanac seed file for `source == almanac`. When empty the almanac source
+    // seeds from the resolved BRDC (`brdc_files` / `brdc_directory`) instead. Not date-specific
+    // in the SP3 sense: it is only the orbital-slot seed for the numerical propagation, so any
+    // recent almanac (ideally the freshest, to minimize extrapolation) works for any run epoch.
+    std::filesystem::path almanac_file;
+
     std::filesystem::path sp3_directory = "../../data/LuPNT_data/ephemeris/gnsslibpy/sp3";
     bool auto_select_sp3 = true;
     std::vector<std::filesystem::path> sp3_files;
@@ -62,6 +78,17 @@ namespace lupnt {
     bool include_galileo = false;
     std::vector<int> gps_prns;
     std::vector<int> galileo_prns;
+
+    // Modeled broadcast signal-in-space error (SISE) for `source == almanac`, replacing the
+    // measured broadcast-minus-precise error (no precise reference exists in almanac mode). A
+    // per-PRN orbit error (radial / along-track / cross-track) plus a clock error, each drawn
+    // once from a zero-mean seeded normal distribution (reusing the sim `seed`) and held fixed
+    // over the short arc, injected through the same filter-transmitter-error code path the real
+    // brdc-minus-sp3 SISE uses. Magnitudes [m] default to representative broadcast values.
+    double synthetic_sise_radial_m = 0.3;
+    double synthetic_sise_along_m = 0.8;
+    double synthetic_sise_cross_m = 0.8;
+    double synthetic_sise_clock_m = 0.5;
 
     // Broadcast (RINEX-nav / BRDC) transmitter ephemeris. When `use_broadcast_ephemeris`
     // is true, the truth measurements keep the precise SP3 transmitter states, but the
