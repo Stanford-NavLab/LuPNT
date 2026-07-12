@@ -12,11 +12,8 @@
 [![Python](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/python.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/python.yml)
 [![Examples](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/examples.yml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/examples.yml)
 [![Documentation Status](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/docs.yaml/badge.svg?branch=development)](https://github.com/Stanford-NavLab/LuPNT/actions/workflows/docs.yaml)
+[![codecov](https://codecov.io/gh/Stanford-NavLab/LuPNT/branch/development/graph/badge.svg)](https://codecov.io/gh/Stanford-NavLab/LuPNT)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PyPI Release](https://img.shields.io/pypi/v/pylupnt.svg)](https://pypi.org/project/pylupnt)
-[![Python Versions](https://img.shields.io/pypi/pyversions/pylupnt)](https://pypi.org/project/pylupnt)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Stanford-NavLab/LuPNT/development?labpath=python%2Fexamples%2Fex_frozen_orbits%2Fex_frozen_orbits.ipynb)
-[![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1yhHImp3hB5P8dadLlv0CcYWQWLabNfuh)
 
 
 `LuPNT` is an open-source C++/Python library for Lunar Positioning, Navigation, and Timing (PNT) research. It provides high-fidelity astrodynamics, signal propagation models, and navigation algorithms tailored for cislunar missions. This project is a product of the [Stanford NAV Lab](https://navlab.stanford.edu/).
@@ -59,7 +56,7 @@ assembled from YAML configuration, so new scenarios are described in config rath
 | **Conversions** | Reference frame transformations (ECI, ECEF, LVLH, Moon-centered, generic body-fixed/inertial) and time system utilities |
 | **Numerics** | Numerical integration (RK4, Euler), Nelder-Mead optimizer, and matrix utilities |
 | **Visualization** | Matplotlib/Plotly plotting plus interactive 3-D [CesiumJS](https://cesium.com/platform/cesiumjs/) scenes of constellations and surface assets (`pnt.plot.CesiumScene`) |
-| **Python bindings** | Full `pylupnt` Python package exposing the C++ library via pybind11 |
+| **Python bindings & authoring** | Full `pylupnt` Python package exposing the C++ library via pybind11 — including subclassing `Application`, `Agent`, and `Measurement` in pure Python and registering them into a YAML-driven `Simulation` (see Example 17) |
 
 ---
 
@@ -96,7 +93,7 @@ LuPNT/
 │   │   ├── plot/               # Plotting utilities
 │   │   ├── interfaces/         # Python-side data interfaces
 │   │   └── _pylupnt.so         # Compiled pybind11 extension
-│   ├── examples/               # Tutorial notebooks (ex1–ex16) — see python/examples/README.md
+│   ├── examples/               # Tutorial notebooks (ex1–ex17) — see python/examples/README.md
 │   └── bindings/               # pybind11 binding source files
 ├── projects/                   # Research project notebooks and scripts
 │   ├── Plasma_Examples/        # GCPM, IRI, and ray-tracing Jupyter notebooks
@@ -137,6 +134,7 @@ per-notebook details.
 | 14 | [Optical navigation](python/examples/ex14_opnav.ipynb) | Lunar-horizon image processing → EKF position fixes |
 | 15 | [Mars PNT](python/examples/ex15_marspnt.ipynb) | Beyond the Moon — Mars gravity, frames, Walker constellation |
 | 16 | [LEO PNT](python/examples/ex16_leopnt.ipynb) | Earth LEO constellation with Harris-Priester atmospheric drag |
+| 17 | [New simulation in Python](python/examples/ex17_python_new_sim_example.ipynb) | Authoring a new Application + Measurement in pure Python (angles-only OD) |
 
 C++ tutorial counterparts live in [`cpp/examples/tutorials/`](cpp/examples/tutorials/).
 

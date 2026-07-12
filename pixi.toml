@@ -62,6 +62,8 @@ plotly = "*"
 pre-commit = "*"
 pymoo = "*"
 pytest = "*"
+pytest-cov = "*"
+gcovr = "*"
 requests = "*"
 scikit-learn = "*"
 sphinx = "*"
@@ -111,6 +113,12 @@ build-test-cpp = { cmd = "cmake --build build-cpp-test-pixi --target lupnt_tests
 test-cpp       = { cmd = "ctest --test-dir build-cpp-test-pixi --output-on-failure", depends-on = ["build-test-cpp"] }
 test-cpp-ci    = { cmd = "ctest --test-dir build-cpp-test-pixi --output-on-failure -E 'data.eop_latest_iers|devices.space_comms|agents.gnss_constellation.setup_from_files|interfaces.antex_loader|interfaces.rinex_nav_loader|interfaces.sp3_loader|measurements.gnss_measurements.visibility|states.tle'", depends-on = ["build-test-cpp"] }
 test-py        = { cmd = "pytest python/test", depends-on = ["build-py"] }
+# ---- code coverage (Codecov) ----
+# C++: build the test suite with gcov instrumentation (ENABLE_TEST_COVERAGE), run the CI test
+# subset, and emit a Cobertura report over the library sources. Runs on Linux CI (gcc/gcov).
+cov-cpp        = { cmd = "cmake -S cpp/test -B build-cov -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_TEST_COVERAGE=ON && cmake --build build-cov --target lupnt_tests && (ctest --test-dir build-cov --output-on-failure -E 'data.eop_latest_iers|devices.space_comms|agents.gnss_constellation.setup_from_files|interfaces.antex_loader|interfaces.rinex_nav_loader|interfaces.sp3_loader|measurements.gnss_measurements.visibility|states.tle' || true) && gcovr --root . --filter 'cpp/lupnt/' --exclude '.*\\.pb\\..*' --xml-pretty -o coverage-cpp.xml --gcov-ignore-parse-errors" }
+# Python: coverage of the pylupnt package from the pytest suite.
+cov-py         = { cmd = "pytest --cov=pylupnt --cov-report=xml:coverage-py.xml python/test", depends-on = ["build-py"] }
 # Execute every python/examples/ex*.ipynb end-to-end and report a pass/fail summary.
 # Outputs are not written back to the source notebooks. Forward extra args after `--`,
 # e.g. `pixi run run-notebooks -- --only ex1 --timeout 600`.

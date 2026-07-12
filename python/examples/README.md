@@ -2,8 +2,8 @@
 
 A progressive set of Jupyter notebooks that teach the `pylupnt` API and reproduce the
 navigation workflows LuPNT is built for. They start from single-orbit propagation and build up
-to full orbit-determination filters, constellation design, optical navigation, and non-lunar
-(Mars / LEO) PNT systems.
+to full orbit-determination filters, constellation design, optical navigation, non-lunar
+(Mars / LEO) PNT systems, and authoring a whole new scenario in pure Python.
 
 ## Running the notebooks
 
@@ -38,7 +38,7 @@ to full orbit-determination filters, constellation design, optical navigation, a
 | 3 | [ex3_gnss_interface.ipynb](ex3_gnss_interface.ipynb) | LuPNT's Earth-GNSS data interfaces: load GPS/Galileo/QZSS from TLEs, inspect transmit antenna gain patterns (main-lobe vs. sidelobe), and compare RINEX broadcast vs. IGS precise products. |
 | 4 | [ex4_plasmasphere.ipynb](ex4_plasmasphere.ipynb) | The plasma environment: sample the GCPM v2.4 electron-density model on a meridional grid, then ray-trace a GPS-to-lunar link to compute total electron content (TEC) and dispersive signal delay. |
 | 5 | [ex5_gnss_measurement_sim.ipynb](ex5_gnss_measurement_sim.ipynb) | Simulate which Earth GNSS signals a lunar receiver can track: propagate an ELFO receiver, load precise ephemerides with `SP3Loader`, build a `GnssConstellation`, and run `GNSSMeasurements.precompute()` for visibility and C/N₀ histories. |
-| 6 | [ex6_gnss_odts.ipynb](ex6_gnss_odts.ipynb) | Sidelobe pseudorange + Doppler + TDCP orbit determination and time sync (ODTS) with a stochastic-cloning UDU EKF. Estimates position, velocity, clock bias/drift, and an SRP coefficient from weak Earth-GNSS sidelobe signals. Helper scripts: [`ex6_gnss_odts_config.py`](ex6_gnss_odts_config.py), [`ex6_precompute.py`](ex6_precompute.py), [`ex6_run_kalman.py`](ex6_run_kalman.py). |
+| 6 | [ex6_gnss_odts.ipynb](ex6_gnss_odts.ipynb) | Sidelobe pseudorange + Doppler + TDCP orbit determination and time sync (ODTS) with a stochastic-cloning UDU EKF. Estimates position, velocity, clock bias/drift, and an SRP coefficient from weak Earth-GNSS sidelobe signals. Helper scripts: [`ex6_gnss_odts_config.py`](ex6_gnss_odts_config.py), [`ex6_precompute.py`](ex6_precompute.py), [`ex6_run_gnss_odts.py`](ex6_run_gnss_odts.py). |
 
 ### Orbit determination and time synchronization
 
@@ -69,6 +69,12 @@ to full orbit-determination filters, constellation design, optical navigation, a
 |---|----------|----------------|
 | 15 | [ex15_marspnt.ipynb](ex15_marspnt.ipynb) | LuPNT applied to **Mars**: an 8×8 Mars gravity field (`Mars50c.cof`), native `MARS_CI`/`MARS_FIXED` frames, a 9-satellite 3-plane Walker constellation propagated with `NBodyDynamics`, and a surface-user DOP/positioning map. |
 | 16 | [ex16_leopnt.ipynb](ex16_leopnt.ipynb) | The Earth companion to Example 15: a 110-satellite **LEO PNT** Walker constellation at 600 km with Harris-Priester atmospheric drag, showing why LEO providers must model drag, and mapping coverage/PDOP for a user in San Francisco. |
+
+### Extending LuPNT in Python
+
+| # | Notebook | What it covers |
+|---|----------|----------------|
+| 17 | [ex17_python_new_sim_example.ipynb](ex17_python_new_sim_example.ipynb) | Author a new simulation in **pure Python**: subclass `pnt.Application` and `pnt.Measurement`, register them with `pnt.register_application`, and run an angles-only orbit-determination scenario driven by the C++ `pnt.Simulation`. The smallest template for building your own scenario. |
 
 ---
 

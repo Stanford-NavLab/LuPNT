@@ -1,0 +1,66 @@
+name: Coverage
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+
+env:
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
+
+jobs:
+  coverage:
+    name: coverage (ubuntu)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          pixi-version: v0.68.1
+          cache: true
+          frozen: true
+
+      - uses: actions/cache@v4
+        with:
+          path: "**/cpm_modules"
+          key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+
+      - uses: actions/cache@v4
+        id: cache-lupnt-data
+        with:
+          path: data/LuPNT_data
+          key: LuPNT_data-${{ vars.LUPNT_DATA_CACHE_DATE }}
+
+      - name: Download LuPNT_data
+        shell: bash
+        run: |
+          if [ -f data/LuPNT_data/gnss/igs20.atx ] && [ -f data/LuPNT_data/tle/2023_06_09/gps_2023_06_09.txt ]; then
+            exit 0
+          fi
+          rm -rf data/LuPNT_data
+          mkdir -p data
+          curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+          unzip -q LuPNT_data.zip
+          mv LuPNT_data data/LuPNT_data
+          rm LuPNT_data.zip
+
+      - name: C++ coverage (gcov instrumented test suite)
+        run: pixi run cov-cpp
+
+      - name: Python coverage (pylupnt package)
+        run: pixi run cov-py
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage-cpp.xml,./coverage-py.xml
+          fail_ci_if_error: false
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
