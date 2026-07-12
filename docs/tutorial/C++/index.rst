@@ -15,10 +15,11 @@ executable. Build them all with:
 
 Each page below embeds the full source of one example. The GNSS trio (interface,
 measurement simulation, and orbit determination) is data-driven (SP3 precise
-ephemerides) and is documented separately under :doc:`GNSS <gnss>`. The
-constellation-design (ex12), Cesium (ex13) and optical-navigation (ex14)
-notebooks are Python-only — they build on the optimiser, Cesium and Blender
-tooling that lives in the Python layer — so they have no C++ counterpart here.
+ephemerides) and its standalone programs are documented separately under
+:doc:`GNSS <gnss>`. The constellation-design (ex12), Cesium (ex13) and
+optical-navigation (ex14) notebooks are Python-only — they build on the
+optimiser, Cesium and Blender tooling that lives in the Python layer — so they
+have no C++ counterpart here.
 
 .. toctree::
     :maxdepth: 1
