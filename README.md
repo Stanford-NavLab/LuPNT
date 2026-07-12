@@ -16,7 +16,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
-`LuPNT` is an open-source C++/Python library for Lunar Positioning, Navigation, and Timing (PNT) research. It provides high-fidelity astrodynamics, signal propagation models, and navigation algorithms tailored for cislunar missions. This project is a product of the [Stanford NAV Lab](https://navlab.stanford.edu/).
+`LuPNT` is an open-source C++/Python library for Lunar Positioning, Navigation, and Timing (PNT) research. It provides high-fidelity astrodynamics, signal propagation models, and navigation algorithms tailored for cislunar missions. While designed for lunar PNT analysis, its config-driven, agent-based framework is general-purpose: it is equally suited to spacecraft orbit-determination and navigation research for other mission scenarios — from Earth orbit (e.g., LEO and GNSS) to interplanetary (e.g., Mars) — as several of the examples demonstrate. This project is a product of the [Stanford NAV Lab](https://navlab.stanford.edu/).
 
 If using this project in your own work please cite the following:
 
