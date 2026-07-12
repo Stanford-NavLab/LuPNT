@@ -30,11 +30,19 @@ using namespace lupnt;
   }
 
 void init_orbit_state(py::module& m) {
-  py::class_<State>(m, "State");
-  py::class_<ClassicalOE, State>(m, "ClassicalOE");
-  py::class_<Cart6, State>(m, "Cart6");
-  py::class_<QuasiNonsingularOE, State>(m, "QuasiNonsingularOE");
-  py::class_<EquinoctialOE, State>(m, "EquinoctialOE");
-  py::class_<SingularROE, State>(m, "SingularROE");
-  py::class_<QuasiNonsingROE, State>(m, "QuasiNonsingROE");
+  py::class_<State>(m, "State", "Generic labeled state vector base class.");
+  py::class_<ClassicalOE, State>(m, "ClassicalOE",
+                                 "Classical Keplerian orbital elements [a, e, i, Omega, w, M].");
+  py::class_<Cart6, State>(m, "Cart6", "Cartesian position+velocity state [r (m); v (m/s)].");
+  py::class_<QuasiNonsingularOE, State>(m, "QuasiNonsingularOE",
+                                        "Quasi-nonsingular orbital elements [a, u, ex, ey, i, "
+                                        "Omega] (singularity-free at e=0, i=0).");
+  py::class_<EquinoctialOE, State>(
+      m, "EquinoctialOE",
+      "Equinoctial orbital elements [a, h, k, p, q, lon] (singularity-free at e=0, i=0).");
+  py::class_<SingularROE, State>(
+      m, "SingularROE", "Singular relative orbital elements, scaled by semi-major axis [m].");
+  py::class_<QuasiNonsingROE, State>(
+      m, "QuasiNonsingROE",
+      "Quasi-nonsingular relative orbital elements, scaled by semi-major axis [m].");
 }

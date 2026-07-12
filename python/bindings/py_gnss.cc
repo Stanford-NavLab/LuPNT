@@ -51,29 +51,32 @@ namespace {
 void InitGnss(py::module& m) {
   // ---- Enums (shared with `AntexLoader`/`GnssConstellation`) --------------
 
-  py::enum_<GnssConst>(m, "GnssConst")
-      .value("GPS", GnssConst::GPS)
-      .value("GLONASS", GnssConst::GLONASS)
-      .value("GALILEO", GnssConst::GALILEO)
-      .value("BEIDOU", GnssConst::BEIDOU)
-      .value("QZSS", GnssConst::QZSS)
+  py::enum_<GnssConst>(m, "GnssConst", "GNSS constellation / system identifier")
+      .value("GPS", GnssConst::GPS, "Global Positioning System (USA)")
+      .value("GLONASS", GnssConst::GLONASS, "GLONASS (Russia)")
+      .value("GALILEO", GnssConst::GALILEO, "Galileo (European Union)")
+      .value("BEIDOU", GnssConst::BEIDOU, "BeiDou (China)")
+      .value("QZSS", GnssConst::QZSS, "Quasi-Zenith Satellite System (Japan)")
       .export_values();
 
-  py::enum_<GnssFreq>(m, "GnssFreq")
-      .value("L1", GnssFreq::L1)
-      .value("L2", GnssFreq::L2)
-      .value("L5", GnssFreq::L5)
-      .value("E1", GnssFreq::E1)
-      .value("E6", GnssFreq::E6)
-      .value("E5", GnssFreq::E5)
-      .value("E5a", GnssFreq::E5a)
-      .value("E5b", GnssFreq::E5b)
+  py::enum_<GnssFreq>(m, "GnssFreq", "GNSS carrier frequency band identifier")
+      .value("L1", GnssFreq::L1, "GPS/QZSS L1 band (1575.42 MHz)")
+      .value("L2", GnssFreq::L2, "GPS/QZSS L2 band (1227.60 MHz)")
+      .value("L5", GnssFreq::L5, "GPS/QZSS L5 band (1176.45 MHz)")
+      .value("E1", GnssFreq::E1, "Galileo E1 band (1575.42 MHz)")
+      .value("E6", GnssFreq::E6, "Galileo E6 band (1278.75 MHz)")
+      .value("E5", GnssFreq::E5, "Galileo E5 (E5a+E5b) band (1191.795 MHz)")
+      .value("E5a", GnssFreq::E5a, "Galileo E5a band (1176.45 MHz)")
+      .value("E5b", GnssFreq::E5b, "Galileo E5b band (1207.14 MHz)")
       .export_values();
 
   // ---- GnssAttitude --------------------------------------------------------
 
-  py::class_<GnssAttitude>(m, "GnssAttitude")
-      .def(py::init<>())
+  py::class_<GnssAttitude>(m, "GnssAttitude",
+                           "GNSS satellite nominal (Sun-pointing yaw-steering) attitude: computes "
+                           "and caches the orthonormal body triad (ex, ey, ez) from orbit and Sun "
+                           "geometry")
+      .def(py::init<>(), "Construct an empty attitude (triad uninitialized until compute/update)")
       .def(py::init<const Vec3&, const Vec3&>(), py::arg("r_sat_eci"), py::arg("r_sun_eci"),
            "Construct and immediately compute the attitude triad (ex, ey, ez)")
       .def_static(
@@ -127,9 +130,12 @@ void InitGnss(py::module& m) {
           "(Re-)compute and cache the attitude triad for this instance via the "
           "documented nominal yaw-steering law; see compute(r_sat_eci, v_sat_eci, "
           "r_sun_eci)")
-      .def("get_ex", &GnssAttitude::GetEx)
-      .def("get_ey", &GnssAttitude::GetEy)
-      .def("get_ez", &GnssAttitude::GetEz)
+      .def("get_ex", &GnssAttitude::GetEx,
+           "Cached along-track body axis ex (unit vector, inertial frame)")
+      .def("get_ey", &GnssAttitude::GetEy,
+           "Cached cross-track (Sun-side) body axis ey (unit vector, inertial frame)")
+      .def("get_ez", &GnssAttitude::GetEz,
+           "Cached nadir body axis ez (unit vector, inertial frame)")
       .def("get_rotation_matrix", &GnssAttitude::GetRotationMatrix,
            "Body-to-inertial rotation matrix [ex, ey, ez] (columns)")
       .def(
@@ -148,7 +154,10 @@ void InitGnss(py::module& m) {
   // for the equation each static method mirrors. Exposed as `staticmethod`s on
   // a non-instantiable class, mirroring `AntexLoader`'s static helpers.
 
-  py::class_<GnssYawSteering>(m, "GnssYawSteering")
+  py::class_<GnssYawSteering>(
+      m, "GnssYawSteering",
+      "Stateless GNSS yaw-attitude steering laws (Cheng et al., 2025, "
+      "https://doi.org/10.1016/j.asr.2024.10.064); non-instantiable, all methods are static")
       .def_static("beta_angle", &GnssYawSteering::BetaAngle, py::arg("r_sat"), py::arg("v_sat"),
                   py::arg("r_sun"), "Sun elevation angle beta above the orbital plane [rad]")
       .def_static("orbit_angle", &GnssYawSteering::OrbitAngle, py::arg("r_sat"), py::arg("v_sat"),
@@ -212,8 +221,10 @@ void InitGnss(py::module& m) {
 
   // ---- Sp3Loader -----------------------------------------------------------
 
-  py::class_<Sp3Loader>(m, "Sp3Loader")
-      .def(py::init<>())
+  py::class_<Sp3Loader>(m, "Sp3Loader",
+                        "Loader for SP3 precise-ephemeris files: parses and interpolates GNSS "
+                        "satellite ECEF position/velocity and clock bias")
+      .def(py::init<>(), "Construct an empty loader (no files loaded)")
       .def(py::init([](const std::string& filepath) {
              return Sp3Loader(std::filesystem::path(filepath));
            }),
@@ -230,7 +241,8 @@ void InitGnss(py::module& m) {
           py::arg("filepath"), "Parse an additional SP3 file and merge its samples in")
       .def("get_satellites", &Sp3Loader::GetSatellites,
            "SP3 identifiers of all satellites with data loaded so far, e.g. ['G01', 'E11', ...]")
-      .def("has_satellite", &Sp3Loader::HasSatellite, py::arg("sat_id"))
+      .def("has_satellite", &Sp3Loader::HasSatellite, py::arg("sat_id"),
+           "True if ephemeris data for `sat_id` (e.g. 'G01') has been loaded")
       .def(
           "get_pos_vel_clock",
           [](const Sp3Loader& loader, const std::string& sat_id, Real t_tai) {
@@ -270,8 +282,10 @@ void InitGnss(py::module& m) {
 
   // ---- AntexLoader ---------------------------------------------------------
 
-  py::class_<AntexLoader>(m, "AntexLoader")
-      .def(py::init<>())
+  py::class_<AntexLoader>(m, "AntexLoader",
+                          "Loader for ANTEX antenna files: provides satellite antenna phase-center "
+                          "offsets (PCO) and the SP3 PCO-correction workflow")
+      .def(py::init<>(), "Construct an empty loader (no files loaded)")
       .def(py::init([](const std::string& filepath) {
              return AntexLoader(std::filesystem::path(filepath));
            }),
@@ -296,7 +310,8 @@ void InitGnss(py::module& m) {
       .def("get_available_freq_codes", &AntexLoader::GetAvailableFreqCodes, py::arg("gnss_const"),
            py::arg("prn"), py::arg("t_tai"),
            "ANTEX frequency codes available for satellite `prn` at epoch `t_tai`")
-      .def("has_satellite", &AntexLoader::HasSatellite, py::arg("gnss_const"), py::arg("prn"))
+      .def("has_satellite", &AntexLoader::HasSatellite, py::arg("gnss_const"), py::arg("prn"),
+           "True if an ANTEX entry exists for satellite (`gnss_const`, `prn`)")
       .def_static(
           "compute_ijk_to_ecef_rotation", &AntexLoader::ComputeIjkToEcefRotation, py::arg("t_tai"),
           py::arg("r_sat_ecef"),
@@ -315,8 +330,10 @@ void InitGnss(py::module& m) {
 
   // ---- RinexNavLoader ------------------------------------------------------
 
-  py::class_<RinexNavLoader>(m, "RinexNavLoader")
-      .def(py::init<>())
+  py::class_<RinexNavLoader>(m, "RinexNavLoader",
+                             "Loader for RINEX navigation (broadcast-ephemeris) files: Keplerian "
+                             "propagation of GNSS satellite ECEF state and clock correction")
+      .def(py::init<>(), "Construct an empty loader (no files loaded)")
       .def(py::init([](const std::string& filepath) {
              return RinexNavLoader(std::filesystem::path(filepath));
            }),
@@ -335,7 +352,8 @@ void InitGnss(py::module& m) {
       .def("get_satellites", &RinexNavLoader::GetSatellites,
            "Identifiers of all satellites with navigation messages loaded so far "
            "(GLONASS excluded), e.g. ['G01', 'E11', ...]")
-      .def("has_satellite", &RinexNavLoader::HasSatellite, py::arg("sat_id"))
+      .def("has_satellite", &RinexNavLoader::HasSatellite, py::arg("sat_id"),
+           "True if a navigation message for `sat_id` (e.g. 'G01') has been loaded")
       .def(
           "get_pos_vel_clock",
           [](const RinexNavLoader& loader, const std::string& sat_id, Real t_tai) {
@@ -370,8 +388,10 @@ void InitGnss(py::module& m) {
 
   // ---- GnssReceiverParams ----------------------------------------------------
 
-  py::class_<GnssReceiverParams>(m, "GnssReceiverParams")
-      .def(py::init<>())
+  py::class_<GnssReceiverParams>(m, "GnssReceiverParams",
+                                 "Receiver tracking-loop and link-budget parameters used to derive "
+                                 "per-channel measurement-noise sigmas and CN0")
+      .def(py::init<>(), "Construct with default receiver parameter values")
       .def_readwrite("Bp", &GnssReceiverParams::Bp, "Carrier loop noise bandwidth [Hz]")
       .def_readwrite("T", &GnssReceiverParams::T, "Tracking loop integration time [s]")
       .def_readwrite("b", &GnssReceiverParams::b, "Front-end bandwidth factor")
@@ -385,8 +405,10 @@ void InitGnss(py::module& m) {
 
   // ---- GnssOccludingBody -----------------------------------------------------
 
-  py::class_<GnssOccludingBody>(m, "GnssOccludingBody")
-      .def(py::init<>())
+  py::class_<GnssOccludingBody>(m, "GnssOccludingBody",
+                                "Spherical body (e.g. Earth or Moon) that can occlude the "
+                                "transmitter-receiver line of sight during visibility checks")
+      .def(py::init<>(), "Construct a zero-radius body at the origin")
       .def_readwrite("radius_m", &GnssOccludingBody::radius_m, "Body radius [m]")
       .def_property(
           "position_m",
@@ -416,18 +438,33 @@ void InitGnss(py::module& m) {
 
   // ---- GnssMeasurementOptions ------------------------------------------------
 
-  py::class_<GnssMeasurementOptions>(m, "GnssMeasurementOptions")
-      .def(py::init<>())
-      .def_readwrite("frame", &GnssMeasurementOptions::frame)
-      .def_readwrite("receive_time_scale", &GnssMeasurementOptions::receive_time_scale)
-      .def_readwrite("ephemeris_time_scale", &GnssMeasurementOptions::ephemeris_time_scale)
-      .def_readwrite("solve_light_time", &GnssMeasurementOptions::solve_light_time)
+  py::class_<GnssMeasurementOptions>(
+      m, "GnssMeasurementOptions",
+      "Configuration for GNSS measurement construction: frames, time "
+      "scales, and light-time/relativity/visibility/CN0 modeling "
+      "toggles used by BuildChannels()/Compute()")
+      .def(py::init<>(), "Construct with default measurement options")
+      .def_readwrite("frame", &GnssMeasurementOptions::frame,
+                     "Frame in which receiver and transmitter states are expressed")
+      .def_readwrite("receive_time_scale", &GnssMeasurementOptions::receive_time_scale,
+                     "Time scale of the receiver signal-reception epochs passed to "
+                     "Compute()/Precompute()")
+      .def_readwrite("ephemeris_time_scale", &GnssMeasurementOptions::ephemeris_time_scale,
+                     "Time scale in which the constellation ephemeris epochs are represented")
+      .def_readwrite("solve_light_time", &GnssMeasurementOptions::solve_light_time,
+                     "Iteratively solve the transmit epoch for signal light-time delay")
       .def_readwrite("apply_transmitter_relativity",
-                     &GnssMeasurementOptions::apply_transmitter_relativity)
-      .def_readwrite("apply_shapiro_delay", &GnssMeasurementOptions::apply_shapiro_delay)
-      .def_readwrite("apply_visibility", &GnssMeasurementOptions::apply_visibility)
-      .def_readwrite("apply_cn0_threshold", &GnssMeasurementOptions::apply_cn0_threshold)
-      .def_readwrite("cn0_threshold_dbhz", &GnssMeasurementOptions::cn0_threshold_dbhz)
+                     &GnssMeasurementOptions::apply_transmitter_relativity,
+                     "Apply the transmitter special-relativistic clock correction")
+      .def_readwrite("apply_shapiro_delay", &GnssMeasurementOptions::apply_shapiro_delay,
+                     "Apply the Shapiro (gravitational) signal-propagation delay [m]")
+      .def_readwrite("apply_visibility", &GnssMeasurementOptions::apply_visibility,
+                     "Drop channels occluded by the configured occluding bodies")
+      .def_readwrite("apply_cn0_threshold", &GnssMeasurementOptions::apply_cn0_threshold,
+                     "Drop channels whose CN0 falls below the acquisition/tracking thresholds")
+      .def_readwrite("cn0_threshold_dbhz", &GnssMeasurementOptions::cn0_threshold_dbhz,
+                     "Deprecated single CN0 threshold [dBHz]; use the acquisition/tracking "
+                     "thresholds below")
       .def_readwrite("cn0_acquisition_threshold_dbhz",
                      &GnssMeasurementOptions::cn0_acquisition_threshold_dbhz,
                      "Min CN0 to acquire a new satellite [dBHz]")
@@ -435,40 +472,58 @@ void InitGnss(py::module& m) {
                      &GnssMeasurementOptions::cn0_tracking_threshold_dbhz,
                      "Min CN0 to maintain an existing lock [dBHz]")
       .def_readwrite("apply_ionosphere_plasma_delay",
-                     &GnssMeasurementOptions::apply_ionosphere_plasma_delay);
+                     &GnssMeasurementOptions::apply_ionosphere_plasma_delay,
+                     "Apply the ionosphere/plasmasphere signal delay [m]");
 
   // ---- GnssChannel -----------------------------------------------------------
 
-  py::class_<GnssChannel>(m, "GnssChannel")
-      .def(py::init<>())
-      .def_readwrite("gnss_const", &GnssChannel::gnss_const)
-      .def_readwrite("prn", &GnssChannel::prn)
-      .def_readwrite("frequency", &GnssChannel::frequency)
-      .def_readwrite("receive_time", &GnssChannel::receive_time)
-      .def_readwrite("transmit_time", &GnssChannel::transmit_time)
+  py::class_<GnssChannel>(
+      m, "GnssChannel",
+      "A single transmitter-receiver GNSS signal channel: transmitter "
+      "identity/state plus per-channel delays, CN0, and observable noise sigmas")
+      .def(py::init<>(), "Construct an empty channel with default field values")
+      .def_readwrite("gnss_const", &GnssChannel::gnss_const, "Transmitter GNSS constellation")
+      .def_readwrite("prn", &GnssChannel::prn, "Transmitter satellite PRN")
+      .def_readwrite("frequency", &GnssChannel::frequency, "Carrier frequency band of this channel")
+      .def_readwrite("receive_time", &GnssChannel::receive_time,
+                     "Signal-reception epoch [s] in receive_time_scale")
+      .def_readwrite("transmit_time", &GnssChannel::transmit_time,
+                     "Signal-transmission epoch [s] in transmit_time_scale")
       .def_property(
           "tx_state", [](const GnssChannel& ch) -> VecXd { return ch.tx_state.cast<double>(); },
           [](GnssChannel& ch, const VecXd& v) { ch.tx_state = v.cast<Real>(); },
           "Transmitter ECI state [r; v] [m, m/s] at transmit epoch")
-      .def_readwrite("tx_clock_bias_s", &GnssChannel::tx_clock_bias_s)
-      .def_readwrite("shapiro_delay_m", &GnssChannel::shapiro_delay_m)
-      .def_readwrite("cn0_dbhz", &GnssChannel::cn0_dbhz)
-      .def_readwrite("sigma_pseudorange_m", &GnssChannel::sigma_pseudorange_m)
-      .def_readwrite("sigma_doppler_hz", &GnssChannel::sigma_doppler_hz)
-      .def_readwrite("sigma_carrier_phase_cycles", &GnssChannel::sigma_carrier_phase_cycles);
+      .def_readwrite("tx_clock_bias_s", &GnssChannel::tx_clock_bias_s, "Transmitter clock bias [s]")
+      .def_readwrite("shapiro_delay_m", &GnssChannel::shapiro_delay_m,
+                     "Shapiro (gravitational) propagation delay [m]")
+      .def_readwrite("cn0_dbhz", &GnssChannel::cn0_dbhz, "Carrier-to-noise density ratio [dBHz]")
+      .def_readwrite("sigma_pseudorange_m", &GnssChannel::sigma_pseudorange_m,
+                     "Pseudorange measurement noise standard deviation [m]")
+      .def_readwrite("sigma_doppler_hz", &GnssChannel::sigma_doppler_hz,
+                     "Doppler measurement noise standard deviation [Hz]")
+      .def_readwrite("sigma_carrier_phase_cycles", &GnssChannel::sigma_carrier_phase_cycles,
+                     "Carrier-phase measurement noise standard deviation [cycles]");
 
   // ---- GNSSMeasurementsEpoch -------------------------------------------------
 
-  py::class_<GNSSMeasurementsEpoch>(m, "GNSSMeasurementsEpoch")
-      .def(py::init<>())
-      .def_readwrite("receive_time", &GNSSMeasurementsEpoch::receive_time)
-      .def_readwrite("channels", &GNSSMeasurementsEpoch::channels);
+  py::class_<GNSSMeasurementsEpoch>(m, "GNSSMeasurementsEpoch",
+                                    "GNSS measurements at a single receive epoch: the visible "
+                                    "channels plus their stacked observable values/Jacobian")
+      .def(py::init<>(), "Construct an empty measurement epoch")
+      .def_readwrite("receive_time", &GNSSMeasurementsEpoch::receive_time,
+                     "Receiver signal-reception epoch [s] in receive_time_scale")
+      .def_readwrite("channels", &GNSSMeasurementsEpoch::channels,
+                     "Visible/usable GNSS channels at this epoch");
 
   // ---- GnssConstellation -----------------------------------------------------
 
-  py::class_<GnssConstellation, std::shared_ptr<GnssConstellation>>(m, "GnssConstellation")
-      .def(py::init<>())
-      .def(py::init<GnssConst>(), py::arg("gnss_const"))
+  py::class_<GnssConstellation, std::shared_ptr<GnssConstellation>>(
+      m, "GnssConstellation",
+      "Constellation of GNSS satellites with precomputed ephemerides; provides satellite "
+      "state interpolation and transmitter antenna/power metadata")
+      .def(py::init<>(), "Construct an empty constellation (no PRNs/ephemerides set)")
+      .def(py::init<GnssConst>(), py::arg("gnss_const"),
+           "Construct an empty constellation for a given GNSS system")
       .def(
           "set_satellite_states",
           [](GnssConstellation& gc, const std::vector<int>& prns, const VecXd& t_tai,
@@ -506,11 +561,15 @@ void InitGnss(py::module& m) {
           py::arg("filepath"), "Save satellite ephemerides to HDF5 file")
       .def("setup_transmitters", &GnssConstellation::SetupTransmitters,
            "Load transmitter antenna patterns and power for all PRNs (GPS/Galileo/QZSS)")
-      .def("get_num_satellites", &GnssConstellation::GetNumSatellites)
-      .def("get_prns", &GnssConstellation::GetPrns)
-      .def("get_gnss_const", &GnssConstellation::GetGnssConst)
-      .def("set_fault_prns", &GnssConstellation::SetFaultPrns, py::arg("prns"))
-      .def("is_fault_prn", &GnssConstellation::IsFaultPrn, py::arg("prn"))
+      .def("get_num_satellites", &GnssConstellation::GetNumSatellites,
+           "Number of satellites (PRNs) currently configured")
+      .def("get_prns", &GnssConstellation::GetPrns, "List of PRNs currently configured")
+      .def("get_gnss_const", &GnssConstellation::GetGnssConst,
+           "GNSS system (GPS, Galileo, BDS, QZSS, ...) of this constellation")
+      .def("set_fault_prns", &GnssConstellation::SetFaultPrns, py::arg("prns"),
+           "Mark the given PRNs as faulted so they are reported unavailable")
+      .def("is_fault_prn", &GnssConstellation::IsFaultPrn, py::arg("prn"),
+           "True if `prn` has been marked faulted via set_fault_prns")
       .def(
           "get_satellite_state_eci",
           [](const GnssConstellation& gc, int prn, double t_tai) -> VecXd {
@@ -519,7 +578,8 @@ void InitGnss(py::module& m) {
           py::arg("prn"), py::arg("t_tai"),
           "Interpolated ECI [r; v] [m, m/s] of satellite `prn` at `t_tai` (TAI seconds)")
       .def("has_transmitter_info", &GnssConstellation::HasTransmitterInfo, py::arg("prn"),
-           py::arg("freq"))
+           py::arg("freq"),
+           "True if antenna and transmit-power metadata exist for `prn` and `freq`")
       .def("get_transmitter_antenna", &GnssConstellation::GetTransmitterAntenna, py::arg("prn"),
            py::arg("freq"), py::return_value_policy::reference_internal,
            "Transmit antenna pattern for `prn` and `freq`")
@@ -532,21 +592,30 @@ void InitGnss(py::module& m) {
 
   // ---- GNSSMeasurements ------------------------------------------------------
 
-  py::class_<GNSSMeasurements>(m, "GNSSMeasurements")
+  py::class_<GNSSMeasurements>(
+      m, "GNSSMeasurements",
+      "Receiver-side GNSS measurement generator: builds visible channels "
+      "and computes pseudorange/Doppler/carrier-phase observables from one "
+      "or more constellations")
       .def(py::init([](std::shared_ptr<GnssConstellation> constellation) {
              return GNSSMeasurements(constellation);
            }),
-           py::arg("constellation"))
+           py::arg("constellation"), "Construct with a single GNSS constellation on L1")
       .def("add_constellation", &GNSSMeasurements::AddConstellation, py::arg("constellation"),
            py::arg("frequency"),
            "Append a (constellation, frequency) pair; BuildChannels merges channels from all pairs")
-      .def("set_frequency", &GNSSMeasurements::SetFrequency, py::arg("frequency"))
-      .def("set_options", &GNSSMeasurements::SetOptions, py::arg("options"))
+      .def("set_frequency", &GNSSMeasurements::SetFrequency, py::arg("frequency"),
+           "Set the carrier frequency for all current constellations (and default for future ones)")
+      .def("set_options", &GNSSMeasurements::SetOptions, py::arg("options"),
+           "Replace the measurement options used by build_channels()/compute()")
       .def("get_options", &GNSSMeasurements::GetOptions,
-           py::return_value_policy::reference_internal)
-      .def("set_occluding_bodies", &GNSSMeasurements::SetOccludingBodies, py::arg("bodies"))
-      .def("set_receiver_params", &GNSSMeasurements::SetReceiverParams, py::arg("params"))
-      .def("set_receiver_antenna", &GNSSMeasurements::SetReceiverAntenna, py::arg("antenna"))
+           py::return_value_policy::reference_internal, "Measurement options currently in use")
+      .def("set_occluding_bodies", &GNSSMeasurements::SetOccludingBodies, py::arg("bodies"),
+           "Set the spherical bodies checked for line-of-sight occlusion during visibility")
+      .def("set_receiver_params", &GNSSMeasurements::SetReceiverParams, py::arg("params"),
+           "Set the receiver tracking-loop/link-budget parameters used to derive noise sigmas")
+      .def("set_receiver_antenna", &GNSSMeasurements::SetReceiverAntenna, py::arg("antenna"),
+           "Set the receiver antenna gain pattern used in the CN0 link budget")
       .def("set_cn0_threshold", &GNSSMeasurements::SetCN0Threshold, py::arg("cn0_threshold_dbhz"),
            "Set both acquisition and tracking CN0 thresholds to the same value [dBHz]")
       .def("reset_tracking", &GNSSMeasurements::ResetTracking,

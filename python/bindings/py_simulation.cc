@@ -136,17 +136,21 @@ static py::object YamlToPy(const YAML::Node& node) {
 // subclasses (e.g. GroundStationManagerApp) registered elsewhere.
 void InitSimulation(py::module& m) {
   // ---- World: shared read-only environment ----
-  py::class_<World, std::shared_ptr<World>>(m, "World")
+  py::class_<World, std::shared_ptr<World>>(
+      m, "World",
+      "Shared, read-only physical environment for a Simulation: epoch, reference frame, force "
+      "model, optional terrain/DEM, and a truth facade (get_state_at).")
       .def(
           "get_epoch", [](const World& w) { return w.GetEpoch().val(); },
           "TDB epoch [s past J2000] of simulation time t = 0")
       .def("get_frame", &World::GetFrame, "Reference frame of the shared environment")
-      .def("has_force_model", &World::HasForceModel)
+      .def("has_force_model", &World::HasForceModel,
+           "Whether a force_model block was provided (so an NBodyDynamics can be built)")
       .def("get_gm", &World::GetGM, "Central-body gravitational parameter [m^3/s^2]")
       .def(
           "gravity", [](const World& w, const Vec3d& r) { return w.Gravity(r); }, py::arg("r"),
           "Point-mass central-body gravitational acceleration at r (world frame) [m/s^2]")
-      .def("has_terrain", &World::HasTerrain)
+      .def("has_terrain", &World::HasTerrain, "Whether a dem (terrain) block was provided")
       .def("get_elevation", &World::GetElevation, py::arg("east_m"), py::arg("north_m"),
            "Terrain elevation at a local ENU offset from the site center [m]")
       .def("enu_to_world", &World::EnuToWorld, py::arg("east_m"), py::arg("north_m"),
@@ -154,14 +158,24 @@ void InitSimulation(py::module& m) {
       .def(
           "r_enu_to_world", [](const World& w) { return w.REnuToWorld(); },
           "Rotation from the local ENU tangent frame to the world frame")
-      .def("site_center_world", [](const World& w) { return w.SiteCenterWorld(); })
-      .def("site_lat_deg", &World::SiteLatDeg)
-      .def("site_lon_deg", &World::SiteLonDeg)
-      .def("dem_x", [](const World& w) { return w.GetDem().x(); })
-      .def("dem_y", [](const World& w) { return w.GetDem().y(); })
-      .def("dem_elevation", [](const World& w) { return w.GetDem().elevation(); })
-      .def("dem_center",
-           [](const World& w) { return Vec2d(w.GetDem().center_x(), w.GetDem().center_y()); })
+      .def(
+          "site_center_world", [](const World& w) { return w.SiteCenterWorld(); },
+          "Site center (local ENU origin) position in the world frame [m]")
+      .def("site_lat_deg", &World::SiteLatDeg, "Site latitude [deg]")
+      .def("site_lon_deg", &World::SiteLonDeg, "Site east longitude [deg]")
+      .def(
+          "dem_x", [](const World& w) { return w.GetDem().x(); },
+          "Terrain DEM grid x coordinates (native projected meters)")
+      .def(
+          "dem_y", [](const World& w) { return w.GetDem().y(); },
+          "Terrain DEM grid y coordinates (native projected meters)")
+      .def(
+          "dem_elevation", [](const World& w) { return w.GetDem().elevation(); },
+          "Terrain DEM elevation grid [m]")
+      .def(
+          "dem_center",
+          [](const World& w) { return Vec2d(w.GetDem().center_x(), w.GetDem().center_y()); },
+          "DEM tile center [x, y] in native projected meters (the ENU East/North origin)")
       .def(
           "get_state_at",
           [](const World& w, const std::string& name, double t) {
@@ -171,28 +185,38 @@ void InitSimulation(py::module& m) {
           "Truth state [r; v] of agent `name` at simulation time t [s], in the world frame");
 
   // ---- Application: polymorphic base (subclassable from Python via PyApplication) ----
-  py::class_<Application, PyApplication, std::shared_ptr<Application>>(m, "Application")
-      .def(py::init<>())
-      .def("get_name", &Application::GetName)
-      .def("set_name", &Application::SetName, py::arg("name"))
-      .def("get_frequency", [](const Application& a) { return a.GetFrequency().val(); })
+  py::class_<Application, PyApplication, std::shared_ptr<Application>>(
+      m, "Application",
+      "Polymorphic base for a scenario application (estimator/logic) hosted on an Agent. "
+      "Subclass in Python and implement step(self, t) (and optionally setup/log).")
+      .def(py::init<>(), "Construct an empty Application (base for a Python subclass).")
+      .def("get_name", &Application::GetName, "This application's name")
+      .def("set_name", &Application::SetName, py::arg("name"), "Set this application's name")
+      .def(
+          "get_frequency", [](const Application& a) { return a.GetFrequency().val(); },
+          "Step() call frequency [Hz]")
       .def(
           "set_frequency", [](Application& a, double f) { a.SetFrequency(f); },
-          py::arg("frequency"))
+          py::arg("frequency"),
+          "Set the Step() call frequency [Hz] used by setup() to schedule steps")
       .def("get_agent", &Application::GetAgent, py::return_value_policy::reference,
            "The Agent that hosts this application (set by the simulation before Setup()).")
       .def("setup", &Application::Setup,
            "Base Setup: schedules Step() at get_frequency() Hz. Call via super().setup() from a "
            "Python subclass to keep that scheduling.")
-      .def("log", &Application::Log, py::arg("t"));
+      .def("log", &Application::Log, py::arg("t"),
+           "Base Log at simulation time t [s] (emits a debug message; override in a subclass).");
 
   // ---- Measurement: polymorphic model base (subclassable from Python via PyMeasurement) ----
   // Subclass and implement ``compute(self, x) -> (z, H, R)`` (numpy). ``evaluate(x)`` runs the
   // model through the C++ base (the same path a Filter uses), so the same Python class both
   // generates observations (apply to a truth state, add noise) and predicts them (apply to the
   // filter state).
-  py::class_<Measurement, PyMeasurement, std::shared_ptr<Measurement>>(m, "Measurement")
-      .def(py::init<>())
+  py::class_<Measurement, PyMeasurement, std::shared_ptr<Measurement>>(
+      m, "Measurement",
+      "Polymorphic base for a measurement model. Subclass in Python and implement "
+      "compute(self, x) -> (z, H = dh/dx, R) to both generate and predict observations.")
+      .def(py::init<>(), "Construct an empty Measurement (base for a Python subclass).")
       .def(
           "evaluate",
           [](const Measurement& meas, const VecXd& x) {
@@ -206,10 +230,14 @@ void InitSimulation(py::module& m) {
           "(z, H = dh/dx, R). Dispatches to a Python subclass's compute(self, x).");
 
   // ---- Agent: polymorphic base (subclassable from Python via PyAgent) ----
-  py::class_<Agent, PyAgent, std::shared_ptr<Agent>>(m, "Agent")
-      .def(py::init<>())
-      .def("get_name", &Agent::GetName)
-      .def("set_name", &Agent::SetName, py::arg("name"))
+  py::class_<Agent, PyAgent, std::shared_ptr<Agent>>(
+      m, "Agent",
+      "Polymorphic base for a physical platform (spacecraft, rover, lander) that hosts "
+      "Applications. Subclass in Python and implement get_state_at(self, t) for a truth "
+      "trajectory.")
+      .def(py::init<>(), "Construct an empty Agent (base for a Python subclass).")
+      .def("get_name", &Agent::GetName, "This agent's name")
+      .def("set_name", &Agent::SetName, py::arg("name"), "Set this agent's name")
       .def("get_application", &Agent::GetApplication,
            "The primary Application hosted by this agent (the first one; downcasts to the "
            "concrete app type)")
@@ -226,7 +254,10 @@ void InitSimulation(py::module& m) {
            "truth state).");
 
   // ---- Simulation: holds agents, the world, and the event queue ----
-  py::class_<Simulation>(m, "Simulation")
+  py::class_<Simulation>(
+      m, "Simulation",
+      "Agent-based simulation: holds the agents, the shared World, and the timed event queue; "
+      "run() drives the event loop to completion.")
       .def(py::init([](const std::string& config_path) {
              YAML::Node node = YAML::LoadFile(config_path);
              Config cfg(node);
@@ -241,10 +272,15 @@ void InitSimulation(py::module& m) {
            py::arg("config"), "Build a Simulation from a config dict / YAML node.")
       .def("run", &Simulation::Run, "Run the event loop to completion.")
       .def("get_agent", &Simulation::GetAgent, py::arg("name"),
-           py::return_value_policy::reference_internal)
-      .def("get_world", &Simulation::GetWorld, py::return_value_policy::reference_internal)
-      .def("get_duration", [](Simulation& s) { return s.GetDuration().val(); })
-      .def("get_time", [](Simulation& s) { return s.GetTime().val(); });
+           py::return_value_policy::reference_internal, "Get the agent registered under `name`")
+      .def("get_world", &Simulation::GetWorld, py::return_value_policy::reference_internal,
+           "The shared read-only World environment (None if no world: block was defined)")
+      .def(
+          "get_duration", [](Simulation& s) { return s.GetDuration().val(); },
+          "Total scenario duration [s]")
+      .def(
+          "get_time", [](Simulation& s) { return s.GetTime().val(); },
+          "Current simulation time [s]");
 
   // ---- Author agents/apps in Python: register a Python subclass with the asset factory ----
   // After `register_application("MyApp", MyApp)`, a config `application: {class: MyApp, ...}` is

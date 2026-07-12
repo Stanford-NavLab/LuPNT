@@ -7,51 +7,66 @@ namespace py = pybind11;
 using namespace lupnt;
 
 void InitConstants(py::module& m) {
-  m.def("get_lupnt_epoch", &lupnt::GetLupntEpoch);
-  m.def("set_lupnt_epoch", &lupnt::SetLupntEpoch);
+  m.def("get_lupnt_epoch", &lupnt::GetLupntEpoch,
+        "Global LuPNT reference epoch [s past J2000, TDB] that propagation time is added to.");
+  m.def("set_lupnt_epoch", &lupnt::SetLupntEpoch,
+        "Set the global LuPNT reference epoch [s past J2000, TDB].");
 
-  py::class_<UnitSystem>(m, "UnitSystem")
+  py::class_<UnitSystem>(m, "UnitSystem",
+                         "Length/time/mass scale factors defining a working unit system.")
       .def(py::init<double, double, double>(), py::arg("length") = METER, py::arg("time") = SECOND,
            py::arg("mass") = KILOGRAM)
-      .def_readwrite("length", &UnitSystem::length)
-      .def_readwrite("time", &UnitSystem::time)
-      .def_readwrite("mass", &UnitSystem::mass)
+      .def_readwrite("length", &UnitSystem::length, "Length unit as a multiple of the SI meter.")
+      .def_readwrite("time", &UnitSystem::time, "Time unit as a multiple of the SI second.")
+      .def_readwrite("mass", &UnitSystem::mass, "Mass unit as a multiple of the SI kilogram.")
       .def("from_si", &UnitSystem::FromSI, py::arg("value"), py::arg("length_power"),
-           py::arg("time_power") = 0, py::arg("mass_power") = 0)
+           py::arg("time_power") = 0, py::arg("mass_power") = 0,
+           "Convert an SI value into this unit system given length/time/mass dimensional powers.")
       .def("to_si", &UnitSystem::ToSI, py::arg("value"), py::arg("length_power"),
-           py::arg("time_power") = 0, py::arg("mass_power") = 0)
-      .def("length_from_si", &UnitSystem::Length)
-      .def("area_from_si", &UnitSystem::Area)
-      .def("velocity_from_si", &UnitSystem::Velocity)
-      .def("acceleration_from_si", &UnitSystem::Acceleration)
-      .def("gm_from_si", &UnitSystem::GravitationalParameter)
-      .def("pressure_from_si", &UnitSystem::Pressure)
-      .def("area_per_mass_from_si", &UnitSystem::AreaPerMass);
+           py::arg("time_power") = 0, py::arg("mass_power") = 0,
+           "Convert a value in this unit system back to SI (inverse of from_si).")
+      .def("length_from_si", &UnitSystem::Length, "Convert a length [m] into this unit system.")
+      .def("area_from_si", &UnitSystem::Area, "Convert an area [m^2] into this unit system.")
+      .def("velocity_from_si", &UnitSystem::Velocity,
+           "Convert a velocity [m/s] into this unit system.")
+      .def("acceleration_from_si", &UnitSystem::Acceleration,
+           "Convert an acceleration [m/s^2] into this unit system.")
+      .def("gm_from_si", &UnitSystem::GravitationalParameter,
+           "Convert a gravitational parameter [m^3/s^2] into this unit system.")
+      .def("pressure_from_si", &UnitSystem::Pressure,
+           "Convert a pressure [Pa] into this unit system.")
+      .def("area_per_mass_from_si", &UnitSystem::AreaPerMass,
+           "Convert an area-per-mass [m^2/kg] into this unit system.");
 
-  py::class_<PhysicalConstants>(m, "PhysicalConstants")
-      .def_readonly("GM_SUN", &PhysicalConstants::GM_SUN)
-      .def_readonly("GM_EARTH", &PhysicalConstants::GM_EARTH)
-      .def_readonly("GM_MOON", &PhysicalConstants::GM_MOON)
-      .def_readonly("GM_MARS", &PhysicalConstants::GM_MARS)
-      .def_readonly("R_SUN", &PhysicalConstants::R_SUN)
-      .def_readonly("R_EARTH", &PhysicalConstants::R_EARTH)
-      .def_readonly("R_MOON", &PhysicalConstants::R_MOON)
-      .def_readonly("R_MARS", &PhysicalConstants::R_MARS)
-      .def_readonly("WGS84_A", &PhysicalConstants::WGS84_A)
-      .def_readonly("OMEGA_EARTH", &PhysicalConstants::OMEGA_EARTH)
-      .def_readonly("OMEGA_MOON", &PhysicalConstants::OMEGA_MOON)
-      .def_readonly("AU", &PhysicalConstants::AU)
-      .def_readonly("C", &PhysicalConstants::C)
-      .def_readonly("P_SUN", &PhysicalConstants::P_SUN)
-      .def_readonly("coordinate_scale", &PhysicalConstants::coordinate_scale);
+  py::class_<PhysicalConstants>(m, "PhysicalConstants",
+                                "Physical constants expressed in a chosen unit system.")
+      .def_readonly("GM_SUN", &PhysicalConstants::GM_SUN, "Sun gravitational parameter.")
+      .def_readonly("GM_EARTH", &PhysicalConstants::GM_EARTH, "Earth gravitational parameter.")
+      .def_readonly("GM_MOON", &PhysicalConstants::GM_MOON, "Moon gravitational parameter.")
+      .def_readonly("GM_MARS", &PhysicalConstants::GM_MARS, "Mars gravitational parameter.")
+      .def_readonly("R_SUN", &PhysicalConstants::R_SUN, "Sun mean radius.")
+      .def_readonly("R_EARTH", &PhysicalConstants::R_EARTH, "Earth mean radius.")
+      .def_readonly("R_MOON", &PhysicalConstants::R_MOON, "Moon mean radius.")
+      .def_readonly("R_MARS", &PhysicalConstants::R_MARS, "Mars mean radius.")
+      .def_readonly("WGS84_A", &PhysicalConstants::WGS84_A, "WGS84 Earth equatorial radius.")
+      .def_readonly("OMEGA_EARTH", &PhysicalConstants::OMEGA_EARTH,
+                    "Earth rotation rate [rad/time].")
+      .def_readonly("OMEGA_MOON", &PhysicalConstants::OMEGA_MOON, "Moon rotation rate [rad/time].")
+      .def_readonly("AU", &PhysicalConstants::AU, "Astronomical unit.")
+      .def_readonly("C", &PhysicalConstants::C, "Speed of light.")
+      .def_readonly("P_SUN", &PhysicalConstants::P_SUN, "Solar radiation pressure at 1 AU.")
+      .def_readonly("coordinate_scale", &PhysicalConstants::coordinate_scale,
+                    "Coordinate time scale these constants are expressed in.");
 
   m.def("get_physical_constants", py::overload_cast<const UnitSystem&>(&GetPhysicalConstants),
-        py::arg("units") = SI_UNITS);
+        py::arg("units") = SI_UNITS, "Physical constants rescaled into the given unit system.");
   m.def("get_physical_constants",
         py::overload_cast<const UnitSystem&, CoordinateScale>(&GetPhysicalConstants),
-        py::arg("units"), py::arg("coordinate_scale"));
+        py::arg("units"), py::arg("coordinate_scale"),
+        "Physical constants in the given unit system and coordinate time scale.");
   m.def("get_physical_constants", py::overload_cast<CoordinateScale>(&GetPhysicalConstants),
-        py::arg("coordinate_scale"));
+        py::arg("coordinate_scale"),
+        "SI physical constants rescaled from TDB to the given coordinate time scale.");
 
   m.attr("METER") = py::float_(METER);
   m.attr("KILOMETER") = py::float_(KILOMETER);
@@ -117,23 +132,29 @@ void InitConstants(py::module& m) {
   m.attr("L_G") = py::float_(L_G);
   m.attr("L_L") = py::float_(L_L);
 
-  py::enum_<CoordinateScale>(m, "CoordinateScale")
-      .value("TCB", CoordinateScale::TCB)
-      .value("TDB", CoordinateScale::TDB)
-      .value("TCG", CoordinateScale::TCG)
-      .value("TT", CoordinateScale::TT)
-      .value("TCL", CoordinateScale::TCL)
-      .value("TL", CoordinateScale::TL)
+  py::enum_<CoordinateScale>(m, "CoordinateScale",
+                             "Relativistic coordinate time scale of a quantity.")
+      .value("TCB", CoordinateScale::TCB, "Barycentric coordinate time (TCB).")
+      .value("TDB", CoordinateScale::TDB, "Barycentric dynamical time (TDB).")
+      .value("TCG", CoordinateScale::TCG, "Geocentric coordinate time (TCG).")
+      .value("TT", CoordinateScale::TT, "Terrestrial time (TT).")
+      .value("TCL", CoordinateScale::TCL, "Lunicentric coordinate time (TCL).")
+      .value("TL", CoordinateScale::TL, "Lunar time (TL).")
       .export_values();
 
   m.def("are_coordinate_scales_convertible", &AreCoordinateScalesConvertible, py::arg("from"),
-        py::arg("to"));
-  m.def("coordinate_scale_factor", &CoordinateScaleFactor, py::arg("scale"));
-  m.def("coordinate_scale_ratio", &CheckedCoordinateScaleRatio, py::arg("from"), py::arg("to"));
+        py::arg("to"), "True if the two coordinate scales are related by a constant factor.");
+  m.def("coordinate_scale_factor", &CoordinateScaleFactor, py::arg("scale"),
+        "Rate factor of a coordinate scale relative to its proper coordinate time.");
+  m.def(
+      "coordinate_scale_ratio", &CheckedCoordinateScaleRatio, py::arg("from"), py::arg("to"),
+      "Ratio to convert a quantity from one coordinate scale to another; throws if incompatible.");
   m.def("scale_length_for_coordinate_scale", &ScaleLengthForCoordinateScaleChecked,
-        py::arg("value"), py::arg("from"), py::arg("to"));
+        py::arg("value"), py::arg("from"), py::arg("to"),
+        "Rescale a length from one coordinate scale to another; throws if incompatible.");
   m.def("scale_gm_for_coordinate_scale", &ScaleGravitationalParameterForCoordinateScaleChecked,
-        py::arg("value"), py::arg("from"), py::arg("to"));
+        py::arg("value"), py::arg("from"), py::arg("to"),
+        "Rescale a gravitational parameter from one coordinate scale to another.");
 
   // Coordinate system constants
   m.attr("GM_SUN") = py::float_(GM_SUN);
@@ -161,42 +182,42 @@ void InitConstants(py::module& m) {
   m.attr("AU") = py::float_(AU);
   m.attr("C") = py::float_(C);
 
-  py::enum_<BodyId>(m, "BodyId")
-      .value("SSB", BodyId::SSB)
-      .value("SOLAR_SYSTEM_BARYCENTER", BodyId::SOLAR_SYSTEM_BARYCENTER)
-      .value("MERCURY_BARYCENTER", BodyId::MERCURY_BARYCENTER)
-      .value("VENUS_BARYCENTER", BodyId::VENUS_BARYCENTER)
-      .value("EMB", BodyId::EMB)
-      .value("EARTH_MOON_BARYCENTER", BodyId::EARTH_MOON_BARYCENTER)
-      .value("MARS_BARYCENTER", BodyId::MARS_BARYCENTER)
-      .value("JUPITER_BARYCENTER", BodyId::JUPITER_BARYCENTER)
-      .value("SATURN_BARYCENTER", BodyId::SATURN_BARYCENTER)
-      .value("URANUS_BARYCENTER", BodyId::URANUS_BARYCENTER)
-      .value("NEPTUNE_BARYCENTER", BodyId::NEPTUNE_BARYCENTER)
-      .value("PLUTO_BARYCENTER", BodyId::PLUTO_BARYCENTER)
-      .value("SUN", BodyId::SUN)
-      .value("MERCURY", BodyId::MERCURY)
-      .value("VENUS", BodyId::VENUS)
-      .value("EARTH", BodyId::EARTH)
-      .value("MOON", BodyId::MOON)
-      .value("MARS", BodyId::MARS)
-      .value("PHOBOS", BodyId::PHOBOS)
-      .value("DEIMOS", BodyId::DEIMOS)
-      .value("JUPITER", BodyId::JUPITER)
+  py::enum_<BodyId>(m, "BodyId", "NAIF-style identifier for a solar-system body or barycenter.")
+      .value("SSB", BodyId::SSB, "Solar system barycenter.")
+      .value("SOLAR_SYSTEM_BARYCENTER", BodyId::SOLAR_SYSTEM_BARYCENTER, "Solar system barycenter.")
+      .value("MERCURY_BARYCENTER", BodyId::MERCURY_BARYCENTER, "Mercury barycenter.")
+      .value("VENUS_BARYCENTER", BodyId::VENUS_BARYCENTER, "Venus barycenter.")
+      .value("EMB", BodyId::EMB, "Earth-Moon barycenter.")
+      .value("EARTH_MOON_BARYCENTER", BodyId::EARTH_MOON_BARYCENTER, "Earth-Moon barycenter.")
+      .value("MARS_BARYCENTER", BodyId::MARS_BARYCENTER, "Mars barycenter.")
+      .value("JUPITER_BARYCENTER", BodyId::JUPITER_BARYCENTER, "Jupiter barycenter.")
+      .value("SATURN_BARYCENTER", BodyId::SATURN_BARYCENTER, "Saturn barycenter.")
+      .value("URANUS_BARYCENTER", BodyId::URANUS_BARYCENTER, "Uranus barycenter.")
+      .value("NEPTUNE_BARYCENTER", BodyId::NEPTUNE_BARYCENTER, "Neptune barycenter.")
+      .value("PLUTO_BARYCENTER", BodyId::PLUTO_BARYCENTER, "Pluto barycenter.")
+      .value("SUN", BodyId::SUN, "Sun.")
+      .value("MERCURY", BodyId::MERCURY, "Mercury.")
+      .value("VENUS", BodyId::VENUS, "Venus.")
+      .value("EARTH", BodyId::EARTH, "Earth.")
+      .value("MOON", BodyId::MOON, "Moon.")
+      .value("MARS", BodyId::MARS, "Mars.")
+      .value("PHOBOS", BodyId::PHOBOS, "Phobos.")
+      .value("DEIMOS", BodyId::DEIMOS, "Deimos.")
+      .value("JUPITER", BodyId::JUPITER, "Jupiter.")
       .export_values();
 
-  py::enum_<Time>(m, "Time")
-      .value("UT1", Time::UT1)
-      .value("UTC", Time::UTC)
-      .value("TAI", Time::TAI)
-      .value("TDB", Time::TDB)
-      .value("TT", Time::TT)
-      .value("TCG", Time::TCG)
-      .value("TCB", Time::TCB)
-      .value("GPS", Time::GPS)
-      .value("JD_TT", Time::JD_TT)
-      .value("JD_TDB", Time::JD_TDB)
-      .value("TCL", Time::TCL)
-      .value("LT", Time::LT)
+  py::enum_<Time>(m, "Time", "Time system / scale identifier.")
+      .value("UT1", Time::UT1, "Universal Time 1.")
+      .value("UTC", Time::UTC, "Coordinated Universal Time.")
+      .value("TAI", Time::TAI, "International Atomic Time.")
+      .value("TDB", Time::TDB, "Barycentric Dynamical Time.")
+      .value("TT", Time::TT, "Terrestrial Time.")
+      .value("TCG", Time::TCG, "Geocentric Coordinate Time.")
+      .value("TCB", Time::TCB, "Barycentric Coordinate Time.")
+      .value("GPS", Time::GPS, "GPS Time.")
+      .value("JD_TT", Time::JD_TT, "Julian Date in TT.")
+      .value("JD_TDB", Time::JD_TDB, "Julian Date in TDB.")
+      .value("TCL", Time::TCL, "Lunar Coordinate Time.")
+      .value("LT", Time::LT, "Lunar Time.")
       .export_values();
 }

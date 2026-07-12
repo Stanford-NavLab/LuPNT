@@ -47,33 +47,42 @@ namespace {
 void InitGnssOdts(py::module& m) {
   // ---- ReceiverAppConfig ------------------------------------------------------
 
-  py::class_<ReceiverAppConfig>(m, "ReceiverAppConfig")
+  py::class_<ReceiverAppConfig>(m, "ReceiverAppConfig", "Receiver application scheduling config")
       .def(py::init<>())
       .def_readwrite("rate_hz", &ReceiverAppConfig::rate_hz,
                      "Receiver application call rate on the receiver's local clock [Hz]");
 
   // ---- DesignConfig -------------------------------------------------------------
 
-  py::class_<DesignConfig>(m, "DesignConfig")
+  py::class_<DesignConfig>(m, "DesignConfig",
+                           "Receiver/antenna design and C/N0-threshold config for the link budget")
       .def(py::init<>())
       .def_property(
           "database_path", [](const DesignConfig& c) { return c.database_path.string(); },
           [](DesignConfig& c, const std::string& s) { c.database_path = std::filesystem::path(s); },
           "Path to a gnss_designs.yaml-style design database (ignored unless set)")
       .def_readwrite("name", &DesignConfig::name, "Design name looked up in the database")
-      .def_readwrite("receiver_params", &DesignConfig::receiver_params)
-      .def_readwrite("cn0_threshold_dbhz", &DesignConfig::cn0_threshold_dbhz)
+      .def_readwrite("receiver_params", &DesignConfig::receiver_params,
+                     "GNSS receiver hardware parameters used in the link budget")
+      .def_readwrite("cn0_threshold_dbhz", &DesignConfig::cn0_threshold_dbhz,
+                     "Deprecated single C/N0 threshold [dBHz]; used only if the acquisition/"
+                     "tracking thresholds are <0")
       .def_readwrite("cn0_acquisition_threshold_dbhz",
-                     &DesignConfig::cn0_acquisition_threshold_dbhz)
-      .def_readwrite("cn0_tracking_threshold_dbhz", &DesignConfig::cn0_tracking_threshold_dbhz)
-      .def_readwrite("apply_cn0_threshold", &DesignConfig::apply_cn0_threshold)
+                     &DesignConfig::cn0_acquisition_threshold_dbhz,
+                     "C/N0 required to acquire a new satellite [dBHz]")
+      .def_readwrite("cn0_tracking_threshold_dbhz", &DesignConfig::cn0_tracking_threshold_dbhz,
+                     "C/N0 required to keep an existing lock [dBHz]")
+      .def_readwrite("apply_cn0_threshold", &DesignConfig::apply_cn0_threshold,
+                     "Gate visible satellites by the C/N0 acquisition/tracking thresholds")
       .def_readwrite("setup_transmitters", &DesignConfig::setup_transmitters,
                      "Load GPS/Galileo transmit antenna gain patterns so link budget/CN0 "
                      "(including sidelobe reception) is modeled instead of assumed nominal")
       .def_readwrite("receiver_antenna_name", &DesignConfig::receiver_antenna_name,
                      "Receiver antenna gain-pattern name for link-budget/CN0 computation; "
                      "empty uses omni 0 dB")
-      .def_readwrite("use_cn0_measurement_sigmas", &DesignConfig::use_cn0_measurement_sigmas)
+      .def_readwrite("use_cn0_measurement_sigmas", &DesignConfig::use_cn0_measurement_sigmas,
+                     "Derive per-link measurement sigmas from C/N0 instead of the fixed config "
+                     "sigmas")
       .def_readwrite("tx_yaw_dedicated", &DesignConfig::tx_yaw_dedicated,
                      "If True, the transmitter CN0 antenna-gain geometry uses the block-specific "
                      "dedicated eclipse yaw-steering law (GPS/Galileo) rather than the nominal "
@@ -82,7 +91,10 @@ void InitGnssOdts(py::module& m) {
 
   // ---- PlasmaDelayConfig ---------------------------------------------------------
 
-  py::class_<PlasmaDelayConfig>(m, "PlasmaDelayConfig")
+  py::class_<PlasmaDelayConfig>(
+      m, "PlasmaDelayConfig",
+      "Ionosphere/plasmasphere delay config: truth/filter application flags plus the "
+      "ray-trace parameters used to build the delay table")
       .def(py::init<>())
       .def_readwrite("simulate_truth", &PlasmaDelayConfig::simulate_truth,
                      "Apply the precomputed ionosphere/plasmasphere delay table to truth "
@@ -90,30 +102,49 @@ void InitGnssOdts(py::module& m) {
       .def_readwrite("model_in_filter", &PlasmaDelayConfig::model_in_filter,
                      "Also apply the delay table to filter (estimated) measurements, instead "
                      "of leaving the delay unmodeled and absorbed by noise inflation")
-      .def_readwrite("raytrace_step_size_km", &PlasmaDelayConfig::raytrace_step_size_km)
-      .def_readwrite("raytrace_correction", &PlasmaDelayConfig::raytrace_correction)
-      .def_readwrite("raytrace_fine_correction", &PlasmaDelayConfig::raytrace_fine_correction)
-      .def_readwrite("raytrace_straight_ray", &PlasmaDelayConfig::raytrace_straight_ray)
+      .def_readwrite("raytrace_step_size_km", &PlasmaDelayConfig::raytrace_step_size_km,
+                     "Ray-trace integration step size [km]")
+      .def_readwrite("raytrace_correction", &PlasmaDelayConfig::raytrace_correction,
+                     "Enable the ray-path bending correction")
+      .def_readwrite("raytrace_fine_correction", &PlasmaDelayConfig::raytrace_fine_correction,
+                     "Enable the fine ray-path bending correction")
+      .def_readwrite("raytrace_straight_ray", &PlasmaDelayConfig::raytrace_straight_ray,
+                     "Trace a straight-line ray instead of a bent ray path")
       .def_readwrite("raytrace_compute_higher_order",
-                     &PlasmaDelayConfig::raytrace_compute_higher_order)
-      .def_readwrite("raytrace_use_adaptive_step", &PlasmaDelayConfig::raytrace_use_adaptive_step)
-      .def_readwrite("raytrace_use_fortran_gcpm", &PlasmaDelayConfig::raytrace_use_fortran_gcpm)
-      .def_readwrite("raytrace_cutoff_radius_re", &PlasmaDelayConfig::raytrace_cutoff_radius_re)
-      .def_readwrite("raytrace_gradient_step_km", &PlasmaDelayConfig::raytrace_gradient_step_km)
+                     &PlasmaDelayConfig::raytrace_compute_higher_order,
+                     "Include higher-order (beyond first-order) plasma delay terms")
+      .def_readwrite("raytrace_use_adaptive_step", &PlasmaDelayConfig::raytrace_use_adaptive_step,
+                     "Use adaptive step-size control in the ray-trace integrator")
+      .def_readwrite("raytrace_use_fortran_gcpm", &PlasmaDelayConfig::raytrace_use_fortran_gcpm,
+                     "Use the Fortran GCPM plasmasphere density model")
+      .def_readwrite("raytrace_cutoff_radius_re", &PlasmaDelayConfig::raytrace_cutoff_radius_re,
+                     "Outer ray-trace cutoff radius [Earth radii]")
+      .def_readwrite("raytrace_gradient_step_km", &PlasmaDelayConfig::raytrace_gradient_step_km,
+                     "Finite-difference step for density gradients [km]")
       .def_readwrite("raytrace_correction_tolerance_m",
-                     &PlasmaDelayConfig::raytrace_correction_tolerance_m)
-      .def_readwrite("raytrace_kp", &PlasmaDelayConfig::raytrace_kp)
-      .def_readwrite("raytrace_rz12", &PlasmaDelayConfig::raytrace_rz12)
-      .def_readwrite("raytrace_integrator", &PlasmaDelayConfig::raytrace_integrator)
-      .def_readwrite("raytrace_correction_method", &PlasmaDelayConfig::raytrace_correction_method)
+                     &PlasmaDelayConfig::raytrace_correction_tolerance_m,
+                     "Ray-path correction convergence tolerance [m]")
+      .def_readwrite("raytrace_kp", &PlasmaDelayConfig::raytrace_kp,
+                     "Kp geomagnetic activity index")
+      .def_readwrite("raytrace_rz12", &PlasmaDelayConfig::raytrace_rz12,
+                     "IRI R12 sunspot index (>0 uses value; -1/-2 historical)")
+      .def_readwrite("raytrace_integrator", &PlasmaDelayConfig::raytrace_integrator,
+                     "Ray-trace ODE integrator name (e.g. 'RK4')")
+      .def_readwrite("raytrace_correction_method", &PlasmaDelayConfig::raytrace_correction_method,
+                     "Ray-path correction optimizer name (e.g. 'neldermead')")
       .def_readwrite("filter_pseudorange_noise_inflation_m",
-                     &PlasmaDelayConfig::filter_pseudorange_noise_inflation_m)
+                     &PlasmaDelayConfig::filter_pseudorange_noise_inflation_m,
+                     "Filter-only pseudorange noise inflation [m] absorbing unmodeled plasma delay")
       .def_readwrite("filter_doppler_noise_inflation_hz",
-                     &PlasmaDelayConfig::filter_doppler_noise_inflation_hz);
+                     &PlasmaDelayConfig::filter_doppler_noise_inflation_hz,
+                     "Filter-only Doppler noise inflation [Hz] absorbing unmodeled plasma delay");
 
   // ---- ConstellationSourceConfig --------------------------------------------------
 
-  py::class_<ConstellationSourceConfig>(m, "ConstellationSourceConfig")
+  py::class_<ConstellationSourceConfig>(
+      m, "ConstellationSourceConfig",
+      "Truth GNSS constellation source: precise SP3+BRDC or numerically propagated almanac, "
+      "with satellite selection and broadcast-error options")
       .def(py::init<>())
       .def_property(
           "sp3_directory",
@@ -122,7 +153,8 @@ void InitGnssOdts(py::module& m) {
             c.sp3_directory = std::filesystem::path(s);
           },
           "Directory scanned for SP3 files when auto_select_sp3 is true")
-      .def_readwrite("auto_select_sp3", &ConstellationSourceConfig::auto_select_sp3)
+      .def_readwrite("auto_select_sp3", &ConstellationSourceConfig::auto_select_sp3,
+                     "Auto-select the SP3 files covering the epoch window from sp3_directory")
       .def_property(
           "sp3_files",
           [](const ConstellationSourceConfig& c) { return PathsToStrings(c.sp3_files); },
@@ -134,11 +166,16 @@ void InitGnssOdts(py::module& m) {
           "antex_file", [](const ConstellationSourceConfig& c) { return c.antex_file.string(); },
           [](ConstellationSourceConfig& c, const std::string& s) {
             c.antex_file = std::filesystem::path(s);
-          })
-      .def_readwrite("use_all_gps", &ConstellationSourceConfig::use_all_gps)
-      .def_readwrite("include_galileo", &ConstellationSourceConfig::include_galileo)
-      .def_readwrite("gps_prns", &ConstellationSourceConfig::gps_prns)
-      .def_readwrite("galileo_prns", &ConstellationSourceConfig::galileo_prns)
+          },
+          "ANTEX (.atx) transmitter antenna phase-center/gain file")
+      .def_readwrite("use_all_gps", &ConstellationSourceConfig::use_all_gps,
+                     "Include all available GPS satellites (ignore gps_prns)")
+      .def_readwrite("include_galileo", &ConstellationSourceConfig::include_galileo,
+                     "Include Galileo satellites")
+      .def_readwrite("gps_prns", &ConstellationSourceConfig::gps_prns,
+                     "Explicit GPS PRN list (used when use_all_gps is false)")
+      .def_readwrite("galileo_prns", &ConstellationSourceConfig::galileo_prns,
+                     "Explicit Galileo PRN list")
       .def_property(
           "brdc_directory",
           [](const ConstellationSourceConfig& c) { return c.brdc_directory.string(); },
@@ -183,18 +220,25 @@ void InitGnssOdts(py::module& m) {
 
   // ---- LunarGnssODTSConfig -------------------------------------------------------
 
-  py::class_<LunarGnssODTSConfig>(m, "LunarGnssODTSConfig")
+  py::class_<LunarGnssODTSConfig>(
+      m, "LunarGnssODTSConfig",
+      "Top-level lunar GNSS ODTS scenario config: Monte-Carlo/timing, receiver orbit+clock, "
+      "dynamics fidelity, measurements, filter tuning, and nested design/plasma/constellation "
+      "configs")
       .def(py::init<>())
-      .def_readwrite("seed", &LunarGnssODTSConfig::seed)
-      .def_readwrite("monte_carlo_runs", &LunarGnssODTSConfig::monte_carlo_runs)
-      .def_readwrite("duration_s", &LunarGnssODTSConfig::duration_s)
-      .def_readwrite("dt_s", &LunarGnssODTSConfig::dt_s)
-      .def_readwrite("ephemeris_dt_s", &LunarGnssODTSConfig::ephemeris_dt_s)
+      .def_readwrite("seed", &LunarGnssODTSConfig::seed, "Base RNG seed")
+      .def_readwrite("monte_carlo_runs", &LunarGnssODTSConfig::monte_carlo_runs,
+                     "Number of Monte-Carlo seeds run")
+      .def_readwrite("duration_s", &LunarGnssODTSConfig::duration_s, "Scenario duration [s]")
+      .def_readwrite("dt_s", &LunarGnssODTSConfig::dt_s, "Filter measurement/update step [s]")
+      .def_readwrite("ephemeris_dt_s", &LunarGnssODTSConfig::ephemeris_dt_s,
+                     "Transmitter ephemeris sampling step [s]")
       .def_property(
           "output_dir", [](const LunarGnssODTSConfig& c) { return c.output_dir.string(); },
           [](LunarGnssODTSConfig& c, const std::string& s) {
             c.output_dir = std::filesystem::path(s);
-          })
+          },
+          "Directory for trajectory_mc<N>.csv / summary.csv outputs")
       .def_property(
           "links_file", [](const LunarGnssODTSConfig& c) { return c.links_file.string(); },
           [](LunarGnssODTSConfig& c, const std::string& s) {
@@ -208,19 +252,32 @@ void InitGnssOdts(py::module& m) {
           },
           "Input CSV of precomputed plasma delays (consumed by Run when "
           "plasma.simulate_truth is true)")
-      .def_readwrite("receiver_app", &LunarGnssODTSConfig::receiver_app)
-      .def_readwrite("design", &LunarGnssODTSConfig::design)
-      .def_readwrite("plasma", &LunarGnssODTSConfig::plasma)
-      .def_readwrite("constellation", &LunarGnssODTSConfig::constellation)
-      .def_readwrite("start_epoch_utc", &LunarGnssODTSConfig::start_epoch_utc)
-      .def_readwrite("receiver_a_m", &LunarGnssODTSConfig::receiver_a_m)
-      .def_readwrite("receiver_ecc", &LunarGnssODTSConfig::receiver_ecc)
-      .def_readwrite("receiver_inc_rad", &LunarGnssODTSConfig::receiver_inc_rad)
-      .def_readwrite("receiver_raan_rad", &LunarGnssODTSConfig::receiver_raan_rad)
-      .def_readwrite("receiver_argp_rad", &LunarGnssODTSConfig::receiver_argp_rad)
-      .def_readwrite("receiver_mean_anomaly_rad", &LunarGnssODTSConfig::receiver_mean_anomaly_rad)
-      .def_readwrite("clock_bias_s", &LunarGnssODTSConfig::clock_bias_s)
-      .def_readwrite("clock_drift_sps", &LunarGnssODTSConfig::clock_drift_sps)
+      .def_readwrite("receiver_app", &LunarGnssODTSConfig::receiver_app,
+                     "Nested receiver application scheduling config")
+      .def_readwrite("design", &LunarGnssODTSConfig::design,
+                     "Nested receiver/antenna design and C/N0 config")
+      .def_readwrite("plasma", &LunarGnssODTSConfig::plasma,
+                     "Nested ionosphere/plasmasphere delay config")
+      .def_readwrite("constellation", &LunarGnssODTSConfig::constellation,
+                     "Nested truth GNSS constellation source config")
+      .def_readwrite("start_epoch_utc", &LunarGnssODTSConfig::start_epoch_utc,
+                     "Scenario start epoch, ISO 8601 UTC (e.g. '2025-01-01T12:00:00')")
+      .def_readwrite("receiver_a_m", &LunarGnssODTSConfig::receiver_a_m,
+                     "Receiver orbit semi-major axis [m] (Moon-centered)")
+      .def_readwrite("receiver_ecc", &LunarGnssODTSConfig::receiver_ecc,
+                     "Receiver orbit eccentricity")
+      .def_readwrite("receiver_inc_rad", &LunarGnssODTSConfig::receiver_inc_rad,
+                     "Receiver orbit inclination [rad]")
+      .def_readwrite("receiver_raan_rad", &LunarGnssODTSConfig::receiver_raan_rad,
+                     "Receiver orbit right ascension of ascending node [rad]")
+      .def_readwrite("receiver_argp_rad", &LunarGnssODTSConfig::receiver_argp_rad,
+                     "Receiver orbit argument of periapsis [rad]")
+      .def_readwrite("receiver_mean_anomaly_rad", &LunarGnssODTSConfig::receiver_mean_anomaly_rad,
+                     "Receiver orbit initial mean anomaly [rad]")
+      .def_readwrite("clock_bias_s", &LunarGnssODTSConfig::clock_bias_s,
+                     "Initial receiver clock bias [s]")
+      .def_readwrite("clock_drift_sps", &LunarGnssODTSConfig::clock_drift_sps,
+                     "Initial receiver clock drift [s/s]")
       .def_readwrite("clock_model", &LunarGnssODTSConfig::clock_model,
                      "Receiver clock model: OCXO, USO, CSAC, MINI_RAFS, RAFS, DSAC")
       .def_readwrite("use_three_state_clock_truth",
@@ -229,32 +286,51 @@ void InitGnssOdts(py::module& m) {
                      "while the filter stays 2-state")
       .def_readwrite("clock_drift_rate_sps2", &LunarGnssODTSConfig::clock_drift_rate_sps2,
                      "Initial truth clock drift-rate [s/s^2] (3-state truth clock only)")
-      .def_readwrite("moon_gravity_degree_truth", &LunarGnssODTSConfig::moon_gravity_degree_truth)
-      .def_readwrite("moon_gravity_order_truth", &LunarGnssODTSConfig::moon_gravity_order_truth)
-      .def_readwrite("moon_gravity_degree_filter", &LunarGnssODTSConfig::moon_gravity_degree_filter)
-      .def_readwrite("moon_gravity_order_filter", &LunarGnssODTSConfig::moon_gravity_order_filter)
+      .def_readwrite("moon_gravity_degree_truth", &LunarGnssODTSConfig::moon_gravity_degree_truth,
+                     "Moon gravity field degree for receiver truth propagation")
+      .def_readwrite("moon_gravity_order_truth", &LunarGnssODTSConfig::moon_gravity_order_truth,
+                     "Moon gravity field order for receiver truth propagation")
+      .def_readwrite("moon_gravity_degree_filter", &LunarGnssODTSConfig::moon_gravity_degree_filter,
+                     "Moon gravity field degree for filter propagation")
+      .def_readwrite("moon_gravity_order_filter", &LunarGnssODTSConfig::moon_gravity_order_filter,
+                     "Moon gravity field order for filter propagation")
       .def_readwrite("moon_gravity_degree_constellation",
-                     &LunarGnssODTSConfig::moon_gravity_degree_constellation)
+                     &LunarGnssODTSConfig::moon_gravity_degree_constellation,
+                     "Moon gravity field degree for almanac-mode constellation propagation")
       .def_readwrite("moon_gravity_order_constellation",
-                     &LunarGnssODTSConfig::moon_gravity_order_constellation)
-      .def_readwrite("include_earth", &LunarGnssODTSConfig::include_earth)
-      .def_readwrite("include_sun", &LunarGnssODTSConfig::include_sun)
+                     &LunarGnssODTSConfig::moon_gravity_order_constellation,
+                     "Moon gravity field order for almanac-mode constellation propagation")
+      .def_readwrite("include_earth", &LunarGnssODTSConfig::include_earth,
+                     "Include Earth third-body gravity in propagation")
+      .def_readwrite("include_sun", &LunarGnssODTSConfig::include_sun,
+                     "Include Sun third-body gravity in propagation")
       .def_readwrite("use_relativity", &LunarGnssODTSConfig::use_relativity,
                      "Apply Moon-centered relativistic clock-rate correction in truth and "
                      "filter propagation (JointOrbitClockDynamics)")
-      .def_readwrite("use_srp_truth", &LunarGnssODTSConfig::use_srp_truth)
-      .def_readwrite("use_srp_filter", &LunarGnssODTSConfig::use_srp_filter)
-      .def_readwrite("srp_coeff_truth_m2_kg", &LunarGnssODTSConfig::srp_coeff_truth_m2_kg)
-      .def_readwrite("srp_coeff_filter_m2_kg", &LunarGnssODTSConfig::srp_coeff_filter_m2_kg)
-      .def_readwrite("pseudorange_sigma_m", &LunarGnssODTSConfig::pseudorange_sigma_m)
-      .def_readwrite("doppler_sigma_hz", &LunarGnssODTSConfig::doppler_sigma_hz)
-      .def_readwrite("use_pseudorange", &LunarGnssODTSConfig::use_pseudorange)
-      .def_readwrite("use_doppler", &LunarGnssODTSConfig::use_doppler)
+      .def_readwrite("use_srp_truth", &LunarGnssODTSConfig::use_srp_truth,
+                     "Include solar radiation pressure in truth propagation")
+      .def_readwrite("use_srp_filter", &LunarGnssODTSConfig::use_srp_filter,
+                     "Include solar radiation pressure in filter propagation")
+      .def_readwrite("srp_coeff_truth_m2_kg", &LunarGnssODTSConfig::srp_coeff_truth_m2_kg,
+                     "Truth SRP coefficient (Cr*A/m) [m^2/kg]")
+      .def_readwrite("srp_coeff_filter_m2_kg", &LunarGnssODTSConfig::srp_coeff_filter_m2_kg,
+                     "Filter SRP coefficient (Cr*A/m) [m^2/kg]")
+      .def_readwrite("pseudorange_sigma_m", &LunarGnssODTSConfig::pseudorange_sigma_m,
+                     "Pseudorange measurement noise std [m] (when not C/N0-derived)")
+      .def_readwrite("doppler_sigma_hz", &LunarGnssODTSConfig::doppler_sigma_hz,
+                     "Doppler measurement noise std [Hz] (when not C/N0-derived)")
+      .def_readwrite("use_pseudorange", &LunarGnssODTSConfig::use_pseudorange,
+                     "Process pseudorange measurements")
+      .def_readwrite("use_doppler", &LunarGnssODTSConfig::use_doppler,
+                     "Process Doppler measurements")
       .def_readwrite("use_tdcp", &LunarGnssODTSConfig::use_tdcp,
                      "Add time-differenced carrier phase (TDCP) rows and switch the filter to "
                      "a UDU stochastic-cloning EKF carrying [x_k, x_(k-1)]")
-      .def_readwrite("carrier_phase_sigma_m", &LunarGnssODTSConfig::carrier_phase_sigma_m)
-      .def_readwrite("tdcp_sigma_m", &LunarGnssODTSConfig::tdcp_sigma_m)
+      .def_readwrite("carrier_phase_sigma_m", &LunarGnssODTSConfig::carrier_phase_sigma_m,
+                     "Carrier-phase measurement noise std [m]")
+      .def_readwrite("tdcp_sigma_m", &LunarGnssODTSConfig::tdcp_sigma_m,
+                     "Shared (truth+filter) additive TDCP noise std [m]; 0 uses the carrier-phase "
+                     "C/N0 floor")
       .def_readwrite("use_ionosphere_free", &LunarGnssODTSConfig::use_ionosphere_free,
                      "Process pseudorange as the dual-frequency (L1+L5) ionosphere-free "
                      "combination; TDCP stays single-frequency (L1)")
@@ -274,19 +350,30 @@ void InitGnssOdts(py::module& m) {
                      &LunarGnssODTSConfig::tdcp_min_tangent_altitude_m,
                      "Reject TDCP links whose LOS tangent point passes below this Earth "
                      "altitude [m]")
-      .def_readwrite("estimate_srp_coefficient", &LunarGnssODTSConfig::estimate_srp_coefficient)
-      .def_readwrite("initial_srp_coeff_m2_kg", &LunarGnssODTSConfig::initial_srp_coeff_m2_kg)
-      .def_readwrite("initial_position_sigma_m", &LunarGnssODTSConfig::initial_position_sigma_m)
-      .def_readwrite("initial_velocity_sigma_mps", &LunarGnssODTSConfig::initial_velocity_sigma_mps)
-      .def_readwrite("initial_clock_bias_sigma_s", &LunarGnssODTSConfig::initial_clock_bias_sigma_s)
+      .def_readwrite("estimate_srp_coefficient", &LunarGnssODTSConfig::estimate_srp_coefficient,
+                     "Estimate the SRP coefficient as a filter state")
+      .def_readwrite("initial_srp_coeff_m2_kg", &LunarGnssODTSConfig::initial_srp_coeff_m2_kg,
+                     "Initial filter SRP coefficient estimate (Cr*A/m) [m^2/kg]")
+      .def_readwrite("initial_position_sigma_m", &LunarGnssODTSConfig::initial_position_sigma_m,
+                     "Initial position uncertainty std [m]")
+      .def_readwrite("initial_velocity_sigma_mps", &LunarGnssODTSConfig::initial_velocity_sigma_mps,
+                     "Initial velocity uncertainty std [m/s]")
+      .def_readwrite("initial_clock_bias_sigma_s", &LunarGnssODTSConfig::initial_clock_bias_sigma_s,
+                     "Initial clock-bias uncertainty std [s]")
       .def_readwrite("initial_clock_drift_sigma_sps",
-                     &LunarGnssODTSConfig::initial_clock_drift_sigma_sps)
+                     &LunarGnssODTSConfig::initial_clock_drift_sigma_sps,
+                     "Initial clock-drift uncertainty std [s/s]")
       .def_readwrite("initial_srp_coeff_sigma_m2_kg",
-                     &LunarGnssODTSConfig::initial_srp_coeff_sigma_m2_kg)
-      .def_readwrite("process_accel_sigma_mps2", &LunarGnssODTSConfig::process_accel_sigma_mps2)
+                     &LunarGnssODTSConfig::initial_srp_coeff_sigma_m2_kg,
+                     "Initial SRP-coefficient uncertainty std [m^2/kg]")
+      .def_readwrite("process_accel_sigma_mps2", &LunarGnssODTSConfig::process_accel_sigma_mps2,
+                     "Process-noise acceleration std [m/s^2]")
       .def_readwrite("process_srp_coeff_sigma_m2_kg_sqrt_s",
-                     &LunarGnssODTSConfig::process_srp_coeff_sigma_m2_kg_sqrt_s)
-      .def_readwrite("integration_step_s", &LunarGnssODTSConfig::integration_step_s)
+                     &LunarGnssODTSConfig::process_srp_coeff_sigma_m2_kg_sqrt_s,
+                     "SRP-coefficient random-walk process-noise std [m^2/kg/sqrt(s)] (numerical "
+                     "floor, not a physical model)")
+      .def_readwrite("integration_step_s", &LunarGnssODTSConfig::integration_step_s,
+                     "Numerical propagation integration step [s]")
       .def_readwrite("precompute_progress_interval_s",
                      &LunarGnssODTSConfig::precompute_progress_interval_s,
                      "Minimum wall-clock seconds between Stage 1 precompute progress prints")
@@ -303,31 +390,43 @@ void InitGnssOdts(py::module& m) {
 
   // ---- LunarGnssODTSSummary ------------------------------------------------------
 
-  py::class_<LunarGnssODTSSummary>(m, "LunarGnssODTSSummary")
+  py::class_<LunarGnssODTSSummary>(m, "LunarGnssODTSSummary",
+                                   "Per-seed ODTS run summary (final and RMS estimation errors)")
       .def(py::init<>())
-      .def_readonly("monte_carlo_index", &LunarGnssODTSSummary::monte_carlo_index)
-      .def_readonly("num_epochs", &LunarGnssODTSSummary::num_epochs)
-      .def_readonly("final_position_error_m", &LunarGnssODTSSummary::final_position_error_m)
-      .def_readonly("final_velocity_error_mps", &LunarGnssODTSSummary::final_velocity_error_mps)
-      .def_readonly("final_clock_bias_error_m", &LunarGnssODTSSummary::final_clock_bias_error_m)
+      .def_readonly("monte_carlo_index", &LunarGnssODTSSummary::monte_carlo_index,
+                    "Monte-Carlo seed index")
+      .def_readonly("num_epochs", &LunarGnssODTSSummary::num_epochs, "Number of filter epochs")
+      .def_readonly("final_position_error_m", &LunarGnssODTSSummary::final_position_error_m,
+                    "Final-epoch position error [m]")
+      .def_readonly("final_velocity_error_mps", &LunarGnssODTSSummary::final_velocity_error_mps,
+                    "Final-epoch velocity error [m/s]")
+      .def_readonly("final_clock_bias_error_m", &LunarGnssODTSSummary::final_clock_bias_error_m,
+                    "Final-epoch clock-bias error [m]")
       .def_readonly("final_clock_drift_error_mps",
-                    &LunarGnssODTSSummary::final_clock_drift_error_mps)
+                    &LunarGnssODTSSummary::final_clock_drift_error_mps,
+                    "Final-epoch clock-drift error [m/s]")
       .def_readonly("final_srp_coeff_error_m2_kg",
-                    &LunarGnssODTSSummary::final_srp_coeff_error_m2_kg)
-      .def_readonly("rms_position_error_m", &LunarGnssODTSSummary::rms_position_error_m)
-      .def_readonly("rms_velocity_error_mps", &LunarGnssODTSSummary::rms_velocity_error_mps);
+                    &LunarGnssODTSSummary::final_srp_coeff_error_m2_kg,
+                    "Final-epoch SRP-coefficient error [m^2/kg] (NaN if not estimated)")
+      .def_readonly("rms_position_error_m", &LunarGnssODTSSummary::rms_position_error_m,
+                    "RMS position error over the run [m]")
+      .def_readonly("rms_velocity_error_mps", &LunarGnssODTSSummary::rms_velocity_error_mps,
+                    "RMS velocity error over the run [m/s]");
 
   // ---- LunarGnssOdtsApp (agent-based) --------------------------------------------
   // The app hosted on the physical `Spacecraft` receiver. Retrieve it from a
   // `pnt.Simulation` via `sim.get_agent("gnss_manager").get_application()` (downcasts here),
   // then read its per-seed `LunarGnssODTSSummary` list; the full time series live in the
   // trajectory_mc<N>.csv / summary.csv outputs under config.output_dir.
-  py::class_<LunarGnssOdtsApp, Application, std::shared_ptr<LunarGnssOdtsApp>>(m,
-                                                                               "LunarGnssOdtsApp")
+  py::class_<LunarGnssOdtsApp, Application, std::shared_ptr<LunarGnssOdtsApp>>(
+      m, "LunarGnssOdtsApp",
+      "Coordinator app for the lunar GNSS ODTS scenario, hosted on a Spacecraft receiver; its "
+      "scheduled Step runs the whole Monte-Carlo EKF body and writes the CSV outputs")
       .def("precompute", &LunarGnssOdtsApp::Precompute,
            "Build receiver truth trajectory and GNSS link/CN0 geometry, writing "
            "config.links_file (optional; the EKF Step computes links in-memory otherwise)")
-      .def("get_config", &LunarGnssOdtsApp::GetConfig, py::return_value_policy::reference_internal)
+      .def("get_config", &LunarGnssOdtsApp::GetConfig, py::return_value_policy::reference_internal,
+           "The resolved LunarGnssODTSConfig driving this app")
       .def("get_summaries", &LunarGnssOdtsApp::GetSummaries,
            py::return_value_policy::reference_internal,
            "Per-seed LunarGnssODTSSummary list; the full time series live in the "

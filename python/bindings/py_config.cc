@@ -114,33 +114,40 @@ public:
 void InitConfig(py::module& m) {
   // Config wrapper class
   auto config_class
-      = py::class_<ConfigWrapper>(m, "Config")
-            .def(py::init<>())
-            .def(py::init<const Config&>())
+      = py::class_<ConfigWrapper>(m, "Config",
+                                  "YAML-backed config node with dict- and attribute-style access.")
+            .def(py::init<>(), "Construct an empty config.")
+            .def(py::init<const Config&>(), "Construct from a YAML node.")
             .def(py::init([](py::dict dict) {
-              Config config = pybind11::detail::python_to_yaml(dict);
-              return ConfigWrapper(config);
-            }))
-            .def("__getitem__", &ConfigWrapper::get_item)
-            .def("__setitem__", &ConfigWrapper::set_item)
-            .def("__getattr__", &ConfigWrapper::get_attr)
-            .def("__contains__", &ConfigWrapper::contains)
-            .def("__len__", &ConfigWrapper::size)
-            .def("keys", &ConfigWrapper::keys)
-            .def("values", &ConfigWrapper::values)
-            .def("items", &ConfigWrapper::items)
-            .def("get", &ConfigWrapper::get, py::arg("key"), py::arg("default") = py::none())
-            .def("to_string", &ConfigWrapper::to_string)
-            .def("update", &ConfigWrapper::update)
-            .def("to_dict", &ConfigWrapper::to_dict)
+                   Config config = pybind11::detail::python_to_yaml(dict);
+                   return ConfigWrapper(config);
+                 }),
+                 "Construct from a Python dict.")
+            .def("__getitem__", &ConfigWrapper::get_item,
+                 "Get a value by key; raises KeyError if missing.")
+            .def("__setitem__", &ConfigWrapper::set_item, "Set a value by key.")
+            .def("__getattr__", &ConfigWrapper::get_attr,
+                 "Get a value by attribute; None if missing.")
+            .def("__contains__", &ConfigWrapper::contains, "True if the key is present.")
+            .def("__len__", &ConfigWrapper::size, "Number of top-level entries.")
+            .def("keys", &ConfigWrapper::keys, "List of top-level keys.")
+            .def("values", &ConfigWrapper::values, "List of top-level values.")
+            .def("items", &ConfigWrapper::items, "List of (key, value) pairs.")
+            .def("get", &ConfigWrapper::get, py::arg("key"), py::arg("default") = py::none(),
+                 "Get a value by key, returning default if missing.")
+            .def("to_string", &ConfigWrapper::to_string, "Serialize the config to a YAML string.")
+            .def("update", &ConfigWrapper::update, "Replace the config contents from a dict.")
+            .def("to_dict", &ConfigWrapper::to_dict, "Convert the config to a Python dict.")
             .def("__repr__", &ConfigWrapper::to_string)
             .def("__str__", &ConfigWrapper::to_string)
             // Copy support
             .def("copy", &ConfigWrapper::copy, "Create a deep copy of the config")
-            .def("__copy__", [](const ConfigWrapper& self) { return self.copy(); })
+            .def(
+                "__copy__", [](const ConfigWrapper& self) { return self.copy(); },
+                "Return a deep copy (copy.copy support).")
             .def(
                 "__deepcopy__", [](const ConfigWrapper& self, py::dict) { return self.copy(); },
-                py::arg("memo"))
+                py::arg("memo"), "Return a deep copy (copy.deepcopy support).")
             // Pickle support
             .def(py::pickle(
                 [](const ConfigWrapper& self) {  // __getstate__
@@ -153,8 +160,10 @@ void InitConfig(py::module& m) {
                 }));
 
   // Config management functions
-  m.def("add_config_search_dir", &AddConfigSearchDir, py::arg("dir"));
-  m.def("init_default_config_search_dirs", &InitDefaultConfigSearchDirs);
+  m.def("add_config_search_dir", &AddConfigSearchDir, py::arg("dir"),
+        "Add a directory to the config file search path.");
+  m.def("init_default_config_search_dirs", &InitDefaultConfigSearchDirs,
+        "Initialize the config search path with LuPNT's default directories.");
 
   // load_config with path (string)
   m.def(
@@ -163,7 +172,8 @@ void InitConfig(py::module& m) {
         Config config = LoadConfig(path, key, recursive);
         return ConfigWrapper(config);
       },
-      py::arg("path"), py::arg("key") = "", py::arg("recursive") = true);
+      py::arg("path"), py::arg("key") = "", py::arg("recursive") = true,
+      "Load a config from a YAML file, optionally selecting a sub-key and resolving includes.");
 
   // load_config with Config (accepts dict or YAML::Node via type caster)
   m.def(
@@ -172,7 +182,7 @@ void InitConfig(py::module& m) {
         Config result = LoadConfig(config);
         return ConfigWrapper(result);
       },
-      py::arg("config"));
+      py::arg("config"), "Resolve includes/defaults on a config given as a dict or YAML node.");
 
   // load_config with ConfigWrapper
   m.def(
@@ -181,17 +191,17 @@ void InitConfig(py::module& m) {
         Config result = LoadConfig(config_wrapper.node);
         return ConfigWrapper(result);
       },
-      py::arg("config"));
+      py::arg("config"), "Resolve includes/defaults on an existing Config.");
 
   m.def(
       "save_config",
       [](const ConfigWrapper& config_wrapper, const std::string& path) {
         SaveConfig(config_wrapper.node, path);
       },
-      py::arg("config"), py::arg("path"));
+      py::arg("config"), py::arg("path"), "Write a config to a YAML file.");
 
   m.def(
       "config_to_string",
       [](const ConfigWrapper& config_wrapper) { return ConfigToString(config_wrapper.node); },
-      py::arg("config"));
+      py::arg("config"), "Serialize a config to a YAML string.");
 }
