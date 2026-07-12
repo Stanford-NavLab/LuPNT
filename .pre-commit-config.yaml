@@ -16,9 +16,16 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-yaml
+      # The GNSS test fixtures under cpp/test/fixtures/ are fixed-column data
+      # products (SP3/RINEX-nav/ANTEX); stripping trailing whitespace or rewriting
+      # line endings corrupts their column layout, so exclude them from the
+      # whitespace-normalizing hooks.
       - id: end-of-file-fixer
+        exclude: '^cpp/test/fixtures/'
       - id: trailing-whitespace
+        exclude: '^cpp/test/fixtures/'
       - id: mixed-line-ending
+        exclude: '^cpp/test/fixtures/'
       # Block accidental large files. Interactive plots/scenes are hosted on
       # lupnt-doc-assets (not committed); the tutorial notebooks keep only small
       # optimized figures, so ~1 MB is the largest legitimate file here.

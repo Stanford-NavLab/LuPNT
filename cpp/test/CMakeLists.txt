@@ -67,6 +67,12 @@ file(GLOB_RECURSE sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 add_executable(${PROJECT_NAME} ${sources})
 target_link_libraries(${PROJECT_NAME} Catch2::Catch2 lupnt::lupnt)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
+
+# Absolute path to committed, in-repo test fixtures (small trimmed GNSS products, etc.) so
+# data-backed loader tests can run in CI without downloading products.
+target_compile_definitions(
+  ${PROJECT_NAME} PRIVATE LUPNT_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+)
 if(TARGET iri2007_lib)
   set_property(
     TARGET ${PROJECT_NAME}
