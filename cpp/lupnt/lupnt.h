@@ -47,7 +47,6 @@
 #include "lupnt/conversions/frame_converter.h"
 #include "lupnt/conversions/frame_converter_spice.h"
 #include "lupnt/conversions/mean_osc_conversions.h"
-#include "lupnt/conversions/mean_osc_lunar_conversions.h"
 #include "lupnt/conversions/state_conversions.h"
 #include "lupnt/conversions/state_converter.h"
 #include "lupnt/conversions/time_conversions.h"
