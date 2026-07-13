@@ -19,8 +19,7 @@ namespace lupnt {
   ///   - range-rate row : `[((dv - rdot*u)/rho)^T, u^T]`.
   ///
   /// Batch orbit-determination chains this instantaneous design matrix with the state
-  /// transition matrix `Phi(t_k, t0)` outside the model; this class owns only the geometry
-  /// (previously implemented inline in `GroundStationOdtsApp::Solve`).
+  /// transition matrix `Phi(t_k, t0)` outside the model; this class owns only the geometry.
   class GroundStationRangeMeasurement : public MeasurementClone<GroundStationRangeMeasurement> {
   public:
     struct Config {

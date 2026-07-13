@@ -12,6 +12,11 @@
 # integration frame, and force model. The target and the estimator share this one
 # force model, so there is no truth/filter model mismatch. Add more stations or
 # targets simply by listing more agents.
+#
+# Each tracking app can optionally add Earth signal-path delays (troposphere,
+# ionosphere, relativistic Shapiro) and a solid Earth tide station displacement to
+# its truth observables -- see the `apply_*` keys on `DSS14` below. They default off,
+# so the baseline scenario tracks a pure geometric range.
 
 name: ground_station_odts
 epoch: "2026-01-01T00:00:00"
@@ -100,6 +105,25 @@ agents:
       range_sigma_m: 10.0
       range_rate_sigma_mps: 1.0e-3
       seed: 42
+
+      # Optional signal-path / station-location corrections (all default off). When enabled
+      # they are added to the *truth* observable this sensor generates, while the estimator
+      # still models a pure geometric range -- so they appear as realistic tracking errors.
+      # Path delays (troposphere, ionosphere, Shapiro) bias the range; the solid Earth tide
+      # displaces the station position and so affects both range and range-rate.
+      apply_troposphere: false        # Saastamoinen zenith delay + 1/sin(el) mapping (~2.4 m
+                                      #   zenith, ~14 m at 10 deg). Unset pressure/temperature
+                                      #   default to the standard atmosphere at the station height.
+      # troposphere_pressure_hpa: 1013.25
+      # troposphere_temperature_k: 288.15
+      # troposphere_humidity_pct: 50.0
+      apply_ionosphere: false         # thin-shell VTEC delay 40.3*STEC/f^2 (dispersive, so a
+                                      #   dual-frequency link cancels it). ~0.06 m at 10 TECU,
+                                      #   X-band zenith; scales as 1/f^2.
+      # ionosphere_vtec_tecu: 10.0
+      # signal_frequency_hz: 8.4e9    # X-band downlink
+      apply_shapiro: false            # relativistic (Sun + Earth) light-time delay, a few m
+      apply_solid_earth_tide: false   # degree-2 solid Earth tide station displacement (<~0.3 m)
 
   DSS43:
     class: GroundStation

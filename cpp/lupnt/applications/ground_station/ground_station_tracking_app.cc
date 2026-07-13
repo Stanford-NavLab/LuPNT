@@ -3,8 +3,10 @@
 #include <limits>
 #include <utility>
 
+#include "lupnt/agents/ground_station.h"
 #include "lupnt/applications/ground_station/ground_station_manager_app.h"
 #include "lupnt/lupnt.h"
+#include "lupnt/measurements/ground_station_corrections.h"
 #include "lupnt/simulations/world.h"
 
 namespace lupnt {
@@ -26,6 +28,19 @@ namespace lupnt {
     range_rate_sigma_mps_ = config["range_rate_sigma_mps"].as<double>(range_rate_sigma_mps_);
     seed_ = config["seed"].as<int>(seed_);
 
+    // Optional truth-model corrections (Earth signal-path delays + station-location tide).
+    apply_solid_earth_tide_ = config["apply_solid_earth_tide"].as<bool>(apply_solid_earth_tide_);
+    apply_troposphere_ = config["apply_troposphere"].as<bool>(apply_troposphere_);
+    apply_ionosphere_ = config["apply_ionosphere"].as<bool>(apply_ionosphere_);
+    apply_shapiro_ = config["apply_shapiro"].as<bool>(apply_shapiro_);
+    tropo_pressure_hpa_ = config["troposphere_pressure_hpa"].as<double>(tropo_pressure_hpa_);
+    tropo_temperature_k_ = config["troposphere_temperature_k"].as<double>(tropo_temperature_k_);
+    tropo_humidity_pct_ = config["troposphere_humidity_pct"].as<double>(tropo_humidity_pct_);
+    iono_vtec_tecu_ = config["ionosphere_vtec_tecu"].as<double>(iono_vtec_tecu_);
+    signal_frequency_hz_ = config["signal_frequency_hz"].as<double>(signal_frequency_hz_);
+    corrections_enabled_
+        = apply_solid_earth_tide_ || apply_troposphere_ || apply_ionosphere_ || apply_shapiro_;
+
     LUPNT_CHECK(use_range_ || use_range_rate_,
                 "GroundStationTrackingApp needs at least one of use_range / use_range_rate",
                 "GroundStationTrackingApp");
@@ -44,6 +59,12 @@ namespace lupnt {
     State gs_state = gs->GetState();
     station_r_ = gs_state.head(3);
     station_frame_ = gs_state.GetFrame();
+
+    // Geodetic latitude/height for the troposphere and solid-tide models (if requested).
+    if (auto* gs_geo = dynamic_cast<GroundStation*>(agent_)) {
+      station_lat_rad_ = gs_geo->GetLatitudeDegDouble() * RAD;
+      station_height_m_ = gs_geo->GetAltitudeMDouble();
+    }
 
     // Resolve the manager app and register this station with it.
     Agent* mgr_agent = sim->GetAgent(manager_name_);
@@ -87,14 +108,55 @@ namespace lupnt {
     elev_deg_.push_back(elevation_deg);
     if (elevation_deg <= elevation_mask_deg_) return;
 
-    // Frame-invariant range / range-rate w.r.t. the station's inertial state.
-    Vec3d dr = (xt.head(3) - st_world.head(3)).cast<double>();
-    Vec3d dv = (xt.tail(3) - st_world.tail(3)).cast<double>();
+    // Optional signal-path / station-location corrections. These act on the *truth*
+    // geometry only: the nominal station position `st_world` is still reported to the
+    // manager, so an estimator that models a pure geometric range sees the corrections as
+    // realistic measurement errors. `st_truth` carries the solid-tide-displaced station.
+    Vec6 st_truth = st_world;
+    double path_delay = 0.0;  // added to the range observable [m]
+    if (corrections_enabled_) {
+      Vec3d earth_w = GetBodyPosVel(epoch_abs, BodyId::EARTH, world_frame).head(3).cast<double>();
+      Vec3d sun_w = GetBodyPosVel(epoch_abs, BodyId::SUN, world_frame).head(3).cast<double>();
+
+      if (apply_solid_earth_tide_) {
+        // Geocentric station / tide-body vectors (world frame is Moon-centered, so the Moon
+        // sits at the origin). The displacement is returned in the same inertial frame.
+        Vec3d station_geo = st_world.head(3).cast<double>() - earth_w;
+        Vec3d moon_geo = -earth_w;
+        Vec3d sun_geo = sun_w - earth_w;
+        Vec3d dtide = SolidEarthTideDisplacement(
+            station_geo, {{moon_geo, GM_MOON}, {sun_geo, GM_SUN}}, GM_EARTH, R_EARTH);
+        st_truth.head(3) += dtide.cast<Real>();
+      }
+      if (apply_troposphere_) {
+        double p_hpa = tropo_pressure_hpa_ > 0.0 ? tropo_pressure_hpa_
+                                                 : StandardAtmospherePressureHPa(station_height_m_);
+        double t_k = tropo_temperature_k_ > 0.0 ? tropo_temperature_k_
+                                                : StandardAtmosphereTemperatureK(station_height_m_);
+        path_delay
+            += TroposphereDelaySaastamoinen(elevation_deg * RAD, station_lat_rad_,
+                                            station_height_m_, p_hpa, t_k, tropo_humidity_pct_);
+      }
+      if (apply_ionosphere_) {
+        path_delay += IonosphereDelayThinShell(elevation_deg * RAD, iono_vtec_tecu_,
+                                               signal_frequency_hz_, station_height_m_);
+      }
+      if (apply_shapiro_) {
+        Vec3d r_tx = st_truth.head(3).cast<double>();
+        Vec3d r_rx = xt.head(3).cast<double>();
+        path_delay += ShapiroRangeDelay(r_tx, r_rx, {{earth_w, GM_EARTH}, {sun_w, GM_SUN}});
+      }
+    }
+
+    // Frame-invariant range / range-rate w.r.t. the (possibly tide-displaced) station state.
+    Vec3d dr = (xt.head(3) - st_truth.head(3)).cast<double>();
+    Vec3d dv = (xt.tail(3) - st_truth.tail(3)).cast<double>();
     double rho = dr.norm();
     double rho_dot = dr.dot(dv) / rho;
 
-    double range = use_range_ ? rho + SampleNormal(0.0, range_sigma_m_, &noise_rng_).val()
-                              : std::numeric_limits<double>::quiet_NaN();
+    double range = use_range_
+                       ? rho + path_delay + SampleNormal(0.0, range_sigma_m_, &noise_rng_).val()
+                       : std::numeric_limits<double>::quiet_NaN();
     double range_rate = use_range_rate_
                             ? rho_dot + SampleNormal(0.0, range_rate_sigma_mps_, &noise_rng_).val()
                             : std::numeric_limits<double>::quiet_NaN();

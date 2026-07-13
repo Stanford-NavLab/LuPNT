@@ -208,6 +208,82 @@ owns only the geometry.
 :math:`\sigma_\rho = 1` m, :math:`\sigma_{\dot\rho} = 10^{-3}` m/s; each row is
 optional via ``use_range`` / ``use_range_rate``.
 
+Ground-Station Signal-Path and Station-Location Corrections
+-------------------------------------------------------------------
+
+For an Earth ground station tracking a lunar spacecraft (Example 7, the three
+Deep Space Network complexes tracking an ELFO orbiter), the geometric range
+above omits the signal-path delays and crustal displacement that a real station
+experiences.  ``GroundStationTrackingApp`` (the sensor) can add these to the
+**truth** observable it generates, while the estimator keeps modelling the pure
+geometric range -- so an enabled correction appears as a realistic tracking
+error rather than being cancelled.  All four are off by default; the
+closed forms live in
+``cpp/lupnt/measurements/ground_station_corrections.{h,cc}``.  Path delays
+(troposphere, ionosphere, Shapiro) bias the range only; the solid Earth tide
+displaces the station and so affects both range and range-rate.
+
+**Troposphere** (``apply_troposphere``).  The non-dispersive neutral-atmosphere
+delay is a Saastamoinen zenith total delay mapped to the slant path by a
+:math:`1/\sin(\mathrm{el})` obliquity factor,
+
+.. math::
+
+   d_\mathrm{tropo}
+   = \frac{1}{\sin\mathrm{el}}\,
+     \frac{0.0022768\,P + 0.0022768\,(1255/T + 0.05)\,e}
+          {1 - 0.00266\cos 2\varphi - 2.8\times10^{-7} h},
+
+with surface pressure :math:`P` [hPa], temperature :math:`T` [K], water-vapour
+partial pressure :math:`e` [hPa] from the relative humidity, station latitude
+:math:`\varphi` and height :math:`h`.  Unset pressure/temperature default to the
+ISO standard atmosphere at the station height.  The zenith delay is
+:math:`\approx 2.4` m, growing to :math:`\approx 14` m at a 10° elevation.
+
+**Ionosphere** (``apply_ionosphere``).  A single-layer (thin-shell) model maps a
+vertical TEC through the ionospheric pierce point and applies the dispersive
+group delay,
+
+.. math::
+
+   d_\mathrm{iono} = \frac{40.3}{f^2}\,\mathrm{STEC},
+   \qquad
+   \mathrm{STEC} = \frac{\mathrm{VTEC}}{\cos z'},
+   \quad
+   \sin z' = \frac{R_\oplus + h}{R_\oplus + h_\mathrm{shell}}\sin z,
+
+with :math:`z` the zenith angle and :math:`h_\mathrm{shell}=350` km.  Because it
+scales as :math:`1/f^2` a dual-frequency link cancels it; at 10 TECU it is
+:math:`\approx 0.06` m at X-band (8.4 GHz) zenith and :math:`\approx 0.83` m at
+S-band (2.2 GHz).
+
+**Shapiro** (``apply_shapiro``).  The relativistic light-time delay, summed over
+the Sun and Earth,
+
+.. math::
+
+   d_\mathrm{Shapiro}
+   = \sum_j \frac{2\,\mu_j}{c^2}
+     \ln\!\frac{r_{1j} + r_{2j} + r_{12}}{r_{1j} + r_{2j} - r_{12}},
+
+with :math:`r_{1j}, r_{2j}` the station/spacecraft distances to body :math:`j`
+and :math:`r_{12}` the station-spacecraft range.  It is a few metres for the
+Earth-Moon geometry.
+
+**Solid Earth tide** (``apply_solid_earth_tide``).  The degree-2 in-phase
+crustal displacement (IERS Conventions), summed over the Moon and Sun,
+
+.. math::
+
+   \Delta r
+   = \sum_j \frac{\mu_j}{\mu_\oplus}\frac{R_\oplus^4}{R_j^3}
+     \Big\{ h_2\,\hat r\big[\tfrac{3}{2}(\hat R_j\!\cdot\!\hat r)^2 - \tfrac12\big]
+     + 3 l_2 (\hat R_j\!\cdot\!\hat r)\big[\hat R_j - (\hat R_j\!\cdot\!\hat r)\hat r\big]\Big\},
+
+with Love numbers :math:`h_2 = 0.6078`, :math:`l_2 = 0.0847`.  The truth station
+position is displaced by :math:`\Delta r` (peak :math:`\lesssim 0.3` m radial)
+while the nominal catalogue position is still reported to the estimator.
+
 Surface LANS / LunaNet Pseudorange
 -------------------------------------------------------------------
 

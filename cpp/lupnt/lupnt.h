@@ -120,6 +120,7 @@
 #include "lupnt/measurements/crosslink_measurement.h"
 #include "lupnt/measurements/gnss_measurement.h"
 #include "lupnt/measurements/ground_range_measurement.h"
+#include "lupnt/measurements/ground_station_corrections.h"
 #include "lupnt/measurements/lander_measurements.h"
 #include "lupnt/measurements/lunar_gnss_combined_measurement.h"
 #include "lupnt/measurements/measurement.h"

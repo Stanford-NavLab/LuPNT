@@ -19,6 +19,14 @@ calls ``Run()``. The manager app also accepts an optional ``filter_dynamics:``
 block (or per-filter ``batch_dynamics:`` / ``sequential_dynamics:``) to run the
 batch and/or sequential filter at a deliberately different fidelity than truth.
 
+Each ``GroundStationTrackingApp`` can optionally add Earth signal-path delays
+(troposphere, ionosphere, relativistic Shapiro) and a solid Earth tide station
+displacement to its truth observables via the ``apply_*`` keys in the config;
+they default off, and an estimator that models a pure geometric range sees them
+as realistic tracking errors.  The closed forms and their magnitudes are given
+in :doc:`../../math/measurements` (Ground-Station Signal-Path and
+Station-Location Corrections).
+
 Mirrors :doc:`../Python/ex7_groundstation_odts`.
 
 .. literalinclude:: ../../../cpp/examples/tutorials/ex7_groundstation_odts.cc
