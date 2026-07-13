@@ -55,8 +55,8 @@ consistent:
   ``include_earth``/``include_sun`` from the presence of those bodies, plus
   ``relativity`` and the SRP scalars) so per-example dynamics builders that need
   their own integrator tolerances or clock coupling can be fed from one
-  consistent config surface.  Both ``relativity`` and the legacy
-  ``use_relativity`` spelling are accepted.
+  consistent config surface.  Both ``relativity`` and ``use_relativity`` are
+  accepted.
 
 State, Epoch, Frame, and Unit Contract
 -------------------------------------------------------------------
@@ -312,9 +312,9 @@ The acceleration is then rotated back to the integration frame:
    =
    R_{BF}^\mathsf{T} a_{J2,B}.
 
-Setting the body-fixed frame equal to the integration frame recovers the older
-inertial-axis J2 convention and is useful for reference comparisons that were
-generated with that approximation.
+Setting the body-fixed frame equal to the integration frame yields the
+inertial-axis J2 convention, useful for reference comparisons that use that
+approximation.
 
 Implemented by
 ``cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: JToCartTwoBodyDynamics::ComputeRates``:
@@ -479,10 +479,9 @@ Relativistic Orbit Correction
 When ``relativity`` is enabled, ``NBodyDynamics`` adds the full *n*-body
 point-mass relativistic perturbative acceleration of Moyer (2000), Eq. (4-26) --
 the parameterized post-Newtonian (PPN) Einstein--Infeld--Hoffmann acceleration in
-the Solar-System barycentric frame -- rather than the earlier single-body
-Schwarzschild correction.  The leading Newtonian point-mass term (the ``1`` in
-Moyer's first brace) is removed so this quantity *adds* to the Newtonian gravity
-already summed above.
+the Solar-System barycentric frame.  The leading Newtonian point-mass term (the
+``1`` in Moyer's first brace) is removed so this quantity *adds* to the Newtonian
+gravity already summed above.
 
 Let :math:`i` denote the spacecraft and :math:`j,k,l` the configured massive
 bodies, with barycentric positions :math:`r`, velocities :math:`\dot r`,
@@ -538,11 +537,8 @@ one-body Schwarzschild isotropic form (Moyer Eq. (4-61)),
    \right],
 
 which is the regression check in
-``cpp/test/dynamics/test_relativity_nbody.cc``.  (Note this is the *positive*
-sign of Moyer Eq. (4-61); the older, now-superseded two-body
-``AccelerationRelativisticCorrection`` used the opposite sign.)  Frame-dragging
-(Lense--Thirring) and geodesic-precession terms are not included in the current
-dynamics model.
+``cpp/test/dynamics/test_relativity_nbody.cc``.  Frame-dragging (Lense--Thirring)
+and geodesic-precession terms are not included in the current dynamics model.
 
 Implemented by
 ``cpp/lupnt/environment/forces.cc :: AccelerationRelativisticNBody`` and wired

@@ -14,10 +14,6 @@ All dependencies — the C++ compiler toolchain, CMake/Ninja, Python, and every
 C++/Python package — are provisioned by `Pixi <https://pixi.sh>`_ from
 conda-forge, so **you do not install any compiler or library by hand**.
 
-.. contents:: On this page
-   :local:
-   :depth: 1
-
 1. Prerequisites
 ================
 

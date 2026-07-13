@@ -80,9 +80,8 @@ Examples mapped to publications
 Selected NAV Lab lunar-PNT publications
 ---------------------------------------
 
-Ordered from oldest to newest.  A complete, up-to-date list is maintained at
-`kdricemt.github.io/publications <https://kdricemt.github.io/publications/>`_
-and on the `Stanford NAV Lab publications page
+Ordered from oldest to newest.  A complete, up-to-date list is maintained on the
+`Stanford NAV Lab publications page
 <https://navlab.stanford.edu/publications/conference-articles>`_.
 
 **2023**

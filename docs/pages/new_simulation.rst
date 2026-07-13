@@ -23,7 +23,7 @@ factories; a top-level ``world:`` block defines the shared read-only environment
 (epoch, integration frame, force model) that both the truth agents and the
 estimators draw from; and any new mission / navigation logic goes into a
 factory-registered ``Application`` that self-drives from the ``world:`` block.
-There is no longer a "monolithic" alternative — nothing subclasses ``Simulation``
+There is no "monolithic" alternative — nothing subclasses ``Simulation``
 or hand-writes a ``Run()`` loop; the ground-station ODTS, GNSS ODTS, ISL ODTS
 (centralized *and* distributed), ephemeris, surface-rover and lander scenarios
 all run this one way (see ``configs/*.yaml``).

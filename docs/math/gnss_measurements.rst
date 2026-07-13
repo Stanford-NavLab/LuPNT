@@ -229,9 +229,7 @@ where
    r_S^\odot = \lVert r_S - r_\odot(t_R) \rVert.
 
 The Sun position :math:`r_\odot(t_R)` is supplied by
-``SetSunPositionProvider`` or by the default Sun provider.  The legacy
-``options.shapiro_mu`` and ``options.shapiro_body_position`` fields are not
-used by the current implementation.
+``SetSunPositionProvider`` or by the default Sun provider.
 
 Ionosphere / Plasma Delay
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
