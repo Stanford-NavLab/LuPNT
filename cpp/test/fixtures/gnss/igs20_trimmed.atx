@@ -489,20 +489,571 @@ PV COPIED FROM GPS BLOCK III-A SATELLITE SVN 074            COMMENT
    G05                                                      END OF FREQUENCY    
                                                             END OF ANTENNA      
                                                             START OF ANTENNA    
-BLOCK II            G02                 G013      1989-044A TYPE / SERIAL NO    
+BLOCK IIR-B         G02                 G061      2004-045A TYPE / SERIAL NO    
                                              0    29-JAN-17 METH / BY / # / DATE
      0.0                                                    DAZI                
      0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
      2                                                      # OF FREQUENCIES    
-  1989     6    10     0     0    0.0000000                 VALID FROM          
-  2004     5    12    23    59   59.9999999                 VALID UNTIL         
+  2004    11     6     0     0    0.0000000                 VALID FROM          
 IGS20_2401                                                  SINEX CODE          
    G01                                                      START OF FREQUENCY  
-    279.00      0.00   2580.89                              NORTH / EAST / UP   
-   NOAZI   -0.80   -0.90   -0.90   -0.80   -0.40    0.20    0.80    1.30    1.40    1.20    0.70    0.00   -0.40   -0.70   -0.90   -0.90   -0.90   -0.90
+      1.30     -1.10    681.86                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
    G01                                                      END OF FREQUENCY    
    G02                                                      START OF FREQUENCY  
-    279.00      0.00   2580.89                              NORTH / EAST / UP   
-   NOAZI   -0.80   -0.90   -0.90   -0.80   -0.40    0.20    0.80    1.30    1.40    1.20    0.70    0.00   -0.40   -0.70   -0.90   -0.90   -0.90   -0.90
+      1.30     -1.10    681.86                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
    G02                                                      END OF FREQUENCY    
-                                                            END OF ANTENNA
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIF           G03                 G069      2014-068A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2014    10    29     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+    394.00      0.00   1482.26                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    394.00      0.00   1482.26                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIIA          G04                 G074      2018-109A TYPE / SERIAL NO    
+                    AEROSPACE/ESA/COD        1    30-JAN-19 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     3                                                      # OF FREQUENCIES    
+  2019    10    21     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+PCO publicly released by system provider (Dec 2021)         COMMENT             
+PV from estimations by ESA/CODE                             COMMENT             
+   G01                                                      START OF FREQUENCY  
+    -59.94     17.48   1179.80                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    -59.26     15.60    687.83                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G02                                                      END OF FREQUENCY    
+   G05                                                      START OF FREQUENCY  
+    -59.33     15.67    726.06                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G05                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIR-M         G05                 G050      2009-043A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2009     8    17     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+     -3.30     -0.30    742.63                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+     -3.30     -0.30    742.63                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIF           G06                 G067      2014-026A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2014     5    17     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+    394.00      0.00   1411.46                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    394.00      0.00   1411.46                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIR-M         G07                 G048      2008-012A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2008     3    15     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+     -0.40      5.00    757.00                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+     -0.40      5.00    757.00                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIF           G08                 G072      2015-033A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2015     7    15     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+    394.00      0.00   1427.68                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    394.00      0.00   1427.68                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIF           G09                 G068      2014-045A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2014     8     2     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+    394.00      0.00   1460.09                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    394.00      0.00   1460.09                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIF           G10                 G073      2015-062A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2015    10    31     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+    394.00      0.00   1429.49                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    394.00      0.00   1429.49                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIIA          G11                 G078      2021-054A TYPE / SERIAL NO    
+                    AEROSPACE/ESA/COD        1    30-JAN-19 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     3                                                      # OF FREQUENCIES    
+  2021     6    17     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+PCO publicly released by system provider (Dec 2021)         COMMENT             
+PV COPIED FROM GPS BLOCK III-A SATELLITE SVN 074            COMMENT             
+   G01                                                      START OF FREQUENCY  
+    -65.94     20.44   1185.75                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    -64.32     20.34    681.61                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G02                                                      END OF FREQUENCY    
+   G05                                                      START OF FREQUENCY  
+    -65.30     21.31    689.52                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G05                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIR-M         G12                 G058      2006-052A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2006    11    17     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+     10.20     -5.60    710.74                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+     10.20     -5.60    710.74                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIR-A         G13                 G043      1997-035A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  1997     7    23     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+     -2.40     -1.60   1287.12                              NORTH / EAST / UP   
+   NOAZI   -6.10   -5.20   -3.30   -1.00    1.40    3.50    4.70    4.90    4.10    2.80    0.80   -1.00   -2.10   -2.10   -1.40   -0.80    2.00    6.40
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+     -2.40     -1.60   1287.12                              NORTH / EAST / UP   
+   NOAZI   -6.10   -5.20   -3.30   -1.00    1.40    3.50    4.70    4.90    4.10    2.80    0.80   -1.00   -2.10   -2.10   -1.40   -0.80    2.00    6.40
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIIA          G14                 G077      2020-078A TYPE / SERIAL NO    
+                    AEROSPACE/ESA/COD        1    30-JAN-19 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     3                                                      # OF FREQUENCIES    
+  2020    11     5     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+PCO publicly released by system provider (Dec 2021)         COMMENT             
+PV COPIED FROM GPS BLOCK III-A SATELLITE SVN 074            COMMENT             
+   G01                                                      START OF FREQUENCY  
+    -63.55     23.19   1187.67                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    -61.89     25.83    701.34                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G02                                                      END OF FREQUENCY    
+   G05                                                      START OF FREQUENCY  
+    -59.60     24.92    684.05                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G05                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIR-M         G15                 G055      2007-047A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2007    10    17     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+      4.50      1.90    575.59                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+      4.50      1.90    575.59                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIR-A         G16                 G056      2003-005A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2003     1    29     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+     12.60     -6.90   1389.15                              NORTH / EAST / UP   
+   NOAZI   -6.10   -5.20   -3.30   -1.00    1.40    3.50    4.70    4.90    4.10    2.80    0.80   -1.00   -2.10   -2.10   -1.40   -0.80    2.00    6.40
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+     12.60     -6.90   1389.15                              NORTH / EAST / UP   
+   NOAZI   -6.10   -5.20   -3.30   -1.00    1.40    3.50    4.70    4.90    4.10    2.80    0.80   -1.00   -2.10   -2.10   -1.40   -0.80    2.00    6.40
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIR-M         G17                 G053      2005-038A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2005     9    26     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+      3.00      1.00    711.51                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+      3.00      1.00    711.51                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIIA          G18                 G075      2019-056A TYPE / SERIAL NO    
+                    AEROSPACE/ESA/COD        1    30-JAN-19 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     3                                                      # OF FREQUENCIES    
+  2020     3    13     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+PCO publicly released by system provider (Dec 2021)         COMMENT             
+PV COPIED FROM GPS BLOCK III-A SATELLITE SVN 074            COMMENT             
+   G01                                                      START OF FREQUENCY  
+    -64.42     19.48   1188.42                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    -64.79     22.06    702.29                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G02                                                      END OF FREQUENCY    
+   G05                                                      START OF FREQUENCY  
+    -64.92     20.85    705.85                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G05                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIR-B         G19                 G059      2004-009A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2004     3    20     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+      8.60     -0.60    718.61                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+      8.60     -0.60    718.61                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIR-A         G20                 G051      2000-025A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2000     5    11     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+      1.00     -3.20   1262.44                              NORTH / EAST / UP   
+   NOAZI   -6.10   -5.20   -3.30   -1.00    1.40    3.50    4.70    4.90    4.10    2.80    0.80   -1.00   -2.10   -2.10   -1.40   -0.80    2.00    6.40
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+      1.00     -3.20   1262.44                              NORTH / EAST / UP   
+   NOAZI   -6.10   -5.20   -3.30   -1.00    1.40    3.50    4.70    4.90    4.10    2.80    0.80   -1.00   -2.10   -2.10   -1.40   -0.80    2.00    6.40
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIIA          G21                 G081      2025-116A TYPE / SERIAL NO    
+                    AEROSPACE/ESA/COD        1    30-JAN-19 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     3                                                      # OF FREQUENCIES    
+  2025     5    30     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+PCO COPIED FROM GPS BLOCK III-A SATELLITE SVN 078           COMMENT             
+PV COPIED FROM GPS BLOCK III-A SATELLITE SVN 074            COMMENT             
+   G01                                                      START OF FREQUENCY  
+    -65.94     20.44   1185.75                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    -64.32     20.34    681.61                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G02                                                      END OF FREQUENCY    
+   G05                                                      START OF FREQUENCY  
+    -65.30     21.31    689.52                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G05                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIR-A         G22                 G044      2000-040A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2023     8    10     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+      1.40      4.70    936.22                              NORTH / EAST / UP   
+   NOAZI   -6.10   -5.20   -3.30   -1.00    1.40    3.50    4.70    4.90    4.10    2.80    0.80   -1.00   -2.10   -2.10   -1.40   -0.80    2.00    6.40
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+      1.40      4.70    936.22                              NORTH / EAST / UP   
+   NOAZI   -6.10   -5.20   -3.30   -1.00    1.40    3.50    4.70    4.90    4.10    2.80    0.80   -1.00   -2.10   -2.10   -1.40   -0.80    2.00    6.40
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIIA          G23                 G076      2020-041A TYPE / SERIAL NO    
+                    AEROSPACE/ESA/COD        1    30-JAN-19 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     3                                                      # OF FREQUENCIES    
+  2020     7    14     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+PCO publicly released by system provider (Dec 2021)         COMMENT             
+PV COPIED FROM GPS BLOCK III-A SATELLITE SVN 074            COMMENT             
+   G01                                                      START OF FREQUENCY  
+    -66.51     19.09   1183.82                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    -64.88     17.12    707.30                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G02                                                      END OF FREQUENCY    
+   G05                                                      START OF FREQUENCY  
+    -66.25     16.30    725.61                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G05                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIF           G24                 G065      2012-053A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2012    10     4     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+    394.00      0.00   1351.80                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    394.00      0.00   1351.80                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIF           G25                 G062      2010-022A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2010     5    28     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+    394.00      0.00   1454.15                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    394.00      0.00   1454.15                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIF           G26                 G071      2015-013A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2015     3    25     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+    394.00      0.00   1433.58                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    394.00      0.00   1433.58                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIF           G27                 G066      2013-023A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2013     5    15     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+    394.00      0.00   1436.32                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    394.00      0.00   1436.32                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIIA          G28                 G079      2023-009A TYPE / SERIAL NO    
+                    AEROSPACE/ESA/COD        1    30-JAN-19 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     3                                                      # OF FREQUENCIES    
+  2023     1    31     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+PCO publicly released by system provider (Jul 2023)         COMMENT             
+PV COPIED FROM GPS BLOCK III-A SATELLITE SVN 074            COMMENT             
+   G01                                                      START OF FREQUENCY  
+    -66.88     26.94   1201.75                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    -66.60     25.48    690.46                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G02                                                      END OF FREQUENCY    
+   G05                                                      START OF FREQUENCY  
+    -66.96     25.52    717.91                              NORTH / EAST / UP   
+   NOAZI   13.90   12.80   10.20    5.80    1.10   -4.50   -9.70  -12.80  -13.40  -11.80   -8.90   -4.50    1.20    7.20   13.30   13.30   13.30   13.30
+   G05                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIR-M         G29                 G057      2007-062A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2007    12    20     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+     10.90     -4.50    722.82                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+     10.90     -4.50    722.82                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIF           G30                 G064      2014-008A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2014     2    21     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+    394.00      0.00   1462.16                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    394.00      0.00   1462.16                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIR-M         G31                 G052      2006-042A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2006     9    25     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+     -0.80      5.80    837.04                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+     -0.80      5.80    837.04                              NORTH / EAST / UP   
+   NOAZI   10.70   10.10    8.00    4.60    0.50   -3.80   -7.50   -9.70  -10.30   -9.50   -7.40   -4.10    0.30    6.00   12.10   22.00   30.40   40.60
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
+                                                            START OF ANTENNA    
+BLOCK IIF           G32                 G070      2016-007A TYPE / SERIAL NO    
+                                             0    29-JAN-17 METH / BY / # / DATE
+     0.0                                                    DAZI                
+     0.0  17.0   1.0                                        ZEN1 / ZEN2 / DZEN  
+     2                                                      # OF FREQUENCIES    
+  2016     2     5     0     0    0.0000000                 VALID FROM          
+IGS20_2401                                                  SINEX CODE          
+   G01                                                      START OF FREQUENCY  
+    394.00      0.00   1471.74                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G01                                                      END OF FREQUENCY    
+   G02                                                      START OF FREQUENCY  
+    394.00      0.00   1471.74                              NORTH / EAST / UP   
+   NOAZI    6.10    4.40    2.80    1.30   -0.20   -1.40   -2.80   -3.90   -4.40   -4.40   -3.70   -2.30   -0.20    3.00    5.70   12.40   18.20   23.50
+   G02                                                      END OF FREQUENCY    
+                                                            END OF ANTENNA      
