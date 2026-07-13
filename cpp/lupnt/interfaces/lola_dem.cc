@@ -159,9 +159,21 @@ namespace lupnt {
     return GetElevation(xya(0).val(), xya(1).val());
   }
 
-  LunarDem LoadLolaDem(double lat_deg, double lon_deg, double half_width_m, double max_res) {
+  LunarDem LoadLolaDem(double lat_deg, double lon_deg, double half_width_m, double max_res,
+                       const std::filesystem::path& dem_file) {
     const LolaSite& site = SelectLolaSite(lat_deg, lon_deg);
-    std::filesystem::path path = DownloadLolaDem(site.id);
+    // An explicit `dem_file` overrides the site download entirely (no network access): the
+    // given GeoTIFF is cropped/downsampled directly. Otherwise fall back to the cached/
+    // downloaded PGDA tile for the nearest site.
+    std::filesystem::path path;
+    if (!dem_file.empty()) {
+      std::error_code ec;
+      LUPNT_CHECK(std::filesystem::exists(dem_file, ec),
+                  "Explicit LOLA DEM file not found: " + dem_file.string(), "LoadLolaDem");
+      path = dem_file;
+    } else {
+      path = DownloadLolaDem(site.id);
+    }
 
     // Read the raster geotransform to find the tile center (each site tile is centered on
     // its landing site), then crop a square window around it in native projected meters.

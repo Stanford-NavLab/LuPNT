@@ -55,7 +55,19 @@ namespace lupnt {
       double half_width_m = d["half_width_m"].as<double>(5000.0);
       double max_res_m = d["max_res_m"].as<double>(20.0);
 
-      dem_ = LoadLolaDem(site_lat_deg_, site_lon_deg_, half_width_m, max_res_m);
+      // Optional explicit tile: skip the PGDA download and crop this GeoTIFF directly. A
+      // relative path is resolved against the current working directory. Used to run surface
+      // scenarios (and their tests) against a small bundled fixture instead of the 41 MB tile.
+      std::filesystem::path dem_file;
+      if (d["dem_file"]) {
+        dem_file = d["dem_file"].as<std::string>();
+        if (!dem_file.empty() && dem_file.is_relative()) {
+          std::error_code ec;
+          dem_file = std::filesystem::absolute(dem_file, ec);
+        }
+      }
+
+      dem_ = LoadLolaDem(site_lat_deg_, site_lon_deg_, half_width_m, max_res_m, dem_file);
       dem_cx_ = dem_.center_x();
       dem_cy_ = dem_.center_y();
 

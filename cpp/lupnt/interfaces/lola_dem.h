@@ -117,12 +117,19 @@ namespace lupnt {
   /// (`DownloadLolaDem`), then crops a `2*half_width_m` square window centered on the tile
   /// and downsamples it to at most `max_res` grid spacing via the existing `LoadTiff`.
   ///
+  /// When `dem_file` is non-empty it overrides the site download entirely: the given GeoTIFF
+  /// is loaded/cropped/downsampled directly (no `DownloadLolaDem`, no network access). The
+  /// site metadata attached to the returned `LunarDem` is still the nearest `SelectLolaSite`
+  /// entry for the query lat/lon (a synthetic label, since the explicit file may be any tile).
+  /// This is the path used to run surface scenarios against a small bundled fixture tile.
+  ///
   /// @param lat_deg      Query latitude [deg] (negative near the south pole).
   /// @param lon_deg      Query east longitude [deg].
   /// @param half_width_m Half-width of the square crop window [m] about the tile center.
   /// @param max_res      Maximum output grid spacing [m] (downsampling target).
+  /// @param dem_file     Optional explicit GeoTIFF path; if set, skips site select/download.
   /// @return             The cropped/downsampled `LunarDem`.
   LunarDem LoadLolaDem(double lat_deg, double lon_deg, double half_width_m = 5000.0,
-                       double max_res = 20.0);
+                       double max_res = 20.0, const std::filesystem::path& dem_file = {});
 
 }  // namespace lupnt

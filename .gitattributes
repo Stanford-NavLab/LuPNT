@@ -1,0 +1,2 @@
+# Binary DEM test fixtures must never be line-ending/whitespace normalized
+cpp/test/fixtures/dem/*.tif binary

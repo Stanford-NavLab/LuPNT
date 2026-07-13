@@ -37,11 +37,12 @@ namespace {
 
   bool ConfigExists(const std::string& name) { return std::filesystem::exists(ConfigPath(name)); }
 
-  // The south-pole DEM tile the rover/lander scenarios crop from. Present in the
-  // repo data set, but guard so a fresh checkout without it skips cleanly.
-  bool Site01DemPresent() {
-    return std::filesystem::exists(GetDataPath() / "dem" / "LOLA_5mpp" / "Site01"
-                                   / "Site01_final_adj_5mpp_surf.tif");
+  // Small bundled DEM tile (full Site01 extent downsampled 5 m/px -> 30 m/px, < 1 MB) so the
+  // rover/lander surface scenarios crop terrain from a committed fixture instead of the 41 MB
+  // PGDA download. Injected into the in-memory config via `world.dem.dem_file`, which makes
+  // `World`/`LoadLolaDem` skip the site download entirely (works on CI without the real tile).
+  std::filesystem::path FixtureDemPath() {
+    return std::filesystem::path(LUPNT_TEST_FIXTURES_DIR) / "dem" / "Site01_5mpp_downsampled.tif";
   }
 
   // True if every entry of a matrix/vector is finite (no NaN/Inf leaked through).
@@ -193,13 +194,12 @@ TEST_CASE("simulations.integration.surface_rover_nav", "[integration]") {
   if (!ConfigExists("surface_rover_nav.yaml")) {
     SKIP("configs/surface_rover_nav.yaml not found");
   }
-  if (!Site01DemPresent()) {
-    SKIP("Site01 LOLA DEM tile not present (data-gated)");
-  }
 
   Config cfg = YAML::LoadFile(ConfigPath("surface_rover_nav.yaml").string());
   cfg["duration"] = "00:01:00";  // 60 s
   cfg["log_level"] = "WARNING";
+  // Crop terrain from the bundled fixture tile (no 41 MB PGDA download; runs on CI).
+  cfg["world"]["dem"]["dem_file"] = FixtureDemPath().string();
   Config app = cfg["agents"]["Rover"]["application"];
   app["duration_s"] = 60.0;  // match the shortened sim window
   app["dt_s"] = 1.0;
@@ -232,13 +232,12 @@ TEST_CASE("simulations.integration.lander_nav", "[integration]") {
   if (!ConfigExists("lander_nav.yaml")) {
     SKIP("configs/lander_nav.yaml not found");
   }
-  if (!Site01DemPresent()) {
-    SKIP("Site01 LOLA DEM tile not present (data-gated)");
-  }
 
   Config cfg = YAML::LoadFile(ConfigPath("lander_nav.yaml").string());
   cfg["duration"] = "00:00:30";  // 30 s of powered descent
   cfg["log_level"] = "WARNING";
+  // Crop terrain from the bundled fixture tile (no 41 MB PGDA download; runs on CI).
+  cfg["world"]["dem"]["dem_file"] = FixtureDemPath().string();
   // The guidance app (index 0) owns the truth-trajectory duration the nav app reads.
   cfg["agents"]["Lander"]["applications"][0]["duration_s"] = 30.0;
 
