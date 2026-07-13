@@ -264,6 +264,20 @@ namespace pecsim {
 
     params = iri_sub(jmag, blatd, blongd, yyyy, -ddd, dhour, aheight, aheight, DELH);
 
+    // Robustness for epochs beyond the bundled solar-index coverage. The
+    // apf107.dat / ig_rz.dat files ship through ~2024 and IRI only projects a
+    // couple of years past their end, so for later epochs (e.g. ex6's
+    // future-epoch runs) IRI returns its no-data sentinel (F10.7 <= 0) together
+    // with non-physical / NaN electron densities -- and this happens for BOTH
+    // the C++ and the Fortran GCPM paths, since they share the same IRI core and
+    // solar-index data. Step the requested year back until IRI has data, so the
+    // caller gets a finite estimate from the most recent available solar
+    // activity instead of NaN. Self-adjusting (no hard-coded cutoff year) and
+    // bounded so it can't loop forever if the data were missing entirely.
+    for (int back = 1; back <= 30 && (params.f107 <= 0.0 || !(params.neiri >= 0.0)); ++back) {
+      params = iri_sub(jmag, blatd, blongd, yyyy - back, -ddd, dhour, aheight, aheight, DELH);
+    }
+
     return params;
   }
 

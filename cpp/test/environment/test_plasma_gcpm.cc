@@ -144,17 +144,38 @@ TEST_CASE("environment.plasma.gcpm.iri_2007_density") {
 TEST_CASE("environment.plasma.gcpm.gcpm_v24_low_latitude_smoke") {
   CwdGuard guard;
   SetupPlasmaBasePath();
+  set_iri_model(IRIModel::IRI_2007);  // the C++ ne_iri_ps_trough path needs an IRI model set
 
   DateTime dt = SampleEpoch();
   // A low magnetic latitude routes gcpm_v24 through ne_iri_ps_trough (the
-  // plasmasphere/trough branch). This call is included to exercise that code
-  // path (coverage), but we only assert on the output *shape*: the pure-C++
-  // GCPM translation currently returns NaN electron densities on this branch
-  // (its internal iri_sm() F10.7 fetch comes back as 0), a known defect. The
-  // physically-validated densities are checked against gcpm_v24_fortran below.
+  // plasmasphere/trough branch). The C++ path returns a finite, physical
+  // electron density here. (The former NaN on this branch was not a translation
+  // defect but a future-epoch solar-index data gap; see the future-epoch test
+  // below and the year step-back fallback in iri_sm().)
   std::vector<double> out = gcpm_v24(dt, 1.0 + 320.0 / RE, 12.0, 0.2, 3.0);
   REQUIRE(out.size() == 8);
   INFO("gcpm_v24 (C++) low-latitude electron density: " << out[0]);
+  REQUIRE(std::isfinite(out[0]));
+  REQUIRE(out[0] > 0.0);
+}
+
+TEST_CASE("environment.plasma.gcpm.gcpm_v24_future_epoch") {
+  CwdGuard guard;
+  SetupPlasmaBasePath();
+  set_iri_model(IRIModel::IRI_2007);
+
+  // Epochs beyond the bundled solar-index projection (apf107.dat / ig_rz.dat end
+  // ~2024, IRI projects only ~2 yr) used to make BOTH the C++ and Fortran GCPM
+  // paths return NaN electron densities. The year step-back fallback (iri_sm and
+  // the gcpm_v24_fortran wrapper) keeps them finite by falling back to the most
+  // recent available solar activity.
+  DateTime dt{2035, 172, 12, 0, 0.0};
+  std::vector<double> out_cpp = gcpm_v24(dt, 1.0 + 320.0 / RE, 12.0, 0.2, 3.0);
+  std::vector<double> out_fortran = gcpm_v24_fortran(dt, 1.0 + 320.0 / RE, 12.0, 0.2, 3.0);
+  REQUIRE(std::isfinite(out_cpp[0]));
+  REQUIRE(out_cpp[0] > 0.0);
+  REQUIRE(std::isfinite(out_fortran[0]));
+  REQUIRE(out_fortran[0] > 0.0);
 }
 
 TEST_CASE("environment.plasma.gcpm.gcpm_v24_fortran_density_profile") {

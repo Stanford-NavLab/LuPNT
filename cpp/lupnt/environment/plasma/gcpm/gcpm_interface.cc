@@ -215,6 +215,16 @@ namespace pecsim {
     // Call the Fortran function
     gcpm_v24_(itime, &r_f, &amlt_f, &alatr_f, &akp_f, outn);
 
+    // Same future-epoch robustness as iri_sm(): the shared IRI solar-index data
+    // (apf107.dat / ig_rz.dat) ends ~2024 with only a short projection, so for
+    // later epochs the Fortran GCPM returns NaN densities. Step the requested
+    // year back (itime[0] = year*1000 + doy) until it has solar data, so a
+    // future-epoch call falls back to the most recent activity instead of NaN.
+    for (int back = 1; back <= 30 && !(outn[0] >= 0.0f); ++back) {
+      int itime_fb[2] = {itime[0] - back * 1000, itime[1]};
+      gcpm_v24_(itime_fb, &r_f, &amlt_f, &alatr_f, &akp_f, outn);
+    }
+
     std::vector<double> outvec;
     for (int i = 0; i < 4; ++i) {
       outvec.push_back(static_cast<double>(outn[i]));
