@@ -57,7 +57,8 @@ void InitDem(py::module& m) {
       "load_lola_dem",
       [](double lat_deg, double lon_deg, double half_width_m, double max_res,
          const std::string& dem_file) {
-        return LoadLolaDem(lat_deg, lon_deg, half_width_m, max_res, std::filesystem::path(dem_file));
+        return LoadLolaDem(lat_deg, lon_deg, half_width_m, max_res,
+                           std::filesystem::path(dem_file));
       },
       py::arg("lat_deg"), py::arg("lon_deg"), py::arg("half_width_m") = 5000.0,
       py::arg("max_res") = 20.0, py::arg("dem_file") = std::string(""),
