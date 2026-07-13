@@ -13,10 +13,11 @@ executable. Build them all with:
    pixi run build-examples          # configures cpp/examples and builds all_examples
    ./build-examples-pixi/ex1_propagate_orbit
 
-Each page below embeds the full source of one example. The GNSS trio (interface,
-measurement simulation, and orbit determination) is data-driven (SP3 precise
-ephemerides) and its standalone programs are documented separately under
-:doc:`GNSS <gnss>`. The constellation-design (ex12), Cesium (ex13) and
+Each page below embeds the full source of one example. The GNSS trio (ex3
+interface, ex5 measurement simulation, ex6 orbit determination) is data-driven
+(SP3 precise ephemerides + Earthdata) — see the :doc:`GNSS overview <gnss>` for
+the shared data setup and the :doc:`gnss_measurements` model reference. The
+constellation-design (ex12), Cesium (ex13) and
 optical-navigation (ex14) notebooks are Python-only — they build on the
 optimiser, Cesium and Blender tooling that lives in the Python layer — so they
 have no C++ counterpart here.
@@ -27,7 +28,10 @@ have no C++ counterpart here.
 
     ex1_propagate_orbit
     ex2_time_conversions
+    ex3_gnss_interface
     ex4_plasmasphere
+    ex5_gnss_measurement_sim
+    ex6_gnss_odts
     ex7_groundstation_odts
     ex8_isl_odts
     ex9_ephemeris

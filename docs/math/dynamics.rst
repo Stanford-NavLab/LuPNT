@@ -32,7 +32,7 @@ entries:
        - MOON: {n: 20, m: 20}   # spherical-harmonic gravity field to degree/order 20
        - EARTH: {}              # third body, point-mass (empty {} = no harmonics)
        - SUN: {}                # third body, point-mass
-     relativity: true           # Schwarzschild correction (see below)
+     relativity: true           # n-body post-Newtonian correction (see below)
      CR: 1.0                    # SRP: enables cannonball SRP with B_SRP = CR * area / mass
      area: 0.002
      mass: 1.0
@@ -476,61 +476,85 @@ exponentially in altitude and weights them by the diurnal-bulge factor
 Relativistic Orbit Correction
 -------------------------------------------------------------------
 
-When relativity is enabled, ``NBodyDynamics`` applies this correction for the
-Sun and for the closest non-Sun, non-SSB configured body, interpreted as the
-local central planet.  For the central body, let
+When ``relativity`` is enabled, ``NBodyDynamics`` adds the full *n*-body
+point-mass relativistic perturbative acceleration of Moyer (2000), Eq. (4-26) --
+the parameterized post-Newtonian (PPN) Einstein--Infeld--Hoffmann acceleration in
+the Solar-System barycentric frame -- rather than the earlier single-body
+Schwarzschild correction.  The leading Newtonian point-mass term (the ``1`` in
+Moyer's first brace) is removed so this quantity *adds* to the Newtonian gravity
+already summed above.
+
+Let :math:`i` denote the spacecraft and :math:`j,k,l` the configured massive
+bodies, with barycentric positions :math:`r`, velocities :math:`\dot r`,
+gravitational parameters :math:`\mu`, and pairwise distances
+:math:`r_{ij}=\lVert r_i-r_j\rVert`.  With PPN parameters :math:`\beta` and
+:math:`\gamma` (both unity in general relativity) and speed of light :math:`c`,
 
 .. math::
 
-   r_c = r - r_B,
-   \qquad
-   v_c = v - v_B,
-   \qquad
-   \mu = \mu_B.
+   \begin{aligned}
+   a_\mathrm{rel}
+   ={}& \sum_{j\neq i}\frac{\mu_j\,(r_j-r_i)}{r_{ij}^3}
+     \Big\{
+       -\frac{2(\beta+\gamma)}{c^2}\sum_{l\neq i}\frac{\mu_l}{r_{il}}
+       -\frac{2\beta-1}{c^2}\sum_{k\neq j}\frac{\mu_k}{r_{jk}} \\
+   &\qquad\quad
+       +\gamma\frac{\lVert\dot r_i\rVert^2}{c^2}
+       +(1+\gamma)\frac{\lVert\dot r_j\rVert^2}{c^2}
+       -\frac{2(1+\gamma)}{c^2}\,\dot r_i\!\cdot\!\dot r_j \\
+   &\qquad\quad
+       -\frac{3}{2c^2}\!\left[\frac{(r_i-r_j)\!\cdot\!\dot r_j}{r_{ij}}\right]^2
+       +\frac{1}{2c^2}(r_j-r_i)\!\cdot\!\ddot r_j
+     \Big\} \\
+   &+\frac{1}{c^2}\sum_{j\neq i}\frac{\mu_j}{r_{ij}^3}
+     \Big\{(r_i-r_j)\!\cdot\!\big[(2+2\gamma)\dot r_i-(1+2\gamma)\dot r_j\big]\Big\}
+     (\dot r_i-\dot r_j) \\
+   &+\frac{3+4\gamma}{2c^2}\sum_{j\neq i}\frac{\mu_j\,\ddot r_j}{r_{ij}}.
+   \end{aligned}
 
-The first-order Schwarzschild post-Newtonian acceleration correction is
+The perturbing-body accelerations :math:`\ddot r_j` are taken from the Newtonian
+*n*-body model, :math:`\ddot r_j=\sum_{k\neq j}\mu_k(r_k-r_j)/r_{jk}^3`; terms of
+order :math:`1/c^4` are dropped, so this Newtonian value is sufficient (Moyer,
+p. 4-21).
+
+Because the equation is written in barycentric coordinates, position
+*differences* are frame-independent but the absolute velocities in the
+:math:`1/c^2` terms are not.  ``NBodyDynamics`` therefore gathers
+Solar-System-barycenter (``BodyId::SSB``) referenced states of the spacecraft and
+of every configured body before evaluating it.
+
+For a single perturbing body at rest, the model above reduces *exactly* to the
+one-body Schwarzschild isotropic form (Moyer Eq. (4-61)),
 
 .. math::
 
    a_\mathrm{rel}
    =
-   -\frac{\mu}{c^2\lVert r_c\rVert^3}
+   \frac{\mu}{c^2\lVert r\rVert^3}
    \left[
-     \left(
-       \frac{4\mu}{\lVert r_c\rVert}
-       -
-       v_c^\mathsf{T}v_c
-     \right)r_c
-     +
-     4(r_c^\mathsf{T}v_c)v_c
-   \right].
+     \left(2(\beta+\gamma)\frac{\mu}{\lVert r\rVert}
+           -\gamma\lVert\dot r\rVert^2\right)r
+     +2(1+\gamma)(r\!\cdot\!\dot r)\,\dot r
+   \right],
 
-This is the gravito-electric correction.  Frame-dragging and third-body
-post-Newtonian terms are not included in the current dynamics model.
-
-The Sun term uses the same expression with
-
-.. math::
-
-   r_c = r - r_\odot,
-   \qquad
-   v_c = v - v_\odot,
-   \qquad
-   \mu = \mu_\odot.
+which is the regression check in
+``cpp/test/dynamics/test_relativity_nbody.cc``.  (Note this is the *positive*
+sign of Moyer Eq. (4-61); the older, now-superseded two-body
+``AccelerationRelativisticCorrection`` used the opposite sign.)  Frame-dragging
+(Lense--Thirring) and geodesic-precession terms are not included in the current
+dynamics model.
 
 Implemented by
-``cpp/lupnt/environment/forces.cc :: AccelerationRelativisticCorrection``;
-``NBodyDynamics::ComputeRates`` selects the nearest planet-like body as the
-second center (``min_relativity_distance`` loop):
+``cpp/lupnt/environment/forces.cc :: AccelerationRelativisticNBody`` and wired
+into ``NBodyDynamics::ComputeRates`` and ``ComputeAccelerations`` through the
+private ``RelativisticNBodyAcceleration`` helper, which assembles the
+SSB-referenced body states.
 
-.. code-block:: cpp
+.. note::
 
-   Vec3 AccelerationRelativisticCorrection(const Vec3& r, const Vec3& v, Real GM, Real c_light) {
-     Real c2 = c_light * c_light;
-     Real v2 = v.squaredNorm();
-     Real rv = r.dot(v);
-     return -GM / (c2 * pow(r.norm(), 3)) * ((4.0 * GM / r.norm() - v2) * r + 4.0 * rv * v);
-   }
+   Reference: T. D. Moyer, *Formulation for Observed and Computed Values of Deep
+   Space Network Data Types for Navigation*, JPL Publication 00-7 (DESCANSO
+   Monograph 2), 2000, Eqs. (4-26) and (4-61).
 
 Total N-Body Acceleration
 -------------------------------------------------------------------

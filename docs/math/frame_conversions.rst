@@ -269,21 +269,71 @@ Implemented by
 GCRF and ITRF
 -------------------------------------------------------------------
 
-The native GCRF-to-ITRF rotation is
+The transformation from the geocentric celestial frame (GCRF, an Earth-centered
+realization of the inertial ICRF axes) to the Earth-fixed ITRF follows the
+IAU 2006/2000A CIO-based (Celestial Intermediate Origin) convention.  It is the
+product of three rotations, each evaluated at the time scale it physically
+depends on:
 
 .. math::
 
    R_{\mathrm{ITRF},\mathrm{GCRF}}
    =
+   \underbrace{R_\mathrm{polar}(t_\mathrm{TT},\,\text{EOP})}_{\text{polar motion}}\;
+   \underbrace{R_\mathrm{ERA}(t_\mathrm{UT1})}_{\text{Earth rotation}}\;
+   \underbrace{R_\mathrm{PN}(t_\mathrm{TT})}_{\text{precession--nutation}} .
+
+Read right to left, a GCRF vector is first carried to the Celestial Intermediate
+Reference System (bias--precession--nutation), then rotated about the Celestial
+Intermediate Pole (CIP) through the sidereal Earth Rotation Angle, and finally
+tilted into the terrestrial pole by polar motion.
+
+**Precession--nutation** :math:`R_\mathrm{PN}`.  LuPNT reads the CIP unit-vector
+coordinates :math:`X,Y` and the CIO locator :math:`s` from tabulated
+IAU 2006/2000A (SOFA) series evaluated at TT, and builds the celestial-to-
+intermediate matrix directly from them:
+
+.. math::
+
+   R_\mathrm{PN}
+   =
+   R_z(-s)
+   \begin{bmatrix}
+     1-aX^2 & -aXY   & -X \\
+     -aXY   & 1-aY^2 & -Y \\
+     X      & Y      & 1-a\,(X^2+Y^2)
+   \end{bmatrix},
+   \qquad
+   a=\frac{1}{1+\sqrt{1-X^2-Y^2}} .
+
+**Earth rotation** :math:`R_\mathrm{ERA}=R_z(\theta_\mathrm{ERA})` is a rotation
+about the CIP by the Earth Rotation Angle, which is *linear* in UT1:
+
+.. math::
+
+   \theta_\mathrm{ERA}(t_\mathrm{UT1})
+   =
+   2\pi\left(0.7790572732640 + 1.00273781191135448\,D_\mathrm{UT1}\right),
+
+with :math:`D_\mathrm{UT1}` the number of UT1 days since J2000.  UT1 is recovered
+from the fitted :math:`\mathrm{UT1}-\mathrm{UTC}` when a SPICE/EOP model covers
+``t_tdb``, otherwise from the ``TDB``\ :math:`\to`\ ``UT1`` conversion.  Because
+:math:`\theta_\mathrm{ERA}` advances at the Earth rotation rate
+:math:`\omega_\oplus\approx7.292115\times10^{-5}\ \mathrm{rad/s}`, this is the
+only factor whose time derivative matters for the velocity transform.
+
+**Polar motion** :math:`R_\mathrm{polar}` aligns the CIP with the ITRF pole using
+the pole offsets :math:`x_p,y_p` (from the fitted EOP, or the bundled EOP table
+sampled at UTC) and the TIO locator
+:math:`s' = -47\ \mu''\times(t_\mathrm{TT}/36525\ \text{d})`:
+
+.. math::
+
    R_\mathrm{polar}
-   R_\mathrm{ERA}
-   R_\mathrm{PN}.
+   =
+   R_x(-y_p)\,R_y(-x_p)\,R_z(s') .
 
-Here :math:`R_\mathrm{PN}` is the IAU precession-nutation rotation,
-:math:`R_\mathrm{ERA}` is Earth rotation from UT1, and
-:math:`R_\mathrm{polar}` is polar motion from EOP data.
-
-The position and velocity mapping is
+The position and velocity mapping is then
 
 .. math::
 
@@ -297,7 +347,19 @@ The position and velocity mapping is
    =
    R_{\mathrm{ITRF},\mathrm{GCRF}} v_\mathrm{GCRF}
    +
-   \dot{R}_{\mathrm{ITRF},\mathrm{GCRF}} r_\mathrm{GCRF}.
+   \dot{R}_{\mathrm{ITRF},\mathrm{GCRF}} r_\mathrm{GCRF},
+
+where the rotation-rate term keeps only the dominant Earth-rotation derivative,
+
+.. math::
+
+   \dot{R}_{\mathrm{ITRF},\mathrm{GCRF}}
+   =
+   R_\mathrm{polar}\,\dot{R}_\mathrm{ERA}\,R_\mathrm{PN} ,
+
+so :math:`\dot{R}\,r_\mathrm{GCRF}` reproduces the :math:`\omega_\oplus\times r`
+transport velocity (the slow precession--nutation and polar-motion rates are
+neglected).
 
 The inverse is
 
