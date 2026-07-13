@@ -97,7 +97,11 @@ list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
 message(STATUS "Catch2_SOURCE_DIR: ${Catch2_SOURCE_DIR}")
 include(CTest)
 include(Catch)
-catch_discover_tests(${PROJECT_NAME})
+# SKIP_RETURN_CODE 4: Catch2 returns exit code 4 when a TEST_CASE is skipped (via SKIP()). Without
+# this, ctest reports a skipped test as FAILED -- which breaks CI whenever a data-gated test (e.g.
+# the DEM-backed rover/lander integration tests) skips because its data is absent from the
+# downloaded bundle.
+catch_discover_tests(${PROJECT_NAME} PROPERTIES SKIP_RETURN_CODE 4)
 
 # ---- code coverage ----
 
