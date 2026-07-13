@@ -124,14 +124,29 @@ TEST_CASE("dynamics.numerical_orbit_dynamics") {
 
     Vec6 rates_no_rel = dyn_no_rel.ComputeRates(t, state);
     Vec6 rates_rel = dyn_rel.ComputeRates(t, state);
-    Vec6 rv_sun = GetBodyPosVel(t_tdb, BodyId::SUN, Frame::GCRF);
-    Vec3 expected = AccelerationRelativisticCorrection(r_rel, v_rel, GM_EARTH)
-                    + AccelerationRelativisticCorrection(state.head(3) - rv_sun.head(3),
-                                                         state.tail(3) - rv_sun.tail(3), GM_SUN);
+
+    // The relativistic contribution now follows the full n-body point-mass model
+    // (Moyer 2000, Eq. 4-26 with the Newtonian term removed). Reconstruct the
+    // same SSB-referenced body/spacecraft states the dynamics uses internally and
+    // compare against AccelerationRelativisticNBody.
+    BodyId center = GetFrameCenter(Frame::GCRF);
+    Vec6 rv_center = GetBodyPosVel(t_tdb, BodyId::SSB, center, Frame::GCRF, SI_UNITS);
+    Vec3 r_ssb = state.head(3) + rv_center.head(3);
+    Vec3 v_ssb = state.tail(3) + rv_center.tail(3);
+    std::vector<Vec3> r_bodies, v_bodies;
+    std::vector<Real> mu_bodies;
+    for (const Body& b : {Body::Earth(), Body::Moon()}) {
+      Vec6 rvb = GetBodyPosVel(t_tdb, BodyId::SSB, b.id, Frame::GCRF, SI_UNITS);
+      r_bodies.push_back(rvb.head(3));
+      v_bodies.push_back(rvb.tail(3));
+      mu_bodies.push_back(b.GM);
+    }
+    Vec3 expected = AccelerationRelativisticNBody(r_ssb, v_ssb, r_bodies, v_bodies, mu_bodies,
+                                                  GetPhysicalConstants(SI_UNITS).C);
     Vec3 actual = rates_rel.tail(3) - rates_no_rel.tail(3);
 
     for (int i = 0; i < 3; ++i) {
-      REQUIRE_THAT(actual(i).val(), WithinAbs(expected(i).val(), 1.0e-15));
+      REQUIRE_THAT(actual(i).val(), WithinRel(expected(i).val(), 1.0e-8));
     }
   }
 }

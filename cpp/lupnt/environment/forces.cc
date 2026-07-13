@@ -180,6 +180,77 @@ namespace lupnt {
     return -GM / (c2 * pow(r_norm, 3)) * ((4.0 * GM / r_norm - v2) * r + 4.0 * rv * v);
   }
 
+  Vec3 AccelerationRelativisticNBody(const Vec3& r_sc, const Vec3& v_sc,
+                                     const std::vector<Vec3>& r_bodies,
+                                     const std::vector<Vec3>& v_bodies,
+                                     const std::vector<Real>& mu_bodies, Real c_light, Real beta,
+                                     Real gamma) {
+    const int n = static_cast<int>(r_bodies.size());
+    const Real c2 = c_light * c_light;
+
+    // Newtonian acceleration of each body j due to the other massive bodies
+    // (Eq. 4-27). Terms of order 1/c^4 are dropped, so the Newtonian value is
+    // sufficient here (Moyer 2000, p. 4-21). The spacecraft mass is negligible
+    // and so does not contribute.
+    std::vector<Vec3> a_body(n, Vec3::Zero());
+    for (int j = 0; j < n; ++j) {
+      Vec3 aj = Vec3::Zero();
+      for (int k = 0; k < n; ++k) {
+        if (k == j) continue;
+        Vec3 d = r_bodies[k] - r_bodies[j];
+        Real dn = d.norm();
+        if (dn <= EPS) continue;
+        aj += mu_bodies[k] * d / (dn * dn * dn);
+      }
+      a_body[j] = aj;
+    }
+
+    // Sum over l of mu_l / r_(sc,l): the spacecraft potential sum (the "l != i"
+    // term of Eq. 4-26, independent of j).
+    Real sum_mu_over_r_scl = 0.0;
+    for (int l = 0; l < n; ++l) {
+      Real r_scl = (r_bodies[l] - r_sc).norm();
+      if (r_scl > EPS) sum_mu_over_r_scl += mu_bodies[l] / r_scl;
+    }
+
+    const Real vsc2 = v_sc.squaredNorm();
+    Vec3 a_rel = Vec3::Zero();
+    for (int j = 0; j < n; ++j) {
+      const Vec3 r_ij = r_sc - r_bodies[j];  // r_i - r_j
+      const Real rij = r_ij.norm();
+      if (rij <= EPS) continue;
+      const Real rij3 = rij * rij * rij;
+      const Vec3 r_ji = -r_ij;  // r_j - r_i
+      const Vec3& vj = v_bodies[j];
+      const Real vj2 = vj.squaredNorm();
+
+      // Sum over k != j of mu_k / r_jk (potential at body j from the others).
+      Real sum_mu_over_rjk = 0.0;
+      for (int k = 0; k < n; ++k) {
+        if (k == j) continue;
+        Real rjk = (r_bodies[j] - r_bodies[k]).norm();
+        if (rjk > EPS) sum_mu_over_rjk += mu_bodies[k] / rjk;
+      }
+
+      // Scalar brace of Eq. (4-26) with the leading Newtonian "1" removed.
+      const Real rij_dot_vj = r_ij.dot(vj);
+      const Real brace = -(2.0 * (beta + gamma) / c2) * sum_mu_over_r_scl
+                         - ((2.0 * beta - 1.0) / c2) * sum_mu_over_rjk + gamma * vsc2 / c2
+                         + (1.0 + gamma) * vj2 / c2 - (2.0 * (1.0 + gamma) / c2) * v_sc.dot(vj)
+                         - (3.0 / (2.0 * c2)) * (rij_dot_vj / rij) * (rij_dot_vj / rij)
+                         + (1.0 / (2.0 * c2)) * r_ji.dot(a_body[j]);
+      a_rel += (mu_bodies[j] / rij3) * brace * r_ji;
+
+      // Second summation of Eq. (4-26).
+      const Real dot2 = r_ij.dot((2.0 + 2.0 * gamma) * v_sc - (1.0 + 2.0 * gamma) * vj);
+      a_rel += (1.0 / c2) * (mu_bodies[j] / rij3) * dot2 * (v_sc - vj);
+
+      // Third summation of Eq. (4-26).
+      a_rel += ((3.0 + 4.0 * gamma) / (2.0 * c2)) * (mu_bodies[j] / rij) * a_body[j];
+    }
+    return a_rel;
+  }
+
   /// @brief Computes the acceleration due to the atmospheric drag
   /// @param mjd_tt Terrestrial Time (Modified Julian Date)
   /// @param rv Satellite position and velocity in the inertial system [km, km/s]

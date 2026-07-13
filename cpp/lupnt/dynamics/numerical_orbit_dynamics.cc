@@ -522,6 +522,30 @@ namespace lupnt {
     return NumericalDynamics::Propagate(x0, t0, tf, u, stm);
   }
 
+  Vec3 NBodyDynamics::RelativisticNBodyAcceleration(Real t_tdb, const Vec3& r,
+                                                    const Vec3& v) const {
+    // Moyer (2000) Eq. (4-26) is written in Solar-System barycentric coordinates,
+    // so gather SSB-referenced states of the spacecraft and the massive bodies.
+    // Position differences are frame-independent, but the absolute velocities in
+    // the 1/c^2 terms are not, so the barycentric velocities matter.
+    PhysicalConstants constants = GetPhysicalConstants(units_);
+    Vec6 rv_center = GetBodyPosVel(t_tdb, BodyId::SSB, GetFrameCenter(frame_), frame_, units_);
+    Vec3 r_ssb = r + rv_center.head(3);
+    Vec3 v_ssb = v + rv_center.tail(3);
+    std::vector<Vec3> r_bodies, v_bodies;
+    std::vector<Real> mu_bodies;
+    r_bodies.reserve(bodies_.size());
+    v_bodies.reserve(bodies_.size());
+    mu_bodies.reserve(bodies_.size());
+    for (const auto& body : bodies_) {
+      Vec6 rv_b = GetBodyPosVel(t_tdb, BodyId::SSB, body.id, frame_, units_);
+      r_bodies.push_back(rv_b.head(3));
+      v_bodies.push_back(rv_b.tail(3));
+      mu_bodies.push_back(body.GM);
+    }
+    return AccelerationRelativisticNBody(r_ssb, v_ssb, r_bodies, v_bodies, mu_bodies, constants.C);
+  }
+
   VecX NBodyDynamics::ComputeRates(Real t, const State& rv) const {
     Real t_tdb = t + GetLupntEpoch();
     LUPNT_CHECK(frame_ != Frame::UNDEFINED, "Frame not set", "NBodyDynamics");
@@ -531,26 +555,8 @@ namespace lupnt {
     Vec3 r = rv.head(3);
     Vec3 v = rv.tail(3);
     Vec3 a = Vec3::Zero();
-    bool has_relativity_center = false;
-    Real min_relativity_distance = std::numeric_limits<double>::infinity();
-    Vec3 r_relativity_center = Vec3::Zero();
-    Vec3 v_relativity_center = Vec3::Zero();
-    Real GM_relativity_center = 0.0;
 
     for (const auto& body : bodies_) {
-      if (use_relativity_ && body.id != BodyId::SUN && body.id != BodyId::SSB) {
-        Vec6 rv_body = GetBodyPosVel(t_tdb, body.id, frame_, units_);
-        Vec3 r_rel = r - rv_body.head(3);
-        Real distance = r_rel.norm();
-        if (!has_relativity_center || distance.val() < min_relativity_distance.val()) {
-          has_relativity_center = true;
-          min_relativity_distance = distance;
-          r_relativity_center = rv_body.head(3);
-          v_relativity_center = rv_body.tail(3);
-          GM_relativity_center = body.GM;
-        }
-      }
-
       if (body.use_gravity_field) {
         auto& grav = body.gravity_field;
         Vec3 r_si = PositionToSI(r, units_);
@@ -599,14 +605,7 @@ namespace lupnt {
     }
 
     if (use_relativity_) {
-      PhysicalConstants constants = GetPhysicalConstants(units_);
-      Vec6 rv_sun = GetBodyPosVel(t_tdb, BodyId::SUN, frame_, units_);
-      a += AccelerationRelativisticCorrection(r - rv_sun.head(3), v - rv_sun.tail(3),
-                                              constants.GM_SUN, constants.C);
-      if (has_relativity_center) {
-        a += AccelerationRelativisticCorrection(r - r_relativity_center, v - v_relativity_center,
-                                                GM_relativity_center, constants.C);
-      }
+      a += RelativisticNBodyAcceleration(t_tdb, r, v);
     }
 
     Vec6 rv_dot;
@@ -624,29 +623,10 @@ namespace lupnt {
 
     std::map<std::string, Vec3> acc;
 
-    bool has_relativity_center = false;
-    Real min_relativity_distance = std::numeric_limits<double>::infinity();
-    Vec3 r_relativity_center = Vec3::Zero();
-    Vec3 v_relativity_center = Vec3::Zero();
-    Real GM_relativity_center = 0.0;
-
     Vec3 a_srp = Vec3::Zero();
     Vec3 a_drag = Vec3::Zero();
 
     for (const auto& body : bodies_) {
-      if (use_relativity_ && body.id != BodyId::SUN && body.id != BodyId::SSB) {
-        Vec6 rv_body = GetBodyPosVel(t_tdb, body.id, frame_, units_);
-        Vec3 r_rel = r - rv_body.head(3);
-        Real distance = r_rel.norm();
-        if (!has_relativity_center || distance.val() < min_relativity_distance.val()) {
-          has_relativity_center = true;
-          min_relativity_distance = distance;
-          r_relativity_center = rv_body.head(3);
-          v_relativity_center = rv_body.tail(3);
-          GM_relativity_center = body.GM;
-        }
-      }
-
       if (body.use_gravity_field) {
         auto& grav = body.gravity_field;
         Vec3 r_si = PositionToSI(r, units_);
@@ -711,15 +691,7 @@ namespace lupnt {
     if (use_drag_) acc["drag"] = a_drag;
 
     if (use_relativity_) {
-      PhysicalConstants constants = GetPhysicalConstants(units_);
-      Vec6 rv_sun = GetBodyPosVel(t_tdb, BodyId::SUN, frame_, units_);
-      Vec3 a_rel = AccelerationRelativisticCorrection(r - rv_sun.head(3), v - rv_sun.tail(3),
-                                                      constants.GM_SUN, constants.C);
-      if (has_relativity_center) {
-        a_rel += AccelerationRelativisticCorrection(
-            r - r_relativity_center, v - v_relativity_center, GM_relativity_center, constants.C);
-      }
-      acc["relativity"] = a_rel;
+      acc["relativity"] = RelativisticNBodyAcceleration(t_tdb, r, v);
     }
 
     return acc;

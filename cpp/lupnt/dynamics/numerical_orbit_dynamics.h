@@ -164,6 +164,13 @@ namespace lupnt {
     Frame frame_ = Frame::MOON_CI;
     UnitSystem units_ = SI_UNITS;
 
+    /// @brief Post-Newtonian relativistic perturbative acceleration of the
+    /// spacecraft from the full n-body model (Moyer 2000, Eq. 4-26, Newtonian
+    /// term removed). Gathers SSB-referenced body states and calls
+    /// `AccelerationRelativisticNBody`. `t_tdb` is absolute TDB; `r`, `v` are the
+    /// spacecraft state in the integration frame `frame_` (coherent units).
+    Vec3 RelativisticNBodyAcceleration(Real t_tdb, const Vec3& r, const Vec3& v) const;
+
   public:
     NBodyDynamics();
     /**

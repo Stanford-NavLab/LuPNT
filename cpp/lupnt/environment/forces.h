@@ -98,6 +98,31 @@ namespace lupnt {
   /// @return        Post-Newtonian acceleration correction [m/s^2]
   Vec3 AccelerationRelativisticCorrection(const Vec3& r, const Vec3& v, Real GM, Real c_light = C);
 
+  /// @brief Relativistic n-body point-mass perturbative acceleration of the
+  /// spacecraft, from Moyer (2000), "Formulation for Observed and Computed
+  /// Values of Deep Space Network Data Types for Navigation" (JPL Pub 00-7),
+  /// Eq. (4-26), with the leading Newtonian point-mass term (the "1" in the
+  /// first brace) removed so it can be ADDED to the Newtonian gravity already
+  /// computed. Body indices `i`, `j`, `k`, `l` in Eq. (4-26) refer to the
+  /// spacecraft (`i`) and the massive perturbing bodies (`j`, `k`, `l`). All
+  /// positions/velocities/GMs must be referred to the same (Solar-System
+  /// barycentric) inertial origin, in one coherent unit system. Body
+  /// accelerations use the Newtonian value (terms of order 1/c^4 are dropped,
+  /// per Moyer p. 4-21). beta = gamma = 1 recovers general relativity.
+  ///
+  /// @param r_sc, v_sc  Spacecraft (SSB-referenced) position and velocity
+  /// @param r_bodies    SSB-referenced positions of the massive bodies
+  /// @param v_bodies    SSB-referenced velocities of the massive bodies
+  /// @param mu_bodies   Gravitational parameters of the massive bodies
+  /// @param c_light     Speed of light (same coherent units)
+  /// @param beta, gamma PPN parameters (1 for general relativity)
+  /// @return            Post-Newtonian relativistic perturbative acceleration
+  Vec3 AccelerationRelativisticNBody(const Vec3& r_sc, const Vec3& v_sc,
+                                     const std::vector<Vec3>& r_bodies,
+                                     const std::vector<Vec3>& v_bodies,
+                                     const std::vector<Real>& mu_bodies, Real c_light = C,
+                                     Real beta = 1.0, Real gamma = 1.0);
+
   /**
    * @brief Computes the acceleration due to atmospheric drag.
    *
