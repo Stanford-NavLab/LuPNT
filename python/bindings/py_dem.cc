@@ -51,7 +51,16 @@ void InitDem(py::module& m) {
       [](const std::string& site_id) { return DownloadLolaDem(site_id).string(); },
       py::arg("site_id"),
       "Download (and cache under LUPNT_DATA_PATH) a site's DEM GeoTIFF; return its path.");
-  m.def("load_lola_dem", &LoadLolaDem, py::arg("lat_deg"), py::arg("lon_deg"),
-        py::arg("half_width_m") = 5000.0, py::arg("max_res") = 20.0,
-        "Load the appropriate NASA PGDA DEM for a query latitude/longitude [deg].");
+  // Paths are accepted as plain strings (converted to std::filesystem::path), the
+  // same convention as the other loaders -- pybind11 has no filesystem caster here.
+  m.def(
+      "load_lola_dem",
+      [](double lat_deg, double lon_deg, double half_width_m, double max_res,
+         const std::string& dem_file) {
+        return LoadLolaDem(lat_deg, lon_deg, half_width_m, max_res, std::filesystem::path(dem_file));
+      },
+      py::arg("lat_deg"), py::arg("lon_deg"), py::arg("half_width_m") = 5000.0,
+      py::arg("max_res") = 20.0, py::arg("dem_file") = std::string(""),
+      "Load the appropriate NASA PGDA DEM for a query latitude/longitude [deg]. If "
+      "`dem_file` is given, that GeoTIFF is used directly (no site selection or download).");
 }
