@@ -107,3 +107,76 @@ TEST_CASE("simulations.lunar_gnss_odts") {
 
   std::filesystem::remove_all(out_dir, ec);
 }
+
+// Companion to the almanac test above, exercising the OTHER constellation-source
+// path: `sp3_brdc` builds the truth transmitter states directly from a precise
+// SP3 product (rather than propagating almanac-seeded elements). Uses the trimmed
+// SP3 fixture (15 epochs over 75 min at 2026-01-14) so no download is needed;
+// broadcast-ephemeris injection is left off (the filter uses the SP3 truth
+// states), keeping the BRDC fixture unnecessary. Same coverage-only assertions.
+TEST_CASE("simulations.lunar_gnss_odts_sp3") {
+  const std::filesystem::path sp3_file = GnssFixture("COD0MGXFIN_trimmed.SP3");
+  const std::filesystem::path antex_file = GnssFixture("igs20_trimmed.atx");
+  REQUIRE(std::filesystem::exists(sp3_file));
+  REQUIRE(std::filesystem::exists(antex_file));
+
+  const std::filesystem::path out_dir
+      = std::filesystem::temp_directory_path() / "lupnt_gnss_odts_engine_sp3_test";
+  std::error_code ec;
+  std::filesystem::remove_all(out_dir, ec);
+
+  LunarGnssODTSConfig cfg;
+  cfg.seed = 42;
+  cfg.monte_carlo_runs = 1;
+
+  // Short arc that stays well inside the SP3 fixture's 75 min span.
+  cfg.duration_s = 300.0;
+  cfg.dt_s = 60.0;
+  cfg.ephemeris_dt_s = 60.0;
+  cfg.start_epoch_utc
+      = "2026-01-14T00:20:00";  // well inside the SP3 fixture span [00:00,01:10] for interp margin
+
+  cfg.output_dir = out_dir;
+  cfg.links_file = out_dir / "precomputed_links.csv";
+  cfg.delays_file = out_dir / "precomputed_delays.csv";
+
+  // Precise-SP3 truth constellation from the explicit fixture file (no auto SP3
+  // date-selection / download). GPS-only ANTEX -> Galileo off.
+  cfg.constellation.source = "sp3_brdc";
+  cfg.constellation.auto_select_sp3 = false;
+  cfg.constellation.sp3_files = {sp3_file};
+  cfg.constellation.antex_file = antex_file;
+  cfg.constellation.use_broadcast_ephemeris = false;  // filter uses SP3 truth states
+  cfg.constellation.use_all_gps = true;
+  cfg.constellation.include_galileo = false;
+
+  cfg.plasma.simulate_truth = false;
+  cfg.plasma.model_in_filter = false;
+
+  cfg.use_srp_truth = false;
+  cfg.use_srp_filter = false;
+  cfg.moon_gravity_degree_truth = 4;
+  cfg.moon_gravity_order_truth = 4;
+  cfg.moon_gravity_degree_filter = 4;
+  cfg.moon_gravity_order_filter = 4;
+  cfg.moon_gravity_degree_constellation = 4;
+  cfg.moon_gravity_order_constellation = 4;
+
+  cfg.design.apply_cn0_threshold = false;
+
+  ResolveLunarGnssODTSConfigForRun(cfg);
+  PrecomputeLunarGnssODTSLinks(cfg);
+  REQUIRE(std::filesystem::exists(cfg.links_file));
+
+  std::vector<LunarGnssODTSSummary> summaries = RunLunarGnssODTSMonteCarlo(cfg);
+
+  REQUIRE_FALSE(summaries.empty());
+  const LunarGnssODTSSummary& s = summaries[0];
+  REQUIRE(s.num_epochs > 0);
+  REQUIRE(std::isfinite(s.final_position_error_m));
+  REQUIRE(s.final_position_error_m >= 0.0);
+  REQUIRE(std::isfinite(s.rms_position_error_m));
+  REQUIRE(s.rms_position_error_m >= 0.0);
+
+  std::filesystem::remove_all(out_dir, ec);
+}
