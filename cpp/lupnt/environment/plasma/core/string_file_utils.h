@@ -17,7 +17,7 @@
 namespace pecsim {
   std::string trim_right_copy(const std::string& input);
   std::vector<std::string> split_string(const std::string& str, char separator);
-  std::filesystem::path get_file_path(const std::string& filename);
+  std::filesystem::path get_file_path(std::string_view filename);
   std::optional<std::filesystem::path> find_file_in_dir(const std::filesystem::path& base_path,
                                                         std::string_view filename);
 

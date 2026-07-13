@@ -116,9 +116,15 @@ namespace lupnt {
       if (stm != nullptr) *stm = Mat6d::Identity(6, 6);
       return x0;
     }
-    if (t0 != t0_) {
+    // Solve the integration constants on the first call, or whenever the
+    // reference epoch t0 changes. `K_.size() == 0` guards the first call even
+    // when t0 == 0 (which equals the default-initialized t0_, so the plain
+    // `t0 != t0_` guard alone would leave K_ empty -> `Phi * K_` crash). t0_ is
+    // updated so the cache key actually tracks the last-solved epoch.
+    if (t0 != t0_ || K_.size() == 0) {
       MatX Phi = ComputeMat(t0);
       K_ = Phi.colPivHouseholderQr().solve(x0);
+      t0_ = t0;
     }
     Mat6 Phi = ComputeMat(tf - t0);
     Vec6 xf = Phi * K_;

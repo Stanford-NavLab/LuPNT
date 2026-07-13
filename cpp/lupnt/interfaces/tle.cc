@@ -18,6 +18,7 @@
 
 #include "lupnt/agents/agent.h"
 #include "lupnt/agents/satellite.h"
+#include "lupnt/conversions/state_conversions.h"
 #include "lupnt/conversions/time_conversions.h"
 #include "lupnt/core/constants.h"
 #include "lupnt/core/definitions.h"
@@ -85,13 +86,17 @@ namespace lupnt {
       Real dt = GetLupntEpoch() - tle.epoch_tai;
       Real M = WrapToPi(tle.mean_anomaly * RAD + rad_per_sec * dt);
 
-      // Convert to Cartesian
+      // Convert to Cartesian: a Satellite carries a Cartesian state (its
+      // dynamics integrate rv), so the classical elements must be converted
+      // before SetState -- passing the ClassicalOE directly leaves the agent
+      // with a non-Cartesian state that breaks downstream propagation.
       State coe = ClassicalOE({a, e, i, Omega, w, M}, Frame::GCRF);
+      State rv = ClassicalToCart(coe, GM_EARTH);
 
       // Create the spacecraft
       auto sat = MakePtr<Satellite>();
       sat->SetTime(0.0);
-      sat->SetState(coe);
+      sat->SetState(rv);
       sat->SetName(tle.name);
       satellites.push_back(std::move(sat));
     }

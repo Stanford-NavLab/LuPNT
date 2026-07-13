@@ -37,6 +37,12 @@ namespace lupnt {
     return f_dyn_func;
   }
 
+  ProcessNoiseFunction GetProcessNoiseFunction(const ProcessNoiseFunction& f_proc) {
+    // Identity pass-through: a ProcessNoiseFunction already has the filter
+    // signature, so no adaptation is needed (mirrors the declared contract).
+    return f_proc;
+  }
+
   MatXd InitialCovariancePosVelClock(double sigma_r, double sigma_v, double sigma_b,
                                      double sigma_d) {
     Mat6d P_rv = Mat6d::Zero();
