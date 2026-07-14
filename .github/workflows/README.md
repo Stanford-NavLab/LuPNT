@@ -19,8 +19,11 @@ manual status workflow.
 | Examples | `examples.yml` | Push and pull request to `development` | Builds the example programs with `pixi run build-examples`. |
 | Install | `install.yml` | Push and pull request to `development` | Runs the install smoke test through `pixi run install-test`. |
 | Docs | `docs.yaml` | Push and pull request to `development` | Builds the documentation with `pixi run build-docs`; on pushes, uploads the generated site to GitHub Pages. |
-| PyPI | `pypi.yml` | Version tags matching `v*` and manual dispatch | Builds a source distribution and publishes it to PyPI on version tag pushes. |
 | Windows | `windows.yml` | Manual dispatch | Reports that Windows CI is paused until `win-64` Pixi support is enabled and validated. |
+
+There is no PyPI publishing workflow: LuPNT is distributed as source only (build
+with Pixi). See [`docs/roadmap.md`](../../docs/roadmap.md) for the packaging status
+and what restoring a PyPI/conda-forge distribution would take.
 
 ## Shared CI Behavior
 
@@ -59,5 +62,6 @@ pixi run install-test
 pixi run build-docs
 ```
 
-For release validation, use a version tag such as `v0.1.0`. PyPI publishing
-requires the repository to be configured for PyPI trusted publishing.
+For release validation, use a version tag such as `v0.1.0`. Tags are source
+release markers only — LuPNT is not published to PyPI (see
+[`docs/roadmap.md`](../../docs/roadmap.md)).

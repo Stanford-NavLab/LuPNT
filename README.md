@@ -139,6 +139,13 @@ C++ tutorial counterparts live in [`cpp/examples/tutorials/`](cpp/examples/tutor
 
 ## Development
 
+> **Installation is from source only — LuPNT is no longer distributed on PyPI.**
+> The legacy `pylupnt` wheels (last published for `0.0.4`) predate the current
+> C++/Fortran dependency stack (OpenCV, Matplot++, Fortran plasma models, HDF5) and
+> are not maintained. Build from source with `pixi` as described below. See
+> [`docs/roadmap.md`](docs/roadmap.md) for the packaging status and what restoring a
+> PyPI/conda-forge distribution would take.
+
 ### Prerequisites
 
 1. Install [pixi](https://pixi.sh) (manages the compiler toolchain, Python, and all C++ dependencies via conda-forge — no manual dependency installation needed):
