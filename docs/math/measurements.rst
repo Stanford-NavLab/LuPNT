@@ -284,6 +284,39 @@ with Love numbers :math:`h_2 = 0.6078`, :math:`l_2 = 0.0847`.  The truth station
 position is displaced by :math:`\Delta r` (peak :math:`\lesssim 0.3` m radial)
 while the nominal catalogue position is still reported to the estimator.
 
+**Estimation-side modelling.**  The sensor forwards each correction component with
+the observation, and the ``GroundStationManagerApp`` chooses how much of it to
+model back out of the predicted range (so leaving them all unmodelled, the
+default, reproduces the raw residual).  The deterministic terms are computable
+and are removed in full: the Shapiro delay is added to the predicted range
+(``model_shapiro``), and the solid Earth tide displaces the station position used
+in the prediction (``model_solid_earth_tide``), so both cancel to the level of
+the estimate-vs-truth geometry difference.  The dispersive/neutral media are only
+partially calibrated -- ``troposphere_cancel_fraction`` and
+``ionosphere_cancel_fraction`` :math:`\in [0,1]` set the modelled fraction
+:math:`f`, leaving the predicted range corrected by
+
+.. math::
+
+   \Delta\rho_\mathrm{model}
+   = d_\mathrm{Shapiro}
+   + f_\mathrm{tropo}\,d_\mathrm{tropo}
+   + f_\mathrm{iono}\,d_\mathrm{iono},
+
+and the uncancelled remainder inflates the range noise so the biased
+measurements are down-weighted:
+
+.. math::
+
+   \sigma_\rho^2 \;\leftarrow\; \sigma_\rho^2
+   + \big[\,s\,\big((1-f_\mathrm{tropo})\,d_\mathrm{tropo}
+   + (1-f_\mathrm{iono})\,d_\mathrm{iono}\big)\big]^2,
+
+with the scale :math:`s` set by ``residual_delay_noise_scale``.  These keys live
+on the ``GroundStationManagerApp`` (the estimator), separately from the
+``apply_*`` keys on the tracking sensors, so the truth injection and the
+estimator's calibration are configured independently.
+
 Surface LANS / LunaNet Pseudorange
 -------------------------------------------------------------------
 

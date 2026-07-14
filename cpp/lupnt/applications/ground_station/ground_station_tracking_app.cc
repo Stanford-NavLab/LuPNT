@@ -113,7 +113,8 @@ namespace lupnt {
     // manager, so an estimator that models a pure geometric range sees the corrections as
     // realistic measurement errors. `st_truth` carries the solid-tide-displaced station.
     Vec6 st_truth = st_world;
-    double path_delay = 0.0;  // added to the range observable [m]
+    Vec3d tide_disp = Vec3d::Zero();  // solid-tide station displacement, world frame [m]
+    double tropo_delay = 0.0, iono_delay = 0.0, shapiro_delay = 0.0;  // per-component [m]
     if (corrections_enabled_) {
       Vec3d earth_w = GetBodyPosVel(epoch_abs, BodyId::EARTH, world_frame).head(3).cast<double>();
       Vec3d sun_w = GetBodyPosVel(epoch_abs, BodyId::SUN, world_frame).head(3).cast<double>();
@@ -124,29 +125,30 @@ namespace lupnt {
         Vec3d station_geo = st_world.head(3).cast<double>() - earth_w;
         Vec3d moon_geo = -earth_w;
         Vec3d sun_geo = sun_w - earth_w;
-        Vec3d dtide = SolidEarthTideDisplacement(
+        tide_disp = SolidEarthTideDisplacement(
             station_geo, {{moon_geo, GM_MOON}, {sun_geo, GM_SUN}}, GM_EARTH, R_EARTH);
-        st_truth.head(3) += dtide.cast<Real>();
+        st_truth.head(3) += tide_disp.cast<Real>();
       }
       if (apply_troposphere_) {
         double p_hpa = tropo_pressure_hpa_ > 0.0 ? tropo_pressure_hpa_
                                                  : StandardAtmospherePressureHPa(station_height_m_);
         double t_k = tropo_temperature_k_ > 0.0 ? tropo_temperature_k_
                                                 : StandardAtmosphereTemperatureK(station_height_m_);
-        path_delay
-            += TroposphereDelaySaastamoinen(elevation_deg * RAD, station_lat_rad_,
-                                            station_height_m_, p_hpa, t_k, tropo_humidity_pct_);
+        tropo_delay
+            = TroposphereDelaySaastamoinen(elevation_deg * RAD, station_lat_rad_, station_height_m_,
+                                           p_hpa, t_k, tropo_humidity_pct_);
       }
       if (apply_ionosphere_) {
-        path_delay += IonosphereDelayThinShell(elevation_deg * RAD, iono_vtec_tecu_,
-                                               signal_frequency_hz_, station_height_m_);
+        iono_delay = IonosphereDelayThinShell(elevation_deg * RAD, iono_vtec_tecu_,
+                                              signal_frequency_hz_, station_height_m_);
       }
       if (apply_shapiro_) {
         Vec3d r_tx = st_truth.head(3).cast<double>();
         Vec3d r_rx = xt.head(3).cast<double>();
-        path_delay += ShapiroRangeDelay(r_tx, r_rx, {{earth_w, GM_EARTH}, {sun_w, GM_SUN}});
+        shapiro_delay = ShapiroRangeDelay(r_tx, r_rx, {{earth_w, GM_EARTH}, {sun_w, GM_SUN}});
       }
     }
+    double path_delay = tropo_delay + iono_delay + shapiro_delay;  // total added to range [m]
 
     // Frame-invariant range / range-rate w.r.t. the (possibly tide-displaced) station state.
     Vec3d dr = (xt.head(3) - st_truth.head(3)).cast<double>();
@@ -177,6 +179,10 @@ namespace lupnt {
     m.range_rate = range_rate;
     m.range_sigma = range_sigma_m_;
     m.range_rate_sigma = range_rate_sigma_mps_;
+    m.tropo_delay_m = tropo_delay;
+    m.iono_delay_m = iono_delay;
+    m.shapiro_delay_m = shapiro_delay;
+    m.tide_disp_m = tide_disp;
     manager_->AddMeasurement(m);
   }
 

@@ -26,6 +26,15 @@ namespace lupnt {
     double range_rate = 0.0;        // noisy [m/s]
     double range_sigma = 0.0;       // 1-sigma [m]     (measurement weight/noise)
     double range_rate_sigma = 0.0;  // 1-sigma [m/s]
+
+    // Signal-path / station-location corrections the sensor injected into the truth
+    // observable (zero when the corresponding sensor option is off). The manager uses these
+    // to model out the deterministic ones (Shapiro, solid tide) and a configurable fraction
+    // of the dispersive/neutral media, and to inflate the range noise for the remainder.
+    double tropo_delay_m = 0.0;         // troposphere delay added to range [m]
+    double iono_delay_m = 0.0;          // ionosphere delay added to range [m]
+    double shapiro_delay_m = 0.0;       // Shapiro delay added to range [m]
+    Vec3d tide_disp_m = Vec3d::Zero();  // solid-tide station displacement, world frame [m]
   };
 
   /// @brief Centralized orbit-determination application hosted on a
@@ -66,6 +75,16 @@ namespace lupnt {
     /// @brief Run the centralized batch + SRIF/smoother over all aggregated
     /// measurements. Scheduled once after the last tracking `Step`; idempotent.
     void Solve();
+
+    // ---- Estimation-side correction modelling (applied to the predicted observable) ----
+    /// Station state the estimator uses for a measurement: the reported nominal position plus
+    /// the solid-tide displacement when `model_solid_earth_tide` is set (else nominal).
+    Vec6d ModeledStation(const StationMeasurement& m) const;
+    /// Modelled range correction added to the predicted range: the full Shapiro delay (when
+    /// enabled) plus the calibrated fractions of the troposphere and ionosphere delays.
+    double ModeledRangeCorrection(const StationMeasurement& m) const;
+    /// Range 1-sigma inflated to cover the uncancelled troposphere/ionosphere remainder.
+    double RangeSigmaEffective(const StationMeasurement& m) const;
 
     // ---- Result accessors (valid after Solve) ----
     bool HasSolved() const { return solved_; }
@@ -112,6 +131,16 @@ namespace lupnt {
     bool run_srif_ = true;
     bool srif_use_process_noise_ = true;
     double srif_accel_psd_ = 3.0e-13;
+
+    // Estimation-side handling of the sensor's signal-path / station-location corrections.
+    // The deterministic terms are modelled out in full by default; the dispersive/neutral media
+    // are only partially calibrated, and the uncancelled remainder inflates the range noise.
+    bool model_shapiro_ = true;           // subtract the Shapiro delay in the estimator
+    bool model_solid_earth_tide_ = true;  // apply the tide displacement to the modelled station
+    double tropo_cancel_fraction_ = 0.0;  // fraction of the troposphere delay modelled out [0,1]
+    double iono_cancel_fraction_ = 0.0;   // fraction of the ionosphere delay modelled out [0,1]
+    double residual_delay_noise_scale_
+        = 1.0;  // uncancelled tropo+iono delay x this -> range 1-sigma
 
     // Optional filter-dynamics overrides (else the shared world force model). `filter_dynamics`
     // applies to both estimators; `batch_dynamics` / `sequential_dynamics` override one each.

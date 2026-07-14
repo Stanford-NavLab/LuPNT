@@ -39,6 +39,16 @@ namespace lupnt {
     srif_use_process_noise_ = config["srif_use_process_noise"].as<bool>(srif_use_process_noise_);
     srif_accel_psd_ = config["srif_accel_psd"].as<double>(srif_accel_psd_);
 
+    // Estimation-side correction modelling policy.
+    model_shapiro_ = config["model_shapiro"].as<bool>(model_shapiro_);
+    model_solid_earth_tide_ = config["model_solid_earth_tide"].as<bool>(model_solid_earth_tide_);
+    tropo_cancel_fraction_ = std::clamp(
+        config["troposphere_cancel_fraction"].as<double>(tropo_cancel_fraction_), 0.0, 1.0);
+    iono_cancel_fraction_ = std::clamp(
+        config["ionosphere_cancel_fraction"].as<double>(iono_cancel_fraction_), 0.0, 1.0);
+    residual_delay_noise_scale_
+        = config["residual_delay_noise_scale"].as<double>(residual_delay_noise_scale_);
+
     // Optional per-filter dynamics overrides (an `NBodyDynamics`-style force-model block). When
     // absent, the filters inherit the shared `world.force_model` (truth == filter).
     if (config["filter_dynamics"]) {
@@ -61,6 +71,25 @@ namespace lupnt {
   }
 
   void GroundStationManagerApp::AddMeasurement(const StationMeasurement& m) { meas_.push_back(m); }
+
+  Vec6d GroundStationManagerApp::ModeledStation(const StationMeasurement& m) const {
+    Vec6d st = m.station_mci;
+    if (model_solid_earth_tide_) st.head(3) += m.tide_disp_m;
+    return st;
+  }
+
+  double GroundStationManagerApp::ModeledRangeCorrection(const StationMeasurement& m) const {
+    double corr = tropo_cancel_fraction_ * m.tropo_delay_m + iono_cancel_fraction_ * m.iono_delay_m;
+    if (model_shapiro_) corr += m.shapiro_delay_m;
+    return corr;
+  }
+
+  double GroundStationManagerApp::RangeSigmaEffective(const StationMeasurement& m) const {
+    double uncancelled = (1.0 - tropo_cancel_fraction_) * m.tropo_delay_m
+                         + (1.0 - iono_cancel_fraction_) * m.iono_delay_m;
+    double extra = residual_delay_noise_scale_ * uncancelled;
+    return std::sqrt(m.range_sigma * m.range_sigma + extra * extra);
+  }
 
   int GroundStationManagerApp::EpochIndex(double t) const {
     if (obs_interval_s_ <= 0.0) return 0;
@@ -166,10 +195,13 @@ namespace lupnt {
 
     // Closed-form range/range-rate observation for one measurement against a satellite
     // world-frame state; fills the observation partials (w.r.t. the satellite state) if h_obs.
-    auto Observe = [](const StationMeasurement& m, const Vec6d& xs, MatXd* h_obs) -> VecXd {
+    auto Observe = [this](const StationMeasurement& m, const Vec6d& xs, MatXd* h_obs) -> VecXd {
       const int nr = (m.has_range ? 1 : 0) + (m.has_range_rate ? 1 : 0);
-      Vec3d dr = xs.head(3) - m.station_mci.head(3);
-      Vec3d dv = xs.tail(3) - m.station_mci.tail(3);
+      // Model the deterministic corrections into the prediction: the tide-displaced station
+      // for the geometry, and the Shapiro + calibrated media delays added to the range.
+      const Vec6d st = ModeledStation(m);
+      Vec3d dr = xs.head(3) - st.head(3);
+      Vec3d dv = xs.tail(3) - st.tail(3);
       double rho = dr.norm();
       Vec3d u = dr / rho;
       double rho_dot = dr.dot(dv) / rho;
@@ -177,7 +209,7 @@ namespace lupnt {
       if (h_obs) *h_obs = MatXd::Zero(nr, 6);
       int row = 0;
       if (m.has_range) {
-        y(row) = rho;
+        y(row) = rho + ModeledRangeCorrection(m);
         if (h_obs) h_obs->block(row, 0, 1, 3) = u.transpose();
         row++;
       }
@@ -200,8 +232,9 @@ namespace lupnt {
       VecXd y(nr), w(nr);
       int row = 0;
       if (m.has_range) {
+        double s = RangeSigmaEffective(m);
         y(row) = m.range;
-        w(row) = 1.0 / (m.range_sigma * m.range_sigma);
+        w(row) = 1.0 / (s * s);
         row++;
       }
       if (m.has_range_rate) {
@@ -361,7 +394,8 @@ namespace lupnt {
           for (int r = 0; r < y.size(); ++r) {
             z(row) = y(r);
             Hm.row(row) = h_obs.row(r);
-            Rm(row, row) = (r == 0 && m.has_range) ? m.range_sigma * m.range_sigma
+            double s_range = RangeSigmaEffective(m);
+            Rm(row, row) = (r == 0 && m.has_range) ? s_range * s_range
                                                    : m.range_rate_sigma * m.range_rate_sigma;
             row++;
           }
