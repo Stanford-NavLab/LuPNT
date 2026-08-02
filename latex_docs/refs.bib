@@ -1,0 +1,698 @@
+% ---------------------------------------------------------------------------
+% refs.bib -- bibliography for the LuPNT manual.
+%
+% Keys are stable: chapters cite them by name, so rename with care.  Grouped
+% by topic; within a group, ordered by year.
+% ---------------------------------------------------------------------------
+
+% === LuPNT itself ==========================================================
+
+@inproceedings{iiyama2023lupnt,
+  author    = {Iiyama, Keidai and Casadesus Vila, Guillem and Gao, Grace},
+  title     = {{LuPNT}: Open-Source Simulator for Lunar Positioning, Navigation,
+               and Timing},
+  booktitle = {Proceedings of the Institute of Navigation GNSS+ Conference
+               (ION GNSS+ 2023)},
+  year      = {2023},
+  doi       = {10.33012/2023.19373}
+}
+
+@inproceedings{casadesus2025lupnt,
+  author    = {Casadesus Vila, Guillem and Iiyama, Keidai and Gao, Grace},
+  title     = {{LuPNT}: An Open-Source Simulator for Lunar Communications,
+               Positioning, Navigation, and Timing},
+  booktitle = {2025 IEEE Aerospace Conference},
+  year      = {2025},
+  doi       = {10.1109/AERO63441.2025.11068501}
+}
+
+@phdthesis{iiyama2026thesis,
+  author  = {Iiyama, Keidai},
+  title   = {Design and Algorithms for Lunar Navigation Satellite Systems},
+  school  = {Stanford University},
+  year    = {2026},
+  url     = {https://purl.stanford.edu/wx922dp2089},
+  note    = {Referred to throughout this manual as ``the thesis''}
+}
+
+% === NAV Lab lunar-PNT publications ========================================
+
+@inproceedings{iiyama2023dcp,
+  author    = {Iiyama, Keidai and Gao, Grace},
+  title     = {Positioning and Timing of Distributed Lunar Satellites via
+               Terrestrial {GPS} Differential Carrier Phase Measurements},
+  booktitle = {Proceedings of the Institute of Navigation GNSS+ Conference
+               (ION GNSS+ 2023)},
+  year      = {2023},
+  doi       = {10.33012/2023.19385}
+}
+
+@inproceedings{cortinovis2023ephemeris,
+  author    = {Cortinovis, Marco and Iiyama, Keidai and Gao, Grace},
+  title     = {Satellite Ephemeris Approximation Methods to Support Lunar
+               Positioning, Navigation, and Timing Services},
+  booktitle = {Proceedings of the Institute of Navigation GNSS+ Conference
+               (ION GNSS+ 2023)},
+  year      = {2023},
+  doi       = {10.33012/2023.19282}
+}
+
+@inproceedings{iiyama2023tdcp,
+  author    = {Iiyama, Keidai and Bhamidipati, Sriramya and Gao, Grace},
+  title     = {Terrestrial {GPS} Time-Differenced Carrier-Phase Positioning of
+               Lunar Surface Users},
+  booktitle = {2023 IEEE Aerospace Conference},
+  year      = {2023},
+  doi       = {10.1109/AERO55745.2023.10115673}
+}
+
+@article{iiyama2024navi,
+  author  = {Iiyama, Keidai and Bhamidipati, Sriramya and Gao, Grace},
+  title   = {Precise Positioning and Timekeeping in a Lunar Orbit via
+             Terrestrial {GPS} Time-Differenced Carrier-Phase Measurements},
+  journal = {NAVIGATION: Journal of the Institute of Navigation},
+  volume  = {71},
+  number  = {1},
+  year    = {2024},
+  doi     = {10.33012/navi.635}
+}
+
+@article{cortinovis2024navi,
+  author  = {Cortinovis, Marco and Iiyama, Keidai and Gao, Grace},
+  title   = {Satellite Ephemeris Parameterization Methods to Support Lunar
+             Positioning, Navigation, and Timing Services},
+  journal = {NAVIGATION: Journal of the Institute of Navigation},
+  volume  = {71},
+  number  = {4},
+  year    = {2024},
+  doi     = {10.33012/navi.664}
+}
+
+@inproceedings{iiyama2024contact,
+  author    = {Iiyama, Keidai and Casadesus Vila, Guillem and Gao, Grace},
+  title     = {Contact Plan Optimization and Distributed State Estimation for
+               Delay Tolerant Satellite Networks},
+  booktitle = {2024 IEEE Aerospace Conference},
+  year      = {2024},
+  doi       = {10.1109/AERO58975.2024.10521114}
+}
+
+@article{iiyama2025insidegnss,
+  author  = {Iiyama, Keidai and Pullen, Sam and Gao, Grace},
+  title   = {Can Satellite-Based Radionavigation Be Extended to the {Moon} and
+             Other Extraterrestrial Bodies?},
+  journal = {Inside GNSS},
+  volume  = {20},
+  number  = {5},
+  pages   = {18--27},
+  year    = {2025},
+  url     = {https://insidegnss.com/can-satellite-based-radionavigation-be-extended-to-the-moon-and-other-extraterrestrial-bodies/}
+}
+
+@article{iiyama2025ephemeris,
+  author  = {Iiyama, Keidai and Gao, Grace},
+  title   = {Ephemeris and Almanac Design for Lunar Navigation Satellites},
+  journal = {IEEE Transactions on Aerospace and Electronic Systems},
+  year    = {2025},
+  note    = {Under review},
+  url     = {https://arxiv.org/abs/2510.25161}
+}
+
+@article{iiyama2025constellation,
+  author  = {Iiyama, Keidai and Gao, Grace},
+  title   = {Trade-off Analysis for Lunar Augmented Navigation Service
+             Constellation Design},
+  journal = {NAVIGATION: Journal of the Institute of Navigation},
+  year    = {2025},
+  note    = {Under review},
+  url     = {https://arxiv.org/abs/2510.16030}
+}
+
+@article{coimbra2025endurance,
+  author  = {Coimbra, Kelly M. Y. and Cortinovis, Marco and Mina, Tara and
+             Gao, Grace},
+  title   = {Single-Satellite Lunar Navigation via Doppler Shift Observables
+             for the {NASA} {Endurance} Mission},
+  journal = {NAVIGATION: Journal of the Institute of Navigation},
+  volume  = {72},
+  number  = {3},
+  year    = {2025},
+  doi     = {10.33012/navi.710}
+}
+
+@article{dai2025fullstack,
+  author  = {Dai, Alexander and Casadesus Vila, Guillem and Wu, Andrew and
+             Iiyama, Keidai and Coimbra, Kelly and Deng, Tianyi and
+             Gao, Grace},
+  title   = {Full Stack Navigation, Mapping, and Planning for the Lunar
+             Autonomy Challenge},
+  journal = {NAVIGATION: Journal of the Institute of Navigation},
+  year    = {2025},
+  note    = {Under review; conference version \cite{dai2025iongnss}}
+}
+
+@inproceedings{dai2025iongnss,
+  author    = {Dai, Alexander and Wu, Andrew and Iiyama, Keidai and
+               Casadesus Vila, Guillem and Coimbra, Kelly and Deng, Tianyi and
+               Gao, Grace},
+  title     = {Full Stack Navigation, Mapping, and Planning for the Lunar
+               Autonomy Challenge},
+  booktitle = {Proceedings of the Institute of Navigation GNSS+ Conference
+               (ION GNSS+ 2025)},
+  year      = {2025},
+  doi       = {10.33012/2025.20447}
+}
+
+@inproceedings{iiyama2025mars,
+  author    = {Iiyama, Keidai and Jun, William W. and Bhamidipati, Sriramya and
+               Gao, Grace and Cheung, Kar-Ming},
+  title     = {Orbit Determination and Time Synchronization for the Future
+               {Mars} Relay and Navigation Constellation},
+  booktitle = {2025 IEEE Aerospace Conference},
+  year      = {2025},
+  doi       = {10.1109/AERO63441.2025.11068793}
+}
+
+@inproceedings{casadesus2025surface,
+  author    = {Casadesus Vila, Guillem and Gao, Grace},
+  title     = {{Moon} Surface Station to Support Lunar Positioning, Navigation,
+               and Timing Services},
+  booktitle = {Proceedings of the Institute of Navigation GNSS+ Conference
+               (ION GNSS+ 2025)},
+  year      = {2025},
+  doi       = {10.33012/2025.20258}
+}
+
+@inproceedings{iiyama2025iono,
+  author    = {Iiyama, Keidai and Gao, Grace},
+  title     = {Ionospheric and Plasmaspheric Delay Characterization and
+               Mitigation Methodologies for Lunar Terrestrial {GNSS} Receivers},
+  booktitle = {Proceedings of the Institute of Navigation GNSS+ Conference
+               (ION GNSS+ 2025)},
+  year      = {2025},
+  doi       = {10.33012/2025.20343}
+}
+
+@article{iiyama2026scud,
+  author  = {Iiyama, Keidai and Gao, Grace},
+  title   = {{GNSS}-Based Lunar Orbit and Clock Estimation with Stochastic
+             Cloning {UD} Filter},
+  journal = {Journal of Guidance, Control, and Dynamics},
+  year    = {2026},
+  note    = {Under review},
+  url     = {https://arxiv.org/abs/2601.16393}
+}
+
+@article{iiyama2026edm,
+  author  = {Iiyama, Keidai and Neamati, Daniel and Gao, Grace},
+  title   = {Satellite Autonomous Clock Fault Monitoring with Inter-Satellite
+             Ranges Using Euclidean Distance Matrices},
+  journal = {NAVIGATION: Journal of the Institute of Navigation},
+  volume  = {73},
+  number  = {1},
+  year    = {2026},
+  doi     = {10.33012/navi.764}
+}
+
+@article{iiyama2026gcpm,
+  author  = {Iiyama, Keidai and Gao, Grace},
+  title   = {Ionospheric and Plasmaspheric Delay Characterization for Lunar
+             Terrestrial {GNSS} Receivers with Global Core Plasma Model},
+  journal = {NAVIGATION: Journal of the Institute of Navigation},
+  year    = {2026},
+  note    = {Accepted},
+  url     = {https://arxiv.org/abs/2510.10059}
+}
+
+% === Time scales, relativity, ephemerides ==================================
+
+@article{park2021de440,
+  author  = {Park, Ryan S. and Folkner, William M. and Williams, James G. and
+             Boggs, Dale H.},
+  title   = {The {JPL} Planetary and Lunar Ephemerides {DE440} and {DE441}},
+  journal = {The Astronomical Journal},
+  volume  = {161},
+  number  = {3},
+  pages   = {105},
+  year    = {2021},
+  doi     = {10.3847/1538-3881/abd414}
+}
+
+@article{turyshev2025transformations,
+  author  = {Turyshev, Slava G. and Williams, James G. and Boggs, Dale H. and
+             Park, Ryan S.},
+  title   = {Relativistic Time Transformations between the Solar System
+             Barycenter, {Earth}, and {Moon}},
+  journal = {The Astrophysical Journal},
+  volume  = {985},
+  number  = {2},
+  pages   = {140},
+  year    = {2025},
+  doi     = {10.3847/1538-4357/adcc18}
+}
+
+@article{turyshev2026cislunar,
+  author  = {Turyshev, Slava G.},
+  title   = {High-precision Relativistic Timescales for Cislunar Navigation},
+  journal = {The Astrophysical Journal},
+  volume  = {997},
+  number  = {1},
+  pages   = {97},
+  year    = {2026},
+  doi     = {10.3847/1538-4357/ae25ff}
+}
+
+@techreport{iers2010,
+  author      = {Petit, G{\'e}rard and Luzum, Brian},
+  title       = {{IERS} Conventions (2010)},
+  institution = {Verlag des Bundesamts f{\"u}r Kartographie und Geod{\"a}sie},
+  number      = {IERS Technical Note No.\ 36},
+  address     = {Frankfurt am Main},
+  year        = {2010}
+}
+
+@book{urban2013,
+  editor    = {Urban, Sean E. and Seidelmann, P. Kenneth},
+  title     = {Explanatory Supplement to the Astronomical Almanac},
+  edition   = {3rd},
+  publisher = {University Science Books},
+  address   = {Mill Valley, CA},
+  year      = {2013}
+}
+
+@article{kopeikin2024lunar,
+  author  = {Kopeikin, Sergei M. and Kaplan, George H.},
+  title   = {Relativistic Reference Frames for Astrometry and Navigation in the
+             {Earth}--{Moon} System},
+  journal = {Physical Review D},
+  volume  = {110},
+  number  = {8},
+  pages   = {084047},
+  year    = {2024},
+  doi     = {10.1103/PhysRevD.110.084047}
+}
+
+@article{acton1996spice,
+  author  = {Acton, Charles H.},
+  title   = {Ancillary Data Services of {NASA}'s Navigation and Ancillary
+             Information Facility},
+  journal = {Planetary and Space Science},
+  volume  = {44},
+  number  = {1},
+  pages   = {65--70},
+  year    = {1996},
+  doi     = {10.1016/0032-0633(95)00107-7}
+}
+
+@misc{hinnant2013,
+  author       = {Hinnant, Howard},
+  title        = {{\tt chrono}-Compatible Low-Level Date Algorithms},
+  year         = {2013},
+  howpublished = {\url{https://howardhinnant.github.io/date_algorithms.html}}
+}
+
+@techreport{ieee754,
+  author      = {{IEEE}},
+  title       = {{IEEE} Standard for Floating-Point Arithmetic},
+  institution = {IEEE},
+  number      = {IEEE Std 754-2019},
+  year        = {2019},
+  doi         = {10.1109/IEEESTD.2019.8766229}
+}
+
+% === Astrodynamics, orbit mechanics ========================================
+
+@book{montenbruck2000,
+  author    = {Montenbruck, Oliver and Gill, Eberhard},
+  title     = {Satellite Orbits: Models, Methods and Applications},
+  publisher = {Springer},
+  address   = {Berlin},
+  year      = {2000},
+  doi       = {10.1007/978-3-642-58351-3}
+}
+
+@book{vallado2013,
+  author    = {Vallado, David A.},
+  title     = {Fundamentals of Astrodynamics and Applications},
+  edition   = {4th},
+  publisher = {Microcosm Press},
+  address   = {Hawthorne, CA},
+  year      = {2013}
+}
+
+@article{harris1962priester,
+  author  = {Harris, Isadore and Priester, Wolfgang},
+  title   = {Time-Dependent Structure of the Upper Atmosphere},
+  journal = {Journal of the Atmospheric Sciences},
+  volume  = {19},
+  number  = {4},
+  pages   = {286--301},
+  year    = {1962},
+  doi     = {10.1175/1520-0469(1962)019<0286:TDSOTU>2.0.CO;2}
+}
+
+@techreport{moyer2000,
+  author      = {Moyer, Theodore D.},
+  title       = {Formulation for Observed and Computed Values of Deep Space
+                 Network Data Types for Navigation},
+  institution = {Jet Propulsion Laboratory},
+  number      = {JPL Publication 00-7 (DESCANSO Monograph 2)},
+  year        = {2000},
+  note        = {Eq.~(4-26): the $n$-body PPN relativistic acceleration}
+}
+
+@article{lemoine2013grgm,
+  author  = {Lemoine, Frank G. and Goossens, Sander and Sabaka, Terence J. and
+             Nicholas, Joseph B. and Mazarico, Erwan and Rowlands, David D. and
+             Loomis, Bryant D. and Chinn, Douglas S. and Neumann, Gregory A. and
+             Smith, David E. and Zuber, Maria T.},
+  title   = {High-Degree Gravity Models from {GRAIL} Primary Mission Data},
+  journal = {Journal of Geophysical Research: Planets},
+  volume  = {118},
+  number  = {8},
+  pages   = {1676--1698},
+  year    = {2013},
+  doi     = {10.1002/jgre.20118}
+}
+
+@article{goossens2016grgm1200b,
+  author  = {Goossens, Sander and Lemoine, Frank G. and Sabaka, Terence J. and
+             Nicholas, Joseph B. and Mazarico, Erwan and Rowlands, David D. and
+             Loomis, Bryant D. and Chinn, Douglas S. and Neumann, Gregory A. and
+             Smith, David E. and Zuber, Maria T.},
+  title   = {A Global Degree and Order 1200 Model of the Lunar Gravity Field
+             Using {GRAIL} Mission Data},
+  journal = {Lunar and Planetary Science Conference},
+  volume  = {47},
+  pages   = {1484},
+  year    = {2016},
+}
+
+@article{kopp2011tsi,
+  author  = {Kopp, Greg and Lean, Judith L.},
+  title   = {A New, Lower Value of Total Solar Irradiance: Evidence and
+             Climate Significance},
+  journal = {Geophysical Research Letters},
+  volume  = {38},
+  number  = {1},
+  pages   = {L01706},
+  year    = {2011},
+  doi     = {10.1029/2010GL045777}
+}
+
+% === Numerical methods =====================================================
+
+@book{hairer1993,
+  author    = {Hairer, Ernst and N{\o}rsett, Syvert P. and Wanner, Gerhard},
+  title     = {Solving Ordinary Differential Equations I: Nonstiff Problems},
+  edition   = {2nd},
+  publisher = {Springer},
+  address   = {Berlin},
+  year      = {1993},
+  doi       = {10.1007/978-3-540-78862-1}
+}
+
+@article{dormand1980,
+  author  = {Dormand, John R. and Prince, Peter J.},
+  title   = {A Family of Embedded {Runge}--{Kutta} Formulae},
+  journal = {Journal of Computational and Applied Mathematics},
+  volume  = {6},
+  number  = {1},
+  pages   = {19--26},
+  year    = {1980},
+  doi     = {10.1016/0771-050X(80)90013-3}
+}
+
+@techreport{fehlberg1969,
+  author      = {Fehlberg, Erwin},
+  title       = {Low-Order Classical {Runge}--{Kutta} Formulas with Stepsize
+                 Control and Their Application to Some Heat Transfer Problems},
+  institution = {NASA},
+  number      = {NASA TR R-315},
+  year        = {1969}
+}
+
+@book{abramowitz1964,
+  author    = {Abramowitz, Milton and Stegun, Irene A.},
+  title     = {Handbook of Mathematical Functions with Formulas, Graphs, and
+               Mathematical Tables},
+  publisher = {National Bureau of Standards},
+  series    = {Applied Mathematics Series},
+  number    = {55},
+  year      = {1964},
+  note      = {Chapter 17 (elliptic integrals); \S17.6 (arithmetic--geometric mean)}
+}
+
+@book{griewank2008,
+  author    = {Griewank, Andreas and Walther, Andrea},
+  title     = {Evaluating Derivatives: Principles and Techniques of Algorithmic
+               Differentiation},
+  edition   = {2nd},
+  publisher = {SIAM},
+  address   = {Philadelphia},
+  year      = {2008},
+  doi       = {10.1137/1.9780898717761}
+}
+
+@misc{leal2018autodiff,
+  author       = {Leal, Allan M. M.},
+  title        = {{autodiff}: A Modern, Fast and Expressive {C++} Library for
+                  Automatic Differentiation},
+  year         = {2018},
+  howpublished = {\url{https://autodiff.github.io}}
+}
+
+@misc{eigen2010,
+  author       = {Guennebaud, Ga{\"e}l and Jacob, Beno{\^i}t and others},
+  title        = {{Eigen} v3},
+  year         = {2010},
+  howpublished = {\url{https://eigen.tuxfamily.org}}
+}
+
+% === Estimation ============================================================
+
+@book{bierman1977,
+  author    = {Bierman, Gerald J.},
+  title     = {Factorization Methods for Discrete Sequential Estimation},
+  publisher = {Academic Press},
+  address   = {New York},
+  year      = {1977}
+}
+
+@article{thornton1980,
+  author  = {Thornton, Catherine L. and Bierman, Gerald J.},
+  title   = {{UDU}$^{\mathsf{T}}$ Covariance Factorization for {Kalman}
+             Filtering},
+  journal = {Control and Dynamic Systems},
+  volume  = {16},
+  pages   = {177--248},
+  year    = {1980},
+  doi     = {10.1016/B978-0-12-012716-0.50011-5}
+}
+
+@book{tapley2004,
+  author    = {Tapley, Byron D. and Schutz, Bob E. and Born, George H.},
+  title     = {Statistical Orbit Determination},
+  publisher = {Elsevier Academic Press},
+  address   = {Burlington, MA},
+  year      = {2004}
+}
+
+@inproceedings{roumeliotis2002cloning,
+  author    = {Roumeliotis, Stergios I. and Burdick, Joel W.},
+  title     = {Stochastic Cloning: A Generalized Framework for Processing
+               Relative State Measurements},
+  booktitle = {Proceedings of the 2002 IEEE International Conference on
+               Robotics and Automation (ICRA)},
+  year      = {2002},
+  doi       = {10.1109/ROBOT.2002.1013609}
+}
+
+@article{julier2004ukf,
+  author  = {Julier, Simon J. and Uhlmann, Jeffrey K.},
+  title   = {Unscented Filtering and Nonlinear Estimation},
+  journal = {Proceedings of the IEEE},
+  volume  = {92},
+  number  = {3},
+  pages   = {401--422},
+  year    = {2004},
+  doi     = {10.1109/JPROC.2003.823141}
+}
+
+@article{zucca2005clock,
+  author  = {Zucca, Chantal and Tavella, Patrizia},
+  title   = {The Clock Model and Its Relationship with the {Allan} and Related
+             Variances},
+  journal = {IEEE Transactions on Ultrasonics, Ferroelectrics, and Frequency
+             Control},
+  volume  = {52},
+  number  = {2},
+  pages   = {289--296},
+  year    = {2005},
+  doi     = {10.1109/TUFFC.2005.1406554}
+}
+
+% === GNSS, signals, propagation ============================================
+
+@book{misra2011gnss,
+  author    = {Misra, Pratap and Enge, Per},
+  title     = {Global Positioning System: Signals, Measurements, and
+               Performance},
+  edition   = {Revised 2nd},
+  publisher = {Ganga-Jamuna Press},
+  address   = {Lincoln, MA},
+  year      = {2011}
+}
+
+@book{kaplan2017,
+  editor    = {Kaplan, Elliott D. and Hegarty, Christopher J.},
+  title     = {Understanding {GPS}/{GNSS}: Principles and Applications},
+  edition   = {3rd},
+  publisher = {Artech House},
+  address   = {Boston},
+  year      = {2017}
+}
+
+@article{kouba2009yaw,
+  author  = {Kouba, Jan},
+  title   = {A Simplified Yaw-Attitude Model for Eclipsing {GPS} Satellites},
+  journal = {GPS Solutions},
+  volume  = {13},
+  number  = {1},
+  pages   = {1--12},
+  year    = {2009},
+  doi     = {10.1007/s10291-008-0092-1}
+}
+
+@article{cheng2025yaw,
+  author  = {Cheng, Yu and others},
+  title   = {Yaw-Steering Attitude Modelling for {GNSS} Satellites},
+  journal = {GPS Solutions},
+  year    = {2025},
+  note    = {Nominal yaw law, Eq.~(1), as implemented in
+             \file{gnss_yaw_steering.cc}}
+}
+
+@incollection{saastamoinen1972,
+  author    = {Saastamoinen, Juhani},
+  title     = {Atmospheric Correction for the Troposphere and Stratosphere in
+               Radio Ranging of Satellites},
+  booktitle = {The Use of Artificial Satellites for Geodesy},
+  series    = {Geophysical Monograph Series},
+  volume    = {15},
+  pages     = {247--251},
+  publisher = {American Geophysical Union},
+  year      = {1972},
+  doi       = {10.1029/GM015p0247}
+}
+
+@article{gallagher2000gcpm,
+  author  = {Gallagher, Dennis L. and Craven, Paul D. and Comfort, Richard H.},
+  title   = {Global Core Plasma Model},
+  journal = {Journal of Geophysical Research: Space Physics},
+  volume  = {105},
+  number  = {A8},
+  pages   = {18819--18833},
+  year    = {2000},
+  doi     = {10.1029/1999JA000241}
+}
+
+@article{bilitza2022iri,
+  author  = {Bilitza, Dieter and Pezzopane, Michael and Truhlik, Vladimir and
+             Altadill, David and Reinisch, Bodo W. and Pignalberi, Alessio},
+  title   = {The International Reference Ionosphere Model: A Review and
+             Description of an Ionospheric Benchmark},
+  journal = {Reviews of Geophysics},
+  volume  = {60},
+  number  = {4},
+  pages   = {e2022RG000792},
+  year    = {2022},
+  doi     = {10.1029/2022RG000792}
+}
+
+@article{alken2021igrf,
+  author  = {Alken, Patrick and Th{\'e}bault, Erwan and Beggan, Ciaran D. and
+             others},
+  title   = {International Geomagnetic Reference Field: The Thirteenth
+             Generation},
+  journal = {Earth, Planets and Space},
+  volume  = {73},
+  pages   = {49},
+  year    = {2021},
+  doi     = {10.1186/s40623-020-01288-x},
+  note    = {LuPNT uses the IGRF-14 coefficient set}
+}
+
+@article{cervera2014pharlap,
+  author  = {Cervera, Manuel A. and Harris, Trevor J.},
+  title   = {Modeling Ionospheric Disturbance Features in Quasi-Vertically
+             Incident Ionograms Using {3-D} Magnetoionic Ray Tracing and
+             Atmospheric Gravity Waves},
+  journal = {Journal of Geophysical Research: Space Physics},
+  volume  = {119},
+  number  = {1},
+  pages   = {431--440},
+  year    = {2014},
+  doi     = {10.1002/2013JA019247},
+  note    = {PHaRLAP ray-tracing toolbox}
+}
+
+@book{budden1985,
+  author    = {Budden, Kenneth G.},
+  title     = {The Propagation of Radio Waves: The Theory of Radio Waves of Low
+               Power in the Ionosphere and Magnetosphere},
+  publisher = {Cambridge University Press},
+  address   = {Cambridge},
+  year      = {1985}
+}
+
+% === Standards and mission documents =======================================
+
+@techreport{lunanet2022,
+  author      = {{NASA}},
+  title       = {{LunaNet} Interoperability Specification, Version 5},
+  institution = {NASA Goddard Space Flight Center},
+  year        = {2023},
+  url         = {https://www.nasa.gov/technology/space-comms/lunanet-interoperability-specification/}
+}
+
+@techreport{ccsds2020nav,
+  author      = {{CCSDS}},
+  title       = {Navigation Data --- Definitions and Conventions},
+  institution = {Consultative Committee for Space Data Systems},
+  number      = {CCSDS 500.0-G-4},
+  year        = {2020}
+}
+
+@techreport{icdgps200,
+  author      = {{U.S. Space Force}},
+  title       = {{NAVSTAR} {GPS} Space Segment / Navigation User Segment
+                 Interfaces},
+  institution = {Global Positioning Systems Directorate},
+  number      = {IS-GPS-200N},
+  year        = {2022}
+}
+
+@misc{orekit2025,
+  author       = {{CS Group}},
+  title        = {{Orekit}: An Accurate and Efficient Core Layer for Space
+                  Flight Dynamics Applications},
+  year         = {2025},
+  howpublished = {\url{https://www.orekit.org/}},
+  note         = {Version 13.1; used to generate the reference vectors in
+                  \file{cpp/test/data/orekit}}
+}
+
+@misc{gmat2023,
+  author       = {{NASA}},
+  title        = {General Mission Analysis Tool ({GMAT}), R2022a},
+  year         = {2023},
+  howpublished = {\url{https://software.nasa.gov/software/GSC-18094-1}}
+}
+
+@article{ching1973,
+  author  = {Ching, B. K. and Chiu, Y. T.},
+  title   = {A phenomenological model of global ionospheric electron density in the {E-, F1- and F2}-regions},
+  journal = {J. Atmos. Terr. Phys.}, volume = {35}, pages = {1615--1630}, year = {1973},
+  doi = {10.1016/0021-9169(73)90180-3}
+}

@@ -1,0 +1,1238 @@
+\chapter{Ephemeris and Almanac Design}
+\label{chap:ephemeris-almanac}
+
+This chapter specifies the mathematical contract of \lupnt{}'s broadcast
+\emph{navigation-message} models for lunar satellites: the precise,
+short-validity \cpp{LansEphemeris} and the coarse, long-validity
+\cpp{LansAlmanac}. Both live in
+\file{cpp/lupnt/applications/ephemeris/}: the models in
+\file{cpp/lupnt/applications/ephemeris/lunanet_ephemeris.cc} and
+\file{cpp/lupnt/applications/ephemeris/lunanet_almanac.cc}, their shared
+numerics in \file{cpp/lupnt/applications/ephemeris/ephemeris_basis.h}, the
+bit-budget analysis in
+\file{cpp/lupnt/applications/ephemeris/ephemeris_app.cc}, and the runtime
+message generator in
+\file{cpp/lupnt/applications/ephemeris/ephemeris_gen_app.cc}.
+
+The chapter fixes, in order: the state, frame and unit contract shared by both
+models (\cref{sec:eph-contract}); the ephemeris representation --- an
+osculating two-body Kepler baseline plus a Chebyshev residual plus an optional
+argument-of-latitude Fourier residual (\cref{sec:eph-representation}); the
+least-squares fit that determines it (\cref{sec:eph-fit}); the almanac
+element-wise series representation, its mean-anomaly residual and
+argument-of-latitude correction (\cref{sec:eph-almanac,sec:eph-almanac-fit});
+the bit allocation and quantization that size a message against the LunaNet
+budget (\cref{sec:eph-bits}); the runtime broadcast generator
+(\cref{sec:eph-broadcast}); and the model boundaries
+(\cref{sec:eph-boundaries}).
+
+The algorithms follow \citep[Ch.~7, Ch.~8]{iiyama2026thesis} --- Chapter~7 for
+the ephemeris, Chapter~8 for the almanac --- and the companion papers
+\citep{iiyama2025ephemeris,cortinovis2023ephemeris,cortinovis2024navi}. The
+bit-allocation conventions mirror the GPS broadcast interface
+\citep{icdgps200}, and the message budget is the one allotted by the LunaNet
+Interoperability Specification \citep{lunanet2022}. Where the code
+deliberately departs from the thesis formulation, the difference is recorded
+in a note rather than silently harmonised.
+
+% ===========================================================================
+\section{State, Frame, and Unit Contract}
+\label{sec:eph-contract}
+
+\subsection{Sampled trajectory and the three entry points}
+
+Both models represent a sampled Cartesian trajectory
+\begin{equation}
+  \label{eq:eph-state-contract}
+  \mat{RV} \in \mathbb{R}^{N\times 6},
+  \qquad
+  \mat{RV}_{i,:} = \big[\vec{r}(t_i)\transpose \;\; \vec{v}(t_i)\transpose\big],
+  \qquad
+  \vec{r}\ \text{in \si{\meter}},\quad \vec{v}\ \text{in \si{\meter\per\second}},
+\end{equation}
+sampled at epochs $t_i$ given in seconds, strictly increasing, and measured
+from an arbitrary but fixed origin. Nothing in either model depends on the
+absolute epoch: only the differences $t_k = t - t_\mathrm{ref}$ enter the
+basis functions, so the caller may use elapsed simulation seconds, seconds
+past J2000 in $\TDB$, or any other consistent scale. The gravitational
+parameter $GM$ supplied through the options must be consistent with those
+units (\SI{4.902800118e12}{\meter\cubed\per\second\squared} for the Moon, the
+default \code{GM\_MOON}).
+
+Three entry points are shared by \cpp{LansEphemeris} and \cpp{LansAlmanac}:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \cpp{Fit(t\_s, rv)} returns a flat parameter vector $\vec{\alpha}$
+    whose layout is documented element-by-element by \cpp{ParamNames()} and
+    whose length is \cpp{NumParams()}.
+  \item \cpp{Eval(t\_s, params)} reconstructs $\mat{RV}$ at arbitrary query
+    epochs from $\vec{\alpha}$ alone. This is the receiver-side operation: it
+    must not need anything that is not broadcast.
+  \item \cpp{EvalError(t\_s, rv\_ref, params)} returns an
+    \cpp{EphemerisFitErrorStats}, the RTN-decomposed RMS and 95th-percentile
+    position and velocity errors against a reference arc.
+\end{itemize}
+
+The error statistics are computed by \cpp{ComputeFitErrorStats} in
+\file{cpp/lupnt/applications/ephemeris/ephemeris_basis.h}. The difference
+$\delta\mat{RV} = \mat{RV}_\mathrm{fit} - \mat{RV}_\mathrm{ref}$ is rotated
+into the Radial--Transverse--Normal triad built at each \emph{reference}
+sample,
+\begin{equation}
+  \label{eq:eph-rtn}
+  \mat{M}_\mathrm{RTN}(\vec{r},\vec{v}) =
+  \begin{bmatrix} \uvec{R}\transpose \\ \uvec{T}\transpose \\ \uvec{N}\transpose \end{bmatrix},
+  \qquad
+  \uvec{R} = \frac{\vec{r}}{\lVert\vec{r}\rVert},\quad
+  \uvec{N} = \frac{\vec{r}\times\vec{v}}{\lVert\vec{r}\times\vec{v}\rVert},\quad
+  \uvec{T} = \uvec{N}\times\uvec{R},
+\end{equation}
+and the four reported components are $[R, T, N, \text{3-D norm}]$. The
+95th percentile uses the nearest-rank definition, index
+$\lceil 0.95N\rceil - 1$ of the sorted absolute values, so it is exactly
+reproducible and never interpolates.
+
+\subsection{The three frames}
+
+Three frames appear in the specification \citep[\S7.1.1]{iiyama2026thesis};
+they are summarised in \cref{tab:eph-frames}.
+
+\begin{table}[H]
+  \centering
+  \caption{The three frames used by the navigation-message models. Only MCI and
+    PA are \lupnt{} \cpp{Frame} enumerators; PAI is an internal construction of
+    the fitting code and is never named in the public API.}
+  \label{tab:eph-frames}
+  \begin{tabularx}{\textwidth}{@{}l l L@{}}
+    \toprule
+    Frame & Enumerator & Role \\
+    \midrule
+    MCI & \code{Frame::MOON\_CI} &
+      Moon-centred inertial, axes aligned with the ICRF. The default fitting
+      frame; the two-body baseline is a standard osculating Kepler orbit and
+      the frame spin rate is zero. \\
+    PA & \code{Frame::MOON\_PA} &
+      Moon-fixed principal-axis frame, rotating about its $z$-axis at
+      $\omega_b = \Omega_\mathrm{Moon} = \SI{2.6617e-6}{\radian\per\second}$
+      (\code{OMEGA\_MOON}). The frame in which the broadcast message is
+      normally expressed. \\
+    PAI & --- (internal) &
+      Principal-Axis Inertial: the instantaneous orientation of PA frozen at
+      each epoch. A quasi-inertial frame used only as the intermediate in
+      which osculating elements are computed and interpreted. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Neither model ever calls \cpp{ConvertFrame}. Instead the entire PA/PAI
+relationship is carried by a single scalar --- the frame spin rate --- and a
+single vector operation, the $\vec{\omega}\times\vec{r}$ cross product with
+$\vec{\omega} = \omega_b\uvec{z}$:
+\begin{equation}
+  \label{eq:eph-spin}
+  \omega_b(\mathcal{F}) =
+  \begin{cases}
+    \Omega_\mathrm{Moon}, & \mathcal{F} = \code{MOON\_PA},\\[2pt]
+    0, & \text{otherwise},
+  \end{cases}
+  \qquad
+  \vec{\omega}\times\vec{r} = \omega_b
+  \begin{bmatrix} -r_y \\ r_x \\ 0 \end{bmatrix}.
+\end{equation}
+
+\begin{lstlisting}[language=cpp, caption={Frame spin rate and the $z$-axis cross product, \code{cpp/lupnt/applications/ephemeris/lunanet\_ephemeris.cc}. The same two helpers are repeated verbatim in \code{lunanet\_almanac.cc}.}, label={lst:eph-spin}]
+// cpp/lupnt/applications/ephemeris/lunanet_ephemeris.cc :: FrameSpinRate / SpinCross
+
+// Angular velocity [rad/s] of `frame` about its z-axis relative to inertial:
+// OMEGA_MOON for the rotating Moon-fixed principal-axis frame, 0 otherwise
+// (so an inertial `frame`, e.g. MOON_CI, reproduces a standard Kepler orbit).
+double FrameSpinRate(Frame frame) { return frame == Frame::MOON_PA ? OMEGA_MOON : 0.0; }
+
+// z-axis (Moon pole) cross product omega x r, with omega = spin * z_hat.
+Vec3d SpinCross(double spin, const Vec3d& r) { return spin * Vec3d(-r(1), r(0), 0.0); }
+\end{lstlisting}
+
+Setting $\omega_b = 0$ collapses every PA-specific term, so the inertial case
+is not a separate code path but the $\omega_b \to 0$ limit of the rotating
+one. When \code{options.frame == Frame::MOON\_PA} the code therefore
+\emph{fits in PAI and returns in PA}: the caller supplies MOON\_PA states, the
+fit adds the $\vec{\omega}\times\vec{r}$ offset to recover the PAI velocity,
+\begin{equation}
+  \label{eq:eph-pai-velocity}
+  \vec{r}^{\,\mathrm{PAI}} = \vec{r}^{\,\mathrm{PA}},
+  \qquad
+  \vec{v}^{\,\mathrm{PAI}} = \vec{v}^{\,\mathrm{PA}} + \vec{\omega}\times\vec{r}^{\,\mathrm{PA}},
+\end{equation}
+and \cpp{Eval} subtracts it back on output. Position is untouched: PA and PAI
+share their axes instantaneously, and differ only in the transport term that
+appears in the velocity.
+
+\begin{lupntnote}
+  The frame handling is what lets a modest polynomial stay accurate. In
+  MOON\_PA the ascending node of the fitted two-body baseline drifts at
+  $-\omega_b$, so the baseline's node tracks the Moon's rotation instead of
+  being chased by the polynomial residual. \cpp{EphemerisGenApp} therefore
+  broadcasts with \code{output\_frame = MOON\_PA}
+  (\file{cpp/lupnt/applications/ephemeris/ephemeris_gen_app.cc}), and the
+  shipped study configuration \file{configs/ephemeris.yaml} sets
+  \code{output\_frame: MOON\_PA} while propagating truth in MOON\_CI.
+\end{lupntnote}
+
+% ===========================================================================
+\section{Ephemeris Representation}
+\label{sec:eph-representation}
+
+\cpp{LansEphemeris} \citep[\S7.2, Algorithm~3]{iiyama2026thesis} models
+Cartesian position as an osculating two-body Kepler baseline plus a Chebyshev
+polynomial residual and an optional Fourier residual in the argument of
+latitude, with velocity obtained from the \emph{analytic} time derivatives of
+all three parts. Nothing is finite-differenced.
+
+\subsection{Base parameters}
+
+The eight base parameters are the reference epoch, the fit span, and the six
+osculating classical elements evaluated once, in PAI, at the window midpoint
+$t_0$:
+\begin{equation}
+  \label{eq:eph-base-params}
+  \vec{\alpha}_\mathrm{base} =
+  \big[\,t_\mathrm{ref},\ t_\mathrm{fit},\ a,\ e,\ i,\ \Omega,\ \omega,\ M_\mathrm{ref}\,\big]\transpose .
+\end{equation}
+Here $t_\mathrm{ref} = t_{\lfloor N/2\rfloor}$ is the midpoint sample (not the
+arc mean), $t_\mathrm{fit} = t_{N-1} - t_0$ is the full span, and
+$(a,e,i,\Omega,\omega,M_\mathrm{ref})$ are \cpp{CartToClassical} applied to the
+midpoint state after the PAI velocity correction \cref{eq:eph-pai-velocity}.
+Local time is measured from the midpoint,
+\begin{equation}
+  \label{eq:eph-tk}
+  t_k = t - t_\mathrm{ref} \in \Big[-\tfrac{t_\mathrm{fit}}{2},\ \tfrac{t_\mathrm{fit}}{2}\Big],
+  \qquad
+  z = \frac{2t_k}{t_\mathrm{fit}} \in [-1, 1],
+\end{equation}
+so that $z$ is the normalized Chebyshev argument. Choosing the midpoint rather
+than the start of the arc halves the magnitude of $t_k$ and centres the
+polynomial, which is why the elements are taken there.
+
+If \code{use\_keplerian\_baseline} is \code{false} the six element slots are
+dropped and only $[t_\mathrm{ref}, t_\mathrm{fit}]$ remain; the model then
+degenerates to a pure Cartesian polynomial, useful only as a baseline for
+comparison because it needs a far higher order for the same accuracy.
+
+\subsection{Chebyshev basis and its analytic derivative}
+
+The Chebyshev polynomials of the first kind, constant term first, are
+generated by the standard three-term recurrence
+\citep[Eqs.~7.1--7.2]{iiyama2026thesis}
+\begin{equation}
+  \label{eq:eph-cheb-rec}
+  T_0(z) = 1,
+  \qquad
+  T_1(z) = z,
+  \qquad
+  T_j(z) = 2z\,T_{j-1}(z) - T_{j-2}(z),
+  \quad j = 2,\dots,n_c .
+\end{equation}
+Differentiating \cref{eq:eph-cheb-rec} with respect to time, and using
+$\dd z/\dd t = 2/t_\mathrm{fit}$ (a constant, because $t_\mathrm{fit}$ is
+fixed for the window), gives a recurrence for the derivative basis that runs
+alongside the value recurrence:
+\begin{equation}
+  \label{eq:eph-cheb-dt}
+  \dot T_0 = 0,
+  \qquad
+  \dot T_1 = \frac{2}{t_\mathrm{fit}},
+  \qquad
+  \dot T_j = 2z\,\dot T_{j-1} + \frac{4}{t_\mathrm{fit}}\,T_{j-1} - \dot T_{j-2}.
+\end{equation}
+This is the product rule applied term by term: the $2z T_{j-1}$ product
+contributes $2\dot z T_{j-1} + 2z\dot T_{j-1}$, and $2\dot z = 4/t_\mathrm{fit}$.
+Because $\dot T_j$ is exact rather than a divided difference, the broadcast
+velocity carries no step-size error and no additional parameters --- the same
+coefficients $\vec{c}$ serve both position and velocity.
+
+Both recurrences are evaluated column-wise over all $N$ samples at once,
+returning $N\times(n_c+1)$ matrices.
+
+\begin{lstlisting}[language=cpp, caption={Chebyshev value and derivative bases, \code{cpp/lupnt/applications/ephemeris/ephemeris\_basis.h}.}, label={lst:eph-cheb}]
+// cpp/lupnt/applications/ephemeris/ephemeris_basis.h :: ChebyshevBasis / ChebyshevBasisDt
+
+inline MatXd ChebyshevBasis(const VecXd& t_k, double t_fit, int order) {
+  const int n = static_cast<int>(t_k.size());
+  MatXd T(n, order + 1);
+  T.col(0).setOnes();
+  if (order == 0) return T;
+  VecXd z = (2.0 / t_fit) * t_k;
+  T.col(1) = z;
+  for (int j = 2; j <= order; ++j) {
+    T.col(j) = 2.0 * z.array() * T.col(j - 1).array() - T.col(j - 2).array();
+  }
+  return T;
+}
+
+inline MatXd ChebyshevBasisDt(const VecXd& t_k, double t_fit, int order) {
+  const int n = static_cast<int>(t_k.size());
+  MatXd T = ChebyshevBasis(t_k, t_fit, order);
+  MatXd Tdot(n, order + 1);
+  Tdot.col(0).setZero();
+  if (order == 0) return Tdot;
+  const double dzdt = 2.0 / t_fit;
+  VecXd z = (2.0 / t_fit) * t_k;
+  Tdot.col(1).setConstant(dzdt);
+  for (int j = 2; j <= order; ++j) {
+    Tdot.col(j) = 2.0 * z.array() * Tdot.col(j - 1).array() + 2.0 * T.col(j - 1).array() * dzdt
+                  - Tdot.col(j - 2).array();
+  }
+  return Tdot;
+}
+\end{lstlisting}
+
+\subsection{The osculating two-body baseline}
+
+\cpp{EvalKeplerianBaseline} propagates the frozen elements
+\cref{eq:eph-base-params} with the two-body mean motion
+\begin{equation}
+  \label{eq:eph-mean-motion}
+  n = \sqrt{\frac{GM}{a^3}},
+  \qquad
+  M(t_k) = M_\mathrm{ref} + n\,t_k,
+\end{equation}
+converts $(a,e,i,\Omega,\omega,M(t_k))$ to a Cartesian PAI state with
+\cpp{ClassicalToCart}, and --- when the output frame rotates --- rigidly
+rotates that state into it. With $\theta(t_k) = -\omega_b t_k$ and
+$\mat{C}(\theta) = \mat{R}_z(\theta)$,
+\begin{equation}
+  \label{eq:eph-baseline-rot}
+  \vec{r}^{\,\mathrm{PA}}_\mathrm{OE} = \mat{C}(\theta)\,\vec{r}^{\,\mathrm{PAI}},
+  \qquad
+  \vec{v}^{\,\mathrm{PA}}_\mathrm{OE} = \mat{C}(\theta)\,\vec{v}^{\,\mathrm{PAI}}
+    + \dot{\mat{C}}(\theta)\,\vec{r}^{\,\mathrm{PAI}},
+\end{equation}
+where
+\begin{equation}
+  \label{eq:eph-rotmat}
+  \mat{C} =
+  \begin{bmatrix}
+    \cos\theta & -\sin\theta & 0 \\
+    \sin\theta & \cos\theta & 0 \\
+    0 & 0 & 1
+  \end{bmatrix},
+  \qquad
+  \dot{\mat{C}} = \frac{\partial\mat{C}}{\partial\theta}\,\dot\theta
+  = \omega_b
+  \begin{bmatrix}
+    \sin\theta & \cos\theta & 0 \\
+    -\cos\theta & \sin\theta & 0 \\
+    0 & 0 & 0
+  \end{bmatrix}.
+\end{equation}
+Equations \cref{eq:eph-baseline-rot,eq:eph-rotmat} are Algorithm~3 steps~5--7
+of \citep[Ch.~7]{iiyama2026thesis}. The net effect on the elements is that the
+right ascension of the ascending node of the baseline drifts at $-\omega_b$,
+which is precisely the secular signature a Moon-fixed observer sees, and the
+velocity acquires the $-\vec{\omega}\times\vec{r}$ transport term. Both are
+represented exactly by the baseline, so the polynomial residual never has to
+absorb them.
+
+For the Fourier terms the baseline additionally returns the argument of
+latitude and its rate. With $E$ the eccentric anomaly from Newton iteration on
+Kepler's equation $E - e\sin E = M$,
+\begin{equation}
+  \label{eq:eph-arglat}
+  \nu = 2\atantwo\!\Big(\sqrt{1+e}\,\sin\tfrac{E}{2},\ \sqrt{1-e}\,\cos\tfrac{E}{2}\Big),
+  \qquad
+  u = \omega + \nu,
+  \qquad
+  \dot u = \dot\nu = \frac{n\sqrt{1-e^2}}{(1 - e\cos E)^2},
+\end{equation}
+the last equality following from $\dot E = n/(1-e\cos E)$ and
+$\dot\nu = \dot E\sqrt{1-e^2}/(1-e\cos E)$. The half-angle $\atantwo$ form of
+$\nu$ is used rather than the $\cos\nu$ form because it is single-valued over
+the full revolution and stays accurate at $e = 0.6$, the eccentricity of the
+ELFO reference orbit.
+
+\subsection{Residual model and reconstruction}
+
+The residual added to the baseline is, per Cartesian axis
+$\xi \in \{x, y, z\}$,
+\begin{equation}
+  \label{eq:eph-residual}
+  \Delta\xi^\mathrm{res}(t)
+  = \sum_{j=0}^{n_c} C^{\xi}_{T,j}\, T_j\!\Big(\frac{2t_k}{t_\mathrm{fit}}\Big)
+  + \sum_{h=1}^{M}\Big[C^{\xi}_{c,h}\cos(h u) + C^{\xi}_{s,h}\sin(h u)\Big],
+\end{equation}
+with the corresponding analytic derivative
+\begin{equation}
+  \label{eq:eph-residual-dot}
+  \Delta\dot\xi^\mathrm{res}(t)
+  = \sum_{j=0}^{n_c} C^{\xi}_{T,j}\,\dot T_j
+  + \sum_{h=1}^{M} h\,\dot u\Big[-C^{\xi}_{c,h}\sin(h u) + C^{\xi}_{s,h}\cos(h u)\Big].
+\end{equation}
+\cpp{Eval} then reconstructs
+\begin{equation}
+  \label{eq:eph-reconstruct}
+  \xi^\mathrm{PA} = \xi^\mathrm{PA}_\mathrm{OE} + \Delta\xi^\mathrm{res},
+  \qquad
+  \dot\xi^\mathrm{PA} = \dot\xi^\mathrm{PA}_\mathrm{OE} + \Delta\dot\xi^\mathrm{res},
+\end{equation}
+which is Algorithm~3 steps~8--9. The Fourier harmonics are functions of $u$,
+not of $t$: they are phase-locked to the orbit rather than to the clock, which
+is what lets a single harmonic pair capture a once-per-revolution residual
+even when the revolution period is not commensurate with the fit window.
+
+\subsection{Parameter layout}
+
+The full flat vector produced by \cpp{Fit}, named element-by-element by
+\cpp{ParamNames()}, is laid out as in \cref{tab:eph-params}. Its length is
+\begin{equation}
+  \label{eq:eph-numparams}
+  N_\mathrm{eph} = b + 3(n_c + 1) + 6M,
+  \qquad
+  b = \begin{cases} 8, & \text{Keplerian baseline},\\ 2, & \text{otherwise},\end{cases}
+\end{equation}
+so the default $n_c = 8$, $M = 0$ configuration carries
+$8 + 27 = 35$ parameters and the shipped study configuration
+($n_c = 6$, $M = 0$) carries $8 + 21 = 29$.
+
+\begin{table}[H]
+  \centering
+  \caption{\cpp{LansEphemeris} parameter layout. Index ranges assume the
+    Keplerian baseline ($b = 8$); the Chebyshev block is grouped by axis, and
+    the Fourier block follows it in full.}
+  \label{tab:eph-params}
+  \begin{tabularx}{\textwidth}{@{}l l l L@{}}
+    \toprule
+    Index & \cpp{ParamNames()} & Symbol & Meaning \\
+    \midrule
+    $0$ & \code{t\_ref} & $t_\mathrm{ref}$ & Midpoint sample epoch \si{\second} \\
+    $1$ & \code{t\_fit} & $t_\mathrm{fit}$ & Fit span $t_{N-1}-t_0$ \si{\second} \\
+    $2$ & \code{a} & $a$ & Osculating semi-major axis at $t_\mathrm{ref}$ (PAI) \\
+    $3$ & \code{e} & $e$ & Eccentricity \\
+    $4$ & \code{i} & $i$ & Inclination \\
+    $5$ & \code{raan} & $\Omega$ & Right ascension of the ascending node \\
+    $6$ & \code{argp} & $\omega$ & Argument of periapsis \\
+    $7$ & \code{M\_ref} & $M_\mathrm{ref}$ & Mean anomaly at $t_\mathrm{ref}$ \\
+    \midrule
+    $8+d(n_c{+}1)+j$ & \code{x\_j}, \code{y\_j}, \code{z\_j} & $C^{\xi}_{T,j}$ &
+      Chebyshev coefficient $j = 0,\dots,n_c$ of axis $d = 0,1,2$ \\
+    $8+3(n_c{+}1)+2dM+2(h{-}1)$ & \code{x\_fc\_h}, \dots & $C^{\xi}_{c,h}$ &
+      Cosine coefficient of harmonic $h = 1,\dots,M$ \\
+    $8+3(n_c{+}1)+2dM+2(h{-}1)+1$ & \code{x\_fs\_h}, \dots & $C^{\xi}_{s,h}$ &
+      Sine coefficient of harmonic $h$ \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\Cref{tab:eph-opts} lists the configuration knobs.
+
+\begin{table}[H]
+  \centering
+  \caption{\cpp{EphemerisFitOptions}, \code{cpp/lupnt/applications/ephemeris/lunanet\_ephemeris.h}.}
+  \label{tab:eph-opts}
+  \begin{tabularx}{\textwidth}{@{}l l L@{}}
+    \toprule
+    Field & Default & Effect \\
+    \midrule
+    \code{poly\_order} & $8$ &
+      Chebyshev order $n_c$ of the position residual; the derivative basis of
+      the same order supplies the velocity residual. \\
+    \code{use\_keplerian\_baseline} & \code{true} &
+      Subtract the osculating two-body orbit before fitting. Disabling it
+      leaves a pure polynomial model needing much higher order. \\
+    \code{gm} & \code{GM\_MOON} &
+      Central-body $GM$ in \si{\meter\cubed\per\second\squared}, consistent
+      with the state units. \\
+    \code{frame} & \code{Frame::MOON\_CI} &
+      Frame of the input states \emph{and} of the evaluated output; sets
+      $\omega_b$ through \cref{eq:eph-spin}. \\
+    \code{num\_fourier\_terms} & $0$ &
+      Number of argument-of-latitude harmonics $M$; $0$ gives a pure
+      Chebyshev $+$ Kepler model. Requires the Keplerian baseline. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lupntnote}
+  \textbf{Implementation vs.\ thesis.} Thesis Eq.~7.3 shows a single
+  second-harmonic Fourier term $C_c\cos 2u + C_s\sin 2u$. The code instead
+  uses fundamental-and-multiples $\cos(hu),\sin(hu)$ for $h = 1,\dots,M$, of
+  which the thesis form is the special case $M = 2$ with the first harmonic
+  constrained to zero. With the default \code{num\_fourier\_terms = 0} the
+  model is pure Chebyshev $+$ Kepler. Fourier terms require
+  \code{use\_keplerian\_baseline}, because the argument of latitude is
+  produced by the baseline orbit; \cpp{Fit} enforces this with a
+  \cpp{LUPNT\_CHECK}.
+\end{lupntnote}
+
+% ===========================================================================
+\section{Ephemeris Least-Squares Fitting}
+\label{sec:eph-fit}
+
+\cpp{LansEphemeris::Fit} \citep[\S7.3.1, Eqs.~7.5--7.7]{iiyama2026thesis}
+proceeds in three stages: fix the osculating elements from the midpoint state,
+subtract the baseline arc to form a position residual, and solve one linear
+least-squares problem per axis over a shared design matrix.
+
+\subsection{Stage 1 --- elements from the midpoint state}
+
+The midpoint index is $\lfloor N/2\rfloor$. The state there is lifted to PAI
+by \cref{eq:eph-pai-velocity} and converted with \cpp{CartToClassical}. No
+iteration and no optimisation is involved: the elements are \emph{fixed}, not
+estimated.
+
+\subsection{Stage 2 --- the residual}
+
+With the baseline arc $\vec{r}_\mathrm{OE}(t_m)$ evaluated at every sample by
+\cref{eq:eph-baseline-rot}, the residual is
+\begin{equation}
+  \label{eq:eph-residual-def}
+  \Delta\vec{r}(t_m) = \vec{r}(t_m) - \vec{r}_\mathrm{OE}(t_m),
+  \qquad m = 1,\dots,N .
+\end{equation}
+Only \emph{position} enters the objective; the velocity is not fit at all. It
+follows from \cref{eq:eph-reconstruct} as the analytic derivative of whatever
+position model the fit produces, which guarantees that the broadcast position
+and velocity are exactly consistent --- a receiver differentiating the
+broadcast position numerically would recover the broadcast velocity.
+
+\subsection{Stage 3 --- the design matrix and the QR solve}
+
+Stacking the Chebyshev and Fourier bases side by side gives the
+$N\times(n_c+1+2M)$ design matrix
+\begin{equation}
+  \label{eq:eph-design}
+  \mat{T} =
+  \big[\,\underbrace{\mat{T}_\mathrm{cheb}}_{N\times(n_c+1)}\ \big|\
+        \underbrace{\mat{F}}_{N\times 2M}\,\big]
+  =
+  \begin{bmatrix}
+    T_0(z_1) & \cdots & T_{n_c}(z_1) & \cos u_1 & \sin u_1 & \cdots & \cos(Mu_1) & \sin(Mu_1)\\
+    T_0(z_2) & \cdots & T_{n_c}(z_2) & \cos u_2 & \sin u_2 & \cdots & \cos(Mu_2) & \sin(Mu_2)\\
+    \vdots   &        & \vdots       & \vdots   & \vdots   &        & \vdots     & \vdots \\
+    T_0(z_N) & \cdots & T_{n_c}(z_N) & \cos u_N & \sin u_N & \cdots & \cos(Mu_N) & \sin(Mu_N)
+  \end{bmatrix},
+\end{equation}
+with $z_m = 2t_{k,m}/t_\mathrm{fit}$ and $u_m = u(t_{k,m})$ from
+\cref{eq:eph-arglat}. The three axes are solved independently against the same
+$\mat{T}$:
+\begin{equation}
+  \label{eq:eph-ls}
+  \vec{\alpha}_d^{\,\star}
+  = \argmin_{\vec{\alpha}\in\mathbb{R}^{n_c+1+2M}}
+    \sum_{m=1}^{N}\big\lVert \Delta r_d(t_m) - \mat{T}_{m,:}\,\vec{\alpha} \big\rVert_2^2,
+  \qquad d \in \{x, y, z\},
+\end{equation}
+whose solution splits as
+$\vec{\alpha}_d^{\,\star} = [\,\vec{C}^{d}_{T}\;;\;\vec{C}^{d}_{F}\,]$, the
+head being the $n_c+1$ Chebyshev coefficients and the tail the $2M$ Fourier
+coefficients of that axis.
+
+Because $\mat{T}$ does not depend on the axis, its column-pivoted Householder
+QR factorization $\mat{T}\mat{P} = \mat{Q}\mat{R}$ is computed \emph{once} and
+reused for all three right-hand sides. Column pivoting is not cosmetic: with
+$M > 0$ the Chebyshev block and the Fourier block are not orthogonal to one
+another, and with a short window relative to the orbital period the low
+harmonics are nearly representable by the low-order polynomials. The revealed
+rank and the pivoting keep the solve well behaved in that regime, where a
+normal-equations solve would lose roughly half the available digits.
+
+The sample-count guard is $N \ge n_c + 2M + 2$, so the system is never
+underdetermined.
+
+\begin{lstlisting}[language=cpp, caption={Design-matrix assembly and the shared per-axis QR solve, \code{cpp/lupnt/applications/ephemeris/lunanet\_ephemeris.cc}.}, label={lst:eph-fit}]
+// cpp/lupnt/applications/ephemeris/lunanet_ephemeris.cc :: LansEphemeris::Fit
+
+const int cheb_len = order + 1;
+const int four_len = 2 * num_fourier;
+const MatXd T = ChebyshevBasis(t_k, t_fit, order);
+const MatXd F = num_fourier > 0 ? FourierBasis(arc.u, num_fourier) : MatXd(n, 0);
+
+// Joint least-squares solve over [Chebyshev | Fourier] for each axis.
+MatXd design(n, cheb_len + four_len);
+design.leftCols(cheb_len) = T;
+if (four_len > 0) design.rightCols(four_len) = F;
+const auto qr = design.colPivHouseholderQr();
+MatXd cheb_coeffs(cheb_len, 3);
+MatXd four_coeffs(four_len, 3);
+for (int d = 0; d < 3; ++d) {
+  const VecXd sol = qr.solve(residual_pos.col(d));
+  cheb_coeffs.col(d) = sol.head(cheb_len);
+  if (four_len > 0) four_coeffs.col(d) = sol.tail(four_len);
+}
+\end{lstlisting}
+
+\begin{lupntnote}
+  \textbf{Implementation vs.\ thesis.} Thesis Eq.~7.4 samples the arc at
+  Chebyshev--Lobatto nodes to suppress Runge oscillation near the window
+  edges; the \lupnt{} model fits whatever epochs the caller supplies.
+  \cpp{EphemerisGenApp::GenerateFromAgent} samples the predicted arc
+  \emph{uniformly} across the validity window
+  (\code{ephemeris\_fit\_samples = 121} by default), so node placement is a
+  caller responsibility and is not enforced by \cpp{Fit}. Separately, the
+  osculating elements and the polynomial coefficients are fit
+  \emph{sequentially} --- elements first from the midpoint state, then a
+  single linear solve for the residual --- matching the thesis's fast and
+  robust scheme rather than a joint nonlinear solve over all
+  $N_\mathrm{eph}$ parameters.
+\end{lupntnote}
+
+% ===========================================================================
+\section{Almanac Representation}
+\label{sec:eph-almanac}
+
+\cpp{LansAlmanac} \citep[\S8.1, Eq.~8.1]{iiyama2026thesis}, Algorithm~2 of
+\citep{iiyama2025ephemeris}, takes the opposite approach from the ephemeris:
+instead of correcting a Cartesian baseline, it fits \emph{each osculating
+element} directly as a low-order polynomial plus an element-specific Fourier
+term over a multi-day window. The representation is therefore always
+element-based, and there is no separate ``baseline'' to enable or disable.
+
+\subsection{Element series}
+
+For an element $\xi(t)$ in normalized time $s = t_k/t_\mathrm{fit}$ with
+$t_k = t - t_\mathrm{ref}$ and $t_\mathrm{ref} = t_0$ (the \emph{first}
+sample, unlike the ephemeris's midpoint),
+\begin{equation}
+  \label{eq:eph-alm-series}
+  \xi(t) = \sum_{p=0}^{P}\beta^{\xi}_p\,s^p
+    + \sum_{h=1}^{M}\Big[C^{\xi}_{c,h}\cos(h\,\omega_\xi t_k)
+                        + C^{\xi}_{s,h}\sin(h\,\omega_\xi t_k)\Big].
+\end{equation}
+Note the deliberate asymmetry: the polynomial is in the dimensionless $s$, so
+its coefficients have the units of $\xi$ regardless of window length, while
+the Fourier arguments are in raw seconds $t_k$, so that the harmonic
+frequencies are physical and independent of the window length.
+
+The base frequency is element-specific --- the orbital mean motion for the
+semi-major axis, the doubled sidereal harmonic for everything else
+\citep[Eq.~8.1]{iiyama2026thesis}:
+\begin{equation}
+  \label{eq:eph-alm-freq}
+  \omega_a = \sqrt{\frac{GM}{a_\mathrm{ref}^3}} = \frac{2\pi}{T_\mathrm{orb}},
+  \qquad
+  \omega_{e} = \omega_{i} = \omega_{\Omega} = \omega_{M} = \omega_{u}
+    = \frac{4\pi}{T_\mathrm{sid}},
+  \qquad T_\mathrm{sid} = \SI{27.321661}{\dayunit}.
+\end{equation}
+The semi-major axis oscillates predominantly at the orbital period, driven by
+the short-period gravitational terms; the remaining elements are dominated by
+the semi-monthly Earth-perturbation signature, hence the $4\pi/T_\mathrm{sid}$
+(twice per sidereal month) base frequency. $a_\mathrm{ref}$ is the arithmetic
+mean of the osculating semi-major axis over the fit window and is broadcast so
+that the receiver can reproduce $\omega_a$ exactly.
+
+\begin{lstlisting}[language=cpp, caption={Element-specific base frequency and the element design matrix, \code{cpp/lupnt/applications/ephemeris/lunanet\_almanac.cc}.}, label={lst:eph-alm-basis}]
+// cpp/lupnt/applications/ephemeris/lunanet_almanac.cc :: ElementFreq / ElementBasis
+
+// Base Fourier angular frequency [rad/s] for element `d`: the orbital mean
+// motion (2*pi/T_orb) for the semi-major axis (d==0), else 4*pi/T_sid.
+double ElementFreq(int d, double a_ref, double gm, double sidereal_period_s) {
+  if (d == 0) return std::sqrt(gm / (a_ref * a_ref * a_ref));
+  return 4.0 * PI / sidereal_period_s;
+}
+
+// Design matrix [N x SegmentLen]: 1, s, ..., s^p (s = t_k/t_fit) followed by
+// cos(h*freq*t_k), sin(h*freq*t_k) for h = 1..num_fourier.
+MatXd ElementBasis(const VecXd& t_k, double t_fit, int poly_order, int num_fourier,
+                   double freq) {
+  const int n = static_cast<int>(t_k.size());
+  MatXd A(n, SegmentLen(poly_order, num_fourier));
+  const VecXd s = t_k.array() / t_fit;
+  A.col(0).setOnes();
+  for (int p = 1; p <= poly_order; ++p) A.col(p) = A.col(p - 1).array() * s.array();
+  const int off = poly_order + 1;
+  for (int h = 1; h <= num_fourier; ++h) {
+    A.col(off + 2 * (h - 1)) = (h * freq * t_k.array()).cos();
+    A.col(off + 2 * (h - 1) + 1) = (h * freq * t_k.array()).sin();
+  }
+  return A;
+}
+\end{lstlisting}
+
+Because only two distinct frequencies occur, only two design matrices are ever
+built: $\mat{A}_a$ at $\omega_a$ for the semi-major axis, and $\mat{A}_s$ at
+$4\pi/T_\mathrm{sid}$ shared by the other five elements.
+
+\subsection{The six represented elements}
+
+Six element series are carried: $a$, $e$, $i$, $\Omega$, the \emph{mean-anomaly
+residual} $\Delta M$, and the \emph{argument-of-latitude correction}
+$u_\mathrm{corr}$. The last two are the two substantive departures from a
+classical almanac.
+
+\paragraph{Mean-anomaly residual.} A polynomial cannot economically represent
+the mean anomaly itself, which sweeps many multiples of $2\pi$ across a
+15-day window. The almanac therefore broadcasts only the \emph{residual} about
+the nominal two-body drift implied by the fitted semi-major axis
+\citep[Algorithm~4, steps~4--5]{iiyama2026thesis}:
+\begin{equation}
+  \label{eq:eph-alm-mean}
+  M(t) = \underbrace{\int_{0}^{t_k} n(\tau)\,\dd\tau}_{M_\mathrm{nom}(t)} + \Delta M(t),
+  \qquad
+  n(\tau) = \sqrt{\frac{GM}{a(\tau)^3}},
+\end{equation}
+where $a(\tau)$ is the \emph{fitted} semi-major axis series
+\cref{eq:eph-alm-series}, not a constant. The integral is evaluated by
+cumulative trapezoid quadrature (\cpp{CumTrapz},
+\file{cpp/lupnt/applications/ephemeris/ephemeris_basis.h}) on the query grid,
+\begin{equation}
+  \label{eq:eph-alm-cumtrapz}
+  M_\mathrm{nom}(t_1) = 0,
+  \qquad
+  M_\mathrm{nom}(t_i) = M_\mathrm{nom}(t_{i-1})
+    + \tfrac{1}{2}\big[n(t_i) + n(t_{i-1})\big]\,(t_i - t_{i-1}),
+\end{equation}
+so it is exactly the same operation at fit time and at evaluation time. This
+introduces a query-grid dependence, discussed in \cref{sec:eph-boundaries}.
+
+\paragraph{Argument-of-latitude correction.} The argument of periapsis
+$\omega$ is \emph{replaced} by $u = \nu + u_\mathrm{corr}$. For a near-circular
+orbit $\omega$ is ill-defined; for the eccentric ELFO reference orbit
+($e = 0.6$) $\omega$ is well-defined but the reconstruction of position from
+$(\omega, M)$ is badly conditioned near periapsis, where a small mean-anomaly
+error maps into a large along-track position error. Parameterizing by the
+argument of latitude moves the fit onto the quantity the geometry actually
+depends on, and keeps the reconstruction well-conditioned at linear polynomial
+order.
+
+\begin{lstlisting}[language=cpp, caption={Mean-anomaly reconstruction inside the almanac series evaluation, \code{cpp/lupnt/applications/ephemeris/lunanet\_almanac.cc}.}, label={lst:eph-alm-eval}]
+// cpp/lupnt/applications/ephemeris/lunanet_almanac.cc :: EvalSeries
+
+AlmanacSeries s;
+s.a   = A_a * params.segment(kNumBaseParams + 0 * seg, seg);
+s.e   = A_s * params.segment(kNumBaseParams + 1 * seg, seg);
+s.inc = A_s * params.segment(kNumBaseParams + 2 * seg, seg);
+s.node = A_s * params.segment(kNumBaseParams + 3 * seg, seg);
+const VecXd m_res = A_s * params.segment(kNumBaseParams + 4 * seg, seg);
+s.u_corr = A_s * params.segment(kNumBaseParams + 5 * seg, seg);
+const VecXd n_series = (opt.gm * s.a.array().pow(-3)).sqrt();
+s.m = CumTrapz(n_series, t_k) + m_res;   // nominal drift + residual
+\end{lstlisting}
+
+\subsection{Parameter layout and the 24 fitted parameters}
+
+Each element occupies a contiguous segment of length
+\begin{equation}
+  \label{eq:eph-alm-seg}
+  L_\mathrm{seg} = (P + 1) + 2M,
+\end{equation}
+and the full vector is three bookkeeping entries followed by six such
+segments,
+\begin{equation}
+  \label{eq:eph-alm-params}
+  \vec{\alpha}_\mathrm{alm} =
+  \big[\,t_\mathrm{ref},\ t_\mathrm{fit},\ a_\mathrm{ref}\ \big|\
+        \vec{\alpha}_a\ \big|\ \vec{\alpha}_e\ \big|\ \vec{\alpha}_i\ \big|\
+        \vec{\alpha}_\Omega\ \big|\ \vec{\alpha}_{\Delta M}\ \big|\
+        \vec{\alpha}_{u}\,\big]\transpose,
+  \qquad
+  N_\mathrm{alm} = 3 + 6L_\mathrm{seg}.
+\end{equation}
+
+With the defaults \code{poly\_order = 1} and \code{num\_fourier\_terms = 1},
+$L_\mathrm{seg} = 4$ and each element carries
+$[\beta_0, \beta_1, C_c, C_s]$ --- the \textbf{24 fitted parameters} of
+\citep[\S8.1]{iiyama2026thesis}, plus the three bookkeeping entries, for
+$N_\mathrm{alm} = 27$ slots in total. For comparison, a GPS almanac page
+carries 13 parameters \citep{icdgps200}; the extra parameters buy
+representation of the strongly perturbed lunar dynamics over a 15-day window,
+which no 13-parameter Keplerian set can follow.
+
+\begin{table}[H]
+  \centering
+  \caption{\cpp{LansAlmanac} parameter layout with the defaults $P = 1$,
+    $M = 1$ ($L_\mathrm{seg} = 4$). The names are those returned by
+    \cpp{ParamNames()}.}
+  \label{tab:eph-alm-params}
+  \begin{tabularx}{\textwidth}{@{}l l l L@{}}
+    \toprule
+    Index & Name & Symbol & Meaning \\
+    \midrule
+    $0$ & \code{t\_ref} & $t_\mathrm{ref}$ & First sample epoch \si{\second} \\
+    $1$ & \code{t\_fit} & $t_\mathrm{fit}$ & Fit span \si{\second} \\
+    $2$ & \code{a\_ref} & $a_\mathrm{ref}$ & Window-mean semi-major axis, sets $\omega_a$ \\
+    \midrule
+    $3$--$6$   & \code{a\_p0}\dots\code{a\_fs1}    & $\vec{\alpha}_a$ & Semi-major axis, frequency $\omega_a$ \\
+    $7$--$10$  & \code{e\_p0}\dots\code{e\_fs1}    & $\vec{\alpha}_e$ & Eccentricity \\
+    $11$--$14$ & \code{i\_p0}\dots\code{i\_fs1}    & $\vec{\alpha}_i$ & Inclination \\
+    $15$--$18$ & \code{raan\_p0}\dots\code{raan\_fs1} & $\vec{\alpha}_\Omega$ & Node, fit directly (drifts secularly in PA) \\
+    $19$--$22$ & \code{M\_p0}\dots\code{M\_fs1}    & $\vec{\alpha}_{\Delta M}$ & Mean-anomaly residual about \cref{eq:eph-alm-mean} \\
+    $23$--$26$ & \code{u\_p0}\dots\code{u\_fs1}    & $\vec{\alpha}_u$ & Argument-of-latitude correction $u_\mathrm{corr}$ \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{\cpp{AlmanacFitOptions}, \code{cpp/lupnt/applications/ephemeris/lunanet\_almanac.h}.}
+  \label{tab:eph-alm-opts}
+  \begin{tabularx}{\textwidth}{@{}l l L@{}}
+    \toprule
+    Field & Default & Effect \\
+    \midrule
+    \code{poly\_order} & $1$ &
+      Secular polynomial degree $P$ in $s = t_k/t_\mathrm{fit}$. Linear is
+      preferred: the $u$ parameterization stays well-conditioned at $P = 1$,
+      and every extra degree costs six broadcast fields. \\
+    \code{num\_fourier\_terms} & $1$ &
+      Harmonics $M$ per element, at the element-specific base frequency
+      \cref{eq:eph-alm-freq}. \\
+    \code{gm} & \code{GM\_MOON} & Central-body $GM$. \\
+    \code{sidereal\_period\_s} & $27.321661\times\code{SECS\_DAY}$ &
+      $T_\mathrm{sid}$, setting $4\pi/T_\mathrm{sid}$ for the five
+      non-semi-major-axis elements. \\
+    \code{frame} & \code{Frame::MOON\_CI} &
+      Frame of the input states and of the output; sets $\omega_b$. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+% ===========================================================================
+\section{Almanac Least-Squares Fitting}
+\label{sec:eph-almanac-fit}
+
+\cpp{LansAlmanac::Fit} \citep[\S8.2, Eqs.~8.2--8.6]{iiyama2026thesis} computes
+unwrapped osculating elements from the (PAI) states, builds the two design
+matrices, and solves each element by QR least squares.
+
+\subsection{Osculating elements and unwrapping}
+
+Every sample is lifted to PAI by \cref{eq:eph-pai-velocity} and converted with
+\cpp{CartToClassical}, giving an $N\times 6$ table
+$[a, e, i, \Omega, \omega, M]$. The four angular columns $i, \Omega, \omega,
+M$ are then \emph{unwrapped}: consecutive samples are forced to differ by less
+than $\pi$ by adding multiples of $2\pi$ (\cpp{UnwrapAngles},
+\file{cpp/lupnt/applications/ephemeris/ephemeris_basis.h}). Without this step
+the least-squares target would contain $2\pi$ discontinuities that a smooth
+basis cannot represent and that would contaminate every coefficient. The
+reference semi-major axis follows as
+\begin{equation}
+  \label{eq:eph-alm-aref}
+  a_\mathrm{ref} = \frac{1}{N}\sum_{m=1}^{N} a(t_m).
+\end{equation}
+
+\subsection{Per-element solves}
+
+Each element is solved independently against its design matrix,
+\begin{equation}
+  \label{eq:eph-alm-ls}
+  \vec{\alpha}_\xi^{\,\star}
+  = \argmin_{\vec{\alpha}_\xi \in \mathbb{R}^{L_\mathrm{seg}}}
+    \sum_{m=1}^{N}\big\lVert \xi(t_m) - \mat{A}_{\xi,m,:}\,\vec{\alpha}_\xi \big\rVert_2^2,
+  \qquad
+  \mat{A}_\xi \in \{\mat{A}_a, \mat{A}_s\},
+\end{equation}
+again with a column-pivoted Householder QR. As in \cref{sec:eph-fit} the two
+factorizations $\mat{A}_a = \mat{Q}_a\mat{R}_a\mat{P}_a\transpose$ and
+$\mat{A}_s = \mat{Q}_s\mat{R}_s\mat{P}_s\transpose$ are formed once and reused
+across all the right-hand sides that share them. Here the pivoting matters for
+a different reason: over a window shorter than $T_\mathrm{sid}/2$ the
+harmonic columns of $\mat{A}_s$ become nearly collinear with the linear
+polynomial column, and column pivoting keeps the split between ``secular'' and
+``periodic'' from being resolved by round-off.
+
+The node $\Omega$ is fit directly rather than through a rate-plus-offset
+parameterization: in the PA frame it drifts secularly at $-\omega_b$, which the
+linear polynomial term absorbs exactly.
+
+\subsection{The mean-anomaly residual target}
+
+The nominal drift is built from the \emph{already fitted} semi-major axis
+series, so it is exactly what the receiver will reconstruct:
+\begin{equation}
+  \label{eq:eph-alm-mnom}
+  a_\mathrm{fit} = \mat{A}_a\vec{\alpha}_a^{\,\star},
+  \qquad
+  n_\mathrm{fit} = \sqrt{GM\,a_\mathrm{fit}^{-3}},
+  \qquad
+  M_\mathrm{nom} = \operatorname{CumTrapz}(n_\mathrm{fit}, t_k),
+\end{equation}
+and the residual target is the unwrapped osculating mean anomaly minus that
+drift, $\Delta M_\mathrm{target} = M_\mathrm{osc} - M_\mathrm{nom}$. This
+sequential structure --- $a$ first, then $M$ against the $a$-implied drift ---
+is what keeps $\Delta M$ small enough for a linear polynomial plus one
+harmonic to represent it.
+
+\subsection{The argument-of-latitude target}
+
+The $u$ correction is fit against a target constructed so that it contains no
+$2\pi$ jumps. With $\nu_\mathrm{osc}$ the true anomaly implied by the
+\emph{osculating} $(M, e)$ pair and $\nu_\mathrm{fit}$ the true anomaly implied
+by the \emph{fitted} $(M_\mathrm{fit}, e_\mathrm{fit})$ pair,
+\begin{equation}
+  \label{eq:eph-alm-utarget}
+  u_\mathrm{target}(t_m)
+  = \omega_\mathrm{osc}(t_m)
+    + \atantwo\!\big(\sin(\nu_\mathrm{osc} - \nu_\mathrm{fit}),\
+                     \cos(\nu_\mathrm{osc} - \nu_\mathrm{fit})\big),
+\end{equation}
+where $\omega_\mathrm{osc}$ is the already-unwrapped argument of periapsis and
+the $\atantwo$ wraps the small true-anomaly discrepancy into $(-\pi, \pi]$.
+The sum is therefore a smooth, slowly varying function: the unwrapped
+$\omega$ carries the secular behaviour, and the wrapped $\Delta\nu$ carries a
+small correction. Fitting $\omega + \Delta\nu$ directly, or wrapping the whole
+sum, would reintroduce the discontinuities the parameterization exists to
+avoid.
+
+\begin{lstlisting}[language=cpp, caption={Mean-anomaly residual and argument-of-latitude targets, \code{cpp/lupnt/applications/ephemeris/lunanet\_almanac.cc}.}, label={lst:eph-alm-fit}]
+// cpp/lupnt/applications/ephemeris/lunanet_almanac.cc :: LansAlmanac::Fit
+
+const VecXd a_series = A_a * a_coeffs;
+const VecXd e_series = A_s * e_coeffs;
+const VecXd n_series = (options_.gm * a_series.array().pow(-3)).sqrt();
+const VecXd m_nom = CumTrapz(n_series, t_k);
+const VecXd m_coeffs = qr_s.solve(coe.col(5) - m_nom);
+const VecXd m_fit = m_nom + A_s * m_coeffs;
+
+// Argument-of-latitude correction u - nu(from fitted M), formed smoothly as
+// argp + wrap(nu_osc - nu_fit) so the least-squares target has no 2*pi jumps.
+VecXd u_target(n);
+for (int i = 0; i < n; ++i) {
+  const double nu_o = TrueAnomaly(SolveKepler(coe(i, 5), coe(i, 1)), coe(i, 1));
+  const double nu_f = TrueAnomaly(SolveKepler(m_fit(i), e_series(i)), e_series(i));
+  const double dnu = std::atan2(std::sin(nu_o - nu_f), std::cos(nu_o - nu_f));
+  u_target(i) = coe(i, 4) + dnu;  // argp (unwrapped) + small residual
+}
+const VecXd u_coeffs = qr_s.solve(u_target);
+\end{lstlisting}
+
+\subsection{Reconstruction}
+
+\cpp{Eval} evaluates the six series at the query epochs, wraps the (large,
+unwrapped) mean anomaly into $(-\pi, \pi]$ so that the Kepler solver inside
+\cpp{ClassicalToCart} stays well-conditioned, and calls \cpp{ClassicalToCart}
+with $\code{argp} = u_\mathrm{corr}$:
+\begin{equation}
+  \label{eq:eph-alm-reconstruct}
+  \vec{rv}^{\,\mathrm{PAI}} = \operatorname{ClassicalToCart}
+    \big(a, e, i, \Omega, u_\mathrm{corr}, \operatorname{wrap}(M)\big),
+  \qquad
+  \vec{v}^{\,\mathrm{PA}} = \vec{v}^{\,\mathrm{PAI}} - \vec{\omega}\times\vec{r}.
+\end{equation}
+Because $u = \nu + u_\mathrm{corr}$ by construction, passing $u_\mathrm{corr}$
+in the argument-of-periapsis slot reproduces exactly the $u$-based
+reconstruction of \citep[Algorithm~4, steps~6--10]{iiyama2026thesis} while
+also yielding the analytic two-body velocity for free.
+
+\begin{lupntnote}
+  \textbf{Implementation vs.\ thesis.} Thesis Algorithm~4 step~11 computes
+  velocity by finite differencing the reconstructed position. The code instead
+  returns the \emph{analytic two-body velocity} from \cpp{ClassicalToCart}
+  (minus the frame $\vec{\omega}\times\vec{r}$ term), which avoids choosing a
+  finite-difference step size and removes the associated truncation and
+  cancellation errors. The class documentation comment in
+  \file{cpp/lupnt/applications/ephemeris/lunanet_almanac.h} still describes the
+  finite-difference formulation; the implementation in
+  \file{lunanet_almanac.cc} is authoritative.
+\end{lupntnote}
+
+% ===========================================================================
+\section{Message Size and Bit Budget}
+\label{sec:eph-bits}
+
+The broadcast cost is sized \emph{per parameter}, so that quantization keeps
+the reconstructed position error under a tolerance
+\citep[\S7.3.2, Eqs.~7.8--7.12]{iiyama2026thesis}. The implementation is in
+\file{cpp/lupnt/applications/ephemeris/ephemeris_app.cc} --- the
+\cpp{EphemerisApp} bit-budget helpers \cpp{SearchParamBits},
+\cpp{RangeBits}, and \cpp{SummarizeWindows} --- and is deliberately kept out
+of the model classes, which store and evaluate unquantized doubles.
+
+\subsection{Fractional-bit search}
+
+For each parameter index $j$, \cpp{SearchParamBits} binary-searches the
+minimum number of fractional bits $k_j$ such that a $2^{-k}$ step in that
+parameter alone changes the \emph{worst-case} position over the window by less
+than the tolerance $\delta_x$:
+\begin{equation}
+  \label{eq:eph-bits-k}
+  k_j = \min\Big\{\,k \in \mathbb{N} \;:\;
+    \max_{m}\big\lVert f(\vec{\alpha} + 2^{-k}\uvec{e}_j,\ t_m)
+                     - f(\vec{\alpha},\ t_m)\big\rVert_2 \le \delta_x \Big\},
+\end{equation}
+where $f(\cdot,t)$ is the model's position output at $t$ and $\uvec{e}_j$ is
+the $j$-th unit vector. Both signs of the perturbation are evaluated and the
+larger displacement is taken, because the map from parameter to position is
+not symmetric --- for an eccentric orbit a $+\epsilon$ and a $-\epsilon$ step
+in, say, the mean anomaly produce different peak excursions.
+
+Using the maximum over the window rather than the RMS is a deliberate choice.
+For the ELFO reference orbit a coarse step in a period-dependent parameter
+spikes the position near periapsis while leaving the window-averaged error
+almost unchanged; bounding the worst case keeps the realized quantized error
+under control everywhere.
+
+\begin{lstlisting}[language=cpp, caption={Worst-case perturbation used by the per-parameter bit search, \code{cpp/lupnt/applications/ephemeris/ephemeris\_app.cc}.}, label={lst:eph-bits}]
+// cpp/lupnt/applications/ephemeris/ephemeris_app.cc :: SearchParamBits
+
+const MatXd baseline = eph.Eval(t_s, params);
+auto perturbed_error = [&](int k) {
+  const double eps = std::pow(2.0, -k);
+  VecXd p = params;
+  p(idx) += eps;
+  const MatXd plus = eph.Eval(t_s, p);
+  p(idx) -= 2.0 * eps;
+  const MatXd minus = eph.Eval(t_s, p);
+  const double err_plus  = (plus.leftCols(3)  - baseline.leftCols(3)).rowwise().norm().maxCoeff();
+  const double err_minus = (minus.leftCols(3) - baseline.leftCols(3)).rowwise().norm().maxCoeff();
+  return std::max(err_plus, err_minus);
+};
+int lo = 0, hi = max_bits;                    // max_bits = 50
+if (perturbed_error(lo) <= precision_m) return lo;
+if (perturbed_error(hi) > precision_m) return hi;
+while (hi - lo > 1) {
+  const int mid = (lo + hi) / 2;
+  if (perturbed_error(mid) <= precision_m) { hi = mid; } else { lo = mid; }
+}
+return hi;
+\end{lstlisting}
+
+The search is bracketed on $[0, 50]$ and returns the endpoint if the tolerance
+is already met at $k = 0$ or still unmet at $k = 50$. The bisection is valid
+because the perturbation magnitude, and hence the induced position offset, is
+monotone in $k$.
+
+\subsection{Range, sign, and margin bits}
+
+Each parameter's field width is the sum of an integer part sized from its
+dynamic range, the fractional part from \cref{eq:eph-bits-k}, a sign bit
+$b_s \in \{0,1\}$, and a margin bit $b_m \in \{0,1\}$
+\citep[Eqs.~7.11--7.12]{iiyama2026thesis}:
+\begin{equation}
+  \label{eq:eph-bits-range}
+  b_j = \max\!\Big(\big\lceil \log_2\!\big(\alpha_{j,\max} - \alpha_{j,\min}\big)\big\rceil,\ 1\Big)
+        + k_j + b_s + b_m,
+  \qquad
+  \text{Message size} = \sum_j b_j .
+\end{equation}
+The $\max(\cdot,1)$ guarantees at least one integer bit even for a parameter
+whose range is below unity, and a non-positive range likewise falls back to one
+bit.
+
+\begin{lstlisting}[language=cpp, caption={Field-width rule, \code{cpp/lupnt/applications/ephemeris/ephemeris\_app.cc}.}, label={lst:eph-rangebits}]
+// cpp/lupnt/applications/ephemeris/ephemeris_app.cc :: RangeBits
+
+int RangeBits(double range, int bits_frac, bool signed_range, bool margin_bit) {
+  const int bits_range
+      = range > 0.0 ? std::max(1, static_cast<int>(std::ceil(std::log2(range)))) : 1;
+  return bits_range + std::max(bits_frac, 0) + (signed_range ? 1 : 0) + (margin_bit ? 1 : 0);
+}
+\end{lstlisting}
+
+The four parameter classes and their scale-factor conventions --- which follow
+the GPS LNAV/CNAV scale-factor tables \citep{icdgps200} --- are given in
+\cref{tab:eph-bitclasses}. Classification is by name prefix
+(\cpp{IsAngleParam}, \cpp{IsEccentricityParam}, \cpp{IsSemiMajorAxisParam}),
+tested in that order, so \code{argp} is classified as an angle even though it
+also begins with \code{a}.
+
+\begin{table}[H]
+  \centering
+  \caption{Bit-allocation classes. $\alpha_{j,\max}$ denotes the largest
+    absolute value of parameter $j$ observed across all fitted windows.}
+  \label{tab:eph-bitclasses}
+  \begin{tabularx}{\textwidth}{@{}l l c c L@{}}
+    \toprule
+    Class & Range & $b_s$ & $b_m$ & Members (name prefix) \\
+    \midrule
+    Angle & $2\pi$ & $1$ & $0$ &
+      \code{i}, \code{raan}, \code{argp}, \code{M}, \code{u} --- including all
+      their polynomial and Fourier coefficients \\
+    Eccentricity & $1$ & $0$ & $0$ & \code{e} and its coefficients \\
+    Semi-major axis & $\alpha_{j,\max}$ & $0$ & $1$ &
+      \code{a}, \code{a\_ref} and the $a$ coefficients \\
+    Other & $\alpha_{j,\max}$ & $1$ & $1$ &
+      Cartesian Chebyshev/Fourier coefficients \code{x\_*}, \code{y\_*},
+      \code{z\_*} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Assigning the full $2\pi$ range to every coefficient of an angular element is
+conservative for the higher-order coefficients, which are typically several
+orders of magnitude smaller; it trades a few bits for a classification rule
+that needs no per-coefficient tuning.
+
+Indices $0$ and $1$ --- $t_\mathrm{ref}$ and $t_\mathrm{fit}$ --- are excluded
+from the budget entirely. They are frame/timing metadata carried by the message
+header rather than quantized model parameters.
+
+\subsection{Sweep and realized error}
+
+\cpp{SummarizeWindows} runs two passes over the \code{num\_windows} sampled
+windows of a given length:
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Sizing.} Fit every window; for each parameter take the maximum
+    over windows of both $k_j$ from \cref{eq:eph-bits-k} and
+    $|\alpha_j|$. The message must be sized for the worst window, not the
+    average one.
+  \item \textbf{Realization.} Re-quantize each window's parameters onto the
+    chosen grid, $\hat\alpha_j = \operatorname{round}(\alpha_j/2^{-k_j})\,2^{-k_j}$,
+    and evaluate \cpp{EvalError} with the \emph{quantized} vector. The
+    reported RMS and 95th-percentile errors are therefore what a receiver
+    decoding the actual broadcast bits would obtain, consistent with the
+    reported \code{total\_bits}.
+\end{enumerate}
+
+The default tolerance is $\delta_x = \SI{0.01}{\meter}$
+(\code{datasize\_precision\_m} in \cpp{EphemerisSimulationConfig}); the shipped
+study configuration \file{configs/ephemeris.yaml} relaxes it to
+\SI{0.05}{\meter} and sweeps
+\code{fit\_window\_minutes: [30, 60, 120]} over four windows of an ELFO arc.
+
+\begin{lupntnote}
+  \textbf{Implementation vs.\ thesis.} Thesis Eqs.~7.9--7.10 size bits from a
+  closed-form sensitivity,
+  $k_j = -\big\lceil\log_2\!\big(\delta_x / |\partial f/\partial\alpha_j|\big)\big\rceil$,
+  followed by a $\pm 1$ refinement. \lupnt{} reaches the same target with a
+  direct binary search over the realized worst-case quantized error, which
+  needs no derivative of the model and automatically accounts for the
+  nonlinearity of the reconstruction near periapsis. The default tolerance is
+  $\delta_x = \SI{0.01}{\meter}$. The LunaNet Interoperability Specification
+  \citep{lunanet2022} allots roughly \textbf{\SI{900}{\bit}} to ephemeris data
+  per broadcast frame \citep[\S1.2.3]{iiyama2026thesis}; the results
+  \citep[Table~7.2]{iiyama2026thesis} meet the $3\sigma$ SISE thresholds
+  (\SI{13.43}{\meter} and \SI{1.2}{\milli\meter\per\second} for LCRNS) within
+  that budget for ELFO fits up to about \SI{240}{\minute}, with Chebyshev plus
+  osculating elements --- plus Fourier terms for windows
+  $\ge \SI{240}{\minute}$ --- as the best accuracy-per-bit representation. The
+  same conclusion is reached independently in
+  \citep{cortinovis2023ephemeris,cortinovis2024navi}.
+\end{lupntnote}
+
+% ===========================================================================
+\section{Broadcast-Message Generation}
+\label{sec:eph-broadcast}
+
+\cpp{EphemerisGenApp}
+(\file{cpp/lupnt/applications/ephemeris/ephemeris_gen_app.h},
+\file{ephemeris_gen_app.cc}) is the \cpp{LunaNetSubApp} that produces both
+message types from a satellite's own predicted arc, as a real vehicle would.
+It is attached to a \cpp{LunaNetSatApp} with \cpp{AddSubApp}.
+
+On each \cpp{Step(t)} it checks whether either message is due for refresh. When
+one is, \cpp{GenerateFromAgent}:
+\begin{enumerate}[leftmargin=1.6em]
+  \item samples the owning agent's \emph{predicted} state at
+    \code{n\_samples} epochs spaced uniformly over
+    $[t_\mathrm{gen},\, t_\mathrm{gen} + T_\mathrm{window}]$ via
+    \cpp{Agent::GetStateAt} --- i.e.\ the satellite propagates its own orbit
+    forward before broadcasting;
+  \item converts the sampled arc from the agent's dynamics frame to
+    \code{output\_frame} with \cpp{ConvertFrame} if they differ (typically
+    MOON\_CI $\to$ MOON\_PA);
+  \item fits the corresponding model and appends a \cpp{BroadcastMessage}
+    holding $[t_\mathrm{generated}, t_\mathrm{start}, t_\mathrm{end},
+    \mathcal{F}, \vec{\alpha}]$.
+\end{enumerate}
+\cpp{LatestEphemeris(t)} and \cpp{LatestAlmanac(t)} return the last message
+whose validity window contains $t$, mirroring a receiver selecting the
+currently valid broadcast page; later messages supersede earlier ones.
+
+\begin{table}[H]
+  \centering
+  \caption{\cpp{EphemerisGenConfig} defaults, \code{cpp/lupnt/applications/ephemeris/ephemeris\_gen\_app.h}. A non-positive refresh interval means ``refresh once per validity window''.}
+  \label{tab:eph-genconfig}
+  \begin{tabularx}{\textwidth}{@{}l l L@{}}
+    \toprule
+    Field & Default & Meaning \\
+    \midrule
+    \code{ephemeris\_window\_s} & \SI{2}{\hour} & Precise-ephemeris validity window \\
+    \code{ephemeris\_refresh\_s} & $0$ & Refresh cadence; $\le 0$ means once per window \\
+    \code{ephemeris\_fit\_samples} & $121$ & Uniform samples of the predicted arc \\
+    \code{almanac\_window\_s} & \SI{15}{\dayunit} & Coarse-almanac validity window \\
+    \code{almanac\_refresh\_s} & $0$ & Refresh cadence \\
+    \code{almanac\_fit\_samples} & $361$ & Uniform samples of the predicted arc \\
+    \code{output\_frame} & \code{Frame::MOON\_CI} &
+      Broadcast frame; \cpp{Setup} forces both models' \code{frame} to it \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lstlisting}[language=cpp, caption={Predicted-arc sampling and frame conversion before fitting, \code{cpp/lupnt/applications/ephemeris/ephemeris\_gen\_app.cc}.}, label={lst:eph-genapp}]
+// cpp/lupnt/applications/ephemeris/ephemeris_gen_app.cc :: GenerateFromAgent
+
+// Sample the agent's predicted state over the validity window, i.e. propagate
+// the satellite's own orbit forward the way a real vehicle would before
+// broadcasting an ephemeris/almanac for the upcoming window.
+VecXd t_s(n_samples);
+MatXd rv(n_samples, 6);
+Frame agent_frame = Frame::MOON_CI;
+for (int i = 0; i < n_samples; ++i) {
+  const double tau = t_gen_s + window_s * static_cast<double>(i) / (n_samples - 1);
+  Cart6 x = agent->GetStateAt(Real(tau));
+  if (i == 0) agent_frame = x.GetFrame();
+  t_s(i) = tau;
+  rv.row(i) = x.cast<double>().transpose();
+}
+
+// Broadcast in output_frame: convert the sampled arc from the agent's dynamics
+// frame if needed (tau is the absolute epoch each state was propagated to).
+if (agent_frame != config_.output_frame) {
+  for (int i = 0; i < n_samples; ++i) {
+    const Vec6 rv_in = rv.row(i).transpose().cast<Real>();
+    const Vec6 rv_out = ConvertFrame(Real(t_s(i)), rv_in, agent_frame, config_.output_frame);
+    rv.row(i) = rv_out.cast<double>().transpose();
+  }
+}
+\end{lstlisting}
+
+Note the two different roles of the ``window'' in the two applications.
+\cpp{EphemerisApp} (\cref{sec:eph-bits}) fits \emph{past} truth samples to
+characterise the accuracy/datasize trade-off; \cpp{EphemerisGenApp} fits a
+\emph{forward-predicted} arc, so its realized user error also contains the
+satellite's own orbit-prediction error, which the fit statistics of
+\cref{sec:eph-contract} do not capture.
+
+% ===========================================================================
+\section{Model Boundaries}
+\label{sec:eph-boundaries}
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Frame is the caller's responsibility.} Inputs to \cpp{Fit} and
+    \cpp{EvalError} must already be expressed in \code{options.frame};
+    broadcasting in MOON\_PA requires the caller to \cpp{ConvertFrame} from MCI
+    first. Neither model performs a frame conversion --- it only applies the
+    scalar $\vec{\omega}\times\vec{r}$ correction of \cref{eq:eph-spin}, which
+    is correct for a pure $z$-axis spin and ignores lunar libration and pole
+    motion within the window.
+  \item \textbf{Fourier terms require the baseline.} \cpp{LansEphemeris}
+    Fourier terms require \code{use\_keplerian\_baseline}, because the argument
+    of latitude comes from the baseline orbit. The almanac always carries the
+    baseline in the sense that osculating elements \emph{are} the
+    representation.
+  \item \textbf{Node placement is a caller responsibility.} Chebyshev--Lobatto
+    versus uniform sampling is decided outside the models, which fit the
+    supplied epochs directly. Uniform sampling
+    (\code{ephemeris\_fit\_samples = 121}) is what
+    \cpp{EphemerisGenApp} uses, so Runge behaviour at the window edges is not
+    suppressed by node placement and instead has to be paid for in polynomial
+    order.
+  \item \textbf{Velocity is analytic throughout.} Almanac velocity is the
+    analytic two-body velocity, not a finite difference; ephemeris velocity is
+    the analytic derivative of the Chebyshev and Fourier bases plus the
+    baseline's rotated velocity. Consequently the broadcast velocity is
+    exactly the derivative of the broadcast position in the ephemeris case,
+    and is exactly two-body-consistent with the reconstructed elements in the
+    almanac case.
+  \item \textbf{The mean-anomaly integral is grid-dependent.} The almanac's
+    $M_\mathrm{nom}$ is a cumulative trapezoid quadrature
+    \cref{eq:eph-alm-cumtrapz} evaluated on the query grid. Two receivers
+    evaluating the same message on different epoch grids obtain slightly
+    different $M_\mathrm{nom}$; the difference is second order in the grid
+    spacing and negligible at the almanac's accuracy level, but it means the
+    reconstruction is not strictly a pointwise closed-form function of $t$.
+  \item \textbf{The bit budget lives outside the models.} The
+    quantization analysis is implemented in \cpp{EphemerisApp}, not in
+    \cpp{LansEphemeris} or \cpp{LansAlmanac}, and \cpp{EphemerisGenApp} stores
+    \emph{unquantized} double-precision parameters. A simulation that needs
+    the realized broadcast error must apply the quantization itself.
+  \item \textbf{Expected accuracy.} Over ELFO fit windows up to about
+    \SI{240}{\minute}, the ephemeris model meets the LCRNS $3\sigma$ SISE
+    thresholds of \SI{13.43}{\meter} and
+    \SI{1.2}{\milli\meter\per\second} inside the LunaNet ephemeris allotment
+    of roughly \SI{900}{\bit} \citep{lunanet2022,iiyama2025ephemeris}. The
+    almanac is a deliberately coarse, long-validity model --- accurate enough
+    for acquisition and visibility prediction over a 15-day window, and orders
+    of magnitude less accurate than the ephemeris. It is not a fallback
+    ranging source.
+\end{itemize}

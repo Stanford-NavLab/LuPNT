@@ -1,0 +1,307 @@
+% ---------------------------------------------------------------------------
+% preamble.tex -- shared packages, styles and macros for the LuPNT manual.
+%
+% Every chapter under chapters/ is written against the contract defined here:
+% the listing styles, the \code/\file/\cpp/\py macros, and the label prefixes
+% (chap:, sec:, eq:, tab:, fig:).  Chapters must not load packages of their
+% own -- add them here so that a chapter stays compilable in isolation via
+% \includeonly.
+% ---------------------------------------------------------------------------
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+
+% --- mathematics ------------------------------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage{siunitx}
+% \year and \day are TeX count registers, so these units need their own
+% control sequences rather than the siunitx defaults.
+% siunitx's default \micro resolves to \textmu, which under T1 + Latin Modern
+% renders as a t-cedilla ("0.3 tps") rather than a mu. Every microsecond,
+% micrometre and microradian in the manual goes through this, so redeclare the
+% prefix to use the math mu. Verified by rendering, not by text extraction:
+% pdftotext maps the broken glyph misleadingly either way.
+\DeclareSIPrefix{\micro}{\ensuremath{\mu}}{-6}
+
+\DeclareSIUnit{\yr}{yr}
+\DeclareSIUnit{\dayunit}{d}
+\DeclareSIUnit{\bit}{bit}
+\DeclareSIUnit{\dB}{dB}
+\DeclareSIUnit{\dBHz}{dB\text{-}Hz}
+\DeclareSIUnit{\dBW}{dBW}
+\DeclareSIUnit{\dBi}{dBi}
+\DeclareSIUnit{\TECU}{TECU}
+\DeclareSIUnit{\au}{au}
+
+% --- tables, figures, floats ------------------------------------------------
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{float}
+
+% --- where figures come from ------------------------------------------------
+% latex_docs holds text only. Binary artefacts live in one of two places:
+%
+%   ../assets/               repository-level brand assets, already in git
+%   $LUPNT_DATA_PATH/docs/   generated/large artefacts, fetched not committed
+%
+% build.sh resolves LUPNT_DATA_PATH and writes figpath.tex (gitignored) with
+% the absolute path; the \providecommand below is the fallback for a plain
+% `pdflatex lupnt` run from this directory.
+\IfFileExists{figpath.tex}{\input{figpath}}{}
+\providecommand{\datafigdir}{../data/LuPNT_data/docs/}
+\graphicspath{{\datafigdir}{../assets/}{../docs/_static/}}
+
+% \datafig[<includegraphics opts>]{<file>} -- include a figure from
+% \datafigdir, degrading to a visible placeholder when the data directory has
+% not been fetched. A missing artefact must not break the build: the manual has
+% to compile from a bare clone.
+\newcommand{\datafig}[2][width=\textwidth]{%
+  \IfFileExists{\datafigdir #2}{%
+    \includegraphics[#1]{#2}%
+  }{%
+    % \detokenize, not a bare \texttt{#2}: the filename was tokenized at the
+    % call site, so its underscores carry catcode 8 and would be read as
+    % subscripts. \detokenize re-emits them as printable catcode-12 characters.
+    \fbox{\parbox{0.92\textwidth}{\centering\small\vspace{6pt}
+      \textbf{Figure not available:} \texttt{\detokenize{#2}}\\[3pt]
+      It lives in \texttt{\$LUPNT\_DATA\_PATH/docs/}, which this build could not
+      find. See the figure notes in \texttt{latex\_docs/README.md} for how to
+      regenerate it.\vspace{6pt}}}%
+  }%
+}
+\usepackage[labelfont=bf,font=small]{caption}
+\usepackage{enumitem}
+\usepackage{microtype}
+
+% Ragged-right X column: long identifiers in the spec tables must not be
+% stretched into rivers.
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+% Weighted ragged-right X column, used directly in a spec as `W{2}`: it takes
+% twice the share of a plain `L`. The weights across one tabularx must sum to
+% the number of X/L columns -- two columns can be W{1.4} W{0.6}, three can be
+% W{1.5} W{1} W{0.5}, and so on. Reach for this instead of a fixed `l`/`r`/`c`
+% column whenever a cell holds a phrase rather than a single token: a non-X
+% column claims its content's natural width first, so one long cell there
+% starves the real X columns until they wrap a word at a time.
+\newcolumntype{W}[1]{>{\hsize=#1\hsize\raggedright\arraybackslash}X}
+% Right-aligned weighted X, for a numeric comparison column that should still
+% be able to wrap a trailing note.
+\newcolumntype{Y}[1]{>{\hsize=#1\hsize\raggedleft\arraybackslash}X}
+
+% A fixed-width ragged-right column, used as `P{2.1cm}`: for a token column
+% (identifier, path) that is narrow on average but has an entry or two long
+% enough that a bare `l` would widen the whole table.
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% --- diagrams ---------------------------------------------------------------
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, fit, backgrounds, calc, shapes.geometric}
+
+\tikzset{
+  tsnode/.style   = {draw, rounded corners=2pt, minimum width=1.05cm,
+                     minimum height=6mm, font=\small\sffamily, fill=white},
+  boxnode/.style  = {draw, rounded corners=2pt, minimum width=2.4cm,
+                     minimum height=8mm, font=\small\sffamily, fill=white,
+                     align=center},
+  constant/.style = {-, thick, black},
+  table/.style    = {-, thick, black, dashed},
+  linear/.style   = {-, thick, blue!65!black},
+  model/.style    = {-, ultra thick, orange!85!black},
+  integral/.style = {-, ultra thick, red!75!black, double},
+  flow/.style     = {-{Latex[length=2mm]}, thick},
+}
+
+% --- admonitions ------------------------------------------------------------
+% The reStructuredText sources use .. note:: / .. warning:: heavily; these
+% reproduce them as light framed boxes without pulling in tcolorbox.
+\usepackage{mdframed}
+\usepackage{xcolor}
+
+\definecolor{notebg}{RGB}{240,244,250}
+\definecolor{noterule}{RGB}{ 70,110,170}
+\definecolor{warnbg}{RGB}{253,244,238}
+\definecolor{warnrule}{RGB}{200,110, 40}
+
+\newmdenv[
+  backgroundcolor=notebg, linecolor=noterule, linewidth=0.8pt,
+  leftline=true, rightline=false, topline=false, bottomline=false,
+  innerleftmargin=8pt, innerrightmargin=8pt,
+  innertopmargin=6pt, innerbottommargin=6pt,
+  skipabove=8pt, skipbelow=8pt
+]{notebox}
+
+\newmdenv[
+  backgroundcolor=warnbg, linecolor=warnrule, linewidth=0.8pt,
+  leftline=true, rightline=false, topline=false, bottomline=false,
+  innerleftmargin=8pt, innerrightmargin=8pt,
+  innertopmargin=6pt, innerbottommargin=6pt,
+  skipabove=8pt, skipbelow=8pt
+]{warnbox}
+
+\newenvironment{lupntnote}{\begin{notebox}\noindent\textbf{Note.}\ \ignorespaces}
+  {\end{notebox}}
+\newenvironment{lupntwarning}{\begin{warnbox}\noindent\textbf{Warning.}\ \ignorespaces}
+  {\end{warnbox}}
+
+% --- source listings --------------------------------------------------------
+\usepackage{listings}
+
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{codekw}{RGB}{ 20, 70,160}
+\definecolor{codestr}{RGB}{160, 60, 40}
+\definecolor{codecomment}{RGB}{100,120,100}
+\definecolor{codeframe}{RGB}{220,220,220}
+
+\lstdefinestyle{lupnt}{
+  backgroundcolor = \color{codebg},
+  basicstyle      = \ttfamily\footnotesize,
+  keywordstyle    = \color{codekw}\bfseries,
+  stringstyle     = \color{codestr},
+  commentstyle    = \color{codecomment}\itshape,
+  numberstyle     = \tiny\color{gray},
+  frame           = single,
+  rulecolor       = \color{codeframe},
+  framesep        = 4pt,
+  xleftmargin     = 6pt,
+  xrightmargin    = 0pt,
+  breaklines      = true,
+  breakatwhitespace = false,
+  postbreak       = \mbox{\textcolor{gray}{$\hookrightarrow$}\space},
+  columns         = fullflexible,
+  keepspaces      = true,
+  showstringspaces= false,
+  captionpos      = b,
+  aboveskip       = 8pt,
+  belowskip       = 8pt,
+  literate        = {->}{{->}}2 {<-}{{<-}}2 {~}{{\textasciitilde}}1
+                    {_}{{\_}}1 {°}{{$^\circ$}}1 {±}{{$\pm$}}1
+                    {μ}{{$\mu$}}1 {Δ}{{$\Delta$}}1 {→}{{$\rightarrow$}}1
+                    {↔}{{$\leftrightarrow$}}1 {—}{{---}}1 {–}{{--}}1
+                    {’}{{'}}1 {‘}{{`}}1 {“}{{``}}1 {”}{{''}}1,
+}
+\lstset{style=lupnt}
+
+% Language aliases used by the chapters.  Each chapter selects one with
+% \begin{lstlisting}[language=cpp] etc.; the names below are the only ones
+% guaranteed to exist.
+\lstdefinelanguage{cpp}[ANSI]{C++}{
+  morekeywords={auto,constexpr,nullptr,override,using,namespace,template,
+                typename,struct,class,enum,static,inline,const,noexcept,
+                Real,Vec3,Vec6,VecX,MatX,Ptr,std},
+}
+\lstdefinelanguage{py}[]{Python}{
+  morekeywords={None,True,False,self,async,await,match,case},
+}
+\lstdefinelanguage{yamlcfg}{
+  keywords={true,false,null,name,type,agents,applications,measurements,
+            simulation,dynamics,frame,epoch,duration,step,outputs},
+  keywordstyle=\color{codekw}\bfseries,
+  comment=[l]{\#},
+  morestring=[b]',
+  morestring=[b]",
+  sensitive=false,
+}
+\lstdefinelanguage{shell}{
+  keywords={cd,ls,git,cmake,pixi,pip,make,python,export,source,conda,sudo,apt,
+            brew,doxygen,sphinx-build,tectonic},
+  keywordstyle=\color{codekw}\bfseries,
+  comment=[l]{\#},
+  morestring=[b]",
+  sensitive=true,
+}
+\lstdefinelanguage{bibtexlang}{
+  keywords={@article,@inproceedings,@book,@techreport,@misc,@phdthesis},
+  keywordstyle=\color{codekw}\bfseries,
+  comment=[l]{\%},
+  sensitive=false,
+}
+
+% --- inline literals --------------------------------------------------------
+% \code   -- an identifier, type, enum value, CLI flag, or short expression
+% \file   -- a path in the repository (breaks at / and _)
+% \cpp    -- a C++ symbol (same rendering as \code; kept distinct so that a
+%            future index pass can separate the two)
+% \py     -- a Python symbol
+\usepackage{url}
+\urlstyle{tt}
+% All four are robust so they survive unprotected in captions and section
+% headings -- \path is fragile, and a bare \file{a_b.cc} in a \caption would
+% otherwise fail with "Undefined control sequence".
+\DeclareRobustCommand{\code}[1]{\texttt{#1}}
+\DeclareRobustCommand{\cpp}[1]{\texttt{#1}}
+\DeclareRobustCommand{\py}[1]{\texttt{#1}}
+\DeclareRobustCommand{\file}[1]{\path{#1}}
+\newcommand{\lupnt}{\textsc{LuPNT}}
+\newcommand{\pylupnt}{\texttt{pylupnt}}
+
+% Long typewriter identifiers that are allowed to wrap. `\code`/`\cpp` set a
+% \texttt box that never breaks, so a 40-character API name pokes out of a
+% table cell or into the margin. Two flavours, both underscore-safe:
+%
+%   \longid{Foo.barBaz_qux}  breaks only at dots, underscores and slashes --
+%                            the tidy choice for a dotted or underscored name.
+%   \brk{NONSPHERICALGRAVITY} breaks between any two characters -- the only
+%                            option for a separator-less run of capitals that
+%                            is itself wider than the column.
+%
+% Reach for either only when an identifier is too long to sit on one line;
+% short ones stay \code.
+\DeclareUrlCommand{\longid}{\urlstyle{tt}%
+  \def\UrlBreaks{\do\/\do\_\do\.\do\-\do\:}}  % + C++ scope operator ::
+\makeatletter
+\DeclareUrlCommand{\brk}{\urlstyle{tt}%
+  \def\UrlBreaks{\do\/\do\_\do\.\do\-%
+    \do\A\do\B\do\C\do\D\do\E\do\F\do\G\do\H\do\I\do\J\do\K\do\L\do\M%
+    \do\N\do\O\do\P\do\Q\do\R\do\S\do\T\do\U\do\V\do\W\do\X\do\Y\do\Z%
+    \do\a\do\b\do\c\do\d\do\e\do\f\do\g\do\h\do\i\do\j\do\k\do\l\do\m%
+    \do\n\do\o\do\p\do\q\do\r\do\s\do\t\do\u\do\v\do\w\do\x\do\y\do\z%
+    \do0\do1\do2\do3\do4\do5\do6\do7\do8\do9}}
+\makeatother
+
+% Vectors and frequently used operators.  Chapters use \vec{} for 3-vectors
+% and \mat{} for matrices so the whole manual stays typographically uniform.
+\renewcommand{\vec}[1]{\bm{#1}}
+\newcommand{\mat}[1]{\bm{#1}}
+\newcommand{\uvec}[1]{\hat{\bm{#1}}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\transpose}{^{\mathsf{T}}}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\atantwo}{atan2}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator{\Tr}{tr}
+\DeclareMathOperator{\erf}{erf}
+
+% Time scales typeset uniformly as upright abbreviations.
+\newcommand{\TT}{\mathrm{TT}}
+\newcommand{\TAI}{\mathrm{TAI}}
+\newcommand{\TDB}{\mathrm{TDB}}
+\newcommand{\TCB}{\mathrm{TCB}}
+\newcommand{\TCG}{\mathrm{TCG}}
+\newcommand{\TCL}{\mathrm{TCL}}
+\newcommand{\LT}{\mathrm{LT}}
+\newcommand{\UTC}{\mathrm{UTC}}
+\newcommand{\UTone}{\mathrm{UT1}}
+\newcommand{\GPST}{\mathrm{GPS}}
+
+% --- bibliography and cross references --------------------------------------
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{cleveref}
+
+\crefname{chapter}{Chapter}{Chapters}
+\crefname{section}{Section}{Sections}
+\crefname{equation}{Eq.}{Eqs.}
+\crefname{figure}{Figure}{Figures}
+\crefname{table}{Table}{Tables}
+\crefname{listing}{Listing}{Listings}
+
+\setlength{\emergencystretch}{4em}  % absorb long unbreakable \texttt identifiers

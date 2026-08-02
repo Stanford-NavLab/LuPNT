@@ -1,0 +1,1083 @@
+\chapter{Numerical Integration}
+\label{chap:integration}
+
+This chapter specifies the mathematical contract of \lupnt{}'s ordinary
+differential equation (ODE) integrators: the family of explicit Runge--Kutta
+methods they realise, the Butcher tableaux they carry, the embedded error
+estimates and step-size control laws of the adaptive members, the termination
+semantics of a propagation run, and the way the state-transition (sensitivity)
+matrix is carried through the integration by the differentiable scalar type of
+\cref{chap:autodiff}. Everything here is implemented by
+\file{cpp/lupnt/numerics/integrator.h} and
+\file{cpp/lupnt/numerics/integrator.cc}; the sensitivity machinery lives in
+\file{cpp/lupnt/numerics/math_utils.cc}, and the callers are the numerical
+dynamics models of \cref{chap:dynamics}. The reference for the general theory,
+the order conditions, and the step-size controller is the standard treatment
+of nonstiff initial value problems \citep{hairer1993}; the individual embedded
+pairs follow \citep{fehlberg1969} and \citep{dormand1980}.
+
+The chapter is written as a specification rather than a description: the
+equations below are the contract that a regression test may assert against.
+Three of those contracts were, for a time, violated by the implementation: one
+coefficient of the \cpp{RK8} tableau, the stage times of \cpp{PD45}, and the
+acceptance threshold of the \cpp{IRKF} controller. All three have been
+corrected, and all three are now pinned by
+\file{cpp/test/numerics/test_integrator_order.cc}. Each is recorded below, in
+the past tense, next to the method it affected rather than in a defect list:
+how each one hid --- one behind a weak tolerance, one behind an autonomous
+test problem, one behind an integer division --- is the more useful half of
+the story. \Cref{sec:int-boundaries} is reserved for what is still a genuine
+limitation.
+
+\section{ODE and State Contract}
+\label{sec:int-contract}
+
+Every integrator advances a first-order, explicitly time-dependent system
+\begin{equation}
+  \label{eq:int-ode}
+  \dot{x} = f(t, x),
+  \qquad x \in \mathbb{R}^{n},
+  \qquad f : \mathbb{R}\times\mathbb{R}^{n} \to \mathbb{R}^{n},
+\end{equation}
+from an initial time $t_0$ to a final time $t_f$. The independent variable $t$
+is in seconds; the step size $h$ carries the sign of the propagation
+direction. The right-hand side is the \cpp{ODE} type,
+
+\begin{lstlisting}[language=cpp, caption={Right-hand side type. Source: \code{cpp/lupnt/numerics/integrator.h}}, label={lst:int-ode}]
+// cpp/lupnt/numerics/integrator.h :: ODE
+using ODE = std::function<VecX(Real, const State&)>;
+\end{lstlisting}
+
+Two properties of \cref{lst:int-ode} are contractual and used throughout the
+rest of this chapter.
+
+\begin{enumerate}[leftmargin=1.5cm]
+  \item The scalar is \cpp{Real}, not \cpp{double}. Both the time argument and
+    every component of the returned rate vector are forward-mode dual numbers
+    (\cref{sec:ad-real}). This is what allows an entire propagation to be
+    differentiated with respect to its initial condition without writing a
+    variational equation --- see \cref{sec:int-stm}.
+  \item The integrator does not interpret the contents of the state. Units,
+    reference frame, epoch offset, and the ordering of the components are
+    entirely the property of the calling dynamics model
+    (\cref{chap:dynamics}). \cpp{NumericalOrbitDynamics},
+    \cpp{ClockDynamics}, and \cpp{JointOrbitClockDynamics} each build an
+    \cpp{ODE} from their own force and derivative models and hand it to
+    \cpp{Integrator::Propagate}.
+\end{enumerate}
+
+\begin{lupntnote}
+  Because the \cpp{ODE} closure is captured by the numerical dynamics model,
+  the absolute epoch enters through the global reference epoch: a dynamics
+  model evaluates its ephemeris at $t_{\TDB} = t_{\mathrm{epoch}} + t$, where
+  $t$ is the integrator's independent variable. The integrator itself is
+  epoch-agnostic.
+\end{lupntnote}
+
+\section{Integrator Selection and Configuration}
+\label{sec:int-selection}
+
+The concrete method is chosen by the enumeration
+\begin{equation}
+  \label{eq:int-types}
+  \texttt{IntegratorType} \in
+  \{\ \texttt{RK4},\ \texttt{RK8},\ \texttt{RKF45},\ \texttt{PD45}\ \},
+\end{equation}
+with \code{RK4} the default (\cpp{default\_integrator} in
+\file{cpp/lupnt/numerics/integrator.h}). \code{RK4} and \code{RK8} are
+fixed-step; \code{RKF45} and \code{PD45} carry embedded error estimates and
+adapt their internal step.
+
+\begin{lstlisting}[language=cpp, caption={Integrator instantiation. Source: \code{cpp/lupnt/dynamics/numerical\_orbit\_dynamics.cc}}, label={lst:int-select}]
+// cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: NumericalDynamics::SetIntegrator
+void NumericalDynamics::SetIntegrator(IntegratorType integ) {
+  if (integ == IntegratorType::RK4) {
+    integrator_ = MakeUnique<RK4>();
+  } else if (integ == IntegratorType::RK8) {
+    integrator_ = MakeUnique<RK8>();
+  } else if (integ == IntegratorType::RKF45) {
+    integrator_ = MakeUnique<RKF45>();
+  } else if (integ == IntegratorType::PD45) {
+    integrator_ = MakeUnique<PD45>();
+  } else {
+    LUPNT_CHECK(false, "Invalid Integrator Type", "NumericalOrbitDynamics");
+  }
+}
+\end{lstlisting}
+
+The configuration knobs a scenario file may set are listed in
+\cref{tab:int-knobs}. They are read once, in the
+\cpp{NumericalDynamics(Config\&)} constructor; the tolerance block is applied
+only if at least one of its three keys is present, so the built-in defaults
+survive a partial configuration.
+
+\begin{table}[H]
+  \centering
+  \caption{Integration configuration keys, read by
+    \cpp{NumericalDynamics(Config\&)} in
+    \code{cpp/lupnt/dynamics/numerical\_orbit\_dynamics.cc} and validated by
+    \cpp{IntegratorParams::CheckIntegratorParams}.}
+  \label{tab:int-knobs}
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Key & Default & Meaning \\
+    \midrule
+    \code{integrator} & \code{RK4} & One of \cref{eq:int-types}, parsed by
+      name through \code{magic\_enum}. \\
+    \code{dt}         & --- & Nominal step size $\mathrm{d}t$ in seconds; must
+      be positive. For the fixed-step methods this is the step; for the
+      adaptive methods it is the outer marching increment
+      (\cref{sec:int-loop}). \\
+    \code{max\_iter}  & \num{20} & Maximum number of rejected attempts an
+      adaptive \cpp{Step} may make before throwing. Must be $>0$. \\
+    \code{abstol}     & \num{1e-6} & Absolute tolerance $\eta_a$. Must be
+      $>0$. \\
+    \code{reltol}     & \num{1e-6} & Relative tolerance $\eta_r$. Must be
+      $>0$. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lstlisting}[language=yamlcfg, caption={Scenario-file form of \cref{tab:int-knobs}.}, label={lst:int-yaml}]
+dynamics:
+  integrator: RKF45   # RK4 | RK8 | RKF45 | PD45
+  dt: 60.0            # [s]
+  abstol: 1.0e-9
+  reltol: 1.0e-9
+  max_iter: 30
+\end{lstlisting}
+
+\section{The Fixed-Step Explicit Runge--Kutta Contract}
+\label{sec:int-rk}
+
+An explicit $s$-stage Runge--Kutta method is defined by a Butcher tableau
+$(a_{ij}, b_i, c_i)$ with $a_{ij} = 0$ for $j \ge i$,
+\begin{equation}
+  \label{eq:int-tableau}
+  \renewcommand{\arraystretch}{1.15}
+  \begin{array}{c|cccc}
+    c_1    &        &        &        &           \\
+    c_2    & a_{21} &        &        &           \\
+    \vdots & \vdots & \ddots &        &           \\
+    c_s    & a_{s1} & a_{s2} & \cdots & a_{s,s-1} \\
+    \hline
+           & b_1    & b_2    & \cdots & b_s
+  \end{array}
+\end{equation}
+which advances the solution over one step of size $h$ by
+\begin{align}
+  \label{eq:int-stage}
+  k_i &= f\!\left(t + c_i h,\ x_k + \sum_{j<i} a_{ij}\, k_j\right),
+        \qquad i = 1,\dots,s, \\
+  \label{eq:int-update}
+  x_{k+1} &= x_k + h \sum_{i=1}^{s} b_i\, k_i .
+\end{align}
+
+Two structural conditions are used repeatedly below as verification checks
+\citep[Ch.~II.1]{hairer1993}:
+\begin{equation}
+  \label{eq:int-consistency}
+  \sum_{i=1}^{s} b_i = 1
+  \qquad\text{(consistency)},
+  \qquad\qquad
+  c_i = \sum_{j<i} a_{ij}
+  \qquad\text{(row-sum / node condition)}.
+\end{equation}
+The row-sum condition is what makes the stage evaluation time $t + c_i h$
+consistent with the stage argument; a tableau that violates it integrates
+autonomous systems at full order but loses order on any explicitly
+time-dependent right-hand side. Both of the tableau defects \lupnt{} once
+carried --- \cref{sec:int-rk8} and \cref{sec:int-pd45} --- were of exactly
+this kind, and \cref{eq:int-consistency} is what diagnosed them. It is now
+asserted directly, as a property of the coefficient arrays rather than of a
+propagated trajectory, by the cases
+\code{numerics.integrator\_order.rk8\_tableau\_consistency} and
+\code{numerics.integrator\_order.pd45\_node\_consistency} in
+\file{cpp/test/numerics/test_integrator_order.cc}.
+
+\begin{lupntnote}
+  In the \lupnt{} source the stage derivatives are stored \emph{pre-scaled} by
+  the step, $k_i \leftarrow h\, f(\cdot)$ (written \code{f(...) * dt}), so the
+  implemented update reads $x_{k+1} = x_k + \sum_i b_i k_i$ without the outer
+  $h$. Every tableau in this chapter is stated in the unscaled convention of
+  \cref{eq:int-stage}--\cref{eq:int-update}; the two agree because the scaling
+  is uniform across stages.
+\end{lupntnote}
+
+\subsection{RK4: the classical fourth-order method}
+\label{sec:int-rk4}
+
+\cpp{RK4} implements the classical tableau
+\begin{equation}
+  \label{eq:int-rk4-tableau}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{array}{c|cccc}
+    0            &             &             &             &             \\
+    \tfrac{1}{2} & \tfrac{1}{2}&             &             &             \\
+    \tfrac{1}{2} & 0           & \tfrac{1}{2}&             &             \\
+    1            & 0           & 0           & 1           &             \\
+    \hline
+                 & \tfrac{1}{6}& \tfrac{1}{3}& \tfrac{1}{3}& \tfrac{1}{6}
+  \end{array}
+\end{equation}
+which satisfies both conditions of \cref{eq:int-consistency} and expands to
+\begin{align}
+  \label{eq:int-rk4-stages}
+  k_1 &= f(t, x_k), &
+  k_2 &= f\!\left(t+\tfrac{h}{2},\ x_k + \tfrac{h}{2}k_1\right), \nonumber \\
+  k_3 &= f\!\left(t+\tfrac{h}{2},\ x_k + \tfrac{h}{2}k_2\right), &
+  k_4 &= f\!\left(t+h,\ x_k + h\,k_3\right),
+\end{align}
+\begin{equation}
+  \label{eq:int-rk4-update}
+  x_{k+1} = x_k + \frac{h}{6}\left(k_1 + 2k_2 + 2k_3 + k_4\right).
+\end{equation}
+The method is of order $4$ with a local truncation error $O(h^5)$, and it is
+exact for any right-hand side that is a polynomial of degree $\le 3$ in $t$
+alone.
+
+\begin{lstlisting}[language=cpp, caption={Classical RK4 step. Source: \code{cpp/lupnt/numerics/integrator.cc}}, label={lst:int-rk4}]
+// cpp/lupnt/numerics/integrator.cc :: RK4::Step
+State RK4::Step(const ODE& f, Real t, const State& x, Real dt) {
+  State k_1 = f(t, x) * dt;
+
+  Real  t1  = t + dt / 2.0;
+  State x1  = x + k_1 / 2.0;
+  State k_2 = f(t1, x1) * dt;
+
+  Real  t2  = t + dt / 2.0;
+  State x2  = x + k_2 / 2.0;
+  State k_3 = f(t2, x2) * dt;
+
+  Real  t3  = t + dt;
+  State x3  = x + k_3;
+  State k_4 = f(t3, x3) * dt;
+
+  State dx = (k_1 + k_2 * 2.0 + k_3 * 2.0 + k_4) / 6.0;
+  return x + dx;
+}
+\end{lstlisting}
+
+\subsection{RK8: the ten-stage, seventh-order method}
+\label{sec:int-rk8}
+
+\cpp{RK8} is a ten-stage explicit method of the Shanks/Cooper--Verner family.
+Its order is $7$, not $8$: the name overstates it, and
+\cref{sec:int-rk8-order} shows that this is a consequence of the stage count
+rather than a residual defect.
+Its coefficient matrix is dense enough that reproducing $a_{ij}$ as a
+$10\times 9$ array is unreadable at this page width; the tableau is therefore
+given in the row-factored form in which the source writes it
+(\cref{tab:int-rk8}), from which the individual $a_{ij}$ follow by
+distributing the common denominator. The stage nodes are
+\begin{equation}
+  \label{eq:int-rk8-nodes}
+  c = \left[\,0,\ \tfrac{4}{27},\ \tfrac{2}{9},\ \tfrac{1}{3},\ \tfrac{1}{2},
+      \ \tfrac{2}{3},\ \tfrac{1}{6},\ 1,\ \tfrac{5}{6},\ 1\,\right],
+\end{equation}
+and the final combination uses only seven of the ten stages,
+\begin{equation}
+  \label{eq:int-rk8-update}
+  x_{k+1} = x_k + \frac{h}{840}\Big(
+    41 k_1 + 27 k_4 + 272 k_5 + 27 k_6 + 216 k_7 + 216 k_9 + 41 k_{10}
+  \Big),
+\end{equation}
+whose weights sum to $840/840 = 1$, satisfying consistency.
+
+\begin{table}[H]
+  \centering
+  \caption{Stage arguments of \cpp{RK8::Step}, exactly as coded in
+    \code{cpp/lupnt/numerics/integrator.cc}. Stage $i$ evaluates
+    $k_i = h f(t + c_i h,\ X_i)$. The last column is
+    $\sum_{j<i} a_{ij}$, which must equal $c_i$ by
+    \cref{eq:int-consistency}.}
+  \label{tab:int-rk8}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{clll}
+    \toprule
+    $i$ & $c_i$ & Stage argument $X_i$ & $\sum_j a_{ij}$ \\
+    \midrule
+    $1$  & $0$            & $x_k$ & $0$ \\
+    $2$  & $\tfrac{4}{27}$& $x_k + \tfrac{4}{27}k_1$ & $\tfrac{4}{27}$ \\
+    $3$  & $\tfrac{2}{9}$ & $x_k + \tfrac{1}{18}\left(k_1 + 3k_2\right)$
+         & $\tfrac{2}{9}$ \\
+    $4$  & $\tfrac{1}{3}$ & $x_k + \tfrac{1}{12}\left(k_1 + 3k_3\right)$
+         & $\tfrac{1}{3}$ \\
+    $5$  & $\tfrac{1}{2}$ & $x_k + \tfrac{1}{8}\left(k_1 + 3k_4\right)$
+         & $\tfrac{1}{2}$ \\
+    $6$  & $\tfrac{2}{3}$
+         & $x_k + \tfrac{1}{54}\left(13k_1 - 27k_3 + 42k_4 + 8k_5\right)$
+         & $\tfrac{2}{3}$ \\
+    $7$  & $\tfrac{1}{6}$
+         & $x_k + \tfrac{1}{4320}\left(389k_1 - 54k_3 + 966k_4 - 824k_5
+           + 243k_6\right)$
+         & $\tfrac{1}{6}$ \\
+    $8$  & $1$
+         & $x_k + \tfrac{1}{20}\left(-231\,k_1 + 81k_3 - 1164k_4
+           + 656k_5 - 122k_6 + 800k_7\right)$
+         & $1$ \\
+    $9$  & $\tfrac{5}{6}$
+         & $x_k + \tfrac{1}{288}\left(-127k_1 + 18k_3 - 678k_4 + 456k_5
+           - 9k_6 + 576k_7 + 4k_8\right)$
+         & $\tfrac{5}{6}$ \\
+    $10$ & $1$
+         & $x_k + \tfrac{1}{820}\left(1481k_1 - 81k_3 + 7104k_4 - 3376k_5
+           + 72k_6 - 5040k_7 - 60k_8 + 720k_9\right)$
+         & $1$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Every row of \cref{tab:int-rk8} now satisfies the node condition, and the
+weights of \cref{eq:int-rk8-update} sum to $1$; the tableau as coded is
+consistent throughout.
+
+\begin{lstlisting}[language=cpp, caption={Final combination of the ten-stage method. Source: \code{cpp/lupnt/numerics/integrator.cc}}, label={lst:int-rk8}]
+// cpp/lupnt/numerics/integrator.cc :: RK8::Step (stages 8 and 10, and the combination)
+// 8
+// The leading coefficient is -231, not -234: the row must sum to c_8 = 1
+// (the consistency condition c_i = sum_j a_ij), and
+// (-231 + 81 - 1164 + 656 - 122 + 800)/20 = 1 exactly, whereas -234 gives
+// 17/20 and silently drops the method to 3rd order. See
+// cpp/test/numerics/test_integrator_order.cc.
+Real t7 = t + dt;
+State x7
+    = x + (1.0 / 20) * (-231 * k_1 + 81 * k_3 - 1164 * k_4 + 656 * k_5 - 122 * k_6 + 800 * k_7);
+State k_8 = f(t7, x7) * dt;
+// ...
+State dx
+    = (41 * k_1 + 27 * k_4 + 272 * k_5 + 27 * k_6 + 216 * k_7 + 216 * k_9 + 41 * k_10) / 840;
+return x + dx;
+\end{lstlisting}
+
+\subsection{Order of RK8: the stage-8 coefficient, and Butcher's barrier}
+\label{sec:int-rk8-order}
+
+\paragraph{The corrected coefficient.}
+\label{warn:int-rk8}
+Stage $8$ was for a long time coded with $-234$ in place of the $-231$ of
+\cref{tab:int-rk8}, and was the only row of the tableau that failed the node
+condition of \cref{eq:int-consistency}: its coefficients summed to
+$17/20 = 0.85$ against a node of $c_8 = 1$. With $-231$ the row sums to
+$20/20 = 1$ exactly. Every other row, and the weight vector
+\cref{eq:int-rk8-update}, already satisfied the conditions, which is what
+identified the entry as an isolated transcription error rather than a
+different tableau. Nor is $-231$ merely \emph{a} value that restores the row
+sum: repairing any other single coefficient of the row instead --- there are
+five candidates --- gives a method that measures order $4$. The intended
+coefficient is therefore uniquely determined by the row it sits in.
+
+\paragraph{What the defect cost, and how it hid.}
+Let $e(h)$ be the global error at $t = 1$ of a propagation over $t\in[0,1]$
+and let
+\begin{equation}
+  \label{eq:int-emporder}
+  p_{\mathrm{emp}} = \log_2 \frac{e(h)}{e(h/2)}
+\end{equation}
+be the empirical order. Measured with the production \cpp{Real} class at
+$h = 1/4$, the as-coded method returned $p_{\mathrm{emp}} = 3.18$ on
+$\dot y = -y$ and $2.83$ on the non-autonomous $\dot y = y\cos t$ --- an
+order-$3$ method wearing an order-$8$ name. With $-231$ the same experiment
+gives $p_{\mathrm{emp}} > 8$ on $\dot y = -y$ and $6.95$ on
+$\dot y = y\cos t$. The first of those two figures is not evidence of order
+$8$: on a linear, constant-coefficient problem the whole step collapses to a
+polynomial in $h\lambda$ that happens to reproduce $e^{h\lambda}$ to higher
+degree than the general order conditions require, so such a problem
+superconverges and cannot be used to measure order at all. The honest
+measurement is the local truncation error evaluated in exact rational
+arithmetic on $\dot y = y^{2}$ and $\dot y = t\,y^{2}$: at four successively
+halved step sizes it decays as $h^{p+1}$ with $p+1 = 8.00$, $8.13$, $8.02$
+and $8.00$, i.e.\ a local error of $O(h^{8})$ and hence a global order of
+$7$.
+
+The reason the defect survived for so long is that the unit test in
+\file{cpp/test/numerics/test_integrator_extra.cc} propagates with
+$\mathrm{d}t = \num{1e-3}$ against a tolerance of \num{1e-8}. An order-$3$
+method clears that comfortably; only a test that varies $h$ and looks at the
+\emph{ratio} of errors can see the difference. That is what
+\code{numerics.integrator\_order.rk8\_is\_seventh\_order} and
+\code{numerics.integrator\_order.rk8\_tableau\_consistency}, in
+\file{cpp/test/numerics/test_integrator_order.cc}, now do.
+
+\paragraph{Order 7 is optimal for ten stages.}
+The remaining gap between the name and the method is not a defect and cannot
+be closed by a better tableau. Butcher's order barrier for explicit
+Runge--Kutta methods states that order $8$ requires at least $s = 11$ stages
+\citep[Thm.~II.5.1]{hairer1993}; \cpp{RK8} has $s = 10$, so order $8$ is
+unattainable for it by construction, and order $7$ --- which needs $s \ge 9$
+--- is the best a ten-stage explicit method can do. The corrected tableau
+attains that bound. It is the class name, not the coefficients, that is
+wrong.
+
+Renaming is nonetheless not a free change and should not be made silently:
+\code{IntegratorType::RK8} is public API, is selected by name through
+\code{magic\_enum} from the \code{integrator} key of \cref{tab:int-knobs},
+and is re-exported in the Python bindings, so every scenario file and every
+\pylupnt{} script that names it would break. Until a deprecation path is
+provided, the name is documented as a misnomer rather than corrected: see
+\cref{sec:int-boundaries}.
+
+\section{Embedded Pairs and the Local Error Estimate}
+\label{sec:int-embedded}
+
+An embedded pair augments \cref{eq:int-tableau} with a second weight vector
+$b^{*}$ of one order lower (or higher) sharing the same stages
+$k_1,\dots,k_s$. Evaluating both weightings costs nothing beyond the stages
+already computed and yields two approximations at $t+h$,
+\begin{equation}
+  \label{eq:int-pair}
+  \hat{x}^{\mathrm{high}}_{k+1} = x_k + h\sum_{i=1}^{s} b_i k_i,
+  \qquad
+  \hat{x}^{\mathrm{low}}_{k+1}  = x_k + h\sum_{i=1}^{s} b^{*}_i k_i,
+\end{equation}
+whose difference estimates the local truncation error of the lower-order
+member componentwise,
+\begin{equation}
+  \label{eq:int-err}
+  e_i = \left| \hat{x}^{\mathrm{high}}_{k+1,i}
+             - \hat{x}^{\mathrm{low}}_{k+1,i} \right|,
+  \qquad i = 1,\dots,n .
+\end{equation}
+\lupnt{} contains two embedded pairs with two \emph{different} controllers:
+\cpp{RKF45}, which derives from the abstract base \cpp{IRKF} and uses the
+componentwise controller of \cref{sec:int-control}, and \cpp{PD45}, which is
+self-contained and uses the root-mean-square controller of
+\cref{sec:int-pd45}.
+
+\subsection{The \texorpdfstring{\cpp{IRKF}}{IRKF} controller}
+\label{sec:int-control}
+
+\cpp{IRKF} scales \cref{eq:int-err} by a mixed absolute/relative tolerance
+built from the \emph{high}-order solution,
+\begin{equation}
+  \label{eq:int-tol}
+  \mathrm{tol}_i = \max\!\left(
+    \eta_r \left|\hat{x}^{\mathrm{high}}_{k+1,i}\right|,\ \eta_a
+  \right),
+  \qquad
+  \varepsilon = \max_{i} \frac{e_i}{\mathrm{tol}_i},
+\end{equation}
+with $\eta_r = \code{reltol}$ and $\eta_a = \code{abstol}$ from
+\cref{tab:int-knobs}. The step is accepted when every component satisfies
+\begin{equation}
+  \label{eq:int-accept}
+  \frac{e_i}{\mathrm{tol}_i} \le \theta,
+  \qquad
+  \theta = (p+1)^{\,(p+1)/p},
+\end{equation}
+where $p$ is the order of the lower-order member ($p = 4$ for \cpp{RKF45}).
+\Cref{eq:int-accept} is the non-conservative acceptance threshold of the
+standard step-size-control literature \citep[Ch.~II.4]{hairer1993}; for $p=4$ its exact value is
+$5^{1.25} \approx 7.48$. Whether the step is accepted or not, the step size is
+rescaled by
+\begin{equation}
+  \label{eq:int-scale}
+  s = \beta\,\varepsilon^{-1/(p+1)},
+  \qquad
+  s \leftarrow \min\big(2,\ \max(0.5,\ s)\big),
+  \qquad
+  \mathrm{d}t \leftarrow s\,\mathrm{d}t,
+\end{equation}
+with safety factor $\beta = 0.9$ and the clamp restricting any single
+adjustment to a factor of two in either direction. The exponent $-1/(p+1)$
+follows from $e \sim C h^{p+1}$: to bring a measured $\varepsilon$ down to $1$
+the step must be scaled by $\varepsilon^{-1/(p+1)}$, and $\beta$ absorbs the
+error in that extrapolation.
+
+\begin{lstlisting}[language=cpp, caption={Componentwise error test and step-size controller. Source: \code{cpp/lupnt/numerics/integrator.cc}}, label={lst:int-relerr}]
+// cpp/lupnt/numerics/integrator.cc :: IRKF::ComputeRelError
+bool IRKF::ComputeRelError(const State& x_new_low, const State& x_new_high, Real& dt) {
+  double tol = 0.0;
+  double error = 0.0;
+  bool within_tolerance = true;
+  double max_error = 0.0;
+
+  // Non-conservative acceptance threshold. J.C. Butcher, Numerical Methods
+  // for Ordinary Differential Equations, p291.
+  //
+  // The exponent must be evaluated in floating point: `order_` is an int, so
+  // `(order_ + 1) / order_` is integer division and collapses to 1 for every
+  // order >= 1, giving 5 instead of 5^1.25 ~ 7.48 for RKF45.
+  double accept_thresh
+      = std::pow(order_ + 1, static_cast<double>(order_ + 1) / static_cast<double>(order_));
+
+  for (size_t i = 0; i < x_new_low.size(); ++i) {
+    error = abs(x_new_high(i) - x_new_low(i));
+    tol = max(params_.reltol * abs(x_new_high(i)), params_.abstol);
+    max_error = std::max(max_error, error / tol);
+    if ((error / tol) > accept_thresh) within_tolerance = false;
+  }
+
+  // Update timestep
+  double beta = 0.9;  // safety factor
+  double s = beta * std::pow(1.0 / max_error, 1.0 / (order_ + 1));
+  s = std::max(0.5, std::min(2.0, s));  // J.C. Butcher, Numerical Methods for
+                                        // Ordinary Differential Equations, (371a)
+  dt = s * dt;
+
+  return within_tolerance;
+}
+\end{lstlisting}
+
+\begin{lupntnote}
+  \label{warn:int-thresh}
+  The two \code{static\_cast<double>} in \cref{lst:int-relerr} are load-bearing
+  and were not always there. \cpp{order\_} is an \cpp{int}, so the exponent
+  \code{(order\_ + 1) / order\_} was previously evaluated in \emph{integer}
+  arithmetic; for \cpp{RKF45} that is $5/4 = 1$, not $1.25$, and in fact the
+  quotient collapses to $1$ for \emph{every} order $p \ge 1$, so the
+  order-dependence of \cref{eq:int-accept} vanished entirely. The realised
+  threshold was $\theta = 5^{1} = 5$ instead of $5^{1.25} \approx 7.48$: a
+  third tighter than intended, and therefore conservative rather than wrong
+  --- it never accepted a step the published law would have rejected. What it
+  did do is silently stop matching the reference the source cites for it
+  (Butcher, \emph{Numerical Methods for Ordinary Differential Equations},
+  p.~291), which is exactly the kind of drift a specification is meant to
+  catch. The threshold now evaluates to $5^{1.25}$ for \cpp{RKF45} and to
+  $(p+1)^{(p+1)/p}$ in general.
+\end{lupntnote}
+
+The retry loop wrapping the controller is \cpp{IRKF::Step}. It calls the
+subclass \cpp{Update} to form the pair, tests it, and repeats with the
+rescaled step, up to \code{max\_iter} attempts; on exhaustion it throws
+through \code{LUPNT\_CHECK}. Note that the value returned is the
+\emph{low}-order member: \lupnt{} does not perform local extrapolation, so the
+achieved order of \cpp{RKF45} is $4$ and the fifth-order solution serves only
+as the error yardstick.
+
+\begin{lstlisting}[language=cpp, caption={Adaptive retry loop. Source: \code{cpp/lupnt/numerics/integrator.cc}}, label={lst:int-irkf-step}]
+// cpp/lupnt/numerics/integrator.cc :: IRKF::Step
+State IRKF::Step(const ODE& f, Real t, const State& x, Real dt) {
+  int n = x.size();
+  State x_new_low(n), x_new_high(n);
+
+  int iter;
+  for (iter = 0; iter < params_.max_iter; ++iter) {
+    Update(f, t, x, dt, x_new_low, x_new_high);
+    bool within_tolerance = ComputeRelError(x_new_low, x_new_high, dt);
+    if (within_tolerance) break;
+  }
+  LUPNT_CHECK(iter < params_.max_iter,
+              "IRKF did not converge, increase max_iter or reduce tolerance", "IRKF");
+
+  return x_new_low;
+}
+\end{lstlisting}
+
+\subsection{RKF45: the Fehlberg 4(5) pair}
+\label{sec:int-rkf45}
+
+\cpp{RKF45} is the six-stage Fehlberg pair \citep{fehlberg1969}, constructed
+as \cpp{IRKF(4)}. Its tableau, with the fifth-order weights $b$ on the first
+rule line and the fourth-order weights $b^{*}$ on the second, is
+
+\begin{equation}
+  \label{eq:int-rkf45-tableau}
+  {\setlength{\arraycolsep}{3pt}
+  \renewcommand{\arraystretch}{1.35}
+  \begin{array}{c|cccccc}
+    0 & & & & & & \\
+    \tfrac{1}{4}    & \tfrac{1}{4} & & & & & \\
+    \tfrac{3}{8}    & \tfrac{3}{32} & \tfrac{9}{32} & & & & \\
+    \tfrac{12}{13}  & \tfrac{1932}{2197} & -\tfrac{7200}{2197}
+                    & \tfrac{7296}{2197} & & & \\
+    1               & \tfrac{439}{216} & -8 & \tfrac{3680}{513}
+                    & -\tfrac{845}{4104} & & \\
+    \tfrac{1}{2}    & -\tfrac{8}{27} & 2 & -\tfrac{3544}{2565}
+                    & \tfrac{1859}{4104} & -\tfrac{11}{40} & \\
+    \hline
+    b               & \tfrac{16}{135} & 0 & \tfrac{6656}{12825}
+                    & \tfrac{28561}{56430} & -\tfrac{9}{50} & \tfrac{2}{55} \\
+    b^{*}           & \tfrac{25}{216} & 0 & \tfrac{1408}{2565}
+                    & \tfrac{2197}{4104} & -\tfrac{1}{5} & 0
+  \end{array}}
+\end{equation}
+
+Both weight vectors sum to $1$ and every row satisfies the node condition of
+\cref{eq:int-consistency}, so the implemented tableau is correct as published.
+Written out, the pair is
+\begin{align}
+  \label{eq:int-rkf45-low}
+  \hat{x}^{\mathrm{low}}_{k+1}
+    &= x_k + \tfrac{25}{216}k_1 + \tfrac{1408}{2565}k_3
+       + \tfrac{2197}{4104}k_4 - \tfrac{1}{5}k_5, \\
+  \label{eq:int-rkf45-high}
+  \hat{x}^{\mathrm{high}}_{k+1}
+    &= x_k + \tfrac{16}{135}k_1 + \tfrac{6656}{12825}k_3
+       + \tfrac{28561}{56430}k_4 - \tfrac{9}{50}k_5 + \tfrac{2}{55}k_6,
+\end{align}
+with $h$-scaled stages as noted in \cref{sec:int-rk}. Stage $k_2$ contributes
+to neither weighting; it exists only to build $k_3$ onwards.
+
+\begin{lstlisting}[language=cpp, caption={Fehlberg 4(5) stages and embedded pair. Source: \code{cpp/lupnt/numerics/integrator.cc}}, label={lst:int-rkf45}]
+// cpp/lupnt/numerics/integrator.cc :: RKF45::Update
+State k1 = f(t, x) * dt;
+State k2 = f(t + dt / 4.0, x + k1 * (1.0 / 4.0)) * dt;
+State k3 = f(t + dt * 3.0 / 8.0, x + k1 * (3.0 / 32.0) + k2 * (9.0 / 32.0)) * dt;
+State k4 = f(t + dt * 12.0 / 13.0,
+             x + k1 * (1932.0 / 2197.0) - k2 * (7200.0 / 2197.0) + k3 * (7296.0 / 2197.0))
+           * dt;
+State k5 = f(t + dt, x + k1 * (439.0 / 216.0) - k2 * 8.0 + k3 * (3680.0 / 513.0)
+                         - k4 * (845.0 / 4104.0))
+           * dt;
+State k6 = f(t + dt / 2.0, x - k1 * (8.0 / 27.0) + k2 * 2.0 - k3 * (3544.0 / 2565.0)
+                               + k4 * (1859.0 / 4104.0) - k5 * (11.0 / 40.0))
+           * dt;
+
+// 4th order solution
+x_new_low = x + k1 * (25.0 / 216.0) + k3 * (1408.0 / 2565.0) + k4 * (2197.0 / 4104.0)
+            - k5 * (1.0 / 5.0);
+
+// 5th order solution
+x_new_high = x + k1 * (16.0 / 135.0) + k3 * (6656.0 / 12825.0) + k4 * (28561.0 / 56430.0)
+             - k5 * (9.0 / 50.0) + k6 * (2.0 / 55.0);
+\end{lstlisting}
+
+\subsection{PD45: the Dormand--Prince 4(5) pair}
+\label{sec:int-pd45}
+
+\cpp{PD45} implements the seven-stage Dormand--Prince pair
+\citep{dormand1980} with its own controller. The coefficient arrays
+\cpp{PD45::A\_}, \cpp{PD45::b\_}, and \cpp{PD45::b\_star\_} are static class
+constants and reproduce the published tableau exactly:
+
+\begin{equation}
+  \label{eq:int-pd45-tableau}
+  {\setlength{\arraycolsep}{2.5pt}
+  \renewcommand{\arraystretch}{1.4}
+  \begin{array}{c|ccccccc}
+    0 & & & & & & & \\
+    \tfrac{1}{5}   & \tfrac{1}{5} & & & & & & \\
+    \tfrac{3}{10}  & \tfrac{3}{40} & \tfrac{9}{40} & & & & & \\
+    \tfrac{4}{5}   & \tfrac{44}{45} & -\tfrac{56}{15} & \tfrac{32}{9}
+                   & & & & \\
+    \tfrac{8}{9}   & \tfrac{19372}{6561} & -\tfrac{25360}{2187}
+                   & \tfrac{64448}{6561} & -\tfrac{212}{729} & & & \\
+    1              & \tfrac{9017}{3168} & -\tfrac{355}{33}
+                   & \tfrac{46732}{5247} & \tfrac{49}{176}
+                   & -\tfrac{5103}{18656} & & \\
+    1              & \tfrac{35}{384} & 0 & \tfrac{500}{1113}
+                   & \tfrac{125}{192} & -\tfrac{2187}{6784}
+                   & \tfrac{11}{84} & \\
+    \hline
+    b     & \tfrac{35}{384} & 0 & \tfrac{500}{1113} & \tfrac{125}{192}
+          & -\tfrac{2187}{6784} & \tfrac{11}{84} & 0 \\
+    b^{*} & \tfrac{5179}{57600} & 0 & \tfrac{7571}{16695} & \tfrac{393}{640}
+          & -\tfrac{92097}{339200} & \tfrac{187}{2100} & \tfrac{1}{40}
+  \end{array}}
+\end{equation}
+
+The tableau is first-same-as-last (FSAL): row $7$ of $A$ equals $b$, so
+$k_7 = f(t+h,\ x^{\mathrm{high}}_{k+1})$ is already the first stage of the
+next step. \lupnt{} does not exploit this, and pays the extra evaluation.
+
+\cpp{PD45} stores no $c$ vector. The stage times are instead \emph{derived}
+from the coefficient matrix at the point of use, by accumulating the row sum
+in the same loop that accumulates the stage combination:
+\begin{equation}
+  \label{eq:int-pd45-nodes}
+  c_i = \sum_{j<i} a_{ij},
+  \qquad
+  k_i = h\, f\!\left(t + c_i h,\ x_k + \sum_{j<i} a_{ij} k_j\right),
+\end{equation}
+which is \cref{eq:int-stage} verbatim. Deriving $c$ rather than storing it is
+deliberate: a separate node array is a second copy of information already
+present in $A$, and the two can disagree, whereas
+\cref{eq:int-pd45-nodes} makes the node condition of
+\cref{eq:int-consistency} true by construction. For the tableau of
+\cref{eq:int-pd45-tableau} the row sums reproduce the published nodes
+$c = \left[0,\ \tfrac{1}{5},\ \tfrac{3}{10},\ \tfrac{4}{5},\ \tfrac{8}{9},
+\ 1,\ 1\right]$ exactly.
+
+The pair is formed by \cref{eq:int-pair} with these weights, and the error is
+reduced to a single scalar by a root-mean-square norm against a per-component
+scale built from the \emph{initial} state of the step,
+\begin{equation}
+  \label{eq:int-pd45-scale}
+  \mathrm{sc}_i = \eta_a + \eta_r\,|x_{k,i}|,
+  \qquad
+  E = \frac{1}{\sqrt{n}}
+      \left\|
+        \frac{y^{\mathrm{high}}_{k+1} - y^{\mathrm{low}}_{k+1}}{\mathrm{sc}}
+      \right\|_2 .
+\end{equation}
+The step is accepted when $E \le 1$, in which case the \emph{high}-order
+member is returned; \cpp{PD45} therefore \emph{does} extrapolate locally and
+is a fifth-order method controlled by a fourth-order estimate. On rejection
+the step is shrunk by
+\begin{equation}
+  \label{eq:int-pd45-shrink}
+  \mathrm{d}t \leftarrow \mathrm{d}t \cdot
+    \max\!\left(0.1,\ \left(\frac{\beta}{E}\right)^{1/4}\right),
+  \qquad \beta = 0.9,
+\end{equation}
+and retried. Two hard failures throw \cpp{std::runtime\_error}: the step
+magnitude falling below $\mathrm{d}t_{\min} = \num{1e-3}$, and exceeding
+\code{max\_iter} attempts. Note that \cref{eq:int-pd45-shrink} can only
+shrink, never grow, so \cpp{PD45} has no mechanism for enlarging its step.
+
+\begin{lstlisting}[language=cpp, caption={Dormand--Prince step, error norm, and rejection branch. Source: \code{cpp/lupnt/numerics/integrator.cc}}, label={lst:int-pd45}]
+// cpp/lupnt/numerics/integrator.cc :: PD45::Step
+k[0] = dt * f(t, x);
+for (int i = 1; i < stages; ++i) {
+  State sum = State::Zero(x.size());
+  // The stage time is the ROW SUM c_i = sum_j a_ij, not the first column
+  // A_[i][0]. Deriving it here rather than storing a separate c_ array
+  // keeps the two consistent by construction. Using A_[i][0] put stages
+  // 4 and 5 at t + 2.95*dt and t + 2.85*dt -- outside the step -- which
+  // is invisible for an autonomous RHS but drops the method to 1st order
+  // as soon as f depends on t, as orbit dynamics with ephemeris terms
+  // does. See cpp/test/numerics/test_integrator_order.cc.
+  double c_i = 0.0;
+  for (int j = 0; j < i; ++j) {
+    sum += A_[i][j] * k[j];
+    c_i += A_[i][j];
+  }
+  k[i] = dt * f(t + c_i * dt, x + sum);
+}
+
+State y_high = x;
+State y_low  = x;
+for (int i = 0; i < stages; ++i) {
+  y_high += b_[i] * k[i];
+  y_low  += b_star_[i] * k[i];
+}
+
+State error_vec = y_high - y_low;
+State scale
+    = (Real(this->params_.abstol) + this->params_.reltol * x.cwiseAbs().array()).matrix();
+Real error_norm = (error_vec.cwiseQuotient(scale)).norm() / std::sqrt(x.size());
+
+if (error_norm <= 1.0) {
+  t += dt;
+  return y_high;
+} else {
+  double factor = std::pow(safety / error_norm.val(), 0.25);
+  dt *= std::max(factor, 0.1);
+}
+\end{lstlisting}
+
+\paragraph{The corrected stage times.}
+\label{warn:int-pd45-nodes}
+\Cref{eq:int-pd45-nodes} replaced an earlier formulation in which the stage
+time was read from the \emph{first column} of the tableau, $t + a_{i1}h$,
+rather than from the row sum. The two agree only for the first two stages;
+the nodes actually realised were
+\begin{equation}
+  \label{eq:int-pd45-oldnodes}
+  c^{\mathrm{old}} = \left[\,0,\ 0.2,\ 0.075,\ 0.978,\ 2.953,\ 2.846,
+    \ 0.091\,\right]
+  \quad\text{against}\quad
+  c = \left[\,0,\ \tfrac{1}{5},\ \tfrac{3}{10},\ \tfrac{4}{5},
+    \ \tfrac{8}{9},\ 1,\ 1\,\right],
+\end{equation}
+so stages $5$ and $6$ sampled the right-hand side almost \emph{three steps}
+beyond the interval being integrated, and the embedded error estimate --- built
+from those same stages --- no longer bounded the true local error.
+
+The instructive part is why nothing noticed. A wrong $c_i$ enters the method
+only through the first argument of $f$. If $f$ is autonomous, $f(t,x) = g(x)$,
+that argument is discarded and the stage values are unchanged: the defect is
+\emph{exactly} invisible, not merely small. Measured with
+\cref{eq:int-emporder}, the old code returned a clean $p_{\mathrm{emp}} = 5.0$
+on an autonomous test problem and $1.30$ on the non-autonomous
+$\dot y = y\cos t$; the corrected code returns $5.0$ on both. A test suite
+built only from constant-coefficient or autonomous problems --- the natural
+first choice for an integrator --- therefore certifies a first-order method as
+fifth order.
+
+That matters for \lupnt{} in particular. The right-hand sides \cpp{PD45} is
+actually asked to integrate are orbit dynamics whose third-body and
+solar-radiation-pressure terms are evaluated from an ephemeris at the current
+epoch (\cref{chap:dynamics}); they are explicitly time-dependent, which is the
+one case the autonomous tests could not see. The regression case
+\code{numerics.integrator\_order.pd45\_is\_fifth\_order} in
+\file{cpp/test/numerics/test_integrator_order.cc} measures the order on a
+non-autonomous problem for precisely this reason, and
+\code{numerics.integrator\_order.pd45\_node\_consistency} checks
+\cref{eq:int-pd45-nodes} against the published nodes directly.
+
+\section{Dense Output and Interpolation}
+\label{sec:int-dense}
+
+None of the four integrators provides dense output. The Dormand--Prince pair
+of \cref{sec:int-pd45} admits the standard fourth-order continuous extension
+\begin{equation}
+  \label{eq:int-dense}
+  u(t_k + \sigma h) = x_k + h \sum_{i=1}^{s} b_i(\sigma)\, k_i,
+  \qquad \sigma \in [0,1],
+\end{equation}
+with polynomial weights $b_i(\sigma)$ \citep[Ch.~II.6]{hairer1993}, but the
+$b_i(\sigma)$ are not stored and \cref{eq:int-dense} is not implemented. The
+only state available to a caller is the value at the end of each accepted
+outer step. A trajectory sampled more finely than the propagation grid must
+therefore either be re-propagated at a smaller $\mathrm{d}t$, or driven
+through the vector-of-epochs overload
+\cpp{Dynamics::Propagate(x0, tfs, u)}, which chains one propagation per
+requested epoch.
+
+Interpolation elsewhere in \lupnt{} is unrelated to integration and operates
+on tabulated data rather than on integrator stages:
+\file{cpp/lupnt/numerics/interpolation.h} provides \cpp{LinearInterp1d},
+\cpp{LinearInterp2d}, and a \cpp{LagrangeInterpolator} used for
+Earth-orientation and IAU series lookups, and
+\file{cpp/lupnt/numerics/cheby_fit.h} provides the Chebyshev fitting used for
+ephemeris representation. None of these participate in the ODE solution.
+
+\section{The Propagation Loop}
+\label{sec:int-loop}
+
+\cpp{Integrator::Propagate} marches forward only. It requires
+$\mathrm{d}t > 0$ and $t_f \ge t_0$, and clamps the last step so the run lands
+exactly on $t_f$:
+\begin{equation}
+  \label{eq:int-march}
+  h_k = \min\!\left(\mathrm{d}t,\ t_f - t_k\right),
+  \qquad
+  x_{k+1} = \Phi_h(t_k, x_k, h_k),
+  \qquad
+  t_{k+1} = t_k + h_k,
+\end{equation}
+where $\Phi_h$ denotes one call to the concrete \cpp{Step}.
+
+\cpp{PropagateEx} generalises \cref{eq:int-march} to signed propagation. With
+\begin{equation}
+  \label{eq:int-dir}
+  \mathrm{dir} = \operatorname{sign}(t_f - t_0) \in \{+1, -1\},
+  \qquad
+  h_k = \mathrm{dir} \cdot \min\!\left(
+    |\mathrm{d}t|,\ |t_f - t_k| \right),
+\end{equation}
+the supplied $\mathrm{d}t$ is treated purely as a magnitude and the direction
+comes from the endpoints. A zero span, $t_f = t_0$, returns immediately with
+zero steps.
+
+\begin{lstlisting}[language=cpp, caption={Forward marching loop and the signed step. Source: \code{cpp/lupnt/numerics/integrator.cc}}, label={lst:int-loop}]
+// cpp/lupnt/numerics/integrator.cc :: Integrator::Propagate
+while (t < tf) {
+  dt = std::min(dt, tf - t);
+  Real prev_dt = dt;
+  x = Step(odefunc, t, x, dt);
+  t += prev_dt;
+}
+
+// cpp/lupnt/numerics/integrator.cc :: Integrator::PropagateEx
+const double dir = (tf.val() > t0.val()) ? 1 : -1;  // forward or backward
+while ((dir > 0 && t < tf) || (dir < 0 && t > tf)) {
+  Real h = dir * std::min(std::abs(dt.val()), std::abs((tf - t).val()));
+  Real prev_h = h;
+  x = Step(odefunc, t, State(x), h);
+  t += prev_h;
+  ++steps;
+}
+\end{lstlisting}
+
+\begin{lupntwarning}
+  \label{warn:int-dtvalue}
+  \cpp{Integrator::Step} takes its step size \emph{by value}:
+  \code{virtual State Step(const ODE\& f, Real t, const State\& x, Real dt)}.
+  An adaptive \cpp{Step} that shrinks \code{dt} internally
+  (\cref{eq:int-scale} or \cref{eq:int-pd45-shrink}) therefore mutates only
+  its own copy; the marching loop of \cref{lst:int-loop} still advances the
+  clock by the \emph{original} \code{prev\_dt}. The header documents the
+  parameter as ``updated in-place by the step-size controller'', which the
+  signature cannot deliver. The consequences are:
+  \begin{itemize}[leftmargin=1.4cm,nosep]
+    \item \code{dt} from \cref{tab:int-knobs} is a fixed outer grid for all
+      four methods; adaptivity operates only \emph{within} one outer step.
+    \item If an adaptive step is rejected and retried at a smaller size, the
+      returned state corresponds to a shorter interval than the time increment
+      applied to $t$, so the trajectory and its time tag disagree. The
+      resulting error is silent.
+  \end{itemize}
+  In practice \code{RKF45} and \code{PD45} are safe only when the requested
+  \code{dt} is already small enough that the first attempt is accepted.
+\end{lupntwarning}
+
+\subsection{Termination semantics}
+\label{sec:int-termination}
+
+\cpp{PropagateEx} returns an \cpp{IntegratorResult}
+$(x,\ t,\ \texttt{reason},\ \texttt{steps})$. The optional predicate
+\begin{equation}
+  \label{eq:int-terminate}
+  \texttt{terminate\_if} : (t, x) \mapsto \{\text{true},\ \text{false}\}
+\end{equation}
+is evaluated once before the first step and again after every accepted step,
+and the run reports
+\begin{equation}
+  \label{eq:int-reason}
+  \texttt{reason} =
+  \begin{cases}
+    \texttt{UserCondition}, & \texttt{terminate\_if}(t,x) = \text{true},\\
+    \texttt{ReachedTf},     & t \text{ reaches } t_f .
+  \end{cases}
+\end{equation}
+\code{steps} counts accepted outer steps. The predicate is checked \emph{after}
+a step completes, so termination is detected at the first grid point at which
+the condition holds, never at the exact crossing: the reported $t$ overshoots
+the true event time by up to $|\mathrm{d}t|$. Event location to better than
+one step requires bisecting on repeated \cpp{PropagateEx} calls in the caller.
+
+\begin{lstlisting}[language=cpp, caption={Termination predicate placement. Source: \code{cpp/lupnt/numerics/integrator.cc}}, label={lst:int-term}]
+// cpp/lupnt/numerics/integrator.cc :: Integrator::PropagateEx
+if (params_.terminate_if && params_.terminate_if(t, x)) {
+  return {x, t, TerminationReason::UserCondition, steps};
+}
+while ((dir > 0 && t < tf) || (dir < 0 && t > tf)) {
+  // ... Step(...) ...; ++steps;
+  if (params_.terminate_if && params_.terminate_if(t, x)) {
+    return {x, t, TerminationReason::UserCondition, steps};
+  }
+}
+return {x, t, TerminationReason::ReachedTf, steps};
+\end{lstlisting}
+
+\section{Carrying the State-Transition Matrix Through Autodiff Types}
+\label{sec:int-stm}
+
+The sensitivity overloads \cpp{Propagate(..., MatXd* J)} and
+\cpp{PropagateEx(..., MatXd* J)} return, alongside the final state,
+\begin{equation}
+  \label{eq:int-jac}
+  J = \frac{\partial x(t_f)}{\partial x(t_0)} \in \mathbb{R}^{n\times n},
+\end{equation}
+the state-transition matrix of the propagation over $[t_0, t_f]$. When
+\code{J} is \code{nullptr} the computation is skipped entirely and the
+overload degenerates to the plain propagation.
+
+\lupnt{} obtains \cref{eq:int-jac} neither by finite differences nor by
+augmenting the state with the variational equation
+$\dot{\Phi} = A(t)\Phi$, $A = \partial f/\partial x$. Instead it
+\emph{differentiates the integrator itself}. Because the whole call chain ---
+\cpp{Step}, the tableau arithmetic, the \cpp{ODE} closure, and every force
+model underneath it --- is written in the differentiable scalar \cpp{Real}
+(\cref{sec:ad-real}), a forward-mode seed planted on one component of $x(t_0)$
+is carried by the chain rule through every stage evaluation and every accepted
+step, and emerges as the corresponding column of $J$. The derivative is
+therefore that of the \emph{discrete} map actually executed, including its
+truncation error, not of the underlying continuous flow. This is the desirable
+property for a filter: the propagated covariance is consistent with the
+trajectory the filter will actually integrate.
+
+Formally, if $\Psi$ denotes the composition of accepted steps, then seeding
+the $i$-th input direction $\vec{e}_i$ gives
+\begin{equation}
+  \label{eq:int-col}
+  J\,\vec{e}_i
+    = \left.\frac{\partial}{\partial \epsilon}\right|_{\epsilon=0}
+      \Psi\!\left(t_0, t_f,\ x_0 + \epsilon\,\vec{e}_i\right),
+\end{equation}
+which is exactly one forward sweep. The $n$ columns are independent, so
+\cpp{JacobianParallel} distributes them across cores with OpenMP, seeding one
+component per thread and re-running the trajectory once per column
+(\cref{sec:ad-jacobian}).
+
+\begin{lstlisting}[language=cpp, caption={Sensitivity overload and the column-parallel sweep. Sources: \code{cpp/lupnt/numerics/integrator.cc} and \code{cpp/lupnt/numerics/math\_utils.cc}}, label={lst:int-stm}]
+// cpp/lupnt/numerics/integrator.cc :: Integrator::Propagate(..., MatXd* J)
+State Integrator::Propagate(const ODE& odefunc, Real t0, Real tf, const State& x0, Real dt,
+                            MatXd* J) {
+  auto func = [=, this](const State& x) { return Propagate(odefunc, t0, tf, x, dt); };
+  State xf = (J != nullptr) ? JacobianParallel(func, x0, *J) : func(x0);
+  return xf;
+}
+
+// cpp/lupnt/numerics/math_utils.cc :: JacobianParallel
+#pragma omp parallel for
+for (int i = 0; i < n; i++) {
+  VecX xi;
+  MatXd Ji;
+  VecX x0_tmp = x0.cast<double>();       // drop incoming seeds for this column
+  jacobian(func, wrt(x0_tmp(i)), at(x0_tmp), xi, Ji);
+  if (i == 0) xf = xi;
+  J_vec[i] = Ji;
+}
+\end{lstlisting}
+
+The cost model follows directly. One column costs one full re-propagation, so
+forming $J$ costs $n$ propagations of the trajectory, each evaluating the
+right-hand side $s$ times per step. For a six-state orbit propagated over $N$
+steps with \cpp{RK8} ($s = 10$) this is $6 \times 10 N = 60N$ force-model
+evaluations, reduced by the OpenMP fan-out to $\lceil 6/n_{\mathrm{thr}}\rceil
+\times 10N$ wall-clock evaluations. Each evaluation is performed in \cpp{Real}
+arithmetic, roughly doubling the arithmetic and memory traffic of a
+\cpp{double} evaluation.
+
+\begin{lupntnote}
+  The Doxygen comment on the \code{MatXd* J} overload in
+  \file{cpp/lupnt/numerics/integrator.h} describes the sensitivity as computed
+  ``via parallel finite-difference Jacobians'', and the model-boundaries list
+  in the reStructuredText source repeats it. The code in \cref{lst:int-stm}
+  calls \code{autodiff::jacobian}: the computation is exact forward-mode
+  automatic differentiation with no step-size parameter and no truncation or
+  cancellation error. The comment is stale; the behaviour specified here is
+  the code's.
+\end{lupntnote}
+
+A second, distinct path exists for the estimation stack.
+\cpp{Dynamics::Propagate(x0, t0, tf, u, stm)} (\cref{chap:dynamics}) seeds the
+\emph{whole} initial state in a single \code{jacobian} call rather than column
+by column, and \cpp{GetFilterDynamicsFunction} (\cref{chap:filters}) wraps a
+plain dynamics function so that the filter receives
+$F = \partial x(t_f)/\partial x(t_0)$ with the propagated state. The EKF, SRIF,
+and UDU filters consume that $F$ directly; they never call the integrator's
+sensitivity overload. The two paths compute the same mathematical object by
+the same mechanism and differ only in how the seeds are batched --- see
+\cref{sec:ad-stm}.
+
+\section{Model Boundaries}
+\label{sec:int-boundaries}
+
+\paragraph{Method coverage.}
+Only explicit Runge--Kutta methods are implemented. There is no implicit,
+multistep, symplectic, or extrapolation method, so stiff systems and
+long-arc energy-conserving propagation are out of scope. \cpp{RK8} has no
+embedded estimate; error control is available only through \cpp{RKF45} and
+\cpp{PD45}.
+
+\paragraph{Step-size control is not closed-loop.}
+Per \cref{warn:int-dtvalue}, the step size chosen by an adaptive controller
+never reaches the marching loop. The outer grid is the user-supplied
+$\mathrm{d}t$ for all four methods, and a rejected-then-shrunk step produces a
+state whose time tag is wrong by the amount of the shrinkage. Treat
+\cpp{RKF45} and \cpp{PD45} as fixed-step methods with an internal error
+diagnostic until the signature is changed to take \code{Real\& dt}.
+
+\paragraph{\cpp{RK8} is a seventh-order method.}
+The name promises an order the stage count cannot deliver. Butcher's barrier
+puts order $8$ out of reach of any explicit method with fewer than $11$ stages
+\citep[Thm.~II.5.1]{hairer1993}, and \cpp{RK8} has $10$; its corrected tableau
+attains order $7$, which is the maximum available at that stage count
+(\cref{sec:int-rk8-order}). Size a step and a tolerance for order $7$, not
+order $8$. The enumerator \code{IntegratorType::RK8} is retained because it is
+public API and appears in scenario files and in the Python bindings; the
+discrepancy is one of naming, not of numerics.
+
+\paragraph{No dense output, no event location.}
+Solution values exist only on the outer grid (\cref{sec:int-dense}), and the
+termination predicate is polled after each accepted step
+(\cref{sec:int-termination}), so an event time is resolved only to within one
+step. Any requirement for sub-step accuracy must be met by the caller.
+
+\paragraph{No local extrapolation in \cpp{RKF45}.}
+\cpp{IRKF::Step} returns the low-order member of the pair, so \cpp{RKF45} is
+fourth-order accurate even though the fifth-order solution has already been
+computed. \cpp{PD45} returns the high-order member and does extrapolate.
+
+\paragraph{Sensitivity cost and scope.}
+The state-transition matrix of \cref{eq:int-jac} costs $n$ re-propagations
+(\cref{sec:int-stm}). It is the derivative of the discrete integration map,
+including truncation error, and its accuracy is bounded by the
+differentiability of the force models (\cref{sec:ad-rules}); any model that
+casts to \cpp{double} internally contributes a zero block to $J$ rather than an
+error. It is not the analytic $\Phi$ of the continuous variational equation,
+and the difference grows with $\mathrm{d}t$.
+
+\paragraph{Numerical hygiene.}
+Comparisons in the marching loops (\code{t < tf}) are exact floating-point
+comparisons on the value part of a \cpp{Real}
+\citep{ieee754}. Because the final step is clamped to land exactly on $t_f$,
+the loop terminates cleanly, but accumulating $t$ by repeated addition over a
+long arc loses low-order bits; propagations spanning many days should be
+broken into segments rather than run as a single call with a small
+$\mathrm{d}t$.

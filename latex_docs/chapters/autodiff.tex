@@ -1,0 +1,799 @@
+\chapter{Automatic Differentiation}
+\label{chap:autodiff}
+
+This chapter specifies how \lupnt{} obtains derivatives. Every
+state-transition matrix in \cref{chap:dynamics} and \cref{chap:integration},
+every measurement Jacobian consumed by the estimators of \cref{chap:filters},
+and every force-model sensitivity used in parameter estimation is produced by
+\emph{forward-mode automatic differentiation} (AD) of the model code itself
+--- not by hand-coded partial derivatives and not by finite differences. The
+consequence is a hard contract on how models may be written: a model that
+respects the rules of \cref{sec:ad-rules} gets exact first derivatives for
+free, and a model that violates them silently returns wrong ones.
+
+The differentiable scalar and the imported AD entry points are declared in
+\file{cpp/lupnt/core/definitions.h}; the parallel Jacobian driver is in
+\file{cpp/lupnt/numerics/math_utils.cc}; the filter-facing wrappers are in
+\file{cpp/lupnt/numerics/filters/filter_utils.cc}. The underlying library is
+\code{autodiff} \citep{leal2018autodiff}, whose containers are Eigen matrices
+\citep{eigen2010}. The theory --- forward and reverse accumulation, seeding,
+and the cost model --- follows the standard treatment of algorithmic
+differentiation \citep{griewank2008}.
+
+\section{The Differentiable Scalar \texorpdfstring{\cpp{Real}}{Real}}
+\label{sec:ad-real}
+
+\subsection{Definition}
+
+\lupnt{}'s fundamental arithmetic type is
+\begin{equation}
+  \label{eq:ad-real}
+  \cpp{Real} \equiv \code{autodiff::real} \equiv \code{autodiff::Real<1, double>},
+\end{equation}
+a first-order truncated Taylor number over \code{double}. Concretely it is a
+two-element array: slot $0$ holds the value, slot $1$ holds one directional
+derivative. Writing a \cpp{Real} as the pair
+\begin{equation}
+  \label{eq:ad-dual}
+  \tilde{x} = \big(x,\ \dot{x}\big),
+  \qquad x = \tilde{x}.\code{val()},
+  \qquad \dot{x} = \tilde{x}[1],
+\end{equation}
+the type is algebraically the dual numbers $\mathbb{R}[\epsilon]/(\epsilon^2)$
+under the identification $\tilde{x} = x + \dot{x}\,\epsilon$ with
+$\epsilon^2 = 0$.
+
+\begin{lstlisting}[language=cpp, caption={Storage layout of the differentiable scalar. Source: \code{autodiff/forward/real/real.hpp} (vendored dependency)}, label={lst:ad-realtype}]
+// autodiff/forward/real/real.hpp :: Real
+template <size_t N, typename T>
+class Real {
+  std::array<T, N + 1> m_data = {};
+public:
+  constexpr auto val() -> T& { return m_data[0]; }
+  constexpr auto val() const -> const T& { return m_data[0]; }
+  constexpr auto operator[](size_t i) -> T& { return m_data[i]; }
+  constexpr auto operator[](size_t i) const -> const T& { return m_data[i]; }
+};
+
+using real1st = Real<1, double>;
+using real    = real1st;    // == lupnt::Real
+\end{lstlisting}
+
+\subsection{The arithmetic}
+
+Every elementary operation is overloaded to propagate the second slot by the
+chain rule. For $\tilde{x} = (x,\dot x)$ and $\tilde{y} = (y,\dot y)$,
+\begin{align}
+  \label{eq:ad-arith}
+  \tilde{x} \pm \tilde{y} &= \big(x \pm y,\ \dot x \pm \dot y\big), &
+  \tilde{x}\,\tilde{y}    &= \big(xy,\ x\dot y + \dot x y\big), \nonumber\\
+  \frac{\tilde{x}}{\tilde{y}}
+    &= \left(\frac{x}{y},\ \frac{\dot x y - x \dot y}{y^{2}}\right), &
+  \sqrt{\tilde{x}} &= \left(\sqrt{x},\ \frac{\dot x}{2\sqrt{x}}\right),
+\end{align}
+and for a general differentiable elementary function $g$,
+\begin{equation}
+  \label{eq:ad-chain}
+  g(\tilde{x}) = \big(g(x),\ g'(x)\,\dot{x}\big).
+\end{equation}
+\Cref{eq:ad-chain} is the whole mechanism. Two of its instances matter
+repeatedly below because their derivative factor is unbounded:
+\begin{equation}
+  \label{eq:ad-acos}
+  \arccos(\tilde{x})
+    = \left(\arccos x,\ \frac{-\dot{x}}{\sqrt{1-x^{2}}}\right),
+  \qquad
+  \arcsin(\tilde{x})
+    = \left(\arcsin x,\ \frac{\dot{x}}{\sqrt{1-x^{2}}}\right),
+\end{equation}
+both of which diverge as $|x| \to 1$ and evaluate to $0/0 = \mathrm{NaN}$ at
+$|x| = 1$ exactly. \Cref{sec:ad-rules} specifies how models must handle this.
+
+\subsection{Containers}
+
+Every \lupnt{} vector and matrix type is an Eigen container templated on
+\cpp{Real} \citep{eigen2010}, with a plain-\cpp{double} counterpart --- suffix
+\code{d} --- used for storage, input/output, and the interfaces that cross
+into non-differentiated code such as the filters' covariance algebra.
+
+\begin{lstlisting}[language=cpp, caption={Differentiable scalar, AD entry points, and container aliases. Source: \code{cpp/lupnt/core/definitions.h}}, label={lst:ad-defs}]
+// cpp/lupnt/core/definitions.h
+namespace ad = autodiff;
+
+using Real = ad::real;      // forward mode, first order
+using ad::at;
+using ad::derivative;
+using ad::jacobian;
+using ad::wrt;
+
+template <int rows, int cols> using Mat  = Matrix<Real,   rows, cols>;
+template <int rows, int cols> using Matd = Matrix<double, rows, cols>;
+template <int size>           using Vec  = Matrix<Real,   size, 1>;
+template <int size>           using Vecd = Matrix<double, size, 1>;
+
+// ... expanded by DEFINE_VECTORS_MATRICES():
+using VecX  = Matrix<Real,   Eigen::Dynamic, 1>;
+using VecXd = Matrix<double, Eigen::Dynamic, 1>;
+using MatX  = Matrix<Real,   Eigen::Dynamic, Eigen::Dynamic>;
+using MatXd = Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
+\end{lstlisting}
+
+The naming convention is contractual and worth stating explicitly, because
+almost every differentiability bug in \cref{sec:ad-rules} is a place where the
+wrong member of a pair was chosen:
+
+\begin{table}[H]
+  \centering
+  \caption{Differentiable and non-differentiable container pairs declared in
+    \code{cpp/lupnt/core/definitions.h}.}
+  \label{tab:ad-types}
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Differentiable & Value only & Role \\
+    \midrule
+    \cpp{Real} & \cpp{double} & Scalar. \cpp{Real} carries one derivative
+      slot; \cpp{double} carries none. \\
+    \cpp{Vec3}, \cpp{Vec6}, \cpp{VecX} & \cpp{Vec3d}, \cpp{Vec6d},
+      \cpp{VecXd} & States, positions, velocities, measurement vectors. \\
+    \cpp{Mat3}, \cpp{MatX} & \cpp{Mat3d}, \cpp{MatXd} & Rotations, and the
+      output Jacobians. Jacobians are always \cpp{MatXd}: a derivative is a
+      number, not a differentiable quantity. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lupntnote}
+  The value of a \cpp{Real} is recovered with \code{.val()}; an Eigen
+  expression over \cpp{Real} is converted with \code{cast<double>()}. Both
+  \emph{discard} the derivative slot. That is exactly what one wants when
+  logging, comparing, or handing a result to a non-differentiated interface,
+  and exactly what one must not do in the middle of a model
+  (\cref{sec:ad-rules}).
+\end{lupntnote}
+
+\section{Forward Mode and Why It Was Chosen}
+\label{sec:ad-forward}
+
+Let $F : \mathbb{R}^{n} \to \mathbb{R}^{m}$ be the function realised by a
+piece of \lupnt{} model code. Forward accumulation evaluates $F$ and,
+simultaneously, its directional derivative along a seed vector
+$\vec{v} \in \mathbb{R}^{n}$:
+\begin{equation}
+  \label{eq:ad-jvp}
+  \big(F(x),\ J(x)\,\vec{v}\big),
+  \qquad J(x) = \frac{\partial F}{\partial x} \in \mathbb{R}^{m\times n},
+\end{equation}
+at a cost of a small constant multiple of one evaluation of $F$
+\citep[Ch.~3]{griewank2008}. Because \cpp{Real} stores a single derivative
+slot, one sweep delivers one Jacobian--vector product; a full Jacobian
+therefore costs $n$ sweeps, one per input direction:
+\begin{equation}
+  \label{eq:ad-cost}
+  \mathrm{cost}(J) \approx n \cdot c_{F},
+  \qquad c_F = \text{cost of one \cpp{Real} evaluation of } F .
+\end{equation}
+Reverse mode would deliver the same Jacobian in $m$ sweeps, which is cheaper
+whenever $m \ll n$. \lupnt{} nonetheless uses forward mode throughout, for
+three reasons that are properties of the problem rather than of the library:
+
+\begin{enumerate}[leftmargin=1.5cm]
+  \item The dominant object is the state-transition matrix, for which
+    $m = n$ (typically $6$ to $12$), so neither mode has an asymptotic
+    advantage.
+  \item Reverse mode requires taping the entire execution, which for a
+    multi-day propagation with a $70\times70$ gravity field and SPICE
+    ephemeris lookups is a prohibitive memory cost.
+  \item Forward mode is non-invasive: it requires only that the code be
+    templated on, or written in, the scalar type. \lupnt{}'s force models,
+    frame rotations, time conversions, and measurement models are all
+    ordinary C++ written in \cpp{Real}, with no differentiation-specific
+    structure.
+\end{enumerate}
+
+The order is likewise first only. \code{autodiff::real} is
+\code{Real<1,double>}; a Hessian would require \code{Real<2,double>} and is
+not instantiated anywhere in \lupnt{}. Every $\Phi$ and every $H$ in this
+manual is therefore a first-order object, and second-order filters are out of
+scope.
+
+\section{Seeding and Derivative Extraction}
+\label{sec:ad-api}
+
+\subsection{The three primitives}
+
+\lupnt{} imports exactly four names from \code{autodiff} into its own
+namespace (\cref{lst:ad-defs}). Three of them form the API:
+
+\begin{description}[leftmargin=1.8cm,style=nextline]
+  \item[\code{wrt(...)}] Names the independent variables. It may name a whole
+    vector (\code{wrt(x)}), a single component (\code{wrt(x(i))}), or a
+    separate parameter block (\code{wrt(p)}). These are the variables that
+    receive a unit seed in slot $1$.
+  \item[\code{at(...)}] Supplies the full evaluation point, in the order the
+    function's parameters are declared. It may contain arguments that are
+    \emph{not} being differentiated --- times, controls, noise covariances,
+    pointers --- and those are simply passed through.
+  \item[\code{jacobian(f, wrt(...), at(...), y, J)}] Evaluates $y = f(\cdot)$
+    and fills $J$ with $\partial y / \partial(\text{wrt variables})$ in one
+    call. It loops internally over the seeded variables, performing one
+    forward sweep per variable and writing the resulting column of $J$.
+\end{description}
+
+The fourth, \code{derivative(f, wrt(t), at(t))}, returns a single directional
+derivative rather than a matrix and is used where the independent variable is
+scalar. \cpp{FixedPointingDynamics} uses it to obtain the time derivative of a
+rotation matrix, from which the angular velocity follows:
+
+\begin{lstlisting}[language=cpp, caption={Scalar directional derivative: $\dot{R}$ from $R(t)$ by AD in time. Source: \code{cpp/lupnt/dynamics/attitude\_dynamics.cc}}, label={lst:ad-derivative}]
+// cpp/lupnt/dynamics/attitude_dynamics.cc :: FixedPointingDynamics
+Real t = tf.val();
+Mat3 R_b2w = func(tf).reshaped(3, 3);
+Mat3 R_b2w_dot = derivative(func, wrt(t), at(t)).reshaped(3, 3);
+Vec3 w_w = RotToAngularVelocity(R_b2w, R_b2w_dot);
+Vec4 q_b2w = RotToQuat(R_b2w);
+\end{lstlisting}
+
+\subsection{The seed-reset idiom}
+\label{sec:ad-seedreset}
+
+A \cpp{Real} that arrives from an enclosing computation may already carry a
+non-zero derivative slot --- it was itself seeded, or it is downstream of
+something that was. Differentiating such a value again would compose the two
+seeds and produce the derivative with respect to the \emph{outer} variable,
+not the one requested. Every independent \code{jacobian} call in \lupnt{}
+therefore begins by copying its input through \code{cast<double>()}, which
+constructs a fresh \cpp{VecX} whose derivative slots are all zero:
+\begin{equation}
+  \label{eq:ad-seedreset}
+  \tilde{x} = (x, \dot{x})
+  \ \xrightarrow{\ \code{cast<double>()}\ }\ x
+  \ \xrightarrow{\ \text{assign to } \cpp{VecX}\ }\ (x, 0),
+\end{equation}
+after which \code{wrt} plants a clean unit seed. The idiom is
+
+\begin{lstlisting}[language=cpp, caption={Canonical seed reset. This two-line pattern precedes every independent Jacobian in the code base.}, label={lst:ad-idiom}]
+VecX x_tmp = x.cast<double>();               // drop any incoming seeds
+jacobian(f, wrt(x_tmp), at(x_tmp), y, J);    // J = df/dx evaluated at x
+\end{lstlisting}
+
+\begin{lupntwarning}
+  Omitting the reset does not raise an error. It produces a Jacobian that is
+  numerically plausible but wrong by whatever the stale seed encoded --- most
+  often a factor equal to some unrelated sensitivity, or a matrix that is
+  correct on the first call and wrong on every subsequent one. Because the
+  \code{at(...)} argument must be the same object that \code{wrt(...)} names,
+  the reset also fixes the evaluation point: pass \code{x\_tmp}, never the
+  original \code{x}, to \code{at}.
+\end{lupntwarning}
+
+There is one deliberate exception. \cpp{IslCrosslinkMeasurement::Compute}
+re-seeds a fresh state precisely so that the derivative seeds carried by the
+\emph{incoming} state are preserved for the consider-state update of the
+Schmidt EKF (\cref{chap:filters}); it differentiates a copy and leaves the
+caller's seeds untouched.
+
+\begin{lstlisting}[language=cpp, caption={Deliberate fresh re-seed that preserves the caller's derivative directions. Source: \code{cpp/lupnt/measurements/crosslink\_measurement.cc}}, label={lst:ad-isl}]
+// cpp/lupnt/measurements/crosslink_measurement.cc :: IslCrosslinkMeasurement::Compute
+if (H != nullptr) {
+  // Reseed a fresh autodiff state (drops incoming derivative seeds) and differentiate
+  // the raw-VecX model, matching the original inline behavior.
+  VecX x_tmp = x.cast<double>();
+  auto f = [this](const VecX& xx) -> VecX { return Model(xx); };
+  jacobian(f, wrt(x_tmp), at(x_tmp), y, *H);
+} else {
+  y = Model(x);
+}
+\end{lstlisting}
+
+\section{Jacobian Assembly}
+\label{sec:ad-jacobian}
+
+\lupnt{} assembles Jacobians in two ways, differing only in how the $n$
+forward sweeps of \cref{eq:ad-cost} are organised.
+
+\subsection{Batched: one \code{jacobian} call}
+
+The default is to hand the whole input vector to \code{jacobian} and let the
+library iterate:
+\begin{equation}
+  \label{eq:ad-batched}
+  \big(y,\ J\big) = \code{jacobian}\!\left(f,\ \code{wrt}(x),\ \code{at}(x)\right),
+  \qquad
+  J_{ji} = \frac{\partial y_j}{\partial x_i}.
+\end{equation}
+This is used wherever the sweeps are cheap relative to the surrounding work
+--- measurement models, analytic dynamics, frame conversions.
+
+\subsection{Column-parallel: \cpp{JacobianParallel}}
+\label{sec:ad-jacparallel}
+
+When one sweep means re-propagating an entire trajectory
+(\cref{sec:int-stm}), the $n$ sweeps dominate. Since the columns of $J$ are
+mutually independent,
+\begin{equation}
+  \label{eq:ad-col}
+  J\,\vec{e}_i = \left.\frac{\partial}{\partial\epsilon}\right|_{\epsilon=0}
+    F\!\left(x + \epsilon\,\vec{e}_i\right),
+  \qquad i = 1,\dots,n,
+\end{equation}
+\cpp{JacobianParallel} spawns one OpenMP thread per column, each seeding a
+single component \code{wrt(x0\_tmp(i))} and running its own sweep, and then
+assembles the $m\times n$ result. Note that each thread performs its own seed
+reset, which is what makes the columns independent and the loop thread-safe
+with respect to the AD state.
+
+\begin{lstlisting}[language=cpp, caption={Column-parallel Jacobian. Source: \code{cpp/lupnt/numerics/math\_utils.cc}}, label={lst:ad-jacpar}]
+// cpp/lupnt/numerics/math_utils.cc :: JacobianParallel
+VecX JacobianParallel(const std::function<VecX(const VecX&)>& func, const VecX& x0, MatXd& J) {
+  int n = x0.size();
+  std::vector<MatXd> J_vec(n);
+  VecX xf;
+
+#pragma omp parallel for
+  for (int i = 0; i < n; i++) {
+    VecX xi;
+    MatXd Ji;
+    VecX x0_tmp = x0.cast<double>();
+    jacobian(func, wrt(x0_tmp(i)), at(x0_tmp), xi, Ji);
+    if (i == 0) xf = xi;
+    J_vec[i] = Ji;
+  }
+
+  int m = xf.size();
+  J.resize(m, n);
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < m; j++) {
+      J(j, i) = J_vec[i](j);
+    }
+  }
+  return xf;
+}
+\end{lstlisting}
+
+\begin{lupntnote}
+  \cpp{JacobianParallel} returns the function value from the $i=0$ thread
+  only. The value is the same in every thread --- forward-mode AD does not
+  perturb the value slot --- so this is a valid, if fragile, optimisation. It
+  does mean that a function with $n = 0$ inputs leaves \code{xf} empty and
+  \code{J} unsized.
+\end{lupntnote}
+
+\section{State-Transition and Parameter Sensitivity Matrices}
+\label{sec:ad-stm}
+
+\subsection{State-transition matrix}
+
+The default \cpp{Dynamics::Propagate} with a non-null \code{stm} pointer
+differentiates the seed-reset, no-STM propagation with respect to the initial
+state:
+\begin{equation}
+  \label{eq:ad-stm}
+  \Phi(t_f, t_0) = \frac{\partial x(t_f)}{\partial x(t_0)}
+    = \code{jacobian}\!\Big(
+        x_0 \mapsto \code{Propagate}(x_0, t_0, t_f, u),
+        \ \code{wrt}(x_0),\ \code{at}(x_0)
+      \Big).
+\end{equation}
+This is the same mathematical object as the integrator sensitivity of
+\cref{eq:int-jac}; the two differ only in batching (one \code{jacobian} call
+versus \cpp{JacobianParallel}). In both cases what is differentiated is the
+\emph{discrete} propagation map, so $\Phi$ inherits the integrator's
+truncation error and is consistent with the trajectory that is actually
+produced --- the property a covariance propagation requires. The continuous
+variational contract $\dot{\Phi} = A(t)\Phi$ with
+$A = \partial f/\partial x$ is documented in \cref{chap:dynamics}; it is never
+integrated.
+
+\subsection{Joint state and parameter sensitivities}
+
+Batch and EKF estimation of force-model or clock parameters needs the two
+blocks
+\begin{equation}
+  \label{eq:ad-stmparam}
+  \Phi_{x} = \frac{\partial x(t_f)}{\partial x(t_0)},
+  \qquad
+  \Phi_{p} = \frac{\partial x(t_f)}{\partial p},
+\end{equation}
+obtained by seeding the two argument blocks in turn while holding the
+evaluation point fixed. The function is evaluated twice, once per seeded
+block; \code{at(x0\_tmp, p0\_tmp)} is identical in both calls, so both
+derivatives are taken at the same trajectory.
+
+\begin{lstlisting}[language=cpp, caption={STM and parameter sensitivity by seeded blocks. Source: \code{cpp/lupnt/dynamics/dynamics.cc}}, label={lst:ad-stm}]
+// cpp/lupnt/dynamics/dynamics.cc :: Dynamics::Propagate(..., MatXd* stm)
+auto func = [=, this](const VecX& x) {
+  State xs = State(x, x0.GetNames(), x0.GetUnits());
+  return Propagate(xs, t0, tf, u);
+};
+VecX xf_tmp;
+VecX x0_tmp = x0.cast<double>();
+jacobian(func, wrt(x0_tmp), at(x0_tmp), xf_tmp, *stm);       // stm = d(xf)/d(x0)
+
+// cpp/lupnt/dynamics/dynamics.cc :: Dynamics::PropagateWithParams(..., stm_state, stm_param)
+VecX x0_tmp = x0.cast<double>();
+VecX p0_tmp = params.cast<double>();
+jacobian(func, wrt(x0_tmp), at(x0_tmp, p0_tmp), xf_tmp, *stm_state);  // d(xf)/d(x0)
+jacobian(func, wrt(p0_tmp), at(x0_tmp, p0_tmp), xf_tmp, *stm_param);  // d(xf)/d(p)
+\end{lstlisting}
+
+\cpp{NBodyDynamics} overrides the STM overload with a hard precondition:
+differentiation is refused unless AD has been enabled, because its gravity
+field has a \cpp{double} fast path that is not differentiable
+(\cref{sec:ad-rules}).
+
+\begin{lstlisting}[language=cpp, caption={AD precondition on the N-body STM. Source: \code{cpp/lupnt/dynamics/numerical\_orbit\_dynamics.cc}}, label={lst:ad-nbody}]
+// cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: NBodyDynamics::Propagate
+State NBodyDynamics::Propagate(const State& x0, Real t0, Real tf, const State* u, MatXd* stm) {
+  LUPNT_CHECK(use_ad_, "Autodiff not enabled", "NBodyDynamics");
+  (void)u;
+  return NumericalDynamics::Propagate(x0, t0, tf, u, stm);
+}
+\end{lstlisting}
+
+\section{Coupling to the Filters}
+\label{sec:ad-filters}
+
+The estimators of \cref{chap:filters} require, at each step, a linearisation
+alongside the nonlinear evaluation:
+\begin{equation}
+  \label{eq:ad-fh}
+  F = \frac{\partial x(t_f)}{\partial x(t_0)} \in \mathbb{R}^{n\times n},
+  \qquad
+  H = \frac{\partial z}{\partial x} \in \mathbb{R}^{n_z \times n},
+\end{equation}
+$F$ for the covariance prediction $P^- = F P F\transpose + Q$ and $H$ for the
+innovation covariance and gain. \lupnt{} does not ask model authors to supply
+either. A plain \cpp{DynamicsFunction} $(x, t_0, t_f, u) \mapsto x(t_f)$ and a
+plain \cpp{MeasurementFunction} $(x, R) \mapsto z$ are \emph{lifted} into the
+filter signatures \cpp{FilterDynamicsFunction} and
+\cpp{FilterMeasurementFunction} by wrapping them in \code{jacobian}. This is
+the single point at which AD enters the estimation stack.
+
+\begin{lstlisting}[language=cpp, caption={Lifting plain models into filter callbacks. Source: \code{cpp/lupnt/numerics/filters/filter\_utils.cc}}, label={lst:ad-filter}]
+// cpp/lupnt/numerics/filters/filter_utils.cc :: GetFilterMeasurementFunction
+FilterMeasurementFunction f_meas_func = [f_meas](const State& x, MatXd* H, MatXd* R) -> VecX {
+  VecX y;
+  VecX x_tmp = x.cast<double>();
+  jacobian(f_meas, wrt(x_tmp), at(x_tmp, R), y, *H);      // H = dz/dx
+  return y;
+};
+
+// cpp/lupnt/numerics/filters/filter_utils.cc :: GetFilterDynamicsFunction
+FilterDynamicsFunction f_dyn_func
+    = [f_dyn](const State& x, Real t0, Real tf, const State* u, MatXd* F) -> State {
+  VecX xf;
+  VecX x_tmp = x.cast<double>();
+  jacobian(f_dyn, wrt(x_tmp), at(x_tmp, t0, tf, u), xf, *F);   // F = d(xf)/d(x0)
+  return State(xf, x.GetNames(), x.GetUnits());
+};
+\end{lstlisting}
+
+Three consequences follow, and they are the reason \cref{sec:ad-rules} is a
+requirement rather than a style guide.
+
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{The filter's linearisation is the model's derivative.} There
+    is no separate, independently maintained Jacobian that could disagree with
+    the model. A change to a force model automatically changes $F$.
+  \item \textbf{A non-differentiable model yields a structurally wrong $F$ or
+    $H$, not an exception.} A block of the state that a model handles in
+    \cpp{double} arithmetic contributes an exactly zero block. The filter then
+    believes that part of the state is unobservable or unaffected by dynamics,
+    and the covariance becomes optimistic in a way no residual test detects.
+  \item \textbf{The UKF is the exception.} \cpp{UKF::Predict} calls the
+    dynamics callback with \code{F = nullptr}, because it propagates sigma
+    points and needs no linearisation \citep{julier2004ukf}. A model that is
+    non-differentiable but numerically correct will therefore work in the UKF
+    and fail silently in the EKF, SRIF, and UDU filters
+    \citep{bierman1977, thornton1980}.
+\end{enumerate}
+
+\section{Differentiability Rules for Models}
+\label{sec:ad-rules}
+
+A model is differentiable in the sense required here if, along the execution
+path actually taken, every operation from input to output is one of the
+overloaded \cpp{Real} operations of
+\cref{eq:ad-arith}--\cref{eq:ad-chain} with a finite derivative factor. The
+following rules are what that means in practice.
+
+\subsection{Rule 1: never narrow to \cpp{double} inside a model}
+
+Assigning a \cpp{Real} to a \cpp{double}, or an Eigen \cpp{Real} expression to
+a \code{d}-suffixed container, drops slot $1$. If the value is later widened
+back to \cpp{Real} it re-enters with a zero derivative, and the whole
+downstream Jacobian block is zero. The canonical example is the gravity-field
+fast path in \cpp{NBodyDynamics::ComputeRates}, which is exactly why the STM
+overload of \cref{lst:ad-nbody} refuses to run with \code{use\_ad\_} disabled.
+
+\begin{lstlisting}[language=cpp, caption={Rule 1. The \code{else} branch is numerically correct and produces a zero derivative block. Source: \code{cpp/lupnt/dynamics/numerical\_orbit\_dynamics.cc}}, label={lst:ad-rule1}]
+// cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: NBodyDynamics::ComputeRates
+if (use_ad_) {
+  // DO: stay in Real -- the spherical-harmonic sum is differentiated exactly
+  a_bf = AccelarationGravityField<Real>(r_bf, grav.GM, grav.R, grav.CS, grav.n, grav.m);
+} else {
+  // DON'T (for any STM/filter use): every derivative is discarded here
+  Vec3d r_bf_d = r_bf.cast<double>();
+  a_bf = AccelarationGravityField<double>(r_bf_d, static_cast<double>(grav.GM),
+                                          static_cast<double>(grav.R),
+                                          grav.CS.cast<double>(), grav.n, grav.m);
+}
+\end{lstlisting}
+
+Use \code{.val()} and \code{cast<double>()} only at the boundaries: logging,
+formatted output, comparisons that select a branch, storage into a results
+container, and the deliberate seed reset of \cref{sec:ad-seedreset}.
+
+\subsection{Rule 2: branch on values, but understand what the branch means}
+
+Comparing \cpp{Real}s is unavoidable and harmless in itself --- comparison
+operators read slot $0$ only. What matters is that \code{jacobian} returns the
+derivative of the branch \emph{actually taken}. Two acceptable patterns:
+
+\begin{lstlisting}[language=cpp, caption={Rule 2, acceptable. Selection returns one of the operands unchanged, so its derivative travels with it. Source: \code{cpp/lupnt/numerics/math\_utils.cc}}, label={lst:ad-rule2ok}]
+// cpp/lupnt/numerics/math_utils.cc
+Real Max(Real x, Real y) { return x.val() > y.val() ? x : y; }
+Real Min(Real x, Real y) { return x.val() < y.val() ? x : y; }
+
+// cpp/lupnt/numerics/math_utils.cc :: safe_acos -- round-off guard, not a model branch
+Real safe_acos(Real x) {
+  if (x >= 1.0) {
+    return acos(x - EPS);
+  } else if (x <= -1.0) {
+    return acos(x + EPS);
+  } else {
+    return acos(x);
+  }
+}
+\end{lstlisting}
+
+\cpp{Max} and \cpp{Min} select a whole \cpp{Real} and therefore carry its
+derivative; they compute a valid one-sided derivative at the kink. What is
+\emph{not} acceptable is a branch that reconstructs a value from
+\code{.val()}, because that rebuilds the number with a zero seed:
+
+\begin{lstlisting}[language=cpp, caption={Rule 2, the failure mode. Both branches return a derivative-free constant.}, label={lst:ad-rule2bad}]
+// DON'T
+Real ClampBad(Real x, double lo, double hi) {
+  if (x.val() < lo) return Real(lo);          // derivative 0 -- correct here
+  if (x.val() > hi) return Real(hi);          // derivative 0 -- correct here
+  return Real(x.val());                       // derivative 0 -- WRONG: x was interior
+}
+
+// DO
+Real ClampGood(Real x, double lo, double hi) {
+  if (x.val() < lo) return Real(lo);
+  if (x.val() > hi) return Real(hi);
+  return x;                                   // interior: pass the Real through
+}
+\end{lstlisting}
+
+\subsection{Rule 3: keep away from the singular edges of the elementary
+  functions}
+
+By \cref{eq:ad-acos}, $\arcsin$ and $\arccos$ have infinite derivative at
+$|x| = 1$ and produce $\mathrm{NaN}$ there. The solar-radiation-pressure
+shadow function evaluates all three of $\arcsin(R_\odot/\rho)$,
+$\arcsin(R_b/r)$, and $\arccos(\cdot)$ on quantities that saturate exactly at
+a grazing eclipse boundary. \cpp{ClampUnit} returns a value strictly inside
+the domain, $\pm(1 - 10^{-12})$, rather than the endpoint: the value shift is
+below \num{1e-9} and irrelevant, while the derivative becomes finite (in fact
+zero, since the returned constant no longer depends on $x$). This is what
+allows a state-transition matrix to be formed across an arc that grazes a
+shadow boundary.
+
+\begin{lstlisting}[language=cpp, caption={Rule 3. Clamp to the interior, never to the endpoint. Source: \code{cpp/lupnt/environment/forces.cc}}, label={lst:ad-clampunit}]
+// cpp/lupnt/environment/forces.cc :: ClampUnit
+Real ClampUnit(Real x) {
+  // Clamp to [-1, 1] for the asin/acos calls in ShadowFunction. When the argument
+  // saturates we return a constant *strictly inside* the domain (+/-(1 - kEps))
+  // rather than exactly +/-1: under autodiff asin'/acos' diverge at +/-1, and
+  // returning exactly +/-1 yields 0/0 = NaN in the derivative (the value is
+  // unaffected). Returning a strictly-interior constant keeps the derivative
+  // finite (it is zero there, since the return no longer depends on x). This is
+  // what lets the state-transition matrix be formed analytically over arcs that
+  // graze a shadow boundary. The value shift is < 1e-9 and irrelevant.
+  constexpr double kEps = 1e-12;
+  if (x.val() >= 1.0) return 1.0 - kEps;
+  if (x.val() <= -1.0) return -1.0 + kEps;
+  return x;
+}
+\end{lstlisting}
+
+The same reasoning applies to $\sqrt{\tilde{x}}$ at $x = 0$ (see
+\cref{eq:ad-arith}), which is why \file{cpp/lupnt/environment/forces.cc}
+writes \code{sqrt(Max(y2, 0.0))} rather than \code{sqrt(y2)}, and to
+$\|\vec{v}\|$ at $\vec{v} = \vec{0}$.
+
+\subsection{Rule 4: build special functions from arithmetic and \code{sqrt}}
+\label{sec:ad-agm}
+
+The C++ standard library's special functions --- \code{std::comp\_ellint\_1},
+\code{std::cyl\_bessel\_j}, and the rest --- take and return \cpp{double}.
+Calling one inside a model violates Rule 1 twice over: it narrows the input
+and returns a seedless output. The remedy is to compose the function out of
+operations that \cpp{Real} already overloads.
+
+The complete elliptic integral of the first kind, needed for the ring
+potential that represents the DE440 asteroid and Kuiper populations in the
+relativistic time transformation of \cref{chap:time-conversions}, is the
+worked example. The arithmetic--geometric mean of $a_0$ and $b_0$ is the
+common limit of
+\begin{equation}
+  \label{eq:ad-agm}
+  a_{n+1} = \tfrac{1}{2}\left(a_n + b_n\right),
+  \qquad
+  b_{n+1} = \sqrt{a_n b_n},
+\end{equation}
+which converges quadratically --- the number of correct digits doubles each
+iteration, so roughly five iterations reach double precision --- and gives
+\citep[\S17.6]{abramowitz1964}
+\begin{equation}
+  \label{eq:ad-agm-K}
+  K(k) = \frac{\pi}{2\,\mathrm{AGM}\!\left(1,\ k'\right)},
+  \qquad k' = \sqrt{1-k^{2}} .
+\end{equation}
+Every operation in \cref{eq:ad-agm}--\cref{eq:ad-agm-K} is an addition, a
+multiplication, a division, or a square root, all of which appear in
+\cref{eq:ad-arith}. The iteration is therefore differentiable as written,
+without any special-function derivative rule, and the derivative converges at
+the same quadratic rate as the value.
+
+\begin{lstlisting}[language=cpp, caption={Rule 4. An AGM iteration replaces a non-differentiable library special function. Source: \code{cpp/lupnt/conversions/time\_conversions.cc}}, label={lst:ad-agm}]
+// cpp/lupnt/conversions/time_conversions.cc :: RingPotential
+/// K is evaluated by the arithmetic-geometric mean, K(k) = pi/(2 AGM(1,k')),
+/// k' = sqrt(1-k^2). AGM converges quadratically (~5 iterations here) and is
+/// differentiable, so this composes with autodiff unlike std::comp_ellint_1.
+Real RingPotential(Real r, double gm_ring, double a_ring) {
+  if (gm_ring == 0.0) return Real(0.0);
+  Real apr = a_ring + r;
+  Real k2 = 4.0 * a_ring * r / (apr * apr);
+  Real a = 1.0;
+  Real b = sqrt(1.0 - k2);          // complementary modulus k'
+  for (int i = 0; i < 12; i++) {
+    Real a_next = 0.5 * (a + b);
+    b = sqrt(a * b);
+    a = a_next;
+    if (abs((a - b).val()) < 1e-16) break;
+  }
+  Real K = PI / (2.0 * a);
+  return 2.0 * gm_ring * K / (PI * apr);
+}
+\end{lstlisting}
+
+Note the convergence test: it compares \code{.val()} only, so the loop trip
+count is decided by values and the derivative simply rides along the fixed
+number of iterations actually executed. That is the correct pattern for an
+iterative algorithm --- differentiate the iterates, do not differentiate the
+stopping rule.
+
+\subsection{Rule 5: know which helpers deliberately pass the seed through}
+
+\lupnt{}'s rounding helpers overwrite \emph{only} slot $0$ and leave slot $1$
+untouched:
+
+\begin{lstlisting}[language=cpp, caption={Rule 5. Value-modifying, seed-preserving helpers. Source: \code{cpp/lupnt/numerics/math\_utils.cc}}, label={lst:ad-rule5}]
+// cpp/lupnt/numerics/math_utils.cc
+Real floor(Real x) { Real y = x; y[0] = std::floor(x.val()); return y; }
+Real ceil(Real x)  { Real y = x; y[0] = std::ceil(x.val());  return y; }
+Real frac(Real x)  { Real y = x; y[0] = x.val() - std::floor(x.val()); return y; }
+Real mod(Real x, Real y) { Real z = x; z[0] = std::fmod(x.val(), y.val()); return z; }
+Real round(Real x, int n) {
+  Real y = x;
+  y[0] = std::round(x.val() * std::pow(10, n)) / std::pow(10, n);
+  return y;
+}
+\end{lstlisting}
+
+Mathematically $\lfloor x \rfloor$ has derivative $0$ almost everywhere, so
+these helpers do \emph{not} return the true derivative of the function they
+name. The behaviour is intentional and is what the time-scale conversions of
+\cref{chap:time-conversions} require: splitting an epoch as
+$t = \lfloor t \rfloor + \mathrm{frac}(t)$ must preserve
+$\partial t/\partial\,(\cdot) = 1$ across the split, which it does precisely
+because \code{floor} and \code{frac} each pass the seed through and the
+derivative of the sum is recovered. Used anywhere else --- a genuine
+quantisation, a table index, a modulo wrap whose discontinuity is physical ---
+they will report a derivative of $1$ where the true value is $0$. Check the
+intent before reaching for them.
+
+\subsection{Checklist}
+
+\begin{table}[H]
+  \centering
+  \caption{Differentiability checklist for a new model.}
+  \label{tab:ad-checklist}
+  \begin{tabularx}{\textwidth}{LL}
+    \toprule
+    Do & Don't \\
+    \midrule
+    Write the model in \cpp{Real}; template on the scalar if a
+      \cpp{double} fast path is also needed. &
+    Assign intermediates to \cpp{double} / \code{Vec3d} / \code{MatXd}
+      inside the model. \\
+    Reset seeds with \code{cast<double>()} before an independent
+      \code{jacobian}. &
+    Pass the original \code{x} to \code{at(...)} while naming a copy in
+      \code{wrt(...)}. \\
+    Clamp \code{asin}/\code{acos} arguments to the strict interior
+      (\cpp{ClampUnit}). &
+    Clamp them to exactly $\pm 1$, or call \code{acos} on an unguarded
+      dot product. \\
+    Guard \code{sqrt} and \code{norm} against a zero argument with
+      \cpp{Max}. &
+    Take \code{sqrt} of a quantity that can round to a small negative
+      number. \\
+    Compose special functions from $+$, $-$, $\times$, $\div$,
+      \code{sqrt} (AGM, series). &
+    Call \code{std::comp\_ellint\_1} or any \cpp{double}-only special
+      function. \\
+    Branch on \code{.val()} and return the selected \cpp{Real}
+      unchanged. &
+    Rebuild the return value as \code{Real(x.val())}. \\
+    Use \code{.val()} at output boundaries only. &
+    Use \cpp{floor}/\cpp{round}/\cpp{mod} where a true zero derivative
+      is meant. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Model Boundaries}
+\label{sec:ad-boundaries}
+
+\paragraph{First order, forward mode only.}
+\cpp{Real} is \code{Real<1,double>}. \lupnt{} produces Jacobians and nothing
+else: no Hessians, no second-order filters, no curvature-based step
+selection. A full $m\times n$ Jacobian costs $n$ forward sweeps
+(\cref{eq:ad-cost}); there is no reverse-mode path, so a scalar objective over
+a large parameter vector --- a cost function for trajectory optimisation, for
+instance --- is differentiated at a cost proportional to the parameter count
+rather than at constant cost.
+
+\paragraph{The derivative is of the code, not of the mathematics.}
+AD differentiates the execution path actually taken. Where a model clamps, a
+table is indexed, an iteration terminates, or a branch is selected, the
+reported derivative is that of the realised path. \cpp{ClampUnit} returns a
+derivative of zero at a saturated shadow boundary, which is finite and useful
+but is not the derivative of the true, non-differentiable shadow function.
+Similarly, an ephemeris read from a tabulated kernel contributes the
+derivative of the interpolant, not of the underlying body motion.
+
+\paragraph{Seed hygiene is unenforced.}
+The \code{cast<double>()} reset of \cref{eq:ad-seedreset} is a convention, not
+a type-system guarantee. Omitting it compiles, runs, and yields a plausible
+but incorrect Jacobian. There is no runtime check that an input arrived
+unseeded.
+
+\paragraph{Silent zero blocks.}
+Any part of a model written in \cpp{double} contributes an exactly zero block
+to $F$ or $H$ rather than an error. \cpp{NBodyDynamics} guards its own case
+with \code{LUPNT\_CHECK(use\_ad\_, ...)} (\cref{lst:ad-nbody}), but that guard
+is specific to that class; nothing prevents another model from silently
+returning a zero-derivative block. The recommended acceptance test for a new
+model is to compare its AD Jacobian against a central finite difference of its
+own value function, component by component, at a few representative states.
+
+\paragraph{Cost and memory.}
+A \cpp{Real} is twice the size of a \cpp{double} and roughly doubles the
+arithmetic of every operation, so a \cpp{Real} evaluation of a force model
+costs about twice its \cpp{double} equivalent even when no derivative is
+wanted. Combined with \cref{eq:ad-cost}, a six-state STM over a trajectory
+therefore costs on the order of $12$ times a plain \cpp{double} propagation,
+reduced by the OpenMP fan-out of \cpp{JacobianParallel}
+(\cref{sec:ad-jacparallel}).
+
+\paragraph{Thread safety.}
+\cpp{JacobianParallel} is safe because each thread owns its own seeded copy of
+the input. That guarantee does not extend to whatever the differentiated
+function touches: a model that reads or writes global mutable state --- the
+global reference epoch being the notable example --- is not automatically safe
+to differentiate in parallel.
+
+\paragraph{Accuracy relative to finite differences.}
+AD carries no truncation error and no subtractive cancellation: the result is
+the derivative of the floating-point program to within round-off
+\citep{ieee754}, with no step-size parameter to tune. Where documentation
+elsewhere in the repository describes a Jacobian as ``finite-difference
+based'' --- including the Doxygen comment on the integrator's sensitivity
+overload (\cref{sec:int-stm}) --- that comment is stale; the implementation
+calls \code{autodiff::jacobian}.

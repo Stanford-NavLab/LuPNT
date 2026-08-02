@@ -1,0 +1,1810 @@
+\chapter{GNSS Measurement Model}
+\label{chap:gnss-measurements}
+
+This chapter specifies the GNSS receiver measurement model of \lupnt{}: how a
+terrestrial GNSS constellation is represented, how the signal-transmission
+epoch is solved, which physical terms enter the pseudorange, Doppler and
+carrier-phase observables, how a link is declared visible and trackable, and
+what the analytic measurement Jacobian contains. The model is the one used
+for the cislunar sidelobe-GNSS studies of \citet{iiyama2024navi} and
+\citet{iiyama2026scud}, and follows the conventions of
+\citet[Ch.~6]{iiyama2026thesis}; the underlying observation equations are the
+standard ones of \citet{misra2011gnss} and \citet{kaplan2017}, with the
+broadcast-message and group-delay conventions of \citet{icdgps200}.
+
+The implementation lives in
+
+\begin{itemize}[leftmargin=1.4em,itemsep=1pt]
+  \item \file{cpp/lupnt/measurements/gnss_measurement.h} and
+        \file{cpp/lupnt/measurements/gnss_measurement.cc} ---
+        \cpp{GnssChannel}, \cpp{GnssMeasurement} (single channel) and
+        \cpp{GNSSMeasurements} (all channels of one receiver);
+  \item \file{cpp/lupnt/agents/gnss_constellation.cc} ---
+        \cpp{GnssConstellation}, the PRN-indexed transmitter ephemeris and
+        antenna/power metadata;
+  \item \file{cpp/lupnt/interfaces/sp3_loader.cc},
+        \file{cpp/lupnt/interfaces/rinex_nav_loader.cc} and
+        \file{cpp/lupnt/interfaces/antex_loader.cc} --- precise, broadcast and
+        antenna-phase-centre ingestion;
+  \item \file{cpp/lupnt/attitude/gnss_attitude.cc} and
+        \file{cpp/lupnt/attitude/gnss_yaw_steering.cc} --- the transmitter
+        body frame in which the transmit-antenna gain is looked up;
+  \item \file{cpp/lupnt/measurements/comms_utils.cc} and
+        \file{cpp/lupnt/measurements/antenna.cc} --- the visibility test, the
+        free-space path loss and the antenna pattern interpolation.
+\end{itemize}
+
+Two neighbouring chapters carry material referenced throughout: the electron
+density model and the ray-traced dispersive delay are specified in
+\cref{chap:ionosphere}, and the closed-form link budget, gain patterns and
+tracking-loop noise mapping in \cref{chap:link-budget}. This chapter states
+only how those quantities enter the GNSS observation equations.
+
+% ===========================================================================
+\section{State, Time and Frame Contract}
+\label{sec:gnss-contract}
+
+\subsection{Receiver state layout}
+
+All vectors in this chapter are expressed in \code{options.frame}, a single
+inertial frame shared by receiver and transmitter. The implementation refuses
+\code{Frame::UNDEFINED}; cislunar filtering runs use \code{Frame::MOON\_CI} for
+the receiver and convert the transmitter ephemeris into it, while Earth-orbit
+runs leave both in \code{Frame::ECI}.
+
+The receiver state vector is not assumed to have any particular length. It is
+interpreted through the index map \cpp{GnssMeasurementOptions::indices},
+
+\begin{equation}
+  \label{eq:gnss-state-layout}
+  \vec{x} =
+  \begin{bmatrix}
+    \cdots & \vec{r}_R\transpose & \cdots & \vec{v}_R\transpose & \cdots &
+    b_R & d_R & \cdots & N & \cdots
+  \end{bmatrix}\transpose ,
+\end{equation}
+
+with $\vec{r}_R \in \mathbb{R}^3$ in \si{\meter}, $\vec{v}_R \in \mathbb{R}^3$
+in \si{\meter\per\second}, receiver clock bias $b_R$, clock drift $d_R$ and an
+optional carrier integer ambiguity $N$ in cycles. A negative index, or an
+index beyond the end of the state, disables that term: it is then neither read
+nor given a Jacobian column. This is what lets the same measurement model
+serve a six-state orbit-only filter, an eight-state orbit-plus-clock filter
+and an ambiguity-augmented carrier-phase filter without modification.
+
+\begin{lstlisting}[language=cpp, caption={Receiver state index map and its
+defaults.}, label={lst:gnss-indices}]
+// cpp/lupnt/measurements/gnss_measurement.h :: GnssMeasurementStateIndices
+struct GnssMeasurementStateIndices {
+  int position = 0;
+  int velocity = 3;
+  int clock_bias = 6;
+  int clock_drift = 7;
+  int carrier_integer = -1;   // < 0 disables the ambiguity state
+};
+\end{lstlisting}
+
+\subsection{Clock-bias units}
+
+The clock states are stored in \code{options.clock\_bias\_unit}, one of
+\code{SECONDS}, \code{METERS} or \code{KILOMETERS}: filters that carry the
+clock in range units keep the state numerically comparable to the position
+components. Conversion to SI seconds happens before the range equations,
+
+\begin{equation}
+  \label{eq:gnss-clock-units}
+  \Delta t_R = \operatorname{seconds}(b_R), \qquad
+  \dot{\Delta t}_R = \operatorname{seconds}(d_R),
+\end{equation}
+
+and the corresponding scale factor is what appears in the clock columns of the
+Jacobian (\cref{sec:gnss-jacobian}). The helpers
+\cpp{ClockBiasToMeters} and \cpp{ClockBiasMetersDerivative} in
+\file{cpp/lupnt/measurements/gnss_measurement.cc} implement
+$c\,\operatorname{seconds}(\cdot)$ and its derivative respectively.
+
+\subsection{Epochs and time scales}
+
+Every epoch handed to \cpp{Compute} or \cpp{Precompute} is a receiver
+\emph{signal-reception} epoch,
+\begin{equation}
+  \label{eq:gnss-epoch-def}
+  t_R \equiv t_{\text{receive}},
+\end{equation}
+expressed in \code{options.receive\_time\_scale}. Constellation ephemerides
+are tabulated and interpolated in $\TAI$ seconds; the implementation asserts
+\code{options.ephemeris\_time\_scale == Time::TAI}. Cislunar simulations
+typically set the receive scale to $\TDB$ and let the measurement model
+convert to $\TAI$ for ephemeris lookup, and to $\TDB$ again for any frame
+rotation. Coordinate-time to coordinate-time conversions go through
+\cpp{ConvertCoordinateTime}, all others through \cpp{ConvertTime}; see
+\cref{chap:time-conversions}.
+
+Epochs are carried as \cpp{Epoch}, a split (integer second, fractional second)
+value that also carries its own scale. This matters here more than anywhere
+else in the library: a bare \code{double} seconds-from-J2000 epoch at
+present-day dates has a unit-in-the-last-place of roughly
+\SI{0.25}{\micro\second}, i.e.\ about \SI{75}{\meter} of range. The light-time
+solution is therefore carried as an \emph{offset} rather than as an absolute
+epoch (\cref{sec:gnss-lighttime}).
+
+\begin{lupntnote}
+  The cached-state fast path in \cpp{GnssChannel::GetTransmitState} compares
+  epochs exactly. Because \cpp{Epoch} carries its scale in the value, an
+  epoch with the same numeric seconds but a different scale no longer aliases
+  onto the cache, which a bare \code{Real} comparison could not prevent.
+\end{lupntnote}
+
+\subsection{Frequencies}
+
+A channel is identified by the triple (constellation, PRN, frequency). The
+carrier wavelength used by every conversion between range, cycles and hertz is
+$\lambda = c/f$, tabulated in \cref{tab:gnss-frequencies} together with the
+spreading-code chipping rate $R_c$ that sets the code-tracking noise.
+
+\begin{table}[htbp]
+  \centering
+  \caption{GNSS carrier frequencies and chipping rates, from
+    \code{GNSS\_FREQ\_MAP} and \code{GNSS\_RC\_MAP} in
+    \file{cpp/lupnt/devices/gnss_device.cc}. Wavelengths are
+    $\lambda = c/f$ with $c = \SI{299792458}{\meter\per\second}$.}
+  \label{tab:gnss-frequencies}
+  \begin{tabular}{lS[table-format=4.3]S[table-format=1.6]S[table-format=2.4]}
+    \toprule
+    \code{GnssFreq} & {$f$ [\si{\mega\hertz}]} & {$\lambda$ [\si{\meter}]}
+      & {$R_c$ [\si{\mega\hertz}]} \\
+    \midrule
+    \code{L1}  & 1575.420 & 0.190294 & 1.0230 \\
+    \code{L2}  & 1227.600 & 0.244210 & 0.5115 \\
+    \code{L5}  & 1176.450 & 0.254828 & 10.2300 \\
+    \code{E1}  & 1575.420 & 0.190294 & 1.0230 \\
+    \code{E6}  & 1278.750 & 0.234442 & 0.5115 \\
+    \code{E5}  & 1191.795 & 0.251547 & 10.2300 \\
+    \code{E5a} & 1176.450 & 0.254828 & 10.2300 \\
+    \code{E5b} & 1207.140 & 0.248349 & 10.2300 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Symbols}
+
+\cref{tab:gnss-symbols} fixes the notation used for the rest of the chapter.
+Every quantity is a scalar unless it is typeset as a vector.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Symbols of the GNSS observation equations.}
+  \label{tab:gnss-symbols}
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Symbol & Unit & Meaning \\
+    \midrule
+    $t_R$, $t_S$ & \si{\second} & signal-reception and signal-transmission epoch \\
+    $\vec{r}_R,\vec{v}_R$ & \si{\meter}, \si{\meter\per\second} & receiver position/velocity at $t_R$ \\
+    $\vec{r}_S,\vec{v}_S$ & \si{\meter}, \si{\meter\per\second} & transmitter position/velocity at $t_S$ \\
+    $\rho$, $\dot\rho$ & \si{\meter}, \si{\meter\per\second} & geometric range and range rate \\
+    $\uvec{u}$ & --- & unit line of sight, transmitter to receiver \\
+    $\Delta t_R$, $\dot{\Delta t}_R$ & \si{\second}, --- & receiver clock bias and drift \\
+    $\Delta t_S$, $\dot{\Delta t}_S$ & \si{\second}, --- & transmitter clock bias and drift \\
+    $\Delta t_S^{\mathrm{rel}}$ & \si{\second} & transmitter periodic relativistic correction \\
+    $\Delta t_S^{\mathrm{grp}}$ & \si{\second} & broadcast group delay $T_{GD}$ \\
+    $\Delta\rho_{\mathrm{Sh}}$ & \si{\meter} & Shapiro (gravitational) delay \\
+    $\Delta\rho_{\mathrm{pl}}$ & \si{\meter} & ionosphere/plasmasphere delay at $f$ \\
+    $\Delta\rho_{\mathrm{tr}}$ & \si{\meter} & tropospheric delay (ground links only) \\
+    $\lambda$, $f$ & \si{\meter}, \si{\hertz} & carrier wavelength and frequency \\
+    $\phi_0$, $N$ & cycle & fractional phase bias, integer ambiguity \\
+    $\varphi_{\mathrm{tx}},\theta_{\mathrm{tx}}$ & \si{\radian} & transmitter off-boresight and azimuth angle \\
+    $\varphi_{\mathrm{rx}}$ & \si{\radian} & receiver off-boresight angle \\
+    $C/N_0$ & \si{\dBHz} & received carrier-to-noise density ratio \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+% ===========================================================================
+\section{Constellation Representation}
+\label{sec:gnss-constellation}
+
+\cpp{GnssConstellation} is a passive, receiver-independent object: it owns a
+PRN-indexed transmitter ephemeris plus antenna and transmit-power metadata,
+and nothing that depends on where the receiver is. Light time, visibility,
+$C/N_0$ and channel selection all live in \cpp{GNSSMeasurements}, because they
+require a receiver state and a receive epoch.
+
+\subsection{PRN bookkeeping}
+\label{sec:gnss-prn}
+
+A constellation carries one \code{GnssConst} system tag (\code{GPS},
+\code{GLONASS}, \code{GALILEO}, \code{BEIDOU}, \code{QZSS}) and the following
+PRN-keyed containers:
+
+\begin{table}[htbp]
+  \centering
+  \caption{PRN bookkeeping in \cpp{GnssConstellation}
+    (\file{cpp/lupnt/agents/gnss_constellation.h}).}
+  \label{tab:gnss-prn-tables}
+  \begin{tabularx}{\textwidth}{lL}
+    \toprule
+    Member & Contents \\
+    \midrule
+    \code{prns\_} & ordered list of PRNs; iteration order of \cpp{BuildChannels} \\
+    \code{fault\_prns\_} & PRNs declared unavailable by \cpp{SetFaultPrns}; skipped outright \\
+    \code{t\_tai\_} & $[M]$ common ephemeris epoch grid, $\TAI$ seconds \\
+    \code{rv\_eci\_} & PRN $\mapsto$ $[M\times 6]$ tabulated ECI state history \\
+    \code{rv\_eci\_cheby\_} & PRN $\mapsto$ fitted \cpp{ChebyshevFitModel} of the same history \\
+    \code{antennas\_} & PRN $\mapsto$ frequency $\mapsto$ \cpp{Antenna} gain pattern \\
+    \code{P\_tx\_} & PRN $\mapsto$ frequency $\mapsto$ transmit power [\si{\dBW}] \\
+    \code{freq\_list\_} & frequencies for which transmitter metadata exists \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+All PRNs of a constellation share one epoch grid \code{t\_tai\_}; a PRN whose
+history has a different length is rejected at
+\cpp{SetSatelliteStates}. Multiple constellations, each with its own
+frequency, are attached to one receiver with
+\cpp{GNSSMeasurements::AddConstellation}, and their channels are simply
+concatenated, so a mixed GPS L1 plus Galileo E1 scenario is a two-entry list.
+A channel therefore records \code{gnss\_const} alongside \code{prn}: PRN 1 of
+GPS and PRN 1 of Galileo are distinct keys, including in the receiver's
+lock-state set \code{tracking\_prns\_}, which is a set of
+$(\code{GnssConst},\ \code{prn})$ pairs.
+
+The constellation exposes three ways to become populated:
+\cpp{SetSatelliteStates} (states already in memory), \cpp{LoadEphemeris}
+(an HDF5 file with datasets \code{/prns}, \code{/t\_tai} and
+\code{/rv\_eci/<prn>}, typically written by a Python preprocessing step), and
+\cpp{SetupSatelliteStatesFromFiles} (SP3 plus ANTEX, described in
+\cref{sec:gnss-sp3}). \cpp{SetupTransmitters} then attaches the gain patterns
+and transmit powers.
+
+\subsection{Piecewise Chebyshev fit of the six-dimensional state}
+\label{sec:gnss-chebyshev}
+
+Whatever the source, the runtime representation of a transmitter is a
+piecewise Chebyshev model of the full six-dimensional state. For each PRN the
+tabulated samples
+\begin{equation}
+  \label{eq:gnss-eph-table}
+  \bigl\{ \bigl(t_k,\ \vec{r}_S(t_k),\ \vec{v}_S(t_k) \bigr) \bigr\}_{k=0}^{M-1},
+  \qquad t_k \in \TAI ,
+\end{equation}
+are fitted segment by segment. On a segment centred at $t_{\mathrm{mid}}$ with
+half-width $t_{\mathrm{rad}}$ the model is
+\begin{equation}
+  \label{eq:gnss-cheby}
+  \vec{y}_S(t)
+  = \begin{bmatrix} \vec{r}_S(t) \\ \vec{v}_S(t) \end{bmatrix}
+  \approx \sum_{n=0}^{p} \vec{c}_n\, T_n(\tau),
+  \qquad
+  \tau = \frac{t - t_{\mathrm{mid}}}{t_{\mathrm{rad}}} \in [-1,1],
+\end{equation}
+where $T_n$ is the Chebyshev polynomial of the first kind of degree $n$ and
+$\vec{c}_n \in \mathbb{R}^6$. The coefficients are obtained by sampling at the
+$p+1$ Chebyshev--Gauss nodes of the segment and applying the discrete
+Chebyshev transform, so \cref{eq:gnss-cheby} is the unique polynomial
+interpolant of the sampler at those nodes.
+
+Because a Chebyshev series is differentiable in closed form, the evaluator can
+return the exact time derivative alongside the value,
+\begin{equation}
+  \label{eq:gnss-cheby-deriv}
+  \frac{\dd \vec{y}_S}{\dd t}(t)
+  = \frac{1}{t_{\mathrm{rad}}}\sum_{n=0}^{p} \vec{c}_n\, T_n'(\tau),
+  \qquad
+  T_n'(\tau) = n\,U_{n-1}(\tau),
+\end{equation}
+with $U_{n-1}$ the Chebyshev polynomial of the second kind. This analytic
+derivative is what the SP3 loader uses to produce velocity from a
+position-only fit (\cref{sec:gnss-sp3}). The constellation itself does
+\emph{not} use it: it fits all six components as independent dimensions and
+evaluates with the derivative output disabled, so the interpolated velocity is
+the fitted tabulated velocity rather than the derivative of the fitted
+position. The two agree to the accuracy of the fit but are not identical
+by construction.
+
+\begin{lstlisting}[language=cpp, caption={The constellation's state fit. Note
+\code{num\_coeffs = 2} and a segment length of one tabulation step.},
+label={lst:gnss-cheby-fit}]
+// cpp/lupnt/agents/gnss_constellation.cc :: FitStateHistoryChebyshev
+ChebyshevFitModel FitStateHistoryChebyshev(const VecXd& t_tai, const MatXd& rv_eci) {
+  double t_start = t_tai(0);
+  double t_end = t_tai(t_tai.size() - 1);
+  double min_step = t_end - t_start;
+  for (int i = 1; i < t_tai.size(); i++)
+    min_step = std::min(min_step, t_tai(i) - t_tai(i - 1));
+
+  return FitChebyshevModel(
+      [&t_tai, &rv_eci](double t) {
+        VecXd state(6);
+        for (int k = 0; k < 6; k++) {
+          VecXd col = rv_eci.col(k);
+          state(k) = LinearInterp1d(t_tai, col, t);
+        }
+        return state;
+      },
+      t_start, t_end, 6, std::max(1.0, min_step), 2);
+}
+\end{lstlisting}
+
+\begin{lupntwarning}
+  With \code{num\_coeffs = 2} the fit is degree one, and the sampler it
+  interpolates is itself a linear interpolation of the table. The
+  constellation-level ``Chebyshev fit'' therefore reduces, at present, to a
+  piecewise-linear interpolation of \code{rv\_eci\_} on the tabulation grid.
+  It is exact at the nodes and its chord error grows quadratically with the
+  tabulation step, so the ephemeris grid handed to \cpp{SetSatelliteStates}
+  must be dense enough for the accuracy required --- a few tens of seconds for
+  metre-level work with medium-Earth-orbit transmitters. The infrastructure
+  supports higher degree unchanged; only the last two arguments of
+  \cpp{FitChebyshevModel} above would change.
+\end{lupntwarning}
+
+Evaluation is a segment lookup followed by a Clenshaw recursion:
+
+\begin{lstlisting}[language=cpp, caption={Ephemeris evaluation at an arbitrary
+epoch.}, label={lst:gnss-cheby-eval}]
+// cpp/lupnt/agents/gnss_constellation.cc :: GnssConstellation::GetSatelliteStateEci
+Vec6 GnssConstellation::GetSatelliteStateEci(int prn, Real t_tai) const {
+  auto it_cheby = rv_eci_cheby_.find(prn);
+  LUPNT_CHECK(it_cheby != rv_eci_cheby_.end(),
+              "Chebyshev ephemeris missing for PRN " + std::to_string(prn),
+              "GnssConstellation");
+  VecX state_x;
+  LUPNT_CHECK(it_cheby->second.Eval(t_tai, &state_x, nullptr),
+              "Ephemeris interpolation time is out of range", "GnssConstellation");
+  Vec6 state = state_x;
+  return state;
+}
+\end{lstlisting}
+
+Queries outside $[t_0, t_{M-1}]$ throw rather than extrapolate. Since the
+light-time solution moves the query about \SI{0.08}{\second} (Earth orbit) to
+\SI{1.3}{\second} (lunar distance) before the first tabulated epoch, the
+ephemeris window must be padded relative to the simulation window.
+
+\subsection{Precise ephemeris ingestion (SP3)}
+\label{sec:gnss-sp3}
+
+\cpp{Sp3Loader} (\file{cpp/lupnt/interfaces/sp3_loader.cc}, exposed to Python
+as \py{pnt.Sp3Loader}) parses IGS SP3 precise-ephemeris files. Satellites are
+keyed by their SP3 identifiers --- \code{"G01"}, \code{"E11"}, \code{"C06"},
+\code{"J03"} --- which is where the mapping from SP3 identifier to
+$(\code{GnssConst},\ \code{prn})$ is made. SP3 tabulates satellite
+\emph{centre-of-mass} ECEF positions and a clock bias at a fixed cadence,
+typically \SI{5}{\minute} for the MGEX final products.
+
+Interpolation is a per-satellite piecewise Chebyshev fit of position only:
+
+\begin{itemize}[leftmargin=1.4em,itemsep=1pt]
+  \item the segment length is $8$ tabulation steps, the polynomial degree is
+        $\min(12, M) - 1$;
+  \item the sampler feeding the fit is a local Lagrange interpolant of order
+        $\min(10, M)$ --- the standard SP3 interpolation. Sampling with a
+        linear interpolant instead would inject kilometre-level chord error
+        over a \SI{5}{\minute} arc, which the Chebyshev fit would then
+        reproduce faithfully;
+  \item velocity is the analytic derivative \cref{eq:gnss-cheby-deriv} of the
+        fitted position polynomial, so position and velocity are consistent by
+        construction;
+  \item the clock is \emph{not} fitted. It is linearly interpolated over the
+        raw samples with the SP3 sentinel value
+        (\num{999999.999999} \si{\micro\second}) excluded, because a Chebyshev
+        fit rings at day boundaries where the sentinel appears.
+\end{itemize}
+
+\begin{lstlisting}[language=cpp, caption={Precise-ephemeris query. The returned
+clock bias already contains the periodic relativistic term.},
+label={lst:gnss-sp3}]
+// cpp/lupnt/interfaces/sp3_loader.h :: Sp3Loader::GetPosVelClock
+void Sp3Loader::GetPosVelClock(const std::string& sat_id, Real t_tai,
+                               Vec6& rv_ecef, Real& clock_bias_s) const;
+// cpp/lupnt/interfaces/sp3_loader.cc :: velocity from the fitted position
+VecX pos, pos_dot;
+it_model->second.Eval(t_tai, &pos, &pos_dot);
+rv_ecef.head(3) = pos.head(3);
+rv_ecef.tail(3) = pos_dot.head(3);
+\end{lstlisting}
+
+Because SP3 positions refer to the centre of mass while the signal leaves the
+antenna, the antenna phase-centre offset (PCO) must be added before the state
+is usable as a transmit point:
+\begin{equation}
+  \label{eq:gnss-pco}
+  \vec{r}^{\,\mathrm{ecef}}_{\mathrm{ant}}
+  = \vec{r}^{\,\mathrm{ecef}}_{\mathrm{CoM}}
+  + \mat{C}_{ijk}\bigl(t, \vec{r}^{\,\mathrm{ecef}}_{\mathrm{CoM}}\bigr)\,
+    \vec{\Delta}^{\,\mathrm{NEU}}_{\mathrm{PCO}} .
+\end{equation}
+\cpp{AntexLoader} (\file{cpp/lupnt/interfaces/antex_loader.cc}, Python
+\py{pnt.AntexLoader}) parses IGS ANTEX (\code{.atx}) files, supplies
+$\vec{\Delta}^{\,\mathrm{NEU}}_{\mathrm{PCO}}$ per satellite and frequency, and
+applies \cref{eq:gnss-pco} through
+\cpp{ApplyPcoCorrectionEcef}. The offset is a few decimetres to about two
+metres and is frequency dependent, so it is not negligible at the accuracy
+this model targets. The SP3 velocity is left uncorrected: the PCO is constant
+in the body frame, and its contribution to ECEF velocity is below the noise of
+any link-budget or visibility decision.
+
+\begin{lupntnote}
+  The PCO ``IJK'' triad, \cpp{AntexLoader::ComputeIjkToEcefRotation}
+  (\code{jvec = normalize(r\_sun - r\_sat)}, \code{kvec = -normalize(r\_sat)},
+  \code{ivec = jvec x kvec}), is deliberately the \emph{raw, un-orthogonalised}
+  Sun-pointing frame used to generate the precomputed PCO-corrected
+  ephemerides. It is a different object from the orthonormal
+  \cpp{GnssAttitude} body frame used for gain-pattern lookups
+  (\cref{sec:gnss-attitude}); the two must not be conflated.
+\end{lupntnote}
+
+\subsection{Broadcast ephemeris ingestion (RINEX navigation)}
+\label{sec:gnss-brdc}
+
+\cpp{RinexNavLoader} (\file{cpp/lupnt/interfaces/rinex_nav_loader.cc}, Python
+\py{pnt.RinexNavLoader}) parses RINEX~V3 navigation (``BRDC'') files and
+evaluates the transmitter state by Keplerian propagation of the broadcast
+navigation message nearest the requested epoch, following the user algorithm
+of \citet{icdgps200} and its Galileo, BeiDou and QZSS analogues. GLONASS,
+whose message carries tabulated state vectors and accelerations rather than
+Keplerian elements, is intentionally unsupported.
+
+Broadcast ephemerides matter here not as a convenience but as an error source:
+they carry the real-time signal-in-space error (SISE) in both position and
+clock relative to the precise product, and differencing the two is how the
+measurement truth acquires a realistic ephemeris/clock error.
+\citet[Ch.~6.4.2 and 6.5.2]{iiyama2026thesis} treats the
+phase-centre-corrected precise product as truth, derives per-satellite
+broadcast errors by differencing, and removes a per-constellation median
+clock-bias offset to absorb the broadcast/precise time-reference difference.
+
+\begin{lupntnote}
+  \cpp{RinexNavLoader} omits the Galileo-specific GST/GPST (``GAGP'')
+  system-time-correction term. This affects the satellite \emph{clock} only,
+  by well under \SI{100}{\nano\second} (below \SI{30}{\meter} of
+  range-equivalent), and has no effect on the broadcast position or velocity.
+\end{lupntnote}
+
+\subsection{Synthetic constellations for future epochs}
+\label{sec:gnss-almanac}
+
+Both paths above require IGS products covering the run epoch, which do not
+exist for a future mission date. For those scenarios the Lunar GNSS ODTS
+driver (\code{constellation.source == "almanac"},
+\file{cpp/lupnt/simulations/lunar_gnss_odts/lunar_gnss_odts_simulation.cc})
+synthesises each PRN's ephemeris instead of loading it, in three steps.
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=2pt]
+  \item \textbf{Seed elements.} Each PRN's coarse Keplerian set is read from a
+    YUMA GPS almanac (\cpp{RinexNavLoader::LoadYumaFile}) or, absent a YUMA
+    file, from the broadcast navigation message. The seed Cartesian state is
+    evaluated at the almanac reference epoch ($t_k = 0$) in ECEF and rotated
+    to ECI.
+
+  \item \textbf{GPS week-number rollover.} A YUMA almanac carries a mod-1024
+    week number, so its raw reference epoch can land two decades from the
+    intended date. The seed epoch is snapped to the 1024-week era nearest the
+    run epoch,
+    \begin{equation}
+      \label{eq:gnss-rollover}
+      t_{\mathrm{seed}} \leftarrow t_{\mathrm{seed}}
+      + \Delta_{1024}\,
+        \operatorname{round}\!\left(
+          \frac{t_{\mathrm{run}} - t_{\mathrm{seed}}}{\Delta_{1024}}
+        \right),
+      \qquad
+      \Delta_{1024} = 1024 \times 7 \times \SI{86400}{\second},
+    \end{equation}
+    so the propagation span is the intended months rather than decades. A
+    full-week BRDC seed makes this a no-op.
+
+  \item \textbf{Numerical propagation.} From the seed state each PRN is
+    propagated over the ephemeris grid under a $4\times4$ Earth gravity field
+    plus Sun and Moon third-body point masses
+    (\cpp{CreateGnssEarthDynamics}), and the resulting ECI states are handed to
+    \cpp{GnssConstellation::SetSatelliteStates} exactly like a precise or
+    broadcast fit.
+\end{enumerate}
+
+With no precise reference to difference against, the broadcast SISE must be
+\emph{modelled}. The \cpp{SyntheticSISE} transmitter-error model draws a
+per-PRN orbit error in the local orbital (radial, along-track, cross-track)
+frame and a clock error,
+\begin{equation}
+  \label{eq:gnss-sise}
+  \delta\vec{r}_{\mathrm{ECI}}
+    = \delta_R\,\uvec{r} + \delta_A\,\uvec{t} + \delta_C\,\uvec{c},
+  \qquad
+  \delta_{R,A,C} \sim \mathcal{N}\!\bigl(0,\ \sigma_{R,A,C}^2\bigr),
+  \qquad
+  \delta t \sim \mathcal{N}\!\bigl(0,\ \sigma_{\mathrm{clk}}^2\bigr),
+\end{equation}
+once per PRN from a seeded random number generator, held fixed over the (short)
+arc --- a first-order stand-in for the near-constant systematic error a real
+receiver sees over a pass. The magnitudes come from the four configuration
+keys \code{constellation.synthetic\_sise\_radial\_m},
+\code{\ldots\_along\_m}, \code{\ldots\_cross\_m} and \code{\ldots\_clock\_m}
+(defaults \SI{0.3}{\meter}, \SI{0.8}{\meter}, \SI{0.8}{\meter} and
+\SI{0.5}{\meter}), and the delta is injected through the same
+filter-transmitter code path (\cpp{BroadcastEphemerisError}) that the measured
+broadcast error uses.
+
+% ===========================================================================
+\section{Light Time and Signal-Transmit-Time Iteration}
+\label{sec:gnss-lighttime}
+
+The observables relate a receiver state at $t_R$ to a transmitter state at the
+earlier epoch $t_S$ at which the signal left the antenna. In an inertial frame
+the transmit epoch is the root of
+\begin{equation}
+  \label{eq:gnss-lighttime-root}
+  t_R - t_S - \frac{\bigl\lVert \vec{r}_R(t_R) - \vec{r}_S(t_S) \bigr\rVert}{c} = 0 ,
+\end{equation}
+solved by the fixed-point iteration
+\begin{equation}
+  \label{eq:gnss-lighttime-fixed}
+  t_S^{(0)} = t_R, \qquad
+  t_S^{(i+1)} = t_R
+    - \frac{\bigl\lVert \vec{r}_R(t_R) - \vec{r}_S\bigl(t_S^{(i)}\bigr) \bigr\rVert}{c} .
+\end{equation}
+The map is a contraction with factor $\lVert \vec{v}_S \rVert / c \approx
+\num{1.3e-5}$ for a medium-Earth-orbit transmitter, so two iterations already
+reach the \SI{1e-11}{\second} default tolerance. The iteration stops when
+\begin{equation}
+  \label{eq:gnss-lighttime-stop}
+  \bigl| t_S^{(i+1)} - t_S^{(i)} \bigr| < \epsilon_{\mathrm{lt}},
+  \qquad \epsilon_{\mathrm{lt}} = \code{options.light\_time\_tolerance\_s},
+\end{equation}
+or after at most
+\code{options.light\_time\_max\_iterations} passes
+(default $10$). Setting \code{options.solve\_light\_time} to false freezes
+$t_S = t_R$, which is useful only for comparing against models that ignore
+light time.
+
+\subsection{The offset formulation}
+
+\cref{eq:gnss-lighttime-fixed} is never evaluated as written. Subtracting
+$\rho/c$ from an absolute epoch of order \num{8e8} seconds discards roughly
+\SI{1e-7}{\second} --- about \SI{30}{\meter} of light time --- to the double
+unit-in-the-last-place. The implementation instead iterates on the
+\emph{offset}
+\begin{equation}
+  \label{eq:gnss-lighttime-offset}
+  \Delta\tau^{(i+1)} = -\frac{\bigl\lVert \vec{r}_R - \vec{r}_S\bigl(t_R + \Delta\tau^{(i)}\bigr) \bigr\rVert}{c},
+  \qquad
+  t_S = t_R + \Delta\tau ,
+\end{equation}
+holding the absolute receive epoch fixed. Carried on an \cpp{Epoch}, the
+offset lives entirely in the fractional-second field and is never absorbed
+into the epoch's unit-in-the-last-place. The absolute transmit epoch is formed
+only to \emph{evaluate} the ephemeris, where a residual
+\SI{0.25}{\micro\second} maps to sub-millimetre position error at
+\si{\kilo\meter\per\second} transmitter speeds.
+
+\begin{lstlisting}[language=cpp, caption={Light-time iteration on the offset,
+inside the per-PRN channel builder.}, label={lst:gnss-lighttime}]
+// cpp/lupnt/measurements/gnss_measurement.cc :: GNSSMeasurements::BuildChannelForPrn
+Epoch t_rx_ephem = Epoch::FromSeconds(receive_time, options_.receive_time_scale)
+                       .To(options_.ephemeris_time_scale);
+Real dtau = Real(0.0);
+Epoch t_tx_ephem = t_rx_ephem;
+Vec6 rv_tx = ConvertEciTransmitStateToMeasurementFrame(
+    constellation->GetSatelliteStateEci(prn, t_tx_ephem.ToSeconds()),
+    t_tx_ephem.ToSeconds(), options_);
+
+if (options_.solve_light_time) {
+  for (int iter = 0; iter < options_.light_time_max_iterations; iter++) {
+    Real rho = (r_rx - rv_tx.head(3)).norm();
+    Real dtau_next = -rho / Real(C);
+    bool converged = abs(dtau_next - dtau) < options_.light_time_tolerance_s;
+    dtau = dtau_next;
+    t_tx_ephem = t_rx_ephem + dtau;
+    rv_tx = ConvertEciTransmitStateToMeasurementFrame(
+        constellation->GetSatelliteStateEci(prn, t_tx_ephem.ToSeconds()),
+        t_tx_ephem.ToSeconds(), options_);
+    if (converged) break;
+  }
+}
+\end{lstlisting}
+
+Clock offsets, group delay and the propagation delays are \emph{not} used to
+solve \cref{eq:gnss-lighttime-root}: the iteration solves the physical
+light-time geometry, and every clock and medium term enters additively in the
+observation equations of \cref{sec:gnss-observables}. This separation is what
+makes the model linear in the clock states.
+
+\subsection{Truth generation versus filter evaluation}
+
+A precomputed channel stores its converged \code{transmit\_time} and
+\code{tx\_state}. When the filter later evaluates the same channel at a
+\emph{different} receiver state, the stored transmit epoch is no longer the
+light-time solution for that state. The flag
+\code{options.recompute\_transmit\_time\_from\_ephemeris} selects the
+behaviour:
+
+\begin{itemize}[leftmargin=1.4em,itemsep=1pt]
+  \item \code{false} (default) --- reuse the stored transmit epoch and state.
+    Correct for truth generation, where the light-time solution belongs to the
+    truth trajectory.
+  \item \code{true} --- re-solve \cref{eq:gnss-lighttime-offset} from the
+    current receiver position against the channel's own Chebyshev coefficients
+    (\cpp{ResolveTransmitState}). Correct for estimated measurements, where
+    the predicted observable must be a consistent function of the estimated
+    state.
+\end{itemize}
+
+The difference is second order --- the transmit-epoch shift is
+$\uvec{u}\transpose\delta\vec{r}_R/c$, moving the transmitter by
+$\lVert\vec{v}_S\rVert/c \approx \num{1.3e-5}$ of the position error --- but it
+matters when the same channel is reused across a long filter update.
+
+% ===========================================================================
+\section{Geometry}
+\label{sec:gnss-geometry}
+
+After light-time convergence, write $\vec{r}_S = \vec{r}_S(t_S)$ and
+$\vec{v}_S = \vec{v}_S(t_S)$, and define
+\begin{align}
+  \label{eq:gnss-delta}
+  \Delta\vec{r} &= \vec{r}_R - \vec{r}_S, &
+  \Delta\vec{v} &= \vec{v}_R - \vec{v}_S, \\
+  \label{eq:gnss-range}
+  \rho &= \lVert \Delta\vec{r} \rVert, &
+  \uvec{u} &= \frac{\Delta\vec{r}}{\rho}, \\
+  \label{eq:gnss-rangerate}
+  \dot\rho &= \frac{\Delta\vec{r}\transpose \Delta\vec{v}}{\rho}
+            = \uvec{u}\transpose\Delta\vec{v} . & &
+\end{align}
+
+The sign convention is fixed once here and used everywhere below:
+\emph{$\uvec{u}$ points from the transmitter to the receiver}, so $\dot\rho >
+0$ means the link is opening (the receiver is receding) and the received
+frequency is \emph{lower} than the transmitted one. The Doppler observable of
+\cref{sec:gnss-observables} carries the compensating minus sign.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[x=1.05cm, y=1.05cm, >=Latex]
+
+    % --- occluding body (Earth) -------------------------------------------
+    \fill[black!8] (0,0) circle (1.15);
+    \draw[thick, black!45] (0,0) circle (1.15);
+    \node[font=\small\sffamily, black!55] at (0.42,-0.72) {Earth};
+    \draw[black!45, dashed] (0,0) -- (-0.81,0.81);
+    \node[font=\scriptsize, black!55] at (-0.28,0.62) {$R_\oplus$};
+
+    % --- receiver body (Moon) ---------------------------------------------
+    \fill[black!8] (5.9,1.95) circle (0.42);
+    \draw[thick, black!45] (5.9,1.95) circle (0.42);
+    \node[font=\scriptsize\sffamily, black!55] at (5.9,1.95) {Moon};
+
+    % --- transmitter at t_S and at t_R ------------------------------------
+    \coordinate (TS) at (-4.35,1.55);
+    \coordinate (TR) at (-4.05,2.05);
+    \coordinate (RX) at (4.75,1.15);
+    \coordinate (TB) at (-4.15,-1.85);
+
+    % visible link
+    \draw[model] (TS) -- (RX);
+    \node[font=\scriptsize, above, sloped] at ($ (TS)!0.42!(RX) $)
+      {$\rho = c\,(t_R - t_S)$};
+
+    % transmitter motion during the light time
+    \draw[flow, black!55] (TS) -- (TR);
+    \node[font=\scriptsize, black!55, above right=-1pt and 1pt] at (TR)
+      {$\vec{r}_S(t_R)$};
+
+    % nadir / boresight of the transmitter
+    \draw[flow, blue!65!black] (TS) -- ($ (TS)!0.55!(0,0) $);
+    \node[font=\scriptsize, blue!65!black, below left=0pt and 1pt]
+      at ($ (TS)!0.55!(0,0) $) {$\uvec{e}_z$};
+    \draw[blue!65!black] ($ (TS)!0.9cm!(0,0) $) arc (-9:22:0.9);
+    \node[font=\scriptsize, blue!65!black] at ($ (TS)+(1.15,0.28) $)
+      {$\varphi_{\mathrm{tx}}$};
+
+    % occulted link
+    \draw[integral, red!75!black, dashed] (TB) -- (RX);
+    \node[font=\scriptsize, red!75!black, below right, sloped]
+      at ($ (TB)!0.78!(RX) $) {occulted};
+
+    % grazing / tangent ray from the blocked transmitter
+    \draw[black!45, dotted] (TB) -- ($ (TB)!1.5!(-0.72,0.90) $);
+    \node[font=\scriptsize, black!55, right=1pt]
+      at ($ (TB)!1.5!(-0.72,0.90) $) {grazing ray};
+
+    % receiver boresight
+    \draw[flow, orange!85!black] (RX) -- ($ (RX)!0.75!(5.9,1.95) $);
+    \node[font=\scriptsize, orange!85!black, below right=0pt and 1pt]
+      at ($ (RX)!0.75!(5.9,1.95) $) {$\uvec{b}_R$};
+    \node[font=\scriptsize, orange!85!black] at ($ (RX)+(-0.15,0.75) $)
+      {$\varphi_{\mathrm{rx}}$};
+
+    % --- nodes -------------------------------------------------------------
+    \node[boxnode, minimum width=2.0cm, anchor=east] at ($ (TS)+(0.05,0) $)
+      {GNSS SV\\[-1pt]{\scriptsize $\vec{r}_S(t_S),\vec{v}_S(t_S)$}};
+    \node[boxnode, minimum width=2.0cm, anchor=east] at ($ (TB)+(0.05,0) $)
+      {GNSS SV\\[-1pt]{\scriptsize blocked PRN}};
+    \node[boxnode, minimum width=1.9cm, anchor=west] at ($ (RX)+(-0.05,-0.95) $)
+      {receiver\\[-1pt]{\scriptsize $\vec{r}_R(t_R),\vec{v}_R(t_R)$}};
+
+    \fill (TS) circle (1.6pt);
+    \fill[black!45] (TR) circle (1.2pt);
+    \fill (TB) circle (1.6pt);
+    \fill (RX) circle (1.6pt);
+
+  \end{tikzpicture}
+  \caption{Transmit/receive geometry. The signal leaves the transmitter at
+    $t_S$ and arrives at $t_R$; during the light time the transmitter moves to
+    $\vec{r}_S(t_R)$, and it is the \emph{retarded} state that enters the
+    observation equations. The transmit antenna gain is evaluated at the
+    off-boresight angle $\varphi_{\mathrm{tx}}$ from the nadir axis
+    $\uvec{e}_z$ of the yaw-steering body frame, and the receive gain at
+    $\varphi_{\mathrm{rx}}$ from the receiver boresight $\uvec{b}_R$. The
+    lower PRN is rejected because the Earth blocks the line of sight.}
+  \label{fig:gnss-geometry}
+\end{figure}
+
+\begin{lupntnote}
+  All three of $\vec{r}_R$, $\vec{v}_R$ and $\vec{r}_S$, $\vec{v}_S$ are in
+  the same inertial frame, so \cref{eq:gnss-rangerate} is the full inertial
+  range rate. No Sagnac term appears, because none is needed: the Sagnac
+  correction is exactly the difference between an Earth-fixed and an inertial
+  formulation, and this model never leaves the inertial frame.
+\end{lupntnote}
+
+% ===========================================================================
+\section{Clock Terms}
+\label{sec:gnss-clocks}
+
+\subsection{Receiver clock}
+
+The receiver clock bias and drift enter as a range and a range-rate offset,
+\begin{equation}
+  \label{eq:gnss-rx-clock}
+  \Delta\rho_R = c\,\Delta t_R, \qquad
+  \Delta\dot\rho_R = c\,\dot{\Delta t}_R ,
+\end{equation}
+with $\Delta t_R > 0$ meaning the receiver clock \emph{leads} true time, which
+makes the measured pseudorange longer than the geometric range. This is the
+convention of \citet{misra2011gnss}: the receiver clock term is added.
+
+\subsection{Transmitter clock}
+
+The transmitter contributes three separate effects, combined into one
+effective bias:
+\begin{equation}
+  \label{eq:gnss-tx-clock}
+  \Delta t_S^{\mathrm{eff}}
+  = \Delta t_S + \Delta t_S^{\mathrm{rel}} - \Delta t_S^{\mathrm{grp}} ,
+  \qquad
+  \dot{\Delta t}_S^{\mathrm{eff}} = \dot{\Delta t}_S ,
+\end{equation}
+and the corresponding range terms are
+\begin{equation}
+  \label{eq:gnss-tx-clock-range}
+  \Delta\rho_S = c\,\Delta t_S^{\mathrm{eff}}, \qquad
+  \Delta\dot\rho_S = c\,\dot{\Delta t}_S^{\mathrm{eff}} .
+\end{equation}
+The transmitter clock term is \emph{subtracted} from the observables: a
+satellite clock that leads true time transmits early, so the signal arrives
+having apparently travelled a shorter distance.
+
+\begin{description}[leftmargin=1.4em,style=nextline,font=\normalfont\itshape]
+  \item[$\Delta t_S$ --- \code{tx\_clock\_bias\_s}]
+    The satellite clock offset. From SP3 it is the interpolated precise clock
+    (which, in \cpp{Sp3Loader}, already contains the relativistic term); from
+    BRDC it is the polynomial $a_{f0} + a_{f1}(t-t_{oc}) + a_{f2}(t-t_{oc})^2$
+    of \citet{icdgps200}.
+  \item[$\Delta t_S^{\mathrm{rel}}$ --- \code{relativistic\_correction\_s}]
+    The periodic relativistic correction due to orbital eccentricity, in the
+    state-based broadcast form
+    \begin{equation}
+      \label{eq:gnss-relativity}
+      \Delta t_S^{\mathrm{rel}}
+      = -\frac{2\,\vec{r}_S\transpose\vec{v}_S}{c^{2}} ,
+    \end{equation}
+    which is the Cartesian equivalent of the broadcast
+    $-2\sqrt{\mu}\,e\sqrt{A}\sin E / c^2$. Its amplitude is
+    $2 e \sqrt{\mu A}/c^2$, about \SI{23}{\nano\second} (\SI{7}{\meter}) for a
+    GPS satellite with $e = 0.01$. Enabled by
+    \code{options.apply\_transmitter\_relativity} (default true).
+  \item[$\Delta t_S^{\mathrm{grp}}$ --- \code{group\_delay\_s}]
+    The broadcast group delay $T_{GD}$ (or the constellation's BGD/TGD
+    equivalent), which calibrates the satellite clock, defined on the
+    ionosphere-free combination, to the single frequency actually tracked
+    \citep{icdgps200}. It is subtracted from the effective bias, hence added
+    to the pseudorange. \lupnt{} carries the field but does not populate it
+    from the navigation message; it defaults to zero.
+\end{description}
+
+\begin{lstlisting}[language=cpp, caption={Effective transmitter clock terms.},
+label={lst:gnss-tx-clock}]
+// cpp/lupnt/measurements/gnss_measurement.cc :: GnssChannel
+Real GnssChannel::EffectiveTransmitClockBiasSeconds() const {
+  return tx_clock_bias_s + relativistic_correction_s - group_delay_s;
+}
+Real GnssChannel::EffectiveTransmitClockDrift() const { return tx_clock_drift; }
+
+// cpp/lupnt/measurements/gnss_measurement.cc :: anonymous namespace
+Real TransmitterRelativisticCorrectionSeconds(const Vec6& rv_tx) {
+  return -2.0 * rv_tx.head(3).dot(rv_tx.tail(3)) / (Real(C) * Real(C));
+}
+\end{lstlisting}
+
+\begin{lupntwarning}
+  \cref{eq:gnss-relativity} must be evaluated in the frame in which the
+  satellite clock is defined, i.e.\ Earth-centred inertial. The
+  implementation applies it to \code{rv\_tx} \emph{after} conversion into
+  \code{options.frame}. For \code{Frame::ECI} the two coincide; for a
+  Moon-centred frame the product $\vec{r}_S\transpose\vec{v}_S$ is not the
+  same quantity, and the correction is wrong by the difference. Runs that use
+  a lunar measurement frame and also require the periodic relativistic term at
+  the nanosecond level should supply the correction externally through
+  \code{relativistic\_correction\_s} with
+  \code{apply\_transmitter\_relativity = false}.
+\end{lupntwarning}
+
+% ===========================================================================
+\section{Propagation Delays}
+\label{sec:gnss-propagation}
+
+\subsection{Shapiro delay}
+\label{sec:gnss-shapiro}
+
+When \code{options.apply\_shapiro\_delay} is true (the default), the one-way
+gravitational (Shapiro) delay of the Sun is added as a range correction,
+\begin{equation}
+  \label{eq:gnss-shapiro}
+  \Delta\rho_{\mathrm{Sh}}
+  = \frac{2\mu_\odot}{c^{2}}
+    \ln\!\left(
+      \frac{r_R^{\odot} + r_S^{\odot} + \rho}
+           {r_R^{\odot} + r_S^{\odot} - \rho}
+    \right),
+  \qquad
+  \begin{aligned}
+    r_R^{\odot} &= \lVert \vec{r}_R - \vec{r}_\odot(t_R) \rVert, \\
+    r_S^{\odot} &= \lVert \vec{r}_S - \vec{r}_\odot(t_R) \rVert .
+  \end{aligned}
+\end{equation}
+It is non-dispersive and always positive, so it is added to \emph{both} the
+code and the carrier observable. The Sun position $\vec{r}_\odot(t_R)$ comes
+from \cpp{SetSunPositionProvider}; with no provider installed the model falls
+back to a fixed placeholder $(0, \SI{1}{\au}, 0)$, which is adequate for the
+magnitude of the term but not for anything else. For a cislunar link
+$2\mu_\odot/c^2 \approx \SI{2.95}{\kilo\meter}$ multiplies a logarithm of
+order \num{1e-5}, giving a few centimetres.
+
+\begin{lstlisting}[language=cpp, caption={Shapiro delay, guarded against the
+degenerate geometry where the log argument is non-positive.},
+label={lst:gnss-shapiro}]
+// cpp/lupnt/measurements/gnss_measurement.cc :: GNSSMeasurements::ComputeShapiroDelay
+Vec3 r_sun = SunPosition(receive_time);
+Real rx_norm = (r_rx_eci - r_sun).norm();
+Real tx_norm = (r_tx_eci - r_sun).norm();
+Real rho = (r_rx_eci - r_tx_eci).norm();
+if (rx_norm <= 0.0 || tx_norm <= 0.0) return Real(0.0);
+
+Real numerator = rx_norm + tx_norm + rho;
+Real denominator = rx_norm + tx_norm - rho;
+if (denominator <= 0.0 || numerator <= 0.0) return Real(0.0);
+
+return 2.0 * Real(GM_SUN) / (Real(C) * Real(C)) * log(numerator / denominator);
+\end{lstlisting}
+
+Only the Sun is modelled. The \code{shapiro\_mu} and
+\code{shapiro\_body\_position} option fields are deprecated placeholders and
+are not read. Earth's contribution to a cislunar link is a few millimetres and
+is omitted.
+
+\subsection{Ionospheric and plasmaspheric delay}
+\label{sec:gnss-plasma}
+
+The dispersive delay of the terrestrial ionosphere and plasmasphere is the
+dominant medium error for a lunar receiver looking back through the Earth's
+plasma envelope. It is represented as a positive \emph{code} delay in metres,
+\begin{equation}
+  \label{eq:gnss-plasma}
+  \Delta\rho_{\mathrm{pl}}
+  = \frac{40.3}{f^{2}} \int_\Gamma n_e \,\dd s \;\ge\; 0 ,
+\end{equation}
+with $n_e$ the electron density along the (possibly bent) ray path $\Gamma$,
+$f$ in \si{\hertz} and $\Delta\rho_{\mathrm{pl}}$ in \si{\meter} when the
+integral is in \si{\per\meter\squared}. Being dispersive, it advances the
+carrier by as much as it delays the code:
+\begin{equation}
+  \label{eq:gnss-plasma-sign}
+  \text{code observable uses } +\Delta\rho_{\mathrm{pl}},
+  \qquad
+  \text{carrier observable uses } -\Delta\rho_{\mathrm{pl}} .
+\end{equation}
+This is the code--carrier divergence that a dual-frequency or
+carrier-smoothing algorithm exploits.
+
+The term is \emph{disabled by default}
+(\code{options.apply\_ionosphere\_plasma\_delay = false}). When enabled,
+\cpp{ComputeIonospherePlasmaDelay} dispatches in strict priority order:
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=1pt]
+  \item \cpp{SetCustomIonospherePlasmaDelayModel} --- a per-link callback
+    $(t_R, \vec{r}_R, \vec{r}_S, f) \mapsto \Delta\rho_{\mathrm{pl}}$;
+  \item \cpp{SetIonospherePlasmaRayTraceOptions} --- the built-in
+    GCPM/IRI ray tracer in
+    \file{cpp/lupnt/environment/plasma/tec/raytrace.cc}, returning either the
+    TEC-only delay or TEC plus the second- and third-order terms according to
+    \code{delay\_mode};
+  \item \code{options.default\_ionosphere\_plasma\_delay\_m} --- a constant.
+\end{enumerate}
+
+The batch variant \cpp{SetBatchCustomIonospherePlasmaDelayModel} is evaluated
+once for all epochs and channels; see \cref{sec:gnss-precompute}. The
+electron-density model, the ray-bending integration and the higher-order terms
+are specified in full in \cref{chap:ionosphere}; this chapter fixes only
+\cref{eq:gnss-plasma-sign}, the interface, and the unit (metres of code delay
+at the channel frequency).
+
+\begin{lupntnote}
+  The ray tracer works in geocentric Earth-fixed coordinates
+  (\code{raytrace\_frame = Frame::ECEF}) and expects $\UTC$ seconds from J2000
+  (\code{raytrace\_epoch\_scale = Time::UTC}), so the measurement model
+  converts both endpoints and the epoch before calling it, and converts
+  nothing back --- the delay is a scalar. Positions are passed in
+  \si{\kilo\meter}.
+\end{lupntnote}
+
+\subsection{Tropospheric delay}
+\label{sec:gnss-tropo}
+
+The troposphere is non-dispersive and is added to both observables with the
+same sign as the Shapiro term. \lupnt{} implements the Saastamoinen zenith
+delay with a $1/\sin e$ mapping \citep{saastamoinen1972},
+\begin{equation}
+  \label{eq:gnss-tropo}
+  \Delta\rho_{\mathrm{tr}}
+  = \frac{1}{\sin e}
+    \left[
+      \frac{\num{0.0022768}\,P}{f(\varphi, h)}
+      + \frac{\num{0.0022768}}{f(\varphi, h)}
+        \left( \frac{1255}{T} + 0.05 \right) e_w
+    \right],
+\end{equation}
+with $e$ the elevation angle, $P$ the total pressure in \si{\hecto\pascal},
+$T$ the temperature in \si{\kelvin}, $e_w$ the water-vapour partial pressure
+from a Tetens saturation formula, and
+$f(\varphi,h) = 1 - \num{0.00266}\cos 2\varphi - \num{2.8e-7} h$ the
+latitude/height gravity factor. The horizon singularity is guarded by clamping
+$\sin e \ge \num{1e-3}$.
+
+\begin{lupntwarning}
+  \cref{eq:gnss-tropo} lives in
+  \file{cpp/lupnt/measurements/ground_station_corrections.cc}
+  (\cpp{TroposphereDelaySaastamoinen}) and is used by the ground-station
+  tracking application, \emph{not} by \cpp{GNSSMeasurements}. The GNSS channel
+  has no troposphere field: the model targets space receivers, whose links do
+  not traverse the neutral atmosphere. A ground-based GNSS receiver simulated
+  with this model will be missing \SIrange{2.3}{25}{\meter} of delay
+  depending on elevation.
+\end{lupntwarning}
+
+\subsection{Phase wind-up}
+\label{sec:gnss-windup}
+
+A right-hand circularly polarised carrier accumulates one cycle of phase per
+relative rotation of the transmit and receive antennas about the line of
+sight. The standard model is
+\begin{equation}
+  \label{eq:gnss-windup}
+  \Delta\phi_{\mathrm{wu}}
+  = \operatorname{sign}\!\bigl(\uvec{u}\transpose(\uvec{D}_S\times\uvec{D}_R)\bigr)
+    \cos^{-1}\!\left(
+      \frac{\uvec{D}_S\transpose\uvec{D}_R}
+           {\lVert \uvec{D}_S\rVert\,\lVert \uvec{D}_R\rVert}
+    \right)
+  \quad\text{[cycle]},
+\end{equation}
+with $\uvec{D}_S$ and $\uvec{D}_R$ the effective dipole vectors of the two
+antennas projected onto the plane normal to $\uvec{u}$, unwrapped in time
+against the previous epoch. \lupnt{} does \emph{not} implement
+\cref{eq:gnss-windup}: there is no wind-up term anywhere in the measurement
+code. Its effect is absorbed into \code{phase\_bias\_cycles} and, over an arc,
+into the estimated ambiguity, which is acceptable while the receiver attitude
+is slowly varying and no cycle-slip reset occurs. It is listed here because it
+is the largest \emph{unmodelled} carrier-phase term for a spinning or
+rapidly slewing receiver --- up to one full cycle, i.e.\ \SI{19}{\centi\meter}
+at L1, per revolution.
+
+% ===========================================================================
+\section{Observation Equations}
+\label{sec:gnss-observables}
+
+Collecting the pieces, with $\lambda = c/f$ and the clock range terms of
+\cref{eq:gnss-rx-clock,eq:gnss-tx-clock-range}, the three observables are as
+follows. Each is emitted only if its \code{GnssObservable} appears in
+\code{options.observables}; the default is all three, in the order
+pseudorange, Doppler, carrier phase.
+
+\subsection{Pseudorange}
+
+\begin{equation}
+  \label{eq:gnss-pseudorange}
+  \boxed{\;
+  P = \rho
+    + \Delta\rho_{\mathrm{Sh}}
+    + \Delta\rho_{\mathrm{pl}}
+    + \Delta\rho_R
+    - \Delta\rho_S \;}
+  \qquad [\si{\meter}]
+\end{equation}
+
+Every term is in metres. The geometric range $\rho$ is the light-time-corrected
+range \cref{eq:gnss-range}; the Shapiro and plasma delays are added because
+both retard the code; the receiver clock is added and the effective
+transmitter clock (bias plus relativity minus group delay) subtracted per
+\cref{sec:gnss-clocks}.
+
+\subsection{Doppler}
+
+\begin{equation}
+  \label{eq:gnss-doppler}
+  \boxed{\;
+  D = -\frac{\dot\rho + \Delta\dot\rho_R - \Delta\dot\rho_S}{\lambda} \;}
+  \qquad [\si{\hertz}]
+\end{equation}
+
+The leading minus sign follows from the $\uvec{u}$ convention of
+\cref{sec:gnss-geometry}: an opening link ($\dot\rho > 0$) produces a negative
+frequency shift. $D$ is the shift of the received carrier relative to the
+nominal frequency $f$, not the received frequency itself. Multiplying by
+$-\lambda$ recovers the pseudorange rate in \si{\meter\per\second}, which is
+the form the Endurance-style single-satellite Doppler navigation problem uses.
+
+\subsection{Carrier phase}
+
+\begin{equation}
+  \label{eq:gnss-carrier}
+  \boxed{\;
+  \Phi = \frac{\rho
+    + \Delta\rho_{\mathrm{Sh}}
+    - \Delta\rho_{\mathrm{pl}}
+    + \Delta\rho_R
+    - \Delta\rho_S}{\lambda}
+    + \phi_0 \;}
+  \qquad [\text{cycle}]
+\end{equation}
+
+with $\phi_0 = \code{phase\_bias\_cycles}$ the fractional (non-integer) bias
+lumping the transmit and receive hardware phase offsets and, in this model,
+the unmodelled wind-up. Note the sign flip on $\Delta\rho_{\mathrm{pl}}$
+relative to \cref{eq:gnss-pseudorange}. When an integer ambiguity is present
+--- either in the channel (\code{integer\_ambiguity\_cycles}) or, taking
+precedence, in the state at \code{indices.carrier\_integer} --- the emitted
+observable is
+\begin{equation}
+  \label{eq:gnss-carrier-meas}
+  \Phi_{\mathrm{meas}} = \Phi + N .
+\end{equation}
+
+\cref{tab:gnss-signs} summarises the sign convention for every term, which is
+the single most error-prone part of any GNSS implementation.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Sign of each term in the three observables. ``$+$'' means the term
+    increases the observable as written; entries in the Doppler column refer
+    to the bracketed range-rate sum of \cref{eq:gnss-doppler}, before the
+    overall $-1/\lambda$.}
+  \label{tab:gnss-signs}
+  \begin{tabular}{llccc}
+    \toprule
+    Term & Field & $P$ & $[\,\cdot\,]$ of $D$ & $\Phi$ \\
+    \midrule
+    geometric range / rate   & ---                             & $+\rho$ & $+\dot\rho$ & $+\rho/\lambda$ \\
+    receiver clock           & state \code{clock\_bias/drift}  & $+$ & $+$ & $+$ \\
+    transmitter clock        & \code{tx\_clock\_bias\_s}       & $-$ & $-$ & $-$ \\
+    transmitter relativity   & \code{relativistic\_correction\_s} & $-$ & $\cdot$ & $-$ \\
+    group delay              & \code{group\_delay\_s}          & $+$ & $\cdot$ & $+$ \\
+    Shapiro                  & \code{shapiro\_delay\_m}        & $+$ & $\cdot$ & $+$ \\
+    ionosphere / plasma      & \code{ionosphere\_plasma\_delay\_m} & $+$ & $\cdot$ & $-$ \\
+    fractional phase bias    & \code{phase\_bias\_cycles}      & $\cdot$ & $\cdot$ & $+$ \\
+    integer ambiguity        & \code{integer\_ambiguity\_cycles} & $\cdot$ & $\cdot$ & $+$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The whole of \cref{eq:gnss-pseudorange,eq:gnss-doppler,eq:gnss-carrier} is
+sixteen lines of code:
+
+\begin{lstlisting}[language=cpp, caption={The three observables.},
+label={lst:gnss-observables}]
+// cpp/lupnt/measurements/gnss_measurement.cc :: GnssMeasurement::ComputeValue
+Vec3 dr = r_rx - r_tx;
+Vec3 dv = v_rx - v_tx;
+Real rho = dr.norm();
+Real rho_dot = dr.dot(dv) / rho;
+
+Real tx_bias_m  = C * channel_.EffectiveTransmitClockBiasSeconds();
+Real tx_drift_mps = C * channel_.EffectiveTransmitClockDrift();
+Real code_delay_m    = channel_.shapiro_delay_m + channel_.ionosphere_plasma_delay_m;
+Real carrier_delay_m = channel_.shapiro_delay_m - channel_.ionosphere_plasma_delay_m;
+Real range_with_clock      = rho + code_delay_m + rx_bias_m - tx_bias_m;
+Real range_rate_with_clock = rho_dot + rx_drift_mps - tx_drift_mps;
+Real lambda = channel_.Wavelength();
+
+value.pseudorange_m = range_with_clock;
+value.doppler_hz = -range_rate_with_clock / lambda;
+value.carrier_phase_cycles
+    = (rho + carrier_delay_m + rx_bias_m - tx_bias_m) / lambda + channel_.phase_bias_cycles;
+value.carrier_integer_cycles = integer_cycles;
+\end{lstlisting}
+
+\begin{lupntnote}
+  The Doppler observable contains no time derivative of the Shapiro or plasma
+  delay. $\dd\Delta\rho_{\mathrm{Sh}}/\dd t$ is of order
+  \SI{1e-5}{\meter\per\second} and negligible;
+  $\dd\Delta\rho_{\mathrm{pl}}/\dd t$ can reach
+  \SIrange{0.01}{0.1}{\meter\per\second} at low geocentric altitude and is a
+  genuine omission for Doppler-only navigation through the plasmasphere.
+\end{lupntnote}
+
+\subsection{Time-differenced carrier phase}
+\label{sec:gnss-tdcp}
+
+The Lunar GNSS ODTS scenario also forms a time-differenced carrier phase
+(TDCP) observable, expressed as a carrier \emph{range} difference in metres
+between consecutive epochs,
+\begin{equation}
+  \label{eq:gnss-tdcp}
+  \Delta\Phi_{k,k-1}
+  = \lambda\bigl(\Phi_k - \Phi_{k-1}\bigr)
+  = \bigl(\rho_k - \rho_{k-1}\bigr)
+  + \bigl(\Delta\rho_{R,k} - \Delta\rho_{R,k-1}\bigr)
+  - \bigl(\Delta\rho_{S,k} - \Delta\rho_{S,k-1}\bigr)
+  + \cdots ,
+\end{equation}
+in which the ambiguity $N$ and the fractional bias $\phi_0$ cancel exactly as
+long as lock is maintained. Because \cref{eq:gnss-tdcp} depends on both the
+current and the previous receiver state, it cannot be processed by a plain
+Kalman update; \lupnt{} processes it with the UDU stochastic-cloning filter
+\citep{iiyama2026scud}, which carries a clone of the previous state in the
+augmented vector. The lunar TDCP positioning and timekeeping results this
+supports are those of \citet{iiyama2024navi}.
+
+% ===========================================================================
+\section{Visibility, Occultation and Channel Gating}
+\label{sec:gnss-visibility}
+
+Given a receiver state, \cpp{BuildChannels} walks every PRN of every attached
+constellation and applies four gates in order. A PRN that fails any gate
+contributes no rows to the measurement vector at that epoch, so the
+measurement dimension changes from epoch to epoch.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[node distance=6mm and 9mm, >=Latex]
+    \node[boxnode] (prn)  {for each PRN\\{\scriptsize of each constellation}};
+    \node[boxnode, right=of prn] (fault) {fault gate\\{\scriptsize \code{IsFaultPrn}}};
+    \node[boxnode, right=of fault] (build) {light time\\{\scriptsize \cpp{BuildChannelForPrn}}};
+    \node[boxnode, below=of build] (vis) {occultation\\{\scriptsize \cpp{ComputeVisibility}}};
+    \node[boxnode, left=of vis] (cn0) {$C/N_0$ gate\\{\scriptsize acquire / track}};
+    \node[boxnode, left=of cn0] (sig) {noise sigmas\\{\scriptsize DLL / FLL / PLL}};
+
+    \draw[flow] (prn) -- (fault);
+    \draw[flow] (fault) -- (build);
+    \draw[flow] (build) -- (vis);
+    \draw[flow] (vis) -- (cn0);
+    \draw[flow] (cn0) -- (sig);
+    \draw[flow] (sig.south) -- ++(0,-0.55)
+      node[boxnode, below, minimum width=3.1cm, anchor=north]
+      {\code{std::vector<GnssChannel>}};
+  \end{tikzpicture}
+  \caption{Channel construction and gating inside
+    \cpp{GNSSMeasurements::BuildChannels}. Each gate can drop the PRN; the
+    surviving channels define the rows of the measurement vector at that
+    epoch.}
+  \label{fig:gnss-pipeline}
+\end{figure}
+
+\subsection{Fault gate}
+
+PRNs registered with \cpp{SetFaultPrns} are skipped before any geometry is
+computed. This is how a satellite outage or a clock-fault scenario is injected
+for the fault-monitoring studies.
+
+\subsection{Body-blocking test}
+\label{sec:gnss-occultation}
+
+Each entry of \cpp{SetOccludingBodies} is a sphere: a radius, and either a
+fixed centre or a per-epoch position callback evaluated once per epoch (not
+once per PRN). \cpp{ComputeVisibility}
+(\file{cpp/lupnt/measurements/comms_utils.cc}) then runs two regimes.
+
+\paragraph{Near-surface endpoints.} An endpoint with
+$\lVert \vec{r} - \vec{r}_{\mathrm{body}} \rVert < R + h_{\min}$ (default
+$h_{\min} = \SI{10}{\kilo\meter}$) is treated as a surface point, and the test
+becomes an elevation mask. With $\vec{r}_{12} = \vec{r}_2 - \vec{r}_1$ and
+$\vec{r}_{1b} = \vec{r}_{\mathrm{body}} - \vec{r}_1$,
+\begin{equation}
+  \label{eq:gnss-elevation}
+  e = \cos^{-1}\!\left(
+      \frac{\vec{r}_{12}\transpose \vec{r}_{1b}}
+           {\lVert\vec{r}_{12}\rVert\,\lVert\vec{r}_{1b}\rVert}
+    \right) - \frac{\pi}{2},
+  \qquad
+  \text{visible} \iff e > e_{\min} .
+\end{equation}
+$e$ is measured from the local horizon plane, positive upward. The default
+mask is $e_{\min} = \SI{5}{\degree}$; the lunar-surface studies of
+\citet[Ch.~6]{iiyama2026thesis} relax it to $\SI{-10}{\degree}$ to admit the
+grazing rays that dominate a lunar user's sidelobe geometry.
+
+\paragraph{Space-to-space links.} If neither endpoint is near the surface, the
+test is a tangent-line occlusion test. With $\vec{r} = \vec{r}_2 - \vec{r}_1$
+and $\vec{r}_{1b} = \vec{r}_1 - \vec{r}_{\mathrm{body}}$,
+\begin{align}
+  \label{eq:gnss-tangent}
+  \theta_1 &= \cos^{-1}\!\left(
+      \frac{-\vec{r}_{1b}\transpose\vec{r}}
+           {\lVert\vec{r}\rVert\,\lVert\vec{r}_{1b}\rVert} \right),
+  &
+  \theta_2 &= \sin^{-1}\!\left(
+      \frac{R}{\lVert\vec{r}_{1b}\rVert} \right),
+  &
+  d_{\mathrm{hor}} &= \sqrt{\lVert\vec{r}_{1b}\rVert^2 - R^2},
+\end{align}
+and the link is \emph{blocked} when
+\begin{equation}
+  \label{eq:gnss-occulted}
+  \theta_1 < \theta_2
+  \quad\text{and}\quad
+  \lVert\vec{r}\rVert > d_{\mathrm{hor}} .
+\end{equation}
+$\theta_2$ is the angular radius of the body seen from $\vec{r}_1$ and
+$\theta_1$ the angle between the line of sight and the direction to the body
+centre, so the first condition says the ray points inside the body's angular
+disc; the second says the far endpoint is beyond the tangent point rather than
+in front of the body. Both are needed --- a receiver between the transmitter
+and the body is not occulted even though the ray points at the body.
+
+\begin{lstlisting}[language=cpp, caption={Space-to-space occultation test.},
+label={lst:gnss-visibility}]
+// cpp/lupnt/measurements/comms_utils.cc :: ComputeVisibility
+Vec3 r = r2 - r1;
+Real r_norm = r.norm();
+Vec3 r1body = r1 - r_body;
+Real dot_r_r1b = -r1body.dot(r);
+Real theta1 = acos(clamp(dot_r_r1b / r_norm / r1body_norm, -1.0, 1.0));
+Real theta2 = asin(clamp(R_body / r1body_norm, -1.0, 1.0));
+Real r1_to_horizon = sqrt(r1body_norm * r1body_norm - R_body * R_body);
+if (theta1 < theta2 && r_norm > r1_to_horizon) return false;
+
+return true;
+\end{lstlisting}
+
+The body is a sphere with no atmosphere and no terrain: the test is purely
+geometric, and an Earth-limb-grazing ray is declared visible with no
+refraction, defocusing or atmospheric attenuation applied. For lunar users the
+Moon is entered with its mean radius $R = \code{R\_MOON}$, so terrain relief of
+a few kilometres is absorbed into the sphere radius.
+
+\subsection{Boresight angles and the transmitter body frame}
+\label{sec:gnss-attitude}
+
+A surviving link still has to be strong enough to track, and the transmit gain
+of a GNSS satellite varies by \SI{30}{\dB} between the main lobe and the
+sidelobes a lunar receiver actually uses. The gain is a table lookup in the
+satellite's yaw-steering body frame, so that frame must be built first.
+
+\cpp{ComputeCN0} transforms the transmitter state, the receiver position and
+the Sun position from \code{options.frame} into \code{Frame::GCRF} before
+building the attitude, because ANTEX-derived patterns are defined in an
+Earth-centred inertial frame. The orthonormal triad is
+\begin{equation}
+  \label{eq:gnss-attitude}
+  \uvec{e}_z = \widehat{-\vec{r}_S}, \qquad
+  \uvec{e}_y = \widehat{\uvec{e}_z \times \widehat{(\vec{r}_\odot - \vec{r}_S)}}, \qquad
+  \uvec{e}_x = \widehat{\uvec{e}_y \times \uvec{e}_z},
+\end{equation}
+i.e.\ $\uvec{e}_z$ along nadir (the antenna boresight), $\uvec{e}_y$ along the
+solar-panel axis and $\uvec{e}_x$ completing the right-handed triad. The
+off-boresight and azimuth angles of the transmitter-to-receiver line of sight
+$\uvec{u}$ are then
+\begin{equation}
+  \label{eq:gnss-boresight}
+  \varphi_{\mathrm{tx}} = \cos^{-1}\!\bigl(\uvec{u}\transpose\uvec{e}_z\bigr),
+  \qquad
+  \theta_{\mathrm{tx}} = \atantwo\!\bigl(\uvec{u}\transpose\uvec{e}_y,\ \uvec{u}\transpose\uvec{e}_x\bigr),
+\end{equation}
+and the receiver off-boresight angle, measured from the receiver's pointing
+target $\vec{b}$ (the Moon or Earth centre, supplied by
+\cpp{SetBoresightTargetProvider}), is
+\begin{equation}
+  \label{eq:gnss-boresight-rx}
+  \varphi_{\mathrm{rx}}
+  = \cos^{-1}\!\left(
+      \widehat{(\vec{b} - \vec{r}_R)}\transpose\,\widehat{(\vec{r}_S - \vec{r}_R)}
+    \right).
+\end{equation}
+
+The velocity-aware overload derives the same frame from the documented nominal
+yaw-steering law,
+\begin{equation}
+  \label{eq:gnss-yaw}
+  \psi_{\mathrm{nom}} = \atantwo\bigl(-\tan\beta,\ \sin\mu\bigr),
+\end{equation}
+with $\beta$ the Sun elevation above the orbital plane and $\mu$ the orbit
+angle from the midnight point, then rotates the orbital reference frame
+($\uvec{e}_x^{\mathrm{ref}} = \widehat{\vec{v}_S}$) about nadir by
+$\psi_{\mathrm{nom}}$. The two constructions are numerically identical, since
+the nominal yaw law is by definition the yaw that keeps the panels
+Sun-pointing \citep{kouba2009yaw,cheng2025yaw}.
+
+\begin{lstlisting}[language=cpp, caption={Body frame, boresight angles and
+link budget for one channel.}, label={lst:gnss-cn0}]
+// cpp/lupnt/measurements/gnss_measurement.cc :: GNSSMeasurements::ComputeCN0
+GnssAttitude::Compute(rv_tx_gcrf.head(3), Vec3(rv_tx_gcrf.tail(3)), r_sun_gcrf, ex, ey, ez);
+Real phi_tx = safe_acos(u_tx2rx_gcrf.dot(ez));
+Real theta_tx = atan2(u_tx2rx_gcrf.dot(ey), u_tx2rx_gcrf.dot(ex));
+Real phi_rx = safe_acos(u_rx2body.dot(u_rx2tx));
+
+Real G_tx = constellation->GetTransmitterAntenna(channel.prn, channel.frequency)
+                .ComputeGain(theta_tx, phi_tx);
+Real G_rx = rx_antenna_.ComputeGain(0.0, phi_rx);
+Real P_tx = constellation->GetTransmitPowerDbw(channel.prn, channel.frequency);
+
+return LinkBudget(P_tx, G_tx, G_rx, range, channel.frequency, rx_params_);
+\end{lstlisting}
+
+Setting \code{options.tx\_yaw\_model = TxYawModel::DEDICATED} replaces
+\cref{eq:gnss-yaw} with the block-specific eclipse yaw law of
+\cpp{GnssYawSteering}
+(\cpp{Gps3EclipseYawAngle} for GPS,
+\cpp{GalileoIovEclipseYawAngle} for Galileo, nominal otherwise), evaluated
+continuously from geometry. These laws differ from nominal only near the
+orbit noon/midnight singularity at small $\beta$, where the real satellite
+rate-limits its yaw; because there is no maneuver-window state machine, the
+result approximates the eclipse-season attitude rather than reproducing a
+maneuver schedule. \citet[Ch.~6.4.3]{iiyama2026thesis} assumes nominal yaw
+steering throughout.
+
+\subsection{Antenna gain gating}
+\label{sec:gnss-gain}
+
+\cpp{Antenna::ComputeGain} (\file{cpp/lupnt/measurements/antenna.cc})
+interpolates the measured pattern, wrapping $\theta$ to $[0,360]^\circ$ and
+$\varphi$ to $[-180,180]^\circ$:
+
+\begin{lstlisting}[language=cpp, caption={Pattern lookup, with the implicit
+sidelobe cutoff.}, label={lst:gnss-antenna}]
+// cpp/lupnt/measurements/antenna.cc :: Antenna::ComputeGain
+Real gain = 0.0;
+if (n_dim_ == 0) return gain;                       // omni antenna: G == 0 dB
+theta = WrapToTwoPi(theta) * DEG;
+phi = WrapToPi(phi) * DEG;
+if (phi > phi_max_ || phi < -phi_max_) return NAN;  // off-pattern -> NaN
+if (phi < 0 && phi_(0) >= 0) phi = -phi;            // symmetry
+if (n_dim_ == 2) gain = LinearInterp2d(phi_, theta_, gain_, phi.val(), theta.val());
+else if (n_dim_ == 1) gain = LinearInterp1d(phi_, gain_, phi.val());
+return gain;
+\end{lstlisting}
+
+An empty antenna name gives an omnidirectional pattern ($G \equiv 0$
+\si{\dB}), and a direction outside the tabulated $\varphi$ range returns
+\code{NaN}. The \code{NaN} propagates through the link budget, and the
+gate below drops the channel, so the pattern's angular extent acts as an
+implicit sidelobe cutoff. The same happens when
+\cpp{HasTransmitterInfo} is false for a PRN/frequency pair: $C/N_0$ is
+\code{NaN} and the channel is dropped.
+
+The received carrier-to-noise density follows the closed-form budget
+\citep[Eq.~6.59]{iiyama2026thesis}
+\begin{equation}
+  \label{eq:gnss-cn0}
+  \left(\frac{C}{N_0}\right)_{\si{\dBHz}}
+  = P_{\mathrm{tx}}
+  + G_{\mathrm{tx}}(\theta_{\mathrm{tx}}, \varphi_{\mathrm{tx}})
+  + G_{\mathrm{rx}}(\varphi_{\mathrm{rx}})
+  - L_{\mathrm{fs}} - L_{\mathrm{atm}} - L_{\mathrm{ad}} - L_{\mathrm{pol}}
+  - 10\log_{10} k_B - 10\log_{10} T_{\mathrm{eff}} ,
+\end{equation}
+with $L_{\mathrm{fs}} = 20\log_{10}(4\pi \rho f / c)$ the free-space path
+loss. The EIRP values, the measured gain patterns and the mapping from
+$C/N_0$ to the DLL, FLL and PLL noise standard deviations are specified in
+\cref{chap:link-budget}; here they matter only through the gate and through
+the diagonal of the measurement covariance.
+
+\subsection{Acquisition and tracking hysteresis}
+
+The $C/N_0$ gate is stateful. A PRN not currently in lock must exceed the
+acquisition threshold; one already in lock need only exceed the (lower)
+tracking threshold:
+\begin{equation}
+  \label{eq:gnss-cn0-gate}
+  \text{keep} \iff
+  \frac{C}{N_0} >
+  \begin{cases}
+    (C/N_0)_{\mathrm{acq}} = \SI{22}{\dBHz}, & \text{PRN not in lock},\\[2pt]
+    (C/N_0)_{\mathrm{trk}} = \SI{20}{\dBHz}, & \text{PRN in lock}.
+  \end{cases}
+\end{equation}
+The lock set \code{tracking\_prns\_} is rebuilt after every
+\cpp{BuildChannels} call from the surviving channels, and is cleared by
+\cpp{ResetTracking}. The \SI{2}{\dB} hysteresis reproduces the observed
+behaviour of a real receiver that holds a weak satellite it has already
+acquired, and prevents the rapid acquire/drop chatter that a single threshold
+produces at the sidelobe boundaries. The comparison is written
+\code{!(cn0 > threshold)}, so a \code{NaN} $C/N_0$ is dropped rather than
+kept. Setting \code{options.apply\_cn0\_threshold = false} disables the gate
+entirely, and \cpp{SetCN0Threshold} collapses both thresholds to one value
+(the deprecated single-threshold behaviour).
+
+% ===========================================================================
+\section{Measurement Jacobians}
+\label{sec:gnss-jacobian}
+
+\cpp{GnssMeasurement::ComputeVector} returns $\vec{y} = h(\vec{x})$ and, when
+asked, the analytic Jacobian $\mat{H} = \partial h/\partial\vec{x}$ with
+$|\code{observables}|$ rows and $\dim\vec{x}$ columns, zero-initialised so
+that any state component not named in \code{indices} keeps a zero column.
+
+\subsection{Building blocks}
+
+Differentiating \cref{eq:gnss-range,eq:gnss-rangerate} with respect to the
+receiver position and velocity, holding the transmitter state fixed,
+\begin{align}
+  \label{eq:gnss-drho}
+  \frac{\partial \rho}{\partial \vec{r}_R} &= \uvec{u}\transpose,
+  &
+  \frac{\partial \rho}{\partial \vec{v}_R} &= \vec{0}\transpose, \\
+  \label{eq:gnss-drhodot}
+  \frac{\partial \dot\rho}{\partial \vec{r}_R}
+    &= \left( \frac{\Delta\vec{v}}{\rho}
+       - \frac{\dot\rho\,\Delta\vec{r}}{\rho^{2}} \right)^{\!\mathsf{T}},
+  &
+  \frac{\partial \dot\rho}{\partial \vec{v}_R} &= \uvec{u}\transpose .
+\end{align}
+\cref{eq:gnss-drhodot} can equivalently be written
+\begin{equation}
+  \label{eq:gnss-drhodot-proj}
+  \frac{\partial \dot\rho}{\partial \vec{r}_R}
+  = \frac{1}{\rho}
+    \left[ \bigl( \mat{I} - \uvec{u}\,\uvec{u}\transpose \bigr) \Delta\vec{v}
+    \right]^{\mathsf{T}},
+\end{equation}
+which makes the structure explicit: only the component of the relative
+velocity \emph{perpendicular} to the line of sight changes the range rate when
+the receiver moves, and the sensitivity falls off as $1/\rho$.
+
+The clock scale factors are the derivatives of \cref{eq:gnss-clock-units},
+\begin{equation}
+  \label{eq:gnss-clock-deriv}
+  \frac{\partial \Delta\rho_R}{\partial b_R}
+    = c\,\frac{\partial \Delta t_R}{\partial b_R}
+    = \frac{c}{s(\text{unit})},
+  \qquad
+  \frac{\partial \Delta\dot\rho_R}{\partial d_R}
+    = \frac{c}{s(\text{unit})},
+\end{equation}
+where $s(\text{unit})$ is the seconds-to-unit scale: $s = 1$ for
+\code{SECONDS}, so the factor is $c$; $s = 1/c$ for \code{METERS}, so the
+factor is $1$; and $s = \num{e-3}/c$ for \code{KILOMETERS}.
+
+\subsection{Rows}
+
+\begin{equation}
+  \label{eq:gnss-jac-pseudorange}
+  \frac{\partial P}{\partial \vec{r}_R} = \uvec{u}\transpose,
+  \qquad
+  \frac{\partial P}{\partial b_R} = \frac{c}{s},
+  \qquad
+  \frac{\partial P}{\partial \vec{v}_R} = \vec{0}\transpose,
+  \qquad
+  \frac{\partial P}{\partial d_R} = 0 ;
+\end{equation}
+\begin{equation}
+  \label{eq:gnss-jac-doppler}
+  \frac{\partial D}{\partial \vec{r}_R}
+    = -\frac{1}{\lambda}\left( \frac{\Delta\vec{v}}{\rho}
+       - \frac{\dot\rho\,\Delta\vec{r}}{\rho^{2}} \right)^{\!\mathsf{T}},
+  \qquad
+  \frac{\partial D}{\partial \vec{v}_R} = -\frac{1}{\lambda}\uvec{u}\transpose,
+  \qquad
+  \frac{\partial D}{\partial d_R} = -\frac{c}{\lambda s} ;
+\end{equation}
+\begin{equation}
+  \label{eq:gnss-jac-carrier}
+  \frac{\partial \Phi}{\partial \vec{r}_R} = \frac{1}{\lambda}\uvec{u}\transpose,
+  \qquad
+  \frac{\partial \Phi}{\partial b_R} = \frac{c}{\lambda s},
+  \qquad
+  \frac{\partial \Phi_{\mathrm{meas}}}{\partial N} = 1 .
+\end{equation}
+
+For the default eight-state layout $\vec{x} = [\vec{r}_R;\ \vec{v}_R;\ b_R;\
+d_R]$ with the clock in seconds, the full single-channel Jacobian is
+\begin{equation}
+  \label{eq:gnss-jac-block}
+  \mat{H} =
+  \begin{bmatrix}
+    \uvec{u}\transpose & \vec{0}\transpose & c & 0 \\[4pt]
+    -\frac{1}{\lambda}\left(\frac{\Delta\vec{v}}{\rho}
+      - \frac{\dot\rho\,\Delta\vec{r}}{\rho^{2}}\right)^{\!\mathsf{T}}
+      & -\frac{1}{\lambda}\uvec{u}\transpose & 0 & -\frac{c}{\lambda} \\[6pt]
+    \frac{1}{\lambda}\uvec{u}\transpose & \vec{0}\transpose & \frac{c}{\lambda} & 0
+  \end{bmatrix},
+\end{equation}
+and \cpp{GNSSMeasurements::ComputeFromChannels} stacks one such block per
+surviving channel, giving a $3 n_{\mathrm{ch}} \times \dim\vec{x}$ matrix at
+that epoch.
+
+\begin{lstlisting}[language=cpp, caption={Analytic Jacobian rows.},
+label={lst:gnss-jacobian}]
+// cpp/lupnt/measurements/gnss_measurement.cc :: GnssMeasurement::ComputeVector
+Vec3 u = dr / rho;
+Vec3 d_rhodot_dr = dv / rho - rho_dot * dr / (rho * rho);
+Vec3 d_rhodot_dv = u;
+Real db_m  = ClockBiasMetersDerivative(options.clock_bias_unit);
+Real dd_mps = ClockDriftMetersPerSecondDerivative(options.clock_bias_unit);
+
+case GnssObservable::PSEUDORANGE:
+  H->block(row, idx.position, 1, 3) = ToRowVec3d(u);
+  if (idx.clock_bias >= 0 && idx.clock_bias < user_state.size())
+    (*H)(row, idx.clock_bias) = db_m.val();
+  break;
+
+case GnssObservable::DOPPLER:
+  H->block(row, idx.position, 1, 3) = ToRowVec3d(-d_rhodot_dr / lambda);
+  H->block(row, idx.velocity, 1, 3) = ToRowVec3d(-d_rhodot_dv / lambda);
+  if (idx.clock_drift >= 0 && idx.clock_drift < user_state.size())
+    (*H)(row, idx.clock_drift) = (-dd_mps / lambda).val();
+  break;
+
+case GnssObservable::CARRIER_PHASE:
+  H->block(row, idx.position, 1, 3) = ToRowVec3d(u / lambda);
+  if (idx.clock_bias >= 0 && idx.clock_bias < user_state.size())
+    (*H)(row, idx.clock_bias) = (db_m / lambda).val();
+  if (idx.carrier_integer >= 0 && idx.carrier_integer < user_state.size())
+    (*H)(row, idx.carrier_integer) = 1.0;
+  break;
+\end{lstlisting}
+
+\subsection{What the Jacobian omits}
+
+\cref{eq:gnss-jac-block} is a \emph{partial} derivative that holds the
+transmitter state, the delays and the noise model fixed. Omitted are:
+
+\begin{itemize}[leftmargin=1.4em,itemsep=1pt]
+  \item the light-time coupling
+    $\partial \vec{r}_S / \partial \vec{r}_R
+     = \vec{v}_S\,\uvec{u}\transpose / c$, of relative size
+    $\lVert\vec{v}_S\rVert/c \approx \num{1.3e-5}$;
+  \item $\partial \Delta\rho_{\mathrm{Sh}} / \partial \vec{r}_R$, of order
+    \num{1e-9};
+  \item $\partial \Delta\rho_{\mathrm{pl}} / \partial \vec{r}_R$, which is not
+    even available in closed form for the ray-traced model;
+  \item the dependence of $C/N_0$, and hence of the measurement covariance
+    $\mat{R}$, on the receiver state --- a genuine effect near a gain-pattern
+    null, but one that a Kalman filter is not structured to use anyway;
+  \item any derivative with respect to the transmitter clock, since the
+    transmitter clock is not estimated.
+\end{itemize}
+
+All of these are far below the linearisation error of an extended Kalman
+filter at the position uncertainties of interest. When exact derivatives are
+required, the whole model is written in the forward-mode \code{Real} scalar
+type and can be differentiated end to end by automatic differentiation
+\citep{leal2018autodiff} instead of using \cref{eq:gnss-jac-block}.
+
+\subsection{Measurement covariance}
+
+The diagonal covariance is built from the per-channel sigmas
+$\sigma_P$, $\sigma_D$, $\sigma_\Phi$ that
+\cpp{BuildChannels} derived from $C/N_0$ through the DLL, FLL and PLL noise
+formulas of \cref{chap:link-budget}:
+\begin{equation}
+  \label{eq:gnss-covariance}
+  \mat{R} = \diag\bigl(
+    \sigma_{P,1}^2,\ \sigma_{D,1}^2,\ \sigma_{\Phi,1}^2,\ \ldots,\
+    \sigma_{P,n}^2,\ \sigma_{D,n}^2,\ \sigma_{\Phi,n}^2 \bigr).
+\end{equation}
+A sigma that is not finite and positive is replaced by $1$ in the observable's
+own unit, so a channel with no link-budget information contributes a
+unit-weight row rather than a singular covariance. The Doppler and
+carrier-phase sigmas are stored in \si{\hertz} and cycles respectively,
+obtained by dividing the range-rate and phase sigmas by $\lambda$. Correlation
+between observables of the same channel, and between channels, is not
+modelled.
+
+% ===========================================================================
+\section{Online and Precomputed Evaluation}
+\label{sec:gnss-precompute}
+
+Two evaluation paths must agree. The online path computes
+$\mathcal{Y}(t_i, \vec{x}_i) = \cpp{Compute}(t_i, \vec{x}_i)$ one epoch at a
+time, and is what a filter calls through \cpp{CreateFunction}. The precompute
+path evaluates the same epochs for vectors \code{receive\_times} and
+\code{user\_states} at once.
+
+They differ only when a \emph{batch} plasma provider is installed. A ray-traced
+delay is far too expensive to evaluate inside a filter update, and a batch
+provider may want the whole epoch/channel grid at once (for example to
+vectorise the ray tracing, or to farm it out to a separate process). In that
+case \cpp{Precompute} runs in three ordered stages:
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=1pt]
+  \item build all channels for all epochs with
+    \code{compute\_ionosphere\_plasma\_delay = false}, so visibility, light
+    time and the transmitter clock terms are resolved but
+    $\Delta\rho_{\mathrm{pl}} = 0$;
+  \item call the batch provider once with
+    (\code{receive\_times}, \code{user\_states}, \code{channels\_by\_epoch})
+    and write the returned $\Delta\rho_{\mathrm{pl},ij}$ into each channel,
+    with the epoch and channel counts checked;
+  \item evaluate the observables from the patched channels.
+\end{enumerate}
+
+This ordering is what avoids an online ray trace whose result would only be
+overwritten by the batch result.
+
+\begin{lstlisting}[language=cpp, caption={Batch plasma staging inside
+\cpp{Precompute}.}, label={lst:gnss-precompute}]
+// cpp/lupnt/measurements/gnss_measurement.cc :: GNSSMeasurements::Precompute
+if (options_.apply_ionosphere_plasma_delay && batch_custom_ionosphere_plasma_delay_model_) {
+  std::vector<std::vector<GnssChannel>> channels_by_epoch;
+  for (size_t i = 0; i < receive_times.size(); i++)
+    channels_by_epoch.push_back(BuildChannels(receive_times[i], user_states[i], false));
+
+  std::vector<std::vector<Real>> delays_m = batch_custom_ionosphere_plasma_delay_model_(
+      receive_times, user_states, channels_by_epoch);
+
+  for (size_t i = 0; i < channels_by_epoch.size(); i++) {
+    for (size_t j = 0; j < channels_by_epoch[i].size(); j++)
+      channels_by_epoch[i][j].ionosphere_plasma_delay_m = delays_m[i][j];
+    MatXd H;
+    precomputed_.push_back(ComputeFromChannels(receive_times[i], user_states[i],
+                                               channels_by_epoch[i],
+                                               compute_jacobians ? &H : nullptr));
+  }
+  return precomputed_;
+}
+\end{lstlisting}
+
+In the staged Lunar GNSS ODTS scenario the same contract is realised across a
+file boundary: \cpp{LunarGnssOdtsApp::Precompute} writes all
+light-time-corrected links with zero plasma delay, the Python driver
+\file{python/examples/ex6_precompute.py} fills the delay terms with GCPM/IRI
+ray tracing (\cref{chap:ionosphere}), and \cpp{LunarGnssOdtsApp::Step} merges
+the delay
+file back into the truth channels before generating pseudorange, Doppler and
+optional TDCP measurements.
+
+\cref{tab:gnss-options} lists the configuration knobs that change the model's
+behaviour.
+
+\begin{table}[htbp]
+  \centering
+  \caption{\cpp{GnssMeasurementOptions} --- the knobs that change the model.}
+  \label{tab:gnss-options}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{p{0.36\textwidth}lL}
+    \toprule
+    Option & Default & Effect \\
+    \midrule
+    \code{observables} & all three & selects and orders the emitted rows \\
+    \code{indices} & $0,3,6,7,-1$ & state layout; a negative index drops the term \\
+    \code{clock\_bias\_unit} & \code{SECONDS} & unit of $b_R$, $d_R$; sets the Jacobian scale \\
+    \code{receive\_time\_scale} & \code{TAI} & scale of the epochs passed in \\
+    \code{ephemeris\_time\_scale} & \code{TAI} & must be \code{TAI}; asserted \\
+    \code{frame} & \code{ECI} & common frame of receiver and transmitter \\
+    \code{solve\_light\_time} & true & enables \cref{eq:gnss-lighttime-offset} \\
+    \code{recompute\_transmit\_time}\newline\code{\_from\_ephemeris} & false & re-solve light time per state evaluation \\
+    \code{light\_time\_max\_iterations} & 10 & iteration cap \\
+    \code{light\_time\_tolerance\_s} & \num{1e-11} & $\epsilon_{\mathrm{lt}}$ of \cref{eq:gnss-lighttime-stop} \\
+    \code{apply\_transmitter\_relativity} & true & enables \cref{eq:gnss-relativity} \\
+    \code{apply\_shapiro\_delay} & true & enables \cref{eq:gnss-shapiro} \\
+    \code{apply\_visibility} & true & enables the occultation gate \\
+    \code{apply\_cn0\_threshold} & true & enables \cref{eq:gnss-cn0-gate} \\
+    \code{cn0\_acquisition\_threshold\_dbhz} & \num{22} & acquire threshold [\si{\dBHz}] \\
+    \code{cn0\_tracking\_threshold\_dbhz} & \num{20} & hold threshold [\si{\dBHz}] \\
+    \code{apply\_ionosphere\_plasma\_delay} & false & enables \cref{eq:gnss-plasma} \\
+    \code{default\_ionosphere\_plasma\_delay\_m} & \num{0} & constant fallback delay \\
+    \code{tx\_yaw\_model} & \code{NOMINAL} & \code{NOMINAL} or \code{DEDICATED} eclipse yaw \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+% ===========================================================================
+\section{Model Boundaries}
+\label{sec:gnss-boundaries}
+
+\subsection{What is approximated}
+
+\begin{description}[leftmargin=1.4em,style=nextline,font=\normalfont\itshape]
+  \item[Transmitter ephemeris interpolation]
+    In \cpp{FitStateHistoryChebyshev} the constellation-level fit is currently
+    degree one over one tabulation step, i.e.\ piecewise-linear in practice.
+    The
+    chord error is $\tfrac{1}{8}\lVert\ddot{\vec{r}}_S\rVert (\Delta t)^2$;
+    for a GPS satellite ($\lVert\ddot{\vec{r}}_S\rVert \approx
+    \SI{0.56}{\meter\per\second\squared}$) this is about \SI{0.7}{\meter} at
+    $\Delta t = \SI{10}{\second}$ and \SI{70}{\meter} at
+    $\Delta t = \SI{100}{\second}$. The tabulation grid, not the fit, sets the
+    accuracy. The SP3 loader's own fit is different and much better: degree up
+    to 11 over eight steps, sampled by a tenth-order Lagrange interpolant,
+    with velocity as the exact analytic derivative.
+  \item[Light time]
+    One-way, geometric, iterated to \SI{1e-11}{\second} $\approx
+    \SI{3}{\milli\meter}$. Solved in the ephemeris frame with no
+    frame-rotation term, which is exact for an inertial frame and would not be
+    for an Earth-fixed one.
+  \item[Relativity]
+    The transmitter contribution is the periodic
+    eccentricity term \cref{eq:gnss-relativity} plus the Sun's Shapiro delay.
+    The constant fractional-rate offset of the satellite oscillator is assumed
+    to be already absorbed into the broadcast/precise clock, per
+    \citet{icdgps200}. Earth's Shapiro delay, second-order Doppler on the
+    receiver clock, and the frame-dependence noted in
+    \cref{sec:gnss-clocks} are not modelled here; see
+    \cref{chap:time-conversions} for the receiver-side timescale treatment.
+  \item[Occulting bodies]
+    Spheres with a single radius and an optional elevation mask. No terrain,
+    no atmosphere, no refraction, no limb attenuation, no penumbra.
+  \item[Transmitter attitude]
+    Nominal yaw steering, with an optional continuously-evaluated
+    block-specific eclipse law that is not a maneuver schedule. Antenna phase
+    variations (PCV) are not applied --- only the constant phase-centre offset
+    (\cref{eq:gnss-pco}) is.
+  \item[Noise]
+    Diagonal, derived from $C/N_0$ through steady-state tracking-loop
+    formulas. No multipath, no inter-channel or inter-observable correlation,
+    no time correlation, no cycle slips.
+\end{description}
+
+\subsection{What is omitted}
+
+\begin{itemize}[leftmargin=1.4em,itemsep=1pt]
+  \item \textbf{Carrier phase wind-up} (\cref{sec:gnss-windup}). Absorbed into
+    $\phi_0$ and the ambiguity; up to one cycle per receiver revolution.
+  \item \textbf{Troposphere} in the GNSS path (\cref{sec:gnss-tropo}). The
+    Saastamoinen model exists but is wired only into the ground-station
+    application.
+  \item \textbf{Group delay}. The \code{group\_delay\_s} field is honoured by
+    \cref{eq:gnss-tx-clock} but is never populated from the navigation
+    message; it defaults to zero. Single-frequency users of a real broadcast
+    clock therefore inherit a systematic bias of a few nanoseconds.
+  \item \textbf{Solid-Earth and ocean loading, antenna PCV, receiver
+    hardware delays.} Not applicable to a space receiver, or absorbed into
+    $\phi_0$.
+  \item \textbf{Time derivatives of the medium delays} in the Doppler
+    observable.
+  \item \textbf{Multipath and near-field effects.} No surface model is coupled
+    to the measurement path.
+  \item \textbf{GLONASS.} Its FDMA frequency plan and tabulated-state
+    navigation message are not supported by \cpp{RinexNavLoader}.
+  \item \textbf{Galileo GST/GPST (GAGP) correction}, worth well under
+    \SI{100}{\nano\second} of satellite clock.
+\end{itemize}
+
+\subsection{Expected accuracy}
+
+With a precise (SP3 plus ANTEX) constellation, a dense ephemeris grid, Shapiro
+enabled and plasma supplied by the ray tracer of \cref{chap:ionosphere}, the
+modelled pseudorange reproduces the geometric truth at the level of the
+ephemeris interpolation error --- decimetres for a
+\SIrange{10}{30}{\second} grid --- plus the plasma model error, which
+dominates at low geocentric altitude and is characterised in
+\cref{chap:ionosphere}. Carrier phase is consistent with pseudorange to the
+same level, with the code--carrier divergence
+$2\Delta\rho_{\mathrm{pl}}$ correctly signed. Doppler carries an additional
+unmodelled $\dd\Delta\rho_{\mathrm{pl}}/\dd t$ of order
+\SI{0.01}{\meter\per\second}.
+
+With a broadcast (BRDC) constellation the error is deliberately larger and is
+the point of the exercise: it is the real signal-in-space error, roughly
+\SIrange{0.5}{2}{\meter} in orbit and \SIrange{1}{3}{\meter} in clock, and
+that is what the filter must be robust to. The synthetic SISE of
+\cref{eq:gnss-sise} substitutes for it at future epochs with per-PRN
+constant draws rather than the true time-correlated process, which is
+optimistic over arcs longer than a few hours.
+
+The navigation performance these numbers support --- lunar orbit
+determination at the tens-of-metres level and clock estimation at the
+nanosecond level from terrestrial GNSS sidelobes --- is reported in
+\citet{iiyama2024navi} and \citet{iiyama2026scud}, and analysed in full in
+\citet[Ch.~6]{iiyama2026thesis}.

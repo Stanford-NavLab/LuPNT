@@ -1,0 +1,939 @@
+\chapter{Time Systems and Conversions}
+\label{chap:time-conversions}
+
+This chapter fixes the mathematical contract for \lupnt{}'s time systems: the
+epoch origin, the scale definitions, the exact offset/rate/periodic equations,
+the body and reference system each scale is proper to, and the leap-second and
+Earth-orientation inputs. Every conversion is tied to the function that
+implements it in \file{cpp/lupnt/conversions/time_conversions.h} and
+\file{cpp/lupnt/conversions/epoch.h}; the Python surface is
+\py{pnt.convert\_time} and friends from
+\file{python/bindings/py_time_converter.cc}.
+
+The relativistic content follows \citep[Ch.~2.3]{iiyama2026thesis} and the
+lunar time-scale formulation of \citet{turyshev2026cislunar}, with the
+barycentric relation taken from the DE440 ephemeris paper
+\citep{park2021de440}. This chapter states what the implementation is
+supposed to compute.
+
+\section{The unit and argument contract}
+\label{sec:tc-contract}
+
+Every scalar time in the API is a \emph{coordinate offset in seconds from the
+J2000 epoch of the corresponding scale}, not a calendar date. The J2000 origin
+is
+%
+\begin{equation}
+\label{eq:tc-j2000}
+  \mathrm{MJD}_{\mathrm{J2000}} = 51544.5\ \text{(TT days)},
+  \qquad
+  \mathrm{JD}_{\mathrm{J2000}}  = 2451545.0\ \text{(TT days)} .
+\end{equation}
+%
+The Julian and Modified Julian bridges are exact linear maps,
+%
+\begin{equation}
+\label{eq:tc-mjd}
+  t = \bigl(\mathrm{MJD} - 51544.5\bigr)\cdot 86400,
+  \qquad
+  \mathrm{MJD} = t/86400 + 51544.5 ,
+\end{equation}
+%
+implemented as one-liners:
+
+\begin{lstlisting}[language=cpp,caption={Julian-date bridges.},label={lst:tc-mjd}]
+// cpp/lupnt/conversions/time_conversions.cc :: MjdToTime / TimeToMjd
+Real MjdToTime(Real mjd) { return (mjd - MJD_J2000_TT) * SECS_DAY; }
+Real TimeToMjd(Real t)   { return t / SECS_DAY + MJD_J2000_TT; }
+\end{lstlisting}
+
+The \code{Time} enum in \file{cpp/lupnt/core/constants.h} enumerates the ten
+supported scales:
+%
+\begin{equation*}
+  \code{UT1},\ \code{UTC},\ \code{TAI},\ \code{TDB},\ \code{TT},\
+  \code{TCG},\ \code{TCB},\ \code{GPS},\ \code{TCL},\ \code{LT}.
+\end{equation*}
+
+\begin{lupntnote}
+A Julian Date is a \emph{representation} of an instant rather than a time
+scale, so it is not a member of the enum. Use \cpp{JdToTime} / \cpp{TimeToJd}
+together with the relevant scale.
+\end{lupntnote}
+
+\section{The precision problem and the \texttt{Epoch} class}
+\label{sec:tc-epoch}
+
+\subsection{Why a bare \texttt{double} is not enough}
+
+The natural way to store an instant is a single floating-point number of
+seconds elapsed since J2000. A binary64 value \citep{ieee754} carries a fixed
+52-bit fraction, so its resolution scales with its own magnitude: the gap
+between neighbouring representable values --- one unit in the last place (ULP)
+--- is
+%
+\begin{equation}
+\label{eq:tc-ulp}
+  \mathrm{ULP}(t) = |t|\,2^{-52} .
+\end{equation}
+%
+At present-day dates $|t| \sim \SI{e9}{\second}$, and \cref{eq:tc-ulp} gives
+%
+\begin{equation}
+\label{eq:tc-ulp-value}
+  \mathrm{ULP} \approx \SI{245}{\nano\second} \approx \SI{74}{\meter}/c .
+\end{equation}
+%
+No instant can be written down more precisely than that, and neither can any
+quantity derived from one: a time-scale offset, a light time, or an
+integration step is snapped to the same grid. For a navigation library,
+\SI{74}{\meter} of equivalent range is a hard floor that no improvement to the
+physical models can lift.
+
+\subsection{The \texttt{Epoch} representation}
+
+\cpp{Epoch} removes the floor by never storing the large and the small parts
+of an instant in the same floating-point number. An epoch is a triple
+%
+\begin{equation}
+\label{eq:tc-epochrep}
+  \code{Epoch} =
+  \bigl(\, \underbrace{s}_{\text{\code{int64}, whole seconds from J2000}},\;\;
+           \underbrace{f}_{\code{Real},\; f \in [0,1)},\;\;
+           \underbrace{S}_{\text{time scale}} \,\bigr),
+  \qquad t = s + f .
+\end{equation}
+%
+The whole seconds live in a 64-bit integer, which is exact: an \code{int64}
+counts every second for $\pm 2.9\times10^{11}$ years without rounding. Only the
+sub-second remainder $f$ is floating-point, and because $|f| < 1$ its ULP is
+$2^{-52} \approx \SI{0.2}{\femto\second}$, independent of the date. The time
+scale $S$ is carried with the value, so subtracting a TT epoch from a TDB one
+is rejected rather than silently returning a wrong answer.
+
+Two operations then keep full precision:
+%
+\begin{align}
+  \label{eq:tc-epochdiff}
+  \text{difference:}\quad & t_1 - t_2 = \underbrace{(s_1 - s_2)}_{\text{exact, integer}}
+                              + (f_1 - f_2), \\
+  \label{eq:tc-epochconv}
+  \text{conversion:}\quad & \code{Epoch}(s,\, f + \Delta_{A\to B},\, B).
+\end{align}
+%
+In \cref{eq:tc-epochdiff} the integer parts cancel exactly, so the result is
+carried at the precision of the \emph{difference} rather than of the epochs:
+two epochs a second apart differ to ${\sim}\SI{e-16}{\second}$. In
+\cref{eq:tc-epochconv} the inter-scale offset $\Delta_{A\to B}$ never exceeds
+${\sim}\SI{100}{\second}$ across the supported scales, so adding it to $f$ is
+good to ${\sim}\SI{e-14}{\second}$. Neither operation ever subtracts two large
+numbers.
+
+\begin{lupntnote}
+\textbf{Autodiff contract.} Derivatives live entirely on $f$; $s$ is a plain
+integer and is never differentiated. This matches how time enters estimation:
+the epoch is a fixed parameter, while the estimated time-like quantities
+(clock bias, clock drift) are exactly the ones that stay in $f$.
+Renormalisation shifts whole seconds between $s$ and $f$, which is
+derivative-preserving because it subtracts an integer constant. See
+\cref{chap:autodiff}.
+\end{lupntnote}
+
+\begin{lstlisting}[language=cpp,caption={The split representation and its exact difference.},label={lst:tc-epoch}]
+// cpp/lupnt/conversions/epoch.h :: Epoch
+class Epoch {
+ public:
+  Epoch(int64_t sec, Real frac, Time scale) : sec_(sec), frac_(frac), scale_(scale) {
+    Normalize();          // fold whole seconds out of frac_, so frac_ in [0,1)
+  }
+  static Epoch FromSeconds(Real t, Time scale);
+  static Epoch FromGregorian(int year, int month, int day, int hour, int min,
+                             Real sec, Time scale);
+
+  Real ToSeconds() const {              // LOSSY: reintroduces the 245 ns ULP
+    return Real(static_cast<double>(sec_)) + frac_;
+  }
+  Epoch To(Time target) const;          // offset-composing conversion
+  Real operator-(const Epoch& other) const;   // exact: integer parts cancel
+
+ private:
+  int64_t sec_ = 0;     // exact
+  Real    frac_ = 0.0;  // the only differentiated component
+  Time    scale_ = Time::TAI;
+};
+\end{lstlisting}
+
+\subsection{Collapsing to a \texttt{Real}, deliberately}
+\label{sec:tc-collapse}
+
+\cpp{Epoch::ToSeconds()} returns $s + f$ as a single \code{Real}. This is lossy
+by construction --- it re-imposes the \SI{245}{\nano\second} quantum of
+\cref{eq:tc-ulp} --- and it exists because most of the library's interfaces
+predate \cpp{Epoch} and take a bare seconds-from-J2000 value.
+\cpp{ConvertFrame(Real t\_tdb, ...)} is the important example
+(\cref{chap:frame-conversions}).
+
+That is an acceptable trade there rather than an oversight. A frame rotation is
+a smooth function of time, and the Earth rotates at \SI{465}{\meter\per\second}
+at the equator, so a \SI{245}{\nano\second} error in the time tag displaces a
+position by ${\sim}\SI{0.1}{\milli\meter}$ --- four orders of magnitude below
+the accuracy of the orientation model itself. The same
+\SI{245}{\nano\second} interpreted as a \emph{light} time is \SI{74}{\meter},
+which is not acceptable. The distinction is what the time is multiplied by.
+
+\begin{lupntwarning}
+Keep an instant in \cpp{Epoch}, and collapse to \code{Real} only at the
+boundary of an interface that multiplies time by a velocity rather than
+by $c$. Work that multiplies a time by $c$, or that differences two epochs,
+must use \cpp{Epoch} or the offset accessors of
+\cref{sec:tc-offset-accessors}.
+\end{lupntwarning}
+
+\subsection{Epoch series}
+
+Much of the API is vectorized over epochs (\cpp{Propagate(x0, tfs)},
+\cpp{GetBodyPosVel}, every \code{VEC\_DEF\_REAL} time function).
+\cpp{EpochSeries} stores the split representation columnwise --- an exact
+\code{int64} second per sample plus a \code{VecX} of fractions --- so a long
+grid keeps the same guarantees a scalar \cpp{Epoch} does:
+
+\begin{lstlisting}[language=cpp,caption={Building an exact uniform grid.},label={lst:tc-epochseries}]
+// cpp/lupnt/conversions/epoch.h :: EpochSeries
+static EpochSeries Linspace(const Epoch& start, Real step, int n);
+VecX Since(const Epoch& ref) const;  // exact elapsed seconds relative to ref
+VecX ToSeconds() const;              // LOSSY collapse, for interop
+\end{lstlisting}
+
+The $i$-th sample of \cpp{Linspace} is $\text{start} + i\,\text{step}$ computed
+in the split representation, so a long grid does not accumulate the rounding
+that repeated addition of a rounded step would. \cpp{Since(ref)} is the
+precision-preserving way to feed a vectorized \code{Real} API: the large common
+epoch is removed once, and the callee sees only small offsets.
+
+\section{The conversion graph}
+\label{sec:tc-graph}
+
+A time scale is a coordinate on a particular four-dimensional reference
+system, so converting between two of them means evaluating a relativistic
+relationship rather than adding a constant \citep{turyshev2026cislunar}.
+\lupnt{} represents those relationships as a directed graph whose edges return
+the \emph{offset} between two scales,
+%
+\begin{equation}
+\label{eq:tc-offset}
+  \delta_{A\to B}(t) = t_B - t_A ,
+\end{equation}
+%
+evaluated at the epoch's reading in scale $A$. A conversion finds the shortest
+registered route (\cpp{numerics/graphs.h :: FindShortestPath}) and sums the
+offsets along it,
+%
+\begin{equation}
+\label{eq:tc-compose}
+  \Delta_{A\to B}(t) = \sum_{k} \delta_{s_k \to s_{k+1}}\!\left(t_k\right),
+  \qquad s_0 = A,\; s_n = B .
+\end{equation}
+%
+Because \cref{eq:tc-compose} only ever sums small quantities, the total retains
+full double precision, and it is the total --- not a converted absolute epoch
+--- that is folded into $f$ by \cref{eq:tc-epochconv}.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[node distance=1.35cm and 1.15cm]
+    \node[tsnode] (ut1) {UT1};
+    \node[tsnode, right=of ut1] (utc) {UTC};
+    \node[tsnode, right=of utc] (tai) {TAI};
+    \node[tsnode, right=of tai] (tt)  {TT};
+    \node[tsnode, right=of tt]  (tdb) {TDB};
+    \node[tsnode, right=of tdb] (tcl) {TCL};
+    \node[tsnode, right=of tcl] (lt)  {LT};
+    \node[tsnode, below=of tai] (gps) {GPS};
+    \node[tsnode, below=of tt]  (tcg) {TCG};
+    \node[tsnode, below=of tdb] (tcb) {TCB};
+
+    \draw[table]    (ut1) -- node[above, font=\tiny] {EOP}  (utc);
+    \draw[table]    (utc) -- node[above, font=\tiny] {leap} (tai);
+    \draw[constant] (tai) -- node[above, font=\tiny] {\SI{32.184}{\second}} (tt);
+    \draw[model]    (tt)  -- node[above, font=\tiny] {model} (tdb);
+    \draw[integral] (tdb) -- node[above, font=\tiny] {$\int$} (tcl);
+    \draw[linear]   (tcl) -- node[above, font=\tiny] {$L_L$} (lt);
+    \draw[constant] (tai) -- node[right, font=\tiny] {\SI{19}{\second}} (gps);
+    \draw[linear]   (tt)  -- node[right, font=\tiny] {$L_G$} (tcg);
+    \draw[linear]   (tdb) -- node[right, font=\tiny] {$L_B$} (tcb);
+
+    \begin{scope}[shift={(0,-2.55)}, every node/.style={font=\scriptsize, anchor=west}]
+      \draw[constant] (0,0)   -- (0.7,0);   \node at (0.8,0)   {constant};
+      \draw[table]    (2.4,0) -- (3.1,0);   \node at (3.2,0)   {table};
+      \draw[linear]   (4.2,0) -- (4.9,0);   \node at (5.0,0)   {linear};
+      \draw[model]    (6.2,0) -- (6.9,0);   \node at (7.0,0)   {model};
+      \draw[integral] (8.2,0) -- (8.9,0);   \node at (9.0,0)   {integral};
+    \end{scope}
+  \end{tikzpicture}
+  \caption{The registered conversion graph. Every edge returns an
+  \emph{offset}; a conversion is the sum of the offsets along the shortest
+  route. Edge classes are ordered by cost: constant and table edges are
+  arithmetic or a lookup, linear edges rescale elapsed time by
+  $L\sim10^{-8}$, the TT\,$\leftrightarrow$\,TDB edge evaluates the active
+  model, and the TDB\,$\leftrightarrow$\,TCL edge integrates from $T_0$. The
+  graph is drawn undirected only for legibility: each edge is registered in
+  both directions, with the inverse offset.}
+  \label{fig:tc-graph}
+\end{figure}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Edge classes and their cost. The spread is why the route matters.}
+  \label{tab:tc-edges}
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Class & Edges & Cost \\
+    \midrule
+    constant & TAI\,$\leftrightarrow$\,TT, TAI\,$\leftrightarrow$\,GPS & arithmetic \\
+    table    & TAI\,$\leftrightarrow$\,UTC (leap seconds),
+               UTC\,$\leftrightarrow$\,UT1 (EOP) & table lookup \\
+    linear   & TT\,$\leftrightarrow$\,TCG, TDB\,$\leftrightarrow$\,TCB,
+               TCL\,$\leftrightarrow$\,LT & rescaling of elapsed time by $L\sim10^{-8}$ \\
+    model    & TT\,$\leftrightarrow$\,TDB & Chebyshev fit, DE440 integral, or analytic series \\
+    integral & TDB\,$\leftrightarrow$\,TCL & trapezoidal sweep from $T_0$ (1977) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+TCL\,$\leftrightarrow$\,LT and TDB\,$\leftrightarrow$\,TCB are single linear
+edges and are reached without touching the TDB\,$\leftrightarrow$\,TCL
+integral. The search minimises hops, which coincides with minimum cost for
+this edge set because the one expensive edge is also the only bridge to the
+lunicentric scales: no route can avoid it that needs it, and no route incurs it
+that does not. Adding an edge that breaks that coincidence would require a
+cost-weighted search.
+
+\begin{lstlisting}[language=cpp,caption={The registered edge table, abridged.},label={lst:tc-edges}]
+// cpp/lupnt/conversions/epoch.cc :: TimeEdges
+const std::map<std::pair<Time, Time>, TimeOffsetFn>& TimeEdges() {
+  static const std::map<std::pair<Time, Time>, TimeOffsetFn> edges = {
+      // --- constant offsets ---
+      {{Time::TAI, Time::TT},  [](Real) { return Real(TT_TAI_OFFSET); }},
+      {{Time::TAI, Time::GPS}, [](Real) { return Real(-19.0); }},
+
+      // --- leap seconds / Earth orientation ---
+      {{Time::TAI, Time::UTC},
+       [](Real t_tai) { return Real(-GetTaiUtcDifference(TimeToMjd(t_tai).val())); }},
+      {{Time::UTC, Time::UT1},
+       [](Real t_utc) { return GetUt1UtcDifference(TimeToMjd(t_utc)); }},
+
+      // --- linear rescalings (elapsed time only ever scaled by L ~ 1e-8) ---
+      {{Time::TT,  Time::TCG},
+       [](Real t_tt)  { return L_G / (1.0 - L_G) * (t_tt - T0Seconds()); }},
+      {{Time::TDB, Time::TCB},
+       [](Real t_tdb) { return (L_B * (t_tdb - T0Seconds()) - TDB_0) / (1.0 - L_B); }},
+      {{Time::TCL, Time::LT},
+       [](Real t_tcl) { return -L_L * (t_tcl - T0Seconds()); }},
+
+      // --- the two model edges ---
+      {{Time::TDB, Time::TT},  [](Real t_tdb) { return TtMinusTdb(t_tdb); }},
+      {{Time::TDB, Time::TCL}, [](Real t_tdb) { return -TdbMinusTcl(t_tdb); }},
+      // ... every edge is also registered in the reverse direction ...
+  };
+  return edges;
+}
+\end{lstlisting}
+
+\subsection{Offset accessors}
+\label{sec:tc-offset-accessors}
+
+An interface that must \emph{return} an absolute epoch cannot benefit from
+\cref{eq:tc-compose}; it is capped near the ULP however good the underlying
+model is. \Cref{tab:tc-entrypoints} states the resulting contract.
+
+\begin{table}[htbp]
+  \centering
+  \caption{What each entry point returns, and the accuracy that follows from
+  the return type. Measured for TDB\,$\leftrightarrow$\,TT over 2020--2035.}
+  \label{tab:tc-entrypoints}
+  \begin{tabularx}{\textwidth}{lLl}
+    \toprule
+    Entry point & Returns & Accuracy \\
+    \midrule
+    \cpp{Epoch::To} / \cpp{TimeScaleOffset} & offset & \SI{4e-4}{\nano\second} \\
+    \cpp{TtMinusTdb}, \cpp{TdbMinusTcl}, \cpp{TdbMinusLt} & offset & \SI{4e-4}{\nano\second} \\
+    \cpp{ConvertTime} & absolute epoch & \SI{38}{\nano\second} rms, \SI{119}{\nano\second} peak \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\cpp{ConvertTime(t, from, to)} delegates to \cpp{Epoch}; its floor is a
+property of the return type, not of the model.
+
+\begin{lstlisting}[language=py,caption={Choosing an interface in Python.},label={lst:tc-python}]
+import pylupnt as pnt
+
+e     = pnt.Epoch.from_seconds(t_tai, pnt.Time.TAI)
+e_tdb = e.to(pnt.Time.TDB)                        # offset-composing, exact
+dt    = pnt.time_scale_offset(e, pnt.Time.TCL)    # offset, sub-picosecond
+
+t_tt  = pnt.convert_time(t_tai, pnt.Time.TAI, pnt.Time.TT)   # ~245 ns floor
+\end{lstlisting}
+
+\section{Proper versus coordinate time}
+\label{sec:tc-proper-coordinate}
+
+A clock measures \textbf{proper time} $\tau$ along its worldline, while a
+\textbf{coordinate time} $t$ labels events in a four-dimensional relativistic
+reference system (BCRS, GCRS, LCRS) and cannot be read off any single physical
+clock \citep[Ch.~2.3.1]{iiyama2026thesis}. \cpp{IsCoordinateTimeScale}
+partitions the enum: TT, TCG, TDB, TCB, TCL, and LT are coordinate scales;
+UT1, UTC, TAI, and GPS are not.
+
+\begin{lstlisting}[language=cpp]
+// cpp/lupnt/conversions/time_conversions.cc :: IsCoordinateTimeScale
+case Time::TT: case Time::TCG: case Time::TDB:
+case Time::TCB: case Time::TCL: case Time::LT: return true;
+\end{lstlisting}
+
+\cpp{ConvertCoordinateTime} is the coordinate-only entry point. Its
+position-aware overloads take a BCRS position $\vec{x}_{\mathrm{bcrs}}$ so that
+the position-dependent terms of the TDB/TCB/TCL transforms are evaluated at the
+event location rather than at the body centre.
+
+\section{Atomic and terrestrial scales}
+\label{sec:tc-atomic}
+
+\paragraph{TAI to TT} is a defining constant offset
+\citep[Eq.~2.38]{iiyama2026thesis}:
+%
+\begin{equation}
+\label{eq:tc-tai-tt}
+  \TT = \TAI + \SI{32.184}{\second} .
+\end{equation}
+
+\begin{lstlisting}[language=cpp]
+// cpp/lupnt/conversions/time_conversions.cc :: TaiToTt / TtToTai
+Real TaiToTt(Real t_tai) { return t_tai + TT_TAI_OFFSET; }   // TT_TAI_OFFSET = 32.184 s
+Real TtToTai(Real t_tt)  { return t_tt  - TT_TAI_OFFSET; }
+\end{lstlisting}
+
+\paragraph{TAI to GPS} is the fixed \SI{19}{\second} offset that removes the
+leap seconds accumulated at the GPS epoch
+\citep[Eq.~2.39]{iiyama2026thesis}; GPS time runs without leap seconds
+thereafter:
+%
+\begin{equation}
+\label{eq:tc-gps}
+  \GPST = \TAI - \SI{19}{\second} .
+\end{equation}
+
+\begin{lupntnote}
+Only GPS is implemented among the GNSS scales. The thesis also lists
+GLONASS $= \TAI - \SI{34}{\second}$ (leap-tracking, offset by UTC),
+Galileo $= \TAI - \SI{19}{\second}$, and BeiDou $= \TAI - \SI{33}{\second}$
+(Eqs.~2.40--2.42); these are not in the \code{Time} enum.
+\end{lupntnote}
+
+\paragraph{TAI and UTC} differ by the integer leap-second table
+$\Delta_{\mathrm{AT}}(\mathrm{MJD})$ from \file{cpp/lupnt/interfaces/tai_utc.h}
+\citep[Eq.~2.43]{iiyama2026thesis}:
+%
+\begin{equation}
+\label{eq:tc-utc}
+  \UTC = \TAI - \Delta_{\mathrm{AT}},
+  \qquad
+  \Delta_{\mathrm{AT}} = \cpp{GetTaiUtcDifference}(\mathrm{MJD}) .
+\end{equation}
+
+\paragraph{UTC and UT1} differ by the observed Earth-orientation correction
+looked up from the EOP table (\file{cpp/lupnt/interfaces/eop.h}):
+%
+\begin{equation}
+\label{eq:tc-ut1}
+  \UTone = \UTC + (\UTone - \UTC),
+  \qquad
+  (\UTone - \UTC) = \cpp{GetUt1UtcDifference}(\mathrm{MJD}) .
+\end{equation}
+
+\begin{lstlisting}[language=cpp]
+// cpp/lupnt/conversions/time_conversions.cc :: UtcToUt1
+Real mjd_utc = t_utc / SECS_DAY + MJD_J2000_TT;
+Real ut1_utc = GetUt1UtcDifference(mjd_utc);
+return t_utc + ut1_utc;
+\end{lstlisting}
+
+UT1 in turn drives Earth rotation. \cpp{EarthRotationAngle} gives the ERA
+%
+\begin{equation}
+\label{eq:tc-era}
+  \theta = 2\pi\left(0.7790572732640
+           + 1.00273781191135448\,\frac{t_{\UTone}}{86400}\right),
+\end{equation}
+%
+and \cpp{GreenwichMeanSiderealTime} / \cpp{GreenwichApparentSiderealTime} give
+GMST and GAST, the latter adding the equation of the equinoxes. These are the
+only rotation quantities keyed on UT1; see \cref{chap:frame-conversions}.
+
+\section{Barycentric and geocentric coordinate scales}
+\label{sec:tc-bary}
+
+The four Einstein-scaled coordinate times share the reference epoch
+$T_0 = $ 1977-01-01 00:00:00 TAI (\code{MJD\_COORDINATE\_TT\_TCG\_TCB}) and the
+defining rates \citep{iers2010}
+%
+\begin{equation}
+\label{eq:tc-rates}
+  L_B = 1.550519768\times10^{-8},\quad
+  L_G = 6.969290134\times10^{-10},\quad
+  \TDB_0 = \SI{-65.5}{\micro\second} .
+\end{equation}
+%
+Writing $\tau = t - T_0$ for elapsed time from the coordinate-time origin, the
+constant and linear edges of \cref{fig:tc-graph} are
+%
+\begin{align}
+  \label{eq:tc-linear}
+  \TCG - \TT   &= \frac{L_G}{1 - L_G}\,\tau_{\TT}, &
+  \TCB - \TDB  &= \frac{L_B\,\tau_{\TDB} - \TDB_0}{1 - L_B}, \\
+  \LT - \TCL   &= -L_L\,\tau_{\TCL}, &
+  \UTC - \TAI  &= -\Delta_{\mathrm{AT}}(t) .
+\end{align}
+
+\begin{lstlisting}[language=cpp]
+// cpp/lupnt/conversions/time_conversions.cc :: TtToTcg  (offset form)
+Real tt_tcg = -L_G / (1.0 - L_G) * (mjd_tt - MJD_COORDINATE_TT_TCG_TCB) * SECS_DAY;
+return t_tt - tt_tcg;
+
+// cpp/lupnt/conversions/time_conversions.cc :: TcbToTdb
+Real t_tdb = t_tcb - L_B * (mjd_tcb - MJD_COORDINATE_TT_TCG_TCB) * SECS_DAY + TDB_0;
+\end{lstlisting}
+
+Only the two remaining edges, TT\,$\leftrightarrow$\,TDB and
+TDB\,$\leftrightarrow$\,TCL, require a relativistic model.
+
+\section{The TT--TDB model}
+\label{sec:tc-tttdb}
+
+\subsection{The DE440 relation}
+
+The barycentric edge is the DE440 relativistic relation
+\citep[Eqs.~3--7]{park2021de440}. With $s_B = (1-L_G)/(1-L_B)$ and a station at
+BCRS position $\vec{r}_S$,
+%
+\begin{equation}
+\label{eq:tc-de440}
+\begin{aligned}
+  \TDB - \TT
+    &= \frac{L_G - L_B}{1 - L_B}\,\tau_{\TDB}
+     + s_B\,\TDB_0
+     + \frac{s_B}{c^{2}} \int_{T_0 + \TDB_0}^{\TDB} f_2 \,\dd t
+     - \frac{s_B}{c^{4}} \int_{T_0 + \TDB_0}^{\TDB} f_4 \,\dd t \\[2pt]
+    &\quad + \frac{1}{c^{2}}\,\vec{v}_E \cdot (\vec{r}_S - \vec{r}_E)
+     + \frac{1}{c^{4}}\left(3 w_{0E} + \tfrac{1}{2} v_E^{2}\right)
+       \vec{v}_E \cdot (\vec{r}_S - \vec{r}_E),
+\end{aligned}
+\end{equation}
+%
+where the integrands collect the Earth's kinetic and potential terms,
+%
+\begin{align}
+  \label{eq:tc-f2}
+  f_2 &= \tfrac{1}{2} v_E^{2} + w_{0E} + w_{LE}, \\
+  \label{eq:tc-f4}
+  f_4 &= -\tfrac{1}{8} v_E^{4} - \tfrac{3}{2} v_E^{2} w_{0E}
+         + 4\,\vec{v}_E \cdot \vec{w}_{iE}
+         + \tfrac{1}{2} w_{0E}^{2} + \Delta_E ,
+\end{align}
+%
+and $w_{0E}$ is the external potential at the Earth,
+%
+\begin{equation}
+\label{eq:tc-w0e}
+  w_{0E} = \sum_{i \neq E} \frac{GM_i}{r_{iE}}
+  + U_{\mathrm{ring}}(r_{\odot E};\, GM_{\mathrm{ast}}, a_{\mathrm{ast}})
+  + U_{\mathrm{ring}}(r_{\odot E};\, GM_{\mathrm{KB}}, a_{\mathrm{KB}}),
+\end{equation}
+%
+with $w_{LE}$ the solar oblateness potential, $\vec{w}_{iE}$ the mass-weighted
+velocity potential, and $\Delta_E$ the remaining $c^{-4}$ terms. The two ring
+terms are \cref{sec:tc-smallbody}. At the geocentre $\vec{r}_S = \vec{r}_E$ and
+both endpoint terms vanish, leaving only the integrals.
+
+\subsection{The model chain}
+\label{sec:tc-model-chain}
+
+Evaluating \cref{eq:tc-de440} means sweeping from $T_0$, so it is not viable
+per call. \cpp{TtMinusTdb(t)} is the single implementation of the TT--TDB
+relation --- both \cpp{TtToTdb} and \cpp{TDBToTt} delegate to it, so the pair
+round-trips exactly whichever model is active --- and it selects, in order:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Chebyshev fit of the DE440t TT--TDB ephemeris.}
+    \cpp{InitTtMinusTdbFit} samples the \file{de440t.bsp} time-ephemeris
+    segment as a clean offset and fits piecewise Chebyshev segments (16-day
+    segments, degree 12). Reproduces the kernel to \SI{4e-4}{\nano\second}.
+  \item \textbf{DE440 integral}, \cref{eq:tc-de440}, opt-in via
+    \cpp{SetTtTdbModel(TtTdbModel::DE440\_INTEGRAL)}. Trapezoidal sweep of the
+    $c^{-2}$ and $c^{-4}$ integrands from $T_0$; agrees with the DE440t
+    ephemeris to \SI{2.4}{\nano\second} rms with a residual secular term
+    (\cref{sec:tc-boundaries}).
+  \item \textbf{Auto-fit}: if no fit covers the requested epoch, one
+    decade-wide window is built on demand (\cpp{SetTtTdbAutoFit}, default on).
+    This is what makes the \emph{default} accuracy \SI{4e-4}{\nano\second} for
+    every caller --- \cpp{ConvertTime}, \cpp{Epoch}, and the offset accessors
+    alike.
+  \item \textbf{Analytic fallback}, used only when the DE440t segment is
+    unavailable: the two-term IAU/IERS series \citep{urban2013},
+    %
+    \begin{equation}
+    \label{eq:tc-series}
+      \TDB - \TT \approx
+      \SI{0.001658}{\second}\,\sin g + \SI{0.000014}{\second}\,\sin 2g,
+    \end{equation}
+    %
+    with $g = \ang{357.53} + \ang{0.9856003}\,d_{\mathrm{J2000}}$ the Earth's
+    mean anomaly, good to $\lesssim\SI{2}{\milli\second}$.
+\end{enumerate}
+
+\begin{lupntnote}
+The \textbf{position-aware} overloads \cpp{TtToTdb(t, x\_bcrs)} and
+\cpp{TDBToTt(t, x\_bcrs)} evaluate the full GCRS\,$\leftrightarrow$\,BCRS
+four-dimensional transform \citep[Eqs.~21--22]{turyshev2026cislunar}: a
+trapezoidal integral of the $c^{-2}$ and $c^{-4}$ integrands built from the
+Earth's barycentric velocity and the external Solar-System potential
+$w_{\mathrm{ext}} = \sum_{B \neq E} GM_B / r_{EB}$, plus a position term
+$-\vec{v}_E \cdot \vec{r}_E / c^2$. \cpp{TtToTdb(t, x\_bcrs)} inverts by
+10-step Newton iteration.
+\end{lupntnote}
+
+\subsection{Small-body populations}
+\label{sec:tc-smallbody}
+
+DE440 integrates the solar system with 343 discrete asteroids, 30 individual
+Kuiper-belt objects, and a 36-point circular ring representing the rest of the
+Kuiper belt at \SI{44}{\au} \citep{park2021de440}. \lupnt{} carries no
+ephemerides for any of them. Omitting that mass leaves a near-constant deficit
+in the external potential, which \cref{eq:tc-de440} integrates into a purely
+secular drift.
+
+Each population is therefore added as a uniform circular ring of mass $M$ and
+radius $a$, whose potential at heliocentric distance $r$ in the ring plane is
+%
+\begin{equation}
+\label{eq:tc-ring}
+  U(r) = \frac{2GM}{\pi(a+r)}\,K(k),
+  \qquad k = \frac{2\sqrt{ar}}{a+r} .
+\end{equation}
+%
+It is evaluated at the body's actual heliocentric distance at each step, so it
+carries the small annual modulation rather than being held constant.
+
+The factor $K$ is the complete elliptic integral of the first kind
+\citep[Ch.~17]{abramowitz1964},
+%
+\begin{equation}
+\label{eq:tc-elliptic}
+  K(k) = \int_{0}^{\pi/2} \frac{\dd\theta}{\sqrt{1 - k^{2}\sin^{2}\theta}} .
+\end{equation}
+%
+It arises for a geometric reason: the potential of a ring is the sum of $GM/d$
+over every element of it, and the distance $d$ from the field point to a ring
+element varies around the ring; integrating $1/d$ over the ring angle produces
+exactly \cref{eq:tc-elliptic}. The modulus $k \in [0,1)$ measures how close the
+field point is to the ring. As $k \to 0$ (far away) $K \to \pi/2$ and
+\cref{eq:tc-ring} reduces to the point-mass potential $GM/r$; as $k \to 1$ (on
+the ring) $K$ diverges logarithmically. For the Earth inside a \SI{44}{\au}
+ring, $k$ is small and the ring is a mild correction to a point mass --- but a
+correction with the right radial dependence, which is what the secular drift is
+sensitive to.
+
+\lupnt{} evaluates \cref{eq:tc-elliptic} by the arithmetic--geometric mean
+(AGM) \citep[\S17.6]{abramowitz1964}: iterating
+$a_{n+1} = \tfrac{1}{2}(a_n + b_n)$, $b_{n+1} = \sqrt{a_n b_n}$ from $a_0 = 1$,
+$b_0 = \sqrt{1-k^{2}}$ converges quadratically to a common limit $M(k)$, and
+$K(k) = \pi / \bigl(2 M(k)\bigr)$.
+
+\begin{lstlisting}[language=cpp,caption={The ring potential, built from arithmetic and square roots so that it composes with automatic differentiation.},label={lst:tc-ring}]
+// cpp/lupnt/conversions/time_conversions.cc :: RingPotential
+// k' = sqrt(1-k^2). AGM converges quadratically (~5 iterations here) and is
+// differentiable, so this composes with autodiff unlike std::comp_ellint_1.
+Real RingPotential(Real r, double gm_ring, double a_ring) {
+  if (gm_ring == 0.0) return Real(0.0);
+  Real apr = a_ring + r;
+  Real k2  = 4.0 * a_ring * r / (apr * apr);
+  Real a = 1.0;
+  Real b = sqrt(1.0 - k2);            // complementary modulus k'
+  for (int i = 0; i < 12; i++) {
+    Real a_next = 0.5 * (a + b);
+    b = sqrt(a * b);
+    a = a_next;
+    if (abs((a - b).val()) < 1e-16) break;
+  }
+  Real K = PI / (2.0 * a);
+  return 2.0 * gm_ring * K / (PI * apr);
+}
+\end{lstlisting}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Ring parameters, taken from DE440's own integration header rather
+  than from independently published values. See the caveat below.}
+  \label{tab:tc-rings}
+  \begin{tabular}{lrr}
+    \toprule
+    Population & $GM$ [\si{\meter\cubed\per\second\squared}] & Ring radius [\si{\au}] \\
+    \midrule
+    Kuiper ring $+$ 30 KBOs & $1.1232\times10^{13}$ & 44 \\
+    343 asteroids           & $1.7053\times10^{11}$ & 2.7 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{lupntwarning}
+DE440 \emph{fitted} its ring mass during the integration, so
+\cref{tab:tc-rings} is not the published Kuiper-belt total --- the
+independently derived value is smaller by a factor of $1.43$. Only the value
+DE440 actually integrated reproduces its TT--TDB. These are therefore
+reproduction constants, not physical mass estimates: they should not be reused
+as measurements of either population, nor tuned against any residual. For
+sub-nanosecond absolute agreement with JPL use the Chebyshev fit instead.
+\end{lupntwarning}
+
+\section{Lunicentric coordinate scales}
+\label{sec:tc-lunar}
+
+The Moon's analogues follow \citet{turyshev2026cislunar}, with LCRS as the
+lunar four-dimensional system. Reaching lunar time uses the same construction
+one level down, with the Moon in place of the Earth.
+
+\subsection{TCB to TCL}
+
+TCL is the coordinate time of the Lunicentric Celestial Reference System. The
+barycentric-to-lunicentric transform \citep[Eqs.~23,~25]{turyshev2026cislunar},
+\citep[Eqs.~2.44--2.45]{iiyama2026thesis} is structurally identical to the
+Earth case with the Moon substituted:
+%
+\begin{equation}
+\label{eq:tc-tcbtcl}
+  \TCL = \TCB
+    - \frac{1}{c^2}\!\int\!\Bigl(\tfrac{1}{2}v_M^2 + w_{\mathrm{ext}}(\vec{x}_M)\Bigr)\dd\TCB
+    - \frac{1}{c^4}\!\int (\cdots)\,\dd\TCB
+    - \frac{\vec{v}_M \cdot \vec{r}_M}{c^2} - \cdots
+\end{equation}
+%
+where $\vec{r}_M = \vec{x}_{\mathrm{bcrs}} - \vec{x}_M$,
+$\vec{v}_M = \dd\vec{x}_M/\dd\TCB$, and
+$w_{\mathrm{ext}}(\vec{x}_M) = \sum_{B \neq M} GM_B / |\vec{x}_M - \vec{x}_B|$
+sums the Sun, Mercury, Venus, Earth, Mars, and the outer planets
+(\code{kTclExternalBodies}), plus the same two rings of
+\cref{sec:tc-smallbody}. Passing no position places the clock at the lunar
+centre ($\vec{v}_M \cdot \vec{r}_M = 0$). \cpp{TclToTcb} inverts by Newton
+iteration.
+
+Equivalently, in the offset form the graph edge uses,
+%
+\begin{equation}
+\label{eq:tc-tcl}
+  \TDB - \TCL
+   = -L_B\,\tau_{\TCB} + \TDB_0
+   + \frac{1}{c^{2}} \int_{T_0}^{\TCB} g_2 \,\dd t
+   + \frac{1}{c^{4}} \int_{T_0}^{\TCB} g_4 \,\dd t,
+\end{equation}
+%
+\begin{equation}
+\label{eq:tc-g24}
+  g_2 = \tfrac{1}{2} v_M^{2} + w_{0M},
+  \qquad
+  g_4 = \tfrac{1}{8} v_M^{4} + \tfrac{3}{2} v_M^{2} w_{0M} - \tfrac{1}{2} w_{0M}^{2},
+\end{equation}
+%
+where $w_{0M}$ is \cref{eq:tc-w0e} evaluated at the Moon.
+
+\begin{lstlisting}[language=cpp]
+// cpp/lupnt/conversions/time_conversions.cc :: TcbToTcl  (Turyshev Eq. 23/25)
+auto [i2, i4] = IntegrateTcbToTclTerms(t_tcb);
+return t_tcb - i2/(C*C) - i4/(C*C*C*C) + TcbToTclPositionTerm(t_tcb, x_bcrs);
+\end{lstlisting}
+
+\subsection{TCL to LT}
+
+LT is the lunar analogue of TT: a defining rate on the selenoid
+\citep[Eqs.~2.48--2.49]{iiyama2026thesis} with
+$L_L = 3.139054\times10^{-11}$,
+%
+\begin{equation}
+\label{eq:tc-lt}
+  \LT = \TCL - L_L\,(\TCL - T_{L0}),
+  \qquad
+  \frac{\dd \LT}{\dd \TCL} = 1 - L_L .
+\end{equation}
+
+\begin{lstlisting}[language=cpp]
+// cpp/lupnt/conversions/time_conversions.cc :: TclToLt  (T_L0 assumed = T_0)
+Real lt_tcl = -L_L * (mjd_tcl - MJD_COORDINATE_TT_TCG_TCB) * SECS_DAY;
+return t_tcl + lt_tcl;
+\end{lstlisting}
+
+\begin{lupntwarning}
+$L_L$ is not yet internationally standardized. The code uses the Turyshev
+selenoid value $3.139054\times10^{-11}$ (potential
+$\Phi_L = 2.82123744381\times10^{6}\ \si{\meter\squared\per\second\squared}$),
+whereas \citet{kopeikin2024lunar} adopt $3.14027\times10^{-11}$
+\citep[Ch.~2.3.5]{iiyama2026thesis}. LT is therefore provisional pending
+standardization.
+\end{lupntwarning}
+
+\subsection{Lunar time as a function of TT: the direct path}
+\label{sec:tc-lt-direct}
+
+Rather than chaining TT\,$\to$\,TDB\,$\to$\,TCB\,$\to$\,TCL\,$\to$\,LT,
+\lupnt{} also implements LT directly as an Earth--Moon \emph{difference}
+\citep[Eq.~57]{turyshev2026cislunar}, the TDB-argument form of thesis
+Eq.~2.50, in \cpp{TdbToLtMinusTt}:
+%
+\begin{equation}
+\label{eq:tc-ltmtt}
+\begin{aligned}
+  \LT - \TT
+    &= \frac{L_G - L_L}{1 - L_B}\left(\TDB - T_0 - \TDB_0\right) \\[2pt]
+    &\quad - \frac{1}{c^{2}} \int_{T_0 + \TDB_0}^{\TDB}
+       \left[ \tfrac{1}{2} v_{EM}^{2}
+            + \frac{GM_E - 2\,GM_M}{r_{EM}}
+            + W^{\odot}_{EM}
+            + \tfrac{3}{2} L_G \frac{GM_S}{r_{SE}} \right] \dd t \\[2pt]
+    &\quad + \frac{1}{c^{2}}
+       \Bigl[ \vec{v}_E \cdot \vec{r}_{EM} \Bigr]_{\TDB}^{T_0 + \TDB_0}
+     - \frac{3}{c^{4}} \int_{T_0 + \TDB_0}^{\TDB}
+       \frac{GM_S}{r_{SE}}\, \vec{v}_E \cdot \vec{v}_{EM} \,\dd t,
+\end{aligned}
+\end{equation}
+%
+with the solar $\ell = 2$ tidal term
+%
+\begin{equation}
+\label{eq:tc-tidal}
+  W^{\odot}_{EM} = \frac{3}{2}\,\frac{GM_S}{r_{SE}^{5}}
+    \left[ (\vec{r}_{ES} \cdot \vec{r}_{EM})^{2}
+         - \tfrac{1}{3} r_{SE}^{2} r_{EM}^{2} \right].
+\end{equation}
+
+\begin{lupntnote}
+The factor of two on $GM_M$ in \cref{eq:tc-ltmtt} is not a typo: one $-GM_M$
+comes from TCL\,--\,TCG, and a second from the $L_L$ rescaling that defines LT.
+Because \cref{eq:tc-ltmtt} contains only Earth--Moon differences, distant
+bodies --- including the small-body rings of \cref{sec:tc-smallbody} ---
+cancel identically and are deliberately omitted from it. Including them there
+would add ${\sim}10^{-9}\ \si{\meter\squared\per\second\squared}$ of numerical
+noise rather than physics.
+\end{lupntnote}
+
+The integral is a trapezoidal sweep at $\dd t = \SI{0.01}{\dayunit}$. For
+repeated queries in a window, \cpp{InitLtMinusTtFit} fits piecewise Chebyshev
+segments (degree 12, 1-day segments) over the window in a single forward sweep
+and caches them; \cpp{TdbToLtMinusTt} then uses the fast path
+(\cpp{ChebyshevFitModel::Eval}, \file{cpp/lupnt/numerics/cheby_fit.h}).
+
+\begin{lstlisting}[language=cpp]
+// cpp/lupnt/conversions/time_conversions.cc :: TdbToLt / TtToLt
+Real TdbToLt(Real t_tdb) { return TDBToTt(t_tdb) + TdbToLtMinusTt(t_tdb); }
+Real TtToLt(Real t_tt)   { return TdbToLt(TtToTdb(t_tt)); }
+\end{lstlisting}
+
+\cpp{LtToTdb} and \cpp{LtToTt} invert by 10-step Newton iteration. That
+\lupnt{} reaches LT by two genuinely different formulations --- the absolute
+lunar potential of \cref{eq:tc-tcl} and the Earth--Moon difference of
+\cref{eq:tc-ltmtt} --- makes their agreement a real check rather than a
+tautology.
+
+A separate lunar-surface proper-time term is provided by
+\cpp{GetProperTimeCorrectionTcl(t\_tcg, x\_mci)}, the first-order clock
+correction $-\vec{v}_{LE}\cdot(\vec{r}_x - \vec{r}_{LE})/c^2$ for a clock at
+MCI position $\vec{x}_{\mathrm{mci}}$ relative to the Moon's geocentric motion.
+
+\section{Exact calendar input}
+\label{sec:tc-calendar}
+
+The chain from a calendar date to an epoch is a second place where precision
+can be lost before any conversion happens. Routing through a Modified Julian
+Date rounds at the coarsest point in the chain: MJD counts days from 1858, so
+one ULP of an MJD at present-day epochs is \SI{1129}{\nano\second} --- eight
+times coarser than seconds-from-J2000, because its origin sits eight times
+further away. Whole minutes survive that (their fraction-of-day is a dyadic
+rational) but arbitrary clock times do not.
+
+\cpp{Epoch::FromGregorian} therefore computes the integer second with integer
+arithmetic \citep{hinnant2013} and carries only the sub-second remainder as a
+floating-point value:
+
+\begin{lstlisting}[language=cpp,caption={Integer-exact calendar conversion.},label={lst:tc-fromgregorian}]
+// cpp/lupnt/conversions/epoch.cc :: Epoch::FromGregorian
+const int64_t days = DaysFromCivil(year, month, day) - kDaysCivilToJ2000;
+const double  s       = sec.val();
+const double  s_floor = std::floor(s);
+const int64_t whole   = days * 86400 + static_cast<int64_t>(hour) * 3600
+                        + static_cast<int64_t>(min) * 60
+                        + static_cast<int64_t>(s_floor) - kJ2000NoonOffset;
+return Epoch(whole, sec - s_floor, scale);
+\end{lstlisting}
+
+The measured input error across a set of calendar dates including non-dyadic
+clock times is \SI{0.0}{\nano\second}, against \SI{358}{\nano\second} for the
+MJD-routed path. Dates before the Gregorian reform
+defer to the MJD path, which handles the calendar discontinuity.
+
+\section{Conversion of physical quantities and constants}
+\label{sec:tc-scaling}
+
+Because the scaled coordinate times (TT, TDB, LT) run at rates $(1-L_G)$,
+$(1-L_B)$, $(1-L_L)$ relative to their unscaled partners (TCG, TCB, TCL),
+spatial coordinates and gravitational parameters must be rescaled to keep $c$
+and the equations of motion invariant
+\citep[Eqs.~2.52--2.57]{iiyama2026thesis}:
+%
+\begin{align}
+  \label{eq:tc-scale-tt}
+  \mathcal{X}_{\TT}  &= (1-L_G)\,\mathcal{X}_{\TCG}, &
+  \mu_{\TT}          &= (1-L_G)\,\mu_{\TCG}, \\
+  \label{eq:tc-scale-tdb}
+  \mathcal{X}_{\TDB} &= (1-L_B)\,\mathcal{X}_{\TCB}, &
+  \mathcal{X}_{\LT}  &= (1-L_L)\,\mathcal{X}_{\TCL}.
+\end{align}
+%
+\lupnt{} encodes these as the \code{CoordinateScale} factors $1 - L_x$, with
+\cpp{CoordinateScaleRatio(from, to)} returning
+$(1-L_{\mathrm{to}})/(1-L_{\mathrm{from}})$ for the rescale, guarded by
+\cpp{AreCoordinateScalesConvertible} --- only
+barycentric\,$\leftrightarrow$\,barycentric,
+geocentric\,$\leftrightarrow$\,geocentric, and
+lunicentric\,$\leftrightarrow$\,lunicentric pairs share a constant factor.
+
+\begin{lstlisting}[language=cpp]
+// cpp/lupnt/core/constants.h :: CoordinateScaleFactor
+case CoordinateScale::TDB: return 1.0 - L_B;
+case CoordinateScale::TT:  return 1.0 - L_G;
+case CoordinateScale::TL:  return 1.0 - L_L;
+\end{lstlisting}
+
+\section{Model boundaries}
+\label{sec:tc-boundaries}
+
+\begin{itemize}[leftmargin=*]
+  \item All API times are seconds from the per-scale J2000 origin; calendar
+    input and output go through \cpp{GregorianToTime} /
+    \cpp{TimeToGregorianString}, or --- preferably ---
+    \cpp{Epoch::FromGregorian} (\cref{sec:tc-calendar}).
+  \item Only GPS is implemented among the GNSS scales; GLONASS, Galileo, and
+    BeiDou offsets are documented but not exposed.
+  \item \cpp{ConvertTime} and \cpp{ConvertCoordinateTime} return absolute
+    epochs and are therefore bounded near \SI{245}{\nano\second} regardless of
+    model quality. Use \cpp{Epoch} or the offset accessors below that level.
+  \item The DE440 integral of \cref{eq:tc-de440} carries a small secular
+    difference against the DE440t ephemeris, dominated by the ring
+    approximation of \cref{sec:tc-smallbody}. Refining the trapezoidal step
+    from \SI{864}{\second} to \SI{216}{\second} moves the drift by
+    \SI{0.0005}{\nano\second\per\yr}, so the residual is a model difference
+    and not quadrature. Use the Chebyshev fit when absolute agreement with JPL
+    matters.
+  \item \cpp{TdbMinusTcl} and \cpp{TdbToLtMinusTt} integrate from $T_0$ per
+    call. Both auto-fit a decade-wide Chebyshev window on demand
+    (\cpp{SetTdbTclAutoFit}, \cpp{InitLtMinusTtFit}); with auto-fitting
+    disabled a single lunar conversion costs seconds.
+  \item $L_L$, and hence LT, is provisional pending international
+    standardization.
+\end{itemize}

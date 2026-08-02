@@ -1,0 +1,1566 @@
+\chapter{Reference Frames and Frame Conversions}
+\label{chap:frame-conversions}
+
+This chapter specifies every reference frame \lupnt{} knows about, the exact
+rotation and translation that relates each adjacent pair, the time scale each
+rotation is evaluated in, and the velocity transformation that accompanies
+each rotation. The public dispatch --- \cpp{ConvertFrame},
+\cpp{GetFrameRotationTranslation}, \cpp{GetFrameRotationTranslationRv} and
+\cpp{GetFrameCenter} --- is implemented in
+\file{cpp/lupnt/conversions/frame_converter.cc} and declared in
+\file{cpp/lupnt/conversions/frame_converter.h}, which also owns the
+\cpp{Frame} enumeration. The individual body-pair rotations
+(\cpp{GcrfToItrf}, \cpp{GcrfToMoonCi}, \cpp{RotMoonCiToPa}, the IAU planet
+orientation, \dots) live in
+\file{cpp/lupnt/conversions/frame_conversions.cc} and
+\file{cpp/lupnt/conversions/frame_conversions.h}. The topocentric
+(east--north--up, azimuth--elevation--range) helpers are in
+\file{cpp/lupnt/conversions/coordinate_conversions.cc}.
+
+The Earth models follow the IAU 2006/2000A conventions of
+\citep{iers2010}, with the classical background of \citep{montenbruck2000}
+and \citep{vallado2013}. The Earth--Moon translation and the lunar mantle
+libration angles come from the JPL DE440 ephemeris \citep{park2021de440}.
+The optional high-accuracy path is calibrated against
+SPICE \citep{acton1996spice}. The cislunar frame conventions and their
+navigation consequences are developed in \citep[Ch.~2]{iiyama2026thesis}.
+Time-scale conversions themselves --- $\TDB\to\TT$, $\TDB\to\UTC$,
+$\TDB\to\UTone$ --- are specified in \cref{chap:time-conversions} and are
+used here as black boxes.
+
+\section{Epoch, state and unit contract}
+\label{sec:fc-contract}
+
+Every frame-conversion entry point takes its epoch as \emph{barycentric
+dynamical time in seconds past the J2000 epoch}:
+%
+\begin{equation}
+  \label{eq:fc-epoch}
+  t \equiv t_{\TDB}
+  \quad [\si{\second}\ \text{past J2000}].
+\end{equation}
+%
+A caller holding an epoch in any other scale must convert it first
+(\cref{chap:time-conversions}); no frame function inspects or repairs the
+scale of its argument. Internally the Earth-orientation routines re-derive
+whichever scale each physical effect depends on:
+$\TT$ for the precession--nutation series and the TIO locator, $\UTone$ for
+the Earth Rotation Angle, and $\UTC$ for the tabulated Earth orientation
+parameters (EOP). \Cref{tab:fc-timescales} collects the dependencies.
+
+\begin{table}[H]
+  \centering
+  \caption{Time scale consumed by each elementary rotation. All are derived
+    internally from the single $t_{\TDB}$ argument.}
+  \label{tab:fc-timescales}
+  \begin{tabularx}{\textwidth}{l l l L}
+    \toprule
+    Rotation & Implementing function & Scale & Reason \\
+    \midrule
+    $\mat{R}_{\mathrm{PN}}$    & \cpp{RotPrecessionNutation} & $\TT$   & the IAU 2006/2000A $(X,Y,s)$ series is tabulated against Julian date TT \\
+    $\mat{R}_{\mathrm{ERA}}$   & \cpp{RotSideralMotion}      & $\UTone$ & the Earth Rotation Angle is defined as a linear function of UT1 \\
+    $\dot{\mat{R}}_{\mathrm{ERA}}$ & \cpp{RotSideralMotionDot} & $\UTone$, $\UTC$ & rate from EOP length-of-day (sampled at UTC) or from the fitted $\UTone-\UTC$ \\
+    $\mat{R}_{\mathrm{polar}}$ & \cpp{RotPolarMotion}        & $\TT$, $\UTC$ & TIO locator $s'$ in TT; $(x_p,y_p)$ interpolated from the EOP table at UTC \\
+    $\mat{B}_e$                & \cpp{RotGcrfToEme}          & ---     & constant frame bias, no epoch argument \\
+    $\mat{R}_{\mathrm{PA},\mathrm{CI}}$ & \cpp{RotMoonCiToPa} & $\TDB$  & DE440 libration Chebyshev coefficients are indexed by TDB \\
+    $\mat{B}_{\mathrm{moon}}$  & \cpp{RotMoonPaToMe}         & ---     & constant PA-to-ME bias, no epoch argument \\
+    $\mat{R}_{\mathrm{OP}}$    & \cpp{RotMoonOpToCi}         & $\TDB$  & built from the DE440 Moon--Earth state \\
+    $\mat{R}_{\mathrm{FIXED},\mathrm{CI}}$ & \cpp{RotBodyCiToFixed} & $\TT$ & IAU orientation elements are linear in days/centuries past J2000 TT \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\paragraph{Units.} Frame conversions are unit-agnostic \emph{for the state}:
+they apply a dimensionless rotation and add a translation obtained from the
+ephemeris, so the output carries whatever length unit the input carried
+\emph{provided} the ephemeris is queried in the same unit. \lupnt{}'s
+ephemeris layer returns \si{\meter} and \si{\meter\per\second}, so the
+documented contract of every \cpp{ConvertFrame} overload is
+\si{\meter} and \si{\meter\per\second}. Angles are radians throughout,
+except in the topocentric helpers of \cref{sec:fc-topocentric}, where
+latitude and longitude are in degrees. The epoch is always seconds.
+
+\begin{lupntwarning}
+  Mixing units silently produces a wrong answer for any conversion that
+  \emph{translates} (ICRF$\leftrightarrow$GCRF,
+  GCRF$\leftrightarrow$MOON\_CI, the planet frames): a state in kilometres
+  will have a metre-valued ephemeris offset added to it. Pure rotations
+  (GCRF$\leftrightarrow$ITRF, GCRF$\leftrightarrow$EME,
+  MOON\_CI$\leftrightarrow$MOON\_PA, MOON\_PA$\leftrightarrow$MOON\_ME) are
+  unaffected.
+\end{lupntwarning}
+
+\section{The frame set}
+\label{sec:fc-frames}
+
+\Cref{tab:fc-frames} enumerates every value of the \cpp{Frame} enum declared
+in \file{cpp/lupnt/conversions/frame_converter.h}, its origin, the definition
+of its axes, and whether \cpp{ConvertFrameBase} implements a route to it.
+Two aliases exist at the enum level: \code{ECEF} is a synonym for
+\code{ITRF} and \code{ECI} is a synonym for \code{EME}, so they compare
+equal and cannot be distinguished at runtime.
+
+\begin{table}[H]
+  \centering
+  \caption{The \cpp{Frame} enumeration: origin, axis definition, and
+    implementation status.}
+  \label{tab:fc-frames}
+  \small
+  \begin{tabularx}{\textwidth}{l l L l}
+    \toprule
+    \code{Frame} & Origin & Axes & Status \\
+    \midrule
+    \code{UNDEFINED} & --- & sentinel for an untagged state & throws \\
+    \code{ICRF}   & solar-system barycenter & ICRS axes: the kinematically non-rotating extragalactic realization & hub \\
+    \code{GCRF}   & Earth center of mass & ICRS axes, geocentric origin & hub \\
+    \code{ITRF} (\code{ECEF}) & Earth center of mass & IERS terrestrial pole and prime meridian; co-rotates with the crust & implemented \\
+    \code{EME} (\code{ECI}) & Earth center of mass & mean equator and equinox of J2000 & implemented \\
+    \code{EMR}    & Earth--Moon barycenter & synodic: $\uvec{x}$ along Earth$\to$EMB, $\uvec{z}$ along the EMB orbit normal, $\uvec{y}$ completing the in-plane triad & implemented \\
+    \code{SER}    & Earth & Sun--Earth rotating & declared only \\
+    \code{GSE}    & Earth & geocentric solar ecliptic & declared only \\
+    \code{MOD}    & Earth & mean equator and equinox of date & declared only \\
+    \code{TOD}    & Earth & true equator and equinox of date & declared only \\
+    \code{MOON\_CI} & Moon center of mass & ICRS/GCRF axes, selenocentric origin & hub \\
+    \code{MOON\_PA} & Moon center of mass & DE440 lunar principal axes (mantle frame) & implemented \\
+    \code{MOON\_ME} & Moon center of mass & mean-Earth/polar axes; a fixed bias from PA & implemented \\
+    \code{MOON\_OP} & Moon center of mass & orbit plane: $\uvec{z}$ along the Moon--Earth orbit normal, $\uvec{x}$ the ME pole projected into that plane & implemented \\
+    \code{<PLANET>\_CI} & planet center & ICRS axes, planet-centered; \code{MERCURY} \dots \code{NEPTUNE} & implemented \\
+    \code{<PLANET>\_FIXED} & planet center & IAU body-fixed axes (pole $\alpha,\delta$ and prime meridian $W$) & implemented \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Requesting a conversion to or from \code{SER}, \code{GSE}, \code{MOD},
+\code{TOD} or \code{UNDEFINED} makes \cpp{ConvertFrameBase} raise a
+\code{std::runtime\_error} carrying the message \code{"Not implemented"};
+these values exist so that external data tagged with them round-trips
+through the enum, not because a transformation is available.
+
+\paragraph{Frame centers.} The map \cpp{frame\_centers} and its accessor
+\cpp{GetFrameCenter} give the natural central body of a frame, used by the
+dynamics and clock models to pick a gravitational parameter and a
+relativity reference:
+%
+\begin{align}
+  \label{eq:fc-centers}
+  \operatorname{center}(\mathrm{ICRF}) &= \mathrm{SSB}, \nonumber\\
+  \operatorname{center}(\mathrm{GCRF})
+    = \operatorname{center}(\mathrm{ITRF})
+    &= \operatorname{center}(\mathrm{EME}) = \mathrm{Earth}, \\
+  \operatorname{center}(\mathrm{MOON\_CI})
+    = \operatorname{center}(\mathrm{MOON\_PA})
+    = \operatorname{center}(\mathrm{MOON\_ME})
+    &= \operatorname{center}(\mathrm{MOON\_OP}) = \mathrm{Moon},
+    \nonumber
+\end{align}
+%
+together with $\operatorname{center}(\code{<PLANET>\_CI}) =
+\operatorname{center}(\code{<PLANET>\_FIXED}) = \text{that planet}$.
+
+\begin{lupntnote}
+  \code{EMR} has no entry in \cpp{frame\_centers}, so
+  \cpp{GetFrameCenter}\code{(Frame::EMR)} throws even though
+  \cpp{ConvertFrame} handles \code{EMR} states. Code that needs a center for
+  a rotating frame must special-case it.
+\end{lupntnote}
+
+\section{The affine transform}
+\label{sec:fc-affine}
+
+\subsection{Positions}
+
+For position-only conversions, the mapping from frame $A$ to frame $B$ is
+affine:
+%
+\begin{equation}
+  \label{eq:fc-affine}
+  \vec{r}_B = \mat{R}_{BA}(t)\,\vec{r}_A + \vec{p}_{BA}(t),
+\end{equation}
+%
+where $\mat{R}_{BA} \in SO(3)$ rotates vector \emph{components} from the $A$
+axes into the $B$ axes, and $\vec{p}_{BA}$ is the position of the origin of
+$A$ expressed in $B$ axes. \cpp{GetFrameRotationTranslation} returns exactly
+the pair $(\mat{R}_{BA}, \vec{p}_{BA})$, and it recovers them without any
+knowledge of the routing by transforming the identity basis and the zero
+vector:
+
+\begin{lstlisting}[language=cpp, caption={Recovering the affine pair from
+  the generic dispatcher (\texttt{cpp/lupnt/conversions/frame\_converter.cc}).},
+  label={lst:fc-rt}]
+// cpp/lupnt/conversions/frame_converter.cc :: GetFrameRotationTranslation
+std::pair<Mat3, Vec3> GetFrameRotationTranslation(Real t_tdb, Frame from_frame, Frame to_frame) {
+  MatX3 I3 = Mat3::Identity();
+  Mat3 M = ConvertFrame(t_tdb, I3, from_frame, to_frame);          // images of e1,e2,e3
+  MatX3 r0 = MatX3::Zero(1, 3);
+  Vec3 r = ConvertFrame(t_tdb, r0, from_frame, to_frame).transpose();   // image of 0 = p_BA
+  Mat3 R = (M.rowwise() - r.transpose()).transpose();              // subtract the offset
+  return std::make_pair(R, r);
+}
+\end{lstlisting}
+
+\subsection{Cartesian states and the transport term}
+\label{sec:fc-transport}
+
+For a Cartesian state $\vec{x} = (\vec{r}, \vec{v})$ the transform is again
+affine, now in six dimensions,
+%
+\begin{equation}
+  \label{eq:fc-affine6}
+  \begin{bmatrix}\vec{r}_B \\ \vec{v}_B\end{bmatrix}
+  =
+  \mat{R}_{6,BA}(t)
+  \begin{bmatrix}\vec{r}_A \\ \vec{v}_A\end{bmatrix}
+  + \vec{p}_{6,BA}(t),
+\end{equation}
+%
+and for a transform composed of a time-dependent rotation and a
+time-dependent translation the blocks follow from differentiating
+\cref{eq:fc-affine}:
+%
+\begin{equation}
+  \label{eq:fc-vel}
+  \vec{v}_B
+  = \mat{R}_{BA}\,\vec{v}_A
+  + \dot{\mat{R}}_{BA}\,\vec{r}_A
+  + \dot{\vec{p}}_{BA},
+  \qquad
+  \mat{R}_{6,BA}
+  = \begin{bmatrix}
+      \mat{R}_{BA} & \mat{0} \\
+      \dot{\mat{R}}_{BA} & \mat{R}_{BA}
+    \end{bmatrix}.
+\end{equation}
+%
+The middle term of \cref{eq:fc-vel} is the transport (or \emph{Coriolis
+carry}) contribution. It is worth writing it in its physical form. Because
+$\mat{R}_{BA}$ is orthogonal, differentiating
+$\mat{R}_{BA}\mat{R}_{BA}\transpose = \mat{I}$ shows that
+$\dot{\mat{R}}_{BA}\mat{R}_{BA}\transpose$ is skew-symmetric, so there is a
+unique vector $\vec{\omega}_{BA}$ --- the angular velocity of frame $B$ with
+respect to frame $A$, expressed in $B$ axes --- with
+%
+\begin{equation}
+  \label{eq:fc-omega}
+  \dot{\mat{R}}_{BA}\,\mat{R}_{BA}\transpose = -\left[\vec{\omega}_{BA}\right]_\times,
+  \qquad
+  \left[\vec{a}\right]_\times \vec{b} \equiv \vec{a}\times\vec{b}.
+\end{equation}
+%
+Substituting into \cref{eq:fc-vel} with $\vec{p}_{BA}=\vec{0}$ gives the
+familiar form
+%
+\begin{equation}
+  \label{eq:fc-transport}
+  \vec{v}_B
+  = \mat{R}_{BA}\,\vec{v}_A - \vec{\omega}_{BA}\times\vec{r}_B .
+\end{equation}
+%
+\lupnt{} never forms $\vec{\omega}_{BA}$ explicitly: it propagates
+$\dot{\mat{R}}$ analytically through the product rule, which is both exact
+and differentiable by the automatic-differentiation scalar type. The sign in
+\cref{eq:fc-omega} follows from \lupnt{}'s \emph{passive} elementary
+rotations,
+%
+\begin{equation}
+  \label{eq:fc-elementary}
+  \mat{R}_x(\alpha) =
+  \begin{bmatrix} 1&0&0\\ 0&\cos\alpha&\sin\alpha\\ 0&-\sin\alpha&\cos\alpha\end{bmatrix},
+  \quad
+  \mat{R}_y(\alpha) =
+  \begin{bmatrix} \cos\alpha&0&-\sin\alpha\\ 0&1&0\\ \sin\alpha&0&\cos\alpha\end{bmatrix},
+  \quad
+  \mat{R}_z(\alpha) =
+  \begin{bmatrix} \cos\alpha&\sin\alpha&0\\ -\sin\alpha&\cos\alpha&0\\ 0&0&1\end{bmatrix},
+\end{equation}
+%
+defined in \file{cpp/lupnt/numerics/math_utils.cc} together with their exact
+derivatives $\mat{R}_x'(\alpha,\dot\alpha) = \dd\mat{R}_x/\dd t$ etc.\ (the
+\cpp{RotXdot}/\cpp{RotYdot}/\cpp{RotZdot} family). Every composite rotation
+in this chapter is built from these three, which is what guarantees that the
+reconstructed matrices are orthonormal to floating-point precision no matter
+how the underlying angles were obtained.
+
+\cpp{GetFrameRotationTranslationRv} returns
+$(\mat{R}_{6,BA}, \vec{p}_{6,BA})$ by the same trick as \cref{lst:fc-rt},
+applied to the six Cartesian basis states:
+
+\begin{lstlisting}[language=cpp, caption={Six-state affine transform
+  (\texttt{cpp/lupnt/conversions/frame\_converter.cc}).},
+  label={lst:fc-rt6}]
+// cpp/lupnt/conversions/frame_converter.cc :: GetFrameRotationTranslationRv
+MatX6 zero_row = MatX6::Zero(1, 6);
+Vec6 t6 = ConvertFrame(t_tdb, zero_row, from_frame, to_frame, false).row(0).transpose();
+MatX6 I6 = Mat6::Identity();
+MatX6 Y = ConvertFrame(t_tdb, I6, from_frame, to_frame, false);  // 6x6
+Mat6 R6;
+for (int j = 0; j < 6; ++j) R6.col(j) = Y.row(j).transpose() - t6;
+return {R6, t6};
+\end{lstlisting}
+
+\subsection{Rotate-only mode}
+
+Every \cpp{ConvertFrame} overload accepts a trailing \code{rotate\_only}
+flag. When it is set, the six-state path is replaced by the \emph{three}
+dimensional affine pair applied to the position and the bare rotation
+applied to the velocity:
+%
+\begin{equation}
+  \label{eq:fc-rotate-only}
+  \vec{r}_B = \mat{R}_{BA}\vec{r}_A + \vec{p}_{BA},
+  \qquad
+  \vec{v}_B = \mat{R}_{BA}\vec{v}_A .
+\end{equation}
+
+\begin{lstlisting}[language=cpp, caption={The \texttt{rotate\_only} branch
+  (\texttt{cpp/lupnt/conversions/frame\_converter.cc}).},
+  label={lst:fc-rotate-only}]
+// cpp/lupnt/conversions/frame_converter.cc :: ConvertFrame (Vec6 overload)
+Vec6 ConvertFrame(Real t_tdb, const Vec6& rv_in, Frame frame_in, Frame frame_out,
+                  bool rotate_only) {
+  if (frame_in == frame_out) return rv_in;
+  if (!rotate_only) return ConvertFrameBase(t_tdb, rv_in, frame_in, frame_out);
+  auto [R, r] = GetFrameRotationTranslation(t_tdb, frame_in, frame_out);
+  Vec6 rv_out;
+  rv_out.head(3) = R * rv_in.head(3) + r;   // position: rotate AND translate
+  rv_out.tail(3) = R * rv_in.tail(3);       // velocity: rotate only
+  return rv_out;
+}
+\end{lstlisting}
+
+\begin{lupntnote}
+  The name is slightly misleading: \code{rotate\_only} still translates the
+  \emph{position} by $\vec{p}_{BA}$; what it drops is the
+  $\dot{\mat{R}}\vec{r} + \dot{\vec{p}}$ contribution to the
+  \emph{velocity}. Use it for vector-like quantities --- accelerations,
+  line-of-sight directions, local offsets --- where the origin motion must
+  not appear. For an absolute position--velocity state, leave it \code{false}.
+\end{lupntnote}
+
+\section{The frame graph and the routing algorithm}
+\label{sec:fc-graph}
+
+\cpp{ConvertFrameBase} is a recursive \code{switch} over \code{frame\_in}
+that hops through three hubs --- ICRF for the solar system, GCRF for the
+Earth family, and MOON\_CI for the lunar family --- until \code{frame\_out}
+is reached. \Cref{fig:fc-graph} draws the implemented graph.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[node distance=8mm]
+    % --- hubs ---------------------------------------------------------
+    \node[tsnode] (icrf)  at (0,0)     {ICRF};
+    \node[tsnode] (gcrf)  at (3.4,0)   {GCRF};
+    \node[tsnode] (mci)   at (7.0,0)   {MOON\_CI};
+    % --- Earth family -------------------------------------------------
+    \node[tsnode] (itrf)  at (2.1,1.7)  {ITRF};
+    \node[tsnode] (eme)   at (4.7,1.7)  {EME};
+    \node[tsnode] (emr)   at (3.4,-1.7) {EMR};
+    \node[tsnode] (nyi)   at (0.7,-1.7) {\footnotesize MOD/TOD/SER/GSE};
+    % --- Moon family --------------------------------------------------
+    \node[tsnode] (mpa)   at (7.0,1.7)  {MOON\_PA};
+    \node[tsnode] (mme)   at (7.0,3.2)  {MOON\_ME};
+    \node[tsnode] (mop)   at (9.9,0)    {MOON\_OP};
+    % --- planets ------------------------------------------------------
+    \node[tsnode] (pci)   at (-0.2,-1.7) [anchor=east] {\footnotesize $\langle$PLANET$\rangle$\_CI};
+    \node[tsnode] (pfx)   at (-0.2,-3.2) [anchor=east] {\footnotesize $\langle$PLANET$\rangle$\_FIXED};
+    % --- edges --------------------------------------------------------
+    \draw[model]    (icrf) -- node[above,font=\scriptsize] {SSB$\to$E} (gcrf);
+    \draw[model]    (gcrf) -- node[above,font=\scriptsize] {E$\to$M} (mci);
+    \draw[linear]   (gcrf) -- node[left,font=\scriptsize,pos=0.55] {$\mat{R}_{\mathrm{polar}}\mat{R}_{\mathrm{ERA}}\mat{R}_{\mathrm{PN}}$} (itrf);
+    \draw[constant] (gcrf) -- node[right,font=\scriptsize,pos=0.55] {$\mat{B}_e$} (eme);
+    \draw[model]    (gcrf) -- node[right,font=\scriptsize] {synodic} (emr);
+    \draw[linear]   (mci)  -- node[right,font=\scriptsize] {$\mat{R}_{\mathrm{PA},\mathrm{CI}}(\phi,\theta,\psi)$} (mpa);
+    \draw[constant] (mpa)  -- node[right,font=\scriptsize] {$\mat{B}_{\mathrm{moon}}$} (mme);
+    \draw[linear]   (mci)  -- node[above,font=\scriptsize] {$\mat{R}_{\mathrm{OP}}$} (mop);
+    \draw[model]    (icrf) -- (pci);
+    \draw[linear]   (pci)  -- node[left,font=\scriptsize] {IAU $W,\alpha,\delta$} (pfx);
+    \draw[table]    (gcrf) -- (nyi);
+    % --- legend -------------------------------------------------------
+    \begin{scope}[shift={(0,-4.6)}]
+      \draw[model]    (0,0)   -- (0.8,0)   node[right,font=\scriptsize] {ephemeris translation};
+      \draw[linear]   (4.2,0) -- (5.0,0)   node[right,font=\scriptsize] {time-dependent rotation};
+      \draw[constant] (8.2,0) -- (9.0,0)   node[right,font=\scriptsize] {constant bias};
+      \draw[table]    (4.2,-0.55) -- (5.0,-0.55) node[right,font=\scriptsize] {declared, not implemented};
+    \end{scope}
+  \end{tikzpicture}
+  \caption{The implemented frame graph. ICRF, GCRF and MOON\_CI are the
+    three hubs; every conversion is routed as a path through them. Edge
+    style encodes the nature of the transformation.}
+  \label{fig:fc-graph}
+\end{figure}
+
+Solar-system planet frames are peeled off first, because they need the ICRF
+hub rather than the GCRF one, and because a same-body \code{<PLANET>\_CI}
+$\leftrightarrow$ \code{<PLANET>\_FIXED} pair must \emph{not} round-trip
+through the barycenter --- doing so would add and subtract a
+$\sim\SI{1e11}{\meter}$ vector and destroy the precision of a small
+body-relative state.
+
+\begin{lstlisting}[language=cpp, caption={The routing switch and the
+  planet-frame fast path
+  (\texttt{cpp/lupnt/conversions/frame\_converter.cc}).},
+  label={lst:fc-route}]
+// cpp/lupnt/conversions/frame_converter.cc :: ConvertFrameBase
+template <int N>
+Vec<N> ConvertFrameBase(Real t_tdb, const Vec<N>& rv_in, Frame frame_in, Frame frame_out) {
+  if (frame_in == frame_out) return rv_in;
+  if (IsPlanetFrame(frame_in) || IsPlanetFrame(frame_out))
+    return ConvertPlanetFrame(t_tdb, rv_in, frame_in, frame_out);
+  switch (frame_in) {
+    case Frame::ICRF:
+      return ConvertFrame(t_tdb, IcrfToGcrf(t_tdb, rv_in), Frame::GCRF, frame_out);
+    case Frame::ITRF:
+      return ConvertFrame(t_tdb, ItrfToGcrf(t_tdb, rv_in), Frame::GCRF, frame_out);
+    case Frame::GCRF:
+      switch (frame_out) {
+        case Frame::ICRF: return GcrfToIcrf(t_tdb, rv_in);
+        case Frame::ITRF: return GcrfToItrf(t_tdb, rv_in);
+        case Frame::EMR:  return GcrfToEmr(t_tdb, rv_in);
+        case Frame::EME:  return GcrfToEme(rv_in);
+        case Frame::SER: case Frame::GSE:
+        case Frame::MOD: case Frame::TOD: throw std::runtime_error("Not implemented");
+        case Frame::MOON_PA: case Frame::MOON_ME: case Frame::MOON_OP: case Frame::MOON_CI:
+          return ConvertFrame(t_tdb, GcrfToMoonCi(t_tdb, rv_in), Frame::MOON_CI, frame_out);
+        default: throw std::runtime_error("Not implemented");
+      }
+    case Frame::MOON_CI:
+      switch (frame_out) {
+        case Frame::MOON_OP: return MoonCiToOp(t_tdb, rv_in);
+        case Frame::MOON_PA: return MoonCiToPa(t_tdb, rv_in);
+        case Frame::MOON_ME: return MoonPaToMe(MoonCiToPa(t_tdb, rv_in));
+        default: return ConvertFrame(t_tdb, MoonCiToGcrf(t_tdb, rv_in), Frame::GCRF, frame_out);
+      }
+    // ... MOON_ME / MOON_PA / MOON_OP / EME / EMR hop back to their hub ...
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=cpp, caption={Same-body fast path for planet
+  frames (\texttt{cpp/lupnt/conversions/frame\_converter.cc}).},
+  label={lst:fc-planetroute}]
+// cpp/lupnt/conversions/frame_converter.cc :: ConvertPlanetFrame
+if (IsPlanetFrame(frame_in) && IsPlanetFrame(frame_out)
+    && GetFrameCenter(frame_in) == GetFrameCenter(frame_out)) {
+  BodyId body = GetFrameCenter(frame_in);
+  bool in_fixed = IsPlanetFixedFrame(frame_in);
+  bool out_fixed = IsPlanetFixedFrame(frame_out);
+  if (in_fixed == out_fixed) return rv_in;            // CI<->CI or FIXED<->FIXED
+  if (out_fixed) return BodyCiToFixed(t_tdb, rv_in, body);
+  return BodyFixedToCi(t_tdb, rv_in, body);
+}
+\end{lstlisting}
+
+Because the routing is recursive, a conversion such as ITRF $\to$ MOON\_ME
+is realised as the composition
+ITRF $\to$ GCRF $\to$ MOON\_CI $\to$ MOON\_PA $\to$ MOON\_ME, i.e.\ four
+elementary steps, each contributing its own rotation and, where applicable,
+its own $\dot{\mat{R}}\vec{r}$ term.
+
+\section{ICRF and GCRF}
+\label{sec:fc-icrf}
+
+GCRF and ICRF share axes and differ only in origin. With
+$\vec{r}_{\mathrm{SSB}\to E}$ and $\vec{v}_{\mathrm{SSB}\to E}$ the
+barycentric state of the Earth from DE440 \citep{park2021de440}, expressed in
+GCRF (= ICRS) axes,
+%
+\begin{equation}
+  \label{eq:fc-icrf}
+  \vec{r}_{\mathrm{ICRF}} = \vec{r}_{\mathrm{GCRF}} + \vec{r}_{\mathrm{SSB}\to E},
+  \qquad
+  \vec{v}_{\mathrm{ICRF}} = \vec{v}_{\mathrm{GCRF}} + \vec{v}_{\mathrm{SSB}\to E},
+\end{equation}
+%
+so $\mat{R}_{\mathrm{ICRF},\mathrm{GCRF}} = \mat{I}$ and
+$\vec{p}_{\mathrm{ICRF},\mathrm{GCRF}} = \vec{r}_{\mathrm{SSB}\to E}$; the
+inverse subtracts the same state. This is a purely kinematic
+(Newtonian) origin shift: no relativistic scale factor between TCB-based and
+TCG-based coordinates is applied, which is the correct choice given that
+\lupnt{}'s states are TDB-compatible throughout.
+
+\section{GCRF and ITRF}
+\label{sec:fc-itrf}
+
+This is the only conversion in \lupnt{} that involves three different time
+scales simultaneously. It follows the IAU 2006/2000A CIO-based convention
+\citep{iers2010}, factored into the product of three rotations:
+%
+\begin{equation}
+  \label{eq:fc-itrf-chain}
+  \mat{R}_{\mathrm{ITRF},\mathrm{GCRF}}(t)
+  =
+  \underbrace{\mat{R}_{\mathrm{polar}}\!\left(t_{\TT}, x_p, y_p\right)}_{\text{polar motion}}
+  \;
+  \underbrace{\mat{R}_{\mathrm{ERA}}\!\left(t_{\UTone}\right)}_{\text{Earth rotation}}
+  \;
+  \underbrace{\mat{R}_{\mathrm{PN}}\!\left(t_{\TT}\right)}_{\text{bias--precession--nutation}} .
+\end{equation}
+%
+Read right to left: a GCRF vector is first carried into the Celestial
+Intermediate Reference System, then rotated about the Celestial Intermediate
+Pole (CIP) through the Earth Rotation Angle into the Terrestrial
+Intermediate Reference System, and finally tilted onto the ITRF pole by
+polar motion.
+
+\subsection{Bias, precession and nutation}
+
+\lupnt{} does not evaluate the classical precession and nutation angle
+series. It reads the CIP unit-vector coordinates $X, Y$ and the CIO locator
+$s$ from a tabulated IAU 2006/2000A (SOFA) series
+(\file{cpp/lupnt/interfaces/iau_sofa.cc}, one row per day in arcseconds
+against Julian date TT, interpolated with a ninth-order Lagrange
+polynomial), and assembles the celestial-to-intermediate matrix in closed
+form:
+%
+\begin{equation}
+  \label{eq:fc-pn}
+  \mat{R}_{\mathrm{PN}}
+  =
+  \mat{R}_z(-s)
+  \begin{bmatrix}
+    1-aX^2 & -aXY   & -X \\
+    -aXY   & 1-aY^2 & -Y \\
+    X      & Y      & 1-a\left(X^2+Y^2\right)
+  \end{bmatrix},
+  \qquad
+  a = \frac{1}{1+\sqrt{1-X^2-Y^2}} .
+\end{equation}
+%
+Here $X = \sin d\cos E$ and $Y = \sin d\sin E$ are the direction cosines of
+the CIP in the GCRS, $d$ and $E$ being its polar coordinates, and $s$ is the
+CIO locator that positions the Celestial Intermediate Origin on the
+intermediate equator. Because the frame bias (the offset between the GCRS
+pole/origin and the mean pole/equinox of J2000) is already folded into the
+tabulated $X, Y, s$, \cref{eq:fc-pn} is a \emph{bias--precession--nutation}
+matrix: no separate bias factor appears in \cref{eq:fc-itrf-chain}. The
+argument is $t_{\TT}$, obtained as
+$t_{\TT} = \code{ConvertTime}(t_{\TDB}, \TDB, \TT)$ and converted to a
+Julian date.
+
+\subsection{Earth rotation}
+
+$\mat{R}_{\mathrm{ERA}} = \mat{R}_z(\theta_{\mathrm{ERA}})$ is a rotation
+about the CIP through the Earth Rotation Angle, which is \emph{exactly}
+linear in UT1 by definition \citep{iers2010}:
+%
+\begin{equation}
+  \label{eq:fc-era}
+  \theta_{\mathrm{ERA}}(t_{\UTone})
+  =
+  2\pi\left(0.7790572732640 + 1.00273781191135448\, D_{\UTone}\right),
+  \qquad
+  D_{\UTone} = \frac{t_{\UTone}}{\SI{86400}{\second}},
+\end{equation}
+%
+with $D_{\UTone}$ the number of UT1 days elapsed since J2000; the result is
+wrapped to $(-\pi,\pi]$. UT1 itself is recovered in one of two ways: if a
+SPICE-fitted EOP model covers the epoch (\cref{sec:fc-spicefit}), then
+$t_{\UTone} = t_{\UTC} + (\UTone-\UTC)_{\text{fitted}}$; otherwise the
+generic $\TDB\to\UTone$ conversion of \cref{chap:time-conversions} is used,
+which interpolates the bundled IERS EOP~14~C04 table.
+
+$\theta_{\mathrm{ERA}}$ is the only factor of \cref{eq:fc-itrf-chain} whose
+derivative is retained. Its rate is the Earth rotation rate
+$\omega_\oplus \approx \SI{7.292115e-5}{\radian\per\second}$, computed as
+%
+\begin{equation}
+  \label{eq:fc-omega-earth}
+  \omega_\oplus =
+  \begin{cases}
+    \dfrac{2\pi \times 1.00273781191135448}{\SI{86400}{\second}}
+      \left(1 + \dfrac{\dd(\UTone-\UTC)}{\dd t}\right)
+      & \text{fitted EOP available,}\\[3.2ex]
+    \num{7.292115146706979e-5}\left(1 - \dfrac{\mathrm{LOD}}{\SI{86400}{\second}}\right)
+      & \text{otherwise,}
+  \end{cases}
+\end{equation}
+%
+where LOD is the excess length of day in seconds interpolated from the EOP
+table at UTC. In the fitted branch the derivative of $\UTone-\UTC$ is
+obtained analytically by differentiating the Chebyshev polynomial, so it is
+exact rather than a finite difference.
+
+\subsection{Polar motion}
+
+$\mat{R}_{\mathrm{polar}}$ carries the CIP onto the ITRF pole using the pole
+offsets $x_p, y_p$ (radians, from the fitted EOP or interpolated from the
+bundled table at UTC) and the TIO locator $s'$:
+%
+\begin{equation}
+  \label{eq:fc-polar}
+  \mat{R}_{\mathrm{polar}}
+  = \mat{R}_x(-y_p)\,\mat{R}_y(-x_p)\,\mat{R}_z(s'),
+  \qquad
+  s' = -47\,\mu''\,T,
+  \qquad
+  T = \frac{t_{\TT}[\si{\second}]}{86400 \times 36525},
+\end{equation}
+%
+where $T$ is the number of Julian centuries of TT elapsed since J2000, as the
+IERS definition of the TIO locator requires \citep[Eq.~(5.13)]{iers2010}.
+\lupnt{} carries $t_{\TT}$ as seconds past J2000, so the conversion divides by
+\code{DAYS\_CENTURY}~$\times$~\code{SECS\_DAY}. The evaluation is factored into
+a single file-local helper, templated on the scalar type so that the
+\cpp{Real} caller keeps its autodiff derivative and the \cpp{double} caller
+stays plain arithmetic:
+
+\begin{lstlisting}[language=cpp, caption={The one place the TIO locator is
+  evaluated (\texttt{cpp/lupnt/conversions/frame\_conversions.cc}).},
+  label={lst:fc-tio}]
+// cpp/lupnt/conversions/frame_conversions.cc :: TioLocator
+template <typename T> inline T TioLocator(const T& t_tt) {
+  return -47e-6 * RAD_ARCSEC * (t_tt / (DAYS_CENTURY * SECS_DAY));
+}
+\end{lstlisting}
+
+\begin{lupntnote}
+  Both the division by \code{SECS\_DAY} and the fact that there is only one
+  copy of \cref{lst:fc-tio} are corrections. The expression previously divided
+  by \code{DAYS\_CENTURY} alone, treating seconds as days: the argument was
+  $t_{\TT}[\si{\second}]/36525$ instead of
+  $t_{\TT}[\si{\second}]/(86400\times36525)$, inflating $s'$ by a factor of
+  $\num{86400}$. By the mid-2020s that gave $s' \approx \num{4.9e-6}$~rad in
+  place of the intended $\num{5.7e-11}$~rad --- since $s'$ enters
+  $\mat{R}_z$ alongside $\theta_{\mathrm{ERA}}$, about \SI{31}{\meter} of
+  spurious rotation about the polar axis at the equator.
+
+  The more useful lesson is why it went unnoticed for so long. The formula was
+  written out in \emph{three} places: \cpp{RotPolarMotion}, which applies
+  $s'$; \cpp{ComputeEopFromSpice} (\cref{sec:fc-spicefit}), which subtracts it
+  again when inverting SPICE for the ERA; and a hardcoded copy inside the
+  round-trip test in \file{cpp/test/conversions/test_frame_conversions.cc}. In
+  that round trip $s'$ cancels identically --- one site removes exactly what
+  the other re-applies --- so the test only ever verified that the copies
+  \emph{agreed with each other}. It would have passed for any value of $s'$
+  whatsoever, including zero, which is precisely how a wrong one survived.
+  The two library sites are now the single helper of \cref{lst:fc-tio}; the
+  test keeps its own independent expression on purpose, since a test that
+  called the helper would verify nothing. Collapsing the duplicates removes the
+  possibility of disagreement but not the possibility of a shared error, so the
+  magnitude itself is now pinned separately by
+  \code{conversions.frame\_conversions\_extra.tio\_locator\_magnitude} in
+  \file{cpp/test/conversions/test_frame_conversions_extra.cc}, which recovers
+  $s'$ from $\mat{R}_{\mathrm{polar}}$ and bounds it at
+  $\num{1e-8}$~rad --- orders of magnitude away from both the correct value and
+  the old one.
+\end{lupntnote}
+
+\subsection{The complete mapping and its inverse}
+
+The position and velocity mapping is
+%
+\begin{align}
+  \label{eq:fc-itrf-rv}
+  \vec{r}_{\mathrm{ITRF}} &= \mat{R}_{\mathrm{ITRF},\mathrm{GCRF}}\,\vec{r}_{\mathrm{GCRF}}, \\
+  \vec{v}_{\mathrm{ITRF}} &= \mat{R}_{\mathrm{ITRF},\mathrm{GCRF}}\,\vec{v}_{\mathrm{GCRF}}
+    + \dot{\mat{R}}_{\mathrm{ITRF},\mathrm{GCRF}}\,\vec{r}_{\mathrm{GCRF}},
+  \nonumber
+\end{align}
+%
+where only the sidereal factor is differentiated,
+%
+\begin{equation}
+  \label{eq:fc-itrf-rdot}
+  \dot{\mat{R}}_{\mathrm{ITRF},\mathrm{GCRF}}
+  = \mat{R}_{\mathrm{polar}}\,\dot{\mat{R}}_{\mathrm{ERA}}\,\mat{R}_{\mathrm{PN}} .
+\end{equation}
+%
+Applying \cref{eq:fc-omega} to \cref{eq:fc-itrf-rdot} and using
+$\dot{\mat{R}}_{\mathrm{ERA}}\mat{R}_{\mathrm{ERA}}\transpose
+= -\left[\omega_\oplus\uvec{z}\right]_\times$ gives
+%
+\begin{equation}
+  \label{eq:fc-itrf-omega}
+  \dot{\mat{R}}_{\mathrm{ITRF},\mathrm{GCRF}}\,
+  \mat{R}_{\mathrm{ITRF},\mathrm{GCRF}}\transpose
+  = -\left[\vec{\omega}_\oplus\right]_\times,
+  \qquad
+  \vec{\omega}_\oplus = \omega_\oplus\, \mat{R}_{\mathrm{polar}}\uvec{z},
+\end{equation}
+%
+so \cref{eq:fc-itrf-rv} is exactly the classical
+$\vec{v}_{\mathrm{ITRF}} = \mat{R}\vec{v}_{\mathrm{GCRF}}
+- \vec{\omega}_\oplus\times\vec{r}_{\mathrm{ITRF}}$ with the spin axis taken
+as the polar-motion-corrected CIP direction --- to first order, the ITRF
+$z$-axis. Neglecting $\dot{\mat{R}}_{\mathrm{PN}}$ and
+$\dot{\mat{R}}_{\mathrm{polar}}$ discards precession--nutation rates of
+order $\num{1e-12}$~rad/s and polar-motion rates of order $\num{1e-13}$~rad/s,
+seven to eight orders of magnitude below $\omega_\oplus$; see
+\cref{sec:fc-boundaries} for the resulting velocity error.
+
+The inverse solves \cref{eq:fc-itrf-rv} for the GCRF state, reusing the
+already-computed $\vec{r}_{\mathrm{GCRF}}$ in the transport term:
+%
+\begin{align}
+  \label{eq:fc-itrf-inv}
+  \vec{r}_{\mathrm{GCRF}} &= \mat{R}_{\mathrm{ITRF},\mathrm{GCRF}}\transpose\,\vec{r}_{\mathrm{ITRF}}, \\
+  \vec{v}_{\mathrm{GCRF}} &= \mat{R}_{\mathrm{ITRF},\mathrm{GCRF}}\transpose
+    \left(\vec{v}_{\mathrm{ITRF}} - \dot{\mat{R}}_{\mathrm{ITRF},\mathrm{GCRF}}\,\vec{r}_{\mathrm{GCRF}}\right).
+  \nonumber
+\end{align}
+
+\begin{lstlisting}[language=cpp, caption={GCRF to ITRF, rotation product and
+  velocity term
+  (\texttt{cpp/lupnt/conversions/frame\_conversions.cc}).},
+  label={lst:fc-gcrf-itrf}]
+// cpp/lupnt/conversions/frame_conversions.cc :: GcrfToItrf
+Vec6 GcrfToItrf(Real t_tdb, const Vec6& rv_gcrf) {
+  Mat3 R_po    = RotPolarMotion(t_tdb);        // R_polar(t_TT, x_p, y_p)
+  Mat3 R_pn    = RotPrecessionNutation(t_tdb); // R_PN(t_TT) from tabulated (X, Y, s)
+  Mat3 R_s     = RotSideralMotion(t_tdb);      // R_z(theta_ERA(t_UT1))
+  Mat3 R_s_dot = RotSideralMotionDot(t_tdb);   // d/dt of the above
+
+  Mat3 R_GcrfToItrf     = R_po * R_s     * R_pn;
+  Mat3 R_GcrfToItrf_dot = R_po * R_s_dot * R_pn;
+
+  Vec3 r_gcrf = rv_gcrf.head(3);
+  Vec3 v_gcrf = rv_gcrf.tail(3);
+  Vec3 r_itrf = R_GcrfToItrf * r_gcrf;
+  Vec3 v_itrf = R_GcrfToItrf * v_gcrf + R_GcrfToItrf_dot * r_gcrf;
+
+  Vec6 rv_itrf;
+  rv_itrf << r_itrf, v_itrf;
+  return rv_itrf;
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=cpp, caption={Precession--nutation from the
+  tabulated CIP coordinates
+  (\texttt{cpp/lupnt/conversions/frame\_conversions.cc}).},
+  label={lst:fc-pn}]
+// cpp/lupnt/conversions/frame_conversions.cc :: RotPrecessionNutation
+Real t_tt  = ConvertTime(t_tdb, Time::TDB, Time::TT);
+Real jd_tt = TimeToJd(t_tt);
+IauSofaData iau_data = GetIauSofaData(jd_tt);   // X, Y, s in arcsec
+Real X = iau_data.X * RAD_ARCSEC;
+Real Y = iau_data.Y * RAD_ARCSEC;
+Real s = iau_data.s * RAD_ARCSEC;
+Real a = 1. / (1. + sqrt(1. - X * X - Y * Y));
+Mat3 mat{{1. - a * X * X, -a * X * Y,     -X},
+         {-a * X * Y,     1. - a * Y * Y, -Y},
+         {X,              Y,              1. - a * (X * X + Y * Y)}};
+Mat3 R_pn = RotZ(-s) * mat;
+\end{lstlisting}
+
+\begin{lupntnote}
+  The \cpp{Vec3} (position-only) overloads of \cpp{GcrfToItrf} and
+  \cpp{ItrfToGcrf} skip \cpp{RotSideralMotionDot} entirely. They are
+  therefore cheaper by one EOP lookup, and are the right entry point for
+  static ground-station coordinates.
+\end{lupntnote}
+
+\subsection{Equinox-based sidereal angles}
+
+\lupnt{} also provides the classical equinox-based angles in
+\file{cpp/lupnt/conversions/time_conversions.cc}, but they are \emph{not}
+used by \cpp{GcrfToItrf}. Greenwich Mean Sidereal Time is evaluated from the
+IAU-82 polynomial,
+%
+\begin{equation}
+  \label{eq:fc-gmst}
+  \begin{aligned}
+    \theta_{\mathrm{GMST}}
+      &= 2\pi \operatorname{frac}\!\left(\frac{g}{\SI{86400}{\second}}\right), \\
+    g &= 24110.54841 + 8640184.812866\,T_0
+         + 1.002737909350795\,u
+         + \left(0.093104 - \num{6.2e-6}\,T\right)T^2,
+  \end{aligned}
+\end{equation}
+%
+with $T_0$ the Julian centuries from J2000 to UT1 midnight of the day in
+question, $u$ the seconds of UT1 elapsed since that midnight, and $T$ the
+Julian centuries from J2000 to the epoch itself; Greenwich Apparent Sidereal
+Time adds the equation of the equinoxes,
+%
+\begin{equation}
+  \label{eq:fc-gast}
+  \theta_{\mathrm{GAST}} = \theta_{\mathrm{GMST}} + \Delta\psi\cos\varepsilon
+  \pmod{2\pi}.
+\end{equation}
+%
+GAST is used by the Sun/Moon analytic ephemeris helper
+(\file{cpp/lupnt/environment/solar_system.cc}, which builds
+$\mat{R}_z(\theta_{\mathrm{GAST}})$), and both angles are cross-validated
+against Orekit. Because \cref{eq:fc-itrf-chain} is CIO-based, the equinox
+route and the CIO route are alternative --- not composable --- descriptions
+of the same physical rotation.
+
+\section{GCRF and EME2000}
+\label{sec:fc-eme}
+
+EME2000 (also called J2000 or, in the enum, \code{ECI}) is the mean equator
+and equinox of J2000. It differs from GCRF by the constant IAU 2006 frame
+bias:
+%
+\begin{equation}
+  \label{eq:fc-bias}
+  \mat{B}_e \equiv \mat{R}_{\mathrm{EME},\mathrm{GCRF}}
+  = \mat{R}_x(-\eta_0)\,\mat{R}_y(\xi_0)\,\mat{R}_z(\Delta\alpha_0),
+\end{equation}
+%
+with the three bias angles taken from
+\file{cpp/lupnt/core/constants.h},
+%
+\begin{equation}
+  \label{eq:fc-bias-angles}
+  \xi_0 = -16.6170\ \mathrm{mas}, \qquad
+  \eta_0 = -6.8192\ \mathrm{mas}, \qquad
+  \Delta\alpha_0 = -14.6\ \mathrm{mas},
+\end{equation}
+%
+where $\xi_0, \eta_0$ are the celestial-pole offsets at J2000 and
+$\Delta\alpha_0$ is the right-ascension offset of the GCRS origin from the
+mean equinox \citep{iers2010}. \Cref{eq:fc-bias} is exact to all orders in
+the angles because it is a genuine product of elementary rotations; the
+first- and second-order approximations are also available for comparison,
+%
+\begin{equation}
+  \label{eq:fc-bias-first}
+  \mat{B}_e \approx
+  \begin{bmatrix}
+    1 & \Delta\alpha_0 & -\xi_0 \\
+    -\Delta\alpha_0 & 1 & -\eta_0 \\
+    \xi_0 & \eta_0 & 1
+  \end{bmatrix}
+  \quad (\cpp{RotGcrfToEmeFirstOrder}),
+\end{equation}
+%
+with \cpp{RotGcrfToEmeSecondOrder} retaining the quadratic terms. Since
+$\mat{B}_e$ is constant, $\dot{\mat{B}}_e = \mat{0}$ and the same matrix is
+applied to position and velocity; the inverse is
+$\mat{B}_e\transpose$. Neither \cpp{GcrfToEme} nor \cpp{EmeToGcrf} takes an
+epoch argument.
+
+\section{The Earth--Moon rotating frame}
+\label{sec:fc-emr}
+
+\code{EMR} is a synodic frame built on the instantaneous Earth$\to$EMB
+(Earth--Moon barycenter) state $(\vec{r}_c, \vec{v}_c)$ taken from DE440 in
+GCRF axes. Its basis is
+%
+\begin{equation}
+  \label{eq:fc-emr-basis}
+  \uvec{x} = \frac{\vec{r}_c}{\lVert\vec{r}_c\rVert},
+  \qquad
+  \uvec{n} = \frac{\vec{r}_c\times\vec{v}_c}{\lVert\vec{r}_c\times\vec{v}_c\rVert},
+  \qquad
+  \uvec{y} = \uvec{n}\times\uvec{x},
+\end{equation}
+%
+and the rotation from GCRF to EMR stacks these as rows in the order
+$(\uvec{x}, \uvec{y}, \uvec{n})$, so the EMR components of a vector are
+(radial, in-track, orbit-normal). The transform of a GCRF state
+$(\vec{r}_d,\vec{v}_d)$ is
+%
+\begin{equation}
+  \label{eq:fc-emr}
+  \vec{r}_{\mathrm{EMR}} = \mat{R}\left(\vec{r}_d - \vec{r}_c\right),
+  \qquad
+  \vec{v}_{\mathrm{EMR}} = \mat{R}\left(\vec{v}_d - \vec{v}_c
+    - \vec{\omega}\times\left(\vec{r}_d - \vec{r}_c\right)\right),
+\end{equation}
+%
+implemented by \cpp{InertialToSynodic} /\cpp{SynodicToInertial} in
+\file{cpp/lupnt/conversions/state_conversions.cc}, which \cpp{GcrfToEmr} and
+\cpp{EmrToGcrf} wrap. The origin of EMR is therefore the EMB, not the Earth.
+
+\begin{lupntwarning}
+  \cpp{InertialToSynodic} forms the frame angular velocity as
+  $\vec{\omega} = (\vec{r}_c\times\vec{v}_c)/\lVert\vec{r}_c\rVert$, whereas
+  the angular velocity of the rotating frame is
+  $\vec{\omega} = (\vec{r}_c\times\vec{v}_c)/\lVert\vec{r}_c\rVert^2$. The
+  transport term in \cref{eq:fc-emr} is consequently scaled by
+  $\lVert\vec{r}_c\rVert$. EMR \emph{positions} are unaffected (they do not
+  involve $\vec{\omega}$); EMR \emph{velocities} should not be relied on
+  until this is reconciled. The \cpp{Vec3} overloads zero the velocity
+  before calling through, so they return correct positions.
+\end{lupntwarning}
+
+\section{GCRF and MOON\_CI}
+\label{sec:fc-moonci}
+
+\code{MOON\_CI} is Moon-centered and axis-aligned with GCRF/ICRF: the
+conversion is a pure translation by the geocentric Moon state, evaluated
+from the DE440 Chebyshev coefficients \citep{park2021de440} bundled with
+\lupnt{} (\file{cpp/lupnt/interfaces/kernels.cc}). With
+$\vec{r}_{E\to M}, \vec{v}_{E\to M}$ the Moon state relative to Earth in
+GCRF axes,
+%
+\begin{equation}
+  \label{eq:fc-moonci}
+  \vec{r}_{\mathrm{MOON\_CI}} = \vec{r}_{\mathrm{GCRF}} - \vec{r}_{E\to M},
+  \qquad
+  \vec{v}_{\mathrm{MOON\_CI}} = \vec{v}_{\mathrm{GCRF}} - \vec{v}_{E\to M},
+\end{equation}
+%
+so $\mat{R}_{\mathrm{MOON\_CI},\mathrm{GCRF}} = \mat{I}$ and
+$\vec{p} = -\vec{r}_{E\to M}$. The velocity is the analytic derivative of
+the position Chebyshev series, not a finite difference.
+
+\begin{lstlisting}[language=cpp, caption={GCRF to Moon-centered inertial ---
+  a pure DE440 translation
+  (\texttt{cpp/lupnt/conversions/frame\_conversions.cc}).},
+  label={lst:fc-moonci}]
+// cpp/lupnt/conversions/frame_conversions.cc :: GcrfToMoonCi
+Vec6 GcrfToMoonCi(Real t_tdb, const Vec6& rv_gcrf) {
+  Vec6 rv_earth2moon = GetBodyPosVel(t_tdb, BodyId::EARTH, BodyId::MOON, Frame::GCRF);
+  Vec6 rv_mi = rv_gcrf - rv_earth2moon;
+  return rv_mi;
+}
+\end{lstlisting}
+
+\section{MOON\_CI and MOON\_PA}
+\label{sec:fc-moonpa}
+
+\code{MOON\_PA} is the lunar principal-axis (mantle) frame. Its orientation
+relative to the inertial axes is given by the three Euler angles of the
+lunar physical libration, $\phi$ (node), $\theta$ (inclination of the
+principal-axis equator) and $\psi$ (rotation), which DE440 supplies as a
+Chebyshev series in the same file as the planetary positions
+(\cpp{GetLunarMantleData}, ephemeris item
+\code{MOON\_MANTLE\_LIBRATIONS}). The rotation is the classical
+$Z$--$X$--$Z$ sequence
+%
+\begin{equation}
+  \label{eq:fc-moonpa}
+  \mat{R}_{\mathrm{PA},\mathrm{CI}}(t)
+  = \mat{R}_z\!\left(\psi(t)\right)\,
+    \mat{R}_x\!\left(\theta(t)\right)\,
+    \mat{R}_z\!\left(\phi(t)\right),
+\end{equation}
+%
+whose exact derivative follows from the product rule and the elementary
+derivative matrices of \cref{eq:fc-elementary}:
+%
+\begin{equation}
+  \label{eq:fc-moonpa-dot}
+  \dot{\mat{R}}_{\mathrm{PA},\mathrm{CI}}
+  = \mat{R}_z'(\psi,\dot\psi)\,\mat{R}_x(\theta)\,\mat{R}_z(\phi)
+  + \mat{R}_z(\psi)\,\mat{R}_x'(\theta,\dot\theta)\,\mat{R}_z(\phi)
+  + \mat{R}_z(\psi)\,\mat{R}_x(\theta)\,\mat{R}_z'(\phi,\dot\phi).
+\end{equation}
+%
+The angle rates $\dot\phi,\dot\theta,\dot\psi$ come from differentiating the
+same Chebyshev series, so \cref{eq:fc-moonpa-dot} is exact (subject to the
+ephemeris fit), not a numerical derivative. Unlike the Earth case, no term
+is dropped: the lunar rotation rate
+($\approx\SI{2.66e-6}{\radian\per\second}$) and the libration rates are of
+comparable smallness, so retaining all three products matters. The state
+transform and its inverse are
+%
+\begin{align}
+  \label{eq:fc-moonpa-vel}
+  \vec{r}_{\mathrm{PA}} &= \mat{R}_{\mathrm{PA},\mathrm{CI}}\,\vec{r}_{\mathrm{CI}},
+  &\vec{v}_{\mathrm{PA}} &= \mat{R}_{\mathrm{PA},\mathrm{CI}}\,\vec{v}_{\mathrm{CI}}
+    + \dot{\mat{R}}_{\mathrm{PA},\mathrm{CI}}\,\vec{r}_{\mathrm{CI}}, \\
+  \vec{r}_{\mathrm{CI}} &= \mat{R}_{\mathrm{PA},\mathrm{CI}}\transpose\,\vec{r}_{\mathrm{PA}},
+  &\vec{v}_{\mathrm{CI}} &= \mat{R}_{\mathrm{PA},\mathrm{CI}}\transpose
+    \left(\vec{v}_{\mathrm{PA}} - \dot{\mat{R}}_{\mathrm{PA},\mathrm{CI}}\,\vec{r}_{\mathrm{CI}}\right).
+  \nonumber
+\end{align}
+
+\begin{lstlisting}[language=cpp, caption={Lunar libration rotation and its
+  analytic derivative
+  (\texttt{cpp/lupnt/conversions/frame\_conversions.cc}).},
+  label={lst:fc-moonpa}]
+// cpp/lupnt/conversions/frame_conversions.cc :: RotMoonCiToPa
+Vec6 lunar_mantle = GetLunarMantleData(t_tdb, compute_vel);
+auto [phi, theta, psi, phi_dot, theta_dot, psi_dot] = Unpack(lunar_mantle);
+
+Mat3 R_z_phi = RotZ(phi), R_x_theta = RotX(theta), R_z_psi = RotZ(psi);
+Mat3 R_mi2pa = R_z_psi * R_x_theta * R_z_phi;
+
+if (compute_vel) {
+  *R_mi2pa_dot = RotZdot(psi, psi_dot) * R_x_theta          * R_z_phi
+               + R_z_psi               * RotXdot(theta, theta_dot) * R_z_phi
+               + R_z_psi               * R_x_theta          * RotZdot(phi, phi_dot);
+}
+\end{lstlisting}
+
+Two implementation details are worth recording. First,
+\cpp{GetLunarMantleData} divides the raw ephemeris item by
+\code{M\_KM}~$=\num{1e3}$, undoing the kilometre-to-metre scaling that the
+generic Chebyshev reader applies to \emph{position} items, so the returned
+angles are radians and the rates are \si{\radian\per\second}. Second,
+\cpp{RotMoonCiToPa} caches the last evaluated $(\mat{R},\dot{\mat{R}})$ pair
+keyed on the epoch, because a single \cpp{ConvertFrame} call from a
+lunar-fixed frame to an Earth frame can request it several times.
+
+\begin{lupntnote}
+  The \code{M\_KM} division above is applied \emph{once}, in the scalar
+  \cpp{GetLunarMantleData(Real, bool)} overload. The vectorised overload
+  \cpp{GetLunarMantleData(VecX, bool)} in
+  \file{cpp/lupnt/interfaces/kernels.cc} used to divide the scalar overload's
+  return value by \code{M\_KM} a second time, so every libration angle it
+  produced was $\num{1e3}$ too small: at one sample epoch it returned
+  $\phi = \num{-5.41e-5}$ where the scalar overload returned
+  $\num{-5.41e-2}$. The defect was latent --- nothing inside \lupnt{} routes
+  \cref{eq:fc-moonpa} through the vector overload, so no \code{MOON\_PA}
+  result was ever wrong --- but the overload is declared public API in
+  \file{cpp/lupnt/interfaces/kernels.h}, so any external caller batching
+  epochs would have received silently wrong angles. The
+  extra division has been removed, and the two overloads are now required to
+  agree row for row by
+  \code{interfaces.kernels\_extra.lunar\_mantle\_vector\_matches\_scalar} in
+  \file{cpp/test/interfaces/test_kernels_extra.cc}.
+\end{lupntnote}
+
+\begin{lupntnote}
+  If \cpp{InitFrameConversionFromSpice} has fitted a lunar-orientation model
+  covering $t_{\TDB}$, \cpp{TryGetFittedMoonCiToPa} returns the
+  SPICE-derived rotation and its exact derivative instead, and the DE
+  libration branch is bypassed entirely (\cref{sec:fc-spicefit}).
+\end{lupntnote}
+
+\section{MOON\_PA and MOON\_ME}
+\label{sec:fc-moonme}
+
+The mean-Earth/polar-axis frame \code{MOON\_ME} --- the frame in which lunar
+cartographic products and surface-station coordinates are published --- is
+related to the principal-axis frame by a constant bias rotation of three
+small angles:
+%
+\begin{equation}
+  \label{eq:fc-moonme}
+  \mat{B}_{\mathrm{moon}} \equiv \mat{R}_{\mathrm{ME},\mathrm{PA}}
+  = \mat{R}_x(-0.2785'')\,\mat{R}_y(-78.6944'')\,\mat{R}_z(-67.8526'') .
+\end{equation}
+%
+The total angle is about $104''$, i.e.\ roughly \SI{880}{\meter} on the
+lunar surface --- large enough that confusing PA and ME coordinates is a
+first-order error for any surface user. As with the Earth frame bias, the
+same matrix is applied to position and velocity, no epoch is needed, and the
+inverse is the transpose.
+
+\section{MOON\_OP: the lunar orbit-plane frame}
+\label{sec:fc-moonop}
+
+\code{MOON\_OP} is the frozen-orbit analysis frame: it is Moon-centered,
+with its $z$-axis along the Earth--Moon orbital angular momentum and its
+$x$-axis the lunar mean-Earth pole projected into that plane. Let
+$(\vec{r}_{M\to E}, \vec{v}_{M\to E})$ be the Moon-to-Earth state in GCRF
+axes; then
+%
+\begin{equation}
+  \label{eq:fc-moonop-z}
+  \uvec{z}_{\mathrm{OP}}
+  = \frac{\vec{r}_{M\to E}\times\vec{v}_{M\to E}}
+         {\lVert\vec{r}_{M\to E}\times\vec{v}_{M\to E}\rVert},
+\end{equation}
+%
+and with $\uvec{p}$ the \code{MOON\_ME} $z$-axis expressed in
+\code{MOON\_CI} (obtained by a recursive \cpp{ConvertFrame} call on
+$\uvec{e}_z$),
+%
+\begin{equation}
+  \label{eq:fc-moonop-xy}
+  \uvec{x}_{\mathrm{OP}}
+  = \frac{\uvec{p}\times\uvec{z}_{\mathrm{OP}}}
+         {\lVert\uvec{p}\times\uvec{z}_{\mathrm{OP}}\rVert},
+  \qquad
+  \uvec{y}_{\mathrm{OP}} = \uvec{z}_{\mathrm{OP}}\times\uvec{x}_{\mathrm{OP}} .
+\end{equation}
+%
+The columns of the OP-to-CI rotation are these three unit vectors expressed
+in CI axes,
+%
+\begin{equation}
+  \label{eq:fc-moonop-R}
+  \mat{R}_{\mathrm{CI},\mathrm{OP}}
+  = \begin{bmatrix}
+      \uvec{x}_{\mathrm{OP}} & \uvec{y}_{\mathrm{OP}} & \uvec{z}_{\mathrm{OP}}
+    \end{bmatrix},
+\end{equation}
+%
+and \cpp{MoonCiToOp} applies its transpose.
+
+\begin{lstlisting}[language=cpp, caption={Orbit-plane triad
+  (\texttt{cpp/lupnt/conversions/frame\_conversions.cc}).},
+  label={lst:fc-moonop}]
+// cpp/lupnt/conversions/frame_conversions.cc :: RotMoonOpToCi
+Vec6 rv_m2e = GetBodyPosVel(t_tdb, BodyId::MOON, BodyId::EARTH, Frame::GCRF);
+Vec3 z_op   = rv_m2e.head(3).cross(rv_m2e.tail(3)).normalized();
+Vec3 i_pole = ConvertFrame(t_tdb, Vec3::UnitZ(), Frame::MOON_ME, Frame::MOON_CI);
+Vec3 x_op   = i_pole.cross(z_op).normalized();
+Vec3 y_op   = z_op.cross(x_op).normalized();
+Mat3 R_op2ci;
+R_op2ci << x_op, y_op, z_op;
+\end{lstlisting}
+
+\begin{lupntwarning}
+  \cpp{MoonCiToOp}/\cpp{MoonOpToCi} apply $\mat{R}_{\mathrm{CI},\mathrm{OP}}$
+  to position \emph{and} velocity with no $\dot{\mat{R}}$ term. The OP frame
+  precesses with the lunar orbit at
+  $\sim\SI{2.7e-6}{\radian\per\second}$, so an OP velocity omits a transport
+  term of order $\omega r$ --- about \SI{5}{\meter\per\second} at
+  \SI{2000}{\kilo\meter} selenocentric radius. \code{MOON\_OP} is intended
+  for geometric orbit-design work (orbit-plane orientation, frozen-orbit
+  elements), not for velocity-critical computation.
+\end{lupntwarning}
+
+\section{Solar-system planet frames}
+\label{sec:fc-planets}
+
+Each \code{<PLANET>\_CI} frame is planet-centered with ICRF axes; reaching it
+from the ICRF hub is a pure ephemeris translation
+(\cpp{PlanetCiToIcrf}/\cpp{IcrfToPlanetCi}). Each \code{<PLANET>\_FIXED}
+frame co-rotates with the planet under the IAU linear orientation model:
+with pole right ascension $\alpha$, pole declination $\delta$, and
+prime-meridian angle $W$,
+%
+\begin{equation}
+  \label{eq:fc-iau}
+  \mat{R}_{\mathrm{FIXED},\mathrm{CI}}
+  = \mat{R}_z(W)\,
+    \mat{R}_x\!\left(\tfrac{\pi}{2}-\delta\right)\,
+    \mat{R}_z\!\left(\tfrac{\pi}{2}+\alpha\right),
+\end{equation}
+%
+where
+%
+\begin{equation}
+  \label{eq:fc-iau-elements}
+  \alpha = \alpha_0 + \dot{\alpha}\,T, \qquad
+  \delta = \delta_0 + \dot{\delta}\,T, \qquad
+  W = W_0 + \dot{W}\,d,
+\end{equation}
+%
+with $d$ the days and $T = d/36525$ the Julian centuries past J2000 in TT.
+The coefficients (\cref{tab:fc-iau}) are the IAU Working Group on
+Cartographic Coordinates and Rotational Elements values; the small periodic
+terms of the full model are omitted.
+
+\begin{table}[H]
+  \centering
+  \caption{IAU linear orientation coefficients used by
+    \cpp{RotBodyCiToFixed}. Angles in degrees; $T$ in Julian centuries and
+    $d$ in days past J2000 (TT).}
+  \label{tab:fc-iau}
+  \begin{tabular}{l r r r r r r}
+    \toprule
+    Body & $\alpha_0$ & $\dot{\alpha}$ & $\delta_0$ & $\dot{\delta}$ & $W_0$ & $\dot{W}$ \\
+    \midrule
+    Mercury & $281.0103$  & $-0.0328$   & $61.4155$  & $-0.0049$ & $329.5988$ & $6.1385108$    \\
+    Venus   & $272.76$    & $0$         & $67.16$    & $0$       & $160.20$   & $-1.4813688$   \\
+    Mars    & $317.68143$ & $-0.1061$   & $52.88650$ & $-0.0609$ & $176.630$  & $350.89198226$ \\
+    Jupiter & $268.056595$& $-0.006499$ & $64.495303$& $0.002413$& $284.95$   & $870.5360000$  \\
+    Saturn  & $40.589$    & $-0.036$    & $83.537$   & $-0.004$  & $38.90$    & $810.7939024$  \\
+    Uranus  & $257.311$   & $0$         & $-15.175$  & $0$       & $203.81$   & $-501.1600928$ \\
+    Neptune & $299.36$    & $0$         & $43.46$    & $0$       & $249.978$  & $541.1397757$  \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Only the prime-meridian spin contributes appreciably to the derivative --- the
+pole rates are of order $\SI{0.01}{\degree}$ per century, i.e.\
+$\sim\num{1e-16}$~rad/s --- so
+%
+\begin{equation}
+  \label{eq:fc-iau-dot}
+  \dot{\mat{R}}_{\mathrm{FIXED},\mathrm{CI}}
+  \approx \mat{R}_z'\!\left(W, \dot{W}\right)
+    \mat{R}_x\!\left(\tfrac{\pi}{2}-\delta\right)
+    \mat{R}_z\!\left(\tfrac{\pi}{2}+\alpha\right),
+  \qquad
+  \dot{W}\ \text{in \si{\radian\per\second}}.
+\end{equation}
+
+\begin{lstlisting}[language=cpp, caption={IAU body orientation
+  (\texttt{cpp/lupnt/conversions/frame\_conversions.cc}).},
+  label={lst:fc-iau}]
+// cpp/lupnt/conversions/frame_conversions.cc :: RotBodyCiToFixed
+Real t_tt = ConvertTime(t_tdb, Time::TDB, Time::TT);
+Real d = TimeToJd(t_tt) - JD_J2000_TT;  // days past J2000 (TT)
+Real T = d / 36525.0;                   // Julian centuries past J2000 (TT)
+
+Real ra  = (o.ra0  + o.ra0_T  * T) * RAD;
+Real dec = (o.dec0 + o.dec0_T * T) * RAD;
+Real W   = (o.w0   + o.w_dot  * d) * RAD;
+
+Mat3 Rx_pole = RotX(M_PI / 2 - dec);
+Mat3 Rz_node = RotZ(M_PI / 2 + ra);
+Mat3 R = RotZ(W) * Rx_pole * Rz_node;
+if (R_dot != nullptr) {
+  Real w_dot = o.w_dot * RAD / SECS_DAY;  // [rad/s]
+  *R_dot = RotZdot(W, w_dot) * Rx_pole * Rz_node;
+}
+\end{lstlisting}
+
+\section{Topocentric frames: ENU and azimuth--elevation--range}
+\label{sec:fc-topocentric}
+
+The topocentric helpers in
+\file{cpp/lupnt/conversions/coordinate_conversions.cc} operate
+\emph{entirely inside one body-fixed frame}; they take a reference position
+$\vec{r}_{\mathrm{ref}}$ and a body shape, never a \cpp{Frame} argument. The
+caller is responsible for having converted both the target and the reference
+into the same body-fixed frame (ITRF for Earth, MOON\_PA or MOON\_ME for the
+Moon) with \cpp{ConvertFrame} first.
+
+\paragraph{Geodetic coordinates.} With equatorial radius $R_b$, flattening
+$f$, and first eccentricity squared $e^2 = f(2-f)$, the geodetic-to-Cartesian
+map is
+%
+\begin{equation}
+  \label{eq:fc-lla}
+  \vec{r} =
+  \begin{bmatrix}
+    (N+h)\cos\varphi\cos\lambda \\
+    (N+h)\cos\varphi\sin\lambda \\
+    \left((1-e^2)N+h\right)\sin\varphi
+  \end{bmatrix},
+  \qquad
+  N = \frac{R_b}{\sqrt{1-e^2\sin^2\varphi}},
+\end{equation}
+%
+$\varphi$ being geodetic latitude, $\lambda$ longitude and $h$ altitude
+above the ellipsoid. The inverse (\cpp{CartToLatLonAlt}) is the classical
+fixed-point iteration on $\Delta z = N e^2 \sin\varphi$, iterated to
+\code{EPS} and capped at 1000 iterations; passing $R_b = 0$ makes it fall
+back to a sphere of radius $\lVert\vec{r}\rVert$.
+
+\paragraph{East--north--up.} The rotation from body-fixed axes to the local
+ENU triad at $(\varphi,\lambda)$ is
+%
+\begin{equation}
+  \label{eq:fc-enu-rot}
+  \mat{R}_{\mathrm{ENU}}
+  = \mat{R}_x\!\left(\tfrac{\pi}{2}-\varphi\right)
+    \mat{R}_z\!\left(\tfrac{\pi}{2}+\lambda\right)
+  = \begin{bmatrix}
+      -\sin\lambda & \cos\lambda & 0 \\
+      -\sin\varphi\cos\lambda & -\sin\varphi\sin\lambda & \cos\varphi \\
+      \cos\varphi\cos\lambda & \cos\varphi\sin\lambda & \sin\varphi
+    \end{bmatrix},
+\end{equation}
+%
+whose rows are the east, north and up unit vectors. The transform of a
+state is
+%
+\begin{equation}
+  \label{eq:fc-enu}
+  \vec{r}_{\mathrm{ENU}} = \mat{R}_{\mathrm{ENU}}\left(\vec{r}-\vec{r}_{\mathrm{ref}}\right),
+  \qquad
+  \vec{v}_{\mathrm{ENU}} = \mat{R}_{\mathrm{ENU}}\,\vec{v} .
+\end{equation}
+%
+No $\dot{\mat{R}}$ term appears, and none is needed: $\mat{R}_{\mathrm{ENU}}$
+is constant \emph{in the body-fixed frame}, and the input velocity is
+already body-fixed-relative. The rotation of the body has been accounted for
+once, in the GCRF$\to$ITRF (or MOON\_CI$\to$MOON\_PA) step.
+
+\paragraph{Azimuth, elevation, range.} Finally,
+%
+\begin{equation}
+  \label{eq:fc-azel}
+  \rho = \lVert\vec{r}_{\mathrm{ENU}}\rVert, \qquad
+  A = \atantwo(e, n), \qquad
+  E = \arcsin\!\left(\frac{u}{\rho}\right),
+\end{equation}
+%
+so azimuth is measured clockwise from north and elevation upward from the
+local horizon; the inverse is
+$(e,n,u) = \rho(\cos E\sin A,\ \cos E\cos A,\ \sin E)$.
+\cpp{CartToAzElRange} is the composition of \cref{eq:fc-enu} and
+\cref{eq:fc-azel}.
+
+\section{SPICE-calibrated Earth and lunar orientation}
+\label{sec:fc-spicefit}
+
+\lupnt{}'s native Earth and lunar orientation models are analytic and
+self-contained: an IAU 2006/2000A series plus an IERS EOP table for the
+Earth, and DE Chebyshev libration angles for the Moon. Both can disagree
+with SPICE's high-accuracy binary PCK products
+(\file{earth_latest_high_prec.bpc}, \file{moon_pa_de*.bpc})
+\citep{acton1996spice}, most severely when the bundled EOP table does not
+cover the requested epoch. \cpp{InitFrameConversionFromSpice} closes that
+gap for a known simulation window, without requiring SPICE at evaluation
+time.
+
+For the Earth, \cpp{ComputeEopFromSpice} inverts the decomposition
+\cref{eq:fc-itrf-chain} at a single epoch. Given SPICE's
+\code{"J2000"}$\to$\code{"ITRF93"} rotation $\mat{R}_{\mathrm{SPICE}}$ and
+\lupnt{}'s own $\mat{R}_{\mathrm{PN}}$, it forms
+$\mat{M} = \mat{R}_{\mathrm{SPICE}}\mat{R}_{\mathrm{PN}}\transpose$ and reads
+off
+%
+\begin{equation}
+  \label{eq:fc-eopinv}
+  x_p = \arcsin M_{13}, \qquad
+  y_p = -\atantwo\!\left(M_{23}, M_{33}\right), \qquad
+  s' + \theta_{\mathrm{ERA}} = \atantwo\!\left(M_{12}, M_{11}\right),
+\end{equation}
+%
+then linearises \cref{eq:fc-era} about $t_{\UTone}\approx t_{\TDB}$ to
+recover $\UTone-\UTC$ (valid because the true offset is at most about
+\SI{1}{\second}, far shorter than the one-day period of
+$\theta_{\mathrm{ERA}}$).
+
+Both the three Earth EOP parameters $(x_p, y_p, \UTone-\UTC)$ and the three
+lunar Euler angles are then fitted over the requested window with piecewise
+Chebyshev polynomials sampled at Chebyshev--Gauss nodes,
+%
+\begin{equation}
+  \label{eq:fc-cheb}
+  q_k(t) \approx \sum_{n=0}^{N-1} c_{kn} T_n(\tau),
+  \qquad
+  \tau = \frac{t - t_{\mathrm{mid}}}{\Delta t/2} \in [-1,1],
+\end{equation}
+%
+with $N = 13$ coefficients per quantity per segment and a default segment
+length of \SI{1}{\dayunit}. For the lunar model the fitted quantities are
+the ZXZ angles $(\phi,\theta,\psi)$ extracted from SPICE's
+\code{"J2000"}$\to$\code{"IAU\_MOON"} rotation by
+%
+\begin{equation}
+  \label{eq:fc-zxz}
+  \theta = \arccos R_{33}, \qquad
+  \phi = \atantwo\!\left(R_{31}, -R_{32}\right), \qquad
+  \psi = \atantwo\!\left(R_{13}, R_{23}\right),
+\end{equation}
+%
+with $\phi$ and $\psi$ continuously unwrapped across the window so that the
+polynomial sees a smooth function rather than a $2\pi$ sawtooth. At
+evaluation time the rotation is \emph{reconstructed} as
+$\mat{R} = \mat{R}_z(\psi)\mat{R}_x(\theta)\mat{R}_z(\phi)$ and its
+derivative by the product rule with the analytically differentiated
+Chebyshev coefficients. This is the reason the angles, and not the nine
+matrix entries, are fitted: a product of elementary rotations is exactly
+orthonormal to floating-point precision regardless of the fit residual,
+whereas fitting the entries independently left an orthonormality violation
+of order $\num{4e-8}$.
+
+\begin{lstlisting}[language=cpp, caption={Fitting the SPICE-derived Earth
+  and lunar orientation
+  (\texttt{cpp/lupnt/conversions/frame\_conversions.cc}).},
+  label={lst:fc-spicefit}]
+// cpp/lupnt/conversions/frame_conversions.cc :: InitFrameConversionFromSpice
+ChebyshevFitModel earth_fit = FitChebyshevModel(
+    [](double t) -> VecXd {
+      SpiceEopParams p = ComputeEopFromSpice(Real(t));
+      VecXd f(3);
+      f << p.x_pole.val(), p.y_pole.val(), p.ut1_utc.val();
+      return f;
+    },
+    t0, t1, /*num_dims=*/3, seg_len, num_coeffs);
+
+ChebyshevFitModel moon_fit = FitEulerAngleModel(
+    [](double t) { return SampleSpiceRotationMatrix(t, "J2000", "IAU_MOON"); },
+    t0, t1, seg_len, num_coeffs);
+\end{lstlisting}
+
+The feature is purely additive: outside the fitted window, or if
+\cpp{InitFrameConversionFromSpice} was never called,
+\cpp{RotPolarMotion}/\cpp{RotSideralMotion}/\cpp{RotSideralMotionDot} and
+\cpp{RotMoonCiToPa} behave exactly as specified in
+\cref{sec:fc-itrf,sec:fc-moonpa}. \cpp{ClearFrameConversionFit} removes the
+fit; \brk{HasFittedEarthOrientation} and \brk{HasFittedLunarOrientation}
+report coverage. A separate, always-SPICE path
+(\longid{lupnt::spice::ConvertFrameSpice} in
+\file{cpp/lupnt/conversions/frame_converter_spice.cc}) exists as the
+reference against which the native path is validated.
+
+\section{Coordinate scale}
+\label{sec:fc-units}
+
+Frame conversions do not rescale. Non-dimensionalisation, when used, happens
+in the ephemeris layer: for a constant coordinate scale factor $F$,
+%
+\begin{equation}
+  \label{eq:fc-scale}
+  \vec{r}_{\mathrm{to}} = F\,\vec{r}_{\mathrm{from}},
+  \qquad
+  \mu_{\mathrm{to}} = F\,\mu_{\mathrm{from}},
+  \qquad
+  \vec{v}_{\mathrm{to}} = \vec{v}_{\mathrm{from}} ,
+\end{equation}
+%
+i.e.\ lengths and gravitational parameters scale together while velocities
+are invariant. Callers must keep the scale consistent across the states they
+transform; see the caveat at the end of \cref{sec:fc-contract}.
+
+\section{The Python binding surface}
+\label{sec:fc-python}
+
+\pylupnt{} exposes the \cpp{Frame} enum and the dispatchers directly; every
+\cpp{ConvertFrame} overload maps to the single overloaded name
+\py{convert\_frame}, with the epoch first and \py{rotate\_only} keyword-only
+by convention.
+
+\begin{lstlisting}[language=cpp, caption={Binding definitions
+  (\texttt{python/bindings/py\_frame\_converter.cc}).},
+  label={lst:fc-bindings}]
+// python/bindings/py_frame_converter.cc
+py::enum_<Frame>(m, "Frame", "Reference frames (Earth, Moon, and solar-system planet frames).")
+    .value("ITRF", Frame::ITRF, "International Terrestrial Reference Frame (Earth-fixed).")
+    .value("GCRF", Frame::GCRF, "Geocentric Celestial Reference Frame (Earth-centered inertial).")
+    .value("MOON_CI", Frame::MOON_CI, "Moon-centered inertial frame (ICRF-aligned axes).")
+    .value("MOON_PA", Frame::MOON_PA, "Moon-fixed principal-axis frame.")
+    .value("MOON_ME", Frame::MOON_ME, "Moon-fixed mean-Earth/polar-axis frame.")
+    /* ... EME/ECI, ICRF, EMR, MOON_OP, <PLANET>_CI, <PLANET>_FIXED ... */
+    .export_values();
+
+m.def("convert_frame", py::overload_cast<Real, const Vec6&, Frame, Frame, bool>(&ConvertFrame),
+      py::arg("t_tdb"), py::arg("rv_in"), py::arg("frame_in"), py::arg("frame_out"),
+      py::arg("rotate_only") = false);
+m.def("get_frame_rotation_translation",
+      py::overload_cast<Real, Frame, Frame>(&GetFrameRotationTranslation),
+      py::arg("t_tdb"), py::arg("frame_in"), py::arg("frame_out"));
+m.def("get_frame_rotation_translation_rv",
+      py::overload_cast<Real, Frame, Frame>(&GetFrameRotationTranslationRv),
+      py::arg("t_tdb"), py::arg("frame_in"), py::arg("frame_out"));
+m.def("get_frame_center", &GetFrameCenter, py::arg("frame"));
+m.def("compute_eop_from_spice", /* ... */);      // (x_pole, y_pole, UT1-UTC) at t_tdb
+m.def("get_lunar_orientation_angles", /* ... */); // (phi, theta, psi, and rates) at t_tdb
+\end{lstlisting}
+
+Eight \py{convert\_frame} overloads are registered, covering the four
+argument shapes (single \code{Vec3}/\code{Vec6}, row-wise
+\code{MatX3}/\code{MatX6}) against the two epoch shapes (a scalar epoch
+applied to all rows, and a vector of epochs applied row by row). The
+vectorised forms are the ones to use from Python: they keep the whole loop
+inside C++ and, for a fixed epoch, evaluate the ephemeris and the
+orientation rotations once.
+
+\begin{lstlisting}[language=py, caption={Typical use from Python.},
+  label={lst:fc-pyuse}]
+import numpy as np
+import pylupnt as pnt
+
+t_tdb = pnt.gregorian_to_time(2026, 7, 21, 0, 0, 0.0)   # [s, TDB past J2000]
+rv_gcrf = np.array([6.8e6, 0.0, 0.0, 0.0, 7.6e3, 0.0])  # [m, m/s]
+
+rv_itrf = pnt.convert_frame(t_tdb, rv_gcrf, pnt.Frame.GCRF, pnt.Frame.ITRF)
+rv_pa   = pnt.convert_frame(t_tdb, rv_gcrf, pnt.Frame.GCRF, pnt.Frame.MOON_PA)
+
+R, p = pnt.get_frame_rotation_translation(t_tdb, pnt.Frame.GCRF, pnt.Frame.MOON_ME)
+assert np.allclose(R @ R.T, np.eye(3), atol=1e-12)
+\end{lstlisting}
+
+\section{Model boundaries}
+\label{sec:fc-boundaries}
+
+\subsection{What is approximated}
+
+\begin{description}[leftmargin=0.9cm,style=nextline,font=\normalfont\itshape]
+  \item[Velocity of the GCRF$\leftrightarrow$ITRF transform.]
+    Only $\dot{\mat{R}}_{\mathrm{ERA}}$ is retained
+    (\cref{eq:fc-itrf-rdot}). Precession--nutation rates
+    ($\sim\num{1e-12}$~rad/s) and polar-motion rates ($\sim\num{1e-13}$~rad/s)
+    are dropped, contributing an error below
+    $\SI{1e-5}{\meter\per\second}$ at geostationary radius and far less in
+    LEO.
+  \item[TIO locator.] $s'$ follows the linear IERS model
+    $-47\,\mu''\,T$ exactly (\cref{eq:fc-polar}); at $\sim\num{6e-11}$~rad it
+    is negligible against every other term in \cref{tab:fc-accuracy}. The
+    seconds-versus-centuries unit error that once inflated it by
+    $\num{86400}$ has been fixed and is pinned by a magnitude test; see the
+    note in \cref{sec:fc-itrf}.
+  \item[MOON\_OP velocity.] No $\dot{\mat{R}}$ term
+    (\cref{sec:fc-moonop}); errors of order
+    $\omega_{\mathrm{Moon}} r \approx \SI{5}{\meter\per\second}$ at
+    \SI{2000}{\kilo\meter}.
+  \item[EMR velocity.] The synodic angular velocity is formed with
+    $\lVert\vec{r}_c\rVert$ instead of $\lVert\vec{r}_c\rVert^2$
+    (\cref{sec:fc-emr}). Positions are correct.
+  \item[Earth rotation rate.] The two branches of
+    \cref{eq:fc-omega-earth} use nominal rates that differ by
+    $\approx\num{7e-13}$~rad/s (a relative $\num{1e-8}$), i.e.\
+    $\sim\SI{3e-5}{\meter\per\second}$ at GEO.
+  \item[Planet orientation.] The IAU model is linear only; the periodic
+    terms (Mars, Neptune, and the outer-planet nutations) are omitted. The
+    residual is well under a degree over multi-decade spans, which is
+    adequate for geometry but not for planetary geodesy.
+  \item[EOP interpolation across leap seconds.] The bundled EOP table stores
+    daily $\UTone-\UTC$ and interpolates linearly \emph{across} the
+    \SI{1}{\second} jump. Within about a day of an insertion this produces a
+    spurious offset --- measured at $+\SI{0.938}{\second}$ one hour before the
+    2016-12-31 leap and $+\SI{0.094}{\second}$ six hours after the
+    2012-06-30 leap --- which propagates directly into
+    $\theta_{\mathrm{ERA}}$ and hence into every ITRF result.
+  \item[Ephemeris interpolation.] The DE440 Chebyshev evaluation is exact to
+    the distributed coefficients; the residual against an independent
+    DE440 reader is $\sim\num{5e-11}$ relative.
+\end{description}
+
+\subsection{What is not implemented}
+
+\code{MOD}, \code{TOD}, \code{SER} and \code{GSE} are enum values with no
+conversion; requesting them throws. \code{EMR} has no
+\cpp{frame\_centers} entry. There is no relativistic scale transformation
+between TCB-, TDB-, TCG- and TT-compatible spatial coordinates: all frames
+are treated as sharing one length unit, which is consistent with \lupnt{}'s
+TDB-compatible convention but means that a state exchanged with a
+TCB-compatible product needs an external $1-L_B$ scaling. There is no
+station-displacement model (solid Earth tides, ocean loading, pole tide), so
+an ITRF ground-station coordinate is a mean position. Nutation offsets
+$\dd X, \dd Y$ from the EOP table are read but not applied to
+$\mat{R}_{\mathrm{PN}}$.
+
+\subsection{Expected accuracy}
+
+\Cref{tab:fc-accuracy} summarises the differences measured against Orekit
+v13.1 and GMAT R2026a on identical inputs and with \lupnt{}'s own physical
+constants installed on both sides, so the residuals are algorithmic and
+data-vintage differences rather than constant mismatches. Full methodology,
+per-case numbers and the calibrated test tolerances are in
+\file{docs/pages/cross_validation.rst} and the fixtures under
+\file{cpp/test/orekit/} and \file{cpp/test/gmat/}.
+
+\begin{table}[H]
+  \centering
+  \caption{Measured frame-conversion differences against external tools
+    (June 2026 fixtures).}
+  \label{tab:fc-accuracy}
+  \small
+  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.1cm} L L L}
+    \toprule
+    Conversion & vs Orekit (max) & vs GMAT (max) & Dominant cause \\
+    \midrule
+    GCRF $\leftrightarrow$ EME
+      & \SI{1.8e-4}{\meter} (trans-lunar), $\sim\num{5e-13}\lVert\vec{r}\rVert$
+      & \SI{54}{\meter} (trans-lunar), $\sim\num{1.6e-7}\lVert\vec{r}\rVert$
+      & \lupnt{} and Orekit use the same IERS bias matrix; GMAT's
+        ICRF$\leftrightarrow$MJ2000Eq differs by $\sim\num{1e-7}$~rad \\
+    GCRF $\leftrightarrow$ ITRF
+      & \SI{4.4}{\kilo\meter} trans-lunar ($\sim\num{1.3e-5}\lVert\vec{r}\rVert$); \SIrange{14}{98}{\meter} in LEO
+      & \SI{1.6}{\kilo\meter} trans-lunar; \SIrange{34}{36}{\meter} in LEO
+      & EOP vintage: a tens-of-ms UT1 difference is a
+        $\num{1e-6}$--$\num{1e-5}$~rad polar rotation, scaling with radius \\
+    GCRF $\to$ MOON\_CI
+      & \SI{0.33}{\meter}
+      & distribution level ($<\SI{200}{\meter}$)
+      & pure DE440 translation; \lupnt{}, Orekit and GMAT R2026a all read DE440
+        (GMAT through \lupnt{}'s \file{de440.bsp} via SPICE), so every column is
+        a distribution/interpolation residual, not a DE-version offset \\
+    Moon body-fixed
+      & MOON\_ME vs IAU pole model: \SIrange{57}{200}{\meter} ($\sim\num{3e-5}\lVert\vec{r}\rVert$)
+      & MOON\_PA vs SPICE Luna: distribution level ($<\SI{300}{\meter}$)
+      & Orekit's analytic IAU pole approximates the DE mean-Earth axes to
+        $\sim\num{3e-5}$~rad; GMAT's SPICE Luna PA kernel and \lupnt{}'s
+        MOON\_PA, both on DE440, agree sub-arcsecond in orientation and at the
+        distribution level in position \\
+    Earth$\to$Moon, Earth$\to$Sun ephemeris
+      & \SI{0.33}{\meter} / \SI{7.2}{\meter} (both $\sim\num{5e-11}$ relative)
+      & ---
+      & same DE440 data, independently distributed and interpolated \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Two readings of \cref{tab:fc-accuracy} are worth stating explicitly. First,
+the frames whose transformation is \emph{definitional} --- the frame bias,
+the DE translation --- agree with an independent implementation at the
+$\num{1e-13}$--$\num{1e-11}$ relative level, which is the floating-point floor.
+Second, every metre-level and kilometre-level entry traces back to
+Earth-orientation \emph{data}, not to the algorithm: the UT1 and
+polar-motion table vintages. The DE ephemeris version is no longer a factor
+now that \lupnt{}, Orekit and GMAT R2026a all read DE440, which is why the
+Moon-centred columns have fallen to the ephemeris distribution level. That is
+precisely the gap
+\cpp{InitFrameConversionFromSpice} (\cref{sec:fc-spicefit}) exists to close.
+For an application that needs SPICE-level Earth or lunar orientation over a
+known window, fitting once at initialisation costs a few seconds and removes
+the table-vintage term entirely; for everything else, the native analytic
+path is self-contained, differentiable, and free of any runtime kernel
+dependency.

@@ -1,0 +1,1366 @@
+\chapter{Measurement Models}
+\label{chap:measurements}
+
+This chapter specifies the mathematical contract of \lupnt{}'s \emph{non-GNSS}
+measurement models: inter-satellite crosslinks, Earth ground-station range and
+range-rate with their signal-path and station-location corrections, the lunar
+surface LANS/LunaNet pseudorange, and the terrain-relative lander sensors
+(radar/laser altimeter and camera crater bearings). GNSS pseudorange, Doppler
+and carrier phase are specified separately in \cref{chap:gnss-measurements};
+the link budget that decides whether a link closes at all is specified in the
+link-budget chapter. For each model this chapter gives the state dependence,
+the observation equation $h(\vec{x})$, the measurement Jacobian
+$\mat{H} = \partial h/\partial \vec{x}$, the noise covariance $\mat{R}$, the
+configuration knobs, and the implementing code.
+
+The concrete classes live under \file{cpp/lupnt/measurements/}: the abstract
+interface in \file{cpp/lupnt/measurements/measurement.h}, the shared geometry
+primitives in \file{cpp/lupnt/measurements/measurement_utils.cc}, and one
+translation unit per model family. The estimators that consume the Jacobians
+are specified in \cref{chap:filters}; the frame machinery every model assumes
+is specified in \cref{chap:frame-conversions}. The models follow
+\citet{montenbruck2000} and \citet{tapley2004} for the range/range-rate
+geometry, and \citep[Ch.~6]{iiyama2026thesis} for the lunar-specific
+observability arguments.
+
+\section{Scope, Frames, Time Scales, and Light Time}
+\label{sec:meas-scope}
+
+\Cref{tab:meas-inventory} inventories the models this chapter specifies, their
+implementing file, the base class they derive from, and the number of rows
+they contribute per epoch.
+
+\begin{table}[H]
+  \centering
+  \caption{Non-GNSS measurement models specified in this chapter. $n_L$ is the
+    number of two-way crosslinks and $n_A$ the number of one-way anchor
+    transmitters staged for the epoch.}
+  \label{tab:meas-inventory}
+  \small
+  \begin{tabularx}{\textwidth}{@{}W{1.0} W{0.8} c W{1.2}@{}}
+    \toprule
+    Class & Source file & Rows & Base / linearization \\
+    \midrule
+    \brk{IslCrosslinkMeasurement} & \file{crosslink_measurement.cc}
+      & $2n_L + n_A + \dots$ & \cpp{Measurement}, autodiff on raw \cpp{VecX} \\
+    \brk{GroundStationRangeMeasurement} & \file{ground_range_measurement.cc}
+      & $1$--$2$ & \cpp{Measurement}, closed-form design matrix \\
+    \brk{SurfaceLansMeasurement} & \file{surface_measurements.cc}
+      & $1$ & \brk{ErrorStateMeasurement}, analytic \\
+    \brk{LanderAltimeterMeasurement} & \file{lander_measurements.cc}
+      & $1$ & \brk{ErrorStateMeasurement}, DEM-supplied \\
+    \brk{LanderCraterMeasurement} & \file{lander_measurements.cc}
+      & $3$ & \brk{ErrorStateMeasurement}, analytic \\
+    \midrule
+    \multicolumn{4}{@{}l@{}}{\emph{Correction library} (not a model; applied to
+      the truth observable or the prediction)} \\
+    \brk{TroposphereDelaySaastamoinen} & \file{ground_station_corrections.cc}
+      & --- & scalar delay, \citep{saastamoinen1972} \\
+    \brk{IonosphereDelayThinShell} & \file{ground_station_corrections.cc}
+      & --- & scalar delay, single-layer VTEC \\
+    \brk{ShapiroRangeDelay} & \file{ground_station_corrections.cc}
+      & --- & scalar delay, summed over bodies \\
+    \brk{SolidEarthTideDisplacement} & \file{ground_station_corrections.cc}
+      & --- & 3-vector displacement, \citep{iers2010} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Time scale}
+\label{sec:meas-timescale}
+
+All models are evaluated at a single \emph{simulation} epoch $t$, in seconds
+relative to the global reference epoch returned by \cpp{GetLupntEpoch()}, which
+is itself an absolute epoch in $\TDB$ seconds past J2000. An application that
+needs an absolute epoch (to query an ephemeris, or to rotate between a
+body-fixed and an inertial frame) forms
+\begin{equation}
+  t_\TDB = t + t_0, \qquad t_0 = \texttt{GetLupntEpoch()},
+  \label{eq:meas-epoch}
+\end{equation}
+exactly as \cpp{GroundStationTrackingApp::Step} does before every
+\cpp{ConvertFrame} call. The epoch that is stamped on a \cpp{MeasData} and on
+each error-state measurement struct (\cpp{timestamp}) is the
+\emph{simulation-relative} $t$, not $t_\TDB$; the conversions between $\TDB$,
+$\TT$, $\TAI$, $\UTC$ and the lunar scale $\TCL$ are specified in the
+time-systems chapter. No model in this chapter carries its own clock model: the
+clock bias $b$ and drift $d$ it consumes are estimated states, propagated by
+the two-state clock dynamics of \cref{chap:filters}.
+
+\subsection{Frames}
+\label{sec:meas-frames}
+
+Range and range-rate are frame invariant as long as \emph{both} endpoints are
+expressed in the same frame, which is what every model assumes. Concretely:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \cpp{IslCrosslinkMeasurement} works entirely in the Moon-centred
+    inertial frame \code{Frame::MOON\_CI}; the anchor positions and velocities
+    (\code{anchor\_pos\_mci}, \code{anchor\_vel\_mci}) are documented as
+    \code{MOON\_CI} and are \emph{not} converted inside the model.
+  \item \cpp{GroundStationRangeMeasurement} works in whatever frame the caller
+    uses, provided \code{Config::reference\_state} is expressed in the same
+    frame as the target \cpp{State}. The hosting
+    \cpp{GroundStationTrackingApp} converts the station from its body-fixed
+    frame into the world (inertial) frame at $t_\TDB$ with \cpp{ConvertFrame}
+    (\cref{chap:frame-conversions}) before differencing, and converts the
+    target \emph{into} the station body-fixed frame only for the topocentric
+    elevation gate.
+  \item The error-state models (\cpp{SurfaceLansMeasurement},
+    \cpp{LanderAltimeterMeasurement}, \cpp{LanderCraterMeasurement}) work in
+    the Moon-fixed principal-axis frame, which is the ``nav'' frame $n$ of the
+    INS; \cpp{NavErrorContext::R\_b2n} rotates the vehicle body frame $b$ into
+    it. The altimeter additionally uses a local East--North--Up (ENU) triad
+    anchored at a DEM tile centre.
+\end{itemize}
+
+\subsection{Light-time convention}
+\label{sec:meas-lighttime}
+
+\begin{lupntwarning}
+  Every model in this chapter uses the \textbf{instantaneous} geometric range
+  evaluated at a single epoch. None of them solves the light-time equation for
+  a transmit epoch $t_\mathrm{tx} = t_\mathrm{rx} - \rho/c$, and none of them
+  applies a Shapiro, aberration, or ionospheric correction \emph{inside} the
+  observation equation. This is the deliberate difference from
+  \cpp{GnssMeasurement} (\cref{chap:gnss-measurements}), which does iterate the
+  transmit epoch. The one relativistic term present anywhere in this family is
+  the receiver clock scaling $c\,b$ in the pseudorange rows.
+\end{lupntwarning}
+
+The omission is not silently swept away for the ground-station case: the
+Shapiro delay and the neutral/dispersive media delays are available as an
+\emph{external} correction library (\cref{sec:meas-gs-corrections}) that the
+sensor adds to the truth observable, so that an estimator which models only the
+geometric range sees them as a realistic tracking error rather than as zero.
+For an Earth--Moon link the neglected light-time displacement of the target
+over one signal transit is $\rho/c \approx \SI{1.28}{\second}$ times the target
+velocity, i.e.\ order \SI{1}{\kilo\meter}; batch and sequential estimators that
+process an entire tracking arc absorb the resulting bias into the
+epoch-state solution only to the extent that it is common-mode. Users needing a
+light-time-consistent non-GNSS observable should build it from the primitives
+of \cref{sec:meas-primitives} with an explicit transmit-epoch iteration.
+
+\section{The Measurement Interface}
+\label{sec:meas-interface}
+
+\subsection{The measurement struct}
+\label{sec:meas-measdata}
+
+Every model returns a \cpp{MeasData}: an epoch, a stacked observable vector
+$\vec{z}$, and the corresponding noise covariance $\mat{R}$, sized
+$n_z \times n_z$. By convention throughout \lupnt{}, $\mat{R}$ is diagonal (or
+isotropic); off-diagonal measurement correlation is not modelled by any class
+in this chapter.
+
+\begin{lstlisting}[language=cpp, caption={The unified measurement data
+  record.}, label={lst:meas-measdata}]
+// cpp/lupnt/measurements/measurement.h :: MeasData
+struct MeasData {
+  Real timestamp = 0.0;  ///< epoch [s]
+  VecXd value;           ///< stacked observable vector `z`
+  MatXd covariance;      ///< measurement noise covariance `R` [n_z x n_z]
+};
+\end{lstlisting}
+
+\subsection{State-vector models: \texttt{Measurement}}
+\label{sec:meas-base}
+
+A state-vector measurement maps an estimation \cpp{State} to a predicted
+observable and, optionally, to its Jacobian:
+
+\begin{lstlisting}[language=cpp, caption={The state-vector measurement
+  interface and its filter adapter.}, label={lst:meas-base}]
+// cpp/lupnt/measurements/measurement.h :: Measurement
+virtual MeasData Compute(const State& x, MatXd* H = nullptr) const = 0;
+
+virtual FilterMeasurementFunction CreateFunction() const {
+  Ptr<Measurement> self = Clone();
+  return [self](const State& x, MatXd* H, MatXd* R) -> VecXd {
+    MeasData md = self->Compute(x, H);
+    if (R != nullptr) *R = md.covariance;
+    return md.value;
+  };
+}
+\end{lstlisting}
+
+The contract is
+\begin{equation}
+  \vec{z} = h(\vec{x}) \in \mathbb{R}^{n_z}, \qquad
+  \mat{R} \in \mathbb{R}^{n_z\times n_z}, \qquad
+  \mat{H} = \frac{\partial h}{\partial \vec{x}}
+          \in \mathbb{R}^{n_z\times \dim(\vec{x})} ,
+  \label{eq:meas-contract}
+\end{equation}
+with $\mat{H}$ filled only when the caller passes a non-null pointer, so that a
+sigma-point filter (which needs no Jacobian) pays nothing for it.
+\cpp{CreateFunction} wraps the model into the
+\cpp{FilterMeasurementFunction} signature
+$(\vec{x}, \mat{H}, \mat{R}) \mapsto \vec{z}$ consumed directly by the
+\cpp{Filter} family of \cref{chap:filters}; the closure owns a \cpp{Clone()} of
+the model, so the filter never holds a dangling reference. The
+\cpp{MeasurementClone<Derived>} CRTP helper supplies \cpp{Clone()} for a
+copy-constructible concrete model.
+
+\paragraph{Jacobian block indexing.} For a \cpp{Measurement}, the columns of
+$\mat{H}$ are in exactly the order of the filter \cpp{State} vector: there is
+no re-ordering layer. When the filter state stacks several sub-states --- as
+the crosslink model does, one $[\vec{r}, \vec{v}, b, d]$ block of
+\code{sub\_state\_size} entries per satellite --- the model writes into columns
+$[\,k\cdot\texttt{sub\_state\_size},\ (k{+}1)\cdot\texttt{sub\_state\_size})$
+for satellite $k$, and the filter's covariance is partitioned identically. A
+consider-state (Schmidt) filter therefore only needs to know which
+\emph{columns} it is allowed to update; the measurement model needs no
+knowledge of the partition at all.
+
+\subsection{Error-state models: \texttt{NavErrorContext}}
+\label{sec:meas-navcontext}
+
+An INS-coupled sensor cannot be expressed against a flat \cpp{State}, because
+its Jacobian depends on the nominal attitude, which does not live naturally in
+a vector. These models derive from \cpp{ErrorStateMeasurement} and consume a
+\cpp{NavErrorContext}: the \emph{nominal} navigation state about which the
+error state is linearized.
+
+\begin{lstlisting}[language=cpp, caption={The nominal navigation state an
+  error-state model linearizes about.}, label={lst:meas-navcontext}]
+// cpp/lupnt/measurements/measurement.h :: NavErrorContext
+struct NavErrorContext {
+  Vec3d r = Vec3d::Zero();          ///< position, Moon-fixed frame [m]
+  Vec3d v = Vec3d::Zero();          ///< velocity, Moon-fixed frame [m/s]
+  Mat3d R_b2n = Mat3d::Identity();  ///< body-to-nav attitude
+  double clock_bias_s = 0.0;        ///< receiver clock bias [s]
+  double clock_drift_sps = 0.0;     ///< receiver clock drift [s/s]
+  int error_state_size = 0;         ///< dimension of the error state (columns of `H`)
+};
+
+// cpp/lupnt/measurements/measurement.h :: ErrorStateMeasurement
+virtual MeasData Compute(const NavErrorContext& nominal,
+                         MatXd* H = nullptr) const = 0;
+\end{lstlisting}
+
+The estimated quantity is the multiplicative-EKF (MEKF) error state
+\begin{equation}
+  \delta\vec{x}
+  =
+  \begin{bmatrix}
+    \delta\vec{r}\transpose &
+    \delta\vec{v}\transpose &
+    \delta\vec{\theta}\transpose &
+    \delta\vec{b}_a\transpose &
+    \delta\vec{b}_g\transpose &
+    \delta b_\mathrm{clk} &
+    \delta d_\mathrm{clk}
+  \end{bmatrix}\transpose
+  \in \mathbb{R}^{17},
+  \label{eq:meas-errorstate}
+\end{equation}
+with $\delta\vec{r}, \delta\vec{v}$ the nav-frame position and velocity errors,
+$\delta\vec{\theta}$ the small nav-frame attitude rotation vector (so that
+$\mat{R}^\mathrm{true}_{b\to n} = \exp([\delta\vec{\theta}]_\times)\,
+\mat{R}^\mathrm{est}_{b\to n}$), $\delta\vec{b}_a, \delta\vec{b}_g$ the
+accelerometer and gyroscope bias errors, and
+$\delta b_\mathrm{clk}, \delta d_\mathrm{clk}$ the receiver clock bias and
+drift errors. The dimension is
+\code{kSurfaceNavErrorStateSize} $=$ \code{kLanderNavErrorStateSize} $= 17$;
+\cref{tab:meas-errorstate} gives the column offsets, which are exactly the
+default values of each model's nested \cpp{Config}.
+
+\begin{table}[H]
+  \centering
+  \caption{Error-state layout shared by the surface-rover and lander INS
+    filters. The offsets are the defaults of
+    \cpp{SurfaceLansMeasurement::Config}, \cpp{LanderAltimeterMeasurement::Config}
+    and \cpp{LanderCraterMeasurement::Config}, and match the \code{I\_D*}
+    constants in \file{cpp/lupnt/applications/lander/lander_nav_app.cc}.}
+  \label{tab:meas-errorstate}
+  \small
+  \begin{tabular}{@{}l c c l l@{}}
+    \toprule
+    Block & Offset & Size & \cpp{Config} field & Meaning \\
+    \midrule
+    $\delta\vec{r}$            & 0  & 3 & \code{i\_dr}  & position error [\si{\meter}] \\
+    $\delta\vec{v}$            & 3  & 3 & ---            & velocity error [\si{\meter\per\second}] \\
+    $\delta\vec{\theta}$       & 6  & 3 & \code{i\_dth} & attitude error [\si{\radian}] \\
+    $\delta\vec{b}_a$          & 9  & 3 & ---            & accelerometer bias error [\si{\meter\per\second\squared}] \\
+    $\delta\vec{b}_g$          & 12 & 3 & ---            & gyroscope bias error [\si{\radian\per\second}] \\
+    $\delta b_\mathrm{clk}$    & 15 & 1 & \code{i\_dcb} & clock-bias error [\si{\second}] \\
+    $\delta d_\mathrm{clk}$    & 16 & 1 & ---            & clock-drift error [\si{\second\per\second}] \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Each error-state model allocates
+$\mat{H} \in \mathbb{R}^{n_z \times \texttt{error\_state\_size}}$, zeroes it,
+and writes only the blocks it touches --- the LANS pseudorange writes
+\code{i\_dr} and \code{i\_dcb}, the altimeter writes \code{i\_dr}, and the
+crater bearing writes \code{i\_dr} and \code{i\_dth}. Everything else stays
+identically zero, which is what makes the sparse-block indexing safe: an
+application may resize the error state (adding, say, a scale-factor block)
+without touching the models, provided the offsets in the \cpp{Config} are
+updated.
+
+\begin{lupntnote}
+  Error-state models have no \cpp{CreateFunction} and no \cpp{Filter}
+  integration. The hosting application drives the Joseph-form update directly
+  --- \cpp{LanderNavApp::UpdateScalar} for the $1$-row models and
+  \cpp{LanderNavApp::UpdateVector} for the $3$-row crater bearing --- because
+  the correction must be \emph{injected} multiplicatively into the nominal
+  quaternion rather than added to a state vector. See
+  \cpp{LanderNavApp::InjectErrorState}.
+\end{lupntnote}
+
+\section{Shared Range Primitives}
+\label{sec:meas-primitives}
+
+The geometric building blocks are free functions in
+\file{cpp/lupnt/measurements/measurement_utils.cc}. For two point masses with
+positions $\vec{r}_1, \vec{r}_2$ and velocities $\vec{v}_1, \vec{v}_2$ in a
+common frame,
+\begin{align}
+  \rho &= \lVert \vec{r}_2 - \vec{r}_1 \rVert,
+  \label{eq:meas-range} \\[3pt]
+  \dot{\rho}
+   &= \frac{(\vec{v}_2 - \vec{v}_1)\transpose(\vec{r}_2 - \vec{r}_1)}
+           {\lVert \vec{r}_2 - \vec{r}_1 \rVert}
+    = \uvec{u}\transpose (\vec{v}_2 - \vec{v}_1),
+  \qquad
+  \uvec{u} = \frac{\vec{r}_2 - \vec{r}_1}{\rho}.
+  \label{eq:meas-rangerate}
+\end{align}
+The range rate is the projection of the relative velocity on the line of sight;
+the transverse component is invisible to it, which is the geometric statement
+behind the Doppler-only observability analysis of
+\citet{coimbra2025endurance}.
+
+\begin{lstlisting}[language=cpp, caption={Range and range-rate in one pass.},
+  label={lst:meas-rrr}]
+// cpp/lupnt/measurements/measurement_utils.cc :: RangeAndRangeRate
+Vec2 RangeAndRangeRate(const VecX& r1, const VecX& r2, const VecX& v1,
+                       const VecX& v2) {
+  Real r_norm = (r2 - r1).norm();
+  return Vec2(r_norm, (v2 - v1).dot(r2 - r1) / r_norm);
+}
+\end{lstlisting}
+
+The clock-biased forms add the light-time-equivalent clock offsets,
+\begin{align}
+  P    &= \rho + c\,(b_1 - b_2),
+  \label{eq:meas-pseudorange} \\
+  \dot{P} &= \dot{\rho} + c\,(d_1 - d_2),
+  \label{eq:meas-prr}
+\end{align}
+with $b_i$ in seconds, $d_i$ in seconds per second, and
+$c$ the speed of light (\cpp{C} in \file{cpp/lupnt/core/constants.h}), so that
+both terms carry units of metres and metres per second respectively.
+
+\begin{lstlisting}[language=cpp, caption={Clock-biased range primitives.},
+  label={lst:meas-pseudorange}]
+// cpp/lupnt/measurements/measurement_utils.cc
+Vec1 Pseudorange(const VecX& r1, const VecX& r2, Real b1, Real b2) {
+  return Range(r1, r2).array() + C * (b1 - b2);
+}
+
+Vec1 PseudorangeRate(const VecX& r1, const VecX& r2, const VecX& v1,
+                     const VecX& v2, Real d1, Real d2) {
+  return RangeRate(r1, r2, v1, v2).array() + C * (d1 - d2);
+}
+\end{lstlisting}
+
+Overloads taking a stacked $\vec{rv} = [\vec{r}; \vec{v}]$ split the argument
+at its midpoint, so the same primitives serve a 3-dimensional Cartesian state
+and any higher-dimensional stacked state without change. The generic partials
+used by every model in this chapter follow from
+\cref{eq:meas-range,eq:meas-rangerate}:
+\begin{equation}
+  \frac{\partial \rho}{\partial \vec{r}_2} = \uvec{u}\transpose,
+  \qquad
+  \frac{\partial \dot{\rho}}{\partial \vec{r}_2}
+    = \frac{\big(\Delta\vec{v} - \dot{\rho}\,\uvec{u}\big)\transpose}{\rho},
+  \qquad
+  \frac{\partial \dot{\rho}}{\partial \vec{v}_2} = \uvec{u}\transpose,
+  \label{eq:meas-partials}
+\end{equation}
+with $\Delta\vec{v} = \vec{v}_2 - \vec{v}_1$, and the partials with respect to
+$\vec{r}_1, \vec{v}_1$ are the negatives of these.
+
+\subsection{One-way versus two-way observables}
+\label{sec:meas-oneway-twoway}
+
+The distinction matters for which clock states appear in $h$, and hence for
+which columns of $\mat{H}$ are non-zero.
+
+\paragraph{Two-way.} The signal leaves the interrogator, is transponded, and
+returns. The \emph{sum} of the two one-way path delays is proportional to
+twice the geometric range and the endpoint clock offsets cancel to first order;
+\lupnt{} reports the resulting observable already halved, i.e.\ as the
+one-way-equivalent $\rho$ of \cref{eq:meas-range}, with \emph{no} clock term.
+The two-way crosslink rows of \cref{sec:meas-crosslink} and the ground-station
+rows of \cref{sec:meas-groundrange} are of this kind, so their Jacobians touch
+only position (and velocity) columns.
+
+\paragraph{One-way.} The signal travels once, from a transmitter with a known
+(or separately estimated) clock to a receiver whose clock bias is a filter
+state. The observable is the pseudorange of \cref{eq:meas-pseudorange} and its
+Jacobian has a $c$ entry in the receiver clock-bias column. The anchor
+pseudorange rows of \cref{sec:meas-crosslink} and the LANS pseudorange of
+\cref{sec:meas-lans} are of this kind.
+
+\paragraph{Two-way time transfer.} Taking the \emph{difference} of the same two
+one-way exchanges that a two-way range sums recovers the relative clock offset
+of the endpoints, and its rate companion recovers the relative drift. These are
+the \code{include\_time\_transfer} and \code{include\_frequency\_transfer} rows
+of \cref{sec:meas-crosslink}; they are purely clock observables, with all
+position and velocity partials identically zero. The same
+sum/difference decomposition underlies the time-differenced carrier-phase
+processing of \citet{iiyama2023tdcp} and the crosslink time-transfer analysis
+of \citep[Ch.~6]{iiyama2026thesis}.
+
+\section{Inter-Satellite Crosslink}
+\label{sec:meas-crosslink}
+
+\cpp{IslCrosslinkMeasurement}
+(\file{cpp/lupnt/measurements/crosslink_measurement.h},
+\file{cpp/lupnt/measurements/crosslink_measurement.cc}) models a hub
+satellite's two-way crosslinks to $n_L$ linked satellites, plus optional
+one-way observables to known-position anchor transmitters --- for example a
+lunar surface station with a disciplined clock \citep{casadesus2025surface}.
+
+\subsection{State dependence}
+
+The filter state stacks one
+$[\,\vec{r}\ (3),\ \vec{v}\ (3),\ b_\mathrm{clk},\ d_\mathrm{clk}\,]$ block per
+satellite, of size \code{Config::sub\_state\_size} $= 8$ by default. Block $0$
+is the hub; blocks $1 \dots n_L$ are the linked satellites. Within a block the
+offsets are \code{idx\_position} $=0$, \code{idx\_velocity} $=3$,
+\code{idx\_clock\_bias} $=6$, \code{idx\_clock\_drift} $=7$. Writing $S$ for
+\code{sub\_state\_size}, satellite $i$ occupies
+\begin{equation}
+  \vec{r}_i = \vec{x}\big[\,iS + 0 : iS + 3\,\big], \quad
+  \vec{v}_i = \vec{x}\big[\,iS + 3 : iS + 6\,\big], \quad
+  b_i = \vec{x}\big[\,iS + 6\,\big], \quad
+  d_i = \vec{x}\big[\,iS + 7\,\big].
+  \label{eq:meas-xl-layout}
+\end{equation}
+
+\subsection{Observation equation}
+
+Per epoch the model emits, in this fixed row order: $2n_L$ clock-independent
+two-way range/range-rate rows; $n_A$ one-way anchor pseudorange rows; $n_A$
+optional one-way anchor Doppler rows; $n_L$ optional two-way time-transfer
+rows; and $n_L$ optional two-way frequency-transfer rows. With
+$\rho_{0i}, \dot\rho_{0i}$ the hub-to-satellite-$i$ geometric range and range
+rate of \cref{eq:meas-range,eq:meas-rangerate}, $\vec{r}_a, \vec{v}_a$ an
+anchor position and velocity, and
+$\uvec{u}_a = (\vec{r}_0 - \vec{r}_a)/\lVert \vec{r}_0 - \vec{r}_a\rVert$,
+\begin{equation}
+  h(\vec{x})
+  =
+  \begin{bmatrix}
+    \big[\,\rho_{0i},\ \dot{\rho}_{0i}\,\big]_{i=1}^{n_L} \\[4pt]
+    \big[\,\lVert \vec{r}_0 - \vec{r}_a\rVert + c\,b_0\,\big]_{a=1}^{n_A} \\[4pt]
+    \big[\,\uvec{u}_a\transpose(\vec{v}_0 - \vec{v}_a) + c\,d_0\,\big]_{a=1}^{n_A} \\[4pt]
+    \big[\,c\,(b_0 - b_i)\,\big]_{i=1}^{n_L} \\[4pt]
+    \big[\,c\,(d_0 - d_i)\,\big]_{i=1}^{n_L}
+  \end{bmatrix}.
+  \label{eq:meas-xl-h}
+\end{equation}
+The optional blocks are present only when the corresponding \code{include\_*}
+flag is set; the total row count is
+\begin{equation}
+  n_z = 2 n_L + n_A + [\,\text{doppler}\,] n_A
+        + [\,\text{time}\,] n_L + [\,\text{freq}\,] n_L .
+  \label{eq:meas-xl-rows}
+\end{equation}
+
+\begin{lstlisting}[language=cpp, caption={The raw autodiff-able crosslink
+  model. Row order matches \cref{eq:meas-xl-h}.},
+  label={lst:meas-xl-model}]
+// cpp/lupnt/measurements/crosslink_measurement.cc :: IslCrosslinkMeasurement::Model
+VecX r0 = x.segment(config_.idx_position, 3);
+VecX v0 = x.segment(config_.idx_velocity, 3);
+for (int i = 0; i < n_links; ++i) {
+  const int off = sub * (i + 1);
+  Vec2 yi = RangeAndRangeRate(r0, VecX(x.segment(off, 3)), v0,
+                              VecX(x.segment(off + 3, 3)));
+  y(2 * i) = yi(0);
+  y(2 * i + 1) = yi(1);
+}
+
+const Real b_hub = x(config_.idx_clock_bias);   // hub clock bias [s]
+const Real d_hub = x(config_.idx_clock_drift);  // hub clock drift [s/s]
+for (int ad = 0; ad < n_anchor; ++ad) {
+  const Vec3 ra = config_.anchor_pos_mci[ad].cast<Real>();
+  y(2 * n_links + ad) = (r_hub - ra).norm() + C * b_hub;
+}
+
+// One-way anchor Doppler (pseudorange-rate) rows.
+for (int ad = 0; ad < n_ad; ++ad) {
+  const Vec3 dr = r_hub - config_.anchor_pos_mci[ad].cast<Real>();
+  const Vec3 u = dr / dr.norm();
+  y(2 * n_links + n_anchor + ad)
+      = u.dot(v_hub - config_.anchor_vel_mci[ad].cast<Real>()) + C * d_hub;
+}
+
+// Two-way time-transfer rows: C * (b_hub - b_link_i).
+for (int i = 0; i < n_tt; ++i) {
+  const Real b_link = x(sub * (i + 1) + config_.idx_clock_bias);
+  y(2 * n_links + n_anchor + n_ad + i) = C * (b_hub - b_link);
+}
+\end{lstlisting}
+
+Two important structural facts follow from \cref{eq:meas-xl-h}. First, the
+two-way crosslink rows are \emph{clock-independent}: the hub and link clock
+biases cancel, so a crosslink-only update leaves the absolute clock states
+unobservable and the constellation's overall clock datum must come from
+elsewhere (an anchor, a time-transfer row, or a prior). Second, the
+time-transfer and frequency-transfer rows are \emph{geometry-independent} ---
+they are linear in the clock states with constant coefficients $\pm c$ ---
+so enabling them makes the \emph{relative} clock states directly observable
+without perturbing the orbit solution.
+
+\subsection{Jacobian}
+
+The Jacobian is taken by automatic differentiation
+\citep{leal2018autodiff,griewank2008} \emph{directly on the raw} \cpp{VecX}
+state rather than on a reconstructed \cpp{State}:
+
+\begin{lstlisting}[language=cpp, caption={Autodiff on a freshly reseeded raw
+  state.}, label={lst:meas-xl-jac}]
+// cpp/lupnt/measurements/crosslink_measurement.cc :: IslCrosslinkMeasurement::Compute
+if (H != nullptr) {
+  // Reseed a fresh autodiff state (drops incoming derivative seeds) and
+  // differentiate the raw-VecX model, matching the original inline behavior.
+  VecX x_tmp = x.cast<double>();
+  auto f = [this](const VecX& xx) -> VecX { return Model(xx); };
+  jacobian(f, wrt(x_tmp), at(x_tmp), y, *H);
+} else {
+  y = Model(x);
+}
+\end{lstlisting}
+
+The \code{x.cast<double>()} strips whatever derivative seeds the incoming state
+carried and reseeds a fresh set. This is deliberate, not incidental: the
+\cpp{SchmidtEKF} consider-state update relies on the incoming seeds remaining
+intact for its own partitioned propagation, and differentiating in place would
+consume them. The resulting $\mat{H}$ is
+$n_z \times \dim(\vec{x})$ with the block sparsity implied by
+\cref{eq:meas-xl-layout}: row pair $2i, 2i+1$ touches only the hub block and
+block $i{+}1$, and the anchor rows touch only the hub block.
+
+\subsection{Covariance and configuration}
+
+$\mat{R}$ is diagonal, with one variance per row type,
+\begin{equation}
+  \mat{R} = \diag\!\Big(
+    \underbrace{\sigma_\rho^2,\ \sigma_{\dot\rho}^2}_{\text{per link}},\ \dots,\
+    \underbrace{\sigma_P^2}_{\text{per anchor}},\ \dots,\
+    \underbrace{\sigma_{\dot P}^2}_{\text{per anchor}},\ \dots,\
+    \underbrace{\sigma_{\mathrm{TT}}^2}_{\text{per link}},\ \dots,\
+    \underbrace{\sigma_{\mathrm{FT}}^2}_{\text{per link}},\ \dots
+  \Big).
+  \label{eq:meas-xl-R}
+\end{equation}
+
+\begin{table}[H]
+  \centering
+  \caption{\cpp{IslCrosslinkMeasurement::Config} knobs and defaults.}
+  \label{tab:meas-xl-config}
+  \small
+  \begin{tabularx}{\textwidth}{@{}l l L@{}}
+    \toprule
+    Key & Default & Meaning \\
+    \midrule
+    \code{sub\_state\_size}    & 8 & per-satellite block size $[\vec{r},\vec{v},b,d]$ \\
+    \code{n\_links}            & 0 & number of two-way crosslinks $n_L$ \\
+    \code{anchor\_pos\_mci}    & \{\} & anchor positions [\si{\meter}], \code{Frame::MOON\_CI} \\
+    \code{anchor\_vel\_mci}    & \{\} & anchor velocities [\si{\meter\per\second}]; required only for Doppler \\
+    \code{sigma\_range\_m}     & \SI{1}{\meter} & $\sigma_\rho$, two-way crosslink range \\
+    \code{sigma\_range\_rate\_mps} & \SI{1e-3}{\meter\per\second} & $\sigma_{\dot\rho}$, crosslink range rate \\
+    \code{sigma\_pseudorange\_m}   & \SI{200}{\meter} & $\sigma_P$, one-way anchor pseudorange \\
+    \code{include\_anchor\_doppler} & \code{false} & append one anchor Doppler row per anchor \\
+    \code{sigma\_anchor\_doppler\_mps} & \SI{1e-3}{\meter\per\second} & $\sigma_{\dot P}$ \\
+    \code{include\_time\_transfer} & \code{false} & append $c(b_0-b_i)$ per link \\
+    \code{sigma\_time\_transfer\_m} & \SI{1}{\meter} & $\sigma_\mathrm{TT}$ \\
+    \code{include\_frequency\_transfer} & \code{false} & append $c(d_0-d_i)$ per link \\
+    \code{sigma\_frequency\_transfer\_mps} & \SI{1e-3}{\meter\per\second} & $\sigma_\mathrm{FT}$ \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The \SI{200}{\meter} anchor default is far larger than a code-phase receiver
+would achieve in isolation; it is inflated deliberately to absorb the
+near-degenerate geometry of a terrestrial-GNSS-derived surface anchor seen from
+lunar orbit, where the transmitter cluster subtends a very small angle and the
+resulting dilution of precision is extreme
+\citep{iiyama2023tdcp,iiyama2026thesis}. The hosting
+\cpp{IslOdtsApp} re-installs the measurement function every epoch, because the
+tracked anchor set changes with visibility.
+
+\section{Ground-Station Range and Range-Rate}
+\label{sec:meas-groundrange}
+
+\cpp{GroundStationRangeMeasurement}
+(\file{cpp/lupnt/measurements/ground_range_measurement.h},
+\file{cpp/lupnt/measurements/ground_range_measurement.cc}) models the
+instantaneous two-way range and/or range rate of a target
+$[\vec{r}(3), \vec{v}(3)]$ relative to a fixed reference state --- the station
+--- with a closed-form design matrix.
+
+\subsection{State dependence and observation equation}
+
+The estimated state is the target Cartesian state
+$\vec{x}_s = [\vec{r}; \vec{v}]$ (only its first six entries are read). The
+station Cartesian state
+$\vec{x}_\mathrm{gs} = [\vec{r}_\mathrm{gs}; \vec{v}_\mathrm{gs}]$ is a fixed
+\code{Config::reference\_state} in the \emph{same} frame. With
+\begin{equation}
+  \Delta\vec{r} = \vec{r} - \vec{r}_\mathrm{gs}, \qquad
+  \Delta\vec{v} = \vec{v} - \vec{v}_\mathrm{gs}, \qquad
+  \rho = \lVert\Delta\vec{r}\rVert, \qquad
+  \uvec{u} = \Delta\vec{r}/\rho,
+  \label{eq:meas-gs-defs}
+\end{equation}
+the observable is
+\begin{equation}
+  h(\vec{x}_s)
+  =
+  \begin{bmatrix} \rho \\ \dot{\rho} \end{bmatrix}
+  =
+  \begin{bmatrix}
+    \lVert\Delta\vec{r}\rVert \\[3pt]
+    \Delta\vec{r}\transpose\Delta\vec{v} / \rho
+  \end{bmatrix}.
+  \label{eq:meas-gs-h}
+\end{equation}
+Each row is optional: \code{use\_range} and \code{use\_range\_rate} select
+them, and at least one must be enabled. Doppler is \emph{not} emitted as a
+separate observable; the two-way Doppler shift is the range rate scaled by
+$-2f/c$ (one-way, $-f/c$) and is formed downstream from $\dot\rho$ when a
+frequency observable is wanted, which is how the single-satellite Doppler
+navigation of \citet{coimbra2025endurance} is reproduced in \lupnt{}.
+
+\subsection{Jacobian}
+
+Unlike the crosslink model, the design matrix is written in closed form ---
+there is no autodiff call in this class at all --- because
+\cref{eq:meas-partials} is exact and cheap:
+\begin{equation}
+  \frac{\partial \rho}{\partial \vec{x}_s}
+  =
+  \begin{bmatrix} \uvec{u}\transpose & \vec{0}\transpose \end{bmatrix},
+  \qquad
+  \frac{\partial \dot{\rho}}{\partial \vec{x}_s}
+  =
+  \begin{bmatrix}
+    \dfrac{(\Delta\vec{v} - \dot{\rho}\,\uvec{u})\transpose}{\rho}
+    & \uvec{u}\transpose
+  \end{bmatrix}.
+  \label{eq:meas-gs-jac}
+\end{equation}
+
+\begin{lstlisting}[language=cpp, caption={Closed-form ground-station
+  observable and design matrix.}, label={lst:meas-gs}]
+// cpp/lupnt/measurements/ground_range_measurement.cc
+Vec3d dr = xs.head(3) - xgs.head(3);
+Vec3d dv = xs.tail(3) - xgs.tail(3);
+double rho = dr.norm();
+Vec3d u = dr / rho;
+double rho_dot = dr.dot(dv) / rho;
+
+if (config_.use_range) {
+  h_obs.block(row, 0, 1, 3) = u.transpose();
+  y(row) = rho;
+  R(row, row) = config_.range_sigma_m * config_.range_sigma_m;
+  row++;
+}
+if (config_.use_range_rate) {
+  h_obs.block(row, 0, 1, 3) = ((dv - rho_dot * u) / rho).transpose();
+  h_obs.block(row, 3, 1, 3) = u.transpose();
+  y(row) = rho_dot;
+  R(row, row) = config_.range_rate_sigma_mps * config_.range_rate_sigma_mps;
+  row++;
+}
+\end{lstlisting}
+
+$\mat{H}$ is always allocated $n_z \times 6$: the class owns only the
+instantaneous geometry. Batch orbit determination chains this design matrix
+with the state-transition matrix $\mat{\Phi}(t_k, t_0)$ \emph{outside} the
+model, forming $\tilde{\mat{H}}_k = \mat{H}_k \mat{\Phi}(t_k, t_0)$ to map the
+epoch-$k$ partials back to the solve-for epoch state \citep{tapley2004}; the
+mechanics are specified in \cref{chap:filters}. Covariance is
+$\mat{R} = \diag(\sigma_\rho^2, \sigma_{\dot\rho}^2)$ with defaults
+$\sigma_\rho = \SI{1}{\meter}$ and
+$\sigma_{\dot\rho} = \SI{1e-3}{\meter\per\second}$ (the DSN tracking scenario
+overrides $\sigma_\rho$ to \SI{10}{\meter}).
+
+\subsection{Visibility gate}
+
+The hosting \cpp{GroundStationTrackingApp} rotates the target into the station
+body-fixed frame at $t_\TDB$, forms the topocentric azimuth/elevation/range
+with \cpp{CartToAzElRange}, and rejects the epoch when the elevation is at or
+below \code{elevation\_mask\_deg} (default \SI{10}{\degree}). The elevation
+series is retained even for rejected epochs, so per-station visibility can be
+analysed independently of the measurement series.
+
+\section{Ground-Station Signal-Path and Station-Location Corrections}
+\label{sec:meas-gs-corrections}
+
+For an Earth station tracking a lunar spacecraft --- the three Deep Space
+Network complexes tracking an elliptical lunar frozen orbiter, in the shipped
+\file{configs/ground_station_odts.yaml} scenario --- the geometric range of
+\cref{eq:meas-gs-h} omits the signal-path delays and the crustal displacement
+that a real station experiences. The closed forms live in
+\file{cpp/lupnt/measurements/ground_station_corrections.h} and
+\file{cpp/lupnt/measurements/ground_station_corrections.cc}.
+
+The architecture is deliberately asymmetric. \cpp{GroundStationTrackingApp} ---
+the \emph{sensor} --- adds the enabled corrections to the \textbf{truth}
+observable it generates, and reports the \emph{nominal} (undisplaced) station
+position to the estimator. \cpp{GroundStationManagerApp} --- the
+\emph{estimator} --- then chooses independently how much of each correction to
+model back out of the predicted range. An enabled but unmodelled correction
+therefore appears as a realistic tracking error rather than cancelling
+silently. All four \code{apply\_*} keys default off, so the observable is a
+pure geometric range unless requested. Path delays bias the range only; the
+solid Earth tide displaces the station and so affects both range and range
+rate.
+
+\subsection{Troposphere: Saastamoinen zenith delay and obliquity mapping}
+\label{sec:meas-troposphere}
+
+The non-dispersive neutral-atmosphere delay is a Saastamoinen zenith total
+delay \citep{saastamoinen1972} mapped to the slant path. The zenith delay
+splits into a hydrostatic (``dry'') and a wet component, sharing the same
+latitude/height gravity correction factor
+\begin{equation}
+  f(\varphi, h) = 1 - 0.00266\cos 2\varphi - 2.8\times 10^{-7}\,h ,
+  \label{eq:meas-tropo-flat}
+\end{equation}
+with $\varphi$ the station geodetic latitude and $h$ its height above the
+ellipsoid in metres. Then
+\begin{equation}
+  d^{z}_\mathrm{hyd} = \frac{0.0022768\,P}{f(\varphi,h)},
+  \qquad
+  d^{z}_\mathrm{wet}
+    = \frac{0.0022768\,\big(1255/T + 0.05\big)\,e}{f(\varphi,h)},
+  \label{eq:meas-tropo-zenith}
+\end{equation}
+with $P$ the total surface pressure in \si{\hecto\pascal}, $T$ the surface
+temperature in \si{\kelvin}, and $e$ the water-vapour partial pressure in
+\si{\hecto\pascal}. The coefficient $0.0022768$ carries units of
+\si{\meter\per\hecto\pascal}. The water-vapour partial pressure is derived from
+the relative humidity $RH \in [0,100]\,\%$ through a Tetens saturation formula,
+\begin{equation}
+  e = \frac{RH}{100}\;6.11\,
+      \exp\!\left(\frac{17.27\,t_C}{t_C + 237.3}\right),
+  \qquad t_C = T - \SI{273.15}{\kelvin} .
+  \label{eq:meas-tropo-tetens}
+\end{equation}
+
+\paragraph{Mapping function.} The obliquity factor is the elementary
+$1/\sin(\mathrm{el})$ flat-layer mapping applied to \emph{both} components,
+\begin{equation}
+  d_\mathrm{tropo}
+  = \frac{d^{z}_\mathrm{hyd} + d^{z}_\mathrm{wet}}{\sin \mathrm{el}}
+  = \frac{1}{\sin\mathrm{el}}\,
+    \frac{0.0022768\,P + 0.0022768\,\big(1255/T + 0.05\big)\,e}
+         {1 - 0.00266\cos 2\varphi - 2.8\times 10^{-7}\,h},
+  \label{eq:meas-tropo}
+\end{equation}
+with $\mathrm{el}$ the topocentric elevation. The implementation floors
+$\sin\mathrm{el}$ at $10^{-3}$ to guard the horizon singularity, and falls back
+to $f \equiv 1$ if \cref{eq:meas-tropo-flat} would go non-positive.
+
+\begin{lstlisting}[language=cpp, caption={Saastamoinen zenith delay with the
+  $1/\sin(\mathrm{el})$ obliquity mapping.}, label={lst:meas-tropo}]
+// cpp/lupnt/measurements/ground_station_corrections.cc :: TroposphereDelaySaastamoinen
+double sin_el = std::sin(elevation_rad);
+if (sin_el <= 1e-3) sin_el = 1e-3;  // guard against the horizon singularity
+
+// Latitude/height gravity correction factor shared by both components.
+double f_lat_h = 1.0 - 0.00266 * std::cos(2.0 * latitude_rad)
+                 - 0.00000028 * height_m;
+if (f_lat_h <= 0.0) f_lat_h = 1.0;
+
+// Water-vapour partial pressure from relative humidity (Tetens formula).
+double t_c = temperature_K - 273.15;
+double e_sat = 6.11 * std::exp(17.27 * t_c / (t_c + 237.3));  // [hPa]
+double e = (std::clamp(humidity_pct, 0.0, 100.0) / 100.0) * e_sat;
+
+double zhd = 0.0022768 * pressure_hPa / f_lat_h;                         // [m]
+double zwd = 0.0022768 * (1255.0 / temperature_K + 0.05) * e / f_lat_h;  // [m]
+return (zhd + zwd) / sin_el;
+\end{lstlisting}
+
+When \code{troposphere\_pressure\_hpa} or \code{troposphere\_temperature\_k}
+are left unset (or non-positive), the sensor substitutes the ISO standard
+atmosphere at the station height,
+\begin{equation}
+  P(h) = P_0 \big(1 - 2.25577\times 10^{-5}\,h\big)^{5.2558797},
+  \qquad
+  T(h) = T_0 - L\,h,
+  \label{eq:meas-stdatm}
+\end{equation}
+with $P_0 = \SI{1013.25}{\hecto\pascal}$, $T_0 = \SI{288.15}{\kelvin}$ and
+$L = \SI{6.5e-3}{\kelvin\per\meter}$. The default relative humidity is
+$50\,\%$. At sea level the zenith total delay is
+$\approx \SI{2.4}{\meter}$, growing to $\approx \SI{14}{\meter}$ at
+\SI{10}{\degree} elevation.
+
+\subsection{Ionosphere: single-layer thin shell}
+\label{sec:meas-iono}
+
+A single-layer (thin-shell) model maps a vertical total electron content
+through the ionospheric pierce point and applies the dispersive group delay,
+\begin{equation}
+  d_\mathrm{iono} = \frac{40.3}{f^2}\,\mathrm{STEC},
+  \qquad
+  \mathrm{STEC} = \frac{\mathrm{VTEC}}{\cos z'},
+  \qquad
+  \sin z' = \frac{R_\oplus + h}{R_\oplus + h_\mathrm{shell}}\,\sin z,
+  \label{eq:meas-iono}
+\end{equation}
+with $z = \pi/2 - \mathrm{el}$ the station zenith angle, $z'$ the zenith angle
+at the pierce point, $h$ the station height, $h_\mathrm{shell} =
+\SI{350}{\kilo\meter}$ the default shell height, and $f$ the carrier frequency
+in \si{\hertz}. VTEC is supplied in \si{\TECU}
+($1\,\si{\TECU} = 10^{16}\,\text{electrons}/\si{\meter\squared}$); the
+implementation clamps $\sin z'$ to $[-1,1]$ and floors $\cos z'$ at $10^{-6}$.
+Because the delay scales as $1/f^2$, a dual-frequency link cancels it to first
+order. At \SI{10}{\TECU} the zenith delay is $\approx\SI{0.06}{\meter}$ at
+X-band (\SI{8.4}{\giga\hertz}) and $\approx\SI{0.83}{\meter}$ at S-band
+(\SI{2.2}{\giga\hertz}). This is the terrestrial-station counterpart of the
+much larger plasmaspheric delay a \emph{lunar} terrestrial-GNSS receiver sees,
+which is specified separately in the ionosphere/plasmasphere chapter.
+
+\subsection{Shapiro delay}
+\label{sec:meas-shapiro}
+
+The relativistic light-time delay, summed over the gravitating bodies (Sun and
+Earth in the shipped configuration), is
+\begin{equation}
+  d_\mathrm{Shapiro}
+  = \sum_j \frac{2\,\mu_j}{c^2}\,
+    \ln\!\frac{r_{1j} + r_{2j} + r_{12}}{r_{1j} + r_{2j} - r_{12}},
+  \label{eq:meas-shapiro}
+\end{equation}
+with $\mu_j$ the body gravitational parameter, $r_{1j}$ and $r_{2j}$ the
+transmitter and receiver distances to body $j$, and $r_{12}$ the
+transmitter--receiver range. Terms with a non-positive numerator or
+denominator are skipped. For the Earth--Moon geometry the total is a few
+metres, dominated by the Earth term.
+
+\subsection{Solid Earth tide station displacement}
+\label{sec:meas-tide}
+
+The degree-2 in-phase crustal displacement follows the IERS Conventions
+\citep{iers2010}, summed over the tide-raising bodies (Moon and Sun),
+\begin{equation}
+  \Delta\vec{r}
+  = \sum_j \frac{\mu_j}{\mu_\oplus}\,\frac{R_\oplus^4}{R_j^3}
+    \left\{
+      h_2\,\uvec{r}\left[\tfrac{3}{2}\big(\uvec{R}_j\cdot\uvec{r}\big)^2
+        - \tfrac{1}{2}\right]
+      + 3\,l_2\,\big(\uvec{R}_j\cdot\uvec{r}\big)
+        \left[\uvec{R}_j - \big(\uvec{R}_j\cdot\uvec{r}\big)\uvec{r}\right]
+    \right\},
+  \label{eq:meas-tide}
+\end{equation}
+with $\uvec{r}$ the geocentric station unit vector, $\uvec{R}_j$ and $R_j$ the
+geocentric unit vector and distance of body $j$, $R_\oplus$ the Earth equatorial
+radius, and the degree-2 Love and Shida numbers $h_2 = 0.6078$,
+$l_2 = 0.0847$. The first brace term is radial and the second is transverse.
+
+\begin{lstlisting}[language=cpp, caption={Degree-2 in-phase solid Earth tide
+  displacement.}, label={lst:meas-tide}]
+// cpp/lupnt/measurements/ground_station_corrections.cc :: SolidEarthTideDisplacement
+Vec3d r_hat = r_station / r_sta;
+double re4 = std::pow(earth_radius_m, 4);
+
+Vec3d disp = Vec3d::Zero();
+for (const auto& [r_body, gm] : tide_bodies) {
+  double rj = r_body.norm();
+  if (rj <= 0.0) continue;
+  Vec3d rj_hat = r_body / rj;
+  double c = rj_hat.dot(r_hat);  // cos(angle between body and station)
+  double scale = (gm / GM_earth) * re4 / (rj * rj * rj);
+  Vec3d radial = h2 * r_hat * (1.5 * c * c - 0.5);
+  Vec3d transverse = 3.0 * l2 * c * (rj_hat - c * r_hat);
+  disp += scale * (radial + transverse);
+}
+\end{lstlisting}
+
+\Cref{eq:meas-tide} is built entirely from frame-invariant dot products of unit
+vectors, so evaluating it with all vectors expressed in an inertial frame
+returns the displacement directly in that frame --- no body-fixed round trip is
+needed. The truth station position is displaced by $\Delta\vec{r}$ (peak
+$\lesssim\SI{0.3}{\meter}$ radial) while the nominal catalogue position is
+still what the sensor reports to the estimator. Because the displaced station
+enters both $\Delta\vec{r}$ and $\Delta\vec{v}$ in \cref{eq:meas-gs-defs}, this
+is the only one of the four corrections that perturbs the range rate as well as
+the range.
+
+\subsection{Estimation-side modelling and noise inflation}
+\label{sec:meas-gs-modelling}
+
+The sensor forwards each correction \emph{component} alongside the observation
+(\code{tropo\_delay\_m}, \code{iono\_delay\_m}, \code{shapiro\_delay\_m},
+\code{tide\_disp\_m}), and the manager decides how much to model back out. The
+deterministic terms are computable and are removed in full: the Shapiro delay
+is added to the predicted range when \code{model\_shapiro} is set, and the
+solid Earth tide displaces the station position used in the prediction when
+\code{model\_solid\_earth\_tide} is set, so both cancel down to the
+estimate-versus-truth geometry difference. The media delays are only partially
+calibratable, so \code{troposphere\_cancel\_fraction} and
+\code{ionosphere\_cancel\_fraction} set the modelled fractions
+$f_\mathrm{tropo}, f_\mathrm{iono} \in [0,1]$:
+\begin{equation}
+  \Delta\rho_\mathrm{model}
+  = [\,\text{shapiro}\,]\,d_\mathrm{Shapiro}
+  + f_\mathrm{tropo}\,d_\mathrm{tropo}
+  + f_\mathrm{iono}\,d_\mathrm{iono} .
+  \label{eq:meas-model-corr}
+\end{equation}
+The uncancelled remainder is a \emph{bias}, not noise, but it is
+down-weighted by inflating the range variance,
+\begin{equation}
+  \sigma_\rho^2 \;\leftarrow\; \sigma_\rho^2
+  + \Big[\,s\,\big((1 - f_\mathrm{tropo})\,d_\mathrm{tropo}
+      + (1 - f_\mathrm{iono})\,d_\mathrm{iono}\big)\Big]^2 ,
+  \label{eq:meas-sigma-inflate}
+\end{equation}
+with the scale $s$ set by \code{residual\_delay\_noise\_scale}. Note that
+\cref{eq:meas-sigma-inflate} is evaluated \emph{per measurement}, so a
+low-elevation observation --- where the mapping function of
+\cref{eq:meas-tropo} is largest --- is automatically down-weighted the most.
+
+\begin{table}[H]
+  \centering
+  \caption{Correction keys. The \code{apply\_*} group lives on each
+    \cpp{GroundStationTrackingApp} (truth injection); the \code{model\_*} and
+    \code{*\_cancel\_fraction} group lives on the single
+    \cpp{GroundStationManagerApp} (estimator calibration). Truth and estimator
+    are configured independently by design.}
+  \label{tab:meas-gs-config}
+  \small
+  \begin{tabularx}{\textwidth}{@{}l l L@{}}
+    \toprule
+    Key & Default & Meaning \\
+    \midrule
+    \multicolumn{3}{@{}l@{}}{\emph{Sensor}, \cpp{GroundStationTrackingApp}} \\
+    \code{apply\_troposphere}      & \code{false} & add \cref{eq:meas-tropo} to the truth range \\
+    \code{troposphere\_pressure\_hpa}  & std.\ atm. & $P$; $\le 0$ selects \cref{eq:meas-stdatm} \\
+    \code{troposphere\_temperature\_k} & std.\ atm. & $T$; $\le 0$ selects \cref{eq:meas-stdatm} \\
+    \code{troposphere\_humidity\_pct}  & 50 & $RH$ in \cref{eq:meas-tropo-tetens} \\
+    \code{apply\_ionosphere}       & \code{false} & add \cref{eq:meas-iono} to the truth range \\
+    \code{ionosphere\_vtec\_tecu}  & \SI{10}{\TECU} & VTEC \\
+    \code{signal\_frequency\_hz}   & \SI{8.4e9}{\hertz} & $f$; X-band downlink \\
+    \code{apply\_shapiro}          & \code{false} & add \cref{eq:meas-shapiro} (Sun $+$ Earth) \\
+    \code{apply\_solid\_earth\_tide} & \code{false} & displace the truth station by \cref{eq:meas-tide} \\
+    \code{elevation\_mask\_deg}    & \SI{10}{\degree} & topocentric visibility gate \\
+    \midrule
+    \multicolumn{3}{@{}l@{}}{\emph{Estimator}, \cpp{GroundStationManagerApp}} \\
+    \code{model\_shapiro}          & \code{true} & include $d_\mathrm{Shapiro}$ in \cref{eq:meas-model-corr} \\
+    \code{model\_solid\_earth\_tide} & \code{true} & displace the modelled station position \\
+    \code{troposphere\_cancel\_fraction} & 0.0 & $f_\mathrm{tropo}$, clamped to $[0,1]$ \\
+    \code{ionosphere\_cancel\_fraction}  & 0.0 & $f_\mathrm{iono}$, clamped to $[0,1]$ \\
+    \code{residual\_delay\_noise\_scale} & 1.0 & $s$ in \cref{eq:meas-sigma-inflate} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lupntnote}
+  Leaving every \code{*\_cancel\_fraction} at its default of $0$ and every
+  \code{apply\_*} at \code{false} reproduces the raw geometric residual
+  exactly, which is the regression baseline. The shipped DSN scenario instead
+  enables all four corrections on the sensors and calibrates $80\,\%$ of the
+  troposphere and ionosphere in the estimator.
+\end{lupntnote}
+
+\section{Surface LANS / LunaNet Pseudorange}
+\label{sec:meas-lans}
+
+\cpp{SurfaceLansMeasurement}
+(\file{cpp/lupnt/measurements/surface_measurements.h},
+\file{cpp/lupnt/measurements/surface_measurements.cc}) is an error-state model
+of a one-way code pseudorange from a relay satellite of the Lunar
+Communications Relay and Navigation Systems / Lunar Augmented Navigation
+Service constellation to a lunar surface rover or lander, following the
+LunaNet interoperability specification \citep{lunanet2022} and the surface
+station concept of \citet{casadesus2025surface}.
+
+\subsection{State dependence}
+
+The estimated quantity is the $17$-dimensional error state of
+\cref{eq:meas-errorstate}, but the model reads only the nominal position
+$\vec{r}$ and the nominal clock bias $b_\mathrm{clk}$ from the
+\cpp{NavErrorContext}. The transmitter position $\vec{r}_S$ (Moon-fixed) is not
+a state: it is supplied with the measurement, from the relay's broadcast
+ephemeris, and its error is folded into the signal-in-space noise term rather
+than estimated.
+
+\subsection{Observation equation and Jacobian}
+
+\begin{equation}
+  h = \lVert \vec{r}_S - \vec{r} \rVert + c\,b_\mathrm{clk} .
+  \label{eq:meas-lans-h}
+\end{equation}
+With the rover-to-satellite unit line of sight
+$\uvec{u} = (\vec{r}_S - \vec{r})/\lVert \vec{r}_S - \vec{r}\rVert$, the
+position partial is $\partial\rho/\partial\vec{r} = -\uvec{u}\transpose$ (the
+sign is the one point where this differs from a transmitter-side partial), and
+the clock partial is exactly $c$:
+\begin{equation}
+  \frac{\partial h}{\partial \delta\vec{r}} = -\uvec{u}\transpose,
+  \qquad
+  \frac{\partial h}{\partial \delta b_\mathrm{clk}} = c,
+  \qquad
+  \mat{H} =
+  \begin{bmatrix}
+    -\uvec{u}\transpose & \vec{0}\transpose_{9} & c & 0
+  \end{bmatrix}
+  \in \mathbb{R}^{1\times 17}.
+  \label{eq:meas-lans-jac}
+\end{equation}
+
+\begin{lstlisting}[language=cpp, caption={LANS pseudorange prediction and
+  error-state Jacobian.}, label={lst:meas-lans}]
+// cpp/lupnt/measurements/surface_measurements.cc :: SurfaceLansMeasurement
+double SurfaceLansMeasurement::PredictedRange(const Vec3d& r_rover,
+                                              double clock_bias_s) const {
+  double range = (r_sat - r_rover).norm();
+  return range + C * clock_bias_s;
+}
+
+MeasData SurfaceLansMeasurement::Compute(const NavErrorContext& nom,
+                                         MatXd* H) const {
+  MeasData md;
+  md.timestamp = timestamp;
+  md.value = VecXd::Constant(1, PredictedRange(nom.r, nom.clock_bias_s));
+  md.covariance = MatXd::Constant(1, 1, NoiseVariance());
+  if (H != nullptr) {
+    Vec3d u = LosUnit(nom.r);  // rover -> satellite unit vector
+    *H = MatXd::Zero(1, nom.error_state_size);
+    H->block(0, config.i_dr, 1, 3) = -u.transpose();  // d(range)/d(r)
+    (*H)(0, config.i_dcb) = C;                        // d(rho)/d(clock_bias)
+  }
+  return md;
+}
+\end{lstlisting}
+
+Note that the velocity, attitude and IMU-bias columns are untouched: a single
+pseudorange constrains only the position projection along $\uvec{u}$ and the
+clock bias. Velocity and attitude become observable through the INS
+mechanization coupling of \cref{chap:filters}, not through this row.
+\cpp{LosUnit} returns the zero vector for a degenerate zero-range geometry, so
+$\mat{H}$ degrades to a pure clock row rather than producing a NaN.
+
+\subsection{Covariance}
+
+The receiver pseudorange noise and the broadcast signal-in-space error add in
+quadrature,
+\begin{equation}
+  \mat{R} = \sigma_m^2 + \sigma_\mathrm{sise}^2 ,
+  \label{eq:meas-lans-R}
+\end{equation}
+with defaults $\sigma_m = \SI{1}{\meter}$ (receiver) and
+$\sigma_\mathrm{sise} = \SI{3}{\meter}$ (combined ephemeris and clock
+signal-in-space, $1\sigma$). Treating the signal-in-space error as white is an
+approximation: the truth generator in \cpp{LanderNavApp} draws a
+\emph{per-satellite constant} bias \code{sise\_bias\_[j]} for the whole run,
+so the residual it induces is strongly time-correlated. The same measurement
+class is reused unchanged by the lander
+(\code{kLanderNavErrorStateSize} $=$ \code{kSurfaceNavErrorStateSize} $= 17$).
+
+The hosting application gates each relay on a topocentric elevation mask
+computed against the local up direction,
+$\uvec{u}\cdot\uvec{e}_U \ge \sin(\mathrm{el}_\mathrm{mask})$, before staging
+the measurement.
+
+\section{Lander Altimeter}
+\label{sec:meas-altimeter}
+
+\cpp{LanderAltimeterMeasurement}
+(\file{cpp/lupnt/measurements/lander_measurements.h},
+\file{cpp/lupnt/measurements/lander_measurements.cc}) is an error-state model
+of a radar or laser altimeter return: the vehicle's height above the terrain
+directly below it, under a nadir-beam, small-tilt assumption.
+
+\subsection{Observation equation}
+
+In a local ENU triad $(\uvec{e}_E, \uvec{e}_N, \uvec{e}_U)$ anchored at the DEM
+tile centre $\vec{r}_c$, with
+$[E, N, U]\transpose = \mat{R}_{\mathrm{PA}\to\mathrm{ENU}}(\vec{r} - \vec{r}_c)$,
+\begin{equation}
+  \mathrm{alt} = U - \mathcal{T}(E, N),
+  \label{eq:meas-alt-h}
+\end{equation}
+where $\mathcal{T}$ is the digital elevation model (DEM) evaluated at the
+horizontal footprint. Because both the predicted altitude and its position
+partial depend on $\mathcal{T}$, they are supplied by the simulation through
+\code{predicted\_altitude\_m} and \code{h\_pos}, and the measurement class
+itself is a thin, terrain-agnostic wrapper:
+\begin{equation}
+  h = \widehat{\mathrm{alt}}(\vec{r}),
+  \qquad
+  \mat{H} =
+  \begin{bmatrix}
+    \vec{h}_\mathrm{pos}\transpose & \vec{0}\transpose_{14}
+  \end{bmatrix}
+  \in \mathbb{R}^{1\times 17},
+  \qquad
+  \vec{h}_\mathrm{pos} = \frac{\partial\,\mathrm{alt}}{\partial \vec{r}} .
+  \label{eq:meas-alt-jac}
+\end{equation}
+
+\begin{lstlisting}[language=cpp, caption={The altimeter model is a thin wrapper
+  around the DEM-supplied prediction and slope.}, label={lst:meas-alt}]
+// cpp/lupnt/measurements/lander_measurements.cc :: LanderAltimeterMeasurement::Compute
+md.value = VecXd::Constant(1, predicted_altitude_m);
+md.covariance = MatXd::Constant(1, 1, NoiseVariance());
+if (H != nullptr) {
+  *H = MatXd::Zero(1, nom.error_state_size);
+  H->block(0, config.i_dr, 1, 3) = h_pos.transpose();  // d(altitude)/d(r), Moon-fixed
+}
+\end{lstlisting}
+
+\subsection{Slope coupling}
+
+The interesting content is in $\vec{h}_\mathrm{pos}$. Differentiating
+\cref{eq:meas-alt-h} and using
+$\partial E/\partial\vec{r} = \uvec{e}_E\transpose$ and likewise for $N, U$,
+\begin{equation}
+  \vec{h}_\mathrm{pos}
+  = \uvec{e}_U
+    - s_E\,\uvec{e}_E
+    - s_N\,\uvec{e}_N ,
+  \qquad
+  s_E = \frac{\partial \mathcal{T}}{\partial E},
+  \qquad
+  s_N = \frac{\partial \mathcal{T}}{\partial N} .
+  \label{eq:meas-alt-slope}
+\end{equation}
+Over perfectly flat terrain $s_E = s_N = 0$ and the altimeter is a pure
+vertical-channel measurement, orthogonal to horizontal position. Over sloped
+terrain the two gradient terms couple the vertical return into the horizontal
+position error --- this is exactly the mechanism by which an altimeter
+contributes horizontal observability in terrain-relative navigation
+\citep{dai2025fullstack}. The slopes are evaluated by central differences on
+the DEM with a step $\Delta s$:
+
+\begin{lstlisting}[language=cpp, caption={DEM prediction and central-difference
+  slope, evaluated by the driving simulation.}, label={lst:meas-alt-dem}]
+// cpp/lupnt/applications/lander/lander_nav_app.cc :: LanderNavApp::Step
+Vec3d enu = R_pa2enu_ * (r_ - r_center_pa_);
+double E = enu(0), Ne = enu(1), U = enu(2);
+double alt_pred = U - world->GetElevation(E, Ne);
+double sE = (world->GetElevation(E + ds_, Ne) - world->GetElevation(E - ds_, Ne))
+            / (2 * ds_);
+double sN = (world->GetElevation(E, Ne + ds_) - world->GetElevation(E, Ne - ds_))
+            / (2 * ds_);
+Vec3d H_pos = (R_pa2enu_.row(2) - sE * R_pa2enu_.row(0)
+               - sN * R_pa2enu_.row(1)).transpose();
+m.predicted_altitude_m = alt_pred;
+m.h_pos = H_pos;
+UpdateAltimeter(m);
+\end{lstlisting}
+
+The rows of \code{R\_pa2enu\_} are $\uvec{e}_E\transpose, \uvec{e}_N\transpose,
+\uvec{e}_U\transpose$, so the listing is \cref{eq:meas-alt-slope} verbatim.
+The measurement is staged only while the vehicle is within
+\code{altimeter\_max\_range\_m} of the surface. Covariance is the scalar
+$\mat{R} = \sigma_m^2$ with default $\sigma_m = \SI{2}{\meter}$.
+
+\begin{lupntwarning}
+  \cpp{LanderNavApp::UpdateAltimeter} builds its \cpp{NavErrorContext} with
+  only \code{error\_state\_size} set --- the nominal position is deliberately
+  \emph{not} copied in, because the model never reads it: both the predicted
+  value and the Jacobian arrive pre-computed from the DEM. Any consumer that
+  supplies its own \code{predicted\_altitude\_m}/\code{h\_pos} pair must
+  therefore guarantee they were evaluated at the same nominal position the
+  filter currently holds, since the model cannot check.
+\end{lupntwarning}
+
+\section{Camera Crater Bearing (Optical Terrain-Relative Navigation)}
+\label{sec:meas-crater}
+
+\cpp{LanderCraterMeasurement}
+(\file{cpp/lupnt/measurements/lander_measurements.h},
+\file{cpp/lupnt/measurements/lander_measurements.cc}) is the attitude-coupled
+optical-navigation model: the unit line of sight from the lander's down-looking
+camera to a mapped crater of known Moon-fixed position $\vec{r}_c$, expressed
+in the vehicle \textbf{body} frame. It is the model behind the crater-based
+terrain-relative navigation of \citet{dai2025fullstack}.
+
+\subsection{State dependence and observation equation}
+
+The model reads the nominal position $\vec{r}$ \emph{and} the nominal attitude
+$\mat{R}_{b\to n}$ from the \cpp{NavErrorContext}. With the nav-frame line of
+sight
+\begin{equation}
+  \uvec{u}_n = \frac{\vec{r}_c - \vec{r}}{\lVert \vec{r}_c - \vec{r}\rVert},
+  \qquad \rho = \lVert \vec{r}_c - \vec{r}\rVert,
+  \label{eq:meas-crater-un}
+\end{equation}
+the predicted body-frame bearing is
+\begin{equation}
+  h = \mat{R}_{b\to n}\transpose\,\uvec{u}_n \in \mathbb{R}^3 .
+  \label{eq:meas-crater-h}
+\end{equation}
+The residual $\vec{y} = \uvec{u}_b^\mathrm{meas} - h$ is formed in the tangent
+plane of the unit sphere, which is why the small-angle unit-vector
+approximation is legitimate for small $\sigma_\mathrm{rad}$.
+
+\subsection{Jacobian}
+
+Differentiating the normalization in \cref{eq:meas-crater-un} gives the
+standard projector form, and the attitude partial follows from the MEKF
+convention
+$\mat{R}^\mathrm{true}_{b\to n} = \exp([\delta\vec{\theta}]_\times)
+\mat{R}^\mathrm{est}_{b\to n}$:
+\begin{equation}
+  \frac{\partial \uvec{u}_n}{\partial \vec{r}}
+    = -\frac{1}{\rho}\big(\mat{I} - \uvec{u}_n\uvec{u}_n\transpose\big),
+  \qquad
+  \frac{\partial h}{\partial \delta\vec{r}}
+    = \mat{R}_{b\to n}\transpose
+      \left[-\frac{1}{\rho}\big(\mat{I} - \uvec{u}_n\uvec{u}_n\transpose\big)\right],
+  \qquad
+  \frac{\partial h}{\partial \delta\vec{\theta}}
+    = \mat{R}_{b\to n}\transpose\,[\uvec{u}_n]_\times ,
+  \label{eq:meas-crater-jac}
+\end{equation}
+where $[\vec{a}]_\times$ is the skew-symmetric cross-product matrix
+\begin{equation}
+  [\vec{a}]_\times =
+  \begin{bmatrix}
+    0 & -a_3 & a_2 \\ a_3 & 0 & -a_1 \\ -a_2 & a_1 & 0
+  \end{bmatrix}.
+  \label{eq:meas-skew}
+\end{equation}
+
+\begin{lstlisting}[language=cpp, caption={Crater bearing: prediction and the
+  position/attitude-coupled Jacobian.}, label={lst:meas-crater}]
+// cpp/lupnt/measurements/lander_measurements.cc :: LanderCraterMeasurement::Compute
+Vec3d los = r_crater - nom.r;
+double range = los.norm();
+if (range <= 0.0) return md;             // degenerate geometry: empty value -> caller skips
+Vec3d u_n = los / range;                 // nav-frame unit line-of-sight
+md.value = nom.R_b2n.transpose() * u_n;  // predicted body line-of-sight
+md.covariance = (sigma_rad * sigma_rad) * MatXd::Identity(3, 3);
+if (H != nullptr) {
+  // d(u_n)/d(r) = -(1/range)(I - u_n u_n^T); attitude term uses [u_n]_x (nav frame).
+  Mat3d dun_dr = -(1.0 / range) * (Mat3d::Identity() - u_n * u_n.transpose());
+  *H = MatXd::Zero(3, nom.error_state_size);
+  H->block(0, config.i_dr,  3, 3) = nom.R_b2n.transpose() * dun_dr;
+  H->block(0, config.i_dth, 3, 3) = nom.R_b2n.transpose() * Skew3d(u_n);
+}
+\end{lstlisting}
+
+The projector $\mat{I} - \uvec{u}_n\uvec{u}_n\transpose$ annihilates the
+along-line-of-sight direction: a bearing carries no range information, so the
+position Jacobian has rank $2$ and the depth along $\uvec{u}_n$ must be
+resolved either by a second landmark at a different bearing or by the
+altimeter of \cref{sec:meas-altimeter}. The $1/\rho$ factor makes the position
+sensitivity grow as the lander descends, while the attitude block
+$\mat{R}_{b\to n}\transpose[\uvec{u}_n]_\times$ is range-independent --- so at
+high altitude the same residual is attributed almost entirely to attitude
+error, and only near the surface does it become an effective horizontal
+position fix.
+
+\subsection{Covariance and gating}
+
+The noise is isotropic per line-of-sight component,
+\begin{equation}
+  \mat{R} = \sigma_\mathrm{rad}^2\,\mat{I}_3 ,
+  \label{eq:meas-crater-R}
+\end{equation}
+with default $\sigma_\mathrm{rad} = \SI{1e-3}{\radian}$ (the lander application
+configures it in arcseconds through \code{crater\_sigma\_arcsec}). Because the
+predicted and measured vectors are unit vectors, the third component of the
+residual is nearly redundant, and $\mat{R}$ is correspondingly slightly
+conservative; the resulting $3\times 3$ innovation covariance is still
+invertible for any $\sigma_\mathrm{rad} > 0$.
+
+A degenerate zero-range geometry returns an \emph{empty} value vector rather
+than a NaN, and \cpp{LanderNavApp::UpdateCrater} checks
+\code{md.value.size() == 0} and skips the update. The application additionally
+gates landmarks on a nadir field-of-view cone
+($-\uvec{u}_n\cdot\uvec{e}_U \ge \cos(\mathrm{FOV})$, key
+\code{camera\_fov\_deg}) and processes at most
+\code{max\_craters\_per\_epoch} of them, sorted by increasing range. The
+\cpp{Camera} device in \file{cpp/lupnt/devices/camera.h} carries only the
+payload pose and image dimensions; it does not render, and the bearing
+measurement is synthesized geometrically from the truth attitude plus additive
+Gaussian noise.
+
+\begin{table}[H]
+  \centering
+  \caption{Default measurement noise levels across the non-GNSS models.}
+  \label{tab:meas-noise}
+  \small
+  \begin{tabularx}{\textwidth}{@{}l l L@{}}
+    \toprule
+    Observable & Default $1\sigma$ & Source \\
+    \midrule
+    Two-way crosslink range        & \SI{1}{\meter}                & \code{sigma\_range\_m} \\
+    Two-way crosslink range rate   & \SI{1e-3}{\meter\per\second}  & \code{sigma\_range\_rate\_mps} \\
+    One-way anchor pseudorange     & \SI{200}{\meter}              & \code{sigma\_pseudorange\_m} \\
+    One-way anchor Doppler         & \SI{1e-3}{\meter\per\second}  & \code{sigma\_anchor\_doppler\_mps} \\
+    Two-way time transfer          & \SI{1}{\meter}                & \code{sigma\_time\_transfer\_m} \\
+    Two-way frequency transfer     & \SI{1e-3}{\meter\per\second}  & \code{sigma\_frequency\_transfer\_mps} \\
+    Ground-station range           & \SI{1}{\meter}                & \code{range\_sigma\_m} \\
+    Ground-station range rate      & \SI{1e-3}{\meter\per\second}  & \code{range\_rate\_sigma\_mps} \\
+    LANS pseudorange (receiver)    & \SI{1}{\meter}                & \code{sigma\_m} \\
+    LANS signal-in-space           & \SI{3}{\meter}                & \code{sise\_m} \\
+    Altimeter                      & \SI{2}{\meter}                & \code{sigma\_m} \\
+    Crater bearing                 & \SI{1e-3}{\radian}            & \code{sigma\_rad} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Model Boundaries}
+\label{sec:meas-boundaries}
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Instantaneous geometry only.} All non-GNSS models use the
+    instantaneous geometric range at a single epoch: no light-time iteration,
+    and no Shapiro, relativistic, or ionospheric range correction inside the
+    observation equation. The only relativistic term present anywhere in this
+    family is the $c\,b$ clock scaling in the pseudorange models. Compare
+    \cref{chap:gnss-measurements}, which does solve the transmit epoch.
+  \item \textbf{Two differentiation strategies, on purpose.}
+    \cpp{IslCrosslinkMeasurement} reseeds a fresh autodiff state before
+    differentiating, in order to preserve the incoming consider-state seeds
+    required by \cpp{SchmidtEKF}; \cpp{GroundStationRangeMeasurement} uses a
+    closed-form design matrix and never calls autodiff. Neither is a fallback
+    for the other.
+  \item \textbf{Error-state models bypass the \cpp{Filter} family.}
+    \brk{SurfaceLansMeasurement}, \brk{LanderAltimeterMeasurement} and
+    \brk{LanderCraterMeasurement} linearize about a \cpp{NavErrorContext} and
+    are driven by the hosting application's Joseph-form error-state update, not
+    through \brk{FilterMeasurementFunction}. They have no \cpp{Clone()} and no
+    \cpp{CreateFunction}.
+  \item \textbf{The altimeter carries no terrain model.} Its predicted value
+    and Jacobian are DEM-supplied; the measurement class performs no terrain
+    evaluation and cannot validate that the supplied pair is consistent with
+    the filter's current nominal position.
+  \item \textbf{Covariances are diagonal or isotropic by convention.} No model
+    in this chapter emits a correlated $\mat{R}$; correlated errors that do
+    exist physically --- the per-satellite constant signal-in-space bias, the
+    slowly varying uncancelled troposphere --- are approximated as white and,
+    for the ground-station case, absorbed by the variance inflation of
+    \cref{eq:meas-sigma-inflate}.
+  \item \textbf{Antenna patterns, obscuration and link closure are elsewhere.}
+    Visibility here is a geometric gate only (elevation mask, field-of-view
+    cone, altimeter maximum range). Whether the link actually closes at the
+    required carrier-to-noise density is decided by the link-budget model, and
+    the measurement models do not consult it.
+  \item \textbf{Truth and estimator are configured independently.} The
+    \code{apply\_*} keys inject a correction into the truth observable; the
+    \code{model\_*} and \code{*\_cancel\_fraction} keys decide how much of it
+    the estimator removes. Setting the two groups inconsistently is a supported
+    and intentional way to study unmodelled-error sensitivity, so no
+    consistency check is performed between them.
+\end{itemize}

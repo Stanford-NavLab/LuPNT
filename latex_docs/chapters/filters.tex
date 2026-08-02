@@ -1,0 +1,1647 @@
+\chapter{Estimation Filters}
+\label{chap:filters}
+
+This chapter specifies the mathematical contract of \lupnt{}'s estimation
+layer: the recursive Kalman family (\cpp{EKF}, \cpp{UKF}, \cpp{UDUEKF},
+\cpp{SRIF}, \cpp{SchmidtEKF}, \cpp{UDUStochasticCloningEKF}), the batch
+weighted least-squares estimator, the fixed-interval smoothers, and the
+process-noise models that drive them. The recursive filters live under
+\file{cpp/lupnt/numerics/filters/}; the clock process noise lives in
+\file{cpp/lupnt/dynamics/clock_dynamics.cc}. The linear-algebra kernels follow
+\citet{bierman1977} and \citet{thornton1980} for the UD factorization,
+\citet{tapley2004} for the square-root information filter, and
+\citet{julier2004ukf} for the unscented transform. The stochastic-cloning UD
+filter and the delayed-state smoother reproduce the contract of
+\citep[Ch.~6.2]{iiyama2026thesis} and \citep{iiyama2026scud}; the corresponding
+thesis equation numbers are cited inline so that the two documents can be read
+side by side.
+
+Every filter in this chapter is a \emph{discrete-time, continuous-dynamics}
+estimator: the state is propagated by numerical integration of the dynamics
+(\cref{chap:dynamics,chap:integration}), the state-transition matrix and
+measurement Jacobian are produced by automatic differentiation
+(\cref{chap:autodiff}), and the covariance algebra specified below is the only
+part that distinguishes one filter from another. The algorithms therefore share
+a single interface, a single outlier-rejection policy, and a single logging
+contract; they differ only in \emph{how} the second moment is represented and
+propagated, and hence in their numerical conditioning and cost.
+
+\section{The Recursive Estimation Contract}
+\label{sec:flt-contract}
+
+\subsection{State and covariance}
+
+Every recursive filter derives from the abstract base class \cpp{Filter}
+(\file{cpp/lupnt/numerics/filters/filter.h}) and maintains a state estimate and
+a covariance
+\begin{equation}
+  \label{eq:flt-state}
+  \hat{\vec{x}} \in \mathbb{R}^{n},
+  \qquad
+  \mat{P} \in \mathbb{R}^{n\times n},
+  \qquad
+  \mat{P} = \mat{P}\transpose \succeq 0 ,
+\end{equation}
+where $n$ is the state dimension. The base class keeps three snapshots of the
+pair: the working copy $(\hat{\vec{x}}, \mat{P})$ in \cpp{x\_}/\cpp{P\_}, the
+prior (post-propagation, pre-update) copy
+$(\hat{\vec{x}}^{-}, \mat{P}^{-})$ in \cpp{x\_prior\_}/\cpp{P\_prior\_}, and
+the posterior (post-update) copy $(\hat{\vec{x}}^{+}, \mat{P}^{+})$ in
+\cpp{x\_post\_}/\cpp{P\_post\_}. A fourth matrix, \cpp{P\_bar\_}, holds the
+\emph{propagated-only} covariance
+\begin{equation}
+  \label{eq:flt-pbar}
+  \bar{\mat{P}} = \mat{F}\,\mat{P}\,\mat{F}\transpose ,
+\end{equation}
+that is, the covariance after the dynamics but before process noise is added.
+It is exposed through \cpp{GetCovarianceBar} and is consumed only by the
+adaptive process-noise estimator of \cref{sec:flt-adaptive}.
+
+The state is carried as a \cpp{State} object, which attaches a reference frame
+and a unit convention to the raw vector; the covariance is a plain
+\cpp{MatXd}. It is the caller's responsibility to keep the two consistent: the
+covariance is always expressed in the same units and frame as the state it
+accompanies, and no filter performs an implicit unit conversion. For a coupled
+orbit--clock state the usual layout is
+\begin{equation}
+  \label{eq:flt-layout}
+  \vec{x} =
+  \begin{bmatrix}
+    \vec{r}\transpose & \vec{v}\transpose & b & \dot{b} & (\ddot{b})
+  \end{bmatrix}\transpose ,
+\end{equation}
+with $\vec{r}, \vec{v} \in \mathbb{R}^3$ the position and velocity in the
+configured frame and $(b, \dot{b}, \ddot{b})$ the clock bias, drift, and
+drift rate in the configured clock-bias unit
+(\cref{sec:flt-clock-noise}).
+
+\subsection{The three callbacks}
+
+A filter is not a model. It is driven entirely by three callbacks registered
+before the estimation loop starts; all model knowledge enters through them. The
+first is the dynamics callback,
+\begin{equation}
+  \label{eq:flt-cb-dyn}
+  \texttt{f\_dyn\_} : (\vec{x}, t_0, t_f, \vec{u}) \;\longmapsto\;
+  \bigl(\vec{x}(t_f),\ \mat{F}\bigr),
+  \qquad
+  \mat{F} = \frac{\partial \vec{x}(t_f)}{\partial \vec{x}(t_0)} ,
+\end{equation}
+which propagates the state over $[t_0, t_f]$ and returns the state-transition
+matrix (STM) $\mat{F}$ of that propagation. The second is the process-noise
+callback,
+\begin{equation}
+  \label{eq:flt-cb-proc}
+  \texttt{f\_proc\_} : (\vec{x}, t_0, t_f) \;\longmapsto\; \mat{Q},
+  \qquad
+  \mat{Q} = \mat{Q}\transpose \succeq 0 ,
+\end{equation}
+which returns the process-noise covariance accumulated over the same interval.
+The third is the measurement callback,
+\begin{equation}
+  \label{eq:flt-cb-meas}
+  \texttt{f\_meas\_} : \vec{x} \;\longmapsto\;
+  \bigl(\hat{\vec{z}},\ \mat{H},\ \mat{R}\bigr),
+  \qquad
+  \mat{H} = \frac{\partial \vec{z}}{\partial \vec{x}} ,
+\end{equation}
+which predicts the measurement at the current estimate and returns its Jacobian
+and noise covariance. The callback signatures are the typedefs
+\cpp{FilterDynamicsFunction}, \cpp{ProcessNoiseFunction}, and
+\cpp{FilterMeasurementFunction} declared in \file{filter.h}.
+
+Plain models (a \cpp{DynamicsFunction} or a \cpp{MeasurementFunction} without a
+Jacobian) are lifted into the callback forms of \cref{eq:flt-cb-dyn} and
+\cref{eq:flt-cb-meas} by \cpp{GetFilterDynamicsFunction} and
+\cpp{GetFilterMeasurementFunction}
+(\file{cpp/lupnt/numerics/filters/filter_utils.h}), which obtain $\mat{F}$ and
+$\mat{H}$ by forward-mode automatic differentiation of the model
+(\cref{chap:autodiff}). No filter ever forms a finite-difference Jacobian.
+
+\begin{lupntnote}
+The process noise is evaluated \emph{at the prior state}, before the dynamics
+are applied: $\mat{Q} = \texttt{f\_proc\_}(\hat{\vec{x}}, t_0, t_f)$. All
+filters follow this convention so that a state-dependent $\mat{Q}$ (for example
+one keyed on the current altitude) is reproducible across the family.
+\end{lupntnote}
+
+\subsection{The predict--update cycle}
+
+The estimation loop alternates two virtual calls,
+\begin{equation}
+  \label{eq:flt-cycle}
+  \cdots \;\longrightarrow\;
+  \underbrace{\texttt{Predict}(t_k)}_{(\hat{\vec{x}}^{+}_{k-1},\mat{P}^{+}_{k-1})
+    \,\mapsto\,(\hat{\vec{x}}^{-}_{k},\mat{P}^{-}_{k})}
+  \;\longrightarrow\;
+  \underbrace{\texttt{Update}(\vec{z}_k)}_{(\hat{\vec{x}}^{-}_{k},\mat{P}^{-}_{k})
+    \,\mapsto\,(\hat{\vec{x}}^{+}_{k},\mat{P}^{+}_{k})}
+  \;\longrightarrow\; \cdots
+\end{equation}
+Both are no-ops for an empty measurement vector: if $\vec{z}_k$ has zero
+length, \cpp{Update} returns immediately and the prior becomes the posterior.
+This is the normal path for an epoch with no visible transmitters.
+
+\subsection{Process-noise mapping}
+
+Correlated process noise on a subset of the state is supplied through a
+mapping matrix $\mat{G} \in \mathbb{R}^{n\times m}$ registered by
+\cpp{SetProcessNoiseMappingMatrix}. When mapping is enabled the noise is
+transformed before it is used,
+\begin{equation}
+  \label{eq:flt-gmap}
+  \mat{Q} \;\longleftarrow\; \mat{G}\,\mat{Q}\,\mat{G}\transpose ,
+\end{equation}
+so that the callback of \cref{eq:flt-cb-proc} may return a compact
+$m\times m$ noise covariance in the natural noise coordinates (for example a
+three-axis acceleration PSD) and the filter expands it to the full state. For
+the dense filters \cref{eq:flt-gmap} is applied literally; for the factorized
+filters of \cref{sec:flt-udu,sec:flt-srif} the mapping is kept
+\emph{separate} from the state factor and never multiplied out, which is
+precisely what preserves the small variances (see \cref{sec:flt-udu}).
+
+\subsection{Outlier rejection and fault detection}
+\label{sec:flt-outliers}
+
+Before any gain is applied, every measurement component is screened by a
+normalized-residual test. With the innovation covariance
+$\mat{S} = \mat{R} + \mat{H}\mat{P}^{-}\mat{H}\transpose$ and the residual
+$\delta \vec{z} = \vec{z} - \hat{\vec{z}}$, component $i$ is rejected when
+\begin{equation}
+  \label{eq:flt-outlier}
+  \frac{\lvert \delta z_i \rvert}{\sqrt{S_{ii}}} \;>\; \tau ,
+\end{equation}
+where $\tau$ is \cpp{outlier\_threshold\_}, default $\tau = 3$ (a
+$3\sigma$ gate) and configurable from YAML through the
+\code{outlier\_threshold} key or at run time through
+\cpp{SetOutlierThreshold}. The flagged rows are dropped from $\delta \vec{z}$,
+$\mat{H}$, and both the rows and columns of $\mat{R}$, and the innovation
+covariance is recomputed on the shrunken system,
+\begin{equation}
+  \label{eq:flt-outlier-recompute}
+  \mat{S} \;\longleftarrow\; \mat{H}\,\mat{P}^{-}\,\mat{H}\transpose + \mat{R} .
+\end{equation}
+Note that \cref{eq:flt-outlier-recompute} uses the stored \emph{prior}
+covariance \cpp{P\_prior\_}, not the working copy, so the recomputation is
+exact rather than a rank-corrected approximation. If every component is
+rejected, the update returns without touching the estimate.
+
+\begin{lstlisting}[language=cpp, caption={Normalized-residual outlier gate.},
+                   label={lst:flt-outliers}]
+// cpp/lupnt/numerics/filters/ekf.cc :: EKF::RemoveOutliers
+VecXd ratio = dz_.array().abs() / S_.diagonal().array().sqrt();
+VecXb is_outlier = ratio.array() > outlier_threshold_;
+
+int N_meas_new = N_meas - is_outlier.count();
+if (N_meas_new == N_meas) return;
+// ... copy the surviving rows of dz_, H_ and the surviving rows/cols of R_ ...
+H_ = H_new;
+R_ = R_new;
+dz_ = dz_new;
+S_ = H_ * P_prior_ * H_.transpose() + R_;   // exact, on the shrunken system
+\end{lstlisting}
+
+The default gate can be replaced wholesale by registering a
+\cpp{FaultDetectionFunction} through \cpp{SetFaultDetectionFunction}. The
+callback has signature \cpp{void(KalmanFilter*)} and is handed the filter
+itself, so it may inspect and rewrite $\delta \vec{z}$, $\mat{H}$, $\mat{R}$,
+and $\mat{S}$ by any rule --- a chi-square test on the full innovation vector,
+a RAIM-style subset-exclusion search, or a clock-fault monitor built on
+inter-satellite ranges \citep{iiyama2026edm}. Once a custom function is
+registered, \cref{eq:flt-outlier} is not evaluated at all. The same screening
+code is shared by \cpp{EKF}, \cpp{SRIF}, and \cpp{UDUEKF}; the UKF does not
+screen, because it never forms a row-wise Jacobian.
+
+\begin{lupntwarning}
+The gate of \cref{eq:flt-outlier} is a per-component test against the
+\emph{filter's own} innovation covariance. A slowly diverging filter inflates
+$S_{ii}$, passes increasingly wrong measurements, and can lock onto a false
+solution. For safety-relevant use, register a fault-detection function with an
+independent consistency statistic rather than relying on the default gate.
+\end{lupntwarning}
+
+\section{Extended Kalman Filter}
+\label{sec:flt-ekf}
+
+The \cpp{EKF} is the reference implementation of the family; every other dense
+filter inherits its screening, logging, and smoothing machinery.
+
+\subsection{Time update}
+
+\cpp{EKF::Predict} evaluates the process noise at the prior state, propagates
+the state and STM through \cref{eq:flt-cb-dyn}, and forms the propagated
+covariance:
+\begin{align}
+  \label{eq:flt-ekf-q}
+  \mat{Q} &= \texttt{f\_proc\_}(\hat{\vec{x}}, t_0, t_f),
+  \qquad
+  \mat{Q} \leftarrow \mat{G}\mat{Q}\mat{G}\transpose \ \text{(if mapped)}, \\
+  \label{eq:flt-ekf-x}
+  \hat{\vec{x}}^{-} &= \texttt{f\_dyn\_}(\hat{\vec{x}}, t_0, t_f, \vec{u};\, \mat{F}), \\
+  \label{eq:flt-ekf-p}
+  \bar{\mat{P}} &= \mat{F}\,\mat{P}\,\mat{F}\transpose,
+  \qquad
+  \mat{P}^{-} = \bar{\mat{P}} + \mat{Q} .
+\end{align}
+The linearization of \cref{eq:flt-ekf-p} is the defining approximation of the
+extended filter: the covariance is transported by the Jacobian of the true
+nonlinear flow evaluated at the current estimate, so the propagated second
+moment is correct to first order in the state error.
+
+\begin{lstlisting}[language=cpp, caption={EKF time update.},
+                   label={lst:flt-ekf-predict}]
+// cpp/lupnt/numerics/filters/ekf.cc :: EKF::Predict
+Q_ = f_proc_(x_, t_, t);
+if (use_process_noise_mapping_) Q_ = G_ * Q_ * G_.transpose();
+
+x_ = f_dyn_(x_, t_, t, u, &F_);
+
+P_bar_ = F_ * P_ * F_.transpose();   // retained for adaptive process noise
+P_ = P_bar_ + Q_;
+
+t_ = t;
+x_prior_ = x_;
+P_prior_ = P_;
+\end{lstlisting}
+
+\subsection{Measurement update}
+
+\cpp{EKF::Update} linearizes the measurement about the prior, screens the
+residual (\cref{sec:flt-outliers}), and applies a Joseph-form correction:
+\begin{align}
+  \label{eq:flt-ekf-innov}
+  \hat{\vec{z}} &= \texttt{f\_meas\_}(\hat{\vec{x}}^{-};\, \mat{H}, \mat{R}),
+  \qquad
+  \mat{S} = \mat{R} + \mat{H}\,\mat{P}^{-}\,\mat{H}\transpose,
+  \qquad
+  \delta \vec{z} = \vec{z} - \hat{\vec{z}}, \\
+  \label{eq:flt-ekf-gain}
+  \mat{K} &= \mat{P}^{-}\mat{H}\transpose \mat{S}^{-1},
+  \qquad
+  \delta \vec{x} = \mat{K}\,\delta \vec{z},
+  \qquad
+  \hat{\vec{x}}^{+} = \hat{\vec{x}}^{-} + \delta \vec{x}, \\
+  \label{eq:flt-ekf-joseph}
+  \mat{P}^{+} &= (\mat{I} - \mat{K}\mat{H})\,\mat{P}^{-}\,
+                (\mat{I} - \mat{K}\mat{H})\transpose
+              + \mat{K}\,\mat{R}\,\mat{K}\transpose .
+\end{align}
+The covariance of the state correction itself,
+\begin{equation}
+  \label{eq:flt-ekf-sigmadx}
+  \mat{\Sigma}_{\delta x} = \mat{K}\,\mat{S}\,\mat{K}\transpose ,
+\end{equation}
+is recorded for the adaptive process-noise estimator of
+\cref{sec:flt-adaptive}.
+
+\Cref{eq:flt-ekf-joseph} is the Joseph (symmetric, or ``stabilized'') form
+rather than the shorter $\mat{P}^{+} = (\mat{I} - \mat{K}\mat{H})\mat{P}^{-}$.
+Two properties motivate the extra work. First, it is manifestly symmetric and
+is a sum of two positive-semidefinite congruences, so round-off cannot
+introduce an asymmetric or indefinite result to first order. Second --- and
+this is what the Schmidt filter below depends on --- it is valid for
+\emph{any} gain $\mat{K}$, not only the optimal one: expanding the covariance
+of $\hat{\vec{x}}^{+} = \hat{\vec{x}}^{-} + \mat{K}(\vec{z} - \mat{H}
+\hat{\vec{x}}^{-})$ for arbitrary $\mat{K}$ reproduces
+\cref{eq:flt-ekf-joseph} exactly, whereas the short form is only correct when
+$\mat{K}$ satisfies the normal equations. Its cost is $O(n^3)$ per update
+against $O(n^2 m)$ for the short form, which is negligible at the state sizes
+relevant here.
+
+\begin{lstlisting}[language=cpp, caption={EKF measurement update, Joseph form.},
+                   label={lst:flt-ekf-update}]
+// cpp/lupnt/numerics/filters/ekf.cc :: EKF::Update
+z_prior_ = f_meas_(x_, &H_, &R_);
+S_ = R_ + H_ * P_ * H_.transpose();
+dz_ = z_true_ - z_prior_;
+
+if (use_custom_fault_detection_ && f_fault_det_) f_fault_det_(this);
+else                                             RemoveOutliers();
+if (dz_.size() == 0) return;                 // all measurements rejected
+
+K_ = P_ * H_.transpose() * S_.inverse();     // Kalman gain
+if (n_consider_ > 0) K_.bottomRows(n_consider_).setZero();
+
+dx_ = K_ * dz_;
+Sigma_dx_ = K_ * S_ * K_.transpose();
+x_ = x_ + dx_;
+
+MatXd I = MatXd::Identity(N_state, N_state);
+MatXd G = I - K_ * H_;
+P_ = G * P_ * G.transpose() + K_ * R_ * K_.transpose();   // Joseph form
+\end{lstlisting}
+
+\subsection{Consider (Schmidt) states}
+\label{sec:flt-schmidt}
+
+Calling \cpp{SetConsiderStateCount}$(n_c)$ --- also exposed as the thin
+subclass \cpp{SchmidtEKF} in \file{schmidt_ekf.h} --- marks the trailing $n_c$
+components of the state as \emph{consider parameters}. Partition
+\begin{equation}
+  \label{eq:flt-schmidt-part}
+  \vec{x} = \begin{bmatrix} \vec{x}_s \\ \vec{x}_c \end{bmatrix},
+  \qquad
+  \mat{P} = \begin{bmatrix}
+    \mat{P}_{ss} & \mat{P}_{sc} \\
+    \mat{P}_{sc}\transpose & \mat{P}_{cc}
+  \end{bmatrix},
+  \qquad
+  \vec{x}_c \in \mathbb{R}^{n_c} .
+\end{equation}
+Consider parameters enter $\mat{F}$, $\mat{H}$, $\mat{K}$, and the covariance
+bookkeeping in the usual way, but their mean is never corrected: the trailing
+block of the gain is zeroed,
+\begin{equation}
+  \label{eq:flt-schmidt-gain}
+  \mat{K} =
+  \begin{bmatrix} \mat{K}_s \\ \mat{K}_c \end{bmatrix}
+  \;\longrightarrow\;
+  \tilde{\mat{K}} =
+  \begin{bmatrix} \mat{K}_s \\ \mat{0} \end{bmatrix} ,
+\end{equation}
+before $\delta \vec{x} = \tilde{\mat{K}}\,\delta \vec{z}$ is formed. Because
+\cref{eq:flt-ekf-joseph} holds for the suboptimal gain $\tilde{\mat{K}}$, the
+consider block's variance $\mat{P}_{cc}$ and, crucially, its cross-covariance
+$\mat{P}_{sc}$ with the solved-for states still update consistently. The effect
+is that the uncertainty of an unestimated bias (an ephemeris error, an
+unmodelled empirical acceleration, a station coordinate) is correctly
+propagated into the estimated states without the filter attempting --- and, for
+a weakly observable parameter, failing --- to solve for it.
+
+\begin{lstlisting}[language=cpp, caption={Schmidt/consider gain truncation.},
+                   label={lst:flt-schmidt}]
+// cpp/lupnt/numerics/filters/ekf.cc :: EKF::Update (n_consider_ branch)
+if (n_consider_ > 0) {
+  // Schmidt-Kalman: never correct the trailing consider states. The Joseph-form
+  // covariance update remains valid for this non-optimal gain, so the consider
+  // states' (co)variance still updates consistently even though their mean does
+  // not move.
+  K_.bottomRows(n_consider_).setZero();
+}
+dx_ = K_ * dz_;
+\end{lstlisting}
+
+\section{Unscented Kalman Filter}
+\label{sec:flt-ukf}
+
+\cpp{UKF} replaces the analytic linearization of \cref{eq:flt-ekf-p} and
+\cref{eq:flt-ekf-innov} with a deterministic sampling scheme, the unscented
+transform of \citet{julier2004ukf}. Rather than propagating a Jacobian, it
+propagates a small, carefully chosen set of points whose sample mean and
+covariance match those of the prior, and reconstructs the moments of the
+transformed distribution from the transformed points. The resulting moments are
+accurate to second order in the Taylor expansion of the nonlinearity for any
+distribution, and to third order for a Gaussian --- against first order for the
+EKF --- at the price of $2n+1$ dynamics evaluations per step.
+
+\subsection{Scaling and weights}
+
+For an $n$-dimensional state the filter uses $2n+1$ sigma points with the
+composite scaling parameter
+\begin{equation}
+  \label{eq:flt-ukf-lambda}
+  \lambda = \alpha^2 (n + \kappa) - n ,
+\end{equation}
+and the mean and covariance weights
+\begin{equation}
+  \label{eq:flt-ukf-weights}
+  w^m_0 = \frac{\lambda}{n+\lambda},
+  \qquad
+  w^c_0 = \frac{\lambda}{n+\lambda} + \bigl(1 - \alpha^2 + \beta\bigr),
+  \qquad
+  w^m_i = w^c_i = \frac{1}{2(n+\lambda)},
+  \quad i = 1,\dots,2n .
+\end{equation}
+The three tuning constants have distinct roles, summarized in
+\cref{tab:flt-ukf-params}: $\alpha$ sets the spread of the points about the
+mean and is normally small so that the sampling stays in the region where the
+local linearization is meaningful; $\kappa$ is a secondary scaling that shifts
+weight between the centre point and the symmetric pairs; $\beta$ injects prior
+knowledge of the fourth moment, with $\beta = 2$ optimal for a Gaussian prior.
+Note that $\sum_i w^m_i = \sum_i w^c_i = 1$ by construction, and that $w^m_0$
+and $w^c_0$ are negative whenever $\lambda < 0$, which is the normal regime for
+$\alpha \ll 1$. A negative centre weight is legitimate --- the reconstructed
+covariance remains positive semidefinite for the standard parameter ranges ---
+but it is the mechanism by which an ill-conditioned prior can produce a
+non-positive reconstructed covariance and abort the next Cholesky factorization.
+
+\begin{table}[H]
+  \centering
+  \caption{Unscented-transform tuning parameters and their defaults in
+           \file{cpp/lupnt/numerics/filters/ukf.h}.}
+  \label{tab:flt-ukf-params}
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Symbol & Member (default) & Role \\
+    \midrule
+    $\alpha$ & \cpp{alpha\_} ($10^{-3}$) &
+      Spread of the sigma points about the mean; small values keep the sampling
+      local. Set with \cpp{SetAlpha}. \\
+    $\beta$ & \cpp{beta\_} ($2$) &
+      Prior knowledge of the distribution's kurtosis; $\beta = 2$ is optimal
+      for a Gaussian. Enters $w^c_0$ only. Set with \cpp{SetBeta}. \\
+    $\kappa$ & \cpp{kappa\_} ($0$) &
+      Secondary scaling; $\kappa = 3 - n$ matches the fourth moment of a
+      Gaussian but yields a negative $\lambda$ for $n > 3$. Set with
+      \cpp{SetKappa}. \\
+    $\lambda$ & \cpp{lambda\_} (derived) &
+      Composite scaling of \cref{eq:flt-ukf-lambda}. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lstlisting}[language=cpp, caption={Unscented-transform weights.},
+                   label={lst:flt-ukf-weights}]
+// cpp/lupnt/numerics/filters/ukf.cc :: UKF::InitializeUkfParams
+lambda_  = alpha_ * alpha_ * (n_x_ + kappa_) - n_x_;
+n_sigma_ = 2 * n_x_ + 1;
+
+w_m_(0) = lambda_ / (n_x_ + lambda_);
+w_c_(0) = lambda_ / (n_x_ + lambda_) + (1.0 - alpha_ * alpha_ + beta_);
+
+for (int i = 1; i < n_sigma_; i++) {
+  w_m_(i) = 1.0 / (2.0 * (n_x_ + lambda_));
+  w_c_(i) = 1.0 / (2.0 * (n_x_ + lambda_));
+}
+\end{lstlisting}
+
+\subsection{Sigma points}
+
+The points about $(\hat{\vec{x}}, \mat{P})$ are
+\begin{equation}
+  \label{eq:flt-ukf-sigma}
+  \mathcal{X}_0 = \hat{\vec{x}},
+  \qquad
+  \mathcal{X}_i = \hat{\vec{x}} + \bigl[\mat{L}\bigr]_i,
+  \qquad
+  \mathcal{X}_{i+n} = \hat{\vec{x}} - \bigl[\mat{L}\bigr]_i,
+  \qquad i = 1,\dots,n ,
+\end{equation}
+where $[\mat{L}]_i$ is the $i$-th column of the lower-triangular Cholesky
+factor of the scaled covariance,
+\begin{equation}
+  \label{eq:flt-ukf-chol}
+  \mat{L}\,\mat{L}\transpose = (n + \lambda)\,\mat{P} .
+\end{equation}
+The set $\{\mathcal{X}_i\}$ with the weights of \cref{eq:flt-ukf-weights}
+reproduces the first two moments of the prior exactly.
+
+\begin{lstlisting}[language=cpp, caption={Sigma-point generation.},
+                   label={lst:flt-ukf-sigma}]
+// cpp/lupnt/numerics/filters/ukf.cc :: UKF::ComputeSigmaPoints
+MatXd chol_cov = ((n_x_ + lambda_) * cov).llt().matrixL();
+
+MatX sigma_points(n_x_, n_sigma_);
+sigma_points.col(0) = state;
+for (int i = 0; i < n_x_; i++) {
+  sigma_points.col(i + 1)        = state + chol_cov.col(i);
+  sigma_points.col(i + 1 + n_x_) = state - chol_cov.col(i);
+}
+\end{lstlisting}
+
+\subsection{Time and measurement updates}
+
+\cpp{UKF::Predict} propagates each point through \texttt{f\_dyn\_} with a null
+Jacobian pointer --- no STM is computed --- and recombines:
+\begin{align}
+  \label{eq:flt-ukf-prop}
+  \mathcal{X}_i^{-} &= \texttt{f\_dyn\_}(\mathcal{X}_i, t_0, t_f, \vec{u};\, \text{nullptr}), \\
+  \label{eq:flt-ukf-predict}
+  \hat{\vec{x}}^{-} &= \sum_{i=0}^{2n} w^m_i\,\mathcal{X}_i^{-},
+  \qquad
+  \mat{P}^{-} = \sum_{i=0}^{2n} w^c_i
+      \bigl(\mathcal{X}_i^{-} - \hat{\vec{x}}^{-}\bigr)
+      \bigl(\mathcal{X}_i^{-} - \hat{\vec{x}}^{-}\bigr)\transpose + \mat{Q} .
+\end{align}
+\cpp{UKF::Update} regenerates the points at the prior, maps them through
+\texttt{f\_meas\_} to measurement points $\mathcal{Z}_i$, and forms the
+predicted measurement, its covariance, and the state--measurement
+cross-covariance:
+\begin{align}
+  \label{eq:flt-ukf-meas}
+  \hat{\vec{z}} &= \sum_{i=0}^{2n} w^m_i\,\mathcal{Z}_i,
+  \qquad
+  \mat{S} = \sum_{i=0}^{2n} w^c_i
+      \bigl(\mathcal{Z}_i - \hat{\vec{z}}\bigr)
+      \bigl(\mathcal{Z}_i - \hat{\vec{z}}\bigr)\transpose + \mat{R}, \\
+  \label{eq:flt-ukf-cross}
+  \mat{P}_{xz} &= \sum_{i=0}^{2n} w^c_i
+      \bigl(\mathcal{X}_i - \hat{\vec{x}}^{-}\bigr)
+      \bigl(\mathcal{Z}_i - \hat{\vec{z}}\bigr)\transpose,
+  \qquad
+  \mat{K} = \mat{P}_{xz}\,\mat{S}^{-1}, \\
+  \label{eq:flt-ukf-update}
+  \hat{\vec{x}}^{+} &= \hat{\vec{x}}^{-} + \mat{K}\bigl(\vec{z} - \hat{\vec{z}}\bigr),
+  \qquad
+  \mat{P}^{+} = \mat{P}^{-} - \mat{K}\,\mat{S}\,\mat{K}\transpose .
+\end{align}
+\Cref{eq:flt-ukf-cross} is the unscented replacement for
+$\mat{P}^{-}\mat{H}\transpose$: the gain is defined directly by the sampled
+cross-covariance, so no measurement Jacobian is ever formed. The measurement
+noise $\mat{R}$ used in \cref{eq:flt-ukf-meas} is the one returned at the first
+sigma point; the implementation evaluates $\mat{R}$ at every point but keeps
+only $\mat{R}_0$, which is exact whenever $\mat{R}$ is state-independent and a
+first-order approximation otherwise.
+
+\begin{lupntwarning}
+\Cref{eq:flt-ukf-update} uses the short covariance form, not the Joseph form.
+The UKF is therefore the least numerically robust member of the family: a long
+run with tightly constrained states can drive $\mat{P}$ indefinite and abort
+the Cholesky factorization of \cref{eq:flt-ukf-chol}. The UKF also does not run
+the outlier gate of \cref{eq:flt-outlier} and does not maintain the smoother
+logs. Use it when the nonlinearity, not the conditioning, is the limiting
+factor.
+\end{lupntwarning}
+
+\section{UD-Factorized Filter (Bierman--Thornton)}
+\label{sec:flt-udu}
+
+\cpp{UDUEKF} never stores a covariance matrix as such. It maintains the
+factorization
+\begin{equation}
+  \label{eq:flt-udu-fact}
+  \mat{P} = \mat{U}\,\diag(\vec{D})\,\mat{U}\transpose ,
+\end{equation}
+with $\mat{U}$ unit upper-triangular ($U_{ii} = 1$, $U_{ij} = 0$ for $i > j$)
+and $\vec{D}$ a non-negative diagonal. This is the UD factorization of
+\citet{bierman1977} and \citet{thornton1980}, and it mirrors the thesis
+factorization
+$\hat{\mat{P}}_{k|m} = \mat{U}_{k|m}\mat{D}_{k|m}\mat{U}_{k|m}\transpose$
+\citep[Ch.~6.2.1, Eq.~6.17, Algorithm~1]{iiyama2026thesis}.
+
+Three properties follow immediately. Symmetry and positive semidefiniteness are
+structural, not numerical: any $(\mat{U}, \vec{D})$ with $\vec{D} \geq 0$
+reconstructs a valid covariance, so no amount of round-off can produce an
+indefinite $\mat{P}$. The effective condition number of the stored quantity is
+the square root of that of $\mat{P}$, so the factored filter carries roughly
+twice the significant digits of the dense filter for the same word length.
+Finally --- and this is the decisive property for coupled orbit--clock
+estimation --- variances many orders of magnitude apart survive. A lunar
+orbit--clock state routinely spans from $\sim\!\SI{1e2}{\meter\squared}$ on
+position down to $\sim\!10^{-26}$ on clock drift; forming
+$\mat{P} = \mat{U}\diag(\vec{D})\mat{U}\transpose$, adding $\mat{Q}$, and
+re-factoring rounds the smallest diagonal entries to zero within a few steps
+and collapses the drift estimate. The algorithms below are constructed so that
+$\mat{P}$ is never re-formed inside the recursion.
+
+The initial factorization is obtained once, from the user-supplied covariance,
+by a backward Cholesky-like sweep in \cpp{UDUDecomposition}
+(\file{cpp/lupnt/numerics/filters/udu_utils.cc}):
+\begin{equation}
+  \label{eq:flt-udu-decomp}
+  D_j = P_{jj} - \sum_{k>j} U_{jk}^2 D_k ,
+  \qquad
+  U_{ij} = \frac{1}{D_j}\Bigl(P_{ij} - \sum_{k>j} U_{ik} D_k U_{jk}\Bigr),
+  \quad i < j ,
+\end{equation}
+evaluated for $j = n, n-1, \dots, 1$; a $D_j$ below $10^{-16}$ in magnitude is
+clamped to zero and its column of $\mat{U}$ left at the identity.
+
+\subsection{Time update: the Thornton MWGS}
+
+The predict step factors the propagated covariance directly. Define the
+$n \times (n+m)$ coefficient array and the $(n+m)\times(n+m)$ weight matrix
+\begin{equation}
+  \label{eq:flt-udu-mwgs-y}
+  \mat{Y} = \begin{bmatrix} \mat{F}\mat{U} & \mat{G} \end{bmatrix},
+  \qquad
+  \tilde{\mat{D}} = \operatorname{blkdiag}\bigl(\diag(\vec{D}),\ \mat{Q}\bigr) ,
+\end{equation}
+with $\mat{G} \in \mathbb{R}^{n\times m}$ the process-noise mapping of
+\cref{eq:flt-gmap} (identity when no mapping is registered) and $\mat{Q}$
+diagonal. A modified weighted Gram--Schmidt (MWGS) orthogonalization of the
+rows of $\mat{Y}$ in the $\tilde{\mat{D}}$ inner product returns
+$(\mat{U}^{-}, \vec{D}^{-})$ such that
+\begin{equation}
+  \label{eq:flt-udu-mwgs}
+  \mat{U}^{-}\diag(\vec{D}^{-})\,(\mat{U}^{-})\transpose
+  = \mat{Y}\,\tilde{\mat{D}}\,\mat{Y}\transpose
+  = \mat{F}\,\mat{P}\,\mat{F}\transpose + \mat{G}\,\mat{Q}\,\mat{G}\transpose ,
+\end{equation}
+where the right-hand product is \emph{never formed}
+\citep[Ch.~6.2.2, Eqs.~6.20--6.23]{iiyama2026thesis}. Writing
+$\vec{b}_j$ for the $j$-th row of $\mat{Y}$, the recursion sweeps
+$j = n, n-1, \dots, 1$ (Thornton ordering) and computes
+\begin{equation}
+  \label{eq:flt-udu-mwgs-rec}
+  D^{-}_j = \vec{b}_j\transpose \tilde{\mat{D}}\,\vec{b}_j ,
+  \qquad
+  U^{-}_{ij} = \frac{\vec{b}_i\transpose \tilde{\mat{D}}\,\vec{b}_j}{D^{-}_j},
+  \qquad
+  \vec{b}_i \leftarrow \vec{b}_i - U^{-}_{ij}\,\vec{b}_j ,
+  \quad i < j .
+\end{equation}
+Only an exactly non-positive $D^{-}_j$ is clamped to zero; a tiny but positive
+variance is deliberately kept, because that is what a clock-drift term looks
+like.
+
+\begin{lstlisting}[language=cpp, caption={Thornton MWGS time update of the UD factors.},
+                   label={lst:flt-udu-predict}]
+// cpp/lupnt/numerics/filters/udu_filter.cc :: UDUEKF::Predict
+Q_ = f_proc_(x_, t_, t);
+x_ = f_dyn_(x_, t_, t, u, &F_);
+
+if (!use_process_noise_mapping_) G_ = MatXd::Identity(n, n);
+LUPNT_CHECK(Q_.isDiagonal(), "UDU process noise must be diagonal ...", "UDU");
+const int m = static_cast<int>(G_.cols());   // reduced process-noise dimension
+
+P_bar_ = F_ * UDUReconstruct(U_, D_diag_) * F_.transpose();  // F P F^T (adaptive only)
+
+MatXd Y = MatXd::Zero(n, n + m);
+Y.leftCols(n)  = F_ * U_;
+Y.rightCols(m) = G_;
+MatXd D_tilde = MatXd::Zero(n + m, n + m);
+D_tilde.topLeftCorner(n, n)     = D_diag_.asDiagonal();
+D_tilde.bottomRightCorner(m, m) = Q_;
+std::tie(D_diag_, U_) = ModifiedGramSchmidt(D_tilde, Y);
+\end{lstlisting}
+
+\begin{lstlisting}[language=cpp, caption={The MWGS kernel.},
+                   label={lst:flt-udu-mwgs}]
+// cpp/lupnt/numerics/filters/udu_utils.cc :: ModifiedGramSchmidt
+std::vector<VecXd> b(n);
+for (int i = 0; i < n; ++i) b[i] = Y.row(i).transpose();
+
+for (int k = 0; k < n; ++k) {
+  const int j = (n - 1) - k;           // Thornton ordering: last row first
+  VecXd fj = D_tilde * b[j];
+  D_m(j) = b[j].dot(fj);
+  if (D_m(j) <= 0.0) { D_m(j) = 0.0; continue; }
+  fj /= D_m(j);
+  for (int i = 0; i < j; ++i) {
+    U_m(i, j) = b[i].dot(fj);
+    b[i] -= U_m(i, j) * b[j];
+  }
+}
+\end{lstlisting}
+
+\subsection{Measurement update: the Carlson rank-one recursion}
+
+Measurements are assimilated \emph{sequentially}, one scalar component at a
+time, which requires a diagonal $\mat{R}$. For a scalar row
+$\vec{h}\transpose$ with variance $r$, define
+\begin{equation}
+  \label{eq:flt-udu-carlson-f}
+  \vec{f} = \mat{U}\transpose \vec{h},
+  \qquad
+  \vec{v} = \diag(\vec{D})\,\vec{f},
+  \qquad\text{so that}\qquad
+  \vec{f}\transpose \vec{v} = \vec{h}\transpose \mat{P}\,\vec{h} .
+\end{equation}
+The recursion accumulates the innovation variance,
+\begin{equation}
+  \label{eq:flt-udu-alpha}
+  \alpha_0 = r,
+  \qquad
+  \alpha_k = \alpha_{k-1} + v_k f_k,
+  \qquad k = 1, \dots, n ,
+\end{equation}
+so that $\alpha_n = r + \vec{h}\transpose\mat{P}\vec{h} = S$; because
+$\alpha_0 = r > 0$ and each increment $v_k f_k = D_k f_k^2 \geq 0$, the
+sequence is positive and increasing, and the recursion cannot divide by zero.
+The diagonal is downdated by the ratio of consecutive $\alpha$'s,
+\begin{equation}
+  \label{eq:flt-udu-d}
+  D^{+}_k = \frac{\alpha_{k-1}}{\alpha_k}\,D_k \;\leq\; D_k ,
+\end{equation}
+which is manifestly a contraction, and the columns of $\mat{U}$ receive a
+rank-one correction driven by the running gain vector $\vec{\beta}$,
+\begin{equation}
+  \label{eq:flt-udu-u}
+  \beta_k \leftarrow v_k,
+  \qquad
+  p_k = -\frac{f_k}{\alpha_{k-1}},
+  \qquad
+  \begin{aligned}
+    U^{+}_{jk} &= U_{jk} + \beta_j\,p_k, \\
+    \beta_j    &\leftarrow \beta_j + U_{jk}\,v_k,
+  \end{aligned}
+  \qquad j < k .
+\end{equation}
+The Kalman gain for the scalar measurement falls out of the same accumulator,
+\begin{equation}
+  \label{eq:flt-udu-gain}
+  \vec{k} = \frac{\vec{\beta}}{\alpha_n} ,
+\end{equation}
+which is the rank-one UD downdate of
+\citep[Ch.~6.2.3, Eqs.~6.24--6.27, Algorithm~2]{iiyama2026thesis}. Because the
+components are processed one at a time against a state that has already
+absorbed the previous ones, the residual of the $m$-th component must be
+corrected for the accumulated correction,
+\begin{equation}
+  \label{eq:flt-udu-residual}
+  \delta z_m' = \delta z_m - \vec{h}_m\transpose \delta \vec{x},
+  \qquad
+  \delta \vec{x} \leftarrow \delta \vec{x} + \vec{k}\,\delta z_m' ,
+\end{equation}
+which reproduces the batch update exactly for a linear model. The dense
+$\mat{P}$ is reconstructed once, at the end of the update, purely for
+reporting.
+
+\begin{lstlisting}[language=cpp, caption={Carlson rank-one sequential UD update.},
+                   label={lst:flt-udu-carlson}]
+// cpp/lupnt/numerics/filters/udu_filter.cc :: UDUEKF::CarlsonUpdate
+for (int meas = 0; meas < n_meas; ++meas) {
+  VecXd h = H_.row(meas).transpose();
+  double r = R_(meas, meas);
+
+  VecXd f = U_.transpose() * h;        // f = U^T h
+  VecXd v = D_diag_.asDiagonal() * f;  // v = D f, so f.dot(v) = h^T P h
+
+  alpha(0) = r;
+  for (int k = 0; k < n; ++k) {
+    alpha(k + 1) = alpha(k) + v(k) * f(k);  // grows from r > 0, stays positive
+    D_plus(k) = alpha(k) / alpha(k + 1) * D_diag_(k);
+    beta(k) = v(k);
+    if (k == 0) continue;
+    double p_k = -f(k) / alpha(k);
+    for (int j = 0; j < k; ++j) {
+      U_plus(j, k) = U_(j, k) + beta(j) * p_k;
+      beta(j)      = beta(j) + U_(j, k) * v(k);
+    }
+  }
+
+  VecXd k_gain = beta / alpha(n);      // Kalman gain for this scalar measurement
+  K_.col(meas) = k_gain;
+
+  Real residual = dz_(meas);
+  if (meas > 0) residual -= H_.row(meas).dot(dx_);   // correct for prior updates
+  dx_ += k_gain * residual.val();
+
+  D_diag_ = D_plus;
+  U_ = U_plus;
+}
+x_ = x_ + dx_;
+\end{lstlisting}
+
+\begin{lupntnote}
+\cpp{UDUEKF} inherits \cpp{EKF::RemoveOutliers}, so the gate of
+\cref{eq:flt-outlier} runs on the \emph{dense} innovation covariance
+$\mat{S} = \mat{R} + \mat{H}\mat{P}\mat{H}\transpose$ formed once before the
+Carlson loop. Only the covariance recursion is factorized; the screening is
+not.
+\end{lupntnote}
+
+\section{Square-Root Information Filter}
+\label{sec:flt-srif}
+
+\cpp{SRIF} is a subclass of \cpp{EKF} that stores the \emph{information} in
+square-root form. Let $\mat{R}_{\text{info}}$ be upper triangular with
+\begin{equation}
+  \label{eq:flt-srif-def}
+  \mat{R}_{\text{info}}\transpose\,\mat{R}_{\text{info}} = \mat{P}^{-1},
+  \qquad\text{equivalently}\qquad
+  \mat{P} = \mat{R}_{\text{info}}^{-1}\,\mat{R}_{\text{info}}^{-\mathsf{T}} .
+\end{equation}
+The factor is initialized from the user's covariance by a Cholesky
+factorization of $\mat{P}^{-1}$ in \cpp{SRIF::SetInfoSqrt}. Like the UD filter,
+the SRIF halves the condition number of the stored object; unlike the UD
+filter, it handles a full (non-diagonal) $\mat{R}$ natively and admits a
+genuinely infinite prior variance --- a zero row of $\mat{R}_{\text{info}}$ ---
+which is why it is the natural choice for a cold start with no useful a-priori
+state. The dense $\mat{P}$ and $\hat{\vec{x}}$ are re-synchronized after every
+step so that the inherited outlier gate, fault detection, and RTS smoother work
+unchanged \citep[Ch.~5]{tapley2004}.
+
+\subsection{Time update (Dyer--McReynolds)}
+
+Let $\mat{S}$ be a square root of the process noise, $\mat{Q} = \mat{S}
+\mat{S}\transpose$ (a Cholesky factor; $\mat{S} = \mat{0}$ when there is no
+process noise), and let $\mat{R}_\Phi = \mat{R}_{\text{info}}\,\mat{\Phi}^{-1}$
+with $\mat{\Phi} = \mat{F}$ the STM. A Householder QR triangularization of the
+$2n \times 2n$ array
+\begin{equation}
+  \label{eq:flt-srif-time}
+  \begin{bmatrix}
+    \mat{I} & \mat{0} \\
+    -\mat{R}_\Phi \mat{S} & \mat{R}_\Phi
+  \end{bmatrix}
+  \;\xrightarrow{\ \text{QR}\ }\;
+  \begin{bmatrix}
+    * & * \\
+    \mat{0} & \bar{\mat{R}}_{\text{info}}
+  \end{bmatrix}
+\end{equation}
+zeros the bottom-left block; the bottom-right block is the a-priori information
+square root at $t_f$. The upper blocks marked $*$ are the (discarded)
+information about the process-noise realization itself. Because the estimate is
+re-centered on $\hat{\vec{x}}$ at every step, the data column is identically
+zero and is omitted from the array.
+
+\begin{lstlisting}[language=cpp, caption={SRIF time update.},
+                   label={lst:flt-srif-predict}]
+// cpp/lupnt/numerics/filters/srif.cc :: SRIF::Predict
+MatXd S = MatXd::Zero(n, n);
+if (!Q_.isZero()) { Eigen::LLT<MatXd> llt(Q_); S = llt.matrixL(); }  // Q = S S^T
+
+MatXd RPhiInv = R_info_ * F_.inverse();
+MatXd A = MatXd::Zero(2 * n, 2 * n);
+A.topLeftCorner(n, n)     = MatXd::Identity(n, n);
+A.bottomLeftCorner(n, n)  = -RPhiInv * S;
+A.bottomRightCorner(n, n) = RPhiInv;
+R_info_ = QrRFactor(A).bottomRightCorner(n, n);
+
+MatXd R_inv = R_info_.inverse();
+P_ = R_inv * R_inv.transpose();
+\end{lstlisting}
+
+\subsection{Measurement update (Householder information update)}
+
+The measurement rows are first whitened. With the Cholesky factorization
+$\mat{R} = \mat{L}\mat{L}\transpose$, the data equation
+$\delta \vec{z} = \mat{H}\,\delta\vec{x} + \vec{v}$,
+$\vec{v} \sim \mathcal{N}(\vec{0}, \mat{R})$ becomes a unit-variance system,
+\begin{equation}
+  \label{eq:flt-srif-whiten}
+  \mat{H}_w = \mat{L}^{-1}\mat{H},
+  \qquad
+  \delta \vec{z}_w = \mat{L}^{-1}\,\delta \vec{z},
+  \qquad
+  \delta \vec{z}_w = \mat{H}_w\,\delta \vec{x} + \vec{v}_w,
+  \quad \vec{v}_w \sim \mathcal{N}(\vec{0}, \mat{I}) .
+\end{equation}
+Both solves are triangular. The whitened rows are then folded into the
+information array by a second Householder QR,
+\begin{equation}
+  \label{eq:flt-srif-meas}
+  \begin{bmatrix}
+    \mat{R}_{\text{info}} & \mat{0} \\
+    \mat{H}_w & \delta \vec{z}_w
+  \end{bmatrix}
+  \;\xrightarrow{\ \text{QR}\ }\;
+  \begin{bmatrix}
+    \hat{\mat{R}}_{\text{info}} & \hat{\vec{b}} \\
+    \mat{0} & *
+  \end{bmatrix} ,
+\end{equation}
+after which the state correction is a single back-substitution against the
+updated triangular factor,
+\begin{equation}
+  \label{eq:flt-srif-dx}
+  \delta \vec{x} = \hat{\mat{R}}_{\text{info}}^{-1}\,\hat{\vec{b}},
+  \qquad
+  \hat{\vec{x}}^{+} = \hat{\vec{x}}^{-} + \delta \vec{x} .
+\end{equation}
+The orthogonal factor $\mat{Q}$ of the QR is never assembled: only the
+triangular $\mat{R}$ factor of the augmented array is needed, and the
+right-hand column is triangularized along with it so that its top rows emerge
+as $\mat{Q}\transpose \delta \vec{z}_w$. The residual entry marked $*$ in
+\cref{eq:flt-srif-meas} is the square root of the post-fit sum of squares, a
+free goodness-of-fit statistic. No gain matrix and no matrix inverse of a
+measurement-sized object appear anywhere in the update; the whole step is
+backward stable.
+
+\begin{lstlisting}[language=cpp, caption={SRIF Householder information update.},
+                   label={lst:flt-srif-update}]
+// cpp/lupnt/numerics/filters/srif.cc :: SRIF::InformationUpdate
+Eigen::LLT<MatXd> llt(R_);
+MatXd L = llt.matrixL();                                            // R = L L^T
+MatXd H_w  = L.template triangularView<Eigen::Lower>().solve(H_);   // m x n
+VecXd dz_w = L.template triangularView<Eigen::Lower>().solve(dz_);  // m
+
+MatXd A(n + m, n + 1);
+A.topLeftCorner(n, n)    = R_info_;
+A.block(0, n, n, 1).setZero();
+A.bottomLeftCorner(m, n) = H_w;
+A.block(n, n, m, 1)      = dz_w;
+
+MatXd Rtri = QrRFactor(A);
+R_info_ = Rtri.topLeftCorner(n, n);
+VecXd b_hat = Rtri.block(0, n, n, 1);
+
+dx_ = R_info_.template triangularView<Eigen::Upper>().solve(b_hat);
+x_  = x_ + dx_;
+
+MatXd R_inv = R_info_.inverse();
+P_ = R_inv * R_inv.transpose();
+\end{lstlisting}
+
+\begin{lupntwarning}
+\Cref{eq:flt-srif-time} inverts the STM. This is exact for the invertible flows
+of orbital dynamics but is a real cost ($O(n^3)$ per step) and a real failure
+mode for a near-singular $\mat{F}$, for example one containing an exactly
+non-observable direction with zero eigenvalue. The UD filter's time update has
+no such requirement.
+\end{lupntwarning}
+
+\section{Fixed-Interval Smoothing}
+\label{sec:flt-smoother}
+
+For post-processing, \cpp{EKF} logs the prior and posterior states,
+covariances, and STMs at every epoch (\cpp{InitializeLogger},
+\cpp{LogFilterEstimate}) and runs a backward Rauch--Tung--Striebel (RTS)
+recursion over the log. With $N$ the index of the last epoch, the recursion is
+initialized at $\hat{\vec{x}}_{N|N} = \hat{\vec{x}}^{+}_N$,
+$\mat{P}_{N|N} = \mat{P}^{+}_N$ and steps backwards with the gain
+\begin{align}
+  \label{eq:flt-rts-gain}
+  \mat{A}_k &= \mat{P}_{k|k}\,\mat{F}_{k+1}\transpose\,\mat{P}_{k+1|k}^{-1}, \\
+  \label{eq:flt-rts-x}
+  \hat{\vec{x}}_{k|N} &= \hat{\vec{x}}_{k|k}
+    + \mat{A}_k\bigl(\hat{\vec{x}}_{k+1|N} - \hat{\vec{x}}_{k+1|k}\bigr), \\
+  \label{eq:flt-rts-p}
+  \mat{P}_{k|N} &= \mat{P}_{k|k}
+    + \mat{A}_k\bigl(\mat{P}_{k+1|N} - \mat{P}_{k+1|k}\bigr)\mat{A}_k\transpose .
+\end{align}
+Here $\mat{F}_{k+1}$ is the STM of the propagation from $t_k$ to $t_{k+1}$,
+stored at index $k+1$ of the log. \Cref{eq:flt-rts-p} is a correction of
+definite sign only in the sense that
+$\mat{P}_{k+1|N} \preceq \mat{P}_{k+1|k}$: the smoothed covariance is never
+larger than the filtered one.
+
+\begin{lstlisting}[language=cpp, caption={RTS backward recursion.},
+                   label={lst:flt-smoother}]
+// cpp/lupnt/numerics/filters/ekf.cc :: EKF::UpdateSmoother
+int k = tidx;
+MatXd P_kk  = P_pos_log_[k];
+MatXd P_k1k = P_prior_log_[k + 1];
+MatXd stm_k = stm_log_[k + 1];
+VecXd x_kk  = x_pos_log_[k];
+VecXd x_k1k = x_prior_log_[k + 1];
+
+MatXd A_k = P_kk * stm_k.transpose() * P_k1k.inverse();
+
+x_sm_[k] = x_kk + A_k * (x_sm_[k + 1] - x_k1k);
+P_sm_[k] = P_kk + A_k * (P_sm_[k + 1] - P_k1k) * A_k.transpose();
+\end{lstlisting}
+
+\Cref{eq:flt-rts-gain,eq:flt-rts-x,eq:flt-rts-p} are exact only when the
+measurements at each epoch depend on the state at that epoch alone. That
+assumption fails for time-differenced carrier phase, and \cref{sec:flt-cloning}
+gives the replacement.
+
+\section{Stochastic-Cloning UD Filter}
+\label{sec:flt-cloning}
+
+Time-differenced carrier-phase (TDCP) measurements depend on the state at
+\emph{two} epochs. Differencing the carrier phase between consecutive epochs
+cancels the (unknown, constant) integer ambiguity and leaves a precise
+delta-range observable, at the cost of an observation model
+\begin{equation}
+  \label{eq:flt-sc-tdcp}
+  \vec{z}_{k} = h_1(\vec{x}_{k}) - h_2(\vec{x}_{k-1}) + \vec{v}_{k}
+\end{equation}
+that is no longer a function of the current state alone
+\citep{iiyama2024navi,iiyama2026scud}. Treating \cref{eq:flt-sc-tdcp} as if it
+were a current-state measurement --- by folding the previous epoch's
+contribution into the noise --- both mis-states the noise covariance and
+destroys the correlation structure the differencing created. The remedy is
+stochastic cloning \citep{roumeliotis2002cloning}: carry a copy of the previous
+state inside the filter so that the delayed-state dependency becomes an
+ordinary linear dependency on an augmented state.
+
+\cpp{UDUStochasticCloningEKF} implements this while keeping the full
+$2n \times 2n$ augmented covariance in UD form.
+
+\subsection{Augmented state and factors}
+
+The augmented state and its UD-factored, time-propagated covariance are
+\citep[Ch.~6.2.1, Eqs.~6.18--6.23]{iiyama2026thesis}
+\begin{equation}
+  \label{eq:flt-sc-state}
+  \vec{x}^{\mathrm{sc}}_{k-1}
+  = \begin{bmatrix}
+      \hat{\vec{x}}_{k-1|k-1} \\ \hat{\vec{x}}_{k-1|k-1}
+    \end{bmatrix},
+\end{equation}
+\begin{equation}
+  \label{eq:flt-sc-ud}
+  \hat{\mat{U}}^{\mathrm{sc}}_{k|k-1}
+  = \begin{bmatrix}
+      \mat{G}_k & \mat{\Phi}_{k,k-1}\hat{\mat{U}}_{k-1|k-1} \\
+      \mat{0}   & \hat{\mat{U}}_{k-1|k-1}
+    \end{bmatrix},
+  \qquad
+  \hat{\mat{D}}^{\mathrm{sc}}_{k|k-1}
+  = \begin{bmatrix}
+      \mat{Q}^{D}_k & \mat{0} \\
+      \mat{0}       & \hat{\mat{D}}_{k-1|k-1}
+    \end{bmatrix} ,
+\end{equation}
+so that the top block is the propagated state, transported by the variational
+STM $\mat{\Phi}_{k,k-1}$, and the bottom block is the frozen clone. In \lupnt{}
+the augmented STM is assembled explicitly as
+\begin{equation}
+  \label{eq:flt-sc-stm}
+  \mat{F} =
+  \begin{bmatrix}
+    \mat{F}_{\text{base}} & \mat{0} \\
+    \mat{I}               & \mat{0}
+  \end{bmatrix}
+  \in \mathbb{R}^{2n \times 2n} ,
+\end{equation}
+whose bottom row copies the pre-propagation state into the clone slot, and the
+Thornton MWGS of \cref{eq:flt-udu-mwgs} is applied to the augmented system
+with the process noise acting on the current block only:
+\begin{equation}
+  \label{eq:flt-sc-mwgs}
+  \mat{E} = \begin{bmatrix} \mat{G} \\ \mat{0} \end{bmatrix}
+    \in \mathbb{R}^{2n \times m},
+  \qquad
+  \mat{Y} = \begin{bmatrix} \mat{F}\mat{U} & \mat{E} \end{bmatrix},
+  \qquad
+  \mat{Y}\tilde{\mat{D}}\mat{Y}\transpose
+  = \mat{F}\mat{P}\mat{F}\transpose
+    + \operatorname{blkdiag}\bigl(\mat{G}\mat{Q}\mat{G}\transpose, \mat{0}\bigr) .
+\end{equation}
+The clone block therefore receives no process noise --- correctly, since it is
+a stored value, not a propagated one --- and the factorization is still
+computed without ever forming the $2n \times 2n$ covariance.
+
+\begin{lstlisting}[language=cpp, caption={Augmented STM assembly and MWGS time update.},
+                   label={lst:flt-sc-predict}]
+// cpp/lupnt/numerics/filters/udu_filter.cc :: UDUStochasticCloningEKF::Predict
+State x_prev_current = x_.head(n);
+MatXd F_base;
+State x_current = f_dyn_(x_prev_current, t_, t, u, &F_base);
+
+State x_pred(2 * n);
+x_pred.head(n) = x_current;        // propagated block
+x_pred.tail(n) = x_prev_current;   // cloned block
+x_ = x_pred;
+
+const int n2 = 2 * n;
+F_.setZero(n2, n2);
+F_.topLeftCorner(n, n)    = F_base;                 // [ F_base 0 ]
+F_.bottomLeftCorner(n, n) = MatXd::Identity(n, n);  // [ I      0 ]
+
+MatXd E = MatXd::Zero(n2, m);
+E.topRows(n) = G_;                 // process noise on the current block only
+MatXd Y = MatXd::Zero(n2, n2 + m);
+Y.leftCols(n2) = F_ * U_;
+Y.rightCols(m) = E;
+MatXd D_tilde = MatXd::Zero(n2 + m, n2 + m);
+D_tilde.topLeftCorner(n2, n2)   = D_diag_.asDiagonal();
+D_tilde.bottomRightCorner(m, m) = Q_;
+std::tie(D_diag_, U_) = ModifiedGramSchmidt(D_tilde, Y);
+\end{lstlisting}
+
+\subsection{Delayed-state Jacobian and update ordering}
+
+The measurement Jacobian with respect to the augmented state splits into
+current- and cloned-state parts
+\citep[Ch.~6.2.3, Eq.~6.25]{iiyama2026thesis},
+\begin{equation}
+  \label{eq:flt-sc-jac}
+  \mat{H}_{k,m}
+  = \begin{bmatrix} \mat{H}^{(1)}_{k,m} & \mat{H}^{(2)}_{k,m} \end{bmatrix},
+  \qquad
+  \mat{H}^{(1)}_{k,m} = \frac{\partial h}{\partial \vec{x}_{k}},
+  \qquad
+  \mat{H}^{(2)}_{k,m} = \frac{\partial h}{\partial \vec{x}_{k-1}} ,
+\end{equation}
+with $\mat{H}^{(2)} = \mat{0}$ for any current-state-only observable such as a
+pseudorange or a Doppler shift. For the TDCP model of \cref{eq:flt-sc-tdcp},
+$\mat{H}^{(1)} = \partial h_1/\partial \vec{x}_k$ and
+$\mat{H}^{(2)} = -\partial h_2/\partial \vec{x}_{k-1}$. Both blocks come from
+the same automatic-differentiation pass over the augmented state, so no
+delayed-state model needs to be differentiated by hand.
+
+Measurements are assimilated by the same Carlson rank-one recursion of
+\cref{eq:flt-udu-carlson-f,eq:flt-udu-alpha,eq:flt-udu-d,eq:flt-udu-u}, applied
+to the $2n$-dimensional factors
+\citep[Eqs.~6.24--6.30]{iiyama2026thesis}. Ordering matters for cost, not for
+the result: because the current-state-only rows have
+$\mat{H}^{(2)} = \mat{0}$, their $\vec{f} = \mat{U}\transpose\vec{h}$ has
+support only in the leading $n$ entries, so processing the delayed-state (TDCP)
+rows \emph{first} lets every subsequent current-state update skip the cloned
+sub-blocks $\hat{\mat{U}}_{22}$ entirely
+\citep[Ch.~6.2.4]{iiyama2026thesis}.
+
+\subsection{The delayed-state smoother}
+
+The standard RTS recursion of \cref{eq:flt-rts-gain,eq:flt-rts-x} rests on the
+Markov assumption \citep[Eq.~6.36]{iiyama2026thesis}, which
+\cref{eq:flt-sc-tdcp} violates: the measurement at epoch $k+1$ is correlated
+with the state at epoch $k$ \citep[Eq.~6.37]{iiyama2026thesis}, so
+$\hat{\vec{x}}_{k|k}$ is not a sufficient statistic for the past. The thesis
+therefore derives the smoother gain from the joint stochastic-cloning
+posterior \citep[Eqs.~6.38--6.41]{iiyama2026thesis}, giving
+\begin{equation}
+  \label{eq:flt-sc-gain}
+  \hat{\vec{x}}_{k|N} = \hat{\vec{x}}_{k+1|k+1}
+    + \mat{J}_k\bigl(\hat{\vec{x}}_{k+1|N} - \hat{\vec{x}}_{k+1|k+1}\bigr),
+  \qquad
+  \mat{J}_k = \hat{\mat{P}}_{k+1,k|k+1}\transpose\,
+              \hat{\mat{P}}_{k+1|k+1}^{-1} ,
+\end{equation}
+where $\hat{\mat{P}}_{k+1,k|k+1}$ is the \emph{posterior} cross-covariance
+between the current and cloned blocks --- that is, the off-diagonal block of
+the augmented covariance after the update. This is exactly the
+measurement-induced correlation that $\mat{A}_k$ in \cref{eq:flt-rts-gain}
+misses, since $\mat{A}_k$ reconstructs the cross-covariance from the STM alone.
+Both quantities in \cref{eq:flt-sc-gain} are available directly from the stored
+augmented UD factors, and the gain is obtained without forming an explicit
+inverse \citep[Eq.~6.42]{iiyama2026thesis} by the three-stage solve
+\begin{equation}
+  \label{eq:flt-sc-solve}
+  \mat{U}\diag(\vec{D})\mat{U}\transpose \mat{X} = \mat{B}
+  \quad\Longrightarrow\quad
+  \underbrace{\mat{U}\mat{Y} = \mat{B}}_{\text{back substitution}},
+  \quad
+  \underbrace{\diag(\vec{D})\mat{Z} = \mat{Y}}_{\text{diagonal scaling}},
+  \quad
+  \underbrace{\mat{U}\transpose\mat{X} = \mat{Z}}_{\text{forward substitution}} ,
+\end{equation}
+implemented as \cpp{UDUSolve} in
+\file{cpp/lupnt/numerics/filters/udu_utils.cc}. Both triangular systems are
+unit-triangular, so \cref{eq:flt-sc-solve} costs $O(n^2)$ per right-hand side
+and touches no division except by $\vec{D}$.
+
+\begin{lupntnote}
+\cpp{EKF::UpdateSmoother} implements the \emph{standard} RTS recursion
+(\cref{eq:flt-rts-gain}), which is exact when measurements depend only on the
+current state. The cross-covariance gain $\mat{J}_k$ of
+\cref{eq:flt-sc-gain} is the thesis extension required when delayed-state
+(TDCP) measurements are present; it operates on the augmented
+stochastic-cloning covariance maintained by \cpp{UDUStochasticCloningEKF}.
+Applying the standard gain to a TDCP run does not merely lose optimality --- it
+produces an inconsistent covariance.
+\end{lupntnote}
+
+\section{Batch Weighted Least Squares}
+\label{sec:flt-batch}
+
+\cpp{RunBatchFilter} (\file{cpp/lupnt/numerics/filters/batch_filter.cc}) solves
+the nonlinear weighted least-squares problem by Gauss--Newton iteration. There
+is no time propagation: the whole measurement set is treated as a function of a
+single epoch state, which makes it the right tool for snapshot positioning and
+for initializing a recursive filter.
+
+At each iteration all residuals, Jacobians, and weights are stacked,
+\begin{equation}
+  \label{eq:flt-batch-stack}
+  \delta \vec{z} = \vec{z} - h(\hat{\vec{x}}),
+  \qquad
+  \mat{H} = \frac{\partial h}{\partial \vec{x}}\bigg|_{\hat{\vec{x}}},
+  \qquad
+  \mat{W} = \diag\bigl(1/\sigma_i^2\bigr) ,
+\end{equation}
+and the normal equations are solved for the correction,
+\begin{equation}
+  \label{eq:flt-batch-normal}
+  \bigl(\mat{H}\transpose \mat{W} \mat{H}\bigr)\,\delta \vec{x}
+    = \mat{H}\transpose \mat{W}\,\delta \vec{z},
+  \qquad
+  \hat{\vec{x}} \leftarrow \hat{\vec{x}} + \delta \vec{x} ,
+\end{equation}
+by an LDLT factorization (\cpp{SolveWeightedLeastSquares}). When
+initialization constraints are enabled (\code{use\_initialization}), a soft
+prior is appended by augmenting the system,
+\begin{equation}
+  \label{eq:flt-batch-prior}
+  \mat{H} \leftarrow \begin{bmatrix} \mat{H} \\ \mat{I} \end{bmatrix},
+  \qquad
+  \delta \vec{z} \leftarrow
+    \begin{bmatrix} \delta \vec{z} \\ \vec{x}_0 - \hat{\vec{x}} \end{bmatrix},
+  \qquad
+  \mat{W} \leftarrow
+    \operatorname{blkdiag}\bigl(\mat{W},\ \diag(1/\sigma_{0}^2)\bigr) ,
+\end{equation}
+which is the exact equivalent of a Gaussian prior $\mathcal{N}(\vec{x}_0,
+\diag(\sigma_0^2))$ and regularizes an otherwise rank-deficient geometry.
+Iteration stops when $\lVert \delta \vec{x}\rVert$ falls below
+\code{convergence\_tol} or the iteration cap \code{max\_iterations} is reached;
+each iteration records its correction norm and weighted residual RMS in
+\cpp{iteration\_history}.
+
+The reported covariance is the inverse of the \emph{measurement} information
+only --- the prior of \cref{eq:flt-batch-prior} is deliberately excluded, so
+that the number reflects the observation geometry rather than the strength of
+the initialization --- and is computed by an SVD pseudo-inverse so that a
+rank-deficient geometry returns a finite answer instead of failing:
+\begin{equation}
+  \label{eq:flt-batch-cov}
+  \mat{P} = \bigl(\mat{H}\transpose \mat{W} \mat{H}\bigr)^{+},
+  \qquad
+  \text{PDOP} = \sqrt{\Tr\bigl(\mat{P}_{[0:3,\,0:3]}\bigr)} .
+\end{equation}
+The PDOP of \cref{eq:flt-batch-cov} assumes that the first three state
+components are position and that $\mat{W}$ carries the measurement variances,
+so it is a metre-valued position-error standard deviation rather than a
+dimensionless dilution factor.
+
+\begin{lstlisting}[language=cpp, caption={Batch normal-equation solve and covariance.},
+                   label={lst:flt-batch}]
+// cpp/lupnt/numerics/filters/batch_filter.cc :: SolveWeightedLeastSquares
+MatXd W    = weights.asDiagonal();
+MatXd HTW  = H.transpose() * W;
+return (HTW * H).ldlt().solve(HTW * residuals);   // (H^T W H) dx = H^T W r
+
+// cpp/lupnt/numerics/filters/batch_filter.cc :: RunBatchFilter
+// final covariance -- SVD pseudo-inverse of the measurement information
+Eigen::JacobiSVD<MatXd> svd(information_matrix,
+                            Eigen::ComputeFullU | Eigen::ComputeFullV);
+covariance_matrix = svd.solve(MatXd::Identity(n_state, n_state));
+
+// cpp/lupnt/numerics/filters/batch_filter.cc :: CalculatePDOP
+Mat3d pos_cov = covariance_matrix.block<3, 3>(0, 0);
+return std::sqrt(pos_cov.trace());
+\end{lstlisting}
+
+\section{Process-Noise Models}
+\label{sec:flt-noise}
+
+The process noise is the filter's statement about what the dynamics model does
+\emph{not} capture. \lupnt{} ships closed-form $\mat{Q}$ blocks for the two
+dominant cases --- unmodelled acceleration on the orbit and oscillator noise on
+the clock --- plus a sliding-window adaptive scheme.
+
+\subsection{Continuous white-noise acceleration}
+\label{sec:flt-cwna}
+
+Model the unmodelled acceleration as a zero-mean, white, continuous process
+with per-axis power spectral density $q_a$ acting on the velocity,
+\begin{equation}
+  \label{eq:flt-cwna-sde}
+  \dd \begin{bmatrix} \vec{r} \\ \vec{v} \end{bmatrix}
+  = \begin{bmatrix} \vec{v} \\ \vec{0} \end{bmatrix} \dd t
+  + \begin{bmatrix} \mat{0} \\ \mat{I}_3 \end{bmatrix} \sqrt{q_a}\,\dd \vec{w},
+  \qquad
+  \mathbb{E}\bigl[\dd \vec{w}\,\dd \vec{w}\transpose\bigr] = \mat{I}_3\,\dd t .
+\end{equation}
+Integrating the state-transition form of \cref{eq:flt-cwna-sde} over a step
+$\Delta t$ against the double-integrator STM gives the standard $6\times 6$
+block for a Cartesian state $[\vec{r}\transpose\ \vec{v}\transpose]\transpose$,
+\begin{equation}
+  \label{eq:flt-cwna}
+  \mat{Q} = q_a
+  \begin{bmatrix}
+    \tfrac{\Delta t^3}{3}\,\mat{I}_3 & \tfrac{\Delta t^2}{2}\,\mat{I}_3 \\[6pt]
+    \tfrac{\Delta t^2}{2}\,\mat{I}_3 & \Delta t\,\mat{I}_3
+  \end{bmatrix},
+  \qquad
+  [q_a] = \si{\meter\squared\per\second\cubed} ,
+\end{equation}
+returned by \cpp{CwnaProcessNoise(dt, accel\_psd)}. The block is
+\emph{singular in the noise directions}: it has rank 3, not 6, since a single
+acceleration process drives both the position and velocity blocks. That is why
+\cref{eq:flt-cwna} may not be handed to the UD or stochastic-cloning filters as
+a diagonal $\mat{Q}$; the correct route there is
+$\mat{Q} = q_a \mat{I}_3$ with the mapping matrix
+$\mat{G} = [\tfrac{\Delta t^2}{2}\mat{I}_3;\ \Delta t\,\mat{I}_3]$ of
+\cref{eq:flt-gmap}.
+
+\begin{lstlisting}[language=cpp, caption={Continuous white-noise acceleration block.},
+                   label={lst:flt-cwna}]
+// cpp/lupnt/numerics/filters/srif.cc :: CwnaProcessNoise
+MatXd Q = MatXd::Zero(6, 6);
+const double q3 = accel_psd * dt * dt * dt / 3.0;
+const double q2 = accel_psd * dt * dt / 2.0;
+const double q1 = accel_psd * dt;
+for (int k = 0; k < 3; ++k) {
+  Q(k, k)         = q3;
+  Q(k, k + 3)     = q2;
+  Q(k + 3, k)     = q2;
+  Q(k + 3, k + 3) = q1;
+}
+return Q;
+\end{lstlisting}
+
+\subsection{Clock process noise}
+\label{sec:flt-clock-noise}
+
+\cpp{ClockDynamics} (\file{cpp/lupnt/dynamics/clock_dynamics.cc}) propagates a
+two- or three-state clock error with the polynomial transition matrices
+\begin{equation}
+  \label{eq:flt-clock-phi}
+  \mat{\Phi}_2(\Delta t) = \begin{bmatrix} 1 & \Delta t \\ 0 & 1 \end{bmatrix},
+  \qquad
+  \mat{\Phi}_3(\Delta t) = \begin{bmatrix}
+    1 & \Delta t & \tfrac{\Delta t^2}{2} \\
+    0 & 1        & \Delta t \\
+    0 & 0        & 1
+  \end{bmatrix} ,
+\end{equation}
+acting on the state $(b, \dot{b})$ or $(b, \dot{b}, \ddot{b})$ --- clock bias,
+fractional frequency offset, and frequency drift rate.
+
+The noise model is the standard two- or three-state clock diffusion of
+\citet{zucca2005clock}: three independent Wiener processes with diffusion
+coefficients $(q_1, q_2, q_3)$ drive the phase, the frequency, and the
+frequency drift respectively,
+\begin{equation}
+  \label{eq:flt-clock-sde}
+  \dd \begin{bmatrix} b \\ \dot{b} \\ \ddot{b} \end{bmatrix}
+  = \begin{bmatrix} \dot{b} \\ \ddot{b} \\ 0 \end{bmatrix} \dd t
+  + \begin{bmatrix}
+      \sqrt{q_1} & 0 & 0 \\
+      0 & \sqrt{q_2} & 0 \\
+      0 & 0 & \sqrt{q_3}
+    \end{bmatrix} \dd \vec{w} .
+\end{equation}
+Integrating $\mat{Q} = \int_0^{\Delta t} \mat{\Phi}(\Delta t - s)\,
+\mat{B}\mat{B}\transpose \mat{\Phi}(\Delta t - s)\transpose \dd s$ in closed
+form gives, for the two-state model (\cpp{TwoStateNoise}),
+\begin{equation}
+  \label{eq:flt-clock-q2}
+  \mat{Q}_2 =
+  \begin{bmatrix}
+    q_1 \Delta t + q_2\dfrac{\Delta t^3}{3} & q_2\dfrac{\Delta t^2}{2} \\[10pt]
+    q_2\dfrac{\Delta t^2}{2}                & q_2 \Delta t
+  \end{bmatrix},
+\end{equation}
+and, for the three-state model (\cpp{ThreeStateNoise}),
+\begin{equation}
+  \label{eq:flt-clock-q3}
+  \mat{Q}_3 =
+  \begin{bmatrix}
+    q_1\Delta t + q_2\dfrac{\Delta t^3}{3} + q_3\dfrac{\Delta t^5}{20}
+      & q_2\dfrac{\Delta t^2}{2} + q_3\dfrac{\Delta t^4}{8}
+      & q_3\dfrac{\Delta t^3}{6} \\[10pt]
+    q_2\dfrac{\Delta t^2}{2} + q_3\dfrac{\Delta t^4}{8}
+      & q_2\Delta t + q_3\dfrac{\Delta t^3}{3}
+      & q_3\dfrac{\Delta t^2}{2} \\[10pt]
+    q_3\dfrac{\Delta t^3}{6}
+      & q_3\dfrac{\Delta t^2}{2}
+      & q_3\Delta t
+  \end{bmatrix} .
+\end{equation}
+\Cref{eq:flt-clock-q2} is the leading $2\times 2$ block of
+\cref{eq:flt-clock-q3} with $q_3 = 0$, as it must be. The dimensions are
+$[q_1] = \si{\second}$, $[q_2] = \si{\per\second}$, and
+$[q_3] = \si{\per\second\cubed}$, so that every entry of
+\cref{eq:flt-clock-q3} carries the square of the corresponding state's unit.
+
+The diffusion coefficients relate directly to the Allan variance of the
+oscillator, which is how they are measured in practice
+\citep{zucca2005clock}:
+\begin{equation}
+  \label{eq:flt-clock-allan}
+  \sigma_y^2(\tau) = \frac{q_1}{\tau} + \frac{q_2\,\tau}{3}
+                   + \frac{q_3\,\tau^3}{20} ,
+\end{equation}
+whose three terms are the white-frequency ($\tau^{-1}$), random-walk-frequency
+($\tau^{+1}$), and random-run ($\tau^{+3}$) branches of the classical Allan
+deviation plot. \Cref{tab:flt-clock} lists the coefficients hard-coded in
+\cpp{ClockDynamics::GetClockValues}.
+
+\begin{table}[H]
+  \centering
+  \caption{Clock diffusion coefficients in
+           \file{cpp/lupnt/dynamics/clock_dynamics.cc}
+           (\cpp{ClockDynamics::GetClockValues}).}
+  \label{tab:flt-clock}
+  \begin{tabularx}{\textwidth}{lllLL}
+    \toprule
+    \cpp{ClockModel} & $q_1$ [\si{\second}] & $q_2$ [\si{\per\second}]
+      & $q_3$ [\si{\per\second\cubed}] & Source \\
+    \midrule
+    \code{OCXO}      & \num{3.881e-25} & \num{4.052e-28} & \num{4.917e-55}
+      & Oven-controlled crystal; first LCRNS satellite design study \\
+    \code{USO}       & \num{1.2e-22}   & \num{1.58e-26}  & \num{5.9e-75}
+      & Ultra-stable oscillator, as flown on MMS \\
+    \code{CSAC}      & \num{5.8e-22}   & \num{1.5e-29}   & \num{1e-45}
+      & Chip-scale atomic clock \\
+    \code{MINI\_RAFS}& \num{1.0e-22}   & \num{1.21e-30}  & \num{4.917e-55}
+      & Miniaturized rubidium atomic frequency standard \\
+    \code{RAFS}      & \num{3.70e-24}  & \num{1.87e-33}  & \num{7.56e-59}
+      & Rubidium AFS; NASA Gateway autonomous-navigation study \\
+    \code{DSAC}      & \num{4.23e-26}  & \num{6.19e-38}  & \num{2.24e-61}
+      & Deep Space Atomic Clock \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lupntnote}
+The clock bias may be carried in seconds, metres, or kilometres, selected by
+\cpp{ClockBiasUnit}. \Cref{eq:flt-clock-q2,eq:flt-clock-q3} are derived in
+seconds and rescaled by the overloads that take a unit,
+\begin{equation}
+  \label{eq:flt-clock-scale}
+  \mat{Q} \leftarrow \sigma^2 \mat{Q},
+  \qquad
+  \sigma = \texttt{SecondsToBiasUnitScale} =
+  \begin{cases}
+    1 & \text{(seconds)}, \\
+    c & \text{(metres)}, \\
+    c \cdot 10^{-3} & \text{(kilometres)},
+  \end{cases}
+\end{equation}
+with $c$ the speed of light. All three clock states scale by the same factor,
+so a single scalar $\sigma^2$ suffices for the whole block. Mixing a
+metre-valued clock state with a second-valued $\mat{Q}$ is silent and
+catastrophic --- always obtain $\mat{Q}$ from the unit-aware overload.
+\end{lupntnote}
+
+This is the clock half of the coupled orbit--clock process noise of
+\citep[Ch.~6.1.2, Eq.~6.6]{iiyama2026thesis}; the orbit half is
+\cref{eq:flt-cwna}. For a coupled state the full block is
+$\operatorname{blkdiag}(\mat{Q}_{\text{orbit}}, \mat{Q}_{\text{clock}})$, which
+is not diagonal, so a UD filter must receive it through the mapping matrix
+$\mat{G}$.
+
+\begin{lstlisting}[language=cpp, caption={Three-state clock process noise and the unit rescaling.},
+                   label={lst:flt-clock}]
+// cpp/lupnt/dynamics/clock_dynamics.cc :: ClockDynamics::ThreeStateNoise
+Q(0, 0) = q1 * dt + q2 * dt3 / 3 + q3 * dt5 / 20.0;
+Q(0, 1) = q2 * dt2 / 2.0 + q3 * dt4 / 8.0;
+Q(0, 2) = q3 * dt3 / 6.0;
+Q(1, 0) = Q(0, 1);
+Q(1, 1) = q2 * dt + q3 * dt3 / 3.0;
+Q(1, 2) = q3 * dt2 / 2.0;
+Q(2, 0) = Q(0, 2);
+Q(2, 1) = Q(1, 2);
+Q(2, 2) = q3 * dt;
+
+// bias-unit overload: Q_unit = sigma^2 Q, sigma = SecondsToBiasUnitScale(unit)
+Real scale = SecondsToBiasUnitScale(unit);
+return ThreeStateNoise(clk_model, dt) * scale * scale;
+\end{lstlisting}
+
+\subsection{Adaptive process noise}
+\label{sec:flt-adaptive}
+
+The class \cpp{ProcessNoise}
+(\file{cpp/lupnt/numerics/filters/adaptive_process_noise.cc}) re-estimates the
+acceleration noise level online from the filter's own recent behaviour, under
+one of three algorithms selected by \cpp{ProcessNoiseAlgorithm}:
+\code{SNC} (state noise compensation, i.e.\ a fixed $\mat{Q}_a$ and no
+adaptation), \code{ASNC} (adaptive SNC: a piecewise-constant white-noise
+acceleration model on the position/velocity states, whose coefficient basis is
+shared across the three axes), or \code{ADMC} (adaptive dynamic model
+compensation: a first-order Gauss--Markov acceleration state of time constant
+$1/\beta$, with a per-axis coefficient basis). Both adaptive variants solve a
+per-axis diagonal $\mat{Q}_a$; they differ in the acceleration model and hence
+in whether that coefficient basis is shared or per-axis.
+
+Each step feeds the tuple $(\delta \vec{x}, \mat{\Sigma}_{\delta x},
+\bar{\mat{P}}, \mat{P}^{+})$ into \cpp{ProcessNoise::Update}, which maintains a
+sliding window of length $N_w$ after an initial burn-in of $N_{\text{wait}}$
+steps. The window yields the empirical process-noise estimate
+\begin{equation}
+  \label{eq:flt-adaptive-qhat}
+  \hat{\mat{Q}} = \frac{1}{N_w}\sum_{i=1}^{N_w}
+    \Bigl(\mat{P}^{+}_i - \bar{\mat{P}}_i
+          + \delta \vec{x}_i\,\delta \vec{x}_i\transpose\Bigr) ,
+\end{equation}
+which is the sample second moment of the corrections, debiased by the
+covariance the filter already claims for them. \Cref{eq:flt-adaptive-qhat} is
+then matched, in a weighted least-squares sense whose weights come from the
+fourth-moment matrix accumulated alongside it, against the structural
+coefficients of \cref{eq:flt-cwna}; solving for the per-axis acceleration PSD
+gives $\mat{Q}_a$, which is clamped to the configured limits,
+\begin{equation}
+  \label{eq:flt-adaptive-clamp}
+  \bigl[\mat{Q}_a\bigr]_{ii} \leftarrow
+    \min\Bigl(\max\bigl(\bigl[\mat{Q}_a\bigr]_{ii},\ \sigma^2_{\min}\bigr),\
+              \sigma^2_{\max}\Bigr) ,
+\end{equation}
+and optionally smoothed by an exponential filter with rate $\alpha$,
+$\mat{Q}_a \leftarrow (1-\alpha)\mat{Q}_a + \alpha \hat{\mat{Q}}_a$. Any window
+entry with a negative variance on the diagonal resets the accumulator rather
+than poisoning it. The result is exposed as an ordinary
+\cpp{ProcessNoiseFunction} through
+\cpp{ProcessNoise::GetProcessNoiseFunction}, so an adaptive filter differs
+from a fixed one only in which callback was registered.
+
+\section{Choosing a Filter}
+\label{sec:flt-choice}
+
+\Cref{tab:flt-comparison} summarizes the trade space. Two rules of thumb cover
+most cases. First, if the state mixes quantities whose variances differ by more
+than about eight orders of magnitude --- which any coupled orbit--clock state
+does --- use a factorized filter; the dense EKF will silently lose the small
+variances no matter how carefully the Joseph form is applied. Second, if the
+measurement model spans two epochs, the choice is made for you: only
+\cpp{UDUStochasticCloningEKF} represents the delayed-state dependency
+correctly.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Comparison of the recursive filters. $n$ is the state dimension,
+           $m$ the number of measurement components per epoch. Costs are the
+           dominant term per epoch.}
+  \label{tab:flt-comparison}
+  \begin{tabularx}{\textwidth}{LLLL}
+    \toprule
+    Filter & Numerical robustness & Cost & When to use \\
+    \midrule
+    \cpp{EKF}
+      & Moderate. Joseph form keeps $\mat{P}$ symmetric and PSD to first order,
+        but the condition number of $\mat{P}$ is carried in full; small
+        variances are lost to round-off.
+      & $O(n^3)$
+      & Default. Well-scaled states, moderate dynamic range, when the smoother
+        and the diagnostics matter more than conditioning. \\
+    \addlinespace
+    \cpp{SchmidtEKF}
+      & As \cpp{EKF}; the truncated gain is legal because the Joseph form
+        tolerates a suboptimal $\mat{K}$.
+      & $O(n^3)$
+      & When a weakly observable bias must contribute its uncertainty without
+        being solved for. \\
+    \addlinespace
+    \cpp{UKF}
+      & Lowest. Short covariance form, no Joseph stabilization, no outlier
+        gate; a Cholesky failure of \cref{eq:flt-ukf-chol} aborts the step.
+      & $(2n{+}1)$ propagations, $O(n^3)$
+      & Strong nonlinearity over the step, or a dynamics model with no usable
+        Jacobian. Not for long unattended runs. \\
+    \addlinespace
+    \cpp{UDUEKF}
+      & Highest among the covariance filters. PSD by construction, effective
+        condition number $\sqrt{\kappa(\mat{P})}$, variances spanning many
+        decades survive.
+      & $O(n^3)$ time update, $O(n^2)$ per scalar measurement
+      & Coupled orbit--clock estimation, long arcs, tight clock states.
+        Requires diagonal $\mat{Q}$ and $\mat{R}$. \\
+    \addlinespace
+    \cpp{SRIF}
+      & Highest overall. Backward-stable Householder updates, no gain matrix,
+        admits an infinite prior variance (zero information).
+      & $O(n^3)$ per step, plus an STM inverse
+      & Cold starts with no meaningful a-priori state; full (non-diagonal)
+        $\mat{R}$; batch-like arcs run sequentially. Needs an invertible
+        $\mat{F}$. \\
+    \addlinespace
+    \cpp{UDUStochastic\-Cloning\-EKF}
+      & As \cpp{UDUEKF}, on a $2n$ state.
+      & $O((2n)^3)$ time update
+      & Time-differenced carrier phase or any other delayed-state observable;
+        required for a consistent TDCP smoother. \\
+    \addlinespace
+    \cpp{RunBatchFilter}
+      & Good. LDLT normal equations with an SVD pseudo-inverse fallback for
+        rank-deficient geometries.
+      & $O(N n^2)$ per iteration
+      & Snapshot positioning, filter initialization, and post-fit consistency
+        checks. No dynamics, no process noise. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Model Boundaries}
+\label{sec:flt-boundaries}
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Diagonal noise requirements.} \cpp{UDUEKF} and
+    \cpp{UDUStochasticCloningEKF} require a diagonal process noise $\mat{Q}$
+    and a diagonal measurement noise $\mat{R}$: the Thornton time update
+    weights the noise block by $\tilde{\mat{D}}$, and the Carlson update
+    processes one scalar row at a time. Correlated process noise --- including
+    the CWNA block of \cref{eq:flt-cwna} and the clock blocks of
+    \cref{eq:flt-clock-q2,eq:flt-clock-q3} --- must be supplied through the
+    mapping matrix $\mat{G}$. The time update asserts on a non-diagonal
+    $\mat{Q}$; a non-diagonal $\mat{R}$ is \emph{not} asserted and its
+    off-diagonal entries are silently ignored.
+
+  \item \textbf{Linearization.} \cpp{EKF}, \cpp{SRIF}, \cpp{UDUEKF}, and the
+    cloning filter are extended filters: they re-linearize about the current
+    estimate at every step, and both $\mat{F}$ and $\mat{H}$ come from the
+    registered callbacks. Their covariance is therefore correct only to first
+    order in the state error, and a large initial error can produce a
+    consistent-looking but wrong solution. The \cpp{UKF} removes the
+    linearization but not the Gaussian assumption; none of the filters
+    represents a multimodal posterior.
+
+  \item \textbf{Gaussian, white, uncorrelated noise.} Every filter here assumes
+    zero-mean Gaussian process and measurement noise, white in time and
+    uncorrelated with each other. Coloured measurement noise (multipath,
+    residual ionospheric delay, unmodelled solar radiation pressure) violates
+    this and must be either estimated as a state, carried as a consider
+    parameter (\cref{sec:flt-schmidt}), or absorbed by inflating $\mat{R}$.
+
+  \item \textbf{Sequential-update ordering.} The Carlson recursion of
+    \cref{sec:flt-udu} is exact for a linear model regardless of the order in
+    which the scalar components are processed, but for a nonlinear model the
+    result depends weakly on the ordering, since each row is linearized about
+    the state produced by the preceding rows. The ordering rule of
+    \cref{sec:flt-cloning} (delayed-state rows first) is a cost optimization,
+    not a correctness requirement.
+
+  \item \textbf{Outlier rejection.} The default gate is a per-component
+    $\tau\sigma$ test against the filter's own innovation covariance; it has no
+    protection against a slowly growing error that inflates $S_{ii}$ in step
+    with the residual, and it screens components independently rather than
+    searching for a consistent subset. It is shared by \cpp{EKF}, \cpp{SRIF},
+    and \cpp{UDUEKF}; the \cpp{UKF} does not screen at all. Register a
+    \cpp{FaultDetectionFunction} for anything stronger.
+
+  \item \textbf{Smoothing.} \cpp{EKF::UpdateSmoother} implements the standard
+    RTS recursion, which is exact only under the Markov assumption. With TDCP
+    or any other delayed-state observable, the smoothed covariance it reports
+    is optimistic; the correct gain is $\mat{J}_k$ of
+    \cref{eq:flt-sc-gain}. The smoother also requires the full log
+    (\cpp{InitializeLogger} must be called with the epoch count in advance) and
+    is therefore memory-bound at $O(N n^2)$.
+
+  \item \textbf{Batch estimator.} \cpp{RunBatchFilter} reports a covariance
+    built from the measurement information only; the soft prior of
+    \cref{eq:flt-batch-prior} regularizes the solution but is excluded from
+    \cref{eq:flt-batch-cov}. A converged batch solution with a very weak
+    geometry can therefore report a large covariance even though the estimate
+    is pinned by the prior. Convergence is declared on the correction norm
+    alone --- no line search, no trust region --- so a poor initial guess can
+    diverge silently within \code{max\_iterations}.
+
+  \item \textbf{Clock model fidelity.} \Cref{eq:flt-clock-q2,eq:flt-clock-q3}
+    model the oscillator as two or three integrated Wiener processes. This
+    captures the white-frequency, random-walk-frequency, and random-run
+    branches of \cref{eq:flt-clock-allan} but \emph{not} flicker noise (the
+    $\tau^0$ floor), deterministic frequency drift, or the temperature and
+    radiation sensitivity of a real flight oscillator. The coefficients of
+    \cref{tab:flt-clock} are nominal specification values, not measured unit
+    data.
+\end{itemize}

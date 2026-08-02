@@ -1,0 +1,1525 @@
+\chapter{Ionosphere, Plasmasphere, and Ray Tracing}
+\label{chap:ionosphere}
+
+This chapter specifies the ionospheric and plasmaspheric group-delay model that
+\lupnt{} applies to terrestrial GNSS signals received by cislunar and lunar
+users.  A lunar receiver observes the terrestrial GNSS constellation through the
+side lobes of the transmit antennas, so the useful links graze the Earth: the
+line of sight passes almost tangentially through the topside ionosphere and then
+runs for tens of Earth radii through the plasmasphere.  Neither the thin-shell
+mapping of the classical GNSS literature nor the Klobuchar broadcast model is applicable
+to such geometry, because both assume a single, steeply inclined crossing of a
+compressed ionospheric shell \citep{misra2011gnss}.  \lupnt{} instead integrates
+the electron density along the numerically ray-traced, bent signal path.
+
+The model is specified in \citep{iiyama2026gcpm}, with the earlier conference
+treatment in \citep{iiyama2025iono} and the full characterization in
+\citep[Ch.~5]{iiyama2026thesis}; equation numbers of the form~(5.x) quoted below
+refer to that chapter.  The implementation lives in the \code{pecsim} namespace
+under \file{cpp/lupnt/environment/plasma/}:
+
+\begin{itemize}[nosep]
+  \item \file{tec/raytrace.h}, \file{tec/raytrace.cc} --- the tracer proper
+        (\cpp{pecsim::trace\_ray}, \cpp{RayTraceConfig}, \cpp{PathProfile});
+  \item \file{gcpm/gcpm_interface.h}, \file{gcpm/gcpm_interface.cc} --- the
+        Global Core Plasma Model (GCPM) v2.4 electron density
+        \citep{gallagher2000gcpm};
+  \item \file{gcpm/iri_interface.h}, \file{gcpm/iri_interface.cc} --- the
+        International Reference Ionosphere (IRI) submodel
+        \citep{bilitza2022iri} and its solar-index options;
+  \item \file{igrf/igrf_interface.h}, \file{igrf/igrf_interface.cc} --- the
+        IGRF-14 geomagnetic field \citep{alken2021igrf};
+  \item \file{tec/iono_model.h} --- the \cpp{IonoModel} backend selector;
+  \item \file{tec/raytrace_wrapper.h}, \file{tec/raytrace_wrapper.cc} --- the
+        batch driver used by the precompute path;
+  \item \file{tec/neldermead.h}, \file{tec/neldermead.cc} --- the simplex solver
+        used by the receiver-side convergence iteration.
+\end{itemize}
+
+The delay is consumed by the GNSS measurement model through
+\cpp{GNSSMeasurements::\allowbreak ComputeIonosphere\allowbreak PlasmaRayTraceDelay}
+(\file{cpp/lupnt/measurements/gnss_measurement.cc}), where it appears as
+$\Delta\rho_\mathrm{plasma}$ in \cref{chap:gnss-measurements}.
+
+\section{Scope, Units, and the Frame Contract}
+\label{sec:iono-contract}
+
+The tracer is a self-contained module with its own unit system, inherited from
+the Fortran heritage of GCPM and IRI.  Every caller is responsible for
+converting at the boundary.
+
+\begin{lupntnote}
+The entire plasma module is \textbf{km-based}.  The positions \code{x1},
+\code{x2} passed to \cpp{trace\_ray} are in kilometres, the step size, gradient
+step and cutoff radius are in kilometres, the Earth radius is
+$R_E = \SI{6371.0}{\kilo\meter}$ and the speed of light is
+$c = \SI{299792.458}{\kilo\meter\per\second}$
+(\file{cpp/lupnt/environment/plasma/core/constants.h}).  Electron density is
+evaluated internally in \si{\per\cubic\centi\meter} by GCPM and converted to
+\si{\per\cubic\meter} before entering the delay integrals; one TEC unit is
+$\SI{1}{\TECU} = \num{1e16}$ electrons per \si{\square\meter}.  Delays are
+returned in \textbf{metres}.  SI callers such as \cpp{GNSSMeasurements} divide
+their metre positions by $1000$ before calling \cpp{trace\_ray}, and use the
+returned metres directly.
+\end{lupntnote}
+
+The tracer works in a geocentric, Earth-fixed Cartesian frame.  The GNSS
+coupling converts the receiver and transmitter states from \code{options.frame}
+into \code{raytrace\_frame} (default \code{Frame::ECEF}) and supplies an epoch in
+\code{raytrace\_epoch\_scale} (default \code{Time::UTC}) expressed as seconds
+from J2000:
+%
+\begin{equation}
+  \label{eq:iono-inputs}
+  \vec{x}_1 = \vec{r}_\mathrm{tx}^{\,\mathrm{ecef}}\,[\si{\kilo\meter}],
+  \qquad
+  \vec{x}_2 = \vec{r}_\mathrm{rx}^{\,\mathrm{ecef}}\,[\si{\kilo\meter}],
+  \qquad
+  t = t_\mathrm{rx}^{\UTC}\ \text{(s since J2000)} .
+\end{equation}
+%
+The unit conversion applied to every density sample is
+%
+\begin{equation}
+  \label{eq:iono-ne-units}
+  n_e\,[\si{\per\cubic\meter}] = 10^{6}\, n_e\,[\si{\per\cubic\centi\meter}] ,
+  \qquad
+  \mathrm{TEC}\,[\si{\TECU}] = 10^{-16} \int_\Gamma n_e\,\dd s\,[\si{\per\square\meter}] .
+\end{equation}
+%
+Because the arc length $s$ is carried in kilometres while $n_e$ is in
+\si{\per\cubic\meter}, every path integrand in \cref{sec:iono-refractive}
+carries an explicit factor $1000$ in the code.
+
+\Cref{tab:iono-symbols} fixes the symbols used throughout the chapter.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Symbols used in the ionosphere/plasmasphere model.}
+  \label{tab:iono-symbols}
+  \small
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Symbol & Unit & Meaning \\
+    \midrule
+    $n_e$              & \si{\per\cubic\meter}   & Electron number density (GCPM output, converted from \si{\per\cubic\centi\meter}) \\
+    $f$                & \si{\hertz}             & Carrier frequency of the link (\code{config.freq\_Hz}) \\
+    $f_p$              & \si{\hertz}             & Electron plasma frequency, \cref{eq:iono-fp} \\
+    $f_g$              & \si{\hertz}             & Electron gyro (cyclotron) frequency, \cref{eq:iono-fp} \\
+    $\vec{B}$, $B$     & \si{\nano\tesla}        & Geomagnetic field vector and its magnitude (IGRF-14) \\
+    $\theta$           & rad                     & Angle between $\vec{B}$ and the local ray direction $\uvec{s}$ \\
+    $n$, $n_\mathrm{gr}$ & ---                   & Phase and group refractive indices \\
+    $\Gamma$           & ---                     & The (bent) ray path from transmitter to receiver \\
+    $s$                & \si{\kilo\meter}        & Arc length along $\Gamma$ \\
+    $\uvec{s}$         & ---                     & Unit tangent to $\Gamma$ \\
+    $\rho$             & \si{\kilo\meter}        & Straight-line (chord) distance $\lVert\vec{x}_2-\vec{x}_1\rVert$ \\
+    $s_f$              & \si{\kilo\meter}        & Total traced arc length (\code{PathProfile::sf}) \\
+    $r$                & \si{\kilo\meter} or $R_E$ & Geocentric radius (in $R_E$ when passed to GCPM) \\
+    $K_p$              & ---                     & Planetary geomagnetic activity index (\code{config.kp}) \\
+    $R_{12}$           & ---                     & 12-month running mean sunspot number (\code{config.rz12}) \\
+    $F_{10.7}$         & sfu                     & Solar radio flux at \SI{10.7}{\centi\meter} \\
+    $IG_{12}$          & ---                     & Ionospheric (effective) global index used by IRI for $f_oF_2$ \\
+    $\mathrm{MLT}$     & h                       & Solar-magnetic local time \\
+    $\phi_\mathrm{SM}$ & rad                     & Solar-magnetic latitude \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Solar-Magnetic Coordinates}
+\label{sec:iono-sm}
+
+GCPM is parameterized in solar-magnetic (SM) coordinates: $\uvec{z}_\mathrm{SM}$
+is aligned with the geomagnetic dipole axis, $\uvec{x}_\mathrm{SM}$ lies in the
+plane spanned by the dipole axis and the Earth--Sun line (tilted towards the
+Sun), and $\uvec{y}_\mathrm{SM}$ completes the right-handed triad.  SM is the
+natural frame for the plasmasphere because the cold-plasma distribution is
+organized by dipole $L$-shells and by local time relative to the Sun.
+
+The conversion is a chain of four elementary rotations
+(\file{cpp/lupnt/environment/plasma/gcpm/conversions.cc}), applied to the
+Earth-fixed (geographic, \code{GEO} $\equiv$ ITRF/ECEF) input position:
+%
+\begin{equation}
+  \label{eq:iono-sm-chain}
+  \vec{x}_\mathrm{SM}
+  = \mat{T}_4\,\mat{T}_3\,\mat{T}_2\,\mat{T}_1^{-1}\,\vec{x}_\mathrm{GEO},
+  \qquad
+  \underbrace{\mathrm{GEO}}_{\text{ITRF}}
+  \xrightarrow{\ \mat{T}_1^{-1}\ } \underbrace{\mathrm{GEI}}_{\text{GCRF}}
+  \xrightarrow{\ \mat{T}_2\ } \mathrm{GSE}
+  \xrightarrow{\ \mat{T}_3\ } \mathrm{GSM}
+  \xrightarrow{\ \mat{T}_4\ } \mathrm{SM} .
+\end{equation}
+%
+With the passive elementary rotations
+%
+\begin{equation}
+  \mat{R}_x(\alpha) =
+  \begin{bmatrix} 1 & 0 & 0 \\ 0 & \cos\alpha & \sin\alpha \\ 0 & -\sin\alpha & \cos\alpha \end{bmatrix},
+  \quad
+  \mat{R}_y(\alpha) =
+  \begin{bmatrix} \cos\alpha & 0 & \sin\alpha \\ 0 & 1 & 0 \\ -\sin\alpha & 0 & \cos\alpha \end{bmatrix},
+  \quad
+  \mat{R}_z(\alpha) =
+  \begin{bmatrix} \cos\alpha & \sin\alpha & 0 \\ -\sin\alpha & \cos\alpha & 0 \\ 0 & 0 & 1 \end{bmatrix},
+\end{equation}
+%
+the four stages are as follows.  Let $T_0 = (\mathrm{MJD} - 51544.5)/36525$ be
+the time in Julian centuries from J2000 and let $\mathrm{ut}$ be the UT hour of
+day.
+
+\paragraph{Stage 1 (GEI $\leftrightarrow$ GEO).}  A rotation about the polar
+axis by the Greenwich mean sidereal angle,
+%
+\begin{equation}
+  \label{eq:iono-t1}
+  \mat{T}_1 = \mat{R}_z(\vartheta),
+  \qquad
+  \vartheta = \left(100.461 + 36000.770\,T_0 + 15.04107\,\mathrm{ut}\right)^{\circ} .
+\end{equation}
+%
+The tracer applies $\mat{T}_1^{-1} = \mat{R}_z(-\vartheta)$ to lift the ECEF
+input into the quasi-inertial GEI frame.
+
+\paragraph{Stage 2 (GEI $\to$ GSE).}  A rotation into the ecliptic and then to
+the Sun direction,
+%
+\begin{equation}
+  \label{eq:iono-t2}
+  \mat{T}_2 = \mat{R}_z(\lambda_\odot)\,\mat{R}_x(\varepsilon),
+\end{equation}
+%
+with obliquity, mean anomaly, mean longitude and apparent solar longitude
+%
+\begin{align}
+  \varepsilon    &= \left(23.439 - 0.013\,T_0\right)^{\circ}, \\
+  M              &= \left(357.528 + 35999.05\,T_0 + 0.04107\,\mathrm{ut}\right)^{\circ}, \\
+  \gamma         &= \left(280.46 + 36000.772\,T_0 + 0.04107\,\mathrm{ut}\right)^{\circ}, \\
+  \lambda_\odot  &= \gamma + \left(1.915 - 0.0048\,T_0\right)^{\circ}\sin M
+                    + 0.020^{\circ}\sin 2M .
+\end{align}
+
+\paragraph{Stages 3 and 4 (GSE $\to$ GSM $\to$ SM).}  Let $\vec{q}$ be the
+geomagnetic dipole unit vector expressed in GSE.  It is built from the IGRF
+dipole pole in geographic coordinates and rotated forward through stages~1
+and~2:
+%
+\begin{equation}
+  \label{eq:iono-dipole}
+  \phi_\mathrm{dip} = \left(78.8 + \num{4.283e-2}\,F\right)^{\circ},
+  \qquad
+  \lambda_\mathrm{dip} = \left(289.1 - \num{1.413e-2}\,F\right)^{\circ},
+  \qquad
+  F = \frac{\mathrm{MJD} - 46066}{365.25} ,
+\end{equation}
+%
+so that $\vec{q}_\mathrm{GEO}$ is the unit vector at latitude
+$\phi_\mathrm{dip}$ and longitude $\lambda_\mathrm{dip}$, and
+$\vec{q} = \mat{T}_2\mat{T}_1^{-1}\vec{q}_\mathrm{GEO}$.  Then
+%
+\begin{equation}
+  \label{eq:iono-t3t4}
+  \mat{T}_3 = \mat{R}_x(\psi), \quad \psi = -\arctan\!\left(\frac{q_y}{q_z}\right),
+  \qquad
+  \mat{T}_4 = \mat{R}_y(\mu), \quad
+  \mu = -\arctan\!\left(\frac{q_x}{\sqrt{q_y^2+q_z^2}}\right) .
+\end{equation}
+%
+$\mat{T}_3$ rolls the frame about the Earth--Sun line until the dipole axis lies
+in the $x$--$z$ plane (giving GSM); $\mat{T}_4$ pitches by the dipole tilt angle
+$\mu$ until $\uvec{z}$ coincides with the dipole axis (giving SM).  When $q_z=0$
+the code substitutes $\psi = -\tfrac{\pi}{2}\operatorname{sign}(q_y)$.
+
+\paragraph{Spherical parameters passed to GCPM.}  After the rotation the
+Cartesian SM position is converted to spherical coordinates and to magnetic
+local time:
+%
+\begin{equation}
+  \label{eq:iono-mlt}
+  r = \frac{\lVert\vec{x}_\mathrm{SM}\rVert}{R_E},
+  \qquad
+  \phi_\mathrm{SM} = \arctan\!\left(\frac{z_\mathrm{SM}}{\sqrt{x_\mathrm{SM}^2 + y_\mathrm{SM}^2}}\right),
+  \qquad
+  \mathrm{MLT} = 12 + \frac{12}{\pi}\,\lambda_\mathrm{SM}\ \ [\mathrm{h}],
+\end{equation}
+%
+where $\lambda_\mathrm{SM} = \atantwo(y_\mathrm{SM}, x_\mathrm{SM})$ is wrapped
+into $[0,2\pi)$ and $\mathrm{MLT}$ is reduced modulo \SI{24}{\hour}.  Noon
+($\mathrm{MLT}=12$) therefore corresponds to $\lambda_\mathrm{SM}=0$, i.e.\ the
+sunward side of the SM frame.
+
+\begin{lstlisting}[language=cpp, caption={Solar-magnetic transformation and GCPM
+call.  Source: \texttt{cpp/lupnt/environment/plasma/tec/raytrace.cc} ::
+\code{compute\_ne}.}, label={lst:iono-computene}]
+// cpp/lupnt/environment/plasma/tec/raytrace.cc :: compute_ne
+double compute_ne(double t_j2000, const Vec3d& pos_geo, RayTraceConfig config, bool debug) {
+  double kp = config.kp;                       // Kp index for the ionosphere model
+  if (kp < 0) throw std::runtime_error("Kp index is not set. Please set the Kp index.");
+  if (get_iri_model() == IRIModel::NONE)
+    throw std::runtime_error("IRI model is not set. Please set the IRI model.");
+
+  double alatr = 0.0, along = 0.0, r = 0.0;
+  std::array<double, 3> pos_gei_arr = {pos_geo[0] / RE, pos_geo[1] / RE, pos_geo[2] / RE};
+  std::array<double, 3> pos_sm;
+
+  double mjd = tj2000_to_mjd(t_j2000);
+  DateTime datetime = mjd_to_datetime(mjd);
+  std::array<int, 2> itime = datetime_to_itime(datetime);
+
+  geo_to_sm(itime, pos_gei_arr, pos_sm);       // GEO -> GEI -> GSE -> GSM -> SM
+  cart_to_pol(pos_sm, alatr, along, r);        // r in RE, alatr in rad, along in [0, 2pi)
+  double amlt = 12.0 + along / AMLTRAD;        // magnetic local time [hours]
+  if (amlt > 24.0) amlt -= 24.0;
+
+  std::vector<double> out;
+  if (config.use_fortran_gcpm) out = gcpm_v24_fortran(datetime, r, amlt, alatr, kp);
+  else                         out = gcpm_v24(datetime, r, amlt, alatr, kp);
+  return out[0];                               // total electron density [cm^-3]
+}
+\end{lstlisting}
+
+\begin{lupntnote}
+The local variable is named \code{pos\_gei\_arr}, but the routine invoked is
+\cpp{geo\_to\_sm}: the argument is interpreted as an Earth-fixed (GEO/ITRF)
+position, consistent with \code{raytrace\_frame} defaulting to
+\code{Frame::ECEF}.  The name is a historical artefact and does not indicate a
+frame change.  Note also that \cref{eq:iono-t1,eq:iono-t2} are the low-precision
+sidereal and solar series used by the GCPM support code; they carry
+milliarcsecond-class errors that are irrelevant at the resolution of an
+empirical plasma model, but they are \emph{not} the IAU~2006/2000A chain used
+elsewhere in \lupnt{} (\cref{chap:frame-conversions}).
+\end{lupntnote}
+
+\section{Electron-Density Environment: GCPM v2.4 over IRI}
+\label{sec:iono-density}
+
+The electron density is supplied by the Global Core Plasma Model (GCPM) v2.4
+\citep{gallagher2000gcpm}, an empirical model of the cold plasma of the inner
+magnetosphere.  GCPM stitches together region-specific submodels --- the
+ionosphere (delegated to IRI \citep{bilitza2022iri}), the plasmasphere, the
+plasmapause, the mid-latitude trough, and the polar cap --- using
+hyperbolic-tangent blending functions so that the composite density field is
+continuous and differentiable, which is a prerequisite for the gradient-driven
+ray tracing of \cref{sec:iono-eikonal}.
+
+As a mathematical contract the density along the path is
+%
+\begin{equation}
+  \label{eq:iono-ne-model}
+  n_e = n_e\big(r,\ \phi_\mathrm{SM},\ \mathrm{MLT};\ K_p,\ R_{12},\ t\big) ,
+\end{equation}
+%
+with the spatial arguments defined by \cref{eq:iono-mlt} and the remaining
+arguments defined below.
+
+\subsection{Region blending}
+\label{sec:iono-blending}
+
+Let $L = r/\cos^2\phi_\mathrm{SM}$ be the dipole $L$-shell of the sample point
+(clamped by $\cos^2\phi_\mathrm{SM}\ge 10^{-5}$), and let $L_\mathrm{crit}$ be the
+$L$-shell of the poleward edge of the auroral oval, obtained by bilinear
+interpolation of the empirical table $P_N$ / $P_S$ in $(\mathrm{MLT},K_p)$.  The
+transition half-width is $\Delta L = 2.0$.  GCPM uses the switching function
+%
+\begin{equation}
+  \label{eq:iono-switchon}
+  \sigma(L; L_\mathrm{crit}, \Delta L)
+  = \frac{1}{2}\left[1 + \tanh\!\left(\frac{3.4534\,(L - L_\mathrm{crit})}{\Delta L}\right)\right] ,
+\end{equation}
+%
+which rises from $0$ to $1$ to within \SI{0.1}{\percent} as $L$ crosses
+$L_\mathrm{crit} \pm \Delta L$, and blends the plasmasphere/trough branch with
+the polar-cap branch:
+%
+\begin{equation}
+  \label{eq:iono-blend}
+  n_e =
+  \begin{cases}
+    n_e^\mathrm{ps/trough}, & L < L_\mathrm{crit} - \Delta L, \\[4pt]
+    (1-\sigma)\,n_e^\mathrm{ps/trough} + \sigma\,n_e^\mathrm{cap},
+      & L_\mathrm{crit} - \Delta L \le L \le L_\mathrm{crit} + \Delta L, \\[4pt]
+    n_e^\mathrm{cap}, & L > L_\mathrm{crit} + \Delta L .
+  \end{cases}
+\end{equation}
+%
+Both branches call IRI below the F2 peak and bridge smoothly to the
+plasmaspheric/polar profiles above it.  The same $\sigma$ controls the ion
+composition: with $h = (r-1)R_E$ the altitude in \si{\kilo\meter},
+%
+\begin{align}
+  \label{eq:iono-composition}
+  \frac{n_{\mathrm{He}^+}}{n_{\mathrm{H}^+}}
+    &= 10^{\,-1.541 - 0.176\,r + \num{8.557e-3}F_{10.7} - \num{1.458e-5}F_{10.7}^2}
+       \left[1 - \sigma(L; L_\mathrm{crit}, \Delta L)\right], \\
+  \alpha_{\mathrm{O}^+}
+    &= \frac{0.995}{\left[1 + \left(\dfrac{h - 350}{531.25}\right)^{2}\right]^{3}} + 0.005 ,
+\end{align}
+%
+from which the $\mathrm{H}^+$, $\mathrm{He}^+$ and $\mathrm{O}^+$ partial
+densities are recovered.
+Only the \emph{total} electron density (output slot~0) enters the delay
+integrals; the ion partition is carried for diagnostics.
+
+\begin{lstlisting}[language=cpp, caption={GCPM v2.4 region blending.  Source:
+\texttt{cpp/lupnt/environment/plasma/gcpm/gcpm\_interface.cc} ::
+\code{gcpm\_v24}.}, label={lst:iono-gcpm}]
+// cpp/lupnt/environment/plasma/gcpm/gcpm_interface.cc :: gcpm_v24
+IRIParams params = iri_sm(0.0, 0.0, 1.01, itime);   // f107 / rz12 / hmF2 from IRI
+double f107 = params.f107, rz12 = params.rz12, hmf2_km = params.hmf2_km;
+
+alcrit   = 1.0 / pow(cos(alatcritn * DEG2RAD), 2);  // L-shell of the auroral edge
+tranlow  = alcrit - altrans;                        // altrans = 2.0
+tranhigh = alcrit + altrans;
+
+clat = pow(cos(alatr), 2);
+if (clat < 1.0e-5) clat = 1.0e-5;
+al      = r / clat;                                 // dipole L-shell
+aheight = (r - 1.0) * re;                           // altitude [km]
+
+double edensity = 0.0;
+if (al < tranlow) {
+  edensity = ne_iri_ps_trough(r, al, alatr, amlt, akp, itime);
+} else if (al <= tranhigh) {
+  double ps_edensity  = ne_iri_ps_trough(r, al, alatr, amlt, akp, itime);
+  double cap_edensity = ne_iri_cap(r, alatr, amlt, itime);
+  double switch_val   = switchon(al, alcrit, altrans);
+  edensity = ps_edensity * (1.0 - switch_val) + cap_edensity * switch_val;
+} else {
+  edensity = ne_iri_cap(r, alatr, amlt, itime);
+}
+double den = edensity / 1.0e6;                      // -> particles per cm^3
+\end{lstlisting}
+
+\subsection{Model inputs}
+\label{sec:iono-inputs}
+
+\begin{description}[style=nextline, leftmargin=1.2em]
+  \item[$K_p$ --- \code{config.kp}]
+    The planetary geomagnetic activity index.  It sets the plasmapause radius:
+    higher $K_p$ erodes the plasmasphere, contracting the plasmapause from
+    $\sim$4--6\,$R_E$ under quiet conditions to $\sim$2--3\,$R_E$ under active
+    conditions, and it also drives the auroral-edge table that fixes
+    $L_\mathrm{crit}$ in \cref{eq:iono-switchon}.  \cpp{compute\_ne} throws when
+    $K_p < 0$.  Passing $K_p<0$ directly to \cpp{gcpm\_v24} instead triggers a
+    lookup of the historical index for the requested epoch.
+  \item[$R_{12}$ --- \code{config.rz12}]
+    The 12-month running mean sunspot number, which parameterizes the IRI
+    submodel.  See \cref{sec:iono-indices}.
+  \item[$t$ --- the epoch]
+    Sets both the IRI solar-activity state and the SM frame orientation through
+    \cref{eq:iono-t1,eq:iono-t2,eq:iono-t3t4}.
+\end{description}
+
+\begin{lupntnote}
+\code{config.kp} must be non-negative and an IRI model must have been selected
+with \cpp{set\_iri\_model} --- \cpp{compute\_ne} throws otherwise.  GCPM and IRI
+describe only the inner-magnetospheric cold plasma; contributions beyond the
+cutoff radius (default $4\,R_E$, see \cref{sec:iono-eikonal}) are neglected,
+where the densities are orders of magnitude lower and the residual delay is well
+below the noise floor of a lunar GNSS receiver.
+\end{lupntnote}
+
+\begin{lupntwarning}
+GCPM cannot be evaluated for arbitrary future epochs: it requires historical
+solar and geomagnetic indices, and the bundled \file{apf107.dat} and
+\file{ig_rz.dat} tables end around 2024 with only a short projection.  Both
+\cpp{iri\_sm} and \cpp{gcpm\_v24\_fortran} therefore step the requested year
+backwards (up to 30 times) until the solar-index tables have coverage, so a
+future epoch silently falls back to the most recent available activity rather
+than returning NaN.  The thesis baseline sidesteps this by using
+2025-01-01 12:00 UTC as an explicit proxy epoch for a 2027 scenario and by
+sweeping $K_p \in \{1, 3, 5, 6.667, 9\}$ and
+$R_{12} \in \{10, 50, 100, 150, 200\}$ \citep[Ch.~5]{iiyama2026thesis}.
+\end{lupntwarning}
+
+\section{Solar Indices: \texorpdfstring{$R_{12}$}{R12}, \texorpdfstring{$F_{10.7}$}{F10.7} and \texorpdfstring{$IG_{12}$}{IG12}}
+\label{sec:iono-indices}
+
+IRI is driven by three correlated solar indices.  When the user supplies a
+sunspot number $R_{12}$ directly, \lupnt{} derives the other two from it with
+the PHaRLAP relations \citep{cervera2014pharlap}, which are the same polynomial
+fits used inside the IRI Fortran core (thesis Eqs.~5.19--5.20):
+%
+\begin{align}
+  \label{eq:iono-f107}
+  F_{10.7} &= 63.75 + 0.728\,R_{12} + \num{0.00089}\,R_{12}^2 , \\
+  \label{eq:iono-ig12}
+  IG_{12}  &= -12.349154 + 1.4683266\,R_{12} - \num{0.00267690893}\,R_{12}^2 .
+\end{align}
+%
+$F_{10.7}$ (the \SI{10.7}{\centi\meter} solar radio flux, in solar flux units)
+drives the topside and composition models; $IG_{12}$ is the
+ionospheric-effective index used by IRI for the F2 critical frequency $f_oF_2$.
+The derived triple is written into the IRI output array \code{oarr} at the
+Fortran slots for $R_{12}$, $IG_{12}$ and $F_{10.7}$ before the model call, and
+IRI2020 additionally receives $F_{10.7,81} = F_{10.7}$.
+
+\begin{lstlisting}[language=cpp, caption={PHaRLAP solar-index relations and the
+IRI user-input path.  Source:
+\texttt{cpp/lupnt/environment/plasma/gcpm/iri\_interface.cc} ::
+\code{iri\_sub}.}, label={lst:iono-indices}]
+// cpp/lupnt/environment/plasma/gcpm/iri_interface.cc :: iri_sub  (IRI 2020 branch)
+R12 = iri_option_2020.R12;
+if (R12 > 0.0) {
+  f107 = 63.75 + R12 * (0.728 + R12 * 0.00089);
+  IG12 = -12.349154 + R12 * (1.4683266 - R12 * 2.67690893e-03);
+  *(oarr + 32) = static_cast<float>(R12);
+  *(oarr + 38) = static_cast<float>(IG12);
+  *(oarr + 40) = static_cast<float>(f107);
+  *(oarr + 45) = static_cast<float>(f107);   /* F10.7_81 is set to F10.7 */
+}
+iri_sub_2020_(iri_option_2020.jf2020, &jmag, &blatdf, &blongdf, &yyyy, &mddd,
+              &dhourf, &aheight1f, &aheight2f, &delhf, outf, oarr);
+\end{lstlisting}
+
+The sign of \code{config.rz12} selects between user-supplied and
+historical/projected indices following the IRI convention, and simultaneously
+switches the foF2 storm model.  \cpp{trace\_ray} pushes \code{config.rz12} into
+the active option object (\cpp{IRI2007Option} or \cpp{IRI2020Option}) and
+re-derives the Fortran logical-flag array \code{jf} before tracing.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Interpretation of \code{RayTraceConfig::rz12} and the resulting IRI
+  Fortran flags.  Flag indices are one-based, as in the IRI documentation.}
+  \label{tab:iono-rz12}
+  \small
+  \begin{tabularx}{\textwidth}{lLl}
+    \toprule
+    \code{rz12} & Meaning & IRI flags \\
+    \midrule
+    $0 < R_{12} \le 200$ & User-supplied sunspot number; $F_{10.7}$ and $IG_{12}$ derived from \cref{eq:iono-f107,eq:iono-ig12} & \code{jf(17)}, \code{jf(25)}, \code{jf(27)}, \code{jf(32)} $=$ false; storm model off \\
+    $-1$ & IRI historical / projected $R_{12}$, storm model on & all four $=$ true; \code{jf(26)} $=$ true \\
+    $-2$ & IRI historical / projected $R_{12}$, storm model off (IRI2007 only) & \code{jf(26)} $=$ false \\
+    other & Rejected --- \cpp{update\_jf\_2007} / \cpp{update\_jf\_2020} throws \code{"Invalid value for R12"} & --- \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{GCPM Interpolation Surrogate}
+\label{sec:iono-gcpm-surrogate}
+
+GCPM is expensive because each call
+performs $\sim$10 IRI evaluations.  For bulk work --- Monte-Carlo delay budgets,
+data-assimilation experiments --- \lupnt{} provides an optional interpolation
+surrogate (\code{RayTraceConfig::use\_gcpm\_surrogate}, default off;
+\file{gcpm/gcpm\_surrogate.h}, \file{gcpm/gcpm\_surrogate.cc}).  GCPM's \emph{own}
+output is pre-sampled on a seven-dimensional grid in its natural solar-magnetic
+frame plus UT,
+%
+\begin{equation}
+  \label{eq:iono-gcpm-surrogate}
+  n_e = f\big(r,\ \phi_\mathrm{SM},\ \mathrm{MLT},\ \mathrm{UT},\ K_p,\ R_{12},\ \mathrm{doy}\big),
+\end{equation}
+%
+stored as $\log n_e$ and interpolated multilinearly (with MLT/UT/season periodic),
+so the model's plasmapause and region-blending logic are baked in.  It is used as a
+\emph{hybrid}: above $r = 1.15\,R_E$, where GCPM is plasmasphere-organized and
+interpolates cleanly, the table is queried; below it, where the sharp,
+\emph{geographic} F-region is not representable on a solar-magnetic grid, the call
+falls through to full GCPM.  The surrogate is
+exact at grid nodes, gives a $\sim$2\% median error on ray-integrated lunar-link
+delays, and is $14$--$200\times$ faster than full GCPM per call --- always more
+than $10\times$.
+
+\begin{lupntwarning}
+The GCPM surrogate does \emph{not} reach sub-percent accuracy, and no practical
+grid can: in solar-magnetic coordinates the ionosphere's geographic structure
+(solar zenith, terminator, equatorial anomaly) becomes razor-sharp, and the
+ionosphere--plasmasphere bridge keeps GCPM universal-time-dependent up to
+$\sim$1.6\,$R_E$ at mid/high latitude.  A genuinely sub-percent fast GCPM would
+require re-deriving a smooth parametric emulator ($N_{mF_2}$, $h_{mF_2}$, and scale
+heights reconstructed into a Chapman profile).  Use the surrogate where a $\sim$2\% delay error
+is acceptable in exchange for the speedup; leave it off for reference evaluations.
+\end{lupntwarning}
+
+\section{Geomagnetic Field: IGRF-14}
+\label{sec:iono-igrf}
+
+The magnetic field is required only by the second- and third-order delay terms
+of \cref{sec:iono-refractive}.  \lupnt{} evaluates it with the IGRF-14
+coefficient set \citep{alken2021igrf}, whose scalar potential is the truncated
+spherical-harmonic series
+%
+\begin{equation}
+  \label{eq:iono-igrf-potential}
+  V(r,\vartheta,\lambda,t)
+  = a \sum_{n=1}^{N} \sum_{m=0}^{n}
+    \left(\frac{a}{r}\right)^{n+1}
+    \Big[ g_n^m(t)\cos m\lambda + h_n^m(t)\sin m\lambda \Big]\,
+    P_n^m(\cos\vartheta) ,
+\end{equation}
+%
+where $a = \SI{6371.2}{\kilo\meter}$ is the IGRF reference radius,
+$\vartheta$ is geocentric colatitude, $\lambda$ is east longitude, $P_n^m$ are
+Schmidt quasi-normalized associated Legendre functions, $N = 13$ for the main
+field, and the Gauss coefficients are linearly interpolated between five-year
+epochs with a secular-variation extrapolation beyond the last epoch,
+%
+\begin{equation}
+  g_n^m(t) = g_n^m(T_k) + (t - T_k)\,\dot{g}_n^m ,
+\end{equation}
+%
+with $t$ the decimal year.  The local north/east/down (NEC) components follow
+from $\vec{B} = -\nabla V$ as
+%
+\begin{equation}
+  \label{eq:iono-bfield}
+  X = \frac{1}{r}\frac{\partial V}{\partial \vartheta},
+  \qquad
+  Y = -\frac{1}{r\sin\vartheta}\frac{\partial V}{\partial \lambda},
+  \qquad
+  Z = \frac{\partial V}{\partial r},
+  \qquad
+  B = \sqrt{X^2 + Y^2 + Z^2} \ \ [\si{\nano\tesla}] .
+\end{equation}
+%
+The projection of the field on the ray enters the delay through
+%
+\begin{equation}
+  \label{eq:iono-costheta}
+  \cos\theta = \frac{\vec{B}\cdot\uvec{s}}{B} ,
+\end{equation}
+%
+i.e.\ the cosine of the angle between the local field line and the local
+propagation direction.  The decimal year handed to the Fortran routine is
+$t = \mathrm{year} + (\mathrm{doy}-1)/365.25$.
+
+\begin{lstlisting}[language=cpp, caption={IGRF-14 evaluation and the ray/field
+angle.  Sources: \texttt{cpp/lupnt/environment/plasma/igrf/igrf\_interface.cc} and
+\texttt{cpp/lupnt/environment/plasma/tec/raytrace.cc} ::
+\code{compute\_B}.}, label={lst:iono-igrf}]
+// cpp/lupnt/environment/plasma/igrf/igrf_interface.cc :: igrf14
+std::vector<double> igrf14(double lat_rad, double lon_rad, double r_km, double decimal_year) {
+  int isv = 0;               // 0 = main field, not secular variation
+  int itype = 2;             // 1 = geodetic, 2 = geocentric
+  double x, y, z, f;
+  double colat_deg = 90.0 - lat_rad * 180.0 / M_PI;
+  double elong_deg = lon_rad * 180.0 / M_PI;
+  if (elong_deg < 0) elong_deg += 360.0;
+  igrf14syn_(&isv, &decimal_year, &itype, &r_km, &colat_deg, &elong_deg, &x, &y, &z, &f);
+  return {x, y, z};          // north, east, vertical [nT]
+}
+
+// cpp/lupnt/environment/plasma/tec/raytrace.cc :: compute_B
+cart_to_pol(pos_geo_arr, lat_rad, lon_rad, r);
+double decimal_year = datetime.year + (datetime.doy - 1) / 365.25;
+std::vector<double> B = igrf14(lat_rad, lon_rad, r, decimal_year);   // [nT]
+
+// cpp/lupnt/environment/plasma/tec/raytrace.cc :: ray_derivative
+Vec3d B_vec = compute_B(t_epoch, x, config, debug);   // in nT
+double B_dot_s = B_vec.dot(s_hat);
+B         = B_vec.norm();                             // in nT
+cos_theta = B_dot_s / B;
+\end{lstlisting}
+
+\begin{lupntnote}
+The delay coefficients hard-coded in \file{raytrace.cc} assume $B$ in
+\textbf{nanotesla}, whereas the thesis writes the symbolic coefficients for $B$
+in tesla.  This is the sole source of the numerical difference between the two
+sets of constants; see \cref{tab:iono-coeffs}.
+\end{lupntnote}
+
+\begin{lupntwarning}
+\cpp{igrf14} returns the field in the local north/east/vertical triad, but
+\cpp{ray\_derivative} dots that triple directly with $\uvec{s}$, which is
+expressed in geocentric Cartesian components.  The magnitude $B$ is unaffected
+(it is frame-invariant), so the $n_e B^2(1+\cos^2\theta)$ part of the third-order
+term is bounded correctly, but $\cos\theta$ as computed mixes the two triads and
+is therefore only an order-of-magnitude proxy for the true field/ray angle.  The
+terms affected are $d_{I2}$ and the $\cos^2\theta$ part of $d_{I3}$, which the
+lunar characterization places several orders of magnitude below $d_{I1}$ and
+which the GNSS default (\code{TEC\_ONLY}, \cref{sec:iono-gnss}) omits entirely.
+Enable \code{compute\_higher\_order} for magnitude studies, not for
+sub-centimetre error budgets.
+\end{lupntwarning}
+
+\section{Refractive Index, Group Delay, and TEC}
+\label{sec:iono-refractive}
+
+\subsection{Appleton--Hartree}
+\label{sec:iono-appleton}
+
+For a cold, magnetized, collisional plasma the complex phase refractive index of
+a characteristic magnetoionic mode is given by the Appleton--Hartree relation
+\citep{budden1985}
+%
+\begin{equation}
+  \label{eq:iono-ah}
+  n^2 = 1 -
+  \frac{X}{\,1 - \mathrm{i}Z - \dfrac{Y_T^2}{2\,(1 - X - \mathrm{i}Z)}
+        \pm \sqrt{\dfrac{Y_T^4}{4\,(1 - X - \mathrm{i}Z)^2} + Y_L^2}\,} ,
+\end{equation}
+%
+with the dimensionless parameters
+%
+\begin{equation}
+  \label{eq:iono-xyz}
+  X = \frac{f_p^2}{f^2}, \qquad
+  Y = \frac{f_g}{f}, \qquad
+  Y_L = Y\cos\theta, \qquad
+  Y_T = Y\sin\theta, \qquad
+  Z = \frac{\nu}{2\pi f} ,
+\end{equation}
+%
+where $\nu$ is the electron collision frequency.  The characteristic frequencies
+are
+%
+\begin{equation}
+  \label{eq:iono-fp}
+  f_p^2 = \frac{n_e e^2}{4\pi^2 \epsilon_0 m_e} \approx 80.6\, n_e
+  \ \ [\si{\square\hertz}] ,
+  \qquad
+  f_g = \frac{e B}{2\pi m_e} \approx 28\,B
+  \ \ [\si{\hertz},\ B\ \text{in}\ \si{\nano\tesla}] ,
+\end{equation}
+%
+with $e$ the elementary charge, $m_e$ the electron mass and $\epsilon_0$ the
+vacuum permittivity.  The upper sign selects the ordinary mode and the lower
+sign the extraordinary mode; a right-hand circularly polarized GNSS signal
+propagating in the northern magnetic hemisphere follows the branch for which the
+$f_g\cos\theta$ term appears with the sign written below.
+
+At GNSS frequencies the ionosphere is weakly refracting and effectively
+collisionless: $X \lesssim 10^{-4}$, $Y \lesssim 10^{-3}$ and $Z \approx 0$ above
+the D region.  \lupnt{} therefore uses the quasi-longitudinal series expansion of
+\cref{eq:iono-ah} truncated after the $f^{-4}$ term (thesis Eqs.~5.1--5.2):
+%
+\begin{align}
+  \label{eq:iono-phase-index}
+  n &= 1
+     - \frac{f_p^2}{2f^2}
+     - \frac{f_p^2 f_g \cos\theta}{2f^3}
+     - \frac{f_p^2}{4f^4}\!\left[\frac{f_p^2}{2} + f_g^2\left(1+\cos^2\theta\right)\right] , \\[4pt]
+  \label{eq:iono-group-index}
+  n_\mathrm{gr} &= 1
+     + \frac{f_p^2}{2f^2}
+     + \frac{f_p^2 f_g \cos\theta}{f^3}
+     + \frac{3f_p^2}{4f^4}\!\left[\frac{f_p^2}{2} + f_g^2\left(1+\cos^2\theta\right)\right] .
+\end{align}
+%
+The group index follows from the phase index through
+$n_\mathrm{gr} = \dd(fn)/\dd f$, which is what produces the factors
+$1 \to 2 \to 3$ on the successive orders.  The delay is dispersive, scaling as
+$f^{-2}$ at leading order; this is what makes the dual-frequency
+ionosphere-free combination of \cref{chap:gnss-measurements} possible.
+
+\subsection{Group delay along the path}
+\label{sec:iono-groupdelay}
+
+Integrating $n_\mathrm{gr}-1$ along the ray gives the excess group path (thesis
+Eqs.~5.4--5.7):
+%
+\begin{equation}
+  \label{eq:iono-delay-orders}
+  d_{I_\mathrm{gr}} = \int_\Gamma \left(n_\mathrm{gr}-1\right)\dd s
+    = \frac{p}{f^2} + \frac{q}{f^3} + \frac{u}{f^4} ,
+\end{equation}
+%
+with, in SI units and $B$ in tesla,
+%
+\begin{align}
+  \label{eq:iono-p}
+  p &= 40.3 \int_\Gamma n_e\,\dd s
+     = 40.3\,\mathrm{TEC}
+     = 40.3\left(\mathrm{TEC}_\mathrm{LOS} + \Delta\mathrm{TEC}_\mathrm{bend}\right) , \\
+  \label{eq:iono-q}
+  q &= -\num{2.2566e12} \int_\Gamma n_e\, B \cos\theta\,\dd s , \\
+  \label{eq:iono-u}
+  u &= 2437 \int_\Gamma n_e^2\,\dd s
+     + \num{4.74e22} \int_\Gamma n_e\, B^2 \left(1+\cos^2\theta\right)\dd s .
+\end{align}
+%
+The first-order coefficient is $40.3 = \tfrac{1}{2}\cdot 80.6$ and carries units
+of \si{\meter\cubed\per\square\second}; the second-order coefficient is
+$\num{2.2566e12} = 7527\,c$, the familiar higher-order ionospheric constant of
+the GNSS literature.  The integral of $n_e$ along the path is the total electron
+content,
+%
+\begin{equation}
+  \label{eq:iono-tecu}
+  \mathrm{TEC} = \int_\Gamma n_e\,\dd s\ \ [\si{\per\square\meter}],
+  \qquad
+  \SI{1}{\TECU} = \num{1e16}\,\si{\per\square\meter},
+  \qquad
+  \SI{1}{\TECU} \ \Longrightarrow\ \SI{0.162}{\meter}\ \text{at L1} .
+\end{equation}
+%
+Because $\Gamma$ is curved, the TEC splits into a line-of-sight part
+$\mathrm{TEC}_\mathrm{LOS}$, obtained by sampling the same density field along
+the straight chord, and a bending increment
+$\Delta\mathrm{TEC}_\mathrm{bend} = \mathrm{TEC} - \mathrm{TEC}_\mathrm{LOS}$.
+For terrestrial and LEO users the second- and third-order terms remain below
+about \SI{1}{\percent} of the first order; for the grazing lunar geometry the
+characterization of \citep[Tab.~5.2]{iiyama2026thesis} finds them several orders
+of magnitude below $d_{I1}$.
+
+\subsection{Sign conventions}
+\label{sec:iono-signs}
+
+Three sign conventions must be kept apart.
+
+\begin{enumerate}[nosep]
+  \item \textbf{Phase versus group.}  $n < 1$ and $n_\mathrm{gr} > 1$: the code
+        observable is \emph{delayed} and the carrier phase is \emph{advanced} by
+        the same first-order amount.  \cref{eq:iono-delay-orders} is the group
+        (code) delay and is positive.
+  \item \textbf{The stored $q$.}  The code accumulates $q$ with a
+        \emph{positive} coefficient \code{q\_coeff}.  The physical sign is
+        carried by $\cos\theta$ (which changes sign when the ray reverses
+        relative to the field) and, in the phase index, by the explicit minus in
+        $n = 1 - (p/f^2 + q/2f^3 + u/3f^4)$.  The thesis instead absorbs the sign
+        into the symbolic definition of $q$ in Eq.~(5.6), hence the leading minus
+        in \cref{eq:iono-q}.
+  \item \textbf{Phase versus group factors.}  The phase index uses
+        $q/(2f^3)$ and $u/(3f^4)$; the group-delay accumulators use $q/f^3$ and
+        $u/f^4$.  Both are consistent with
+        \cref{eq:iono-phase-index,eq:iono-group-index} --- the group form simply
+        omits the $\tfrac{1}{2}$ and $\tfrac{1}{3}$ phase factors.
+\end{enumerate}
+
+\begin{lstlisting}[language=cpp, caption={Phase index used to bend the ray, and
+the three group-delay accumulators.  Source:
+\texttt{cpp/lupnt/environment/plasma/tec/raytrace.cc} ::
+\code{refractive\_index\_neB}, \code{ray\_derivative}.}, label={lst:iono-index}]
+// cpp/lupnt/environment/plasma/tec/raytrace.cc
+static const double p_coeff  = 40.3;     // first-order
+static const double q_coeff  = 2.2566e3; // second-order  (for B in nT)
+static const double u1_coeff = 2437;     // third-order, ne^2 part
+static const double u2_coeff = 4.74e4;   // third-order, B^2 part (for B in nT)
+
+// :: refractive_index_neB  -- the phase index that bends the ray
+double p = p_coeff * ne_m3;
+double q = 0.0, u = 0.0;
+if (compute_q) {
+  q = q_coeff * ne_m3 * B * cos_theta;
+  u = u1_coeff * ne_m3 * ne_m3 + u2_coeff * ne_m3 * B * B * (1 + cos_theta * cos_theta);
+}
+double n = 1 - (p / f2 + q / (2 * f3) + u / (3 * f4));   // phase refractive index
+
+// :: ray_derivative -- per-arc group-delay accumulators (s is in km, hence *1000)
+dz(7) = ne_m3 * 1000;                                  // d(TEC)/ds       [m^-2 per km]
+dz(8) = q_coeff * ne_m3 * B * cos_theta * 1000;        // second-order integrand
+dz(9) = 1000 * (u1_coeff * ne_m3 * ne_m3
+              + u2_coeff * ne_m3 * B * B * (1 + cos_theta * cos_theta));  // third order
+\end{lstlisting}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Delay coefficients: code constants (with $B$ in \si{\nano\tesla})
+  versus the SI symbolic values of \citep[Ch.~5]{iiyama2026thesis} (with $B$ in
+  \si{\tesla}).}
+  \label{tab:iono-coeffs}
+  \small
+  \begin{tabular}{llll}
+    \toprule
+    Term & Code constant & Value ($B$ in \si{\nano\tesla}) & SI value ($B$ in \si{\tesla}) \\
+    \midrule
+    $p$, first order      & \code{p\_coeff}  & $40.3$          & $40.3$ \\
+    $q$, second order     & \code{q\_coeff}  & $\num{2.2566e3}$ & $\num{2.2566e12}$ \quad ($\times 10^{-9}$) \\
+    $u$, third order, $n_e^2$ & \code{u1\_coeff} & $2437$      & $2437$ \\
+    $u$, third order, $B^2$   & \code{u2\_coeff} & $\num{4.74e4}$ & $\num{4.74e22}$ \quad ($\times 10^{-18}$) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Vector Eikonal Ray Tracing}
+\label{sec:iono-eikonal}
+
+\subsection{Governing equations and state}
+\label{sec:iono-state}
+
+In the geometric-optics limit the signal path obeys the vector eikonal (ray)
+equations, integrated with respect to arc length $s$ (thesis Eqs.~5.11--5.13):
+%
+\begin{equation}
+  \label{eq:iono-eikonal}
+  \frac{\dd t}{\dd s} = \frac{n}{c},
+  \qquad
+  \frac{\dd \vec{r}}{\dd s} = \uvec{s},
+  \qquad
+  \frac{\dd \uvec{s}}{\dd s}
+    = \frac{\nabla n - \uvec{s}\,(\uvec{s}\cdot\nabla n)}{n} ,
+\end{equation}
+%
+subject to the two-point boundary conditions
+$\vec{r}(t_\mathrm{tx}) = \vec{r}_\mathrm{tx}$ and
+$\vec{r}(t_\mathrm{rx}) = \vec{r}_\mathrm{rx}$.  The right-hand side of the third
+equation is the component of $\nabla n$ perpendicular to the ray, normalized by
+$n$: the ray bends towards increasing refractive index, and the parallel
+component --- which would only rescale $\lVert\uvec{s}\rVert$ --- is projected
+out, keeping $\uvec{s}$ on the unit sphere.
+
+The integrated state has ten components,
+%
+\begin{equation}
+  \label{eq:iono-statevec}
+  \vec{z} = \big[\,\underbrace{\vec{r}}_{0..2},\ \underbrace{\uvec{s}}_{3..5},\
+                  \underbrace{\Delta t}_{6},\ \underbrace{\mathrm{TEC}}_{7},\
+                  \underbrace{I_2}_{8},\ \underbrace{I_3}_{9}\,\big]
+       \in \mathbb{R}^{10},
+\end{equation}
+%
+where $\Delta t = t - t_\mathrm{tx}$ and $I_2$, $I_3$ are the second- and
+third-order delay integrals of \cref{eq:iono-q,eq:iono-u} (without the $f^{-3}$,
+$f^{-4}$ factors, which are applied once at the end).  The refractive-index
+gradient is a central finite difference with step \code{config.gradn\_dx}
+(default \SI{1}{\kilo\meter}):
+%
+\begin{equation}
+  \label{eq:iono-gradn}
+  \left[\nabla n\right]_i
+  = \frac{n(\vec{x} + \delta\,\uvec{e}_i) - n(\vec{x} - \delta\,\uvec{e}_i)}{2\delta},
+  \qquad i = 1,2,3, \qquad \delta = \code{gradn\_dx} .
+\end{equation}
+%
+Each gradient evaluation therefore costs six GCPM calls, which dominates the
+runtime and motivates both the stored-gradient reuse of
+\cref{sec:iono-correction} and the batch precompute path of
+\cref{sec:iono-precompute}.
+
+\begin{lstlisting}[language=cpp, caption={Eikonal right-hand side.  Source:
+\texttt{cpp/lupnt/environment/plasma/tec/raytrace.cc} ::
+\code{ray\_derivative}.}, label={lst:iono-derivative}]
+// cpp/lupnt/environment/plasma/tec/raytrace.cc :: ray_derivative
+Vec3d dshat_ds = Vec3d::Zero();
+if (config.straight_ray) dshat_ds.setZero();
+else                     dshat_ds = (grad_n - s_hat * grad_n.dot(s_hat)) / n;   // Eq. (5.13)
+
+VecXd dz(STATE_SIZE);
+dz.segment<3>(0) = s_hat;      // dr/ds   = s_hat
+dz.segment<3>(3) = dshat_ds;   // ds_hat/ds
+// We only track the time increase due to distance here due to machine precision
+// in tracking TEC delays (= p_coeff * ne_m3 / (freq_Hz * freq_Hz) / C = ne_m3 * 1e-23)
+// -> We do not want to keep epochs and TEC delays in the same vector
+dz(6) = 1.0 / C;               // dt/ds  ~ 1/c (vacuum; the plasma delay is added later)
+\end{lstlisting}
+
+\begin{lupntnote}
+The geometric propagation time is accumulated as $\dd t/\dd s = 1/c$ (vacuum)
+rather than $n/c$, and the plasma contribution is added once at the end as
+$(d_{I1} + d_{I2} + d_{I3})/c$.  This is a deliberate floating-point choice: the
+per-step TEC time increment is of order $n_e \cdot 10^{-23}\,\si{\second}$, far
+below the resolution of a double holding an epoch of order $10^{8}\,\si{\second}$
+from J2000, so co-accumulating the two would lose the delay entirely.  The result
+is algebraically identical to integrating $\dd t/\dd s = n/c$.
+\end{lupntnote}
+
+\subsection{Integration and the adaptive step schedule}
+\label{sec:iono-integration}
+
+\code{config.integ\_method} selects between the explicit Euler step
+%
+\begin{equation}
+  \label{eq:iono-euler}
+  \vec{z}_{k+1} = \vec{z}_k + h\,\vec{F}(s_k, \vec{z}_k),
+  \qquad s_{k+1} = s_k + h ,
+\end{equation}
+%
+and the classical fourth-order Runge--Kutta step \citep{hairer1993}
+%
+\begin{equation}
+  \label{eq:iono-rk4}
+  \begin{gathered}
+    \vec{k}_1 = \vec{F}(s_k, \vec{z}_k), \qquad
+    \vec{k}_2 = \vec{F}\!\left(s_k + \tfrac{h}{2},\ \vec{z}_k + \tfrac{h}{2}\vec{k}_1\right), \\
+    \vec{k}_3 = \vec{F}\!\left(s_k + \tfrac{h}{2},\ \vec{z}_k + \tfrac{h}{2}\vec{k}_2\right), \qquad
+    \vec{k}_4 = \vec{F}\!\left(s_k + h,\ \vec{z}_k + h\,\vec{k}_3\right), \\
+    \vec{z}_{k+1} = \vec{z}_k
+      + \frac{h}{6}\left(\vec{k}_1 + 2\vec{k}_2 + 2\vec{k}_3 + \vec{k}_4\right) .
+  \end{gathered}
+\end{equation}
+%
+RK4 costs four density/gradient evaluations per step (i.e.\ 28 GCPM calls with
+the finite-difference gradient) and correspondingly quadruples the storage
+width; Euler is the default because the adaptive schedule below already keeps
+the local truncation error well inside the model error of GCPM itself.  After
+each step $\uvec{s}$ is renormalized, which removes the drift that the
+projection in \cref{eq:iono-eikonal} leaves at $O(h^2)$.
+
+The step size is not error-controlled but keyed on altitude
+$\mathrm{alt} = r - R_E$, which is an excellent proxy for the density scale
+height:
+%
+\begin{equation}
+  \label{eq:iono-step}
+  h(\mathrm{alt}) =
+  \begin{cases}
+    \SI{10}{\kilo\meter},  & \mathrm{alt} < \SI{1000}{\kilo\meter}, \\
+    \SI{20}{\kilo\meter},  & \SI{1000}{\kilo\meter} \le \mathrm{alt} < \SI{4000}{\kilo\meter}, \\
+    \SI{100}{\kilo\meter}, & \mathrm{alt} \ge \SI{4000}{\kilo\meter} .
+  \end{cases}
+\end{equation}
+%
+The schedule is enabled by \code{config.use\_adaptive\_step} (default true) and
+overrides \code{config.step\_size} within the plasmasphere; the final partial
+step is clipped so that $s$ lands exactly on $s_f$.  Because the schedule can
+reduce the step to \SI{10}{\kilo\meter} even when \code{config.step\_size} is
+larger, the per-step storage matrix is allocated for the worst case
+$\lceil s_f/\SI{10}{\kilo\meter}\rceil + 2$ rows and trimmed afterwards.
+
+\begin{lstlisting}[language=cpp, caption={Altitude-keyed step schedule.  Source:
+\texttt{cpp/lupnt/environment/plasma/tec/raytrace.cc} ::
+\code{adjust\_stepsize}.}, label={lst:iono-step}]
+// cpp/lupnt/environment/plasma/tec/raytrace.cc :: adjust_stepsize
+double adjust_stepsize(double r, const VecXd& store_vec) {
+  double step_size = 20.0;   // Default step size in km
+  double alt = r - RE;       // Altitude in km
+  if (alt < 1000)      step_size = 10.0;    // Smaller step size for closer distances
+  else if (alt < 4000) step_size = 20.0;    // Default step size for medium distances
+  else                 step_size = 100.0;   // Maximum step size for very far distances
+  return step_size;
+}
+\end{lstlisting}
+
+\subsection{Cutoff split and the terminal shot}
+\label{sec:iono-cutoff}
+
+The path is split into a plasmasphere section and a vacuum section at the cutoff
+radius \code{config.cutoff\_r} (default
+$4\,R_E \approx \SI{25484}{\kilo\meter}$).  Beyond the cutoff the density is
+taken as zero, so $\nabla n = \vec{0}$ and the ray is exactly straight; there is
+no point integrating it.  When the marching state first satisfies
+$r \ge r_\mathrm{cut}$ \emph{and} $r > r_\mathrm{prev}$ (the second test prevents
+an inbound ray from terminating on entry), the tracer projects the remaining
+displacement onto the exit direction (thesis Eqs.~5.17--5.18):
+%
+\begin{equation}
+  \label{eq:iono-shoot}
+  \Delta s = \left(\vec{x}_\mathrm{rx} - \vec{x}_\mathrm{exit}\right)\cdot\uvec{s}_\mathrm{exit},
+  \qquad
+  s_f = s_\mathrm{exit} + \Delta s,
+  \qquad
+  \vec{x}_f = \vec{x}_\mathrm{exit} + \Delta s\,\uvec{s}_\mathrm{exit} .
+\end{equation}
+%
+$\Delta s$ is the least-squares closest approach along the exit ray, so the
+residual $\vec{x}_f - \vec{x}_\mathrm{rx}$ is exactly the component of the miss
+perpendicular to $\uvec{s}_\mathrm{exit}$ --- which is precisely the quantity the
+direction correction of \cref{sec:iono-correction} drives to zero.  The
+propagation time is extended by the vacuum flight time $\Delta s / c$.
+
+\begin{lstlisting}[language=cpp, caption={Cutoff exit and terminal shot.  Source:
+\texttt{cpp/lupnt/environment/plasma/tec/raytrace.cc} ::
+\code{propagate\_ray}.}, label={lst:iono-shoot}]
+// cpp/lupnt/environment/plasma/tec/raytrace.cc :: propagate_ray
+if ((r >= cutoff_r) && (r > r_prev)) {
+  // Find sf that minimizes |fpos - x2|, where fpos = pos_now + dir_now * (sf - s)
+  Vec3d delta_x2 = x2 - pos_now;
+  double delta_s = delta_x2.dot(dir_now);
+  sf = s + delta_s;
+  Vec3d final_pos = pos_now + dir_now * (sf - s);
+  double computed_prop_time = z(6) + (sf - s) / C;
+  z.segment<3>(0) = final_pos;
+  z(6) = computed_prop_time;
+  cutoff_hit_p = true;
+  break;
+}
+\end{lstlisting}
+
+\subsection{Receiver-side convergence iteration}
+\label{sec:iono-correction}
+
+\Cref{eq:iono-eikonal} is an initial-value problem, but the physical problem is a
+two-point boundary-value problem: the unknown launch direction $\uvec{s}_0$ must
+be chosen so that the ray lands on the receiver.  \lupnt{} solves it by shooting.
+Parameterizing the launch direction by azimuth and elevation,
+$\uvec{s}_0 = \uvec{s}(\alpha, \epsilon)$, the objective is the terminal miss
+distance
+%
+\begin{equation}
+  \label{eq:iono-miss}
+  J(\alpha,\epsilon)
+  = \left\lVert \bar{\vec{x}}_\mathrm{rx}(\alpha,\epsilon) - \vec{x}_\mathrm{rx} \right\rVert ,
+\end{equation}
+%
+where $\bar{\vec{x}}_\mathrm{rx}$ is the terminal position produced by
+\cpp{propagate\_ray}.  The iteration is initialized with the straight-line
+direction and chord length,
+$\uvec{s}_0 = (\vec{x}_2 - \vec{x}_1)/\rho$ and $s_f = \rho$, and alternates two
+updates for at most 20 coarse iterations:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Propagation-time refresh} (\cpp{correct\_proptime}).  The
+        propagation time is reset to include the plasma delay accumulated on the
+        current path,
+        %
+        \begin{equation}
+          \label{eq:iono-proptime}
+          \tau \leftarrow \Delta t
+            + \frac{1}{c}\left(\frac{p}{f^2} + \frac{q}{f^3} + \frac{u}{f^4}\right) ,
+        \end{equation}
+        %
+        which in turn moves $t_\mathrm{tx} = t_\mathrm{rx} - \tau$ and hence the
+        epoch at which GCPM is sampled.  This is the light-time iteration of
+        thesis Eq.~(5.16), consistent with \cref{chap:gnss-measurements}.
+  \item \textbf{Direction re-solve} (\cpp{correct\_dir\_neldermead}).  $J$ is
+        minimized over $(\alpha, \epsilon)$ with a two-dimensional Nelder--Mead
+        simplex.
+\end{enumerate}
+
+The coarse loop terminates as soon as one of
+%
+\begin{equation}
+  \left|J_k - J_{k-1}\right| < \SI{1}{\meter},
+  \qquad
+  J_k > J_{k-1},
+  \qquad
+  J_k \le \code{corr\_tol}
+\end{equation}
+%
+holds; if the error increased, the previous direction, state and stored
+derivative matrix are restored.  To keep the cost tractable, the coarse pass
+runs with \code{use\_precomputed\_vals = true}: it replays the per-step
+refractive index, gradient, $n_e$, $B$ and $\cos\theta$ stored in
+\code{store\_mat} on the previous propagation, together with the step sizes that
+produced them, instead of re-querying GCPM at every point.  Only the geometry is
+re-integrated.  The stored rows are trimmed to those actually written, so a
+perturbed ray that runs longer than the reference simply stops at the last stored
+row.
+
+An optional finer pass (\code{config.fine\_correction}) re-solves with GCPM
+evaluated at every step, either with Nelder--Mead again or with a
+finite-difference Newton update:
+%
+\begin{equation}
+  \label{eq:iono-newton}
+  \mat{J} = \frac{\partial \bar{\vec{x}}_\mathrm{rx}}{\partial (\alpha,\epsilon)}
+          \in \mathbb{R}^{3\times 2},
+  \qquad
+  \begin{bmatrix}\Delta\alpha \\ \Delta\epsilon\end{bmatrix}
+    = \mat{J}^{+}\left(\vec{x}_\mathrm{rx} - \bar{\vec{x}}_\mathrm{rx}\right),
+\end{equation}
+%
+where $\mat{J}$ is built by central differences with a perturbation of
+$10^{-7}\,\si{\radian}$ and $\mat{J}^{+}$ is the thin-SVD pseudo-inverse (the
+system is over-determined because the terminal shot of \cref{eq:iono-shoot}
+already removed the along-track component).  The step is applied with unit
+relaxation.  \Cref{tab:iono-neldermead} lists the simplex settings.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Nelder--Mead settings in \cpp{correct\_dir\_neldermead}.  $J_0$ is the
+  terminal miss of the incoming solution, in \si{\kilo\meter}.}
+  \label{tab:iono-neldermead}
+  \small
+  \begin{tabularx}{\textwidth}{lLL}
+    \toprule
+    Setting & Coarse pass (\code{coarse\_mode = true}) & Fine pass (\code{coarse\_mode = false}) \\
+    \midrule
+    Density/gradient source & replayed from \code{store\_mat} & re-evaluated from GCPM/IGRF \\
+    Initial simplex edge     & $10^{-4}\,\si{\radian}$ & $10^{-6}$, $10^{-7}$ or $10^{-8}\,\si{\radian}$ for $J_0 > 0.1$, $J_0 \le 0.1$, $J_0 \le 0.01$ \\
+    Simplex tolerance        & $10^{-8}$ & $10^{-4}$ \\
+    Objective tolerance      & $10^{-6}\,\si{\kilo\meter}$ & \code{corr\_tol}$/1000$ \si{\kilo\meter} \\
+    Iteration cap            & 200 & 50 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lstlisting}[language=cpp, caption={Coarse convergence loop: propagate,
+refresh the propagation time, re-solve the launch direction.  Source:
+\texttt{cpp/lupnt/environment/plasma/tec/raytrace.cc} ::
+\code{trace\_ray}.}, label={lst:iono-traceray}]
+// cpp/lupnt/environment/plasma/tec/raytrace.cc :: trace_ray
+Vec3d dir = (x2 - x1).normalized();
+double L  = (x2 - x1).norm();
+double prop_time = L / C;     // straight-line light time as the initial guess
+double sf = L;
+
+int n_iter = 20;              // Number of iterations for coarse correction
+for (int iter = 0; iter < n_iter; ++iter) {
+  zf = propagate_ray(prop_time, dir, sf, x1, x2, epoch_utc_rx, config, store_mat, false);
+  pos_err = (zf.segment<3>(0) - x2).norm();                      // [km]
+
+  if ((abs(pos_err - pos_err_prev) < 1e-3) || (pos_err > pos_err_prev)
+      || (pos_err <= config.corr_tol / 1000)) {
+    if (pos_err > pos_err_prev) { dir = dir_prev; zf = zf_prev; store_mat = store_mat_prev; }
+    break;
+  }
+  correct_proptime(prop_time, dir, sf, x1, x2, epoch_utc_rx, config, zf);
+  pos_err_prev = pos_err; dir_prev = dir; zf_prev = zf; store_mat_prev = store_mat;
+  correct_dir_neldermead(prop_time, dir, sf, x1, x2, epoch_utc_rx, config, zf, store_mat,
+                         /*coarse_mode=*/true, debug_corr);
+}
+\end{lstlisting}
+
+Without the correction the terminal miss is \SIrange{10}{100}{\kilo\meter} for a
+grazing lunar link, purely because of bending; with it the miss is driven to the
+sub-metre to \SI{100}{\meter} range, depending on whether the fine pass is
+enabled.  The residual is reported in \code{PathProfile::corr\_final\_pos\_err}
+and \code{PathProfile::corr\_final\_time\_err} so that a caller can reject
+non-converged rays.
+
+\begin{lupntwarning}
+\code{config.correction\_method} must be \code{"neldermead"} or \code{"newton"};
+\cpp{trace\_ray} throws otherwise.  The struct default is \code{"grid"}, which
+\emph{would} throw, so any caller that enables \code{correction} must set this
+field explicitly.  The thrown message text
+(\code{"Supported methods are 'naive' and 'newton'"}) is stale with respect to
+the check it accompanies.
+\end{lupntwarning}
+
+\section{Delay Decomposition}
+\label{sec:iono-decomposition}
+
+Once the corrected path has been integrated, \cpp{compute\_path\_profile}
+converts the accumulators $z_7$, $z_8$, $z_9$ and the geometry into metres.  The
+excess geometric path caused by bending is
+%
+\begin{equation}
+  \label{eq:iono-dlen}
+  d_\mathrm{len} = \int_\Gamma \dd s - \rho = s_f - \rho,
+  \qquad
+  \rho = \left\lVert \vec{r}_\mathrm{tx} - \vec{r}_\mathrm{rx} \right\rVert ,
+\end{equation}
+%
+which is non-negative because the straight chord is the shortest path between the
+endpoints.  The total group delay relative to the chord is then the sum of five
+physically distinct terms (thesis Eqs.~5.8--5.10):
+%
+\begin{equation}
+  \label{eq:iono-dtotal}
+  d_\mathrm{total}
+    = d_{I_\mathrm{gr}} + d_\mathrm{len}
+    = \underbrace{40.3\,\mathrm{TEC}_\mathrm{LOS}}_{d_{I1,\mathrm{LOS}}}
+    + \underbrace{q/f^3}_{d_{I2}}
+    + \underbrace{u/f^4}_{d_{I3}}
+    + \underbrace{40.3\,\Delta\mathrm{TEC}_\mathrm{bend}}_{d_{I1,B}}
+    + d_\mathrm{len} .
+\end{equation}
+%
+$d_{I1,\mathrm{LOS}}$ is what a straight-line TEC model would predict;
+$d_{I1,B}$ is the additional dispersive delay incurred because the bent path
+samples a different (generally denser, lower-altitude) part of the ionosphere;
+$d_\mathrm{len}$ is the non-dispersive geometric lengthening.  The straight-line
+reference $\mathrm{TEC}_\mathrm{LOS}$ is computed by
+\cpp{compute\_tec\_straight}, which marches the same density field along the
+chord with fixed steps of \code{config.step\_size} and zeroes any sample outside
+the cutoff radius.
+
+\begin{lstlisting}[language=cpp, caption={Assembly of the delay terms.  Source:
+\texttt{cpp/lupnt/environment/plasma/tec/raytrace.cc} ::
+\code{compute\_path\_profile}.}, label={lst:iono-profile}]
+// cpp/lupnt/environment/plasma/tec/raytrace.cc :: compute_path_profile
+double tec_straight = z(7);
+if (config.straight_ray == false)
+  tec_straight = compute_tec_straight(t_tx, initial_pos, final_pos, config);
+
+double dist                  = (final_pos - initial_pos).norm();       // chord [km]
+double tec_delay_m           = p_coeff * z(7) / freq2;                 // 40.3 * TEC_bent / f^2
+double tec_delay_straight_m  = p_coeff * tec_straight / freq2;
+double second_delay_m        = z(8) / freq3;
+double third_delay_m         = z(9) / freq4;
+
+double C_ms = C * 1000;                                                // [m/s]
+double prop_time_total = z(6) + (tec_delay_m + second_delay_m + third_delay_m) / C_ms;
+
+pp.dist_bend_m      = (sf - dist) * 1000;                              // excess path length [m]
+pp.tec_delay_m      = tec_delay_m;
+pp.tec_delay_bend_m = tec_delay_m - tec_delay_straight_m;
+pp.total_delay_m    = pp.dist_bend_m + pp.tec_delay_m
+                    + pp.second_delay_m + pp.third_delay_m;
+pp.tecu             = z(7) / TECU;
+pp.tecu_bend        = (z(7) - tec_straight) / TECU;
+\end{lstlisting}
+
+\begin{table}[htbp]
+  \centering
+  \caption{\cpp{PathProfile} scalar outputs and their mapping onto
+  \cref{eq:iono-dtotal}.}
+  \label{tab:iono-pathprofile}
+  \small
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Field & Symbol & Meaning \\
+    \midrule
+    \code{tec\_delay\_m}      & $d_{I1,\mathrm{LOS}} + d_{I1,B}$ & First-order delay $40.3\,\mathrm{TEC}/f^2$ along the \emph{bent} path [\si{\meter}] \\
+    \code{tec\_delay\_bend\_m}& $d_{I1,B}$        & Bending increment $40.3\,\Delta\mathrm{TEC}_\mathrm{bend}/f^2$ [\si{\meter}] \\
+    \code{second\_delay\_m}   & $d_{I2}$          & $q/f^3$ [\si{\meter}] \\
+    \code{third\_delay\_m}    & $d_{I3}$          & $u/f^4$ [\si{\meter}] \\
+    \code{dist\_bend\_m}      & $d_\mathrm{len}$  & Excess geometric path $(s_f - \rho)$ [\si{\meter}] \\
+    \code{total\_delay\_m}    & $d_\mathrm{total}$& Sum of the four rows above [\si{\meter}] \\
+    \code{tecu}               & $\mathrm{TEC}$    & Bent-path TEC [\si{\TECU}] \\
+    \code{tecu\_bend}         & $\Delta\mathrm{TEC}_\mathrm{bend}$ & Bent minus straight TEC [\si{\TECU}] \\
+    \code{sf}                 & $s_f$             & Total traced arc length [\si{\kilo\meter}] \\
+    \code{dist\_straight\_km} & $\rho$            & Chord length [\si{\kilo\meter}] \\
+    \code{max\_sep\_line\_m}  & ---               & Maximum perpendicular separation of $\Gamma$ from the chord [\si{\meter}] \\
+    \code{prop\_time\_total}  & $\tau$            & Total propagation time including plasma delay [\si{\second}] \\
+    \code{corr\_final\_pos\_err} & ---            & Residual terminal miss $\bar{\vec{x}}_\mathrm{rx}-\vec{x}_\mathrm{rx}$ [\si{\kilo\meter}] \\
+    \code{corr\_final\_time\_err}& ---            & Residual propagation-time inconsistency [\si{\second}] \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The per-step arrays \code{s}, \code{r}, \code{pos\_eci}, \code{tec\_section},
+\code{az\_dir}, \code{el\_dir} and \code{dist\_to\_line} carry the sampled
+profile itself and are what the characterization plots of
+\citep[Ch.~5]{iiyama2026thesis} are built from.
+
+\section{Configuration Knobs}
+\label{sec:iono-config}
+
+\begin{table}[htbp]
+  \centering
+  \caption{\cpp{RayTraceConfig} (\texttt{cpp/lupnt/environment/plasma/tec/raytrace.h}).}
+  \label{tab:iono-config}
+  \small
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Field & Default & Effect \\
+    \midrule
+    \code{freq\_Hz}   & NaN & Carrier frequency [\si{\hertz}].  The constants \code{freq\_L1} $=\SI{1575.42}{\mega\hertz}$, \code{freq\_L2} $=\SI{1227.60}{\mega\hertz}$, \code{freq\_L5} $=\SI{1176.45}{\mega\hertz}$ are provided.  All delays scale as $f^{-2}$ at leading order, so L5 sees $\approx 1.8\times$ the L1 delay.  Must be set. \\
+    \code{step\_size} & $10.0$ & Nominal integrator step [\si{\kilo\meter}]; also the fixed step of the straight-line TEC reference. \\
+    \code{use\_adaptive\_step} & true & Enable the 10/20/100 \si{\kilo\meter} altitude schedule of \cref{eq:iono-step}. \\
+    \code{integ\_method} & \code{"Euler"} & \code{"Euler"} or \code{"RK4"} (case-insensitive for RK4); anything else throws. \\
+    \code{correction} & true & Run the bent-path launch-direction correction of \cref{sec:iono-correction}. \\
+    \code{fine\_correction} & false & Run the additional fine pass with GCPM re-evaluated at every step. \\
+    \code{correction\_method} & \code{"grid"} & Must be set to \code{"neldermead"} or \code{"newton"} when \code{correction} is on. \\
+    \code{corr\_tol} & $1.0$ & Terminal miss tolerance [\si{\meter}]. \\
+    \code{cutoff\_r} & $4R_E$ & Plasmasphere/vacuum boundary [\si{\kilo\meter}]. \\
+    \code{gradn\_dx} & $1.0$ & Central-difference step for $\nabla n$ [\si{\kilo\meter}]. \\
+    \code{kp} & $-1$ & Geomagnetic $K_p$; must be set $\ge 0$ or \cpp{compute\_ne} throws. \\
+    \code{rz12} & $-1.0$ & Solar $R_{12}$; see \cref{tab:iono-rz12}. \\
+    \code{compute\_higher\_order} & true & Include $d_{I2}$, $d_{I3}$ (requires the IGRF evaluation). \\
+    \code{straight\_ray} & false & Force $\nabla n = \vec{0}$ and skip the coarse correction, producing the straight-line TEC baseline. \\
+    \code{use\_fortran\_gcpm} & true & Use the Fortran GCPM v2.4 backend instead of the C++ reimplementation (GCPM backend only). \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The electron-density backend itself is not a \cpp{RayTraceConfig} field but a
+process-global selected with \cpp{set\_iono\_model},
+in the same way \cpp{set\_iri\_model} selects the IRI submodel.
+
+\section{Coupling into the GNSS Measurement Model}
+\label{sec:iono-gnss}
+
+When \code{options.apply\_ionosphere\_plasma\_delay} is true and ray-trace
+options have been registered through
+\cpp{SetIonospherePlasmaRayTraceOptions}, the GNSS model calls the tracer once
+per link.
+
+\begin{lstlisting}[language=cpp, caption={Per-link tracer invocation.  Source:
+\texttt{cpp/lupnt/measurements/gnss\_measurement.cc} ::
+\code{ComputeIonospherePlasmaRayTraceDelay}.}, label={lst:iono-gnss}]
+// cpp/lupnt/measurements/gnss_measurement.cc :: ComputeIonospherePlasmaRayTraceDelay
+pecsim::RayTraceConfig config = ray_opts.config;
+if (ray_opts.use_channel_frequency) config.freq_Hz = GnssFrequencyHz(freq);
+if (ray_opts.iri_model != pecsim::IRIModel::NONE) pecsim::set_iri_model(ray_opts.iri_model);
+
+Real t_raytrace = ConvertGnssEpoch(receive_time, options_.receive_time_scale,
+                                   ray_opts.raytrace_epoch_scale);
+Real t_tdb      = ConvertGnssEpoch(receive_time, options_.receive_time_scale, Time::TDB);
+
+Vec3 r_rx_ray = r_rx, r_tx_ray = r_tx;
+if (ray_opts.raytrace_frame != options_.frame) {
+  r_rx_ray = ConvertFrame(t_tdb, r_rx, options_.frame, ray_opts.raytrace_frame);
+  r_tx_ray = ConvertFrame(t_tdb, r_tx, options_.frame, ray_opts.raytrace_frame);
+}
+
+pecsim::PathProfile profile = pecsim::trace_ray(
+    t_raytrace.val(), ToVec3d(r_tx_ray) / 1000.0, ToVec3d(r_rx_ray) / 1000.0, config,
+    ray_opts.debug_propagation, ray_opts.debug_correction);
+
+Real delay_m = profile.tec_delay_m;
+if (ray_opts.delay_mode == GnssIonospherePlasmaRayTraceDelayMode::TEC_PLUS_HIGHER_ORDER)
+  delay_m += profile.second_delay_m + profile.third_delay_m;
+return delay_m;
+\end{lstlisting}
+
+The returned $\Delta\rho_\mathrm{plasma}$ is a positive code delay and enters the
+observation equations of \cref{chap:gnss-measurements} with opposite signs on the
+two observables,
+%
+\begin{equation}
+  \label{eq:iono-observables}
+  \rho = \ldots + \Delta\rho_\mathrm{plasma} + \ldots ,
+  \qquad
+  \varphi = \ldots - \Delta\rho_\mathrm{plasma} + \ldots ,
+\end{equation}
+%
+reflecting the phase advance / group delay duality of \cref{sec:iono-signs}.
+
+The \cpp{GnssIonospherePlasmaRayTraceOptions} fields are \code{config} (the
+tracer knobs of \cref{tab:iono-config}; note that \cpp{GNSSMeasurements} never
+fills in $K_p$, the integrator or the step sizes --- those must come from the
+caller), \code{raytrace\_frame} (default \code{ECEF}),
+\code{raytrace\_epoch\_scale} (default \code{UTC}),
+\code{use\_channel\_frequency} (default true, which overwrites
+\code{config.freq\_Hz} with the channel frequency), \code{iri\_model}, and
+\code{delay\_mode}.
+
+\begin{lupntnote}
+\code{delay\_mode} defaults to \code{TEC\_ONLY}, so the delay returned to the
+measurement model is \code{profile.tec\_delay\_m} alone, i.e.\
+$d_{I1,\mathrm{LOS}} + d_{I1,B}$; \code{TEC\_PLUS\_HIGHER\_ORDER} adds
+$d_{I2} + d_{I3}$.  The geometric excess-path term $d_\mathrm{len}$
+(\code{profile.dist\_bend\_m}) is computed and reported but is \textbf{not} added
+to the pseudorange: its timing effect is already captured by the
+$\Delta\mathrm{TEC}_\mathrm{bend}$ part of \code{tec\_delay\_m}, and the residual
+sub-metre geometric lengthening is deliberately left out of the range equation.
+\end{lupntnote}
+
+\section{Batch Precompute}
+\label{sec:iono-precompute}
+
+Ray tracing is expensive: one GCPM call per gradient component per stage per
+step per correction iteration.  Two execution paths therefore exist.
+
+The \emph{online} path calls \cpp{trace\_ray} link-by-link inside
+\cpp{GNSSMeasurements::Compute}.  The \emph{batch} path decouples the tracer from
+filtering: in the staged lunar GNSS ODTS scenario, \cpp{Precompute} writes all
+light-time-corrected links with zero plasma delay, a Python driver fills each
+epoch/channel delay by ray tracing on a coarse cadence and interpolating to
+\SI{1}{\hertz}, and \cpp{Run} merges the delay file back before forming the
+observables.  The two paths agree exactly on the measurement model; see the
+online/precompute equivalence discussion in \cref{chap:gnss-measurements}.
+
+\begin{lstlisting}[language=py, caption={Batch delay generation driver.  Source:
+\texttt{python/examples/ex6\_precompute.py} (writes
+\texttt{precomputed\_delays.csv}).}, label={lst:iono-precompute}]
+# python/examples/ex6_precompute.py
+FREQ_HZ = {"L1": 1575.42e6, "L2": 1227.60e6, "L5": 1176.45e6,
+           "E1": 1575.42e6, "E5a": 1176.45e6}
+EARTH_RADIUS_KM = 6371.2
+
+def _rt_params(cfg):
+    """Picklable dict of RayTraceConfig attribute values, sent to each worker."""
+    p = cfg.plasma
+    return dict(step_size=p.raytrace_step_size_km,
+                correction=p.raytrace_correction,
+                fine_correction=p.raytrace_fine_correction,
+                cutoff_r=p.raytrace_cutoff_radius_re * EARTH_RADIUS_KM,
+                gradn_dx=p.raytrace_gradient_step_km,
+                integ_method=p.raytrace_integrator,
+                correction_method=p.raytrace_correction_method,
+                kp=p.raytrace_kp, rz12=p.raytrace_rz12,
+                use_fortran_gcpm=p.raytrace_use_fortran_gcpm,
+                corr_tol=p.raytrace_correction_tolerance_m,
+                compute_higher_order=p.raytrace_compute_higher_order,
+                use_adaptive_step=p.raytrace_use_adaptive_step,
+                straight_ray=p.raytrace_straight_ray)
+
+def _init_worker(params):
+    """Runs in each worker (fork or spawn): select the IRI model and build its RayTraceConfig."""
+    global _RT_CONFIG
+    pnt.set_iri_model("IRI2007")
+    _RT_CONFIG = _build_rt_config(params)
+
+def _trace_worker(task):
+    """Ray-trace one link through GCPM/IRI2007 -> dict of delay columns."""
+    t_utc, tx_km, rx_km, freq_hz = task
+    _RT_CONFIG.freq_Hz = freq_hz
+    profile = pnt.trace_ray(t_utc, tx_km, rx_km, _RT_CONFIG, False, False)
+    tec_m = float(profile.tec_delay_m)
+    higher_m = (float(profile.second_delay_m) + float(profile.third_delay_m)
+                if _RT_CONFIG.compute_higher_order else 0.0)
+    return {"tecu": float(profile.tecu),
+            "tec_delay_m": tec_m,
+            "second_delay_m": float(profile.second_delay_m),
+            "third_delay_m": float(profile.third_delay_m),
+            "ionosphere_plasma_delay_m": tec_m + higher_m}
+\end{lstlisting}
+
+Two details of the driver are load-bearing.  First, \cpp{set\_iri\_model} mutates
+process-global Fortran COMMON state and reads the IRI data files, so it must be
+called once per worker process in the initializer rather than per ray.  Second,
+the cached delays are keyed on a fingerprint that combines the Stage-1 link
+fingerprint with every \cpp{RayTraceConfig} field and the interpolation cadence,
+so changing $K_p$, $R_{12}$, the integrator or the cutoff invalidates the cache
+while filter tuning does not.
+
+A pure C++ batch entry point is also exposed through
+\file{cpp/lupnt/environment/plasma/tec/raytrace_wrapper.h}
+(\cpp{pecsim::run\_raytrace\_batch}, \cpp{load\_raytrace\_data},
+\cpp{RaytraceData}), which stores per ray the fields listed in
+\cref{tab:iono-batch}.  The $K_p$ time series consumed by these runs is fetched
+from GFZ Potsdam by \file{python/pylupnt/plasma/kp_loader.py} and cached under
+the plasma data directory.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Per-ray records in \cpp{RaytraceData}
+  (\texttt{raytrace\_wrapper.h}).}
+  \label{tab:iono-batch}
+  \small
+  \begin{tabularx}{\textwidth}{lL}
+    \toprule
+    Field & Contents \\
+    \midrule
+    \code{tidxs}, \code{row\_fulls}          & Transmitter index and full-table row index \\
+    \code{epoch\_utcs}                       & Reception epoch [\si{\second}] \\
+    \code{tx\_positions}, \code{rx\_positions} & Endpoint positions [\si{\meter}] \\
+    \code{total\_delays}                     & $d_\mathrm{total}$ [\si{\meter}] \\
+    \code{tecus}                             & Bent-path TEC [\si{\TECU}] \\
+    \code{tec\_delays}                       & $d_{I1,\mathrm{LOS}} + d_{I1,B}$ [\si{\meter}] \\
+    \code{second\_delays}, \code{third\_delays} & $d_{I2}$, $d_{I3}$ [\si{\meter}] \\
+    \code{dist\_bend\_m}                     & $d_\mathrm{len}$ [\si{\meter}] \\
+    \code{tec\_delay\_bend\_m}               & $d_{I1,B}$ [\si{\meter}] \\
+    \code{min\_alts}                         & Minimum (tangential) altitude along the path [\si{\meter}] \\
+    \code{max\_sep\_line\_m}                 & Maximum separation from the chord [\si{\meter}] \\
+    \code{final\_pos\_err\_m}                & Residual terminal miss [\si{\meter}] \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Model Boundaries and Notes}
+\label{sec:iono-boundaries}
+
+\begin{description}[style=nextline, leftmargin=1.2em]
+  \item[Km-unit convention.]
+    All tracer inputs and outputs are km / km-s based; SI callers scale by
+    $1000$ at the boundary.  Delays, however, are returned in metres.
+
+  \item[Magnetic-field units.]
+    The delay coefficients assume $B$ in \si{\nano\tesla}; the thesis symbolic
+    coefficients are the SI-tesla equivalents (\cref{tab:iono-coeffs}).  The
+    field components are additionally expressed in the local north/east/down
+    triad while $\uvec{s}$ is geocentric Cartesian, so $\cos\theta$ is a proxy
+    rather than an exact projection.
+
+  \item[Second and third order are small.]
+    For terrestrial and LEO users they stay below about \SI{1}{\percent} of the
+    first-order delay; for the lunar geometry
+    \citep[Tab.~5.2]{iiyama2026thesis} places them several orders of magnitude
+    below $d_{I1}$.  The GNSS default (\code{TEC\_ONLY}) omits them, and they are
+    the only consumers of the IGRF evaluation.
+
+  \item[Cutoff at $4\,R_E$.]
+    Plasma outside the inner magnetosphere is neglected entirely and the path is
+    taken to be exactly straight beyond the cutoff.  For a lunar receiver at
+    $\approx 60\,R_E$ this means roughly \SI{93}{\percent} of the geometric path
+    length contributes nothing to the delay --- which is correct to well within
+    the model error, since the magnetosheath and solar-wind densities are
+    $\lesssim \SI{10}{\per\cubic\centi\meter}$.
+
+  \item[Time integration.]
+    $\dd t/\dd s$ uses the vacuum $1/c$ with the plasma delay added separately;
+    this is algebraically equivalent to $\dd t/\dd s = n/c$ but avoids
+    catastrophic cancellation against an epoch of order $10^{8}\,\si{\second}$.
+
+  \item[Excess path length.]
+    $d_\mathrm{len}$ is characterized and reported but is \emph{not} added to the
+    measurement delay (\cref{sec:iono-gnss}).
+
+  \item[Geometric optics only.]
+    The eikonal formulation assumes the WKB regime: no diffraction, no
+    scintillation, no mode coupling between the ordinary and extraordinary
+    branches of \cref{eq:iono-ah}, and no Faraday rotation bookkeeping.  Small
+    scale irregularities below the \SIrange{10}{100}{\kilo\meter} step are not
+    resolved, and GCPM does not contain them in the first place.
+
+  \item[Empirical-model validity.]
+    GCPM and IRI require historical solar and geomagnetic inputs and silently
+    fall back to earlier years beyond their data coverage.  The characterization
+    covers $K_p \in [1,9]$ and $R_{12} \in [10,200]$.
+
+  \item[Magnitudes.]
+    The delay is strongly dependent on the tangential (minimum) altitude of the
+    path: the mean first-order delay is $\approx \SI{50}{\meter}$ for tangential
+    altitudes below \SI{500}{\kilo\meter}, and falls below
+    $\approx \SI{0.2}{\meter}$ above \SI{10000}{\kilo\meter}
+    \citep{iiyama2026gcpm}.  Screening links by minimum altitude
+    (\code{RaytraceData::min\_alts}) is therefore an effective, cheap
+    approximation to running the full tracer on every link.
+\end{description}

@@ -1,0 +1,187 @@
+% ---------------------------------------------------------------------------
+% The LuPNT Manual -- LaTeX edition.
+%
+% Build (no system LaTeX required):
+%   cd latex_docs && ./build.sh
+%
+% This document covers LuPNT's design and mathematical specifications: full
+% derivations, unit and time-scale contracts, and the implementing C++/Python
+% code inline. See README.md for the layout and for the conventions every
+% chapter follows.
+% ---------------------------------------------------------------------------
+
+% `book` (not `report`) for \frontmatter / \mainmatter / \backmatter.
+\documentclass[11pt,twoside,openright]{book}
+
+\input{preamble}
+
+\title{\textbf{The \lupnt{} Manual}\\[4pt]
+       \large A C++/Python Library for Lunar Communications, Positioning,\\
+       \large Navigation, and Timing}
+\author{Stanford NAV Lab\\[4pt]
+        \normalsize \url{https://github.com/Stanford-NavLab/LuPNT}}
+\date{\today}
+
+\begin{document}
+
+% --- title page -------------------------------------------------------------
+\begin{titlepage}
+  \centering
+  \vspace*{3.0cm}
+  \datafig[width=0.66\textwidth]{lupnt_logo_horizontal.pdf}\\[2.4cm]
+  {\Huge\bfseries The \lupnt{} Manual}\\[10pt]
+  {\large A C++/Python Library for Lunar Communications,}\\[2pt]
+  {\large Positioning, Navigation, and Timing}\\[2.4cm]
+  {\large Stanford NAV Lab}\\[10pt]
+  {\normalsize \url{https://github.com/Stanford-NavLab/LuPNT}}\\[2.4cm]
+  {\large \today}
+  \vfill
+  {\small Released under the MIT License.}
+\end{titlepage}
+
+\frontmatter
+\pagenumbering{roman}
+
+% --- version page -----------------------------------------------------------
+\chapter*{Version}
+\addcontentsline{toc}{chapter}{Version}
+
+\begin{table}[H]
+  \centering
+  \caption*{\textbf{Document and component versions}}
+  \begin{tabularx}{\textwidth}{lL}
+    \toprule
+    Item & Value \\
+    \midrule
+    Manual revision      & 1.0 \\
+    Manual date          & \today \\
+    \lupnt{} version     & 0.1.0 \quad (\file{cpp/lupnt/version.txt}, \file{pixi.toml}) \\
+    Python distribution  & \pylupnt{} 0.1.0 \quad (\file{python/pyproject.toml}) \\
+    Repository           & \url{https://github.com/Stanford-NavLab/LuPNT} \\
+    Upstream origin      & \url{https://github.com/Stanford-NavLab/LuPNT} \\
+    License              & MIT \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption*{\textbf{Revision history}}
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Revision & Date & Summary \\
+    \midrule
+    1.0 & \today & First LaTeX edition. Consolidates the design notes and
+                   mathematical specifications, and adds cross-validation
+                   against GMAT and Orekit. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\vfill
+
+\section*{Provenance}
+
+\lupnt{} is an open-source project of the \textbf{Stanford NAV Lab},
+published at
+\url{https://github.com/Stanford-NavLab/LuPNT}. The simulator and the models it
+implements are described in \citet{iiyama2023lupnt} and
+\citet{casadesus2025lupnt}, and the underlying algorithms in
+\citet{iiyama2026thesis}.
+
+Development continues at the \textbf{Stanford NAV Lab}; the repository above is
+the authoritative source for this manual and for the tutorial material that
+accompanies the papers.
+
+\clearpage
+
+\chapter*{About this manual}
+\addcontentsline{toc}{chapter}{About this manual}
+
+\lupnt{} is a C++ library, with Python bindings (\pylupnt{}), for simulating
+and analysing communications, positioning, navigation, and timing (PNT) in
+cislunar space. This manual is the self-contained reference: it states the
+mathematical contract of every model --- state conventions, units, time
+scales, optional corrections, and observable equations --- and ties each one to
+the code that implements it.
+
+The manual is organised in four parts.
+\begin{description}[leftmargin=1.6cm,style=nextline,font=\normalfont\itshape]
+  \item[Part~\ref{part:overview}, Overview and Setup] introduces the library,
+    installs it, sets up a development environment, and walks through building
+    a simulation and the documentation itself.
+  \item[Part~\ref{part:tutorials}, Tutorials] works through the Python and C++
+    examples that ship in the repository, including what each one produces.
+  \item[Part~\ref{part:math}, Mathematical Specifications] is the core of the
+    document: time and frame conversions, dynamics, integration, automatic
+    differentiation, estimation, measurement and signal models, and navigation
+    message design.
+  \item[Part~\ref{part:verification}, Verification, Data, and References]
+    covers external data products, cross-validation against GMAT and Orekit,
+    and the publications behind the models.
+\end{description}
+
+Throughout, \code{monospace} marks an identifier, an enum value, or a command;
+\file{a/slashed/path} is a path relative to the repository root. Equations are
+numbered per chapter and cross-referenced with \code{\textbackslash cref}, so
+\cref{eq:tc-compose} always resolves to the right number regardless of where it
+moves.
+
+\tableofcontents
+
+\mainmatter
+\pagenumbering{arabic}
+
+% ===========================================================================
+\part{Overview and Setup}
+\label{part:overview}
+% ===========================================================================
+
+\include{chapters/introduction}
+\include{chapters/getting_started}
+\include{chapters/development}
+\include{chapters/new_simulation}
+\include{chapters/building_docs}
+
+% ===========================================================================
+\part{Tutorials}
+\label{part:tutorials}
+% ===========================================================================
+
+\include{chapters/tutorials}
+
+% ===========================================================================
+\part{Mathematical Specifications}
+\label{part:math}
+% ===========================================================================
+
+\include{chapters/time_conversions}
+\include{chapters/frame_conversions}
+\include{chapters/dynamics}
+\include{chapters/integration}
+\include{chapters/autodiff}
+\include{chapters/filters}
+\include{chapters/gnss_measurements}
+\include{chapters/link_budget}
+\include{chapters/ionosphere_plasmasphere}
+\include{chapters/measurements}
+\include{chapters/ephemeris_almanac}
+
+% ===========================================================================
+% Verification sits after the specifications it checks: each chapter here
+% measures a Part-III model against an independent implementation.
+\part{Verification, Data, and References}
+\label{part:verification}
+% ===========================================================================
+
+\include{chapters/sp3_download}
+\include{chapters/cross_validation}
+\include{chapters/publications}
+
+% ===========================================================================
+\backmatter
+\bibliographystyle{plainnat}
+\bibliography{refs}
+\addcontentsline{toc}{chapter}{Bibliography}
+
+\end{document}

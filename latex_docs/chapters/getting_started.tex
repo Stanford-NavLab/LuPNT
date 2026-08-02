@@ -1,0 +1,603 @@
+\chapter{Getting Started}
+\label{chap:getting-started}
+
+This chapter walks through a complete \lupnt{} setup on a fresh machine:
+installing the toolchain, cloning the repository, building the C++ library and
+the Python bindings, verifying the install, registering the Jupyter kernel, and
+configuring the NASA Earthdata credentials needed by the data-driven GNSS
+examples and tests. For an overview of what \lupnt{} is, see
+\cref{chap:introduction}; for the developer workflow --- build variants,
+debugging, VS~Code --- see \cref{chap:development}; for building the
+documentation, see \cref{chap:building-docs}.
+
+Every dependency --- the C++ compiler toolchain, CMake and Ninja, the Fortran
+compiler, Python, and every C++/Python package --- is provisioned by Pixi
+(\url{https://pixi.sh}) from conda-forge into a project-local \file{.pixi}
+directory. \textbf{You install no compiler and no library by hand}, and nothing
+in this procedure touches your system Python, your system compilers, or any
+other conda environment.
+
+\begin{lupntnote}
+\lupnt{} is built from source. It is not distributed on PyPI or conda-forge;
+the last published \pylupnt{} wheels (\code{0.0.4}) predate the current
+C++/Fortran dependency stack and are unmaintained. \code{pip install pylupnt}
+will not give you the library described in this manual.
+\end{lupntnote}
+
+\section{Prerequisites}
+\label{sec:gs-prereq}
+
+\subsection{Pixi}
+
+Pixi is the only tool you install manually:
+
+\begin{lstlisting}[language=shell]
+curl -fsSL https://pixi.sh/install.sh | bash
+\end{lstlisting}
+
+Restart the shell, or \code{source} your profile, so that \code{pixi} is on
+\code{PATH}. Verify with \code{pixi --version}.
+
+\subsection{Git}
+
+Needed to clone the repository. It is also available \emph{inside} the Pixi
+environment (\code{git} is a declared dependency in \file{pixi.toml}), but you
+need a system \code{git} to perform the initial clone.
+
+\subsection{Windows}
+
+\lupnt{} does not build natively on Windows. Build and run inside
+\textbf{WSL2 (Ubuntu)}, which is a real Linux environment and follows exactly
+the Linux/macOS procedure below. Create the \file{~/.netrc} file of
+\cref{sec:gs-earthdata} inside WSL as well.
+
+\begin{lstlisting}[language=shell]
+# 1. In an Administrator PowerShell: install WSL and the default Ubuntu distro
+wsl --install
+# reboot if prompted, then launch "Ubuntu" and create a Unix user
+
+# 2. Inside the WSL Ubuntu shell
+sudo apt update && sudo apt upgrade -y
+
+# 3. Clone inside the WSL filesystem, NOT under /mnt/c/... which is much
+#    slower and breaks symlinks and permissions
+cd ~
+git clone https://github.com/Stanford-NavLab/LuPNT.git
+cd LuPNT
+\end{lstlisting}
+
+Then continue with the ordinary steps below from inside the WSL shell. You can
+still edit the repository with Windows tools --- VS~Code with the ``WSL''
+extension, or \code{code .} from inside the WSL shell --- while all builds and
+tests run inside WSL.
+
+\subsection{Disk and network}
+
+The bundled data set (SPICE kernels, gravity fields, ephemerides, EOP and
+TAI--UTC tables, TLEs, plasma coefficients, surface imagery) is roughly
+650~MB compressed and about 1~GB on disk, and is downloaded automatically on
+the first build. The Pixi environment itself adds several gigabytes under
+\file{.pixi}, and the three build trees (\file{build}, \file{build-debug},
+\file{build-reldbg}) a few more.
+
+\section{Clone the repository}
+\label{sec:gs-clone}
+
+\begin{lstlisting}[language=shell]
+git clone https://github.com/Stanford-NavLab/LuPNT.git
+cd LuPNT
+\end{lstlisting}
+
+\begin{lupntnote}
+The optical-navigation and stereo research code under
+\file{python/thirdparty} lives in git submodules. The core library and every
+numbered example build without them; fetch them only if you need those
+projects:
+
+\begin{lstlisting}[language=shell]
+git submodule update --init --recursive
+\end{lstlisting}
+\end{lupntnote}
+
+\section{Install the environment}
+\label{sec:gs-install}
+
+From the repository root, provision the isolated conda-forge environment. This
+downloads the toolchain and every dependency into \file{.pixi}:
+
+\begin{lstlisting}[language=shell]
+pixi install
+\end{lstlisting}
+
+The environment is pinned by \file{pixi.lock}, so every machine and the CI
+runners resolve byte-identical packages. \file{pixi.toml} declares two
+environments: \code{default}, used by everything in this chapter, and
+\code{dev}, which adds the optional \code{orekit} package used only to
+\emph{regenerate} the cross-validation reference vectors
+(\cref{chap:cross-validation}). \code{pixi install} provisions only
+\code{default}; \code{pixi install -e dev} adds the extra feature.
+
+Every subsequent command runs through Pixi, either as \code{pixi run <task>} or
+from inside an activated shell:
+
+\begin{lstlisting}[language=shell]
+pixi shell        # activate the environment; leave it with `exit`
+# ...or prefix individual commands:
+pixi run <task>
+\end{lstlisting}
+
+Activation exports the four runtime environment variables listed in
+\cref{tab:gs-envvars}, all derived from \code{PIXI\_PROJECT\_ROOT}. Outside an
+activated shell --- for instance when launching a binary directly --- they must
+be set by hand, or the library aborts with
+\code{"Environment variable LUPNT\_DATA\_PATH is not set."} from
+\file{cpp/lupnt/core/file.cc}.
+
+\begin{table}[H]
+  \centering
+  \caption{Environment variables exported by Pixi activation
+           (the \code{[activation]} block of \code{pixi.toml}).}
+  \label{tab:gs-envvars}
+  \begin{tabularx}{\textwidth}{@{}llL@{}}
+    \toprule
+    Variable & Default value & Meaning \\
+    \midrule
+    \code{LUPNT\_DATA\_PATH} & \file{<root>/data/LuPNT_data} &
+      Root of the runtime data set. Read by \file{cpp/lupnt/core/file.cc} and
+      by \py{pylupnt.core}; every kernel, gravity field, ANTEX, SP3, and TLE
+      path is resolved relative to it. Fatal if unset. \\
+    \code{PYTHONPATH} & \file{<root>/python} &
+      Puts the in-place \pylupnt{} package on the import path. There is no
+      \code{pip install} step. \\
+    \code{PECSIMPY\_BASE\_PATH} & \file{<root>/data/LuPNT_data/plasma} &
+      Base directory of the plasma models: IRI and GCPM coefficient files, the
+      IGRF-14 coefficients, and the \file{data/kp/} cache written by
+      \file{python/pylupnt/plasma/kp_loader.py}. \\
+    \code{LUPNT\_OUTPUT\_PATH} & \file{<root>/output} &
+      Where simulations, filters, and the data logger write results (HDF5
+      logs, CSV, generated Cesium scenes). Optional: if unset, the Python
+      helpers fall back to the current working directory. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Build \lupnt{}}
+\label{sec:gs-build}
+
+\begin{lstlisting}[language=shell]
+pixi run build       # build the C++ library      (target: lupnt)
+pixi run build-py    # build and deploy the Python bindings (_pylupnt)
+\end{lstlisting}
+
+These are not opaque wrappers. \code{pixi run build} expands to
+
+\begin{lstlisting}[language=shell]
+cmake -S cpp -B build -GNinja -DCMAKE_BUILD_TYPE=Release \
+  && cmake --build build --target lupnt
+\end{lstlisting}
+
+and \code{pixi run build-py} to
+
+\begin{lstlisting}[language=shell]
+cmake -S python/bindings -B build-py -GNinja -DCMAKE_BUILD_TYPE=Release \
+  && cmake --build build-py --target pylupnt-dev
+\end{lstlisting}
+
+The \code{lupnt} target compiles every \file{.cc} under \file{cpp/lupnt}
+(globbed with \code{CONFIGURE\_DEPENDS}, so new files need no CMake edit)
+together with the Fortran plasma libraries \code{gcpm\_lib},
+\code{iri2007\_lib}, \code{iri2020\_lib}, \code{xform\_lib}, and
+\code{igrf\_lib}, and links Eigen, \code{fmt}, \code{yaml-cpp},
+\code{spdlog}, OpenCV, GDAL, OpenMP, and the CPM-vendored \code{autodiff},
+\code{cspice}, Matplot++, \code{magic\_enum}, HighFive, and \code{crow}. The
+\code{pylupnt-dev} target builds the pybind11 extension from
+\file{python/bindings} against that library and copies the resulting shared
+object into \file{python/pylupnt/}, so the package is importable in place.
+\code{ccache} is used automatically if it is on \code{PATH}.
+
+\subsection{Build variants}
+\label{sec:gs-buildvariants}
+
+Three CMake build types are available. Each uses its own build directory, so
+you can switch between them without reconfiguring
+(\cref{tab:gs-buildmodes}).
+
+\begin{table}[H]
+  \centering
+  \caption{Build variants and their build directories.}
+  \label{tab:gs-buildmodes}
+  \begin{tabularx}{\textwidth}{@{}lllL@{}}
+    \toprule
+    Pixi task & CMake type & Build directory & Use case \\
+    \midrule
+    \code{build}        & \code{Release}        & \file{build/}        & production: full optimisation, no debug symbols \\
+    \code{build-reldbg} & \code{RelWithDebInfo} & \file{build-reldbg/} & profiling: optimised, with debug symbols \\
+    \code{build-debug}  & \code{Debug}          & \file{build-debug/}  & development: no optimisation, full debug symbols \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The corresponding binding tasks copy the compiled extension into
+\file{python/pylupnt/}:
+
+\begin{lstlisting}[language=shell]
+pixi run build-py          # Release bindings       -> build-py/
+pixi run build-py-reldbg   # RelWithDebInfo bindings -> build-py-reldbg/
+pixi run build-py-debug    # Debug bindings          -> build-py-debug/
+\end{lstlisting}
+
+\begin{lupntnote}
+The \textbf{first} build downloads the bundled \file{data/LuPNT_data} set ---
+SPICE kernels, gravity fields, ephemerides, EOP and TAI--UTC tables, TLEs,
+plasma coefficients --- via \file{cmake/FetchLuPNTData.cmake}, from a public
+GitHub Release asset. The download is unauthenticated (no token or account
+needed) and runs headlessly. CMake decides whether to fetch by probing for the
+marker file \file{data/LuPNT_data/gnss/igs20.atx}; later builds skip it. Only
+the live GNSS products of \cref{sec:gs-earthdata} additionally require an
+Earthdata login.
+
+To disable the fetch entirely --- for air-gapped builds, or when the data is
+already staged --- pass \code{-DLUPNT\_FETCH\_DATA=OFF} to the underlying
+\code{cmake} configure call, or place the data manually at
+\file{data/LuPNT_data} beforehand.
+\end{lupntnote}
+
+\subsection{The C++ example programs}
+\label{sec:gs-examples}
+
+Optionally build the standalone C++ tutorial programs, one per source file in
+\file{cpp/examples/tutorials}:
+
+\begin{lstlisting}[language=shell]
+pixi run build-examples          # builds all_examples into build-examples-pixi/
+./build-examples-pixi/ex1_propagate_orbit
+\end{lstlisting}
+
+Configuring \file{cpp/examples} as a top-level project puts the binaries in
+\file{build-examples-pixi/}. When the examples are built as part of the main
+\file{cpp} tree instead, they land in \file{build/examples/}:
+
+\begin{lstlisting}[language=shell]
+# from inside `pixi shell`
+./build/examples/ex1_propagate_orbit
+./build/examples/ex4_plasmasphere
+\end{lstlisting}
+
+Outside an activated shell the runtime variables must be supplied explicitly:
+
+\begin{lstlisting}[language=shell]
+LUPNT_DATA_PATH=$PWD/data/LuPNT_data \
+PECSIMPY_BASE_PATH=$PWD/data/LuPNT_data/plasma \
+./build/examples/ex4_plasmasphere
+\end{lstlisting}
+
+\section{Verify the install}
+\label{sec:gs-verify}
+
+Inside \code{pixi shell} the \pylupnt{} package is already importable:
+\code{PYTHONPATH} and the data paths are set by the environment. Three checks,
+in increasing order of coverage.
+
+\subsection{Smoke test: the extension imports and constants resolve}
+
+\begin{lstlisting}[language=shell]
+python -c "import pylupnt as pnt; print(pnt.R_MOON)"
+\end{lstlisting}
+
+This must print \code{1737400.0}: the lunar mean radius, \SI{1737.4}{\kilo\metre},
+expressed in the library's base units. \lupnt{}'s constants and states are SI
+throughout --- metres, metres per second, $\si{\metre\cubed\per\second\squared}$
+for gravitational parameters, seconds for time --- not the kilometre-based
+convention some astrodynamics packages use. A failure
+here is almost always one of: the bindings were never built
+(\code{pixi run build-py}), \code{PYTHONPATH} is not set (you are outside
+\code{pixi shell}), or a shared-library mismatch such as the
+\code{libjxl.so.0.11} case pinned in \file{pixi.toml}.
+
+\subsection{Fuller check: constants, epoch, and a propagation}
+
+The following exercises the constant table, an epoch in a named time scale, a
+frame conversion, and one integration step --- that is, one path through each
+of \cref{chap:time-conversions}, \cref{chap:frame-conversions}, and
+\cref{chap:dynamics}. Save it as \file{verify.py} and run
+\code{python verify.py} inside \code{pixi shell}.
+
+\begin{lstlisting}[language=py, caption={A minimal install check.}, label={lst:gs-verify}]
+# verify.py -- run inside `pixi shell`
+import os
+import numpy as np
+import pylupnt as pnt
+
+print("pylupnt version :", pnt.__version__)
+print("LUPNT_DATA_PATH :", os.environ["LUPNT_DATA_PATH"])
+print("R_MOON  [m]     :", pnt.R_MOON)
+print("R_EARTH [m]     :", pnt.R_EARTH)
+print("GM_MOON [m3/s2] :", pnt.GM_MOON)
+
+# A circular 100 km lunar orbit.  Base units are SI: m, m/s, s.
+a = pnt.R_MOON + 100.0e3
+v = np.sqrt(pnt.GM_MOON / a)
+rv0 = np.array([a, 0.0, 0.0, 0.0, v, 0.0])
+period = 2.0 * np.pi * np.sqrt(a**3 / pnt.GM_MOON)
+print("speed   [m/s]   :", v)
+print("period  [s]     :", period)
+\end{lstlisting}
+
+On a correct install this prints
+
+\begin{lstlisting}[language=shell]
+pylupnt version : 0.1.0
+LUPNT_DATA_PATH : /path/to/lupnt/data/LuPNT_data
+R_MOON  [m]     : 1737400.0
+R_EARTH [m]     : 6378137.0
+GM_MOON [m3/s2] : 4902800118000.0
+speed   [m/s]   : 1633.5041340503267
+period  [s]     : 7067.4597282997065
+\end{lstlisting}
+
+preceded by the \code{[PyLuPNT] Initializing} banner that the library logs on
+first import.
+
+\subsection{Full check: the test suites and a worked example}
+
+\begin{lstlisting}[language=shell]
+pixi run test-py                 # Python tests; no credentials needed
+pixi run test-cpp                # C++ tests; some GNSS cases need Earthdata
+python python/examples/ex1_propagate_orbit.py
+\end{lstlisting}
+
+\code{pixi run test-py} depends on \code{build-py} and then runs
+\code{pytest python/test}. \code{pixi run test-cpp} configures
+\file{cpp/test} into \file{build-cpp-test-pixi/}, builds the
+\code{lupnt\_tests} target, and runs \code{ctest --output-on-failure}.
+
+Eight of the C++ tests need live GNSS and EOP products from CDDIS and
+therefore an Earthdata login (\cref{sec:gs-earthdata}):
+
+\begin{lstlisting}[language=shell]
+data.eop_latest_iers
+devices.space_comms
+agents.gnss_constellation.setup_from_files   # also needs files on disk
+interfaces.antex_loader
+interfaces.rinex_nav_loader                  # also needs files on disk
+interfaces.sp3_loader                        # also needs files on disk
+measurements.gnss_measurements.visibility
+states.tle
+\end{lstlisting}
+
+The three marked above additionally expect specific SP3 and BRDC files to be on
+disk already, rather than downloading them on the fly; the expected location is
+given by \code{GnssFilesDir()} in
+\file{cpp/test/interfaces/test_sp3_loader.cc}. Fetch them once first:
+
+\begin{lstlisting}[language=shell]
+pixi run download-gnss-test-data   # one-time; requires ~/.netrc
+pixi run test-cpp                  # build and run the C++ Catch2/CTest suite
+pixi run test-py                   # build the bindings, then run pytest
+pixi run test                      # both suites
+\end{lstlisting}
+
+If you have not set up an Earthdata login, use \code{pixi run test-cpp-ci}
+instead. It is the exact command CI runs and excludes those eight tests via a
+\code{ctest -E} pattern.
+
+\section{NASA Earthdata credentials}
+\label{sec:gs-earthdata}
+
+The Earth-GNSS examples --- ex3 (\file{ex3_gnss_interface}), ex5
+(\file{ex5_gnss_measurement_sim}), ex6 (\file{ex6_gnss_odts}), and their Python
+notebooks --- plus the \code{pixi run test-cpp} cases listed above download
+precise SP3, BRDC, and ANTEX products from NASA CDDIS
+(\url{https://cddis.nasa.gov/}), which requires a free \textbf{NASA Earthdata
+Login}. All non-GNSS examples run from the bundled data with no credentials at
+all.
+
+\paragraph{Step 1 --- create an account}
+at \url{https://urs.earthdata.nasa.gov/} (``Register for a profile''), fill in
+the required fields, and verify your email address.
+
+\paragraph{Step 2 --- create a \code{.netrc} file}
+in your home directory (on Windows, inside WSL). Note that it is
+\file{~/.netrc}, \emph{not} a file in the repository:
+
+\begin{lstlisting}[language=shell]
+touch ~/.netrc
+chmod 0600 ~/.netrc
+echo "machine urs.earthdata.nasa.gov login <your_username> password <your_password>" >> ~/.netrc
+\end{lstlisting}
+
+Replace \code{<your\_username>} and \code{<your\_password>} with your actual
+credentials, and verify the result with \code{cat} on \file{~/.netrc}.
+
+\begin{lupntwarning}
+The \code{chmod 0600} step is required --- \code{curl} and \code{wget} refuse
+to use a world-readable \file{.netrc}. Keep this file private and
+\textbf{never commit it}. It lives outside the repository at \file{~/.netrc},
+so it cannot be checked into git.
+\end{lupntwarning}
+
+\paragraph{Step 3 (alternative)}
+For short local tests both loaders also read the credentials from environment
+variables instead of \file{~/.netrc}:
+
+\begin{lstlisting}[language=shell]
+export EARTHDATA_USERNAME="<your_username>"
+export EARTHDATA_PASSWORD="<your_password>"
+\end{lstlisting}
+
+\paragraph{Step 4}
+On the first scripted CDDIS access, sign in through a browser once and approve
+any Earthdata application-access prompt for CDDIS. Until that approval is
+given, the download returns an HTML login page rather than the product, and the
+loaders fail with a parse error rather than an authentication error.
+
+The full download workflow --- cache location, running the Python and C++ SP3
+examples, and the ex6 precompute stages --- is in \cref{chap:sp3-download}.
+
+\section{Jupyter and notebook setup}
+\label{sec:gs-jupyter}
+
+The Python example notebooks under \file{python/examples} run in a dedicated
+kernel that bakes in \code{PYTHONPATH}, \code{LUPNT\_DATA\_PATH},
+\code{LUPNT\_OUTPUT\_PATH}, and \code{PECSIMPY\_BASE\_PATH}, so
+\code{import pylupnt} and the data-backed examples work when the kernel is
+launched directly by Jupyter or VS~Code, outside Pixi activation. Register it
+once per machine:
+
+\begin{lstlisting}[language=shell]
+pixi run install-kernel     # registers the "LuPNT (pixi)" kernel
+\end{lstlisting}
+
+Then select the \textbf{LuPNT (pixi)} kernel in Jupyter or VS~Code. The task
+depends on \code{build-py} and runs \file{scripts/install_kernel.py}, which
+
+\begin{itemize}[leftmargin=*]
+  \item writes a kernelspec named \code{lupnt} with display name
+    \code{LuPNT (pixi)},
+  \item points its \code{argv} at the stable project-local interpreter
+    symlink \file{.pixi/envs/default/bin/python} rather than at the hashed
+    package-cache path, which changes whenever the environment is re-solved,
+  \item derives all four environment variables from the repository layout, so
+    the kernelspec is correct on both macOS and Linux/WSL, and
+  \item writes a git-ignored \file{.env} at the repository root so that VS~Code
+    applies the same variables when the pixi interpreter is selected directly
+    rather than through the kernelspec.
+\end{itemize}
+
+Re-run the task after moving the repository or switching machines. If the
+kernel picker only shows the bare pixi interpreter, with no environment
+variables, re-run it.
+
+Two further tasks execute the notebooks in bulk:
+
+\begin{lstlisting}[language=shell]
+pixi run run-notebooks       # execute every python/examples/ex*.ipynb, report pass/fail
+pixi run render-notebooks    # execute and write cell outputs back IN PLACE
+pixi run run-notebooks -- --only ex1 --timeout 600   # forward extra arguments
+\end{lstlisting}
+
+Both depend on \code{install-plotly-chrome}, which fetches the headless Chrome
+that \code{kaleido} needs to render static Plotly images. It is idempotent and
+a fast no-op once installed.
+
+\section{Other tasks worth knowing}
+\label{sec:gs-tasks}
+
+\cref{tab:gs-tasks} is the full task list from \file{pixi.toml}. Run any of
+them as \code{pixi run <task>}.
+
+\begin{table}[H]
+  \centering
+  \caption{Pixi tasks defined in \code{pixi.toml}.}
+  \label{tab:gs-tasks}
+  \begin{tabularx}{\textwidth}{@{}lL@{}}
+    \toprule
+    Task & What it does \\
+    \midrule
+    \code{build}, \code{build-debug}, \code{build-reldbg} &
+      Configure and build the \code{lupnt} library in the corresponding CMake
+      build type (\cref{tab:gs-buildmodes}). \\
+    \code{build-py}, \code{build-py-debug}, \code{build-py-reldbg} &
+      Build the \code{pylupnt-dev} pybind11 target and copy the extension into
+      \file{python/pylupnt/}. \\
+    \code{build-examples} &
+      Configure \file{cpp/examples} into \file{build-examples-pixi/} and build
+      the \code{all\_examples} target. \\
+    \code{build-docs} &
+      Run \file{docs/make_docs.py} (Sphinx, Doxygen, Breathe, Exhale) into
+      \file{build/docs}; depends on \code{build-py}
+      (\cref{chap:building-docs}). \\
+    \code{install-kernel} &
+      Register the \code{LuPNT (pixi)} Jupyter kernelspec
+      (\cref{sec:gs-jupyter}). \\
+    \code{test-cpp}, \code{test-cpp-ci}, \code{test-py}, \code{test} &
+      Run the C++ CTest suite, the credential-free CI subset, the pytest
+      suite, or both suites. \\
+    \code{cov-cpp}, \code{cov-py} &
+      Build with \code{gcov} instrumentation and emit Cobertura coverage
+      reports \file{coverage-cpp.xml} and \file{coverage-py.xml}. \\
+    \code{download-gnss-test-data} &
+      One-time fetch of the SP3 and BRDC fixtures the file-based GNSS tests
+      expect on disk; requires \file{~/.netrc}. \\
+    \code{run-notebooks}, \code{render-notebooks}, \code{render-tutorials} &
+      Execute the example notebooks, optionally writing outputs back in place
+      and optimising the embedded images. \\
+    \code{format-check} &
+      Run \file{scripts/check_format.py} (\code{clang-format} 18 and
+      \code{cmake-format}). \\
+    \code{install-test} &
+      Configure with \code{CMAKE\_INSTALL\_PREFIX} set to
+      \file{<root>/install}, build the
+      \code{install} target, and assert that
+      \file{install/lib/cmake/lupnt/lupntConfig.cmake} and
+      \file{install/include/lupnt-0.1.0} exist. This is the check that
+      \lupnt{} is consumable by an external project via
+      \code{find\_package(lupnt)}. \\
+    \code{install-plotly-chrome} &
+      Fetch the headless Chrome used by \code{kaleido} for static Plotly
+      export. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Pre-commit hooks run automatically on \code{git commit}; to run them by hand:
+
+\begin{lstlisting}[language=shell]
+pixi run pre-commit run --all-files
+\end{lstlisting}
+
+Building and previewing the HTML documentation:
+
+\begin{lstlisting}[language=shell]
+pixi run build-docs
+python -m http.server 8000 --directory build/docs
+# then open http://localhost:8000
+\end{lstlisting}
+
+\begin{lupntnote}
+The GitHub Actions workflows (\file{.github/workflows/}) runs exactly these tasks ---
+\code{format-check}, \code{test-cpp-ci}, \code{test-py},
+\code{build-examples}, \code{install-test}, \code{cov-cpp}, \code{cov-py},
+\code{build-docs} --- so a green local run of the same task is a faithful
+predictor of CI. There is no separate CI build script.
+\end{lupntnote}
+
+\section{Troubleshooting}
+\label{sec:gs-trouble}
+
+\begin{description}[leftmargin=0.9cm,style=nextline,font=\normalfont\itshape]
+  \item[The \file{data/LuPNT_data} download fails] The bundle is fetched
+    unauthenticated from a public GitHub Release, so a failure usually means no
+    network access or a transient error. Re-run the configure step; or download
+    the archive manually from the release and extract its \file{LuPNT_data/}
+    folder into \file{data/}; or build with \code{-DLUPNT\_FETCH\_DATA=OFF} and
+    stage \file{data/LuPNT_data} yourself.
+  \item[\code{Environment variable LUPNT\_DATA\_PATH is not set}]
+    You are running a binary or a Python process outside \code{pixi shell}.
+    Either enter the shell, prefix with \code{pixi run}, or set the variables
+    explicitly as in \cref{sec:gs-examples}.
+  \item[\code{ImportError: libjxl.so.0.11: cannot open shared object file}]
+    A conda solve picked an incompatible image stack.
+    \file{pixi.toml} pins \code{libjxl = "0.11.*"} for this reason; re-run
+    \code{pixi install} so the lock file is honoured.
+  \item[\code{import pylupnt} works in the terminal but not in a notebook]
+    The kernelspec is stale or absent. Re-run \code{pixi run install-kernel}
+    and select \textbf{LuPNT (pixi)}.
+  \item[GNSS tests or examples fail with a parse error on a downloaded file]
+    CDDIS returned an HTML login page. Complete Steps 2 and 4 of
+    \cref{sec:gs-earthdata}, then delete the cached bad file and retry.
+\end{description}
+
+\section{Next steps}
+\label{sec:gs-next}
+
+\begin{itemize}[leftmargin=*]
+  \item \cref{chap:tutorials} --- the worked Python and C++ examples; start
+    with \file{ex1_propagate_orbit}.
+  \item \cref{chap:new-simulation} --- the agent-based architecture and the
+    workflow for building your own scenario.
+  \item \cref{part:math} --- the mathematical specifications for the dynamics,
+    measurement, and estimation models.
+  \item \cref{chap:development} --- build variants, debugging, and the VS~Code
+    workflow.
+\end{itemize}

@@ -1,0 +1,975 @@
+\chapter{Cross-Validation against GMAT and Orekit}
+\label{chap:cross-validation}
+
+Every model specified in Part~\ref{part:math} is checked against at least one
+independent implementation. Three references are used: Orekit v13.1, a
+JVM-based astrodynamics library \citep{orekit2025}; GMAT R2026a,
+NASA's General Mission Analysis Tool \citep{gmat2023}, pointed at \lupnt{}'s own
+DE440 ephemeris (see \cref{sec:xval-constants}); and NAIF's CSPICE
+toolkit \citep{acton1996spice}, which \lupnt{} links directly and can
+therefore query in-process. The first two are compared through checked-in JSON
+fixtures; the third is compared live, inside the ordinary test run.
+
+This chapter states how each comparison is constructed, tabulates every
+measured difference and the tolerance asserted against it, and --- the part
+that matters --- explains at specification level \emph{why} each residual is
+the size it is. A tolerance that merely passes is not the goal. The intent is
+that no residual in the tables below is unexplained: each one is attributed
+either to floating-point representation, to a difference in the input data
+(EOP vintage, DE version), or to a deliberate modelling choice
+(inertial-axis $J_2$, mean-Earth versus principal-axes lunar frame). Where a
+difference traces back to a model, the chapter that specifies that model is
+cited: \cref{chap:time-conversions} for the time scales,
+\cref{chap:frame-conversions} for the rotations, and \cref{chap:dynamics} for
+the force models.
+
+The implementing files are \file{cpp/test/orekit/} and \file{cpp/test/gmat/}
+(fixture-based), and \file{cpp/test/conversions/test_frame_conversions.cc} and
+\file{cpp/test/conversions/test_time_conversions_ttdb.cc} (live SPICE). The
+external data products the comparison depends on are specified in
+\cref{chap:sp3-download}.
+
+% ===========================================================================
+\section{Methodology}
+\label{sec:xval-method}
+% ===========================================================================
+
+Neither Orekit nor GMAT is a build, run, or test dependency of \lupnt{}.
+A two-stage arrangement keeps it that way:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item A developer-only \emph{generator} drives the external tool once and
+    serialises its outputs into a checked-in JSON fixture.
+    \file{cpp/test/orekit/gen_orekit_reference.py}, run in the optional
+    \code{dev} pixi environment, writes
+    \file{cpp/test/orekit/data/orekit_reference.json}.
+    \file{cpp/test/gmat/gen_gmat_reference.py}, which needs a local GMAT
+    desktop installation, generates a GMAT script, runs it, parses the report
+    output, and writes \file{cpp/test/gmat/data/gmat_reference.json}. The
+    exact script it ran is checked in beside the fixture as
+    \file{cpp/test/gmat/data/gmat_reference.script}, with machine-specific
+    paths replaced by placeholder tokens.
+  \item Ordinary Catch2 test files under \file{cpp/test/orekit/} and
+    \file{cpp/test/gmat/} load the fixture through \cpp{LoadTestJson()} in
+    \file{cpp/test/utils.cc} and compare \lupnt{}'s own computation against
+    it. They run as part of \code{pixi run test-cpp} on every machine, with no
+    JVM, no GMAT, and no network.
+\end{enumerate}
+
+\subsection{Isolating algorithmic differences}
+\label{sec:xval-constants}
+
+Both fixtures are generated with \lupnt{}'s physical constants forced onto the
+external tool, so a residual can never be a constants mismatch in disguise.
+The values, from \file{cpp/lupnt/core/constants.h}, are listed in
+\cref{tab:xval-constants} and recorded in the \code{\_meta} block of each
+fixture.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Constants imposed on both sides of every comparison.}
+  \label{tab:xval-constants}
+  \small
+  \begin{tabular}{@{}llll@{}}
+    \toprule
+    Symbol & \lupnt{} identifier & Value & Unit \\
+    \midrule
+    $\mu_\oplus$ & \code{GM\_EARTH}  & \num{398600.435507e9} & \si{\meter\cubed\per\second\squared} \\
+    $\mu_{\mathrm{M}}$& \code{GM\_MOON}   & \num{4902.800118e9}   & \si{\meter\cubed\per\second\squared} \\
+    $R_\oplus$   & \code{R\_EARTH}   & \num{6378137}         & \si{\meter} \\
+    $J_2$        & \code{J2\_EARTH}  & \num{1.08262668e-3}   & --- \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+On the GMAT side this required more than a configuration flag. A minimal
+potential file, \file{cpp/test/gmat/lupnt_j2_earth.cof}, sets \code{GM},
+\code{R\_eq} and the normalised \code{C20} $(= -J_2$ normalised$)$ to exactly
+these values; \code{TwoBodyFM} uses it at \code{Degree=0, Order=0} (pure point
+mass) and \code{J2FM} at \code{Degree=2, Order=0} (point mass plus the
+degree-2 zonal term). \code{Earth.Mu}, \code{Earth.EquatorialRadius} and
+\code{Luna.Mu} are additionally overridden globally so that GMAT's internal
+Cartesian--Keplerian conversions use the same numbers.
+
+The planetary ephemeris is now shared as well. GMAT ships only up to DE424 ---
+no DE440 even in R2026a --- so both generators point it at \lupnt{}'s own
+\file{de440.bsp} through \code{SolarSystem.EphemerisSource = 'SPICE'} and
+\code{SolarSystem.SPKFilename}. Orekit likewise evaluates DE440
+\citep{park2021de440}. With the same ephemeris on every side, the former
+DE421-versus-DE440 Moon-frame offset is gone: what remains in the Moon-centred
+and third-body comparisons is a distribution and interpolation residual, not a
+DE-version difference. For the third-body and SRP force models this also means
+the Sun and Moon positions that drive the perturbation are identical on both
+sides.
+
+Where the two comparisons overlap --- the frame-conversion input states, the
+orbit cases, the epochs --- the fixtures use \emph{identical} inputs. The
+Orekit and GMAT columns in the tables below are therefore directly comparable,
+and the difference between the two columns is itself informative: it is what
+lets \cref{sec:xval-causes} attribute the $J_2$ propagation residual to the
+symmetry-axis convention rather than to the integrator.
+
+\subsection{Tolerance philosophy}
+\label{sec:xval-tolerances}
+
+Each asserted tolerance is set a small factor --- typically $2$ to $20$ ---
+above the measured difference, with a comment in the test file naming the
+origin of that difference. Tolerances that scale with the state are written
+that way rather than flattened to a constant: the GCRF--ITRF position
+tolerance is $\max(\SI{100}{\meter},\, \num{2e-5}\,\lVert\vec r\rVert)$
+because the underlying cause is a small rotation angle, whose linear effect
+grows with radius. Flattening it would make the LEO test vacuous and the
+trans-lunar test unpassable.
+
+% ===========================================================================
+\section{Scope of the comparison}
+\label{sec:xval-scope}
+% ===========================================================================
+
+\begin{table}[htbp]
+  \centering
+  \caption{What each external reference covers.}
+  \label{tab:xval-scope}
+  \small
+  \begin{tabularx}{\textwidth}{@{}l L L@{}}
+    \toprule
+    Category & versus Orekit & versus GMAT \\
+    \midrule
+    Time scales &
+      $\TAI-\UTC$, $\TT-\TAI$, $\TDB-\TAI$, $\GPST-\TAI$, $\UTone-\UTC$ at six
+      epochs bracketing the 2012 and 2016 leap seconds &
+      $\TAI-\UTC$, $\TT-\TAI$, $\TDB-\TAI$ at the same epochs (GMAT R2026a
+      exposes no \code{UT1ModJulian} or \code{GPSModJulian} parameter) \\
+    Sidereal angles &
+      GMST (IAU-82 / IERS 1996) and the Earth Rotation Angle (IAU 2000) &
+      --- \\
+    Earth frames &
+      GCRF $\leftrightarrow$ EME2000 and GCRF $\leftrightarrow$ ITRF (IERS
+      2010, no \code{simpleEOP}) for LEO, MEO, GEO and trans-lunar states at
+      three epochs &
+      the same states and epochs through GMAT's \code{EarthICRFCS},
+      \code{EarthMJ2000Eq} and \code{EarthFixedCS} systems \\
+    Moon frames &
+      GCRF $\leftrightarrow$ \code{MOON\_CI} (DE440 translation);
+      \code{MOON\_ME} against the analytical IAU pole model &
+      GCRF $\leftrightarrow$ \code{MOON\_CI} (DE440 via SPICE); \code{MOON\_PA}
+      against GMAT's SPICE-kernel Luna \code{BodyFixed}, a principal-axes
+      frame \\
+    Ephemerides &
+      Earth$\to$Moon and Earth$\to$Sun position and velocity (DE440) at three
+      epochs &
+      implicit in the Moon-frame translations \\
+    Kepler propagation &
+      six orbits --- Earth MEO-HEO, LEO, GEO, Molniya plus lunar LLO and ELFO
+      --- propagated to $0.25$, $0.5$, $0.75$ and $1.5$ periods with the
+      analytical \longid{KeplerianPropagator} &
+      the same six orbits, numerically propagated point-mass (RK89,
+      \code{Accuracy = 1e-13}) \\
+    $J_2$ acceleration &
+      formula-level check at five positions
+      (\longid{J2OnlyPerturbation.computeAccelerationInJ2Frame}) &
+      --- \\
+    $J_2$ propagation &
+      three orbits with $J_2$ about the \textbf{inertial} $Z$ axis, the same
+      model as \lupnt{} --- isolates integrator differences &
+      two orbits with $J_2$ evaluated in the \textbf{body-fixed} frame ---
+      exposes the modelling difference \\
+    Harmonic gravity &
+      formula-level acceleration at 42 body-fixed positions (Earth $8\times8$
+      EGM96, Moon $12\times12$ GRGM1200B) via
+      \longid{HolmesFeatherstoneAttractionModel}, both sides fed the same
+      \code{.cof} through an ICGEM bridge &
+      the Earth $8\times8$ field propagated \SI{2}{\hour} with the shared
+      \code{EGM96.cof} \\
+    Third body &
+      formula-level acceleration from the Sun and Moon
+      (\longid{ThirdBodyAttraction}), perturber positions from the shared
+      DE440 &
+      Sun and Moon point masses propagated \SI{2}{\hour} \\
+    Solar radiation pressure &
+      formula-level cannonball acceleration, fully sunlit
+      (\longid{SolarRadiationPressure}) &
+      cannonball propagated \SI{2}{\hour} on a continuously sunlit orbit \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The Orekit fixture is organised into the sections \code{time\_scales},
+\code{sidereal}, \code{frames}, \code{moon\_frames}, \code{ephemerides},
+\code{kepler}, \code{j2\_acceleration}, \code{j2\_propagation},
+\code{gravity\_acceleration}, \code{third\_body\_acceleration} and
+\code{srp\_acceleration}; the GMAT fixture
+\file{cpp/test/gmat/data/gmat_reference.json} into \code{time\_scales},
+\code{frames}, \code{moon\_frames}, \code{kepler} and \code{j2\_propagation}.
+The GMAT force-model checks live in a separate fixture
+\file{cpp/test/gmat/data/gmat_forces_reference.json} (sections
+\code{gravity\_propagation}, \code{third\_body\_propagation} and
+\code{srp\_propagation}), generated by
+\file{cpp/test/gmat/gen_gmat_forces_reference.py} so the original
+kepler/$J_2$/frame fixture is untouched. Within a \code{kepler} or
+\code{j2\_propagation} entry, \code{coe0} is
+$[a, e, i, \Omega, \omega, M_0]$ in SI units and radians with \emph{mean}
+anomaly, \code{body} is \code{"EARTH"} or \code{"MOON"}, and \code{cart0} and
+each \code{propagated[].cart} are $[x,\dots,v_z]$ in metres and metres per
+second --- expressed in \code{EarthMJ2000Eq} axes for the Earth cases and
+Luna-centred ICRF axes for the lunar ones.
+
+\begin{lupntnote}
+GMAT's Keplerian display state accepts only \emph{true} anomaly as its sixth
+element, so \file{cpp/test/gmat/gen_gmat_reference.py} solves Kepler's
+equation itself and uses the resulting true anomaly purely to configure each
+spacecraft. The \code{coe0}, anomaly and \code{period} entries in the GMAT
+fixture are therefore Python-computed; \code{cart0} and every
+\code{propagated} entry are genuine GMAT outputs.
+\end{lupntnote}
+
+% ===========================================================================
+\section{Measured differences}
+\label{sec:xval-results}
+% ===========================================================================
+
+The numbers below were measured when the fixtures were generated (June 2026).
+They are properties of a particular pair of data vintages, not constants of
+nature: regenerate the fixtures (\cref{sec:xval-regenerate}) and re-derive
+them whenever the comparison data changes. ``Tolerance'' is the value the
+tests actually assert.
+
+\subsection{Time scales and sidereal angles}
+\label{sec:xval-time}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Time-scale and Earth-rotation-angle differences. Implemented in
+    \code{cpp/test/orekit/test\_time\_conversions\_orekit.cc} and
+    \code{cpp/test/gmat/test\_time\_conversions\_gmat.cc}; the models are
+    specified in \cref{chap:time-conversions}.}
+  \label{tab:xval-time}
+  \small
+  \begin{tabularx}{\textwidth}{@{}W{0.85} r r W{1.15}@{}}
+    \toprule
+    Quantity & versus Orekit (max) & versus GMAT (max) & Tolerance and origin \\
+    \midrule
+    $\TAI-\UTC$, $\TT-\TAI$, $\GPST-\TAI$ &
+      ${\sim}\SI{2e-8}{\second}$ & ${\sim}\SI{6e-7}{\second}$ &
+      \SI{1e-6}{\second}. Exactly defined offsets, so the residual is pure
+      floating-point representation: \lupnt{} stores epochs as
+      seconds-since-J2000 doubles, whereas GMAT reports ${\sim}30\,000$-day
+      Modified Julian dates whose subtraction amplifies the ULP. \\
+    $\TDB-\TAI$ &
+      ${\sim}\SI{4e-8}{\second}$ & ${\sim}\SI{5e-7}{\second}$ &
+      \SI{1e-6}{\second} (Orekit) / \SI{1e-5}{\second} (GMAT). The
+      ${\sim}\SI{1.7}{\milli\second}$ periodic relativistic term is
+      implemented with different truncated series on each side. \\
+    $\UTone-\UTC$ &
+      $\leq \SI{0.024}{\second}$ (away from leap seconds) & --- &
+      \SI{0.1}{\second}. EOP-table vintage difference: the two sides hold
+      different IERS bulletin snapshots. See \cref{sec:xval-leap}. \\
+    GMST, ERA &
+      $\leq \SI{1.8e-6}{\radian}$ & --- &
+      \SI{1e-5}{\radian}. Identical formulas on both sides (IAU-82 GMST,
+      IAU-2000 ERA); the residual is exactly the $\UTone$ difference times the
+      Earth rotation rate. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Reference frames and ephemerides}
+\label{sec:xval-frames}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Frame-conversion and ephemeris differences. Implemented in
+    \code{cpp/test/orekit/test\_frame\_conversions\_orekit.cc},
+    \code{cpp/test/orekit/test\_ephemeris\_orekit.cc} and
+    \code{cpp/test/gmat/test\_frame\_conversions\_gmat.cc}; the models are
+    specified in \cref{chap:frame-conversions}. $\lVert\vec r\rVert$ is the
+    position magnitude of the test state.}
+  \label{tab:xval-frames}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{@{}l L L L@{}}
+    \toprule
+    Conversion & versus Orekit (max) & versus GMAT (max) & Tolerance and origin \\
+    \midrule
+    GCRF $\leftrightarrow$ EME2000 &
+      \SI{1.8e-4}{\meter} (trans-lunar), i.e.\
+      ${\sim}\num{5e-13}\,\lVert\vec r\rVert$ &
+      \SI{54}{\meter} (trans-lunar), i.e.\
+      ${\sim}\num{1.6e-7}\,\lVert\vec r\rVert$ &
+      \SI{1e-3}{\meter} (Orekit);
+      $\max(\SI{5}{\meter},\, \num{3e-7}\,\lVert\vec r\rVert)$ (GMAT).
+      \lupnt{} and Orekit implement the same IERS frame-bias matrix
+      \citep{iers2010}; GMAT's ICRF $\leftrightarrow$ MJ2000Eq rotation
+      differs by ${\sim}\SI{1e-7}{\radian}$, slightly epoch-dependent. \\
+    GCRF $\leftrightarrow$ ITRF &
+      \SI{4.4}{\kilo\meter} at the trans-lunar 2025 epoch
+      (${\sim}\num{1.3e-5}\,\lVert\vec r\rVert$);
+      \SIrange{14}{98}{\meter} at LEO &
+      \SI{1.6}{\kilo\meter} trans-lunar
+      (${\sim}\num{4.5e-6}\,\lVert\vec r\rVert$);
+      \SIrange{34}{36}{\meter} at LEO &
+      $\max(\SI{100}{\meter},\, \num{2e-5}\,\lVert\vec r\rVert)$, velocity
+      \SI{1}{\meter\per\second}. Earth-orientation ($\UTone$, polar motion)
+      table vintage: a tens-of-milliseconds $\UTone$ difference rotates
+      positions by $\num{1e-6}$ to $\num{1e-5}$ radians about the polar axis,
+      scaling with radius. Differences grow toward 2025 epochs, where one or
+      both tables are predictions. \\
+    GCRF $\rightarrow$ \code{MOON\_CI} &
+      \SI{0.33}{\meter} & distribution level &
+      \SI{1}{\meter} (Orekit) / \SI{200}{\meter} (GMAT). A pure DE-ephemeris
+      translation: \lupnt{}, Orekit and now GMAT R2026a (through \lupnt{}'s
+      \file{de440.bsp} via SPICE) all evaluate DE440 \citep{park2021de440}, so
+      every column is a distribution and interpolation residual at
+      ${\sim}\num{5e-11}$ relative, not a DE-version offset. The \SI{200}{\meter}
+      GMAT tolerance predates the shared ephemeris and is retained with wide
+      margin. \\
+    Moon body-fixed &
+      \code{MOON\_ME} versus the IAU model: \SIrange{57}{200}{\meter}
+      (${\sim}\num{3e-5}\,\lVert\vec r\rVert$) &
+      \code{MOON\_PA} versus Luna \code{BodyFixed}: distribution level,
+      orientation-limited &
+      $\num{3e-4}\,\lVert\vec r\rVert$ (Orekit) / \SI{300}{\meter} (GMAT).
+      Orekit's body-oriented Moon frame is the analytical IAU pole model,
+      which approximates the DE \emph{mean-Earth} axes to
+      ${\sim}\SI{3e-5}{\radian}$. GMAT loads a SPICE Luna principal-axes
+      kernel, which validates \lupnt{}'s \code{MOON\_PA}: with both sides on
+      DE440 the Moon-position translation agrees at the distribution level and
+      the PA orientations agree at the sub-arcsecond level, so the residual is
+      well inside the retained \SI{300}{\meter} tolerance. Cross-check: swapping
+      the frames (PA against IAU, or ME against GMAT) increases the differences
+      by a factor of $10$ to $40$ (\SIrange{0.6}{3.4}{\kilo\meter}), confirming
+      each identification. \\
+    Ephemerides (Earth$\to$Moon, Earth$\to$Sun) &
+      Moon \SI{0.33}{\meter}, Sun \SI{7.2}{\meter}, both
+      ${\sim}\num{5e-11}$ relative & --- &
+      $\max(\SI{1}{\meter},\, \num{1e-10}\,\lVert\vec r\rVert)$, velocity
+      \SI{1e-5}{\meter\per\second}. The same DE440 data
+      \citep{park2021de440}, independently distributed and independently
+      interpolated. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Orbit propagation}
+\label{sec:xval-orbits}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Propagation differences. Implemented in
+    \code{cpp/test/orekit/test\_orbit\_dynamics\_orekit.cc} (test cases
+    \code{dynamics.kepler\_orekit\_reference},
+    \code{dynamics.j2\_acceleration\_orekit\_reference},
+    \code{dynamics.j2\_propagation\_orekit\_reference}) and
+    \code{cpp/test/gmat/test\_orbit\_dynamics\_gmat.cc}
+    (\code{dynamics.kepler\_gmat\_reference},
+    \code{dynamics.j2\_propagation\_gmat\_reference}); the models are
+    specified in \cref{chap:dynamics}.}
+  \label{tab:xval-orbits}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{@{}l L L L@{}}
+    \toprule
+    Quantity & versus Orekit (max) & versus GMAT (max) & Tolerance and origin \\
+    \midrule
+    Kepler: initial COE $\rightarrow$ Cartesian &
+      \SI{1.5e-8}{\meter} & \SI{1.3e-8}{\meter} &
+      \SI{1e-3}{\meter}. Pure conversion arithmetic; machine precision. \\
+    Kepler: propagated Cartesian &
+      \SI{5.7e-8}{\meter} / \SI{5e-12}{\meter\per\second} &
+      \SI{1.8e-2}{\meter} / \SI{8e-6}{\meter\per\second} &
+      \SI{1e-2}{\meter} (Orekit) / \SI{0.1}{\meter} (GMAT). Orekit's
+      propagator is analytical, like \lupnt{}'s, so agreement is at machine
+      precision; GMAT integrates even the point-mass problem numerically
+      (RK89, accuracy \num{1e-13}), so its column is integrator drift. \\
+    Kepler: propagated angles ($M$, $E$, $\nu$) &
+      $\leq \SI{3e-15}{\radian}$ & $\leq \SI{5e-8}{\radian}$ &
+      \SI{1e-9}{\radian} (Orekit) / \SI{1e-6}{\radian} (GMAT). The same
+      analytical-versus-numerical distinction. \\
+    $J_2$ acceleration &
+      $\leq \SI{1e-15}{\meter\per\second\squared}$ &
+      --- &
+      \SI{1e-12}{\meter\per\second\squared}. Identical closed-form $J_2$
+      expression on both sides. \\
+    $J_2$ propagation, inertial-axis $J_2$ &
+      \SI{2.2e-5}{\meter} / \SI{1.9e-9}{\meter\per\second} over 1.5 orbits &
+      --- &
+      \SI{1e-3}{\meter} / \SI{1e-6}{\meter\per\second}. The same force model
+      on both sides ($J_2$ about the inertial $Z$ axis); the residual is
+      \lupnt{}'s fixed-step RK4 at \SI{1}{\second} against Orekit's adaptive
+      DP853. \\
+    $J_2$ propagation, body-fixed $J_2$ &
+      --- &
+      \SIrange{22}{182}{\meter} /
+      \SIrange{0.005}{0.099}{\meter\per\second} over $0.25$ to $1.5$ orbits &
+      \SI{300}{\meter} / \SI{0.15}{\meter\per\second}. \textbf{Modelling
+      difference}: \cpp{JToCartTwoBodyDynamics} takes the inertial $Z$ axis as
+      the oblateness symmetry axis, whereas GMAT evaluates the zonal harmonic
+      in the Earth body-fixed frame. The Orekit row above --- same dynamics,
+      same axis convention, ${\sim}\SI{1e-5}{\meter}$ agreement --- isolates
+      the axis choice as the cause. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Force models}
+\label{sec:xval-forces}
+
+Three force models are cross-validated with two deliberately different
+constructions, because the two reference tools expose different quantities.
+Orekit exposes force-model \emph{accelerations}, so \lupnt{}'s acceleration
+functions --- \cpp{AccelarationGravityField}, \cpp{AccelerationPointMass} and
+\cpp{AccelerationSolarRadiation}, specified in \cref{chap:dynamics} --- are fed
+the exact inputs Orekit's models used and the acceleration vector is compared
+directly. There is no integrator or frame realisation in the loop: the check
+isolates the force-model \emph{algorithm}, the same style as the
+$J_2$-acceleration row of \cref{tab:xval-orbits}. GMAT reports only states, so
+its checks are \emph{propagation}-level: a spacecraft is propagated for a fixed
+\SI{2}{\hour} arc with one force model active and the Cartesian state is
+compared, exercising the assembled propagation (force model plus integrator plus
+frame). \Cref{tab:xval-forces} gives both.
+
+For the Orekit gravity check both sides read the \emph{same} \lupnt{} \code{.cof}
+coefficient file: the generator parses it and writes an Orekit-readable ICGEM
+copy, so the comparison isolates the harmonic recursion and the normalisation
+convention rather than the adopted coefficients. For third body and SRP the
+perturber position (Sun, Moon) and the reference solar pressure are stored in
+the fixture and fed to \lupnt{} unchanged, decoupling the ephemeris --- already
+checked by the \code{ephemerides} section --- and the adopted flux from the
+perturbation formula. On the GMAT side the same coefficients, the shared DE440
+(\cref{sec:xval-constants}) and \lupnt{}'s constants are forced onto the tool, so
+a residual is an integrator or frame-realisation difference only. The SRP orbit
+is chosen high and sunward so the spacecraft is never eclipsed: \lupnt{}'s
+apparent-disk penumbra and GMAT's shadow model differ, and a continuously sunlit
+arc keeps that difference out of the cannonball comparison.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Force-model differences. The Orekit columns are formula-level
+    acceleration checks (implemented in
+    \code{cpp/test/orekit/test\_force\_models\_orekit.cc}); the GMAT columns are
+    propagation-level state checks over a \SI{2}{\hour} arc (implemented in
+    \code{cpp/test/gmat/test\_force\_models\_gmat.cc}); the models are specified
+    in \cref{chap:dynamics}.}
+  \label{tab:xval-forces}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{@{}l W{0.62} W{0.62} W{1.76}@{}}
+    \toprule
+    Model & versus Orekit (accel., max) & versus GMAT (state, max) & Tolerance and origin \\
+    \midrule
+    Spherical-harmonic gravity &
+      \SI{6.2e-15}{\meter\per\second\squared} (Earth $8\times8$ EGM96, Moon
+      $12\times12$ GRGM1200B; 42 cases) &
+      \SI{0.19}{\meter} over \SI{2}{\hour} (Earth $8\times8$) &
+      \SI{1e-9}{\meter\per\second\squared} (Orekit); \SI{3}{\meter} /
+      \SI{5e-3}{\meter\per\second} (GMAT). Orekit: matched coefficients via the
+      \code{.cof}$\rightarrow$ICGEM bridge, so the residual is machine-precision
+      evaluation of the same recursion. GMAT: the shared \code{.cof} and DE440
+      leave only integrator and ITRF-versus-GMAT-\code{EarthFixed}
+      realisation. \\
+    Third body (Sun + Moon) &
+      \SI{1.9e-18}{\meter\per\second\squared} (4 cases) &
+      \SI{0.004}{\meter} over \SI{2}{\hour} &
+      \SI{1e-12}{\meter\per\second\squared} (Orekit); \SI{0.2}{\meter} /
+      \SI{1e-3}{\meter\per\second} (GMAT). The perturber positions come from the
+      shared DE440 on both sides, so the point-mass formula is compared in
+      isolation. \\
+    Solar radiation pressure &
+      \SI{6.7e-24}{\meter\per\second\squared} (cannonball, sunlit; 3 cases) &
+      \SI{0.003}{\meter} over \SI{2}{\hour} (high sunlit orbit) &
+      \SI{1e-15}{\meter\per\second\squared} (Orekit); \SI{0.2}{\meter} /
+      \SI{1e-3}{\meter\per\second} (GMAT). Matched reference pressure and Sun
+      position; the sunlit orbit keeps the two differing shadow models from
+      engaging. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The Orekit residuals sit at machine precision --- $\num{6e-15}$,
+$\num{2e-18}$ and $\num{7e-24}\,\si{\meter\per\second\squared}$ --- exactly what
+a comparison of two implementations of the same closed form on identical inputs
+should produce. The tolerances
+(\SIlist{1e-9;1e-12;1e-15}{\meter\per\second\squared}) sit far above them yet
+remain many orders of magnitude below any real force-model error. The GMAT
+residuals are sub-metre over two hours because every
+input is matched and only the integrator and the frame realisation differ; the
+tolerances retain roughly a $15\times$ to $60\times$ margin.
+
+\subsection{Live comparisons against SPICE}
+\label{sec:xval-spice}
+
+The SPICE comparisons are structurally different from the two above. CSPICE is
+linked into \lupnt{}, so no fixture is needed: the tests call
+\code{sxform\_c} or \cpp{spice::ConvertTime} and compare against \lupnt{}'s
+own fitted fast paths in the same process, at the same epochs, in the same
+time scale. What is being validated is not an independent implementation of a
+model but the \emph{fidelity of \lupnt{}'s fits} to the SPICE kernels ---
+\cpp{InitFrameConversionFromSpice} for orientation and
+\cpp{InitTtMinusTdbFit} for $\TT-\TDB$ --- which exist because CSPICE is not
+thread safe and cannot be called from an OpenMP region.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Live SPICE comparisons \citep{acton1996spice}. Probe vectors for
+    the orientation checks are unit vectors, so an absolute position
+    difference is numerically equal to the rotation-matrix element error.}
+  \label{tab:xval-spice}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{@{}L L l L@{}}
+    \toprule
+    Check & SPICE reference & Tolerance & Meaning \\
+    \midrule
+    \cpp{GcrfToItrf} after \cpp{InitFrameConversionFromSpice} over a 3-day window &
+      \code{sxform\_c("J2000", "ITRF93", et)} &
+      \num{1e-6} &
+      The fitted Earth orientation reproduces the high-accuracy binary PCK to
+      within \SI{1e-6}{\radian}-scale rotation error. \\
+    \cpp{MoonCiToPa} after the same fit &
+      \code{sxform\_c("J2000", "IAU\_MOON", et)} &
+      \num{1e-6} &
+      Same, for the lunar principal-axes orientation. \\
+    \cpp{ItrfToGcrf}$\,\circ\,$\cpp{GcrfToItrf} and
+      \cpp{MoonPaToCi}$\,\circ\,$\cpp{MoonCiToPa} &
+      identity &
+      \num{1e-12} &
+      Round-trip closure. Angle-based fitting composes a ZXZ rotation, so the
+      fitted matrix is exactly orthonormal by construction. \\
+    $\mat R\transpose \mat R = \mat I$ for the fitted rotation &
+      identity &
+      \num{1e-14} &
+      Explicit orthonormality. This would have failed at ${\sim}\num{4e-8}$
+      under the earlier matrix-element fitting scheme; it is the property that
+      motivated fitting angles instead. \\
+    \cpp{ComputeEopFromSpice} re-composed rotation &
+      \code{sxform\_c("J2000", "ITRF93", et)} &
+      \num{1e-9} &
+      The EOP-like parameters extracted from SPICE regenerate the original
+      SPICE rotation element-wise. \\
+    \cpp{spice::ConvertTime} $\TDB \leftrightarrow \TT$ round trip &
+      itself &
+      \SI{1e-9}{\second} &
+      Round-trip closure of the DE440t path near J2000. \\
+    DE440t $\TT-\TDB$ versus the truncated analytic series &
+      \code{unitim\_c}-style series &
+      $> \SI{1e-6}{\second}$ and $< \SI{1e-3}{\second}$ &
+      The two must differ meaningfully --- that difference is the fidelity
+      gain from the time ephemeris --- while both remain sane $\TT-\TDB$
+      models. \\
+    Native Chebyshev $\TT-\TDB$ fit (16-day segments, 13 coefficients) &
+      DE440t via \cpp{spice::ConvertTime} &
+      $< \SI{1e-9}{\second}$ &
+      The thread-safe fast path is sub-nanosecond-faithful to the kernel. \\
+    Fitted \cpp{TDBToTt} over a 2024--2025 mission window ($-30$ to $+400$ days) &
+      \cpp{spice::ConvertTime} &
+      $\leq 1$ ULP (${\sim}\SI{0.3}{\micro\second}$) &
+      End-to-end absolute epochs agree to the last representable bit. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The tolerance in the last row is expressed as a ULP rather than an absolute
+time because it must be: at a 2025 epoch, seconds-since-J2000 is
+${\sim}\num{8e8}$, and $2^{-52}$ of that is already
+${\sim}\SI{0.2}{\micro\second}$. No conversion expressed in that
+representation can do better, which is the same floating-point floor that
+appears in the first row of \cref{tab:xval-time}. See
+\cref{chap:time-conversions} for how \lupnt{} keeps the offset arithmetic away
+from the absolute epoch where precision matters.
+
+A separate test, \code{data.eop\_latest\_iers}, exercises the live IERS
+refresh described in \cref{chap:sp3-download}. It tolerates being offline, and
+it explicitly restores the bundled EOP file before returning, because the
+tolerances in \cref{tab:xval-frames} are calibrated against the bundled
+vintage.
+
+% ===========================================================================
+\section{Why the differences are the size they are}
+\label{sec:xval-causes}
+% ===========================================================================
+
+Four mechanisms account for essentially every non-trivial number in
+\cref{tab:xval-time,tab:xval-frames,tab:xval-orbits}. Each is a
+specification-level statement about the models involved, not a numerical
+accident.
+
+\subsection{EOP vintage}
+\label{sec:xval-eop}
+
+The GCRF$\to$ITRF rotation specified in \cref{chap:frame-conversions}
+factorises into precession-nutation, Earth rotation, and polar motion. Only
+the last two depend on measured data, and both come from the IERS EOP series
+\citep{iers2010}. The dominant term is the Earth rotation angle, driven by
+$\UTone-\UTC$.
+
+\lupnt{}, Orekit and GMAT each ship a different snapshot of that series, taken
+at a different date. The IERS revises past values as more VLBI and GNSS data
+are reduced, and \emph{predicts} future ones. A tens-of-milliseconds
+disagreement in $\UTone$ is therefore normal between two valid tables, and it
+maps directly into an angle,
+\begin{equation}
+  \label{eq:xval-ut1-angle}
+  \delta\theta \;=\; \omega_\oplus \, \delta(\UTone),
+  \qquad \omega_\oplus \approx \SI{7.292115e-5}{\radian\per\second},
+\end{equation}
+so $\delta(\UTone) = \SI{0.024}{\second}$ gives
+$\delta\theta \approx \SI{1.75e-6}{\radian}$. That is precisely the
+$\leq \SI{1.8e-6}{\radian}$ GMST and ERA residual in \cref{tab:xval-time}: the
+sidereal-angle row is not an independent check of the angle formulas at all
+--- those are identical on both sides --- it is a direct read-out of the
+$\UTone$ disagreement.
+
+A rotation error is a position error proportional to radius. For a
+perpendicular component,
+\begin{equation}
+  \label{eq:xval-rot-scaling}
+  \delta r \;\approx\; \delta\theta \, \lVert\vec r\rVert .
+\end{equation}
+At LEO ($\lVert\vec r\rVert \approx \SI{7e6}{\meter}$) an angle of
+$\num{2e-6}$ to $\num{1.4e-5}$ radians gives tens of metres --- the
+\SIrange{14}{98}{\meter} and \SIrange{34}{36}{\meter} entries. At trans-lunar
+distance ($\lVert\vec r\rVert \approx \SI{3.5e8}{\meter}$) the same angles
+give kilometres --- the \SI{4.4}{\kilo\meter} and \SI{1.6}{\kilo\meter}
+entries. This is why the tolerance is written as
+$\max(\SI{100}{\meter},\, \num{2e-5}\,\lVert\vec r\rVert)$ and not as a
+constant, and why the difference grows toward 2025 epochs, where one or both
+tables have crossed from measurement into prediction.
+
+\subsection{\code{MOON\_ME} versus the analytical IAU pole}
+\label{sec:xval-moon}
+
+The Moon has two distinct body-fixed frames, both specified in
+\cref{chap:frame-conversions}. The \emph{principal-axes} (PA) frame is aligned
+with the principal axes of the lunar inertia tensor and is what the DE lunar
+libration integration actually produces. The \emph{mean-Earth/mean-rotation}
+(ME) frame is the cartographic frame in which lunar products are published;
+it differs from PA by a small, essentially constant rotation of order
+$\SI{100}{\arcsecond}$.
+
+A third object is often confused with both: the IAU/WGCCRE analytical pole
+model, a low-order trigonometric series for the lunar right ascension,
+declination and prime meridian. Orekit's body-oriented Moon frame is that
+analytical model. It is designed to \emph{approximate} the ME axes, and it
+does so only to about $\SI{3e-5}{\radian}$. Applying
+\cref{eq:xval-rot-scaling} at a low lunar orbit radius of
+${\sim}\SI{1.9e6}{\meter}$ gives ${\sim}\SI{57}{\meter}$; at ELFO apoapsis it
+gives the upper end of the \SIrange{57}{200}{\meter} range. The Orekit column
+is therefore not measuring an error in \lupnt{} --- it is measuring the known
+accuracy of the analytical model against the kernel-based ME frame, which is
+why the tolerance is written as $\num{3e-4}\,\lVert\vec r\rVert$.
+
+GMAT gives the complementary check. Its Luna \code{BodyFixed} system is loaded
+from a SPICE frame kernel and is a DE-era \emph{principal-axes} frame, so it
+is compared against \lupnt{}'s \code{MOON\_PA}. With both sides now on DE440
+(\cref{sec:xval-de}) the Moon-position translation agrees at the
+distribution-and-interpolation level, so the residual is orientation-limited
+and the two PA frames agree at the sub-arcsecond level.
+
+The identification is confirmed by deliberately mismatching the frames.
+Comparing \lupnt{}'s PA against Orekit's IAU frame, or \lupnt{}'s ME against
+GMAT's Luna \code{BodyFixed}, inflates the difference by a factor of $10$ to
+$40$, to \SIrange{0.6}{3.4}{\kilo\meter} --- consistent with the
+${\sim}\SI{100}{\arcsecond}$ PA-to-ME rotation and inconsistent with anything
+else. Between the two comparisons, both \lupnt{} lunar body-fixed frames are
+independently pinned.
+
+\subsection{ICRF versus MJ2000Eq: the frame bias}
+\label{sec:xval-bias}
+
+GCRF and EME2000 (equivalently ICRF and MJ2000Eq) differ only by the constant
+\emph{frame bias} matrix, the fixed rotation of order 20 milliarcseconds
+that relates the dynamical mean equator and equinox of J2000.0 to the ICRS
+axes. The IERS Conventions \citep{iers2010} give it exactly, and it is
+time-independent by definition.
+
+\lupnt{} and Orekit implement that matrix. They agree to
+${\sim}\num{5e-13}\,\lVert\vec r\rVert$, i.e.\ \SI{1.8e-4}{\meter} even at
+trans-lunar range --- pure floating-point rounding, which is what a
+comparison of two identical constant matrices should look like.
+
+GMAT's ICRF $\leftrightarrow$ MJ2000Eq rotation differs from that matrix by
+${\sim}\SI{1e-7}{\radian}$ (about 20 milliarcseconds), and the
+difference is slightly epoch-dependent, which a true constant bias cannot be.
+This is a GMAT-side convention difference, not an error in either tool, but it
+must be budgeted for: by \cref{eq:xval-rot-scaling} it is invisible at LEO
+(sub-metre) and reaches ${\sim}\SI{54}{\meter}$ at trans-lunar range. Hence
+the asymmetric tolerances --- \SI{1e-3}{\meter} against Orekit but
+$\max(\SI{5}{\meter},\, \num{3e-7}\,\lVert\vec r\rVert)$ against GMAT. Any
+lunar analysis that ingests GMAT-produced inertial states should treat
+${\sim}\SI{50}{\meter}$ as an irreducible interface bias.
+
+\subsection{Leap-second boundaries}
+\label{sec:xval-leap}
+
+$\UTone-\UTC$ is a sawtooth: it drifts smoothly, then jumps by exactly
+\SI{1}{\second} when a leap second is inserted. \lupnt{}'s EOP table stores
+the daily $\UTone-\UTC$ column and interpolates it \emph{linearly across} that
+jump. Within roughly a day of an insertion the interpolant therefore returns a
+value that is not merely inaccurate but wrong by a large fraction of a second.
+The measured errors are $+\SI{0.938}{\second}$ one hour before the
+2016-12-31 leap and $+\SI{0.094}{\second}$ six hours after the 2012-06-30
+leap.
+
+The correct treatment, which Orekit uses, is to interpolate the
+\emph{continuous} quantity $\UTone-\TAI$ and reconstruct $\UTone-\UTC$ from it
+using the leap-second step table --- exactly the decomposition
+\cref{chap:time-conversions} specifies for the constant-offset scales. The
+generator flags the affected epochs with \code{near\_leap\_second: true}, and
+the tests skip the $\UTone$-dependent assertions ($\UTone-\UTC$, GMST, ERA)
+there. The scales that do not depend on $\UTone$ --- $\TAI$, $\TT$, $\TDB$,
+$\GPST$ --- are still verified at those epochs, so leap-second handling in the
+integer-offset path is not left untested.
+
+\subsection{DE version, and the two floating-point floors}
+\label{sec:xval-de}
+
+Two further mechanisms round out the picture.
+
+\paragraph{Ephemeris version.} \lupnt{} and Orekit both evaluate DE440
+\citep{park2021de440}, and their Earth$\to$Moon and Earth$\to$Sun vectors
+agree to ${\sim}\num{5e-11}$ relative --- \SI{0.33}{\meter} for the Moon and
+\SI{7.2}{\meter} for the Sun, both consistent with independent
+redistributions of the same Chebyshev coefficients read by independent
+interpolators. GMAT ships DE405, DE421 and DE424 and still has no DE440 even in
+R2026a, so it is pointed at \lupnt{}'s own \file{de440.bsp} through
+\code{EphemerisSource = 'SPICE'} (\cref{sec:xval-constants}). All three tools
+therefore evaluate DE440, and the former DE421-versus-DE440 lunar offset is
+gone: the Moon-centred columns of \cref{tab:xval-frames} are now the same
+distribution-and-interpolation residual as the Orekit column, at the
+${\sim}\num{5e-11}$-relative level, rather than a DE-version translation. The
+third-body and SRP force checks (\cref{tab:xval-forces}) inherit the same shared
+Sun and Moon positions.
+
+\paragraph{Floating point.} Two distinct floors appear. \lupnt{} represents
+epochs as seconds since J2000 in a double; at a 2016 epoch that is
+${\sim}\num{5e8}$, so one ULP is ${\sim}\SI{1e-7}{\second}$. GMAT reports
+Modified Julian dates of ${\sim}30\,000$ days, and differencing two of them
+amplifies the ULP further. Nothing in either tool can produce a $\TAI-\UTC$
+agreement better than that, which is why the exactly-defined offsets ---
+quantities that are integers or fixed constants by definition --- still show
+${\sim}\SI{2e-8}{\second}$ and ${\sim}\SI{6e-7}{\second}$ residuals.
+
+\paragraph{Integrator.} Finally, GMAT integrates numerically even where an
+analytical solution exists. Its ``two-body'' propagation is RK89 with
+\code{Accuracy = 1e-13}, so the \code{kepler} comparison carries genuine
+integrator drift (${\sim}\SI{2e-2}{\meter}$ and ${\sim}\SI{5e-8}{\radian}$ in
+the fast angles over 1.5 orbits), whereas Orekit's analytical
+\code{KeplerianPropagator} agrees with \lupnt{}'s analytical propagator at
+machine precision. In the inertial-axis $J_2$ case the roles reverse: both
+sides integrate, and the ${\sim}\SI{2.2e-5}{\meter}$ residual is \lupnt{}'s
+fixed-step RK4 at \SI{1}{\second} against Orekit's adaptive DP853 (see
+\cref{chap:dynamics}).
+
+% ===========================================================================
+\section{Known modelling differences and limitations}
+\label{sec:xval-limitations}
+% ===========================================================================
+
+The cross-validation surfaced three items worth stating as standing
+limitations rather than as test artifacts. All three are documented in the
+corresponding test files.
+
+\paragraph{UT1 interpolation across leap seconds (a \lupnt{} limitation).}
+As described in \cref{sec:xval-leap}, the daily $\UTone-\UTC$ column is
+interpolated straight through the \SI{1}{\second} step, producing spurious
+$\UTone-\UTC$ of up to $+\SI{0.938}{\second}$ within about a day of an
+insertion. Anything that consumes $\UTone$ --- GMST, ERA, and therefore the
+whole GCRF$\leftrightarrow$ITRF chain --- is affected in that window. There
+have been no leap seconds since 2016-12-31, so present-day work is unaffected,
+but historical reprocessing across 2012-06-30 or 2016-12-31 is not.
+
+\paragraph{$J_2$ symmetry axis (an intentional simplification).}
+\cpp{JToCartTwoBodyDynamics} applies the $J_2$ acceleration about the inertial
+$Z$ axis rather than the body-fixed pole. The GMAT comparison quantifies the
+cost for Earth orbits: tens of metres to ${\sim}\SI{200}{\meter}$ over up to
+1.5 orbits for the tested LEO and MEO-HEO cases, growing with propagation
+span. The simplification buys a frame-independent, autodiff-friendly closed
+form. Use the full spherical-harmonic gravity dynamics of
+\cref{chap:dynamics} when it matters.
+
+\paragraph{GMAT's ICRF/MJ2000Eq frame bias (an external convention
+difference).} As described in \cref{sec:xval-bias}, GMAT's rotation differs
+from the IERS frame-bias matrix used by \lupnt{} and Orekit (which agree to
+sub-millimetre) by ${\sim}\SI{1e-7}{\radian}$. It is invisible in Earth orbit
+and worth ${\sim}\SI{50}{\meter}$ at trans-lunar range.
+
+\subsection{GMAT-specific caveats}
+\label{sec:xval-gmat-caveats}
+
+Five further caveats constrain what the GMAT fixture can and cannot show.
+They are recorded in \code{\_meta.notes} of
+\file{cpp/test/gmat/data/gmat_reference.json} and reproduced here because
+anyone extending the generator will meet them.
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{No $\UTone$ or GPS time scale.} GMAT R2026a exposes no
+    \code{UT1ModJulian} or \code{GPSModJulian} spacecraft parameter, so the
+    \code{time\_scales} section carries only \code{tai\_minus\_utc},
+    \code{tt\_minus\_tai} and \code{tdb\_minus\_tai}.
+  \item \textbf{Anomalies are Python-computed}, as described in
+    \cref{sec:xval-scope}; only \code{cart0} and the propagated states are
+    GMAT outputs.
+  \item \textbf{DE440 through SPICE, on both sides}, with the consequences in
+    \cref{sec:xval-de}: GMAT has no native DE440, so it reads \lupnt{}'s
+    \file{de440.bsp}.
+  \item \textbf{Luna \code{BodyFixed} is principal axes}, hence the comparison
+    against \code{MOON\_PA} rather than \code{MOON\_ME}
+    (\cref{sec:xval-moon}).
+  \item \textbf{The ``combined \code{Propagate}'' bug.} Synchronising two
+    spacecraft and propagators in one command, e.g.
+    \code{Propagate Prop1(SatA) Prop2(SatB) \{SatA.ElapsedSecs = X\};}, was
+    found to desynchronise the second spacecraft's force model in GMAT:
+    its state ended up about $60\times$ further from the two-body solution
+    than the expected $J_2$ perturbation --- clearly a tool bug, not a real
+    effect. The generator therefore always emits separate, sequential
+    \code{Propagate <Prop>(<Sat>) \{<Sat>.ElapsedSecs = <dt>\};} commands, one
+    per spacecraft-propagator pair. Preserve that pattern when extending it.
+\end{enumerate}
+
+% ===========================================================================
+\section{Regenerating the fixtures and re-running the comparison}
+\label{sec:xval-regenerate}
+% ===========================================================================
+
+Regeneration is needed only when adding cross-validation cases or
+deliberately updating the reference values after an intentional algorithm
+change. The fixtures are checked in precisely so that nobody else has to do
+it.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Files involved in the fixture-based comparison.}
+  \label{tab:xval-files}
+  \small
+  \begin{tabularx}{\textwidth}{@{}L L@{}}
+    \toprule
+    Path & Role \\
+    \midrule
+    \file{cpp/test/orekit/gen_orekit_reference.py} & Generator; needs the optional \code{dev} pixi environment (JVM, JCC-wrapped Orekit). \\
+    \file{cpp/test/orekit/data/orekit_reference.json} & Checked-in Orekit fixture. \\
+    \file{cpp/test/orekit/test_time_conversions_orekit.cc} & Time scales, GMST, ERA. \\
+    \file{cpp/test/orekit/test_frame_conversions_orekit.cc} & GCRF, EME2000, ITRF and the Moon frames. \\
+    \file{cpp/test/orekit/test_ephemeris_orekit.cc} & Sun and Moon DE440 ephemerides. \\
+    \file{cpp/test/orekit/test_orbit_dynamics_orekit.cc} & Kepler propagation, $J_2$ acceleration and propagation. \\
+    \file{cpp/test/orekit/test_force_models_orekit.cc} & Gravity, third-body and SRP accelerations (formula level). \\
+    \file{cpp/test/orekit/README.md} & Per-section data dictionary and tolerance rationale. \\
+    \file{cpp/test/gmat/gen_gmat_reference.py} & Generator (time / frame / kepler / $J_2$); needs a local GMAT R2026a desktop install. \\
+    \file{cpp/test/gmat/gen_gmat_forces_reference.py} & Generator (gravity, third-body, SRP propagation); same GMAT install, pointed at \lupnt{}'s DE440. \\
+    \file{cpp/test/gmat/data/gmat_reference.json} & Checked-in GMAT fixture. \\
+    \file{cpp/test/gmat/data/gmat_forces_reference.json} & Checked-in GMAT force-model fixture. \\
+    \file{cpp/test/gmat/data/gmat_reference.script} & The exact GMAT script that was run, paths tokenised. \\
+    \file{cpp/test/gmat/data/gmat_forces_reference.script} & The force-model GMAT script, paths tokenised. \\
+    \file{cpp/test/gmat/lupnt_j2_earth.cof} & Minimal potential file forcing \lupnt{}'s \code{GM}, \code{R\_eq} and \code{C20} onto GMAT. \\
+    \file{cpp/test/gmat/test_time_conversions_gmat.cc} & $\TAI$, $\TT$, $\TDB$. \\
+    \file{cpp/test/gmat/test_frame_conversions_gmat.cc} & Earth and Moon frames. \\
+    \file{cpp/test/gmat/test_orbit_dynamics_gmat.cc} & Kepler and $J_2$ propagation. \\
+    \file{cpp/test/gmat/test_force_models_gmat.cc} & Gravity, third-body and SRP propagation. \\
+    \file{cpp/test/gmat/README.md} & Per-section data dictionary, caveats, tolerance rationale. \\
+    \file{cpp/test/utils.cc} & \cpp{LoadTestJson()}, the fixture reader. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lstlisting}[language=shell, caption={Regenerating the Orekit fixture.}, label={lst:xval-orekit}]
+# The optional `dev` environment adds the JVM-based orekit package (via JCC)
+# on top of the default environment.  Normal users and CI never need it.
+pixi install -e dev
+pixi run -e dev python cpp/test/orekit/gen_orekit_reference.py
+
+# First run downloads the small `orekit-data` bundle (leap seconds, EOP, DE440)
+# into data/orekit-data-main/, which .gitignore already covers via **/*orekit-data*/.
+# The script overwrites cpp/test/orekit/data/orekit_reference.json.
+
+git diff --stat cpp/test/orekit/data/orekit_reference.json   # review before committing
+pixi run test-cpp
+\end{lstlisting}
+
+\begin{lstlisting}[language=shell, caption={Regenerating the GMAT fixture.}, label={lst:xval-gmat}]
+# GMAT R2026a is a desktop application, not a pixi/conda package: install it
+# separately.  On macOS the default location is /Applications/GMAT_R2026a/.
+# Point the generator at GmatConsole via GMAT_CONSOLE, or at the install
+# directory via GMAT_HOME / GMAT_ROOT_DIR; common locations are searched.
+# GMAT has no native DE440, so both generators point it at LuPNT's de440.bsp
+# via SolarSystem.EphemerisSource = 'SPICE'.  Standard library only.
+GMAT_CONSOLE=/Applications/GMAT_R2026a/bin/GmatConsole-R2026a \
+    python3 cpp/test/gmat/gen_gmat_reference.py
+
+# The force-model fixture is a separate generator (same GMAT install; it finds
+# de440.bsp under LuPNT_data by default, or set LUPNT_DE440=<path>):
+GMAT_CONSOLE=/Applications/GMAT_R2026a/bin/GmatConsole-R2026a \
+    python3 cpp/test/gmat/gen_gmat_forces_reference.py
+
+# The first overwrites data/gmat_reference.json and data/gmat_reference.script;
+# the second overwrites data/gmat_forces_reference.json (and .script).
+
+pixi run test-cpp
+\end{lstlisting}
+
+Re-running the comparison alone needs neither tool:
+
+\begin{lstlisting}[language=shell, caption={Running the cross-validation tests.}, label={lst:xval-run}]
+pixi run test-cpp                      # everything, including the fixture-based tests
+
+# Or, directly through ctest, a single family at a time:
+ctest --test-dir build-cpp-test-pixi --output-on-failure -R 'orekit_reference'
+ctest --test-dir build-cpp-test-pixi --output-on-failure -R 'gmat_reference'
+ctest --test-dir build-cpp-test-pixi --output-on-failure -R 'conversions.frame_conversions'
+ctest --test-dir build-cpp-test-pixi --output-on-failure -R 'conversions.tt_tdb_high_fidelity'
+\end{lstlisting}
+
+The relevant Catch2 test-case names are
+\longid{dynamics.kepler_orekit_reference},
+\longid{dynamics.j2_acceleration_orekit_reference},
+\longid{dynamics.j2_propagation_orekit_reference},
+\longid{dynamics.gravity_field_orekit_reference},
+\longid{dynamics.third_body_orekit_reference},
+\longid{dynamics.srp_orekit_reference},
+\longid{dynamics.kepler_gmat_reference},
+\longid{dynamics.j2_propagation_gmat_reference},
+\longid{dynamics.gravity_propagation_gmat_reference},
+\longid{dynamics.third_body_propagation_gmat_reference},
+\longid{dynamics.srp_propagation_gmat_reference},
+\longid{conversions.frame_conversions.spice_fit} and
+\longid{conversions.tt_tdb_high_fidelity}.
+
+\begin{lupntwarning}
+If a regenerated fixture moves a number, do not simply widen the tolerance.
+Every tolerance in
+\cref{tab:xval-time,tab:xval-frames,tab:xval-orbits,tab:xval-forces} is
+paired with a comment naming the mechanism that sets it. A change means either
+that mechanism changed --- a newer EOP snapshot in \code{orekit-data}, a
+different GMAT build, a new DE --- or that something regressed. Identify which
+before touching the assertion, and update the corresponding row here.
+\end{lupntwarning}
+
+% ===========================================================================
+\section{Model boundaries}
+\label{sec:xval-boundaries}
+% ===========================================================================
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{The comparison is a snapshot.} The fixtures freeze one Orekit
+    build, one \code{orekit-data} EOP vintage, and one GMAT release. They
+    detect regressions in \lupnt{}; they do not track the external tools.
+  \item \textbf{Coverage is by category, not exhaustive.} Three epochs, four
+    Earth states and two lunar states for the frames; six orbits for
+    propagation; five positions for the $J_2$ formula; 42 gravity, four
+    third-body and three SRP force-model cases. Extreme regimes --- very high
+    eccentricity, epochs far outside the EOP table, deep-past DE coverage ---
+    are not sampled.
+  \item \textbf{Drag is the one perturbation not cross-validated} against these
+    tools. Point mass, $J_2$, spherical-harmonic gravity, third-body
+    point-mass perturbations and solar radiation pressure are now all covered
+    (\cref{tab:xval-orbits,tab:xval-forces}); atmospheric drag, eclipse/shadow
+    transitions and higher-order coupling remain covered only by the internal
+    tests of \cref{chap:dynamics}.
+  \item \textbf{Measurement, signal and estimation models are out of scope.}
+    Neither reference tool models the observables of the later chapters.
+  \item \textbf{$\UTone$-dependent results are skipped near leap seconds},
+    so the \SI{0.024}{\second} figure in \cref{tab:xval-time} is an
+    away-from-leap-second bound, not a global one.
+  \item \textbf{The SPICE comparisons validate fits, not physics.} They show
+    that \lupnt{}'s thread-safe fast paths reproduce the kernels; the accuracy
+    of the kernels themselves is the province of NAIF and JPL
+    \citep{acton1996spice,park2021de440}.
+  \item \textbf{Tolerances are calibrated against the bundled EOP vintage.}
+    Refreshing EOP from the IERS mid-run (\cref{chap:sp3-download}) will move
+    the ITRF comparison by tens of milliseconds of $\UTone$, i.e.\ well
+    outside the asserted bound at trans-lunar range.
+\end{itemize}

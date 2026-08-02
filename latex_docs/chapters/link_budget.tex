@@ -1,0 +1,1244 @@
+\chapter{Link Budget and Visibility}
+\label{chap:link-budget}
+
+This chapter specifies the mathematical contract for \lupnt{}'s line-of-sight
+visibility test and its carrier-to-noise-density ($C/N_0$) link budget.
+Together the two decide \emph{which} GNSS channels a lunar receiver can track
+and \emph{how noisy} each resulting observable is: the visibility predicate
+gates channel construction, and the $C/N_0$ value drives the tracking-loop
+thermal-noise models that populate the per-channel standard deviations
+$\sigma_P$, $\sigma_D$ and $\sigma_\Phi$ consumed by the GNSS measurement
+model.
+
+The implementation is spread over five translation units:
+\file{cpp/lupnt/measurements/comms_utils.cc} (free-space path loss,
+tracking-loop jitter, visibility),
+\file{cpp/lupnt/measurements/antenna.cc} (gain-pattern tables),
+\file{cpp/lupnt/measurements/gnss_measurement.cc} (the \cpp{LinkBudget} and
+\cpp{ComputeCN0} glue, and the $\sigma$ converters),
+\file{cpp/lupnt/attitude/gnss_attitude.cc} (transmitter body frame), and
+\file{cpp/lupnt/attitude/gnss_yaw_steering.cc} (nominal and maneuver yaw
+laws).  Receiver-side knobs live on \cpp{GnssReceiverParams} in
+\file{cpp/lupnt/agents/gnss_constellation.h}.
+
+The reference model is the thesis, \citep[Ch.~6.4.3, Ch.~3.3]{iiyama2026thesis};
+the tracking-loop and antenna conventions follow \citet{kaplan2017} and
+\citet{misra2011gnss}, the yaw-attitude laws follow \citet{kouba2009yaw} and
+\citet{cheng2025yaw}, and the lunar service parameters (S-band carrier,
+received-power floor) follow \citep{lunanet2022}.
+
+\section{Scope, Units and Frame Contract}
+\label{sec:lb-scope}
+
+Every quantity in this chapter obeys the following contract.
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Positions and velocities} are given in a single inertial frame
+        (\code{options.frame}, typically \code{Frame::ECI} or
+        \code{Frame::GCRF}) in \si{\meter} and \si{\meter\per\second}.  The
+        attitude computation is performed after an explicit conversion to
+        \code{Frame::GCRF}, because the yaw-steering law is defined relative to
+        the Earth-centred orbital plane of the GNSS transmitter.
+  \item \textbf{Epochs} passed to \cpp{ComputeCN0} are receiver signal
+        \emph{reception} epochs in the \code{receive\_time\_scale} option
+        (default $\TAI$); the transmitter state is evaluated at the
+        light-time-corrected transmit epoch, and the Sun position at the
+        reception epoch converted to $\TDB$ for the ephemeris call.
+  \item \textbf{Powers and gains} are logarithmic throughout: transmit power in
+        \si{\dBW}, antenna gains in \si{\dBi}, losses in \si{\dB}, and
+        $C/N_0$ in \si{\dBHz}.  The only linear quantity is
+        $\gamma = 10^{(C/N_0)/10}$ in \si{\hertz}, used by the tracking-loop
+        models.
+  \item \textbf{Angles} are in \si{\radian} in all C++ interfaces.  Antenna
+        pattern tables are stored in degrees and converted on lookup; the
+        elevation mask \code{min\_elev\_deg} is the sole degree-valued
+        argument.
+\end{itemize}
+
+\section{Visibility Geometry}
+\label{sec:lb-visibility}
+
+Line-of-sight visibility between two points $\vec{r}_1$ and $\vec{r}_2$ in a
+common frame, in the presence of one spherical occulting body of radius $R_B$
+centred at $\vec{r}_B$, is evaluated by \cpp{ComputeVisibility}.  It is invoked
+per transmitter channel from \cpp{GNSSMeasurements::BuildChannels} when
+\code{options.apply\_visibility} is set, once per configured
+\cpp{GnssOccludingBody} (typically the Moon and the Earth).
+
+\begin{lstlisting}[language=cpp, caption={Visibility predicate signature and
+defaults.}, label={lst:lb-visibility-sig}]
+// cpp/lupnt/measurements/comms_utils.h :: ComputeVisibility
+bool ComputeVisibility(const Vec3& r1, const Vec3& r2, Real R_body,
+                       const Vec3& r_body = Vec3::Zero(),
+                       const Real min_alt = 10e3,
+                       const Real min_elev_deg = 5.0);
+\end{lstlisting}
+
+The test distinguishes two regimes based on whether either endpoint lies within
+$R_B + h_\mathrm{min}$ of the body centre, with $h_\mathrm{min}$ the
+\code{min\_alt} argument (default \SI{10}{\kilo\meter}).
+
+\subsection{Elevation-mask regime}
+\label{sec:lb-visibility-elev}
+
+If $\vec{r}_1$ is a near-surface point, the local elevation of the link toward
+$\vec{r}_2$ is
+\begin{equation}
+  e_1
+  =
+  \cos^{-1}
+  \!\left(
+    \frac{(\vec{r}_2 - \vec{r}_1)\transpose(\vec{r}_B - \vec{r}_1)}
+         {\lVert \vec{r}_2 - \vec{r}_1 \rVert \,
+          \lVert \vec{r}_B - \vec{r}_1 \rVert}
+  \right)
+  - \frac{\pi}{2},
+  \label{eq:lb-elevation}
+\end{equation}
+i.e.\ the complement of the angle between the line of sight and the local
+nadir direction.  The link is rejected when $e_1 < e_\mathrm{min}$, with
+$e_\mathrm{min}$ the \code{min\_elev\_deg} argument (code default
+$+5^\circ$).  The same test is applied symmetrically if $\vec{r}_2$ is the
+near-surface endpoint.
+
+\subsection{Horizon-occlusion regime}
+\label{sec:lb-visibility-horizon}
+
+For a space-to-space link the body is treated as a hard sphere.  With
+$\vec{r} = \vec{r}_2 - \vec{r}_1$ and $\vec{r}_{1B} = \vec{r}_1 - \vec{r}_B$,
+\begin{equation}
+  \theta_1
+  = \cos^{-1}\!\left(
+      \frac{-\vec{r}_{1B}\transpose \vec{r}}
+           {\lVert \vec{r} \rVert\,\lVert \vec{r}_{1B}\rVert}\right),
+  \qquad
+  \theta_2
+  = \sin^{-1}\!\left(\frac{R_B}{\lVert \vec{r}_{1B}\rVert}\right),
+  \qquad
+  d_\mathrm{hor}
+  = \sqrt{\lVert \vec{r}_{1B}\rVert^2 - R_B^2},
+  \label{eq:lb-horizon-angles}
+\end{equation}
+where $\theta_1$ is the angle at $\vec{r}_1$ between the body centre and the
+transmitter, $\theta_2$ is the angular radius of the body as seen from
+$\vec{r}_1$, and $d_\mathrm{hor}$ is the distance from $\vec{r}_1$ to its own
+tangent point on the limb.  The line of sight is blocked when the transmitter
+lies inside the body's angular disc \emph{and} beyond the tangent point:
+\begin{equation}
+  \theta_1 < \theta_2
+  \quad\text{and}\quad
+  \lVert \vec{r} \rVert > d_\mathrm{hor}.
+  \label{eq:lb-blocked}
+\end{equation}
+The second condition is what keeps a transmitter that is in front of the body
+(closer than the limb) visible even though it projects onto the disc.
+
+\begin{lupntnote}
+\cpp{ComputeVisibility} handles a \emph{single} occulting body per call;
+\cpp{BuildChannels} loops over all configured \cpp{GnssOccludingBody} entries
+and requires every one to pass.  The GNSS specification's near-surface
+threshold of $e > -10^\circ$ is the scenario-level \code{min\_elev\_deg} passed
+by the caller; the code default is $+5^\circ$, so a scenario that wants the
+below-horizon grazing rays must pass a negative mask explicitly.
+\end{lupntnote}
+
+\section{The Link Equation Chain in Decibels}
+\label{sec:lb-chain}
+
+The received carrier-to-noise-density ratio for one channel is assembled by the
+anonymous-namespace helper \cpp{LinkBudget} and driven by
+\cpp{GNSSMeasurements::ComputeCN0}.
+
+\begin{lstlisting}[language=cpp, caption={The link-budget accumulator.},
+label={lst:lb-linkbudget}]
+// cpp/lupnt/measurements/gnss_measurement.cc :: LinkBudget
+Real LinkBudget(Real P_tx_dbw, Real G_tx_db, Real G_rx_db, Real range_m,
+                GnssFreq freq, const GnssReceiverParams& rx_params) {
+  constexpr double k_B = 1.38e-23;  // [J/K] Boltzmann constant
+
+  auto it = GNSS_FREQ_MAP.find(freq);
+  LUPNT_CHECK(it != GNSS_FREQ_MAP.end(), "Unknown GNSS frequency",
+              "GNSSMeasurements");
+  Real freq_Hz = it->second;
+
+  Real L_fs = FreeSpacePathLoss(range_m, freq_Hz);
+  double kb_db = 10.0 * std::log10(k_B);
+
+  return P_tx_dbw + G_tx_db + G_rx_db - rx_params.L_atm - L_fs
+         - rx_params.L_ad - rx_params.L_pol - kb_db
+         - 10.0 * log10(rx_params.T_eff);
+}
+\end{lstlisting}
+
+\subsection{Carrier power at the receiver}
+\label{sec:lb-carrier}
+
+The chain is best read in three stages.  First, the transmitter radiates an
+equivalent isotropically radiated power in the direction
+$(\theta_\mathrm{tx}, \varphi_\mathrm{tx})$ of the receiver,
+\begin{equation}
+  \mathrm{EIRP}(\theta_\mathrm{tx}, \varphi_\mathrm{tx})
+  =
+  P_\mathrm{tx}
+  - L_\mathrm{tx}
+  + G_\mathrm{tx}(\theta_\mathrm{tx}, \varphi_\mathrm{tx})
+  \qquad [\si{\dBW}],
+  \label{eq:lb-eirp}
+\end{equation}
+with $P_\mathrm{tx}$ the transmit amplifier output power in \si{\dBW},
+$L_\mathrm{tx}$ the transmit feed/cable loss in \si{\dB}, and
+$G_\mathrm{tx}$ the transmit pattern gain in \si{\dBi}.  \lupnt{} folds
+$L_\mathrm{tx}$ into the published $P_\mathrm{tx}$ and therefore carries no
+separate transmit-cable term (see \cref{sec:lb-eirp-inverse}).
+
+Second, the wave is attenuated on the way to the receive antenna terminals,
+and the receive pattern gain is applied:
+\begin{equation}
+  C
+  =
+  \mathrm{EIRP}(\theta_\mathrm{tx}, \varphi_\mathrm{tx})
+  - L_\mathrm{fs}
+  - L_\mathrm{atm}
+  - L_\mathrm{pol}
+  - L_\mathrm{ad}
+  + G_\mathrm{rx}(\varphi_\mathrm{rx})
+  - L_\mathrm{rx}
+  \qquad [\si{\dBW}].
+  \label{eq:lb-carrier}
+\end{equation}
+
+Third, the one-sided noise power spectral density at the same reference plane
+is
+\begin{equation}
+  N_0
+  =
+  10\log_{10}\!\big(k_B\,T_\mathrm{eff}\big)
+  =
+  10\log_{10} k_B + 10\log_{10} T_\mathrm{eff}
+  \qquad [\si{\dBW\per\hertz}],
+  \label{eq:lb-n0}
+\end{equation}
+with $k_B = \SI{1.38e-23}{\joule\per\kelvin}$, so that
+$10\log_{10} k_B = \SI{-228.60}{\dB}$ referenced to \si{\watt\per\kelvin\per\hertz}.
+The quantity delivered to the rest of the measurement model is the difference
+$C - N_0$:
+\begin{equation}
+  \left(C/N_0\right)_{\mathrm{dB\text{-}Hz}}
+  =
+  P_\mathrm{tx}
+  + G_\mathrm{tx}(\theta_\mathrm{tx}, \varphi_\mathrm{tx})
+  + G_\mathrm{rx}(\varphi_\mathrm{rx})
+  - L_\mathrm{fs}
+  - L_\mathrm{atm}
+  - L_\mathrm{ad}
+  - L_\mathrm{pol}
+  - 10\log_{10} k_B
+  - 10\log_{10} T_\mathrm{eff}.
+  \label{eq:lb-cn0}
+\end{equation}
+\Cref{eq:lb-cn0} is exactly what \cref{lst:lb-linkbudget} evaluates:
+$L_\mathrm{tx}$ and $L_\mathrm{rx}$ are absent because they are absorbed into
+$P_\mathrm{tx}$ and $G_\mathrm{rx}$ respectively.  Every term is catalogued in
+\cref{tab:lb-terms}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Terms of the $C/N_0$ link equation \eqref{eq:lb-cn0}, their units and
+  their source in the code.}
+  \label{tab:lb-terms}
+  \begin{tabularx}{\textwidth}{l l l L}
+    \toprule
+    Symbol & Unit & Code & Meaning and source \\
+    \midrule
+    $P_\mathrm{tx}$ & \si{\dBW} & \cpp{P\_tx\_dbw} &
+      Transmit power at the antenna port, from
+      \cpp{GnssConstellation::GetTransmitPowerDbw}; for constellations that
+      publish EIRP directly this field carries the EIRP. \\
+    $G_\mathrm{tx}$ & \si{\dBi} & \cpp{G\_tx\_db} &
+      Transmit pattern gain at off-boresight angle $\varphi_\mathrm{tx}$ and
+      azimuth $\theta_\mathrm{tx}$; \cpp{Antenna::ComputeGain}. \\
+    $G_\mathrm{rx}$ & \si{\dBi} & \cpp{G\_rx\_db} &
+      Receive pattern gain at off-boresight angle $\varphi_\mathrm{rx}$,
+      evaluated at azimuth $0$. \\
+    $L_\mathrm{fs}$ & \si{\dB} & \cpp{L\_fs} &
+      Free-space path loss, \cpp{FreeSpacePathLoss}; the only
+      geometry-dependent loss. \\
+    $L_\mathrm{atm}$ & \si{\dB} & \cpp{rx\_params.L\_atm} &
+      Atmospheric/ionospheric absorption; $0$ on the vacuum lunar link. \\
+    $L_\mathrm{ad}$ & \si{\dB} & \cpp{rx\_params.L\_ad} &
+      Analogue-to-digital conversion and implementation loss (the thesis
+      $R_\mathrm{loss}$). \\
+    $L_\mathrm{pol}$ & \si{\dB} & \cpp{rx\_params.L\_pol} &
+      Polarization mismatch loss between the transmitted and received
+      circular polarizations. \\
+    $k_B$ & \si{\joule\per\kelvin} & \cpp{k\_B} &
+      Boltzmann's constant, hard-coded as \num{1.38e-23}. \\
+    $T_\mathrm{eff}$ & \si{\kelvin} & \cpp{rx\_params.T\_eff} &
+      Effective system noise temperature referred to the antenna port. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lupntnote}
+\Cref{eq:lb-cn0} is thesis Eq.~(6.59),
+$(C/N_0) = P_\mathrm{tx} + G_\mathrm{tx} + G_\mathrm{rx}
+ - 20\log_{10}(4\pi d f / c) - L_\mathrm{pol}
+ - 10\log_{10}(k_B T_\mathrm{sys}) - R_\mathrm{loss}$,
+with two bookkeeping differences.  The code splits the single thesis noise term
+$10\log_{10}(k_B T_\mathrm{sys})$ into
+$10\log_{10} k_B + 10\log_{10} T_\mathrm{eff}$ (identical value), and it
+carries an extra $L_\mathrm{atm}$ term (zero on the lunar link) while naming
+the implementation loss $L_\mathrm{ad}$ rather than $R_\mathrm{loss}$.  The
+numerical results are the same for $L_\mathrm{atm} = 0$ and
+$T_\mathrm{eff} = T_\mathrm{sys}$.
+\end{lupntnote}
+
+\subsection{Free-space path loss}
+\label{sec:lb-fspl}
+
+Free-space path loss is the spreading of an isotropic wavefront over a sphere
+of radius $d$ relative to the effective aperture $\lambda^2/4\pi$ of an
+isotropic receiver:
+\begin{equation}
+  L_\mathrm{fs}
+  =
+  20\log_{10}\!\left(\frac{4\pi d f}{c}\right)
+  =
+  20\log_{10}\!\left(\frac{4\pi d}{\lambda}\right)
+  \qquad [\si{\dB}],
+  \label{eq:lb-fspl}
+\end{equation}
+with $d$ the transmitter-receiver slant range in \si{\meter}, $f$ the carrier
+frequency in \si{\hertz} (looked up in \code{GNSS\_FREQ\_MAP}), $c$ the speed
+of light, and $\lambda = c/f$.  This is thesis Eq.~(3.18), and the loss term of
+Eq.~(6.59).
+
+\begin{lstlisting}[language=cpp, caption={Free-space path loss.},
+label={lst:lb-fspl}]
+// cpp/lupnt/measurements/comms_utils.cc :: FreeSpacePathLoss
+Real FreeSpacePathLoss(Real dist, Real freq) {
+  return 20.0 * log10((4.0 * PI * dist) / (C / freq));
+}
+\end{lstlisting}
+
+The slant range $d$ used by \cpp{ComputeCN0} is the geometric range between the
+light-time-corrected transmitter position and the receiver position at
+reception, $d = \lVert \vec{r}_\mathrm{rx}(t_\mathrm{rx})
+- \vec{r}_\mathrm{tx}(t_\mathrm{tx})\rVert$, i.e.\ the same range that enters
+the pseudorange model.  For a terrestrial GPS transmitter seen from lunar
+distance, $d \approx \SI{4e8}{\meter}$ and $f = \SI{1575.42}{\mega\hertz}$ give
+$L_\mathrm{fs} \approx \SI{208.4}{\dB}$, roughly \SI{26}{\dB} more than the
+same link seen from low Earth orbit.
+
+\subsection{EIRP: forward model versus design inverse}
+\label{sec:lb-eirp-inverse}
+
+\lupnt{} carries the transmit power and the transmit antenna gain
+\emph{separately}: \cpp{GnssConstellation} exposes
+\cpp{GetTransmitPowerDbw}, which supplies $P_\mathrm{tx}$, and
+\cpp{GetTransmitterAntenna}, which supplies the pattern that yields
+$G_\mathrm{tx}(\theta_\mathrm{tx}, \varphi_\mathrm{tx})$,
+and their sum is the EIRP of \cref{eq:lb-eirp}.  For constellations that
+publish EIRP directly rather than power-plus-pattern (Galileo, for example),
+$P_\mathrm{tx}$ is loaded as the EIRP and the transmit pattern is set to its
+peak-referenced shape, so that \cref{eq:lb-eirp} still returns the published
+value on boresight.
+
+The thesis instead poses the \emph{required} EIRP as a design output
+\citep[Ch.~3.3, Eq.~(3.17)]{iiyama2026thesis}, for a surface user at a fixed
+received-power floor $P_\mathrm{rx}$:
+\begin{equation}
+  \mathrm{EIRP}
+  =
+  P_\mathrm{rx}
+  + L_\mathrm{fs}
+  - G_\mathrm{rx}
+  + L_\mathrm{tx}
+  + L_\mathrm{rx}
+  \qquad [\si{\dBW}],
+  \label{eq:lb-eirp-required}
+\end{equation}
+with $L_\mathrm{tx}$ and $L_\mathrm{rx}$ the transmitter and receiver cable
+losses.  \Cref{eq:lb-eirp-required} is the algebraic inverse of
+\cref{eq:lb-carrier}: \lupnt{} propagates a \emph{known} EIRP forward to
+$C/N_0$, whereas the thesis solves for the EIRP that meets a received-power or
+$C/N_0$ requirement.  The reference sizing case is given in
+\cref{tab:lb-thesis-eirp}.
+
+\subsection{Antenna gain patterns}
+\label{sec:lb-gain}
+
+The gains $G_\mathrm{tx}$ and $G_\mathrm{rx}$ are table lookups into measured
+patterns.  A pattern is a function of the off-boresight (polar) angle
+$\varphi$ measured from the boresight axis and the azimuth $\theta$ about it:
+\begin{equation}
+  G(\theta, \varphi)
+  =
+  \operatorname{interp}\big(\varphi,\ \theta;\ \code{gain\_}\big)
+  \qquad [\si{\dBi}].
+  \label{eq:lb-gain}
+\end{equation}
+
+\begin{lstlisting}[language=cpp, caption={Pattern lookup with the coverage cut
+and the mirror-symmetry fold.}, label={lst:lb-gain}]
+// cpp/lupnt/measurements/antenna.cc :: Antenna::ComputeGain
+Real Antenna::ComputeGain(Real theta, Real phi) const {
+  Real gain = 0.0;
+  if (n_dim_ == 0) return gain;  // Omni-directional antenna
+
+  theta = WrapToTwoPi(theta) * DEG;
+  phi = WrapToPi(phi) * DEG;
+  if (phi > phi_max_ || phi < -phi_max_) return NAN;  // Minimum angle
+  if (phi < 0 && phi_(0) >= 0) phi = -phi;            // Symmetry
+
+  if (n_dim_ == 2) {
+    gain = LinearInterp2d(phi_, theta_, gain_, phi.val(), theta.val());
+  } else if (n_dim_ == 1) {
+    gain = LinearInterp1d(phi_, gain_, phi.val());
+  }
+  return gain;
+}
+\end{lstlisting}
+
+Patterns are read from ANTEX/ACE-style data files by
+\cpp{Antenna::LoadAntennaPattern}, as 1D $G(\varphi)$ or 2D
+$G(\varphi,\theta)$ tables, then normalized to
+$\varphi \in [-180, 180]^\circ$ and $\theta \in [0, 360]^\circ$ by
+\cpp{FormatAntennaPattern}.  Three conventions matter for the link budget:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item An empty antenna name gives an omni-directional antenna,
+        $G \equiv \SI{0}{\dBi}$, and the gain term drops out of
+        \cref{eq:lb-cn0}.
+  \item Directions beyond the pattern's \code{phi\_max\_} return \code{NaN};
+        this acts as an implicit hard sidelobe cutoff and propagates a
+        \code{NaN} $C/N_0$, which downstream channel construction treats as
+        an untrackable channel.
+  \item A pattern tabulated only for $\varphi \ge 0$ is assumed symmetric
+        about the boresight, and negative $\varphi$ is folded onto
+        $\lvert\varphi\rvert$.
+\end{enumerate}
+
+A closed-form parabolic alternative is available for quick studies, following
+the standard main-lobe approximation \citep{kaplan2017}:
+\begin{equation}
+  G(\varphi)
+  =
+  G_\mathrm{max}
+  - 12\left(\frac{\varphi}{\varphi_\mathrm{3dB}}\right)^{2}
+  \qquad [\si{\dBi}],
+  \label{eq:lb-parabolic}
+\end{equation}
+with $\varphi_\mathrm{3dB}$ the half-power beamwidth, implemented as
+\cpp{ParabolicAntennaGain} in \file{cpp/lupnt/measurements/comms_utils.cc}.
+\Cref{eq:lb-parabolic} is valid only inside the main lobe; it diverges to
+$-\infty$ and must not be extrapolated into the sidelobe region that dominates
+Earth-GNSS-to-Moon links.
+
+\subsection{Pointing loss}
+\label{sec:lb-pointing}
+
+Classical link budgets carry an explicit pointing-loss term
+$L_\mathrm{point} = L_\mathrm{point,tx} + L_\mathrm{point,rx}$, defined as the
+gain shortfall relative to boresight caused by an attitude error
+$\delta\varphi$,
+\begin{equation}
+  L_\mathrm{point}(\delta\varphi)
+  =
+  G(0) - G(\delta\varphi)
+  \;\approx\;
+  12\left(\frac{\delta\varphi}{\varphi_\mathrm{3dB}}\right)^{2}
+  \qquad [\si{\dB}],
+  \label{eq:lb-pointing}
+\end{equation}
+where the approximation uses \cref{eq:lb-parabolic}.  \lupnt{} does \emph{not}
+carry \cref{eq:lb-pointing} as a separate budget line: because
+$G_\mathrm{tx}$ and $G_\mathrm{rx}$ are evaluated at the true geometric
+off-boresight angles $\varphi_\mathrm{tx}$ and $\varphi_\mathrm{rx}$ of
+\cref{sec:lb-attitude}, the deterministic part of the pointing loss is already
+inside the gain terms of \cref{eq:lb-cn0}.  What is omitted is the
+\emph{stochastic} part: the residual attitude-control jitter of the
+transmitter and of the receive antenna gimbal.  A user who wants a jitter
+allowance must fold it into $L_\mathrm{ad}$, which is the only free
+implementation-loss knob in \cpp{GnssReceiverParams}.
+
+\subsection{Atmospheric and other losses}
+\label{sec:lb-losses}
+
+Three static loss terms complete the chain.
+
+\begin{description}[leftmargin=0pt, style=nextline]
+  \item[Atmospheric loss $L_\mathrm{atm}$.]  Absorption by the neutral
+        atmosphere and, at low elevation, by the ionosphere.  It is
+        \SI{0}{\dB} for a lunar-surface or cislunar receiver, which is the
+        default.  For an Earth-limb-grazing terrestrial-GNSS ray the physical
+        value is elevation- and frequency-dependent, but \lupnt{} models it as
+        a constant; the ray-traced ionospheric path in the GNSS measurement
+        model contributes a \emph{delay}, not an absorption.
+  \item[Polarization loss $L_\mathrm{pol}$.]  Mismatch between the transmitted
+        and received polarization ellipses.  For two nominally right-hand
+        circularly polarized antennas with axial ratios $\mathrm{AR}_1$,
+        $\mathrm{AR}_2$ the worst-case loss is bounded by the standard
+        axial-ratio expression \citep{kaplan2017}; \lupnt{} uses the constant
+        \SI{1.0}{\dB} of the thesis reference budget.
+  \item[Implementation loss $L_\mathrm{ad}$.]  Quantization, sampling and
+        correlator implementation loss, referred to as $R_\mathrm{loss}$ in
+        the thesis.  Default \SI{0.6}{\dB}.
+\end{description}
+
+All three are static per receiver: they are read once from
+\cpp{GnssReceiverParams} and do not vary with geometry, epoch or channel.
+
+\subsection{Noise temperature and $G/T$}
+\label{sec:lb-gt}
+
+The effective system noise temperature $T_\mathrm{eff}$ referred to the
+receive-antenna output port is, in the standard cascade form,
+\begin{equation}
+  T_\mathrm{eff}
+  =
+  \frac{T_A}{L_\mathrm{rx}^{\,\mathrm{lin}}}
+  + T_0\left(1 - \frac{1}{L_\mathrm{rx}^{\,\mathrm{lin}}}\right)
+  + T_0\,(F - 1)
+  \qquad [\si{\kelvin}],
+  \label{eq:lb-teff}
+\end{equation}
+where $T_A$ is the antenna noise temperature (the brightness temperature
+integrated over the pattern: cold sky, lunar regolith or Earth disc,
+depending on where the beam points), $L_\mathrm{rx}^{\,\mathrm{lin}}$ is the
+linear feed loss between antenna and first amplifier, $F$ is the receiver
+noise factor, and $T_0 = \SI{290}{\kelvin}$ is the reference temperature.
+\lupnt{} does not evaluate \cref{eq:lb-teff}; it takes the result as the single
+scalar \cpp{rx\_params.T\_eff} (default \SI{167.98}{\kelvin}), so a scenario
+that changes the antenna's field of view must recompute
+\cref{eq:lb-teff} offline and set the new value.
+
+The receiver figure of merit is the gain-to-noise-temperature ratio
+\begin{equation}
+  \left(G/T\right)
+  =
+  G_\mathrm{rx}(\varphi_\mathrm{rx})
+  - 10\log_{10} T_\mathrm{eff}
+  \qquad [\si{\dB\per\kelvin}],
+  \label{eq:lb-gt}
+\end{equation}
+in terms of which the link equation \eqref{eq:lb-cn0} collapses to the compact
+form
+\begin{equation}
+  \left(C/N_0\right)_{\mathrm{dB\text{-}Hz}}
+  =
+  \mathrm{EIRP}(\theta_\mathrm{tx}, \varphi_\mathrm{tx})
+  - L_\mathrm{fs}
+  - \left(L_\mathrm{atm} + L_\mathrm{ad} + L_\mathrm{pol}\right)
+  + \left(G/T\right)
+  + \SI{228.60}{\dB},
+  \label{eq:lb-cn0-gt}
+\end{equation}
+where the constant is $-10\log_{10} k_B$ with $k_B = \num{1.38e-23}$.  With the
+default $T_\mathrm{eff} = \SI{167.98}{\kelvin}$,
+$10\log_{10} T_\mathrm{eff} = \SI{22.25}{\dB}$, so the receiver contributes a
+net $+\SI{206.35}{\dB}$ to \cref{eq:lb-cn0-gt}, and the thesis reference
+$G_\mathrm{rx} = \SI{14}{\dBi}$ gives
+$G/T = \SI{-8.25}{\dB\per\kelvin}$.  Substituting the lunar-distance
+$L_\mathrm{fs} \approx \SI{208.4}{\dB}$ of \cref{sec:lb-fspl} and a sidelobe
+EIRP of about \SI{29}{\dBW} yields
+$C/N_0 \approx \SI{39}{\dBHz}$, comfortably above the acquisition floor but
+within a few \si{\dB} of it once the transmit pattern rolls off.
+
+\section{Transmitter Attitude and Boresight Angles}
+\label{sec:lb-attitude}
+
+Evaluating $G_\mathrm{tx}$ requires the transmitter body frame, because the
+off-boresight angles $(\theta_\mathrm{tx}, \varphi_\mathrm{tx})$ are defined in
+the GNSS satellite's yaw-steering attitude.  \cpp{GNSSMeasurements::ComputeCN0}
+builds that frame with \cpp{GnssAttitude} at the transmit epoch, then projects
+the line of sight onto it.
+
+\subsection{The transmitter body triad}
+\label{sec:lb-triad}
+
+The orthonormal transmitter triad
+$(\uvec{e}_x, \uvec{e}_y, \uvec{e}_z)$ is the nominal Sun-pointing
+``yaw-steering'' body frame,
+\begin{equation}
+  \uvec{e}_z = \widehat{-\vec{r}_\mathrm{tx}},
+  \qquad
+  \uvec{e}_y
+  = \widehat{\uvec{e}_z \times
+             \widehat{\left(\vec{r}_\odot - \vec{r}_\mathrm{tx}\right)}},
+  \qquad
+  \uvec{e}_x = \widehat{\uvec{e}_y \times \uvec{e}_z},
+  \label{eq:lb-triad}
+\end{equation}
+where $\uvec{e}_z$ is the nadir direction (the antenna boresight),
+$\uvec{e}_y$ is the cross-track direction toward the Sun side (the solar-panel
+rotation axis, orthogonal to the satellite-Sun-Earth plane), and
+$\uvec{e}_x$ completes the right-handed triad in the along-track sense.
+$\vec{r}_\odot$ is the Sun position in the same frame.
+
+The off-boresight and azimuth angles of the transmitter-to-receiver unit vector
+$\uvec{u} = \widehat{\vec{r}_\mathrm{rx} - \vec{r}_\mathrm{tx}}$ are
+\begin{equation}
+  \varphi_\mathrm{tx}
+  = \cos^{-1}\!\big(\uvec{u}\transpose \uvec{e}_z\big)
+  \in [0, \pi],
+  \qquad
+  \theta_\mathrm{tx}
+  = \atantwo\!\big(\uvec{u}\transpose \uvec{e}_y,\
+                   \uvec{u}\transpose \uvec{e}_x\big)
+  \in (-\pi, \pi].
+  \label{eq:lb-tx-angles}
+\end{equation}
+
+For the receiver, \cpp{BoresightTarget(t)} supplies the receive-antenna
+boresight aim point (default the frame origin; a provider can point it at the
+Earth, matching the thesis Earth-pointing receiver).  With
+$\uvec{b} = \widehat{\vec{r}_\mathrm{target} - \vec{r}_\mathrm{rx}}$ and
+$\uvec{u}' = -\uvec{u}$ the receiver-to-transmitter line of sight,
+\begin{equation}
+  \varphi_\mathrm{rx}
+  = \cos^{-1}\!\big(\uvec{b}\transpose \uvec{u}'\big),
+  \qquad
+  \theta_\mathrm{rx} \equiv 0,
+  \label{eq:lb-rx-angles}
+\end{equation}
+i.e.\ the receive pattern is always sampled on its azimuth-zero cut, which is
+exact for a 1D (axisymmetric) receive pattern and an approximation for a 2D
+one.  The geometry of \crefrange{eq:lb-triad}{eq:lb-rx-angles} is drawn in
+\cref{fig:lb-geometry}.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[>=Latex, scale=1.0]
+    % --- central body ---
+    \fill[black!8] (0,0) circle (1.0);
+    \draw[thick, black!45] (0,0) circle (1.0);
+    \node[font=\small\sffamily] at (0,0) {Earth};
+
+    % --- transmitter and receiver ---
+    \coordinate (TX) at (-3,3);
+    \coordinate (RX) at (4,1);
+    \node[tsnode, above left=1pt and 1pt of TX] {GNSS Tx};
+    \node[tsnode, above right=1pt and 1pt of RX] {Rx};
+    \fill (TX) circle (1.6pt);
+    \fill (RX) circle (1.6pt);
+
+    % --- body triad at the transmitter ---
+    \draw[flow] (TX) -- ++(-45:1.9)
+      node[pos=1.0, below left=-1pt and 0pt, font=\small]
+      {$\uvec{e}_z$ (nadir)};
+    \draw[flow] (TX) -- ++(45:1.2)
+      node[pos=1.0, above right=-2pt and -2pt, font=\small] {$\uvec{e}_x$};
+    \draw[fill=white] (TX) ++(0.42,0.0) circle (2.2pt);
+    \fill (TX) ++(0.42,0.0) circle (0.7pt);
+    \node[font=\small, right=1pt] at ($(TX)+(0.55,0.02)$)
+      {$\uvec{e}_y$ (out of page, Sun side)};
+
+    % --- Sun direction ---
+    \draw[table] (TX) -- ++(115:2.0)
+      node[pos=1.0, above, font=\small] {to Sun $\uvec{s}$};
+
+    % --- line of sight ---
+    \draw[linear] (TX) -- (RX)
+      node[pos=0.52, above, font=\small] {$\uvec{u}$, slant range $d$};
+
+    % --- off-boresight angle at the transmitter ---
+    \draw[thick, black!70] ($(TX)+(-45:1.25)$) arc (-45:-16:1.25);
+    \node[font=\small] at ($(TX)+(-30:1.62)$) {$\varphi_\mathrm{tx}$};
+
+    % --- receiver boresight ---
+    \draw[flow] (RX) -- ++(194:1.9)
+      node[pos=1.0, below left=-2pt and -3pt, font=\small]
+      {$\uvec{b}$ (boresight)};
+    \draw[thick, black!70] ($(RX)+(164:1.15)$) arc (164:194:1.15);
+    \node[font=\small] at ($(RX)+(179:1.55)$) {$\varphi_\mathrm{rx}$};
+
+    % --- azimuth reminder ---
+    \node[font=\small\itshape, align=center] at (0.2,-2.0)
+      {$\theta_\mathrm{tx}$ is measured about $\uvec{e}_z$ from
+       $\uvec{e}_x$ toward $\uvec{e}_y$};
+  \end{tikzpicture}
+  \caption{Transmit and receive antenna geometry.  The transmitter body triad
+  $(\uvec{e}_x,\uvec{e}_y,\uvec{e}_z)$ is nadir-pointing with
+  $\uvec{e}_y$ orthogonal to the satellite-Sun-Earth plane; the transmit gain
+  is sampled at the off-boresight angle $\varphi_\mathrm{tx}$ and azimuth
+  $\theta_\mathrm{tx}$ of the line of sight $\uvec{u}$, and the receive gain at
+  the angle $\varphi_\mathrm{rx}$ between the receive boresight $\uvec{b}$ and
+  the reversed line of sight.}
+  \label{fig:lb-geometry}
+\end{figure}
+
+\begin{lstlisting}[language=cpp, caption={Boresight-angle extraction and gain
+lookup inside the $C/N_0$ computation.}, label={lst:lb-computecn0}]
+// cpp/lupnt/measurements/gnss_measurement.cc :: GNSSMeasurements::ComputeCN0
+Vec3 r_boresight_target_eci = BoresightTarget(receive_time);
+Vec3 u_rx2body = (r_boresight_target_eci - r_rx_eci).normalized();
+
+Real t_tdb = ConvertGnssEpoch(receive_time, options_.receive_time_scale,
+                              Time::TDB);
+Vec6 rv_tx_gcrf = ConvertFrame(t_tdb, rv_tx, options_.frame, Frame::GCRF);
+Vec3 r_rx_gcrf  = ConvertFrame(t_tdb, r_rx_eci, options_.frame, Frame::GCRF);
+Vec3 r_sun_gcrf = ConvertFrame(t_tdb, SunPosition(receive_time),
+                               options_.frame, Frame::GCRF);
+Vec3 u_tx2rx_gcrf = (r_rx_gcrf - rv_tx_gcrf.head(3)).normalized();
+
+Vec3 ex, ey, ez;
+GnssAttitude::Compute(rv_tx_gcrf.head(3), Vec3(rv_tx_gcrf.tail(3)),
+                      r_sun_gcrf, ex, ey, ez);
+Real phi_tx   = safe_acos(u_tx2rx_gcrf.dot(ez));
+Real theta_tx = atan2(u_tx2rx_gcrf.dot(ey), u_tx2rx_gcrf.dot(ex));
+Real phi_rx   = safe_acos(u_rx2body.dot(u_rx2tx));
+
+Real G_tx = constellation->GetTransmitterAntenna(channel.prn,
+                                                 channel.frequency)
+                .ComputeGain(theta_tx, phi_tx);
+Real G_rx = rx_antenna_.ComputeGain(0.0, phi_rx);
+Real P_tx = constellation->GetTransmitPowerDbw(channel.prn,
+                                               channel.frequency);
+
+return LinkBudget(P_tx, G_tx, G_rx, range, channel.frequency, rx_params_);
+\end{lstlisting}
+
+The direct Sun-vector construction of \cref{eq:lb-triad} is
+\cpp{GnssAttitude::Compute(r\_sat, r\_sun, ...)}:
+
+\begin{lstlisting}[language=cpp, caption={Direct Sun-pointing body-frame
+construction.}, label={lst:lb-attitude}]
+// cpp/lupnt/attitude/gnss_attitude.cc :: GnssAttitude::Compute
+void GnssAttitude::Compute(const Vec3& r_sat_eci, const Vec3& r_sun_eci,
+                           Vec3& ex, Vec3& ey, Vec3& ez) {
+  //   ez = normalize(-r_sat)                                (nadir)
+  //   ey = normalize(cross(ez, normalize(r_sun - r_sat)))   (toward Sun)
+  //   ex = normalize(cross(ey, ez))                         (completes triad)
+  ez = (-r_sat_eci).normalized();
+  Vec3 e_to_sun = (r_sun_eci - r_sat_eci).normalized();
+  ey = ez.cross(e_to_sun).normalized();
+  ex = ey.cross(ez).normalized();
+}
+\end{lstlisting}
+
+\section{The Nominal Yaw-Steering Law}
+\label{sec:lb-yaw}
+
+The velocity-aware overload
+\cpp{GnssAttitude::Compute(r, v, r\_sun, ...)} builds the same frame through
+the documented \emph{nominal yaw-steering law} of \citet{kouba2009yaw}, in the
+parameterization of \citep[Eq.~(1)]{cheng2025yaw}, implemented in
+\file{cpp/lupnt/attitude/gnss_yaw_steering.cc}.  This is the overload actually
+called by \cpp{ComputeCN0}.
+
+\subsection{Satellite-Sun-Earth geometry}
+\label{sec:lb-yaw-geometry}
+
+Two angles parameterize the geometry.  Let
+\begin{equation}
+  \uvec{n}
+  = \frac{\vec{r}_\mathrm{tx} \times \vec{v}_\mathrm{tx}}
+         {\lVert \vec{r}_\mathrm{tx} \times \vec{v}_\mathrm{tx} \rVert},
+  \qquad
+  \uvec{s} = \widehat{\vec{r}_\odot},
+  \label{eq:lb-orbit-normal}
+\end{equation}
+be the orbit normal (angular-momentum direction) and the geocentric Sun
+direction.  The \emph{Sun elevation above the orbital plane} is
+\begin{equation}
+  \beta = \sin^{-1}\!\big(\uvec{n}\transpose \uvec{s}\big)
+  \in \left[-\tfrac{\pi}{2}, \tfrac{\pi}{2}\right],
+  \label{eq:lb-beta}
+\end{equation}
+positive when the Sun lies on the same side of the orbital plane as
+$\uvec{n}$.  The \emph{orbit angle} $\mu$ is measured in the orbital plane, in
+the direction of motion, from the orbit midnight point.  With the anti-Sun
+direction projected into the orbital plane,
+\begin{equation}
+  \vec{m} = -\uvec{s} + \big(\uvec{s}\transpose\uvec{n}\big)\,\uvec{n},
+  \qquad
+  \uvec{m} = \widehat{\vec{m}},
+  \label{eq:lb-midnight}
+\end{equation}
+the signed angle from $\uvec{m}$ to the satellite radial direction
+$\uvec{r} = \widehat{\vec{r}_\mathrm{tx}}$ about $\uvec{n}$ is
+\begin{equation}
+  \mu
+  = \atantwo\!\Big(
+      \big(\uvec{m} \times \uvec{r}\big)\transpose \uvec{n},\
+      \uvec{m}\transpose \uvec{r}
+    \Big),
+  \label{eq:lb-mu}
+\end{equation}
+so that $\mu = 0$ at the midnight point (satellite directly behind the Earth as
+seen from the Sun) and $\mu = \pm\pi$ at the noon point.  The orbit noon angle
+used by the maneuver laws is $\eta = \mathrm{wrap}_\pi(\mu - \pi)$.
+
+\subsection{Nominal yaw angle and rate}
+\label{sec:lb-yaw-nominal}
+
+The nominal yaw angle that keeps the solar-panel axis $\uvec{e}_y$
+perpendicular to the satellite-Sun direction while the antenna boresight stays
+nadir-pointing is
+\begin{equation}
+  \psi(\beta, \mu)
+  = \atantwo\!\big(-\tan\beta,\ \sin\mu\big),
+  \label{eq:lb-yaw-nominal}
+\end{equation}
+with the corresponding yaw rate obtained by differentiating
+\cref{eq:lb-yaw-nominal} along the orbit,
+\begin{equation}
+  \dot{\psi}
+  = \dot{\mu}\,
+    \frac{\tan\beta\,\cos\mu}
+         {\sin^{2}\!\mu + \tan^{2}\!\beta}.
+  \label{eq:lb-yaw-rate}
+\end{equation}
+
+\begin{lstlisting}[language=cpp, caption={Satellite-Sun-Earth geometry and the
+nominal yaw law.}, label={lst:lb-yaw}]
+// cpp/lupnt/attitude/gnss_yaw_steering.cc
+Real GnssYawSteering::BetaAngle(const Vec3& r_sat, const Vec3& v_sat,
+                                const Vec3& r_sun) {
+  Vec3 n = r_sat.cross(v_sat).normalized();  // orbit normal
+  Vec3 s_hat = r_sun.normalized();
+  return safe_asin(n.dot(s_hat));
+}
+
+Real GnssYawSteering::OrbitAngle(const Vec3& r_sat, const Vec3& v_sat,
+                                 const Vec3& r_sun) {
+  Vec3 n = r_sat.cross(v_sat).normalized();
+  Vec3 s_hat = r_sun.normalized();
+  Vec3 r_hat = r_sat.normalized();
+  Vec3 m = -s_hat - (-s_hat).dot(n) * n;   // anti-Sun, in the orbital plane
+  Vec3 m_hat = m.normalized();
+  return atan2(m_hat.cross(r_hat).dot(n), m_hat.dot(r_hat));
+}
+
+// Eq. (1) of Cheng et al. (2025); Kouba (2009)
+Real GnssYawSteering::NominalYawAngle(Real beta, Real mu) {
+  return atan2(-tan(beta), sin(mu));
+}
+
+Real GnssYawSteering::NominalYawRate(Real beta, Real mu, Real mu_dot) {
+  Real tan_beta = tan(beta);
+  Real sin_mu = sin(mu);
+  return mu_dot * tan_beta * cos(mu) / (sin_mu * sin_mu + tan_beta * tan_beta);
+}
+\end{lstlisting}
+
+\subsection{From yaw angle to body triad}
+\label{sec:lb-yaw-frame}
+
+\cpp{GnssAttitude::ComputeFromYawAngle} rotates the orbital reference axes
+about the nadir axis by $\psi$.  With
+\begin{equation}
+  \uvec{e}_z = \widehat{-\vec{r}_\mathrm{tx}},
+  \qquad
+  \uvec{e}_x^{\mathrm{ref}} = \widehat{\vec{v}_\mathrm{tx}},
+  \qquad
+  \uvec{e}_y^{\mathrm{ref}} = \uvec{e}_z \times \uvec{e}_x^{\mathrm{ref}},
+  \label{eq:lb-orbital-ref}
+\end{equation}
+the body axes are
+\begin{equation}
+  \uvec{e}_x
+  = \cos\psi\,\uvec{e}_x^{\mathrm{ref}}
+  + \sin\psi\,\uvec{e}_y^{\mathrm{ref}},
+  \qquad
+  \uvec{e}_y
+  = -\sin\psi\,\uvec{e}_x^{\mathrm{ref}}
+  + \cos\psi\,\uvec{e}_y^{\mathrm{ref}}.
+  \label{eq:lb-yaw-rotation}
+\end{equation}
+Substituting $\psi$ from \cref{eq:lb-yaw-nominal} into
+\cref{eq:lb-yaw-rotation} reproduces the direct Sun-vector construction
+\eqref{eq:lb-triad} exactly, because the nominal yaw law is by definition the
+yaw angle that keeps the solar panels Sun-pointing; the equivalence is checked
+numerically in \file{cpp/test/agents/test_gnss_attitude.cc}.
+
+\subsection{Eclipse and noon-turn caveats}
+\label{sec:lb-yaw-eclipse}
+
+\Cref{eq:lb-yaw-nominal} is singular in rate as $\beta \to 0$: near the orbit
+noon and midnight points the required yaw rate \eqref{eq:lb-yaw-rate} exceeds
+the attitude-control authority of a real satellite, which then rate-limits its
+slew and departs from nominal by up to $180^\circ$ for tens of minutes.
+\cpp{GnssYawSteering} therefore also implements the block-specific
+\emph{modeled} laws of \citet{cheng2025yaw} --- GPS~IIF shadow crossing and
+noon turn (Eqs.~3--5), GPS~IIR midnight and noon turns (Eqs.~6--7), the
+GPS~III and Galileo~IOV collinearity-region laws (Eqs.~8--11, 17--18), the
+Galileo~FOC and BDS-3~CAST cosine-transition laws (Eqs.~12--14), and the BDS-3
+SECM CSNO/MCSNO laws (Eqs.~15--16).  Each is a stateless pure function of the
+geometry; the \code{TxYawModel::DEDICATED} option selects the eclipse law for
+GPS and Galileo and falls back to nominal for other systems.
+
+\begin{lupntnote}
+The thesis \citep[Ch.~6.4.3]{iiyama2026thesis} assumes \emph{nominal} yaw
+steering, with the antenna boresight aligned to the spacecraft-Earth direction
+and the solar-panel axis orthogonal to the Earth-satellite-Sun plane;
+off-nominal eclipse-season steering is listed as future work.  \lupnt{}
+implements the nominal law used by \cpp{ComputeCN0} and additionally exposes
+the maneuver laws as building blocks, but no maneuver-window state machine is
+wired into the $C/N_0$ path: \code{TxYawModel::DEDICATED} evaluates the
+eclipse law \emph{continuously} from geometry rather than on a maneuver
+schedule, which is an approximation of the true eclipse-season attitude.
+\end{lupntnote}
+
+\begin{lupntwarning}
+The eclipse laws matter for the link budget only through the transmit azimuth
+$\theta_\mathrm{tx}$, since $\varphi_\mathrm{tx}$ is unaffected by a rotation
+about $\uvec{e}_z$.  For an axisymmetric (1D) transmit pattern the yaw model
+is therefore irrelevant, and the two \code{TxYawModel} settings give identical
+$C/N_0$.  The distinction only becomes observable with a 2D
+$G(\varphi,\theta)$ pattern.
+\end{lupntwarning}
+
+\section{Receiver Tracking-Loop Noise from $C/N_0$}
+\label{sec:lb-tracking}
+
+Once $C/N_0$ is known, the per-observable measurement standard deviations
+follow from the tracking-loop thermal-noise models of \citet{kaplan2017} and
+\citet{misra2011gnss}.  Throughout this section
+\begin{equation}
+  \gamma
+  = 10^{\left(C/N_0\right)_{\mathrm{dB\text{-}Hz}}/10}
+  \qquad [\si{\hertz}]
+  \label{eq:lb-gamma}
+\end{equation}
+is the linear carrier-to-noise-density ratio, computed by
+\cpp{DecibelToDecimal}.  The loop parameters are listed in
+\cref{tab:lb-loop-params}.
+
+\subsection{Code tracking (DLL)}
+\label{sec:lb-dll}
+
+\cpp{GNSSMeasurements::ComputeSigmaRange} scales the dimensionless
+code-tracking jitter returned by \cpp{SigmaDll} (in chips) by the chip length
+in metres, $c\,T_c$, where $T_c = 1/R_c$ is the chip period of the spreading
+code (from \code{GNSS\_RC\_MAP}).  \cpp{SigmaDll} carries three correlator
+regimes, distinguished by the early-late spacing $d$ relative to the
+front-end bandwidth $B_\mathrm{fe} = b\,R_c$.  Writing
+\begin{equation}
+  \kappa \equiv \frac{1}{T_c B_\mathrm{fe}} = \frac{1}{b}
+  \qquad [\text{chip}]
+  \label{eq:lb-kappa}
+\end{equation}
+for the correlator resolution set by the front-end bandwidth, the three
+branches are
+\begin{equation}
+  \sigma_\mathrm{DLL}^2
+  =
+  \begin{cases}
+    \dfrac{B_n}{2\gamma}\,\kappa\,
+    \left(1 + \dfrac{1}{T_n \gamma}\right),
+      & d \le \kappa
+        \quad \text{(narrow correlator)}, \\[3ex]
+    \dfrac{B_n}{2\gamma}
+    \left[
+      \kappa + \dfrac{(d - \kappa)^{2}}{(\pi - 1)\,\kappa}
+    \right]
+    \left(1 + \dfrac{2}{T_n \gamma\,(2 - d)}\right),
+      & \kappa < d < \pi\kappa, \\[3ex]
+    \dfrac{B_n}{2\gamma}\, d
+    \left(1 + \dfrac{2}{T_n \gamma\,(2 - d)}\right),
+      & d \ge \pi\kappa
+        \quad \text{(wide correlator)},
+  \end{cases}
+  \label{eq:lb-sigma-dll}
+\end{equation}
+in units of chips${}^2$, with $B_n$ the DLL one-sided noise bandwidth in
+\si{\hertz}, $T_n$ the coherent integration time in \si{\second}, and $d$ the
+early-late spacing in chips.  The pseudorange standard deviation is
+\begin{equation}
+  \sigma_P
+  =
+  c\,T_c\,\sigma_\mathrm{DLL},
+  \qquad\text{so that}\qquad
+  \sigma_P^2
+  =
+  (c\,T_c)^2\,
+  \frac{B_n}{2\gamma}\,
+  \frac{1}{B_\mathrm{fe} T_c}
+  \left(1 + \frac{1}{T_n \gamma}\right)
+  \label{eq:lb-sigma-range}
+\end{equation}
+in the narrow-correlator regime, which is the branch selected by the \lupnt{}
+defaults ($d = 0.1$ chip, $b = 2$, so $\kappa = 0.5 > d$).
+\Cref{eq:lb-sigma-range} matches thesis Eq.~(6.60) term for term.
+
+\begin{lstlisting}[language=cpp, caption={DLL jitter, all three correlator
+regimes.}, label={lst:lb-sigmadll}]
+// cpp/lupnt/measurements/comms_utils.cc :: SigmaDll
+Real SigmaDll(const DllParams& params, Real CN0_w) {
+  Real B_dll = params.B_dll;
+  Real T_i = params.T_i;
+  Real d = params.d;
+  Real Tc = params.Tc;
+  Real B_fe = params.B_fe;
+
+  Real term_1 = B_dll / (2.0 * CN0_w);
+  Real term_2 = 0.0;
+  Real term_3 = 1.0 + 2.0 / (T_i * CN0_w * (2.0 - d));
+
+  Real sigma_dll_2 = 0.0;
+  if (d <= 1.0 / (Tc * B_fe)) {
+    term_2 = 1.0 / (Tc * B_fe);
+    term_3 = 1.0 + (1.0 / (T_i * CN0_w));
+    sigma_dll_2 = term_1 * term_2 * term_3;
+  } else if ((PI / (Tc * B_fe) > d) && (d > 1.0 / (Tc * B_fe))) {
+    term_2 = 1.0 / (Tc * B_fe)
+             + Tc * B_fe / (PI - 1) * pow(d - 1.0 / (Tc * B_fe), 2);
+    sigma_dll_2 = term_1 * term_2 * term_3;
+  } else {
+    sigma_dll_2 = term_1 * d * term_3;
+  }
+  return sqrt(sigma_dll_2);
+}
+\end{lstlisting}
+
+\begin{lupntnote}
+The \cpp{DllParams} field comments do not match the usage:
+\cpp{d} is documented as ``chip duration'' but is populated from
+\cpp{rx\_params\_.D}, the early-to-late correlator spacing in chips, and
+\cpp{Tc} is documented as ``spread code period'' but is populated with
+$1/R_c$, the chip period.  The equations above follow the \emph{usage} in
+\cpp{ComputeSigmaRange}, which is the reference-consistent reading.
+\end{lupntnote}
+
+\subsection{Carrier-phase tracking (PLL)}
+\label{sec:lb-pll}
+
+\cpp{GNSSMeasurements::ComputeSigmaCarrierPhase} converts the PLL phase jitter
+to a length via $\lambda/2\pi$:
+\begin{equation}
+  \sigma_\Phi
+  =
+  \frac{\lambda}{2\pi}\,\sigma_\mathrm{PLL},
+  \qquad
+  \sigma_\mathrm{PLL}^2
+  =
+  \frac{B_p}{\gamma}
+  \left(1 + \frac{1}{2\,T_p\,\gamma}\right)
+  \qquad [\si{\radian\squared}],
+  \label{eq:lb-sigma-pll}
+\end{equation}
+with $B_p$ the PLL one-sided noise bandwidth in \si{\hertz} and $T_p$ the
+coherent integration time in \si{\second}.  The second factor is the
+squaring-loss term of a Costas discriminator.
+
+\begin{lstlisting}[language=cpp, caption={PLL jitter and its conversion to a
+carrier-phase range error.}, label={lst:lb-sigmapll}]
+// cpp/lupnt/measurements/comms_utils.cc :: SigmaPll
+Real SigmaPll(const PllParams& params, Real CN0_w) {
+  Real B_pll = params.B_pll;
+  Real T_i = params.T_i;
+
+  Real sigma_pll_2 = B_pll / CN0_w * (1.0 + 1.0 / (2.0 * T_i * CN0_w));
+  return sqrt(sigma_pll_2);
+}
+
+// cpp/lupnt/measurements/gnss_measurement.cc
+//   :: GNSSMeasurements::ComputeSigmaCarrierPhase
+return lambda / (2.0 * PI) * SigmaPll(params, CN0_w);
+\end{lstlisting}
+
+\begin{lupntnote}
+The thesis Eq.~(6.61) writes
+$\sigma_\phi^2 = \left(\lambda/2\pi\right)^2
+ \left[\,\dfrac{B_p}{2\gamma}\left(1 + \dfrac{1}{2 T_p \gamma}\right)\right]$.
+The \lupnt{} \cpp{SigmaPll} uses $B_p/\gamma$ --- no factor of two in the
+denominator --- so the code's carrier-phase \emph{variance} is larger than the
+thesis expression by exactly a factor of two, i.e.\ the standard deviation is
+larger by $\sqrt{2}$.  The DLL term matches the thesis (both use
+$B_n/(2\gamma)$).  This discrepancy is documented, not fixed: changing it would
+silently alter every carrier-phase covariance produced by the library.  Users
+comparing against thesis numbers should scale $\sigma_\Phi$ by $1/\sqrt{2}$, or
+halve $B_p$.
+\end{lupntnote}
+
+\subsection{Doppler and range-rate tracking (FLL)}
+\label{sec:lb-fll}
+
+\cpp{GNSSMeasurements::ComputeSigmaRangeRate} uses a frequency-lock-loop model,
+converting a frequency jitter to a range rate via $\lambda$:
+\begin{equation}
+  \sigma_D
+  =
+  \frac{\lambda}{2\pi\,T_f}
+  \sqrt{\frac{4 B_f}{\gamma}\left(1 + \frac{1}{T_f\,\gamma}\right)}
+  \qquad [\si{\meter\per\second}],
+  \label{eq:lb-sigma-fll}
+\end{equation}
+with $B_f$ the FLL one-sided noise bandwidth in \si{\hertz} and $T_f$ the
+coherent integration time in \si{\second}.
+
+\begin{lstlisting}[language=cpp, caption={The inlined FLL range-rate jitter.},
+label={lst:lb-sigmafll}]
+// cpp/lupnt/measurements/gnss_measurement.cc
+//   :: GNSSMeasurements::ComputeSigmaRangeRate
+return lambda / (2.0 * PI * rx_params_.T)
+       * sqrt(4.0 * rx_params_.Bf / CN0_w
+              * (1.0 + 1.0 / (rx_params_.T * CN0_w)));
+\end{lstlisting}
+
+\begin{lupntnote}
+\cpp{ComputeSigmaRangeRate} inlines \cref{eq:lb-sigma-fll} rather than calling
+the library helper \cpp{SigmaFll} in
+\file{cpp/lupnt/measurements/comms_utils.cc}.  The two are not equivalent:
+\cpp{SigmaFll} evaluates
+\code{4 * F\_ll * B\_fll * (1 + 1/(T\_i * CN0\_w))} --- the leading term is
+\emph{not} divided by $\gamma$ --- and additionally carries the squaring-loss
+factor $F \in \{1, 2\}$ that doubles below the threshold
+\cpp{CN0\_F\_fll}.  Only the inlined form in \cpp{ComputeSigmaRangeRate}
+reproduces the reference expression \citep{kaplan2017}; \cpp{SigmaFll} is
+currently unused by the measurement path.
+\end{lupntnote}
+
+\section{Reference Parameters}
+\label{sec:lb-params}
+
+\Cref{tab:lb-rx-params} lists the \lupnt{} receiver defaults;
+\cref{tab:lb-loop-params} names the loop symbols used in
+\crefrange{eq:lb-sigma-dll}{eq:lb-sigma-fll}; \cref{tab:lb-thesis-cn0} and
+\cref{tab:lb-thesis-eirp} give the thesis reference values against which the
+implementation is validated.
+
+\begin{table}[htbp]
+  \centering
+  \caption{\cpp{GnssReceiverParams} defaults
+  (\code{cpp/lupnt/agents/gnss\_constellation.h}).}
+  \label{tab:lb-rx-params}
+  \begin{tabular}{l l S l}
+    \toprule
+    Field & Symbol & {Default} & Unit / meaning \\
+    \midrule
+    \cpp{Bp}    & $B_p$              & 1.0    & \si{\hertz}, carrier (PLL) loop noise bandwidth \\
+    \cpp{T}     & $T_p = T_n = T_f$  & 0.020  & \si{\second}, coherent integration time \\
+    \cpp{b}     & $b$                & 2.0    & --, front-end bandwidth factor, $B_\mathrm{fe} = b R_c$ \\
+    \cpp{Bn}    & $B_n$              & 0.7    & \si{\hertz}, code (DLL) loop noise bandwidth \\
+    \cpp{Bf}    & $B_f$              & 0.2    & \si{\hertz}, frequency (FLL) loop noise bandwidth \\
+    \cpp{D}     & $d$                & 0.1    & chip, early-to-late correlator spacing \\
+    \cpp{L\_ad} & $L_\mathrm{ad}$    & 0.6    & \si{\dB}, A/D and implementation loss \\
+    \cpp{L\_pol}& $L_\mathrm{pol}$   & 1.0    & \si{\dB}, polarization loss \\
+    \cpp{L\_atm}& $L_\mathrm{atm}$   & 0.0    & \si{\dB}, atmospheric loss \\
+    \cpp{T\_eff}& $T_\mathrm{eff}$   & 167.98 & \si{\kelvin}, effective noise temperature \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Tracking-loop symbols and the \cpp{DllParams} / \cpp{PllParams} /
+  \cpp{FllParams} fields that carry them.}
+  \label{tab:lb-loop-params}
+  \begin{tabularx}{\textwidth}{l l l L}
+    \toprule
+    Symbol & Unit & Field & Meaning \\
+    \midrule
+    $\gamma$          & \si{\hertz} & \cpp{CN0\_w} &
+      Linear carrier-to-noise density, $10^{(C/N_0)/10}$. \\
+    $B_n$             & \si{\hertz} & \cpp{DllParams::B\_dll} &
+      DLL one-sided noise bandwidth. \\
+    $T_n$             & \si{\second}& \cpp{DllParams::T\_i} &
+      DLL coherent integration time. \\
+    $d$               & chip        & \cpp{DllParams::d} &
+      Early-to-late correlator spacing. \\
+    $T_c$             & \si{\second}& \cpp{DllParams::Tc} &
+      Chip period, $1/R_c$. \\
+    $B_\mathrm{fe}$   & \si{\hertz} & \cpp{DllParams::B\_fe} &
+      Double-sided front-end bandwidth, $b R_c$. \\
+    $B_p$             & \si{\hertz} & \cpp{PllParams::B\_pll} &
+      PLL one-sided noise bandwidth. \\
+    $T_p$             & \si{\second}& \cpp{PllParams::T\_i} &
+      PLL coherent integration time. \\
+    $B_f$             & \si{\hertz} & \cpp{FllParams::B\_fll} &
+      FLL one-sided noise bandwidth. \\
+    $T_f$             & \si{\second}& \cpp{FllParams::T\_i} &
+      FLL coherent integration time. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Reference $C/N_0$ link-budget parameters, thesis Table~6.3
+  \citep[Ch.~6.4.3]{iiyama2026thesis}, for a lunar receiver tracking
+  terrestrial GPS.}
+  \label{tab:lb-thesis-cn0}
+  \begin{tabular}{l l l}
+    \toprule
+    Quantity & Symbol & Value \\
+    \midrule
+    GPS transmit power        & $P_\mathrm{tx}$      & \SIrange{16}{19}{\dBW} \\
+    Receive antenna gain      & $G_\mathrm{rx}$      & \SI{14}{\dBi} \\
+    System noise temperature  & $T_\mathrm{sys}$     & \SI{162}{\kelvin} \\
+    Polarization loss         & $L_\mathrm{pol}$     & \SI{1.0}{\dB} \\
+    Implementation loss       & $R_\mathrm{loss}$    & \SI{0.9}{\dB} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Reference EIRP-sizing parameters, thesis Table~3.6
+  \citep[Ch.~3.3]{iiyama2026thesis}, for the lunar augmented navigation
+  service signal of \citep{lunanet2022}.}
+  \label{tab:lb-thesis-eirp}
+  \begin{tabular}{l l l}
+    \toprule
+    Quantity & Symbol & Value \\
+    \midrule
+    Carrier frequency             & $f$              & \SI{2492.028}{\mega\hertz} \\
+    Required received power       & $P_\mathrm{rx}$  & $-160$ / $-147$ \si{\dBW} \\
+    User receive antenna gain     & $G_\mathrm{rx}$  & \SI{3.0}{\dBi} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The two received-power floors in \cref{tab:lb-thesis-eirp} correspond to the
+weak-signal (acquisition-limited, omnidirectional user) and strong-signal
+(data-demodulation) cases of the service specification; the resulting required
+EIRP follows from \cref{eq:lb-eirp-required}.
+
+\section{Model Boundaries}
+\label{sec:lb-boundaries}
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Visibility.}  Occulting bodies are spheres and the test is a
+        per-body pass/fail.  There is no atmospheric refraction, no
+        tropospheric or ionospheric ducting of grazing rays, and no terrain
+        horizon beyond the scalar elevation mask of
+        \cref{eq:lb-elevation}.  Lunar topography, which can raise or lower the
+        local horizon by several kilometres, is not represented.
+  \item \textbf{Static loss terms.}  The $C/N_0$ budget is per-channel and
+        static in $L_\mathrm{atm}$, $L_\mathrm{ad}$, $L_\mathrm{pol}$ and
+        $T_\mathrm{eff}$: only $L_\mathrm{fs}$ and the two antenna gains vary
+        with geometry.  In particular $T_\mathrm{eff}$ does not increase when
+        the receive beam sweeps across the warm lunar surface or the Earth
+        disc, and \cref{eq:lb-teff} is never evaluated internally.
+  \item \textbf{Pointing.}  Only the deterministic geometric off-boresight loss
+        is modelled, through the pattern lookups; attitude-control jitter and
+        antenna phase-centre variation are not included in
+        \cref{eq:lb-cn0}.  Phase-centre offsets are handled separately by the
+        ANTEX machinery, in a different (non-orthonormal) frame.
+  \item \textbf{Transmit attitude.}  The transmit gain uses the \emph{nominal}
+        yaw-steering attitude \eqref{eq:lb-yaw-nominal}.  Maneuver-law
+        attitudes exist in \cpp{GnssYawSteering} and can be selected with
+        \code{TxYawModel::DEDICATED}, but they are evaluated continuously from
+        geometry rather than gated by a maneuver-window state machine, and
+        they affect only $\theta_\mathrm{tx}$ (see
+        \cref{sec:lb-yaw-eclipse}).
+  \item \textbf{Pattern coverage.}  A direction beyond \code{phi\_max\_}
+        returns \code{NaN} rather than an extrapolated sidelobe level; the
+        effective sidelobe cutoff is therefore a property of the data file, not
+        of the model.  Link-budget studies that depend on far-sidelobe energy
+        must supply patterns tabulated out to the required $\varphi$.
+  \item \textbf{Tracking-loop noise.}  Only thermal noise is modelled.
+        Dynamic stress error, oscillator phase noise, Allan-variance-driven
+        jitter and vibration-induced jitter --- all of which appear in the full
+        error budgets of \citet{kaplan2017} --- are omitted.  The PLL noise
+        coefficient differs from the thesis by a factor of two in variance (see
+        \cref{sec:lb-pll}); the DLL and the inlined FLL forms match their
+        reference expressions, while the standalone \cpp{SigmaFll} helper does
+        not (see \cref{sec:lb-fll}).
+  \item \textbf{Multipath and interference.}  No multipath, no near-far
+        interference from other GNSS signals, and no jamming or RFI margin are
+        represented anywhere in \cref{eq:lb-cn0}.
+\end{itemize}

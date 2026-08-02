@@ -1,0 +1,2976 @@
+\chapter{Tutorials}
+\label{chap:tutorials}
+
+This chapter walks through the worked examples that ship with \lupnt{}. Every
+example exists in two forms: a Python notebook under \file{python/examples/},
+which renders the results as 3-D scenes, time histories, maps and histograms,
+and --- for most of them --- a standalone C++ program under
+\file{cpp/examples/tutorials/} that computes the same quantities and prints them
+as console statistics. The two are deliberately kept numerically equivalent: the
+notebook is the exploratory surface, the \code{.cc} file is the
+compile-time-checked twin that exercises the same library entry points from
+C++.
+
+The chapter is organised as one section per example. Each section states the
+scenario the example configures --- epochs, orbital elements, constellations,
+station sets, sensor noise --- with the actual numbers taken from the notebook;
+walks through the computation with excerpts of the real source; then describes
+\emph{what the example produces}: every figure it draws, what is on each axis,
+the magnitudes involved, and the conclusion the reader is meant to draw. Each
+section closes with a pointer to the Part~\ref{part:math} chapter that specifies
+the underlying model. A consolidated index is given in
+\cref{tab:tut-examples}, and \cref{sec:tut-publications} maps the examples onto
+the publications whose methodology they implement.
+
+\begin{lupntnote}
+The examples are not unit tests. They are allowed to download data, to take
+minutes to run, and to print approximate numbers. Every numeric result quoted in
+this chapter is the value stored in the committed notebook output for one
+particular run on one particular machine; a re-run with a different random seed,
+a different SP3 vintage, or a different Earthdata snapshot will move the last
+digits. The authoritative statements about accuracy live in the
+Part~\ref{part:math} chapters and in the validation material of
+Part~\ref{part:verification}.
+\end{lupntnote}
+
+% ===========================================================================
+\section{Running the Examples}
+\label{sec:tut-running}
+
+Both flavours are driven by the \code{pixi} workspace defined in
+\file{pixi.toml} at the repository root. The workspace's activation block sets
+the environment variables the examples assume --- \code{LUPNT\_DATA\_PATH}
+pointing at \file{data/LuPNT_data}, \code{PYTHONPATH} pointing at
+\file{python/}, \code{PECSIMPY\_BASE\_PATH} at the plasma data, and
+\code{LUPNT\_OUTPUT\_PATH} at \file{output/} --- so no manual export is needed
+as long as commands are run through \code{pixi run}.
+
+\subsection{Python notebooks}
+\label{sec:tut-running-python}
+
+The notebooks import \pylupnt{}, the pybind11 binding layer, which must be built
+once. Building the bindings and registering a Jupyter kernel that inherits the
+workspace environment is a single task each:
+
+\begin{lstlisting}[language=shell, caption={Building and running the Python examples.}, label={lst:tut-run-python}]
+# from the repository root
+pixi run build-py         # builds the pylupnt-dev extension module
+pixi run install-kernel   # registers a Jupyter kernel with LUPNT_DATA_PATH baked in
+
+# then open any notebook with the "LuPNT (pixi)" kernel, e.g.
+#   python/examples/ex1_propagate_orbit.ipynb
+
+# or execute them headlessly and get a pass/fail summary
+pixi run run-notebooks -- --only ex1 --timeout 600
+pixi run run-notebooks                      # all of ex1 .. ex17
+\end{lstlisting}
+
+Every notebook begins with the same defensive preamble: it walks up from the
+working directory until it finds \file{python/pylupnt/__init__.py}, puts that
+\file{python/} first on \code{sys.path}, and pins \code{LUPNT\_DATA\_PATH} to the
+sibling \file{data/LuPNT_data}. This makes a notebook use \emph{this} checkout's
+bindings and data even when a stale copy sits on a global \code{PYTHONPATH} or
+in an old kernelspec.
+
+\code{run-notebooks} executes each notebook end-to-end without writing outputs
+back. The companion task \code{render-notebooks} executes them \emph{in place},
+so that the Sphinx build (which never re-executes notebooks) shows real results;
+\code{render-tutorials} additionally optimises the embedded figures. Several of
+the heavier examples (\cref{sec:tut-ex6}, \cref{sec:tut-ex7},
+\cref{sec:tut-ex8}, \cref{sec:tut-ex9}, \cref{sec:tut-ex10},
+\cref{sec:tut-ex11}) delegate the expensive run to a sibling
+\code{ex*\_run\_*.py} script and let the notebook read back the exported results,
+which keeps the rendered tutorial fast. Those scripts seed their output
+directory from a shipped copy under \file{data/LuPNT_data/examples/}, so the
+notebook still plots real numbers on a machine that has never run the
+simulation.
+
+\subsection{C++ tutorial binaries}
+\label{sec:tut-running-cpp}
+
+The directory \file{cpp/examples/} is its own CMake project, \code{lupnt\_examples}.
+Its \file{CMakeLists.txt} globs every \code{.cc} file under \file{tutorials/},
+turns each into an executable named after the file stem, links it against
+\code{lupnt::lupnt} plus TBB, and collects them all under a convenience target
+\code{all\_examples}:
+
+\begin{lstlisting}[language=shell, caption={Building and running the C++ examples.}, label={lst:tut-run-cpp}]
+# configures cpp/examples into build-examples-pixi and builds the all_examples target
+pixi run build-examples
+
+# each .cc becomes its own binary; run it FROM THE REPOSITORY ROOT, because the
+# YAML-driven examples default to a relative config path such as configs/...
+./build-examples-pixi/ex1_propagate_orbit
+./build-examples-pixi/ex7_groundstation_odts
+./build-examples-pixi/ex7_groundstation_odts configs/my_variant.yaml
+\end{lstlisting}
+
+Every YAML-driven example takes an optional first argument overriding the
+configuration file, so a scenario variant can be tried without recompiling.
+
+\subsection{Data prerequisites}
+\label{sec:tut-running-data}
+
+The Earth-GNSS examples --- \cref{sec:tut-ex3}, \cref{sec:tut-ex5}, and
+\cref{sec:tut-ex6} --- are data-driven. They read SP3 precise-ephemeris
+products, and in places ANTEX antenna files and RINEX broadcast navigation
+messages, which are fetched from NASA CDDIS and require a free Earthdata login
+(a \file{~/.netrc} entry, or the \code{EARTHDATA\_USERNAME} and
+\code{EARTHDATA\_PASSWORD} environment variables). The download procedure is
+specified in \cref{chap:sp3-download}. Downloads are cached under
+\file{output/gnss_files/}, so only the first run needs the network.
+
+\begin{lupntwarning}
+\code{pixi run build-examples} only \emph{compiles} the programs; the data is
+loaded at run time. Each of the three guards its inputs: with the files or
+credentials absent it prints an informative note and exits with status zero, so
+it always builds and runs, and produces its full analysis once the data is
+present. \cref{sec:tut-ex6} additionally requires the staged link and
+plasma-delay precompute produced by \file{python/examples/ex6_precompute.py}.
+\end{lupntwarning}
+
+\subsection{Where the figures in this chapter come from}
+\label{sec:tut-running-figures}
+
+The notebooks are committed \emph{with} their outputs --- \code{nbstripout} is
+configured in this repository to preserve them --- so every plot a tutorial
+produces already sits in the notebook JSON as a base64 \code{image/png} output.
+\file{latex_docs/} is a text-only tree, so those images cannot be committed
+beside this chapter. They are extracted instead:
+
+\begin{lstlisting}[language=shell, caption={Extracting the tutorial figures into the data directory.}, label={lst:tut-extract-figs}]
+# writes $LUPNT_DATA_PATH/docs/tutorials/<notebook-stem>_<n>.png
+LUPNT_DATA_PATH=/path/to/LuPNT_data \
+    python latex_docs/scripts/extract_notebook_figures.py
+
+# only one notebook, or a dry run that writes nothing
+python latex_docs/scripts/extract_notebook_figures.py --only ex15
+python latex_docs/scripts/extract_notebook_figures.py --dry-run
+\end{lstlisting}
+
+The counter \code{<n>} runs over that notebook's images in execution order, so
+\file{ex1_propagate_orbit_3.png} is the third plot Example~1 draws. The chapter
+includes them with \code{\textbackslash datafig}, which degrades to a visible
+placeholder when \code{LUPNT\_DATA\_PATH} has not been fetched; the manual
+therefore still compiles from a bare clone. Two notebooks contribute no figures:
+\cref{sec:tut-ex2} ships without stored outputs (its plots are described in
+prose from the plotting code), and \cref{sec:tut-ex13} emits interactive HTML
+scenes rather than raster images.
+
+% ===========================================================================
+\section{Example 1: Propagating an ELFO Orbit}
+\label{sec:tut-ex1}
+
+\textbf{Python:} \file{python/examples/ex1_propagate_orbit.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex1_propagate_orbit.cc}
+
+\paragraph{The scenario.}
+The entry point to the library. A lunar Elliptical Frozen Orbit (ELFO) is
+initialised at the epoch \textbf{2009-07-15 01:00:00 TDB} from the classical
+elements $a=\SI{6541.4}{\kilo\meter}$, $e=0.6$, $i=\SI{56.2}{\degree}$,
+$\Omega=\SI{0}{\degree}$, $\omega=\SI{90}{\degree}$, $M_0=\SI{0}{\degree}$,
+expressed in the Moon-centred Orbital Plane (OP) frame --- the frame that tracks
+the Earth's instantaneous orbit plane about the Moon, and in which the canonical
+frozen-orbit parameters of Ely are defined. The Keplerian period of that
+semi-major axis is \SI{13.19}{\hour}. Converting to Cartesian and rotating into
+the Moon-Centred Inertial (MCI) frame moves the initial position from
+$(0,\,1455.58,\,2174.32)\,\si{\kilo\meter}$ in OP to
+$(1076.81,\,-334.33,\,2361.16)\,\si{\kilo\meter}$ in MCI --- the same physical
+point, a different set of axes.
+
+The force model is a $2\times2$ lunar spherical-harmonic field (so $J_2$ and
+$C_{22}$), Earth and Sun as point-mass third bodies, and a cannonball solar
+radiation pressure with $C_R=1.8$, $A=\SI{0.02}{\meter\squared}$,
+$m=\SI{10}{\kilogram}$. The integrator is adaptive RKF45 with a relative
+tolerance of \num{1e-10} and an absolute tolerance of \SI{1e-6}{\meter}. The arc
+is \textbf{720 days} --- the variable is spelled \code{sim\_days = 30 * 24} ---
+sampled every \SI{30}{\minute}, giving \num{34561} output states.
+
+\begin{lstlisting}[language=py, caption={Elements, frame rotation, and the force model.}, label={lst:tut-ex1-setup}]
+# python/examples/ex1_propagate_orbit.ipynb
+t0 = pnt.gregorian_to_time(2009, 7, 15, 1, 0, 0)  # [s] TDB
+
+a = 6541.4e3        # [m]   semi-major axis
+e = 0.6             # [-]   eccentricity
+i = 56.2 * pnt.RAD  # [rad] inclination
+raan = 0.0 * pnt.RAD
+w = 90.0 * pnt.RAD  # [rad] argument of perigee
+M0 = 0.0 * pnt.RAD
+
+coe0_op = np.array([a, e, i, raan, w, M0])
+rv0_op = pnt.classical_to_cart(coe0_op, pnt.GM_MOON)                # [m, m/s] in OP
+rv0_mci = pnt.convert_frame(t0, rv0_op, pnt.MOON_OP, pnt.MOON_CI)   # [m, m/s] in MCI
+
+dyn = pnt.NBodyDynamics()
+dyn.set_frame(pnt.MOON_CI)
+dyn.set_units(pnt.SI_UNITS)                    # states in metres / seconds
+dyn.add_body(pnt.create_body(pnt.MOON, 2, 2))  # Moon gravity, 2x2 spherical harmonics
+dyn.add_body(pnt.create_body(pnt.EARTH))       # Earth third-body
+dyn.add_body(pnt.create_body(pnt.SUN))         # Sun third-body + SRP source
+dyn.set_srp_coeff(1.8, 0.02, 10.0)             # C_R, area [m^2], mass [kg]
+dyn.set_integrator(pnt.IntegratorType.RKF45)
+params = pnt.IntegratorParams()
+params.reltol = 1e-10
+params.abstol = 1e-6                           # [m] -- 1 micrometre position floor
+dyn.set_integrator_params(params)
+\end{lstlisting}
+
+\paragraph{The computation.}
+Propagation is one call. The interpretation happens afterwards: each MCI state
+is rotated back into OP and converted to osculating classical elements, i.e.\ the
+instantaneous Keplerian orbit that would match the state if all perturbations
+were switched off. That turns a Cartesian trajectory into the physically
+meaningful $(a,e,i,\omega)$ history in which ``frozen'' means something.
+
+\begin{lstlisting}[language=py, caption={Propagating, then recovering osculating elements in the OP frame.}, label={lst:tut-ex1-prop}]
+# python/examples/ex1_propagate_orbit.ipynb
+sim_days = 30 * 24
+dt_out = 30 * pnt.SECS_MINUTE                                 # [s] output cadence
+tspan = np.arange(0, sim_days * pnt.SECS_DAY + dt_out, dt_out)
+tfs = t0 + tspan
+rv_mci = dyn.propagate(rv0_mci, tfs)                          # [N x 6] in metres, m/s
+
+rv_op = np.array([pnt.convert_frame(tfs[k], rv_mci[k], pnt.MOON_CI, pnt.MOON_OP)
+                  for k in range(len(tfs))])
+coe = np.array([pnt.cart_to_classical(rv_op[k], pnt.GM_MOON) for k in range(len(tfs))])
+# columns: [a, e, i, RAAN, argp, M] -- angles in radians, a in metres
+\end{lstlisting}
+
+The last cell re-propagates a short, finely sampled arc (3 orbits at
+$T/300 \approx \SI{158}{\second}$ cadence) under an $8\times8$ lunar field and
+asks the dynamics object to hand back each acceleration term separately.
+
+\begin{lstlisting}[language=py, caption={Decomposing the acceleration into individual harmonics and third bodies.}, label={lst:tut-ex1-acc}]
+# python/examples/ex1_propagate_orbit.ipynb
+acc_terms = {}  # term name -> [N, 3] acceleration array [m/s^2]
+for k in range(len(tfs_acc)):
+    for name, vec in dyn_hf.compute_accelerations(
+        tfs_acc[k], rv_acc[k], decompose_gravity=True
+    ).items():
+        acc_terms.setdefault(name, np.zeros((len(tfs_acc), 3)))[k] = vec
+
+acc_mag = {name: np.linalg.norm(v, axis=1) for name, v in acc_terms.items()}
+peak = {name: mag.max() for name, mag in acc_mag.items()}
+ranked = sorted(peak, key=peak.get, reverse=True)
+\end{lstlisting}
+
+\paragraph{The results.}
+The notebook produces four figures.
+
+The first (\cref{fig:tut-ex1-orbit}) is a Plotly 3-D view of the first two
+orbital periods ($\approx\SI{26.4}{\hour}$) in the MCI frame, with the Moon
+drawn to scale. It is a geometry check: the orbit is visibly eccentric, perilune
+sits close to the surface, and the spacecraft spends most of the period out near
+apolune, which is exactly the dwell time a relay or navigation satellite is
+after.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.52\textwidth]{tutorials/ex1_propagate_orbit_1.png}
+  \caption{Example~1, first figure: the ELFO over its first two revolutions in
+           the Moon-Centred Inertial frame. The long apolune arc, not the fast
+           perilune passage, is where the satellite spends its time.}
+  \label{fig:tut-ex1-orbit}
+\end{figure}
+
+The second (\cref{fig:tut-ex1-coe}) is the point of the example: a
+$2\times2$ panel of the osculating $a$ [\si{\kilo\meter}], $e$ [--],
+$i$ [\si{\degree}] and $\omega$ [\si{\degree}] against time in days over the
+whole 720-day arc. The semi-major axis oscillates about its mean without a
+secular trend; the eccentricity and the argument of perigee execute a slow,
+bounded libration about $(e,\omega)=(0.6,\SI{90}{\degree})$ rather than
+circulating. That bounded behaviour \emph{is} the frozen-orbit property. (The
+panel's suptitle still reads ``30-day'', a leftover from an earlier arc length;
+the abscissa runs to 720 days.)
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.92\textwidth]{tutorials/ex1_propagate_orbit_2.png}
+  \caption{Example~1, second figure: osculating elements in the OP frame over
+           the 720-day arc under the N-body plus SRP model. Each element
+           oscillates within a bounded envelope; none drifts away.}
+  \label{fig:tut-ex1-coe}
+\end{figure}
+
+The third (\cref{fig:tut-ex1-phase}) plots the same information as an
+$e$-versus-$\omega$ phase portrait, coloured by elapsed time, with a red star at
+the nominal frozen point $(\SI{90}{\degree},0.6)$. A truly circulating orbit
+would sweep $\omega$ through the full \SI{360}{\degree}; here the trajectory
+stays in a closed loop around the star. Reading the colour bar shows the loop is
+traversed repeatedly rather than spiralling outward.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.62\textwidth]{tutorials/ex1_propagate_orbit_3.png}
+  \caption{Example~1, third figure: the $e$--$\omega$ phase portrait, coloured
+           by time. The libration loop around the frozen point (red star) is the
+           direct visual signature of a frozen orbit.}
+  \label{fig:tut-ex1-phase}
+\end{figure}
+
+The fourth (\cref{fig:tut-ex1-acc}) is a semi-logarithmic time history of the
+magnitude of each modelled acceleration over three orbits, with dotted vertical
+lines at the period boundaries. The ranking it prints establishes the budget
+for a lunar navigation satellite: the lunar monopole peaks at
+\SI{7.19e-1}{\meter\per\second\squared}; $J_2$ at
+\SI{1.56e-4}{\meter\per\second\squared} and the Earth third body at
+\SI{1.08e-4}{\meter\per\second\squared} are comparable and four orders of
+magnitude down; $C_{31}$ (\SI{5.0e-5}{}) and $C_{22}$ (\SI{2.7e-5}{}) follow;
+the Sun contributes \SI{4.6e-7}{\meter\per\second\squared}; and the relativistic
+correction (\SI{4.4e-8}{}) and SRP (\SI{3.2e-8}{\meter\per\second\squared}) are
+the smallest terms retained. Every harmonic term peaks sharply at perilune and
+collapses at apolune, so the higher-order field only matters during the short
+low-altitude passage, whereas the Earth's pull peaks at apolune --- the two
+dominant perturbations act on opposite halves of the orbit.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex1_propagate_orbit_4.png}
+  \caption{Example~1, fourth figure: acceleration budget by force term over
+           three orbits with an $8\times8$ lunar field. The lunar harmonics
+           spike at perilune; the Earth third body peaks at apolune.}
+  \label{fig:tut-ex1-acc}
+\end{figure}
+
+The force model, the integrator, and the tolerance contract are specified in
+\cref{chap:dynamics} and \cref{chap:integration}; the OP, MCI and body-fixed
+frame definitions and the \cpp{ConvertFrame} graph are specified in
+\cref{chap:frame-conversions}.
+
+% ===========================================================================
+\section{Example 2: Relativistic Time Conversions}
+\label{sec:tut-ex2}
+
+\textbf{Python:} \file{python/examples/ex2_time_conversions.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex2_time_conversions.cc}
+
+\paragraph{The scenario.}
+The example evaluates the IAU coordinate time scales relevant to cislunar
+operations --- $\TT$, $\TDB$, Selenocentric Coordinate Time $\TCL$, and Lunar
+Time $\LT$ --- on a \textbf{15-year grid of 721 points from 2020-01-01 to
+2035-01-01} (a spacing of about \SI{7.6}{\dayunit}), and a second, denser
+\textbf{6-year grid at \SI{0.25}{\dayunit} spacing} used only for the lunar
+spectrum. It opens by making the precision argument explicit: the largest
+absolute epoch on the grid has an ULP of about \SI{245}{\nano\second}, i.e.\
+\SI{73}{\meter} once multiplied by $c$, so the API returns \emph{offsets} rather
+than differencing two large absolute epochs.
+
+\paragraph{The computation.}
+Three independent routes to $\TT-\TDB$ are compared: the DE440 Eq.~(3)
+relativistic integral evaluated from \lupnt{}'s own ephemeris with an \SI{864}{\second}
+trapezoid step; JPL's own integrated $\TT-\TDB$ read straight out of the
+\code{de440t} time-ephemeris segment (the reference); and the Chebyshev fit of
+that kernel, which is what \lupnt{} uses by default.
+
+\begin{lstlisting}[language=py, caption={Three routes to TT - TDB on the same grid.}, label={lst:tut-ex2-routes}]
+# python/examples/ex2_time_conversions.ipynb
+t_start = float(pnt.gregorian_to_time("2020-01-01T00:00:00"))
+t_end = float(pnt.gregorian_to_time("2035-01-01T00:00:00"))
+n_pts = 721                                  # ~7.6 day sampling over 15 years
+t_tdb = np.linspace(t_start, t_end, n_pts)
+
+# --- Route 2: the DE440t kernel (reference) -----------------------------------
+tt_tdb_kernel = np.asarray(
+    pnt.spice.get_time_ephemeris_offset(t_tdb, 1000000001), float)   # TT - TDB [s]
+
+# --- Route 1: DE440 Eq. (3) relativistic integral ------------------------------
+pnt.set_de440_tt_tdb_step(0.01 * SECS_DAY)   # 864 s trapezoid
+tt_tdb_integral = -np.asarray(pnt.tdb_minus_tt_de440(t_tdb), float)
+
+# --- Route 3: Chebyshev fit of the kernel (LuPNT default) ---------------------
+pnt.init_tt_minus_tdb_fit(t_start - 30 * SECS_DAY, t_end + 30 * SECS_DAY)
+tt_tdb_fit = np.asarray(pnt.tt_minus_tdb(t_tdb), float)
+\end{lstlisting}
+
+The expensive $\TDB\leftrightarrow\TCL$ integral --- the one edge in the
+conversion graph that sweeps from $T_0=1977$ on every call --- is then composed
+with the cheap linear $\TCL\leftrightarrow\LT$ rescaling to reach $\LT-\TT$, and
+the composed chain is cross-checked against what \py{Epoch} produces when asked
+to walk the graph itself.
+
+\begin{lstlisting}[language=py, caption={Composing LT - TT from offsets, and checking it against Epoch.}, label={lst:tut-ex2-lt}]
+# python/examples/ex2_time_conversions.ipynb
+tdb_lt = np.asarray(pnt.tdb_minus_lt(t_tdb), float)   # TDB - LT [s]
+lt_tt = -tdb_lt - tt_tdb_fit                          # LT - TT = (LT-TDB) + (TDB-TT)
+
+lt_tt_epoch = -np.array([
+    float(pnt.time_scale_offset(
+        pnt.Epoch.from_seconds(float(x), pnt.Time.LT), pnt.Time.TT))
+    for x in (t_tdb[_chk] - tdb_lt[_chk])              # LT reading of the same instant
+])
+
+days = (t_tdb - t_tdb[0]) / SECS_DAY
+slope_us_per_day = np.polyfit(days, lt_tt * 1e6, 1)[0]
+\end{lstlisting}
+
+A final Fourier stage detrends each signal and takes a Hanning-windowed
+amplitude spectrum, picking the strongest lines at least three frequency bins
+apart. The notebook is explicit that the two signals need different grids: the
+\SI{7.6}{\dayunit} spacing of the 15-year record aliases the \SI{27.55}{\dayunit}
+anomalistic and \SI{29.53}{\dayunit} synodic months, and the two lunar months
+are only resolved once the record is longer than about \SI{4.5}{\yr}, hence the
+separate 6-year, \SI{0.25}{\dayunit} grid.
+
+\begin{lstlisting}[language=py, caption={Amplitude spectrum of a detrended, uniformly sampled offset.}, label={lst:tut-ex2-fft}]
+# python/examples/ex2_time_conversions.ipynb
+def spectrum(sig, t):
+    """Amplitude spectrum of a detrended, uniformly-sampled signal."""
+    n = len(sig)
+    dt = t[1] - t[0]
+    x = sig - sig.mean()
+    w = np.hanning(n)
+    amp = np.abs(np.fft.rfft(x * w)) / (w.sum() / 2.0)
+    freq = np.fft.rfftfreq(n, d=dt)
+    with np.errstate(divide="ignore"):
+        period_d = 1.0 / (freq * SECS_DAY)
+    return period_d[1:], amp[1:], freq[1:]
+\end{lstlisting}
+
+\paragraph{The results.}
+This is the one notebook in the set that is committed \emph{without} stored
+outputs, so no extracted figures accompany it; the three figures it draws are
+described here from the plotting code.
+
+The first figure is a three-panel stack sharing a year axis. The top panel is
+$\TT-\TDB$ from the DE440t kernel in milliseconds, dominated by the annual term
+of amplitude $\approx\SI{1.66}{\milli\second}$ driven by the Earth's orbital
+eccentricity. The middle panel is the Eq.~(3) integral minus the kernel in
+nanoseconds, overlaid with the fitted linear drift: the difference is
+\emph{almost purely secular}, so the periodic physics of the two computations
+agrees and only the rate differs slightly --- the residual rate comes from the
+343 asteroids, 30 KBOs and the Kuiper ring that DE440 integrates and that
+\lupnt{} approximates with two ring models. The bottom panel is the Chebyshev fit
+minus the kernel in \emph{picoseconds}: the fit interpolates the same data read
+as clean offsets, so nothing limits it but the polynomial degree. That is the
+argument for making it the default.
+
+The second figure is a two-panel stack for $\LT-\TT$: the top panel shows the
+raw offset, whose secular slope is the printed drift compared against the
+published \SI{56.0256}{\micro\second\per\dayunit} of Turyshev et al.; the bottom
+panel shows what is left after removing that linear trend, a purely periodic
+signal at the microsecond level.
+
+The third figure is a pair of log--log amplitude spectra. The left panel, from
+the 15-year record, has period in years on the abscissa with a marker at
+\SI{1}{\yr}: the annual line towers over everything, with much smaller planetary
+lines at longer periods. The right panel, from the dense 6-year record, has
+period in days with markers at \SI{27.5545}{\dayunit} (anomalistic month),
+\SI{29.5306}{\dayunit} (synodic month) and \SI{13.6061}{\dayunit} (half
+anomalistic month); the lunar structure of $\LT-\TT$ resolves into those lines.
+The reader's takeaway is the attribution: the annual term of $\TT-\TDB$ is the
+Earth's orbit, and the monthly terms of $\LT-\TT$ are the Moon's.
+
+The scale definitions, the conversion graph and its edge classes (constant,
+table, linear, model, integral), and the choice of route are specified in
+\cref{chap:time-conversions}.
+
+% ===========================================================================
+\section{Example 3: GNSS Interface}
+\label{sec:tut-ex3}
+
+\textbf{Python:} \file{python/examples/ex3_gnss_interface.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex3_gnss_interface.cc}
+
+\paragraph{The scenario.}
+The Earth-GNSS data interfaces, exercised end to end in four parts.
+
+Part~one loads two-line elements archived for \textbf{2025-01-01} ---
+\textbf{31 GPS}, \textbf{31 Galileo} and \textbf{4 QZSS} satellites --- and
+reports the mean altitude at epoch: \SI{20143}{\kilo\meter} for GPS (range
+19\,887--20\,780), \SI{23380}{\kilo\meter} for Galileo (23\,208--25\,728) and
+\SI{36622}{\kilo\meter} for QZSS (35\,653--38\,902). Each satellite is then
+propagated with two-body dynamics for two days at \SI{1}{\minute} cadence.
+
+Part~two loads transmit-antenna gain tables for four GPS blocks and for Galileo
+and QZSS signals. Part~three downloads the daily COD MGEX final SP3 products and
+the multi-GNSS broadcast navigation messages for a \textbf{3-day window starting
+2026-01-01}, plus one day of lead-in margin, and compares broadcast against
+precise orbits and clocks on a \textbf{\SI{15}{\minute} grid of 289 epochs} for
+the first five common GPS PRNs (G01--G05) and Galileo PRNs (E02--E06). The SP3
+file carries 123 satellites, the broadcast file 115. Part~four evaluates the
+satellites' yaw-steering attitude laws.
+
+\begin{lstlisting}[language=py, caption={Downloading and parsing the precise and broadcast products.}, label={lst:tut-ex3-load}]
+# python/examples/ex3_gnss_interface.ipynb
+START_DT = datetime(2026, 1, 1)   # UTC start date
+SIM_DAYS = 3
+
+# one daily product per day, plus a one-day lead-in margin for the interpolators
+window_days = [START_DT + timedelta(days=d) for d in range(-1, SIM_DAYS + 1)]
+sp3_paths, brdc_paths = [], []
+for dt in window_days:
+    te = _day_epoch_tai(dt)
+    sp3_paths.append(pnt.Sp3Loader.download_file_for_epoch(te, pnt.Time.TAI))
+    brdc_paths.append(pnt.RinexNavLoader.download_file_for_epoch(te, pnt.Time.TAI))
+
+sp3 = pnt.Sp3Loader(sp3_paths)          # C++ loaders parse the downloaded files
+brdc = pnt.RinexNavLoader(brdc_paths)
+antex = pnt.AntexLoader(os.path.join(DATA_DIR, "gnss/igs20.atx"))
+\end{lstlisting}
+
+\paragraph{The computation.}
+SP3 products are referenced to the satellite centre of mass, while the broadcast
+model is used at the antenna phase centre, so the comparison is only meaningful
+after applying the IGS20 ANTEX phase-centre offset
+$\vec{r}_\mathrm{APC} = \vec{r}_\mathrm{CoM}
+ + \mat{R}_{\mathrm{NEU}\to\mathrm{ECEF}}\,\mathbf{PCO}_\mathrm{NEU}$.
+The C++ helper builds the satellite body-frame rotation from the nadir direction
+and the Sun direction, so the yaw-steering attitude is applied consistently.
+
+\begin{lstlisting}[language=py, caption={Applying the ANTEX phase-centre offset and decomposing into RTN.}, label={lst:tut-ex3-pco}]
+# python/examples/ex3_gnss_interface.ipynb
+for k in range(len(t_tai_arr)):
+    t_k = float(t_tai_arr[k])
+    pco_neu = np.asarray(antex.get_pco(const, prn, freq, t_k))   # NEU offset [m]
+    r_apc_ecef[k] = np.asarray(
+        pnt.AntexLoader.apply_pco_correction_ecef(t_k, r_com_ecef[k], pco_neu))
+
+def rtn_decompose(r_ref, v_ref, dr):
+    r_hat = r_ref / np.linalg.norm(r_ref, axis=1, keepdims=True)
+    h = np.cross(r_ref, v_ref)
+    n_hat = h / np.linalg.norm(h, axis=1, keepdims=True)
+    t_hat = np.cross(n_hat, r_hat)
+    return (dr * r_hat).sum(axis=1), (dr * t_hat).sum(axis=1), (dr * n_hat).sum(axis=1)
+\end{lstlisting}
+
+The clock comparison first removes a systematic per-constellation bias: the
+precise and broadcast products are referenced to slightly different time scales,
+so their satellite-clock estimates differ by an offset common to every satellite
+in a constellation, which a real receiver would absorb into its own clock-bias
+state.
+
+\begin{lstlisting}[language=py, caption={Removing the per-constellation broadcast-versus-precise clock bias.}, label={lst:tut-ex3-clkbias}]
+# python/examples/ex3_gnss_interface.ipynb
+# median(precise - broadcast) over every satellite AND epoch of the constellation
+for c in constellations:
+    pooled = np.concatenate([
+        results[tag]["clk_sp3_raw"] - results[tag]["clk_brdc"]
+        for tag in results if const_of(tag) == c])
+    clock_bias_s[c] = float(np.nanmedian(pooled))
+
+for tag, d in results.items():
+    d["clk_sp3"] = d["clk_sp3_raw"] - clock_bias_s[const_of(tag)]
+\end{lstlisting}
+
+\paragraph{The results.}
+Ten figures come out of this notebook.
+
+Figure~1 is a 3-D Earth-fixed snapshot of the three constellations propagated
+for two days --- GPS in blue, Galileo in orange, QZSS in green --- showing the
+two MEO shells and the QZSS inclined-geosynchronous ground trace.
+
+Figures~2 and~3 are the antenna patterns, drawn as polar maps in which the
+radius is off-boresight angle from \SI{0}{\degree} at the centre to
+\SI{90}{\degree} at the rim, the azimuth is antenna azimuth, and colour is gain
+in \si{\dB}. \cref{fig:tut-ex3-gain} shows the four GPS blocks side by side. All
+four peak at about \SI{14.8}{\dB} --- IIA, IIR-M and IIF at
+$\varphi=\SI{12}{\degree}$, IIR at \SI{10}{\degree} --- and all four show the
+main lobe collapsing beyond roughly \SI{14}{\degree}, which is the angular
+radius of the Earth as seen from MEO. Everything a lunar receiver can use lives
+outside that ring, in the sidelobes, \SI{20}{\dB} to \SI{30}{\dB} down.
+Figure~3 puts GPS IIR-M/IIF, Galileo E1/E5a and two QZSS L1 patterns on the same
+scale; figure~4 is a 3-D rendering of the Block~IIF table wrapped around
+boresight.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex3_gnss_interface_2.png}
+  \caption{Example~3, second figure: GPS transmit-antenna gain patterns for the
+           four blocks, as polar maps in off-boresight angle (radius, $0$ to
+           \SI{90}{\degree}) and antenna azimuth. Peak gain is
+           $\approx\SI{14.8}{\dB}$ near \SI{12}{\degree}; a lunar receiver lives
+           entirely in the sidelobe structure outside the main beam.}
+  \label{fig:tut-ex3-gain}
+\end{figure}
+
+Figure~5 (\cref{fig:tut-ex3-rtn}) is the orbit comparison: six panels of
+broadcast minus (precise + PCO) in the radial, along-track and cross-track
+directions, GPS in the left column and Galileo in the right, over the 72-hour
+window. The per-PRN standard deviations printed alongside are, for GPS,
+$\sigma_R = 0.14$--\SI{0.19}{\meter}, $\sigma_T = 0.48$--\SI{0.65}{\meter} and
+$\sigma_N = 0.21$--\SI{0.42}{\meter}; for Galileo they are roughly half that,
+$\sigma_R = 0.12$--\SI{0.16}{\meter}, $\sigma_T = 0.26$--\SI{0.35}{\meter},
+$\sigma_N = 0.11$--\SI{0.20}{\meter}. The along-track channel is the worst in
+both systems, and the traces show the characteristic once-per-revolution
+signature of a broadcast fit.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex3_gnss_interface_5.png}
+  \caption{Example~3, fifth figure: broadcast minus (precise + phase-centre
+           offset) orbit differences in the radial/along-track/cross-track
+           frame, GPS (left) and Galileo (right), \SI{15}{\minute} cadence over
+           three days. Along-track is the largest component in both systems.}
+  \label{fig:tut-ex3-rtn}
+\end{figure}
+
+Figure~6 (\cref{fig:tut-ex3-clk}) is the clock comparison, again in a
+$3\times2$ grid: the broadcast clock polynomial, the debiased precise clock, and
+their difference in nanoseconds. The removed per-constellation bias is
+\SI{0.789}{\nano\second} for GPS and \SI{-1.005}{\nano\second} for Galileo. What
+remains is broadcast clock \emph{prediction} error: per-PRN standard deviations
+of 0.32 to \SI{1.63}{\nano\second} with peak-to-peak excursions up to
+\SI{8.4}{\nano\second}, which at $c$ is a few metres of pseudorange.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.86\textwidth]{tutorials/ex3_gnss_interface_6.png}
+  \caption{Example~3, sixth figure: broadcast clock, debiased precise clock, and
+           their difference for five GPS and five Galileo satellites, after
+           removing the per-constellation median offset.}
+  \label{fig:tut-ex3-clk}
+\end{figure}
+
+Figures~7 and~8 pool those differences into histograms, one row per
+constellation, with radial, along-track, cross-track and clock panels annotated
+with RMS and $\sigma$. Pooled over 5 PRNs $\times$ 289 epochs the GPS numbers are
+radial RMS \SI{0.53}{\meter} (95th percentile \SI{0.96}{\meter}), along-track
+\SI{0.82}{\meter} (\SI{1.62}{\meter}), cross-track \SI{0.32}{\meter}
+(\SI{0.60}{\meter}) and clock \SI{1.02}{\nano\second} (\SI{1.75}{\nano\second});
+the Galileo numbers are \SI{0.16}{\meter}, \SI{0.31}{\meter}, \SI{0.16}{\meter}
+and \SI{0.84}{\nano\second}. This is the signal-in-space error budget that the
+later measurement simulations must tolerate --- and it is dominated by the
+broadcast product, not by anything \lupnt{} models.
+
+Figure~9 compares nominal and block-specific ``dedicated'' yaw-steering laws for
+one GPS and one Galileo satellite over the window. The two curves \emph{coincide}
+and their difference is flat, which is the expected result and is explained
+rather than hidden: over this arc G01 has $|\beta| =$ 23.8--\SI{25.1}{\degree},
+far outside the \SI{5.8}{\degree} eclipse regime in which a rate-limited law
+departs from nominal. Figure~10 (\cref{fig:tut-ex3-yaw}) therefore constructs a
+synthetic low-$\beta$ turn at $\beta=\SI{1.5}{\degree}$ and sweeps the orbit
+angle $\pm\SI{40}{\degree}$ around noon and around midnight, showing the nominal
+law against the constant-rate block laws (IIR and IIR-M at
+\SI{0.20}{\degree\per\second}, IIF at \SI{0.11}{\degree\per\second}). Only there
+do the laws visibly diverge, and the slower IIF limit lags furthest behind
+nominal.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex3_gnss_interface_10.png}
+  \caption{Example~3, tenth figure: a synthetic low-$\beta$ noon turn (left) and
+           midnight turn (right) at $\beta=\SI{1.5}{\degree}$, comparing the
+           nominal yaw law with the rate-limited GPS block laws.}
+  \label{fig:tut-ex3-yaw}
+\end{figure}
+
+The observable definitions, the antenna gain model, and the broadcast ephemeris
+evaluation this example compares against are specified in
+\cref{chap:gnss-measurements}; the download workflow and product naming are in
+\cref{chap:sp3-download}.
+
+% ===========================================================================
+\section{Example 4: Plasmasphere and Ionosphere}
+\label{sec:tut-ex4}
+
+\textbf{Python:} \file{python/examples/ex4_plasmasphere.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex4_plasmasphere.cc}
+
+\paragraph{The scenario.}
+The \code{pecsim} backend behind \py{pylupnt.plasma}, in two parts, both at the
+epoch \textbf{2026-01-01 00:00 UTC} ($t=\SI{820497627}{\second}$ from J2000)
+with a geomagnetic activity index $K_p = 2.0$ and the IRI-2007 ionosphere model
+selected inside GCPM v2.4.
+
+Part~one samples the electron density on a $101\times101$ meridional grid
+spanning $\pm 8\,R_E$ in the noon--midnight plane, skipping points inside
+$1.01\,R_E$ and outside the domain. Part~two ray-traces one GPS-to-lunar link:
+the transmitter is a circular MEO satellite at
+$a=\SI{26560}{\kilo\meter}$, $e=0.001$, $i=\SI{55}{\degree}$ with its mean
+anomaly deliberately tuned to \SI{245}{\degree} so that it sits on the
+\emph{far} side of the Earth from the Moon; the receiver is the same ELFO family
+used throughout ($a=\SI{6541.4}{\kilo\meter}$, $e=0.6$, $i=\SI{56.2}{\degree}$,
+$\omega=\SI{90}{\degree}$, $M=\SI{180}{\degree}$), propagated about the Moon and
+then shifted into the Earth-centred frame. At this epoch the transmitter is at
+$4.17\,R_E$, the Moon at $56.67\,R_E$ and the receiver at $55.34\,R_E$, and the
+line of sight grazes the plasmasphere instead of missing it entirely. The
+notebook says so explicitly: a transmitter on the same side as the Moon would
+give a path that never dips below the $4\,R_E$ cutoff and a TEC of exactly zero.
+
+\begin{lstlisting}[language=py, caption={Epoch, activity index, and the electron-density grid.}, label={lst:tut-ex4-grid}]
+# python/examples/ex4_plasmasphere.ipynb
+YEAR, MONTH, DAY, HOUR = 2026, 1, 1, 0
+mjd = plasma.gregorian_to_mjd(YEAR, MONTH, DAY, HOUR)
+epoch_j2000 = plasma.mjd_to_tj2000(mjd)   # seconds since J2000 (UTC)
+dt = plasma.mjd_to_datetime(mjd)          # DateTime for GCPM/IRI queries
+kp = plasma.get_kp_index(dt)
+plasma.set_iri_model("IRI2007")
+
+for i in range(N):
+    for j in range(N):
+        x, z = XX[i, j], ZZ[i, j]
+        r = np.hypot(x, z)
+        alatr = np.arctan2(z, np.abs(x))     # magnetic latitude [rad]
+        amlt = 12.0 if x >= 0 else 0.0       # noon-midnight meridian
+        ne = plasma.gcpm_v24(dt, r, amlt, alatr, kp)[0]
+\end{lstlisting}
+
+\paragraph{The computation.}
+The ray tracer integrates the plasma model along the path at
+\SI{100}{\kilo\meter} steps with RK4, applies a receiver-position correction by
+Nelder--Mead, and stops modelling plasma beyond a cutoff radius of $4\,R_E =
+\SI{25484}{\kilo\meter}$ (vacuum above that, all the way to the Moon).
+
+\begin{lstlisting}[language=py, caption={Ray-trace configuration and the returned path profile.}, label={lst:tut-ex4-trace}]
+# python/examples/ex4_plasmasphere.ipynb
+config = plasma.RayTraceConfig()
+config.freq_Hz = plasma.freq_L1        # 1575.42 MHz
+config.step_size = 100.0               # integration step [km]
+config.correction = True               # apply receiver-position correction
+config.fine_correction = False
+config.correction_method = "neldermead"
+config.cutoff_r = CUTOFF_RE * RE_km    # 4 R_E
+config.kp = kp
+config.integ_method = "rk4"
+config.straight_ray = False
+
+pp = plasma.trace_ray(epoch_j2000, pos_tx_km, pos_rx_km, config,
+                      debug_prop=False, debug_corr=False)
+# pp.tecu, pp.tec_delay_m, pp.dist_bend_m, pp.dist_straight_km, pp.pos_eci, pp.r, pp.s
+\end{lstlisting}
+
+\paragraph{The results.}
+The example prints a small table of scalars and draws two figures.
+
+The scalars are the physical answer. The grid sweep reports an electron density
+spanning \SI{1.58e-1}{} to \SI{1.55e6}{\per\centi\meter\cubed} --- seven orders
+of magnitude between the outer magnetosphere and the F-region peak. The ray
+trace returns \textbf{\SI{4.968}{\TECU}} of total electron content along a
+straight-line distance of \SI{376900}{\kilo\meter}, which at L1 becomes a total
+delay of \SI{0.8066}{\meter}, of which \SI{0.8067}{\meter} is the dispersive TEC
+term and only \SI{2e-6}{\meter} is geometric bending. The lesson is quantitative:
+the delay is dominated entirely by the TEC integral, ray bending is negligible at
+L1, and the whole effect is at the metre level --- large compared with a
+carrier-phase observable, small compared with a broadcast ephemeris error.
+
+The first figure (\cref{fig:tut-ex4-slice}) is the meridional slice: a
+\code{pcolormesh} of $\log_{10} n_e$ over $X\in[-8,8]\,R_E$ (noon on $+X$,
+midnight on $-X$) and $Z\in[-8,8]\,R_E$ along the magnetic axis, colour-scaled
+from $10^0$ to $10^5\,\si{\per\centi\meter\cubed}$, with the Earth filled in, a
+dashed white plasmapause circle at $4\,R_E$ and the GPS orbit radius
+($4.2\,R_E$) drawn in yellow. The dense torus hugging the Earth is the
+plasmasphere; the sharp drop across the plasmapause and the day/night asymmetry
+between the noon and midnight halves are both visible, and the GPS shell is
+shown to sit right at the plasmapause --- which is why link geometry, not
+altitude alone, decides whether a signal is affected.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.68\textwidth]{tutorials/ex4_plasmasphere_1.png}
+  \caption{Example~4, first figure: meridional slice of GCPM~v2.4 + IRI-2007
+           electron density at $K_p=2$, in the noon--midnight plane. Dashed
+           white: the $4\,R_E$ plasmapause; yellow: the GPS orbit radius.}
+  \label{fig:tut-ex4-slice}
+\end{figure}
+
+The second figure (\cref{fig:tut-ex4-ray}) has three panels. The left panel
+plots the traced ray in the $XZ$ plane over the near-Earth region, each sample
+coloured by $\log_{10} n_e$, with the transmitter marked, the $4\,R_E$ cutoff
+circle dashed, and a cyan arrow pointing off-plot toward the Moon; it shows the
+path diving in toward perigee and back out. The middle panel is altitude above
+the Earth's surface against arc length, truncated at the outbound $4\,R_E$
+crossing, with the perigee marked. The right panel is the electron-density
+profile along the same arc. The notebook then spends a whole markdown cell on
+that third panel: the two near-vertical walls in $n_e$ are \emph{not} a
+discontinuity but the genuinely steep, still-continuous plasmapause gradient,
+under-sampled by the \SI{100}{\kilo\meter} step; resampling the identical path
+at \SI{2}{\kilo\meter} shows $n_e$ falling smoothly from about 2000 to
+\SI{330}{\per\centi\meter\cubed} over \SI{230}{\kilo\meter} on the inbound wall
+and rising from about 450 to \SI{4400}{\per\centi\meter\cubed} over
+\SI{450}{\kilo\meter} on the perigee side. The density peak also sits slightly
+off the geometric perigee, because the plasma is organised by dipole $L$-shell
+and magnetic latitude rather than by geocentric radius.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex4_plasmasphere_2.png}
+  \caption{Example~4, second figure: the GPS-to-ELFO ray through the
+           plasmasphere (left, coloured by $n_e$), its altitude profile to the
+           $4\,R_E$ crossing (centre), and the electron density along the path
+           (right).}
+  \label{fig:tut-ex4-ray}
+\end{figure}
+
+The GCPM and IRI density models, the Haselgrove ray-tracing equations, the
+dispersive delay relation, and the model boundaries are specified in
+\cref{chap:ionosphere}. A higher-fidelity closed-loop variant with a full
+constellation and occultation gating lives in
+\file{projects/old/Plasma_Examples/ex_plasma_raytrace.py}.
+
+% ===========================================================================
+\section{Example 5: GNSS Measurement Simulation}
+\label{sec:tut-ex5}
+
+\textbf{Python:} \file{python/examples/ex5_gnss_measurement_sim.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex5_gnss_measurement_sim.cc}
+
+\paragraph{The scenario.}
+Which Earth-GNSS signals can a lunar receiver actually track? The receiver is
+the standard ELFO ($a=\SI{6541.4}{\kilo\meter}$, $e=0.6$,
+$i=\SI{56.2}{\degree}$, $\omega=\SI{90}{\degree}$), started at
+\textbf{2026-01-01 00:00:00 TDB} and propagated for exactly \textbf{one orbital
+period (\SI{47474.9}{\second}, \SI{13.19}{\hour})} at \SI{300}{\second} steps,
+i.e.\ 159 receiver epochs. Over that period the altitude above the lunar surface
+swings from \SI{879}{\kilo\meter} at periapsis to \SI{8727}{\kilo\meter} at
+apoapsis.
+
+The transmitters come from the same COD MGEX SP3 products as
+\cref{sec:tut-ex3}: \textbf{32 GPS} and \textbf{27 Galileo} satellites with
+complete coverage over the arc, sampled on a \SI{300}{\second} grid that starts
+one step early so the light-time iteration (about \SI{1.3}{\second} at cislunar
+range) has data to interpolate. The receiver antenna is the \code{moongpsr}
+model --- an Earth-pointing dish, \SI{+14}{\dBi}, roughly \SI{7}{\degree}
+half-power beamwidth --- and both the Earth and the Moon are registered as
+occulting bodies, the Moon with a per-epoch position provider because it moves
+\SI{7}{\degree} over the arc. Acquisition and tracking $C/N_0$ thresholds are
+\SI{22}{\dBHz} and \SI{20}{\dBHz}.
+
+\begin{lstlisting}[language=py, caption={Receiver-side measurement model configuration.}, label={lst:tut-ex5-opts}]
+# python/examples/ex5_gnss_measurement_sim.ipynb
+opts = pnt.GnssMeasurementOptions()
+opts.frame = pnt.ECI
+opts.receive_time_scale = pnt.TAI
+opts.solve_light_time = True
+opts.apply_transmitter_relativity = True
+opts.apply_visibility = True
+opts.apply_cn0_threshold = True
+opts.cn0_acquisition_threshold_dbhz = 22.0
+opts.cn0_tracking_threshold_dbhz = 20.0
+
+gnss_meas = pnt.GNSSMeasurements(gps_const)
+gnss_meas.set_frequency(pnt.GnssFreq.L1)
+gnss_meas.add_constellation(gal_const, pnt.GnssFreq.E1)
+gnss_meas.set_options(opts)
+gnss_meas.set_receiver_antenna(pnt.Antenna("moongpsr"))  # Earth-pointing, +14 dBi
+gnss_meas.set_occluding_bodies([earth_body, moon_body])
+gnss_meas.set_boresight_target_provider(earth_pos_eci)
+\end{lstlisting}
+
+\paragraph{The computation.}
+For each receiver epoch the model solves light time, applies transmitter
+relativity, checks the path against both occulting bodies, evaluates the
+transmit antenna gain in the satellite body frame, adds free-space loss, and
+returns one channel per surviving link with its $C/N_0$.
+
+\begin{lstlisting}[language=py, caption={Building the per-epoch channel list.}, label={lst:tut-ex5-loop}]
+# python/examples/ex5_gnss_measurement_sim.ipynb
+epoch_results = []
+for t_tai, state in zip(t_tai_arr.tolist(), states_list):
+    channels = gnss_meas.build_channels(t_tai, state)
+    epoch_results.append(_Epoch(t_tai, channels))
+
+# Use ch.gnss_const (not the PRN number) to tag constellation -- Galileo PRNs
+# 2-31 overlap with GPS PRNs, so PRN-based tagging silently miscounts.
+for i, ep in enumerate(epoch_results):
+    for ch in ep.channels:
+        const = "G" if ch.gnss_const == pnt.GnssConst.GPS else "E"
+        links.append((t_hrs[i], f"{const}{ch.prn:02d}", float(ch.cn0_dbhz)))
+\end{lstlisting}
+
+Each visible link is then projected back into the \emph{transmitter's} antenna
+frame, so the reader can see where on the pattern the lunar receiver actually
+sits.
+
+\begin{lstlisting}[language=py, caption={Projecting each link into the transmit-antenna frame.}, label={lst:tut-ex5-angles}]
+# python/examples/ex5_gnss_measurement_sim.ipynb
+att = pnt.GnssAttitude(tx_pos, sun_pos)
+u = rx_pos - tx_pos
+u /= np.linalg.norm(u)
+theta_r, phi_r = att.get_angles(np.array(u))   # theta = azimuth, phi = off-boresight
+\end{lstlisting}
+
+\paragraph{The results.}
+Over the 159 epochs the model yields \textbf{844 visible links} ---
+\textbf{657 GPS} and \textbf{187 Galileo} --- a mean of \textbf{5.3 visible
+satellites}, a peak of \textbf{10} and a minimum of \textbf{1}, with $C/N_0$
+spanning \SI{20.0}{} to \SI{44.9}{\dBHz}. Four or more simultaneous satellites,
+the classic requirement for an instantaneous 3-D-plus-clock fix, is available
+much but not all of the time --- which is precisely why \cref{sec:tut-ex6} uses
+a filter rather than a snapshot solution.
+
+The first figure (\cref{fig:tut-ex5-vis}) is a two-panel step plot of the number
+of visible GPS (top) and Galileo (bottom) satellites against time from epoch in
+hours. The dips are geometry: occultation by the Moon near perilune, and stretches
+where the Earth-pointing beam sees only weak sidelobes. Galileo contributes
+roughly a quarter of the links, reflecting both the smaller usable sidelobe
+structure and the smaller number of satellites in the SP3 file.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.92\textwidth]{tutorials/ex5_gnss_measurement_sim_1.png}
+  \caption{Example~5, first figure: visible GPS (top) and Galileo (bottom)
+           satellite count over one ELFO period, gated at \SI{22}{\dBHz}
+           acquisition.}
+  \label{fig:tut-ex5-vis}
+\end{figure}
+
+The second figure (\cref{fig:tut-ex5-cn0}) is the more informative view: a
+$C/N_0$ heat map with satellites on the ordinate (GPS then Galileo, PRN-sorted)
+and time on the abscissa, colour-scaled \SI{15}{} to \SI{45}{\dBHz}. Each
+horizontal streak is one satellite's pass; the streaks are short, because a lunar
+receiver sees a given GPS satellite only while the sidelobe geometry happens to
+line up. The colour tells the reader what the visibility count cannot: a link
+barely over the \SI{22}{\dBHz} threshold and a \SI{40}{\dBHz} link contribute
+very different measurement noise.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex5_gnss_measurement_sim_2.png}
+  \caption{Example~5, second figure: $C/N_0$ received by the ELFO from each GPS
+           L1 and Galileo E1 satellite over one orbit. Short streaks are
+           sidelobe passes, not continuous tracking.}
+  \label{fig:tut-ex5-cn0}
+\end{figure}
+
+Figures~3 and~4 close the argument. Each is a $2\times3$ grid of polar plots,
+one per most-tracked PRN (GPS 2, 11, 15, 18, 20, 29; Galileo 14, 18, 21, 23, 27,
+30), showing that transmitter's own gain table as a faint background with every
+link to the lunar receiver over-plotted at its off-boresight angle and azimuth.
+\cref{fig:tut-ex5-polar} shows the GPS panel. Essentially every point lies well
+outside the Earth's angular radius from MEO ($\approx\SI{13.9}{\degree}$), i.e.\
+outside the main beam that the antenna was designed for. That is the whole thesis
+of lunar GNSS in one picture: the usable signal is sidelobe signal.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex5_gnss_measurement_sim_3.png}
+  \caption{Example~5, third figure: directions to the lunar receiver plotted on
+           each GPS transmitter's own gain pattern. Every link falls outside the
+           Earth-facing main lobe.}
+  \label{fig:tut-ex5-polar}
+\end{figure}
+
+The light-time iteration, the relativistic and plasma corrections, the antenna
+gain and occultation gating, and the online versus batch \cpp{Precompute} paths
+are specified in \cref{chap:gnss-measurements}; the $C/N_0$ computation itself
+is in \cref{chap:link-budget}.
+
+% ===========================================================================
+\section{Example 6: GNSS Sidelobe ODTS}
+\label{sec:tut-ex6}
+
+\textbf{Python:} \file{python/examples/ex6_gnss_odts.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex6_gnss_odts.cc}
+
+\paragraph{The scenario.}
+Orbit determination and time synchronisation for a lunar receiver navigating on
+the weak sidelobe signals of \cref{sec:tut-ex5}. The scenario is a YAML file,
+\file{configs/lunar_gnss_odts.yaml}: a physical \code{receiver} \cpp{Spacecraft}
+agent hosts a \cpp{LunarGnssOdtsApp}, and the notebook's own configuration
+module mirrors the same values field-for-field so that the C++ precompute cache
+--- keyed on a fingerprint of the configuration --- is shared between the
+notebook and the standalone script. The configuration the notebook prints is:
+
+\begin{itemize}[nosep]
+  \item a \textbf{\SI{13.19}{\hour}} run ($\approx$ one ELFO period,
+        \SI{47475}{\second}) at \textbf{\SI{1}{\hertz}}, starting
+        \textbf{2026-01-01T02:00:00};
+  \item TDCP on, SRP-coefficient estimation on with a truth
+        $C_R A/m = \SI{2.00e-3}{\meter\squared\per\kilogram}$;
+  \item ionosphere-free (L1+L5) pseudorange, $C/N_0$-derived noise plus filter
+        inflation of \SI{10}{\meter} on pseudorange and \SI{200}{\milli\meter}
+        on TDCP;
+  \item tangent-altitude cutoffs of \SI{1000}{\meter} for pseudorange and
+        \SI{4000}{\meter} for TDCP;
+  \item GPS + Galileo, \code{moongpsr} receiver antenna, \SI{22}{}/\SI{20}{\dBHz}
+        acquisition/tracking gate;
+  \item plasma delay ray-traced every \SI{120}{\second} and interpolated to
+        \SI{1}{\hertz}.
+\end{itemize}
+
+The filter is deliberately imperfect: truth carries higher-fidelity dynamics,
+the Sun's Shapiro delay and the ray-traced plasmaspheric delay, while the
+estimator uses a simpler onboard-style model and inflated measurement noise so
+that it does not chase unmodelled effects as if they were state error.
+
+\paragraph{The computation.}
+Three observables drive a stochastic-cloning UDU extended Kalman filter over the
+nine-state $[\vec{r},\vec{v},b,\dot b, C_R A/m]$: pseudorange, instantaneous
+Doppler, and time-differenced carrier phase. TDCP references two epochs, so the
+augmented state carries both the current and the previous receiver state --- the
+main mathematical lesson of the notebook.
+
+Stage~1 builds the link geometry and caches it; stage~2 ray-traces the plasma
+delay. Ray tracing is far too slow to run per link at \SI{1}{\hertz}, so it is
+done at \SI{120}{\second} anchor epochs and interpolated in time per
+satellite-frequency link, cutting the trace count by roughly $120\times$; a
+satellite whose whole pass falls between two anchors is traced directly rather
+than silently zeroed.
+
+\begin{lstlisting}[language=py, caption={Loading the scenario, then reading back the two cached precompute stages.}, label={lst:tut-ex6-stage}]
+# python/examples/ex6_gnss_odts.ipynb
+cfg = build_config()     # struct config: drives the Stage 2 plasma ray-trace
+scen = load_scenario()   # agent-based scenario dict for pnt.Simulation
+sim = pnt.Simulation(scen)
+app = sim.get_agent("receiver").get_application()
+
+app.precompute()         # Stage 1: link geometry / C-N0 -> precomputed_links.csv
+links = pd.read_csv(cfg.links_file)
+
+if delays_cache_valid(cfg, PLASMA_DELAY_DT_S):     # Stage 2: GCPM/IRI ray trace
+    delays = pd.read_csv(Path(cfg.delays_file))
+else:
+    delays = compute_delays(cfg, links, PLASMA_DELAY_DT_S)
+\end{lstlisting}
+
+\begin{lstlisting}[language=py, caption={Running the filter and reading the per-run summary.}, label={lst:tut-ex6-run}]
+# python/examples/ex6_gnss_odts.ipynb
+sim.run()
+summary = app.get_summaries()[0]
+print(f"Final position error:    {summary.final_position_error_m:8.3f} m")
+print(f"RMS position error:      {summary.rms_position_error_m:8.3f} m")
+print(f"Final clock bias error:  {summary.final_clock_bias_error_m * 1e2:8.3f} cm")
+
+traj = pd.read_csv(Path(cfg.output_dir) / "trajectory_mc0.csv")
+\end{lstlisting}
+
+The Monte-Carlo section re-runs the same deterministic truth and link geometry
+with only the noise realisation and initial-estimate perturbation changing,
+three trials each for pseudorange-only and pseudorange-plus-TDCP:
+
+\begin{lstlisting}[language=py, caption={A three-trial Monte Carlo for each measurement variant.}, label={lst:tut-ex6-mc}]
+# python/examples/ex6_gnss_odts.ipynb
+N_MC = 3
+MC_VARIANTS = {"Pseudorange only": ("mc_pr_only", False),
+               "Pseudorange + TDCP": ("mc_pr_tdcp", True)}
+
+s = load_scenario()
+a = s["agents"]["receiver"]["application"]
+a["simulation"]["output_dir"] = str(vdir)
+a["simulation"]["monte_carlo_runs"] = N_MC
+a["measurements"]["use_tdcp"] = use_tdcp
+pnt.Simulation(s).run()
+\end{lstlisting}
+
+\paragraph{The results.}
+Ten figures, and they build an argument rather than just reporting numbers.
+
+Figure~1 (\cref{fig:tut-ex6-delay}) is the plasma sanity check: a scatter of
+plasmaspheric delay (logarithmic, in metres) against the ray's tangent altitude
+above the Earth's surface in kilometres, coloured by epoch index, for the L1
+links only. The delay falls off monotonically as the tangent point rises away
+from the dense inner plasmasphere, which is the expected physical behaviour; the
+delays span \SI{0}{} to \SI{133.91}{\meter} across the arc.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.78\textwidth]{tutorials/ex6_gnss_odts_1.png}
+  \caption{Example~6, first figure: GCPM/IRI-2007 plasmaspheric delay against
+           signal-path tangent altitude, L1 links. Delay falls off
+           monotonically as the path clears the plasmasphere.}
+  \label{fig:tut-ex6-delay}
+\end{figure}
+
+Figure~2 (\cref{fig:tut-ex6-rtn}) is the filter's core result: six panels of
+estimate error against time in hours, radial/tangential/normal position in the
+left column (clipped to $\pm\SI{100}{\meter}$) and the corresponding velocity
+components in the right column (clipped to $\pm\SI{20}{\milli\meter\per\second}$),
+each overlaid with the filter's own formal $3\sigma$ envelope from the EKF
+covariance. The error stays inside the envelope, and the envelope narrows as
+sidelobe measurements accumulate.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex6_gnss_odts_2.png}
+  \caption{Example~6, second figure: RTN position and velocity error with the
+           filter's formal $3\sigma$ bounds, over one ELFO period at
+           \SI{1}{\hertz}.}
+  \label{fig:tut-ex6-rtn}
+\end{figure}
+
+Figure~3 shows the clock: bias error and drift error in range-equivalent units
+with their $3\sigma$ bands, the drift band explicitly flagged as untrustworthy
+(a covariance-conditioning artefact, unrelated to TDCP). Figure~4 is the
+solar-radiation-pressure coefficient estimate relative to truth, with its
+$3\sigma$ band: the filter starts from a deliberately biased value and the
+estimate creeps toward the dashed truth line while the band shrinks slowly ---
+SRP acts as a slow, mostly along-track acceleration, so one orbital period is
+about the shortest arc on which it moves at all.
+
+Figure~5 (\cref{fig:tut-ex6-hist}) turns the time histories into four
+histograms over all 47\,475 epochs of the single run. The printed statistics are
+radial mean \SI{-3.43}{\meter}, $\sigma=\SI{20.48}{\meter}$, RMS
+\SI{20.76}{\meter}, 95th-percentile $|{\cdot}|$ \SI{32.84}{\meter}; transverse
+\SI{5.24}{}/\SI{24.25}{}/\SI{24.81}{}/\SI{47.33}{\meter}; normal
+\SI{-5.23}{}/\SI{22.28}{}/\SI{22.88}{}/\SI{51.63}{\meter}; and clock bias
+\SI{-6.60}{}/\SI{20.32}{}/\SI{21.37}{}/\SI{33.95}{\meter}. In other words, a
+lunar receiver navigating purely on terrestrial GNSS sidelobes holds a few tens
+of metres in each axis over an orbit.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex6_gnss_odts_5.png}
+  \caption{Example~6, fifth figure: per-epoch distribution of the RTN position
+           error and the range-equivalent clock-bias error. Each is centred near
+           zero with an RMS in the low tens of metres.}
+  \label{fig:tut-ex6-hist}
+\end{figure}
+
+Figure~6 overlays, on twin axes, the number of distinct GNSS satellites tracked
+per epoch and the total number of measurement rows fed to the filter (pseudorange
+and Doppler rows plus one TDCP row per continuously tracked link); 47\,474 of
+47\,475 epochs carry at least one TDCP row, the exception being the first, which
+has no previous epoch to difference against. Figure~7 histograms the broadcast
+signal-in-space error the pseudorange actually sees, split into the transmitter
+orbit error projected on the line of sight, the transmitter clock error in range
+units, and their sum. Pooled over 78\,391 GPS satellite-epochs the total is
+mean \SI{+0.447}{\meter}, RMS \SI{0.726}{\meter}, 95th percentile
+\SI{1.197}{\meter}; over 30\,315 Galileo satellite-epochs it is
+\SI{+0.176}{\meter}, RMS \SI{0.319}{\meter}, 95th percentile \SI{0.628}{\meter}
+--- consistent with \cref{sec:tut-ex3} and, the notebook argues, the binding
+residual in this scenario.
+
+Figures~8 and~9 are the Monte-Carlo comparison. Figure~8 plots the 3-D position
+error of each of the three trials plus the ensemble mean, pseudorange-only on
+the left and pseudorange-plus-TDCP on the right, on a common
+\SIrange{0}{200}{\meter} scale. \cref{fig:tut-ex6-mc} is the head-to-head bar
+chart: mean RMS position error drops from \SI{47.27}{\meter} to
+\SI{40.10}{\meter} and mean final error from \SI{21.24}{\meter} to
+\SI{19.16}{\meter} when TDCP is added, with the individual trials shown as black
+dots so the reader can see the spread is comparable to the improvement.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.82\textwidth]{tutorials/ex6_gnss_odts_9.png}
+  \caption{Example~6, ninth figure: RMS and final 3-D position error,
+           pseudorange-only versus pseudorange-plus-TDCP, three Monte-Carlo
+           trials each (bars are ensemble means, dots individual trials).}
+  \label{fig:tut-ex6-mc}
+\end{figure}
+
+The accompanying discussion is the sharpest quantitative result in the notebook
+and does not appear in any figure. TDCP is single-frequency (L1 / E1), so unlike
+the ionosphere-free pseudorange it gets \emph{no} plasma cancellation; the
+epoch-to-epoch change of the ray-traced delay, measured directly from the cached
+table, is RMS \SI{3.6}{\centi\meter} with a tail to about \SI{0.85}{\meter}.
+Feeding TDCP at a nominal \SI{1}{\centi\meter} noise makes the filter chase those
+spikes: normalised-error RMS of 25/31/49 in R/T/N and a position RMS of
+\SI{768}{\meter}, i.e.\ divergence. At the default \SI{0.20}{\meter} inflation
+the normalised-error RMS is 1.6 in all three axes --- as consistent as the
+pseudorange-only baseline --- \emph{and} more accurate. Measurement-noise
+inflation, not process noise, is the lever.
+
+Figure~10 is a capability demonstration rather than an accuracy result: the same
+engine run at the future epoch \textbf{2027-01-01T02:00:00} for
+\SI{15}{\minute}, GPS-only, with the constellation seeded from a freshly
+downloaded YUMA almanac and numerically propagated (Earth $J_2$ plus Sun and
+Moon third bodies) to the run epoch, and with a modelled synthetic
+signal-in-space error injected through the same filter path. Over 901 epochs it
+gives a final 3-D position error of \SI{8522}{\meter} and an RMS of
+\SI{18665}{\meter} --- kilometre-level, as the notebook says it should be for a
+year-extrapolated almanac seen through sparse sidelobes. The point is that the
+pipeline runs and produces sane measurements at an epoch for which no precise
+product exists.
+
+Run \file{python/examples/ex6_precompute.py} first: stage~1 builds the link
+geometry, stage~2 the GCPM/IRI plasma delays, and both caches are keyed on a
+fingerprint of the configuration so the notebook and the C++ binary share them.
+The filter formulation is specified in \cref{chap:filters}, the observables in
+\cref{chap:gnss-measurements}, and the delay model in \cref{chap:ionosphere}.
+
+% ===========================================================================
+\section{Example 7: Ground-Station Orbit Determination}
+\label{sec:tut-ex7}
+
+\textbf{Python:} \file{python/examples/ex7_groundstation_odts.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex7_groundstation_odts.cc}
+
+\paragraph{The scenario.}
+A lunar satellite is tracked by the three \SI{70}{\meter} Deep Space Network
+antennas --- Goldstone (\code{DSS14}), Canberra (\code{DSS43}) and Madrid
+(\code{DSS63}) --- via two-way range and range rate over a
+\textbf{\SI{36}{\hour}} arc sampled at \textbf{433 epochs}, producing
+\textbf{627 measurements} in total under a \SI{10}{\degree} elevation mask.
+This is the first fully agent-based example: a shared \code{World} holds the
+epoch, frame and truth force model; a \cpp{Satellite} agent self-propagates the
+ELFO truth; each antenna is a \cpp{GroundStation} agent running a
+\cpp{GroundStationTrackingApp} that generates its own visibility-gated, noisy
+observations; and a \cpp{GroundStationManager} agent runs the
+\cpp{GroundStationManagerApp}, which aggregates them and recovers the orbit from
+a perturbed a-priori state.
+
+The tracking apps add the dominant Earth signal-path delays to the \emph{truth}
+observable --- Saastamoinen troposphere ($\approx\SI{2.4}{\meter}$ at zenith,
+$\approx\SI{14}{\meter}$ at the \SI{10}{\degree} mask), a thin-shell ionosphere
+(sub-metre at X-band), the relativistic Shapiro delay (a few metres) and a solid
+Earth tide station displacement of up to \SI{0.3}{\meter}. The manager removes
+the deterministic terms in full (\code{model\_shapiro},
+\code{model\_solid\_earth\_tide}) and calibrates a configurable fraction of the
+atmospheric ones (\code{troposphere\_cancel\_fraction} and
+\code{ionosphere\_cancel\_fraction}, here 0.8), inflating the range noise for
+the uncancelled remainder via \code{residual\_delay\_noise\_scale}. An optional
+\code{filter\_dynamics:} block lets the estimator run at a deliberately
+different fidelity from truth.
+
+\paragraph{The computation.}
+The manager runs an iterative weighted-least-squares batch filter whose design
+matrix is chained analytically through the autodiff state-transition matrix,
+then a square-root information filter and a fixed-interval smoother over the
+same data. The \SI{36}{\hour} arc is compute-heavy, so the notebook reads back
+CSVs written by \file{python/examples/ex7_run_odts.py}.
+
+\begin{lstlisting}[language=py, caption={Reading back the exported ODTS run.}, label={lst:tut-ex7-load}]
+# python/examples/ex7_groundstation_odts.ipynb
+DATA = seed_example_output("ex7_data")
+meta = json.load(open(DATA / "meta.json"))
+grid = pd.read_csv(DATA / "grid.csv")
+iters = pd.read_csv(DATA / "iterations.csv")
+elevation = pd.read_csv(DATA / "elevation.csv")
+measurements = pd.read_csv(DATA / "measurements.csv")
+epoch_sol = pd.read_csv(DATA / "epoch_solution.csv").set_index("which")
+covariance = pd.read_csv(DATA / "covariance.csv", index_col=0).values
+# duration=36:00:00  epochs=433  measurements=627  converged=True  iterations=5
+\end{lstlisting}
+
+\begin{lstlisting}[language=py, caption={Rotating the estimate error and its covariance into the RTN frame.}, label={lst:tut-ex7-rtn}]
+# python/examples/ex7_groundstation_odts.ipynb
+R_hat = r_true / np.linalg.norm(r_true, axis=1, keepdims=True)
+h = np.cross(r_true, v_true)
+N_hat = h / np.linalg.norm(h, axis=1, keepdims=True)
+T_hat = np.cross(N_hat, R_hat)
+Q = np.stack([R_hat, T_hat, N_hat], axis=1)
+
+dpos_rtn = np.einsum("nij,nj->ni", Q, est[:, :3] - truth[:, :3])
+Prr = np.einsum("nij,njk,nlk->nil", Q, est_cov[:, :3, :3], Q)
+sig_pos_rtn = np.sqrt(np.diagonal(Prr, axis1=1, axis2=2))
+\end{lstlisting}
+
+The corresponding C++ driver reads the same solution off the manager
+application:
+
+\begin{lstlisting}[language=cpp, caption={Reading the centralized OD solution off the manager app.}, label={lst:tut-ex7-cpp}]
+// cpp/examples/tutorials/ex7_groundstation_odts.cc
+Simulation sim(YAML::LoadFile("configs/ground_station_odts.yaml"));
+sim.Run();
+
+auto mgr = std::dynamic_pointer_cast<GroundStationManagerApp>(
+    sim.GetAgent("gs_manager")->GetApplication());
+std::cout << "Batch filter converged: " << (mgr->Converged() ? "yes" : "no")
+          << " in " << mgr->NumIterations() << " iterations\n";
+const Vec6d x0_est = mgr->X0Estimated();
+const double sigma_pos = std::sqrt(mgr->Covariance().topLeftCorner(3, 3).trace());
+\end{lstlisting}
+
+\paragraph{The results.}
+Six figures, plus a convergence table.
+
+Figure~1 (\cref{fig:tut-ex7-vis}) plots each station's topocentric elevation of
+the satellite against time in hours, with the region above the \SI{10}{\degree}
+mask shaded --- those shaded bands are exactly the passes that produced
+measurements. The coverage is markedly uneven: Goldstone sees the satellite at
+291 of 432 epochs (\SI{67.4}{\percent}), Madrid 221 (\SI{51.2}{\percent}) and
+Canberra only 115 (\SI{26.6}{\percent}). Figure~2 shows the resulting
+observations themselves: range in kilometres (a few hundred thousand, as
+expected at lunar distance) and range rate in \si{\meter\per\second}, one colour
+per station, visibly segmented into passes.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.92\textwidth]{tutorials/ex7_groundstation_odts_1.png}
+  \caption{Example~7, first figure: DSN elevation of the lunar satellite from
+           Goldstone, Canberra and Madrid over \SI{36}{\hour}, with the
+           above-mask tracking passes shaded.}
+  \label{fig:tut-ex7-vis}
+\end{figure}
+
+Figure~3 (\cref{fig:tut-ex7-conv}) is the batch convergence, in two
+logarithmic panels: the epoch-state error against iteration on the left, and the
+RMS measurement residual against iteration on the right with dotted lines at the
+assumed noise floors. The printed table is worth quoting because it shows a real
+Gauss--Newton trajectory rather than a monotone one. Starting from an a-priori
+that is \SI{1149.0}{\meter} and \SI{0.468}{\meter\per\second} from truth, the
+range residual falls from \SI{116286.7}{\meter} to \SI{12811.7}{\meter} to
+\SI{1791.4}{\meter} to \SI{10.5}{\meter} to \SI{10.2}{\meter}; the state error
+\emph{worsens} at iteration~1 (\SI{16144.5}{\meter}) before collapsing to
+\SI{24.4}{\meter}, \SI{3.96}{\meter} and finally \SI{1.639}{\meter}. The filter
+converges in five iterations, the residual settles at the noise floor, and the
+weighted RMS lands at 0.989 --- essentially unity, the signature of a correctly
+weighted least-squares solution.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.92\textwidth]{tutorials/ex7_groundstation_odts_3.png}
+  \caption{Example~7, third figure: batch least-squares convergence. Left, the
+           epoch-state error; right, the RMS range and range-rate residuals
+           against their noise floors (dotted).}
+  \label{fig:tut-ex7-conv}
+\end{figure}
+
+The final solution is a position error of \SI{1.639}{\meter} against a formal
+$1\sigma$ of \SI{1.877}{\meter}, and a velocity error of
+\SI{0.711}{\milli\meter\per\second} against a formal
+\SI{0.973}{\milli\meter\per\second} --- error and covariance agree, so the
+formal statistics are believable at the epoch. Figure~4 shows that solution
+propagated: six panels of RTN position and velocity error along the arc inside
+the batch covariance tube $\mat{P}(t_i)=\mat\Phi\mat{P}_0\mat\Phi\transpose$.
+
+Figure~5 (\cref{fig:tut-ex7-srif}) is the methodological punchline. It plots
+the formal position $1\sigma$ on a logarithmic axis for three estimators over
+the same arc, with the tracking passes shaded: the batch
+$\mat\Phi\mat{P}_0\mat\Phi\transpose$ curve, the SRIF forward filter, and the
+SRIF fixed-interval smoother. The batch curve is optimistic --- it assumes
+perfect dynamics, so mapping the epoch covariance forward never grows it
+honestly. The forward filter, which carries white-noise-acceleration process
+noise, grows visibly through each untracked apoapsis coast and is pulled back
+down at every pass, giving the characteristic scalloped shape. The smoother,
+which uses data on both sides of every epoch, stays bounded throughout. Figure~6
+then shows the smoothed error in RTN with the smoother covariance tube (solid)
+against the batch tube (dashed), confirming that the smoother's tighter
+\emph{and} honest envelope still contains the error.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.92\textwidth]{tutorials/ex7_groundstation_odts_5.png}
+  \caption{Example~7, fifth figure: formal position $1\sigma$ from the batch
+           mapping, the SRIF forward filter, and the SRIF smoother. Shaded
+           bands are tracking passes; the forward filter grows through every
+           untracked coast.}
+  \label{fig:tut-ex7-srif}
+\end{figure}
+
+The batch and square-root information filters are specified in
+\cref{chap:filters}; the closed forms and magnitudes of the ground-station
+signal-path and station-location corrections are in \cref{chap:measurements}.
+
+% ===========================================================================
+\section{Example 8: Distributed Inter-Satellite-Link ODTS}
+\label{sec:tut-ex8}
+
+\textbf{Python:} \file{python/examples/ex8_isl_odts.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex8_isl_odts.cc}
+
+\paragraph{The scenario.}
+NASA's five-satellite \textbf{LCRNS Reference Constellation~3.1}, taken as
+Cartesian states in the Moon-centred ICRF at the reference epoch
+\textbf{2027-03-01 00:00:00}, propagated over a \textbf{\SI{6}{\hour}} arc at a
+\textbf{\SI{60}{\second}} measurement interval (361 epochs). The five ELFOs share
+an orbital period of about \SI{30}{\hour}; their initial radii are
+\SI{3485.5}{}, \SI{19149.8}{}, \SI{12548.6}{}, \SI{17631.0}{} and
+\SI{17602.3}{\kilo\meter}, with \code{SV-1} and \code{SV-2} in one plane,
+\code{SV-3} and \code{SV-4} in a second, and \code{SV-5} in a third. The
+constellation is fully cross-linked --- four links per satellite --- and is
+supplemented by three lunar surface stations.
+
+The agent roster the notebook prints from \file{configs/isl_odts_distributed.yaml}
+is five \cpp{Spacecraft} each hosting a \cpp{SatelliteOdtsApp}, three
+\cpp{SurfaceStation} each hosting a \cpp{StationBeaconSensor}, and one
+\cpp{SurfaceStationManager} hosting the centralized \cpp{GroundOdtsApp}. The
+shared \code{world:} block holds the higher-fidelity truth force model; each
+onboard app carries only its \emph{filter} model, a reduced $8\times8$ lunar
+field. The two prior uncertainties are tuned deliberately: each satellite knows
+its \emph{own} freshly initialised state to \SI{200}{\meter} but has only a
+coarse broadcast ephemeris of its neighbours, \SI{500}{\meter}. Crosslink range
+noise is \SI{1.0}{\meter} and range-rate noise
+\SI{0.001}{\meter\per\second}; two-way time and frequency transfer are enabled;
+consider states are exchanged every \SI{10}{\minute}.
+
+\paragraph{The computation.}
+Every satellite runs its own Schmidt EKF: it estimates its own eight-state
+$[\vec{r},\vec{v},b,\dot b]$ and carries each neighbour as a \emph{consider}
+state --- propagated and used in the measurement update, but never directly
+corrected. Satellite-to-satellite links give two-way range and range rate (nearly
+clock-free, so they constrain relative geometry) plus two-way time transfer
+$c\,(b_i-b_j)$ and frequency transfer $c\,(d_i-d_j)$. Surface stations exchange a
+one-way pseudorange and its Doppler with every satellite above their mask,
+supplying the one \emph{absolute} time reference.
+
+Five variants are produced by \file{python/examples/ex8_run_isl_odts.py} over
+identical truth and geometry: the full system, exchange off, stations off, a
+covariance-intersection exchange, and a three-step sweep of the crosslink clock
+observables.
+
+\begin{lstlisting}[language=py, caption={The LCRNS reference states used as truth initial conditions.}, label={lst:tut-ex8-lcrns}]
+# python/examples/ex8_isl_odts.ipynb
+t0_str = "2027-03-01T00:00:00"    # UTC, LCRNS Reference Constellation 3.1 epoch
+lcrns_states_km = {   # Moon-centered ICRF, [km], [km/s]  (Ryden & Volle, Table 2)
+    "SV-1": ([-198.931445, 386.023132, 3458.355412], [-1.539867, 0.022243, -0.091059]),
+    "SV-2": ([1089.980598, -2260.918271, -18984.562823], [0.280301, -0.004049, 0.016575]),
+    "SV-3": ([9187.665852, -260.470721, -8543.222759], [0.273629, 0.417588, -0.313828]),
+    "SV-4": ([6484.019002, 14329.883921, -7966.345594], [-0.258433, 0.033951, 0.235264]),
+    "SV-5": ([-5074.242314, 14473.022751, -8638.530033], [-0.229931, -0.026926, -0.264381]),
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=py, caption={Per-epoch NEES, the covariance-consistency metric.}, label={lst:tut-ex8-nees}]
+# python/examples/ex8_isl_odts.ipynb
+def nees_ts(r, dof=3):
+    """Per-epoch NEES averaged over the constellation.
+
+    dof=3 -> position only, dof=8 -> full [r, v, clock_bias, clock_drift] state.
+    A consistent filter sits near `dof`; NEES >> dof means the covariance is optimistic.
+    """
+    N, ns = len(r.t_s), len(r.satellite_names)
+    out = np.full(N, np.nan)
+    for k in range(N):
+        vals = []
+        for j in range(ns):
+            e = own_block(r, j)[k, :dof] - r.truth_states[j][k, :dof]
+            P = own_cov_8x8(r, j)[k, :dof, :dof]
+            vals.append(float(e @ np.linalg.solve(P, e)))
+        out[k] = np.mean(vals)
+    return out
+\end{lstlisting}
+
+\paragraph{The results.}
+Six figures, each answering a separate question.
+
+Figure~1 (\cref{fig:tut-ex8-mesh}) is the geometry: the five ELFO truth tracks
+over the arc, one colour per satellite, with the full crosslink mesh drawn as
+grey segments at a single snapshot epoch. It makes plain why the constellation
+works --- the satellites spend most of their long period near apolune over the
+southern hemisphere, so a south-polar station sees most of them most of the
+time. Figure~2 shows the observable geometry the onboard filters range across:
+two-way crosslink range and range rate for the four links referenced to
+\code{SV-1}; the \code{SV-1}--\code{SV-2} range alone spans \SI{14859}{} to
+\SI{22635}{\kilo\meter} over the six hours.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.55\textwidth]{tutorials/ex8_isl_odts_1.png}
+  \caption{Example~8, first figure: the five LCRNS ELFOs over the \SI{6}{\hour}
+           arc, with the full inter-satellite crosslink mesh at one snapshot
+           epoch.}
+  \label{fig:tut-ex8-mesh}
+\end{figure}
+
+Figure~3 (\cref{fig:tut-ex8-conv}) is the convergence panel. The top row plots
+each satellite's own position error and clock-bias error against time on
+logarithmic axes with the individual $3\sigma$ envelopes dashed; the bottom row
+isolates the two observability contributions using the constellation mean. The
+numbers underneath separate them cleanly. Final own-state position error with the
+full system is \SI{31.0}{}, \SI{25.4}{}, \SI{39.0}{}, \SI{55.7}{} and
+\SI{53.0}{\meter} for \code{SV-1}--\code{SV-5}, a constellation mean of
+\SI{40.8}{\meter}; with the \SI{10}{\minute} consider-state exchange
+\emph{disabled} the mean degrades to \SI{162.6}{\meter}, with individual
+satellites as bad as \SI{444}{\meter}. Clock bias is the mirror image: the mean
+is \SI{24.9}{\meter} with the surface stations on and \SI{410.2}{\meter} with
+them off, essentially unobserved. \textbf{Crosslinks plus exchange fix the
+orbit; the surface station fixes the time.}
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex8_isl_odts_3.png}
+  \caption{Example~8, third figure: own position and clock-bias error for all
+           five onboard filters with their $3\sigma$ envelopes (top), and the
+           exchange-off and station-off ablations against the constellation mean
+           (bottom).}
+  \label{fig:tut-ex8-conv}
+\end{figure}
+
+Figure~4 asks whether the reported covariance is \emph{honest}, using the
+normalised estimation error squared, which for a consistent filter sits near its
+degrees of freedom (3 for position). The naive-overwrite exchange --- each
+filter simply adopting a neighbour's self-reported covariance --- reaches a
+position NEES of \num{34180}, about \num{11393} times the consistent value of 3:
+it reports a $\sigma$ of \SI{0.42}{\meter} while the true RMS error is
+\SI{24.5}{\meter}. The cause is named explicitly: the five filters share the same
+crosslink observations and have already been mixed by previous exchanges, so
+treating a broadcast as fresh independent information counts it repeatedly, a
+data-incest feedback loop. Switching to a covariance-intersection exchange with
+matched process noise brings the NEES down to \num{236} --- a $145\times$
+reduction in over-confidence --- at the cost of only a slight accuracy change
+(RMS \SI{19.5}{\meter}) and a reported $\sigma$ of \SI{16.25}{\meter}, now the
+same order as the true error.
+
+Figure~5 (\cref{fig:tut-ex8-transfer}) sweeps the crosslink clock observables
+on the same truth with the consistent exchange: constellation-mean clock-bias
+error and clock-drift error against time for three configurations. Range and
+range rate alone leave \SI{58.5}{\meter} of clock bias and
+\SI{0.00356}{\meter\per\second} of drift; adding two-way time transfer collapses
+the bias to \SI{19.0}{\meter} and the drift to
+\SI{0.00121}{\meter\per\second}; adding frequency transfer as well gives
+\SI{5.4}{\meter} and \SI{0.00038}{\meter\per\second}. Coherent two-way ranging
+cancels the clocks and therefore says nothing about them; the two transfer
+observables are what make the constellation's relative clocks observable.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex8_isl_odts_5.png}
+  \caption{Example~8, fifth figure: constellation-mean clock-bias and
+           clock-drift error as two-way time transfer and then frequency
+           transfer are added to the crosslink observables.}
+  \label{fig:tut-ex8-transfer}
+\end{figure}
+
+Figure~6 (\cref{fig:tut-ex8-central}) is the head-to-head against the classic
+architecture: per-satellite final position error, clock error, and a summary
+panel, distributed ISL against the centralized ground filter that sees only the
+surface-station pseudoranges. The distributed scheme is \emph{uniform} ---
+\SIrange{25}{56}{\meter} across all five satellites --- while the ground filter
+ranges from \SI{1503}{\meter} on the well-covered \code{SV-5} to
+\SI{6789}{\meter} on the low-perilune \code{SV-1} that spends long stretches
+below every station's horizon, with clock errors from \SI{1455}{} to
+\SI{14371}{\meter}. Crosslinks buy observability that no ground network alone
+can supply.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex8_isl_odts_6.png}
+  \caption{Example~8, sixth figure: final per-satellite position and clock error,
+           distributed inter-satellite-link filters versus the centralized
+           ground filter on identical truth and station geometry.}
+  \label{fig:tut-ex8-central}
+\end{figure}
+
+The Schmidt/consider formulation, the covariance-intersection fusion, the
+stochastic-cloning bookkeeping, and the covariance conventions are specified in
+\cref{chap:filters}; the crosslink and beacon observables are in
+\cref{chap:measurements}.
+
+% ===========================================================================
+\section{Example 9: Ephemeris and Almanac Fitting}
+\label{sec:tut-ex9}
+
+\textbf{Python:} \file{python/examples/ex9_ephemeris.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex9_ephemeris.cc}
+
+\paragraph{The scenario.}
+The accuracy-versus-broadcast-datasize trade-off of two lunar-satellite orbit
+models fit to a numerically propagated truth trajectory. The truth is the ELFO
+of \cref{sec:tut-ex1} propagated under N-body dynamics and exported already
+rotated into the Moon-fixed principal-axis frame \code{MOON\_PA} --- the frame a
+lunar navigation broadcast uses, so that a surface user can form topocentric
+geometry directly. Two arcs are exported: a dense \textbf{1-day arc, 1441
+samples at \SI{60}{\second}}, for the precise ephemeris, and a coarse
+\textbf{30-day arc, 4321 samples at \SI{600}{\second}}, for the almanac.
+
+The two models are \cpp{LansEphemeris} --- an osculating two-body baseline plus
+per-axis Chebyshev Cartesian residuals, fit here over a \textbf{2-hour} window
+with polynomial order~8, giving \textbf{35 parameters} --- and
+\cpp{LansAlmanac}, which fits each element with a linear polynomial plus one
+element-specific Fourier term, replacing the argument of periapsis by an
+argument-of-latitude correction, fit over a \textbf{15-day} window with
+\textbf{27 parameters}.
+
+\begin{lstlisting}[language=py, caption={Fitting both broadcast models in the Moon-fixed frame.}, label={lst:tut-ex9-fit}]
+# python/examples/ex9_ephemeris.ipynb
+cart_opts = pnt.EphemerisFitOptions()
+cart_opts.poly_order = 8
+cart_opts.use_keplerian_baseline = True
+cart_opts.frame = pnt.MOON_PA
+cart_eph = pnt.LansEphemeris(cart_opts)
+
+alm_opts = pnt.AlmanacFitOptions()
+alm_opts.poly_order = 1        # linear polynomial + one Fourier term per element
+almanac = pnt.LansAlmanac(alm_opts)
+\end{lstlisting}
+
+\paragraph{The computation.}
+Both models are fit and evaluated in \code{MOON\_PA}; internally the osculating
+elements are formed in the quasi-inertial principal-axis-inertial (PAI) frame,
+which shares position with PA and differs in velocity by
+$\vec\omega\times\vec{r}$ with $\omega_M=\SI{2.6617e-6}{\radian\per\second}$,
+and the two-body baseline's node drifts at the Moon's rotation rate so that the
+model lands in the rotating output frame.
+
+The trade-off study is automated by an \cpp{EphemerisApp} hosted on a thin
+\cpp{EphemerisManager} agent, run out of process by
+\file{python/examples/ex9_run_ephemeris.py}. For each fit-window length it fits
+several windows, and for each parameter a bisection finds the fewest fractional
+bits whose quantisation keeps the \emph{worst-case} in-window position offset
+under the target precision; the broadcast value is then quantised to that
+resolution and the orbit re-evaluated, so the reported accuracy is what a
+receiver decoding the message actually gets.
+
+\begin{lstlisting}[language=py, caption={Per-parameter bit search, mirroring the C++ EphemerisApp.}, label={lst:tut-ex9-bits}]
+# python/examples/ex9_ephemeris.ipynb
+def _search_param_bits(eph_model, t_s, params, idx, precision_m, max_bits=50):
+    base = eph_model.eval(t_s, params)[:, :3]
+
+    def perturbed_err(k):
+        eps = 2.0 ** (-k)
+        q = params.copy()
+        q[idx] += eps
+        plus = eph_model.eval(t_s, q)[:, :3]
+        q[idx] -= 2.0 * eps
+        minus = eph_model.eval(t_s, q)[:, :3]
+        return max(...)
+\end{lstlisting}
+
+\begin{lstlisting}[language=py, caption={Turning the almanac into the observables a surface user needs.}, label={lst:tut-ex9-obs}]
+# python/examples/ex9_ephemeris.ipynb
+user_lla = np.array([-90.0, 0.0, 0.0])            # lunar South Pole [lat deg, lon deg, alt m]
+user_pa = pnt.lat_lon_alt_to_cart(user_lla, pnt.R_MOON)
+f_carrier_hz = 2.4e9                              # nominal S-band carrier
+
+def observables(rv_pa):
+    """(az[deg], el[deg], range[m], range-rate[m/s], Doppler[Hz]) at the user."""
+    aer = np.asarray(pnt.cart_to_az_el_range(rv_pa[:, :3], user_pa))
+    rel = rv_pa[:, :3] - user_pa
+    range_rate = np.sum(rel * rv_pa[:, 3:], axis=1) / np.linalg.norm(rel, axis=1)
+    doppler_hz = -range_rate * f_carrier_hz / pnt.C
+    return np.rad2deg(aer[:, 0]), np.rad2deg(aer[:, 1]), aer[:, 2], range_rate, doppler_hz
+\end{lstlisting}
+
+\paragraph{The results.}
+Four figures plus two tables, and the headline is the four-orders-of-magnitude
+gap between the two models.
+
+The single-window comparison prints, for the 2-hour \cpp{LansEphemeris},
+position RMS \SI{0.183}{\meter} and 95th percentile \SI{0.318}{\meter}, with
+velocity RMS \SI{1.54}{\milli\meter\per\second}; for the 15-day
+\cpp{LansAlmanac}, position RMS \SI{11156}{\meter} and 95th percentile
+\SI{19558}{\meter}, with velocity RMS \SI{1.87}{\meter\per\second}. Figure~1
+(\cref{fig:tut-ex9-fit}) plots those two error histories side by side on
+logarithmic ordinates --- hours within the window for the ephemeris, days for
+the almanac. The ephemeris error is essentially flat and sub-metre across the
+window; the almanac error oscillates strongly at the orbital period, spiking
+near periapsis where the geometry changes fastest.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex9_ephemeris_1.png}
+  \caption{Example~9, first figure: 3-D position error inside one fit window,
+           \cpp{LansEphemeris} over \SI{2}{\hour} (left) and \cpp{LansAlmanac}
+           over \SI{15}{\dayunit} (right). Note the different ordinate decades.}
+  \label{fig:tut-ex9-fit}
+\end{figure}
+
+Figure~2 (\cref{fig:tut-ex9-user}) asks what that almanac error means for the
+user who has to point an antenna: four stacked panels of azimuth, elevation,
+range and Doppler prediction error for a receiver at the lunar South Pole over
+the 15-day window, with the intervals in which the satellite is below a
+\SI{5}{\degree} elevation mask greyed out. Over the 1625 of 2161 samples
+(\SI{75.2}{\percent}) in which the satellite is actually visible, the errors are
+azimuth RMS \SI{0.082}{\degree} (95th percentile \SI{0.160}{\degree}, max
+\SI{0.242}{\degree}), elevation RMS \SI{0.049}{\degree}, range RMS
+\SI{4036}{\meter} (max \SI{13640}{\meter}) and Doppler RMS \SI{3.12}{\hertz}
+at S-band (95th percentile \SI{6.25}{\hertz}). This is the practical reading of
+``coarse but useful'': kilometres of range error, but pointing good to a tenth
+of a degree and Doppler good to a few hertz --- enough to acquire the signal,
+which is all an almanac has to do.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.78\textwidth]{tutorials/ex9_ephemeris_2.png}
+  \caption{Example~9, second figure: \cpp{LansAlmanac} prediction error in
+           azimuth, elevation, range and S-band Doppler as seen from the lunar
+           South Pole. Grey bands are below the \SI{5}{\degree} elevation mask.}
+  \label{fig:tut-ex9-user}
+\end{figure}
+
+Figure~3 (\cref{fig:tut-ex9-trade}) is the trade-off proper: 95th-percentile
+3-D position error against fit-window length on the left, and against total
+broadcast size in bits on the right, with each point annotated by its window.
+The six sweep points are, for \cpp{LansEphemeris}, \SI{30}{\minute} / 29
+parameters / \textbf{381 bits} / \SI{0.048}{\meter}, \SI{60}{\minute} /
+\textbf{400 bits} / \SI{0.102}{\meter}, and \SI{120}{\minute} / \textbf{428
+bits} / \SI{0.345}{\meter}; and for \cpp{LansAlmanac}, \SI{1}{\dayunit} / 27
+parameters / \textbf{740 bits} / \SI{8452}{\meter}, \SI{7}{\dayunit} /
+\textbf{752 bits} / \SI{14141}{\meter}, and \SI{15}{\dayunit} / \textbf{754
+bits} / \SI{26889}{\meter}. Two conclusions fall out. First, within a model,
+error grows steeply with validity while the bit count barely moves --- the
+almanac buys fifteen days for fourteen extra bits, at the price of a factor of
+three in error. Second, the two models are not on one curve: the almanac costs
+roughly \emph{twice} the bits of the ephemeris and delivers four orders of
+magnitude worse accuracy, because it is answering a different question
+(acquisition over weeks, not ranging over hours).
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex9_ephemeris_3.png}
+  \caption{Example~9, third figure: 95th-percentile position error against fit
+           window (left) and against broadcast size in bits (right) for both
+           models, each point labelled with its window length.}
+  \label{fig:tut-ex9-trade}
+\end{figure}
+
+Figure~4 opens up the 428-bit ephemeris point into a per-parameter bar chart:
+the six Keplerian baseline elements and the three per-axis Chebyshev blocks
+stacked by coefficient order. The bars sum to exactly the 428 bits of the
+trade-off point, so the reader can see which parameters are expensive --- the
+low-order coefficients, which move the orbit most per unit change --- and which
+are nearly free.
+
+Because the sweep is compute-heavy, the notebook delegates it to
+\file{python/examples/ex9_run_ephemeris.py} and reads back the exported results.
+The parameterisations, the fitting procedure, the quantisation and bit-budget
+accounting are specified in \cref{chap:ephemeris-almanac}.
+
+% ===========================================================================
+\section{Example 10: Surface Rover Navigation}
+\label{sec:tut-ex10}
+
+\textbf{Python:} \file{python/examples/ex10_surface_rover.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex10_surface_rover.cc}
+
+\paragraph{The scenario.}
+A lunar-surface rover driving a slowly curving arc at \textbf{Site01
+(``Connecting ridge'')} near the south pole, over \textbf{2401 epochs at
+\SI{1}{\second}}, i.e.\ a \textbf{\SI{40}{\minute}} arc. It fuses a full
+strapdown inertial measurement unit (accelerometer and gyroscope, Kalibr noise
+model), LCRNS/LANS pseudoranges from a five-satellite relay constellation, and a
+LOLA digital-elevation-model altitude constraint, estimating the IMU biases
+online.
+
+The scenario is \file{configs/surface_rover_nav.yaml}. A shared \code{World}
+holds the frame (\code{MOON\_PA}), point-mass lunar gravity, and the DEM site,
+downloaded and cached from NASA PGDA. A thin \code{Rover} agent hosts the
+\cpp{SurfaceRoverNavApp}, an error-state strapdown-INS EKF that precomputes the
+driving-arc truth, synthesises the IMU, pseudorange and DEM measurements each
+epoch from the \code{World}, and runs predict/update. A
+\code{LunarNavConstellation} agent stands in for the five relay satellites ---
+one configuration entry expanding into five self-propagating \cpp{Spacecraft}
+--- so the rover queries the relay geometry rather than propagating the orbits
+itself.
+
+The \SI{30}{\minute}-scale INS arc is compute-heavy, so
+\file{python/examples/ex10_run_surface_nav.py} runs it once (a full-sensor run
+and a DEM-disabled ablation) and caches CSVs that the notebook reads.
+
+\begin{lstlisting}[language=py, caption={Reading the full-sensor run and the DEM ablation.}, label={lst:tut-ex10-load}]
+# python/examples/ex10_surface_rover.ipynb
+DATA = seed_example_output("ex10_data")
+meta = json.load(open(DATA / "meta.json"))
+on = pd.read_csv(DATA / "series_dem_on.csv")    # DEM constraint enabled
+off = pd.read_csv(DATA / "series_dem_off.csv")  # DEM constraint disabled (ablation)
+dem_x = np.load(DATA / "dem_x.npy")
+dem_y = np.load(DATA / "dem_y.npy")
+dem_z = np.load(DATA / "dem_elevation.npy")
+# Site: Site01 (Connecting ridge)  epochs=2401  dt=1.0 s
+\end{lstlisting}
+
+The C++ twin performs the same ablation by editing the configuration in memory
+rather than on disk:
+
+\begin{lstlisting}[language=cpp, caption={Ablating the DEM constraint by editing the config in memory.}, label={lst:tut-ex10-cpp}]
+// cpp/examples/tutorials/ex10_surface_rover.cc
+Config cfg_off = YAML::LoadFile(config_path);
+cfg_off["agents"]["Rover"]["application"]["enable_dem_constraint"] = false;
+Simulation sim_off(cfg_off);
+sim_off.Run();
+auto* app_off = dynamic_cast<SurfaceRoverNavApp*>(
+    sim_off.GetAgent("Rover")->GetApplication().get());
+// app_off->pos_err_norm(), pos_err_enu(), n_visible(), site_id()
+\end{lstlisting}
+
+\paragraph{The results.}
+Six figures, and one clean ablation number.
+
+Figure~1 (\cref{fig:tut-ex10-track}) is the setting: a filled contour map of the
+LOLA terrain elevation in kilometres over the local East/North tile, with the
+truth ground track in white, the DEM-aided estimate dashed in red, and the start
+marked. The two tracks are visually indistinguishable at map scale --- the
+metre-level errors that follow are invisible against a multi-kilometre tile,
+which is itself worth seeing.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.66\textwidth]{tutorials/ex10_surface_rover_1.png}
+  \caption{Example~10, first figure: LOLA terrain at Site01 with the rover's
+           truth track (white) and DEM-aided estimate (red dashed).}
+  \label{fig:tut-ex10-track}
+\end{figure}
+
+Figure~2 (\cref{fig:tut-ex10-err}) is the consistency check: East, North and Up
+position error against time in minutes, each with the filter's $\pm3\sigma$
+envelope, with the ordinate zoomed to the converged behaviour rather than the
+initial transient. All three components stay inside the envelope, so the filter
+is consistent in every axis. Figure~3 shows the online IMU bias estimation ---
+accelerometer bias error in \si{\milli\meter\per\second\squared} and gyroscope
+bias error in \si{\micro\degree\per\second}, per axis, against the dotted
+$3\sigma$ bounds --- converging toward zero as the arc proceeds. Figure~4 shows
+the attitude error (the nav-frame rotation vector, roll/pitch/yaw in degrees)
+inside its own $3\sigma$ envelope; attitude observability here comes from the
+accelerometer sensing gravity plus the rover's own motion.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.86\textwidth]{tutorials/ex10_surface_rover_2.png}
+  \caption{Example~10, second figure: East/North/Up position error against the
+           filter's $\pm3\sigma$ envelope, DEM-aided.}
+  \label{fig:tut-ex10-err}
+\end{figure}
+
+Figure~5 (\cref{fig:tut-ex10-dem}) is the point of the example: the absolute
+vertical error with the DEM constraint on and off, on one axis. The final
+$|\mathrm{Up}|$ error is \textbf{\SI{1.21}{\meter}} with the constraint and
+\textbf{\SI{16.42}{\meter}} without it, and the total 3-D position error goes
+from \SI{6.06}{\meter} to \SI{16.65}{\meter}. Essentially all of the degradation
+is vertical: with relays clustered above a polar user the vertical channel is
+the weakly observable one, and tying the estimate to the terrain height is what
+holds it down.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.86\textwidth]{tutorials/ex10_surface_rover_5.png}
+  \caption{Example~10, fifth figure: the DEM altitude constraint ablation.
+           Removing it inflates the vertical error from
+           $\approx\SI{1}{\meter}$ to $\approx\SI{16}{\meter}$.}
+  \label{fig:tut-ex10-dem}
+\end{figure}
+
+Figure~6 closes the loop on the aiding source: the number of LCRNS relays above
+the elevation mask on top, and the receiver-clock-bias error in nanoseconds with
+its $\pm3\sigma$ band below, so the reader can correlate dips in relay
+visibility with excursions in the clock estimate.
+
+The IMU error model, the pseudorange observable, and the DEM height constraint
+are specified in \cref{chap:measurements}; the error-state filter is in
+\cref{chap:filters}.
+
+% ===========================================================================
+\section{Example 11: Lunar Lander Navigation}
+\label{sec:tut-ex11}
+
+\textbf{Python:} \file{python/examples/ex11_lander_navigation.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex11_lander_navigation.cc}
+
+\paragraph{The scenario.}
+A lander on powered descent to the same south-pole site (\textbf{Site01,
+Connecting ridge}), over \textbf{601 epochs at \SI{0.5}{\second}} --- a
+\textbf{\SI{300}{\second}} descent. It glides from roughly \SI{2.5}{\kilo\meter}
+downrange and \SI{2}{\kilo\meter} altitude to a hover, ending at a truth height
+above terrain of \SI{15.00}{\meter}.
+
+Navigation is an error-state INS multiplicative EKF fusing a full IMU (Kalibr
+noise model), a nadir radar altimeter measuring height above the DEM terrain,
+crater-landmark bearings against a synthetic crater map (terrain-relative
+navigation), and LunaNet/LANS pseudoranges, with the IMU biases estimated
+online. The single \code{Lander} agent hosts \emph{two} applications: a
+\cpp{LanderGncApp} that owns the powered-descent truth trajectory --- a built-in
+smoothstep, or a guidance-law trajectory injected through
+\py{set\_reference\_trajectory\_enu} --- and writes the lander truth state each
+epoch, and a \cpp{LanderNavApp} that reads that truth to synthesise its
+measurements and drive the descent MEKF. The scenario is
+\file{configs/lander_nav.yaml}; \file{python/examples/ex11_run_lander_nav.py}
+runs the full-sensor descent plus a sensor ablation and caches the CSVs.
+
+\begin{lstlisting}[language=py, caption={The cached descent run, crater map, and ablation table.}, label={lst:tut-ex11-load}]
+# python/examples/ex11_lander_navigation.ipynb
+DATA = seed_example_output("ex11_data")
+meta = json.load(open(DATA / "meta.json"))
+s = pd.read_csv(DATA / "series_all.csv")
+craters = pd.read_csv(DATA / "craters.csv")
+ablation = pd.read_csv(DATA / "ablation.csv")
+# Site: Site01 (Connecting ridge)  epochs=601  dt=0.5 s
+# final 3D position error (all sensors): 5.06 m ; touchdown altitude (truth): 15.00 m
+\end{lstlisting}
+
+\begin{lstlisting}[language=cpp, caption={Two applications on one agent, and the sensor ablation.}, label={lst:tut-ex11-cpp}]
+// cpp/examples/tutorials/ex11_lander_navigation.cc
+Simulation sim(YAML::LoadFile(config_path));
+sim.Run();
+auto* app = dynamic_cast<LanderNavApp*>(
+    sim.GetAgent("Lander")->GetApplicationByName("LanderNavApp").get());
+// app->alt_truth(), app->pos_err_norm(), app->vel_err_norm()
+
+Config c = YAML::LoadFile(config_path);
+c["agents"]["Lander"]["application"]["enable_craters"] = false;   // then re-run
+\end{lstlisting}
+
+\paragraph{The results.}
+Five figures.
+
+Figure~1 (\cref{fig:tut-ex11-track}) draws the descent over the terrain: a
+filled elevation contour with the truth ground track in white, the estimated
+track dashed in red, the synthetic crater field as small black dots, the start
+marked with a star and the landing target with a cross. It shows both that the
+descent is a few kilometres of downrange travel and that the crater map the
+terrain-relative navigation uses actually covers the approach corridor.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.66\textwidth]{tutorials/ex11_lander_navigation_1.png}
+  \caption{Example~11, first figure: powered-descent ground track over the
+           Site01 terrain, with the synthetic crater map used for
+           terrain-relative navigation.}
+  \label{fig:tut-ex11-track}
+\end{figure}
+
+Figure~2 pairs the altitude profile --- truth against estimated height above
+terrain, falling from about \SI{2}{\kilo\meter} to the \SI{15}{\meter} hover ---
+with the per-epoch counts of craters in the field of view and LunaNet satellites
+visible, so the reader can see which aiding source is actually available at each
+phase of the descent. Figure~3 (\cref{fig:tut-ex11-err}) is the consistency
+plot: East, North and Up position error against the filter's $\pm3\sigma$
+envelope over the \SI{300}{\second} descent. Figure~4 stacks the accelerometer
+bias error, gyroscope bias error and attitude error with their bounds.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.86\textwidth]{tutorials/ex11_lander_navigation_3.png}
+  \caption{Example~11, third figure: descent position error in East/North/Up
+           against the MEKF's $\pm3\sigma$ envelope.}
+  \label{fig:tut-ex11-err}
+\end{figure}
+
+Figure~5 (\cref{fig:tut-ex11-ablation}) is the sensor ablation, as a labelled
+bar chart of final 3-D position error: \textbf{all sensors
+\SI{5.06}{\meter}}, \textbf{no craters \SI{5.11}{\meter}}, \textbf{no altimeter
+\SI{4.76}{\meter}}, \textbf{no LunaNet \SI{12.15}{\meter}}. The honest reading
+is that in \emph{this} configuration only LunaNet is load-bearing for the final
+error: removing it more than doubles it, while removing craters or the altimeter
+changes it by a few percent --- the altimeter case even improves marginally,
+which is within the noise of a single run. Craters constrain the horizontal
+channel and the altimeter the vertical, but with an absolute pseudorange fix
+available throughout, neither is what sets the terminal accuracy. That is a
+useful negative result: it says the ablation must be re-run without LunaNet if
+one wants to see what terrain-relative navigation is worth on its own.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.62\textwidth]{tutorials/ex11_lander_navigation_5.png}
+  \caption{Example~11, fifth figure: final 3-D position error with each aiding
+           source disabled in turn. Only the loss of LunaNet moves the terminal
+           error appreciably.}
+  \label{fig:tut-ex11-ablation}
+\end{figure}
+
+The altimeter, bearing, and pseudorange observables and their Jacobians are
+specified in \cref{chap:measurements}; the multiplicative error-state
+formulation is in \cref{chap:filters}.
+
+% ===========================================================================
+\section{Example 12: Lunar Navigation Constellation Design}
+\label{sec:tut-ex12}
+
+\textbf{Python:} \file{python/examples/ex12_constellation_design.ipynb} \quad
+\textbf{C++:} none (Python only)
+
+\paragraph{The scenario.}
+The first example that studies geometry rather than estimating a state. A
+reusable \py{LunarNavConstellation} class generates a symmetric ELFO
+Walker-type constellation, propagates it, computes visibility and dilution of
+precision, estimates the required EIRP, and optimises satellite phasing.
+
+The orbit design is closed analytically before any propagation. A resonant
+semi-major axis is chosen so that an integer number of revolutions fits exactly
+into one sidereal month (\SI{27.3217}{\dayunit}), making the whole geometry
+repeat monthly: \textbf{$N_\mathrm{rev}=22$} gives a period of
+\SI{29.805}{\hour} and $a=\SI{11265.75}{\kilo\meter}$. With $e=0.60$ and
+$\omega=\SI{90}{\degree}$ the frozen inclination follows from requiring the
+secular apsidal rate to vanish, and comes out at
+\textbf{\SI{51.757}{\degree}}, giving a perilune altitude of
+\SI{2769}{\kilo\meter} over the northern hemisphere and an apolune altitude of
+\SI{16288}{\kilo\meter} over the south --- exactly the dwell a polar service
+needs.
+
+The constellation is \textbf{6 satellites in 3 planes} (2 per plane), propagated
+over one sidereal month at \SI{30}{\minute} sampling (1312 steps). The service
+volume is the south-polar cap below \SI{75}{\degree}S sampled at
+$\SI{5}{\degree}\times\SI{30}{\degree}$, \textbf{37 user points}, under a
+\SI{10}{\degree} elevation mask, and the availability requirement is
+$\mathrm{PDOP} < 6$.
+
+\begin{lstlisting}[language=py, caption={Resonant semi-major axis and frozen inclination.}, label={lst:tut-ex12-design}]
+# python/examples/ex12_constellation_design.ipynb
+def resonant_sma(n_rev, gm=GM_MOON, t_repeat=T_SIDEREAL_MONTH):
+    """Semi-major axis [m] and period [s] for n_rev revolutions per repeat window."""
+    period = t_repeat / n_rev
+    a = (gm * (period / (2 * np.pi)) ** 2) ** (1.0 / 3.0)
+    return a, period
+
+
+def omega_dot(a, e, inc, gm=GM_MOON, n_third=OMEGA_EM, j2=J2_MOON, r_body=R_MOON):
+    """Secular apsidal rate [rad/s] at omega=90deg: Moon-J2 + Earth third-body."""
+    n = np.sqrt(gm / a**3)
+    p = a * (1.0 - e**2)
+    w_j2 = 0.75 * n * j2 * (r_body / p) ** 2 * (5 * np.cos(inc) ** 2 - 1.0)
+    w_3b = (0.75 * (n_third**2 / n) / np.sqrt(1 - e**2)
+            * (2 + 3 * e**2 - 5 * np.sin(inc) ** 2))
+    return w_j2 + w_3b
+
+
+def frozen_inclination(a, e, **kw):
+    return brentq(lambda inc: omega_dot(a, e, inc, **kw), 5 * RAD, 89 * RAD)
+\end{lstlisting}
+
+\paragraph{The computation.}
+The design metric is position dilution of precision. With $\mat{G}$ the matrix
+of line-of-sight unit vectors to the visible satellites, augmented with a column
+of ones for the receiver clock,
+\begin{equation}
+  \mat{Q} = \left(\mat{G}\transpose \mat{G}\right)^{-1},
+  \qquad
+  \mathrm{PDOP} = \sqrt{Q_{xx} + Q_{yy} + Q_{zz}},
+  \label{eq:tut-pdop}
+\end{equation}
+evaluated in a vectorised sweep over all users and epochs, with fewer than four
+visible satellites flagged as no fix.
+
+Phasing is then optimised. Re-propagating for each candidate would be far too
+slow, so the notebook exploits two facts of the two-body resonant design: the
+inertial-to-fixed rotation does not depend on phasing and can be precomputed
+once, and shifting a satellite's mean anomaly by $\Delta M$ is exactly a time
+shift $\Delta t = \Delta M/n$ along its inertially fixed orbit, so each plane's
+reference trajectory can be precomputed over an extended grid and any phase
+offset realised as an index roll. Each objective evaluation reduces to array
+rolls, an \py{einsum}, and a batched $4\times4$ inverse.
+
+\begin{lstlisting}[language=py, caption={Vectorised PDOP over a stack of line-of-sight vectors.}, label={lst:tut-ex12-pdop}]
+# python/examples/ex12_constellation_design.ipynb
+def batched_pdop(u_enu, visible):
+    """Vectorized PDOP over a (..., n_sat, 3) stack of unit LOS vectors + visibility.
+
+    Geometry matrix rows are [e, n, u, 1]; PDOP = sqrt(trace of the 3x3 position
+    block of (H^T W H)^-1) with 0/1 weights. Entries with fewer than 4 visible
+    satellites are set to DOP_INF.
+    """
+    h = np.concatenate([u_enu, np.ones(u_enu.shape[:-1] + (1,))], axis=-1)
+\end{lstlisting}
+
+\begin{lstlisting}[language=py, caption={Optimising the per-plane phase offsets.}, label={lst:tut-ex12-opt}]
+# python/examples/ex12_constellation_design.ipynb
+def neg_availability(x):
+    return -evaluator.availability(np.concatenate([[0.0], x]))
+
+result = differential_evolution(neg_availability,
+                                bounds=[(0, 2 * np.pi)] * (N_PLANES - 1),
+                                maxiter=20, popsize=12, tol=1e-4, seed=0, polish=False)
+best_phase = np.concatenate([[0.0], result.x])
+\end{lstlisting}
+
+\paragraph{The results.}
+Ten figures, in a narrative that goes design $\rightarrow$ baseline $\rightarrow$
+optimisation $\rightarrow$ verification.
+
+Figure~1 is the service volume: the 37 south-polar user points on a polar
+projection with rings at \SI{5}{}, \SI{10}{} and \SI{15}{\degree} from the pole.
+Figure~2 (\cref{fig:tut-ex12-const}) is the six-satellite constellation drawn in
+\code{MOON\_CI} with the Moon to scale and the South Pole marked; the three
+planes and the strongly eccentric, apolune-southern geometry are both apparent.
+Figure~3 shows the ground tracks of all six satellites over one sidereal month
+in the Moon-fixed frame, with the \SI{75}{\degree}S service boundary marked ---
+the tracks converge over the southern cap, which is the whole design intent.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.58\textwidth]{tutorials/ex12_constellation_design_2.png}
+  \caption{Example~12, second figure: the six-satellite, three-plane frozen-ELFO
+           navigation constellation in \code{MOON\_CI}, with the South Pole
+           marked in red.}
+  \label{fig:tut-ex12-const}
+\end{figure}
+
+Figures~4 and~5 establish the baseline with naive phasing (all plane offsets
+zero). Figure~4 plots, for a user at the pole itself, the number of visible
+satellites (with a red line at the four needed for a 3-D-plus-clock fix) and the
+PDOP against time in days. Figure~5 maps per-user availability over the cap on a
+polar projection, coloured red-to-green. With naive phasing the availability is
+only \textbf{\SI{43.6}{\percent}}, with a median of 5 visible satellites (range
+3 to 6) and a median PDOP of 3.57 --- the geometry is often adequate and often
+not.
+
+Figure~6 sizes the payload: required transmit EIRP against slant range, coloured
+by elevation, for a \SI{30}{\dBHz} target with a \SI{6}{\dBi} user antenna at
+the LunaNet Augmented Forward Signal band. The requirement runs from
+\SI{-3.3}{\dBW} (\SI{0.46}{\watt}) at best to \textbf{\SI{4.5}{\dBW}}
+(\SI{2.8}{\watt}) at the maximum in-view slant range of
+\SI{17140}{\kilo\meter}; the 95th percentile is \SI{4.3}{\dBW}. A few watts
+closes the link, so the constellation is not power-limited.
+
+Figure~7 (\cref{fig:tut-ex12-land}) is the optimisation landscape: availability
+as a function of the two free per-plane phase offsets on a
+$25\times25$ grid (about \SI{15}{\degree} resolution), with the grid optimum
+starred. It spans \textbf{\SI{20.2}{\percent}} at the worst phasing to
+\textbf{\SI{69.2}{\percent}} at the best --- phasing alone is worth a factor of
+three in availability, at zero cost in mass, power or satellite count. The
+differential-evolution refinement finds offsets of
+$(0,\,209.3,\,328.0)\si{\degree}$ and \textbf{\SI{72.0}{\percent}}.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.6\textwidth]{tutorials/ex12_constellation_design_7.png}
+  \caption{Example~12, seventh figure: $\mathrm{PDOP}<6$ availability over the
+           south-polar service volume as a function of the two free per-plane
+           phase offsets. The landscape spans \SIrange{20}{69}{\percent}.}
+  \label{fig:tut-ex12-land}
+\end{figure}
+
+Figure~8 (\cref{fig:tut-ex12-avail}) puts the naive and optimised per-user
+availability maps side by side on a shared colour scale, and figure~9 shows the
+PDOP cumulative distribution over the service volume for both, with a vertical
+line at $\mathrm{PDOP}=6$: the optimised curve crosses that line far higher, and
+its whole distribution is shifted left.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex12_constellation_design_8.png}
+  \caption{Example~12, eighth figure: per-user $\mathrm{PDOP}<6$ availability
+           over the south-polar cap, naive phasing (left) versus optimised
+           phasing (right).}
+  \label{fig:tut-ex12-avail}
+\end{figure}
+
+The verification step is deliberately sobering. Re-propagating the optimised
+constellation with full N-body dynamics (a $7\times1$ lunar field plus Earth and
+Sun third bodies) over the same month drops availability from
+\textbf{\SI{71.2}{\percent}} (two-body) to \textbf{\SI{60.3}{\percent}}: the slow
+frozen libration reshapes the geometry away from the idealised two-body optimum,
+so a production design would have to optimise directly on the perturbed
+trajectories. Figure~10 confirms the orbits nevertheless remain frozen --- an
+$e$--$\omega$ phase portrait librating around the frozen point, and a bounded
+inclination history --- so the degradation is a phasing effect, not an orbit
+instability.
+
+There is no dedicated Part~\ref{part:math} chapter for constellation design; the
+propagation it rests on is specified in \cref{chap:dynamics}, the line-of-sight
+geometry and visibility gating in \cref{chap:measurements}, and the design study
+itself is \citep{iiyama2025constellation}. The same optimiser is reused as a
+building block by \cref{sec:tut-ex10}, whose \code{LunarNavConstellation} agent
+plays the relay constellation.
+
+% ===========================================================================
+\section{Example 13: Visualising Constellations in Cesium}
+\label{sec:tut-ex13}
+
+\textbf{Python:} \file{python/examples/ex13_cesium.ipynb} \quad
+\textbf{C++:} none (Python only)
+
+\paragraph{The scenario.}
+Turning \lupnt{} trajectory samples into interactive CesiumJS scenes. Beyond
+presentation, this is a practical debugging tool for frame conventions,
+body-fixed coordinates, surface locations, and moving link geometry. Three
+scenes are built.
+
+The Earth scene loads the \textbf{31 GPS and 31 Galileo} two-line elements
+archived at \textbf{2025-01-01} and propagates each with two-body dynamics for
+\textbf{\SI{16}{\hour} at \SI{4}{\minute}} steps --- more than one full
+revolution for both systems --- handing the inertial states to
+\py{add\_trajectory}, which rotates them into the Earth-fixed frame. The lunar
+scene takes the same five LCRNS Reference Constellation~3.1 states as
+\cref{sec:tut-ex8}, at \textbf{2027-03-01}, and propagates them for
+\textbf{\SI{31}{\hour} at \SI{10}{\minute}} steps (about one full ELFO period)
+under an $8\times8$ lunar field plus Earth and Sun third bodies, rendering them
+in the Moon-fixed \code{MOON\_PA} frame together with five surface sites ---
+Shackleton HQ (\SI{-89.9}{\degree}, \SI{0}{\degree}), Connecting Ridge HQ
+(\SI{-89.45}{\degree}, \SI{222.8}{\degree}), de Gerlache HQ
+(\SI{-88.5}{\degree}, \SI{290}{\degree}), plus a near-side and a far-side site.
+The third scene puts both constellations in one Earth-centred inertial view.
+
+\begin{lstlisting}[language=py, caption={Building a CZML scene from inertial samples.}, label={lst:tut-ex13}]
+# python/examples/ex13_cesium.ipynb
+earth = pnt.plot.CesiumScene(body="EARTH", name="Earth GNSS constellation",
+                             epoch=EPOCH_EARTH, multiplier=120, texture=True)
+for i, tle in enumerate(gps_tles):
+    earth.add_trajectory(f"GPS-{i+1}", t_tdb, gnss_eci(tle),
+                         frame_in=pnt.ECI, color=(0, 180, 255))   # cyan
+for i, tle in enumerate(gal_tles):
+    earth.add_trajectory(f"GAL-{i+1}", t_tdb, gnss_eci(tle),
+                         frame_in=pnt.ECI, color=(255, 180, 0))   # amber
+\end{lstlisting}
+
+\paragraph{The results.}
+This notebook produces no raster figures --- its outputs are standalone HTML
+files containing CZML, Cesium's time-dynamic JSON format, which is why it
+contributes nothing to the extracted figure set. What it \emph{does} print is a
+useful cross-check on the lunar scene: the perilune and apolune altitudes of the
+five LCRNS satellites, \SI{1728}{}/\SI{17406}{}, \SI{1704}{}/\SI{17433}{},
+\SI{1890}{}/\SI{17325}{}, \SI{1802}{}/\SI{17289}{} and
+\SI{1723}{}/\SI{17379}{\kilo\meter} respectively --- five nearly identical
+frozen ELFOs, as the reference constellation intends.
+
+The notebook is candid about one rendering artefact: the drawn orbit path is the
+finite propagated arc, not a mathematically closed conic, so the top of an ELFO
+can look clipped where the first and last samples fail to wrap into one another.
+\py{pnt.plot.CesiumScene} needs no Cesium ion account; it embeds a textured
+ellipsoid and loads only the CesiumJS library from a public CDN. Surface assets
+are placed with \py{add\_station(lat=..., lon=...)} in degrees, on a sphere of
+the body's radius in the same frame as the orbits, so stations and satellites
+share one consistent scene. The frame rotations \py{add\_trajectory} applies are
+specified in \cref{chap:frame-conversions}.
+
+% ===========================================================================
+\section{Example 14: Optical Navigation}
+\label{sec:tut-ex14}
+
+\textbf{Python:} \file{python/examples/ex14_opnav.ipynb} \quad
+\textbf{C++:} none (Python only)
+
+\paragraph{The scenario.}
+A compact optical-navigation pipeline for a spacecraft in lunar orbit,
+combining \lupnt{} propagation, synthetic image generation in Blender, image
+processing, geometric measurement formation, and an EKF.
+
+The truth orbit is circular at \textbf{\SI{2600}{\kilo\meter}} altitude ---
+orbit radius \SI{4337.4}{\kilo\meter}, inclination \SI{55}{\degree}, right
+ascension \SI{35}{\degree}, period \SI{7.12}{\hour} --- at the epoch
+\textbf{2025-01-01T00:00:00}. A high orbit is chosen deliberately so the full
+lunar disk fits inside a modest field of view and a simple circle fit can
+recover the limb. \textbf{18 images} are rendered over \textbf{0.36 of one
+orbit}, a cadence of \SI{9.0}{\minute}, with a \textbf{$256\times256$ pixel}
+camera at a \textbf{\SI{50}{\degree}} field of view, nadir-pointed with attitude
+assumed known. The Sun is at \SI{146.74e6}{\kilo\meter} from the Moon and the
+solar phase angle over the sequence runs from \SI{28.1}{} to \SI{67.8}{\degree},
+so the images are genuinely phase-lit rather than fully illuminated.
+
+Rendering uses Blender's Python module (\code{bpy}~4.5.11, provided by
+\code{pixi install}) with NASA SVS CGI Moon Kit textures --- the 2025 LROC WAC
+colour map for surface colour and the LOLA-derived preview displacement map as a
+bump map --- plus directional sunlight, a weak camera-side fill so the night-side
+limb stays visible, and a sparse star background.
+
+\paragraph{The computation.}
+Each image is segmented by taking the border median as the sky level, thresholding
+at eight robust standard deviations above it, keeping the largest connected
+component, filling interior mare and crater holes, extracting the one-pixel
+exterior boundary, and fitting a circle to it by linear least squares (with a
+half-pixel outward correction, because the binary boundary lies just inside the
+continuous limb).
+
+For a spherical Moon of radius $R_M$, a fitted image radius $r_\mathrm{px}$ at
+focal length $f_\mathrm{px}$ gives
+\begin{equation}
+  \alpha = \arctan\!\left(\frac{r_\mathrm{px}}{f_\mathrm{px}}\right),
+  \qquad
+  \rho = \frac{R_M}{\sin\alpha},
+  \label{eq:tut-opnav}
+\end{equation}
+and the fitted disk centre gives the bearing to the Moon centre, so each image
+becomes a full Moon-centred inertial position measurement.
+
+\begin{lstlisting}[language=py, caption={From a fitted limb circle to a Moon-centred position fix.}, label={lst:tut-ex14-meas}]
+# python/examples/ex14_opnav.ipynb
+def detection_to_position_ci(det, q_cam_to_ci, cam):
+    alpha = np.arctan(det["radius_px"] / cam["f_px"])
+    rho = R_MOON / np.sin(alpha)
+    u_cam = np.array([(det["xc"] - cam["cx"]) / cam["f_px"],
+                      -(det["yc"] - cam["cy"]) / cam["f_px"],
+                      1.0])
+    u_cam /= np.linalg.norm(u_cam)
+    u_ci = q_cam_to_ci @ u_cam
+    return -rho * u_ci
+\end{lstlisting}
+
+\begin{lstlisting}[language=py, caption={The position-only EKF measurement update.}, label={lst:tut-ex14-ekf}]
+# python/examples/ex14_opnav.ipynb
+def ekf_update_position(x, p, z, sigma_pos=8.0e3):
+    h = np.zeros((3, 6))
+    h[:, :3] = np.eye(3)
+    r = (sigma_pos**2) * np.eye(3)
+    y = z - h @ x
+    s = h @ p @ h.T + r
+    k = np.linalg.solve(s, h @ p).T
+    x = x + k @ y
+    i_kh = np.eye(6) - k @ h
+    p = i_kh @ p @ i_kh.T + k @ r @ k.T
+    return x, p, y
+\end{lstlisting}
+
+The filter state is Cartesian $[\vec{r},\vec{v}]$; propagation is two-body lunar
+dynamics with RK4 and a process-noise acceleration of
+\SI{2e-7}{\meter\per\second\squared}; the measurement is position-only with an
+assumed $\sigma=\SI{8}{\kilo\meter}$. It is started deliberately imperfect:
+the first image fix perturbed by \SI{15}{\kilo\meter} per axis, the truth
+velocity perturbed by \SI{8}{\meter\per\second} per axis, with a prior of
+\SI{25}{\kilo\meter} and \SI{20}{\meter\per\second}.
+
+\paragraph{The results.}
+Three figures, and a result that is worth reading carefully because it is not a
+success story.
+
+Figure~1 (\cref{fig:tut-ex14-limb}) shows the first six rendered frames with the
+fitted limb circle drawn in red and the fitted radius in the panel title. The
+renders are visibly phase-lit --- part of the disk is in shadow --- yet the fit
+still tracks the full silhouette, because the segmentation keys on
+\emph{difference from the sky}, not on brightness. This is the figure that
+demonstrates the image-processing stage works.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.82\textwidth]{tutorials/ex14_opnav_1.png}
+  \caption{Example~14, first figure: six of the eighteen Blender-rendered lunar
+           disks, each with the fitted limb circle and its radius in pixels.}
+  \label{fig:tut-ex14-limb}
+\end{figure}
+
+The scalars quantify it: the limb radius error has an RMS of
+\textbf{\SI{1.054}{px}}, and the resulting raw optical position fixes have an
+RMS error of \textbf{\SI{31.87}{\kilo\meter}}. That number follows directly from
+\cref{eq:tut-opnav}: at this range one pixel of radius error maps to tens of
+kilometres of range error, so a one-pixel circle fit is a tens-of-kilometres
+measurement. Optical limb navigation is a coarse absolute sensor, and the
+example makes that unavoidable.
+
+Figure~2 (\cref{fig:tut-ex14-err}) plots position error against time in hours
+for the raw image fixes and for the EKF estimate on the left, and the velocity
+error on the right. The filter ends at a final position error of
+\SI{47.55}{\kilo\meter} and a filtered position RMS of
+\SI{39.39}{\kilo\meter}, with a final velocity error of
+\SI{16.02}{\meter\per\second}. Those are \emph{worse} than the raw fix RMS of
+\SI{31.87}{\kilo\meter}. The reason is visible in the setup rather than the
+plot: the arc is only 18 measurements over a third of an orbit, the filter is
+started \SI{15}{\kilo\meter} and \SI{8}{\meter\per\second} away from truth with
+a loose prior, and the assumed measurement $\sigma$ of \SI{8}{\kilo\meter} is
+optimistic against the \SI{32}{\kilo\meter} the fixes actually deliver, so the
+filter under-weights its own dynamics. The honest conclusion is that a
+short-arc, position-only EKF cannot improve on the fixes it is fed; the
+velocity, which no single image observes, is recovered only through the dynamic
+model tying the sequence together, and \SI{16}{\meter\per\second} is what that
+buys over a third of an orbit.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.92\textwidth]{tutorials/ex14_opnav_2.png}
+  \caption{Example~14, second figure: position error of the raw image fixes and
+           of the EKF estimate (left), and the velocity error recovered through
+           the dynamics (right).}
+  \label{fig:tut-ex14-err}
+\end{figure}
+
+Figure~3 is the 3-D summary: the truth orbit, the EKF estimate as a dashed
+crimson curve, and the individual image fixes as black markers, around a
+half-transparent Moon. It shows the fixes scattering about the truth track and
+the filtered curve running smoothly through the middle of them.
+
+The notebook is explicit about what has been kept simple so the mathematical
+structure stays visible: a spherical shape model, known camera attitude, no lens
+distortion, no terrain relief, and no illuminated-limb-only fitting. Those are
+listed as the natural extensions. The filter is specified in
+\cref{chap:filters} and the bearing-measurement machinery in
+\cref{chap:measurements}.
+
+% ===========================================================================
+\section{Example 15: Mars PNT}
+\label{sec:tut-ex15}
+
+\textbf{Python:} \file{python/examples/ex15_marspnt.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex15_marspnt.cc}
+
+\paragraph{The scenario.}
+Nothing in \lupnt{}'s core is Moon-specific, and this example demonstrates that
+by building a Mars navigation constellation end to end at the epoch
+\textbf{2035-01-01}. Mars is taken from \py{Body.Mars} with
+$GM=\SI{4.282838e13}{\meter\cubed\per\second\squared}$ and
+$R=\SI{3396.0}{\kilo\meter}$, and the shipped \textbf{Mars-50c} spherical-harmonic
+field truncated to \textbf{$8\times8$}. The measured sidereal day recovered from
+the frame rotation is \SI{24.6230}{\hour} against the true \SI{24.6229}{\hour}.
+
+The constellation is a \textbf{Walker-delta 9/3/1}: 9 satellites in 3 planes,
+circular, \textbf{\SI{15000}{\kilo\meter}} altitude ($a=\SI{18396}{\kilo\meter}$),
+\textbf{\SI{45}{\degree}} inclination \emph{to Mars' equator}, giving a period of
+\SI{21.04}{\hour} that is deliberately \emph{not} synchronous with the
+\SI{24.62}{\hour} Martian day, so the ground tracks walk westward and sample
+every longitude within a few sols. It is propagated for \textbf{two sols} (985
+epochs at \SI{180}{\second}, about 2.3 orbital periods).
+
+The inclination caveat is worth stating: \code{MARS\_CI} is ICRF-aligned, and
+Mars' spin pole is tilted \textbf{\SI{37.13}{\degree}} from the ICRF pole, so
+elements built directly in \code{MARS\_CI} would be measured against the wrong
+equator. The notebook therefore constructs a Mars-equatorial inertial frame from
+\lupnt{}'s own Mars orientation --- rotating the body-fixed $z$-axis into
+\code{MARS\_CI} to get the pole, then completing an orthonormal triad --- and
+designs there.
+
+\begin{lstlisting}[language=py, caption={A Mars-equatorial design frame from LuPNT's own orientation model.}, label={lst:tut-ex15-frame}]
+# python/examples/ex15_marspnt.ipynb
+def mars_equatorial_to_ci(t):
+    """Rotation from a Mars-equatorial inertial frame (z = Mars pole) to MARS_CI."""
+    pole = np.asarray(pnt.convert_frame(t, np.array([0.0, 0.0, 1.0]), FIXED, CI, True))
+    pole /= np.linalg.norm(pole)
+    x = np.cross([0.0, 0.0, 1.0], pole)   # node of Mars equator on the ICRF equator
+    x /= np.linalg.norm(x)
+    y = np.cross(pole, x)
+    return np.column_stack([x, y, pole])  # columns = equatorial axes in MARS_CI
+\end{lstlisting}
+
+\begin{lstlisting}[language=py, caption={Walker layout, propagation, and rotation into the body-fixed frame.}, label={lst:tut-ex15-walker}]
+# python/examples/ex15_marspnt.ipynb
+def walker_elements(T, P, Fp, a, e, inc):
+    """Classical elements [a,e,i,RAAN,argp,M] for a Walker-delta constellation."""
+    spp = T // P
+    coes = []
+    for p in range(P):
+        raan = p * 2 * np.pi / P
+        for s in range(spp):
+            M = (s * 2 * np.pi / spp + p * 2 * np.pi * Fp / T) % (2 * np.pi)
+            coes.append([a, e, inc, raan, 0.0, M])
+    return np.array(coes)
+
+for k in range(N_SAT):
+    POS_CI[k] = np.asarray(dyn.propagate(RV0[k], TS))[:, :3]
+    POS_FIXED[k] = np.asarray(pnt.convert_frame(TS, POS_CI[k], CI, FIXED, True))
+\end{lstlisting}
+
+\paragraph{The computation.}
+The same $\mathrm{PDOP} = \sqrt{Q_{11}+Q_{22}+Q_{33}}$ of \cref{eq:tut-pdop} is
+evaluated on a $\SI{5}{\degree}\times\SI{5}{\degree}$ latitude/longitude grid at
+every epoch under a \SI{5}{\degree} elevation mask, and the median over the
+two-sol window is mapped. A user-positioning simulation at \textbf{Jezero
+Crater} (\SI{18.44}{\degree}N, \SI{77.45}{\degree}E) then forms a pseudorange to
+every visible satellite with $\sigma=\SI{8}{\meter}$ and solves for position and
+clock bias by iterated Gauss--Newton least squares, seeded at the planet centre.
+
+\paragraph{The results.}
+Five figures.
+
+Figure~1 (\cref{fig:tut-ex15-acc}) is the acceleration budget on a
+representative satellite, drawn as a horizontal log-scale bar chart of the
+strongest decomposed terms. The printed ranking is monopole
+\SI{1.266e-1}{\meter\per\second\squared}, $J_2$
+\SI{1.132e-5}{}, $C_{22}$ \SI{1.485e-6}{}, $C_{33}$
+\SI{1.932e-7}{}, $C_{31}$ \SI{9.849e-8}{}, $C_{32}$
+\SI{6.208e-8}{}, $J_3$ \SI{4.490e-8}{}, $C_{44}$
+\SI{1.445e-8}{\meter\per\second\squared}. The point made in the text is that
+$J_2$ --- about twice Earth's, at $1.96\times10^{-3}$ --- sits four orders below
+the central term but acts \emph{secularly}, steadily rotating each orbit plane,
+so it dominates the long-term geometry even though the instantaneous number
+looks small. Propagation over two sols produces only \SI{6.9}{\kilo\meter} of
+orbit-radius spread, the short-period $J_2$ breathing.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.72\textwidth]{tutorials/ex15_marspnt_1.png}
+  \caption{Example~15, first figure: Mars gravity acceleration budget on a
+           satellite at $R_\mathrm{Mars}+\SI{15000}{\kilo\meter}$, decomposed
+           per spherical-harmonic term.}
+  \label{fig:tut-ex15-acc}
+\end{figure}
+
+Figure~2 is the constellation in 3-D over one period in \code{MARS\_CI},
+coloured by plane over a textured Mars. Figure~3 draws the ground tracks over
+two sols on the Mars surface map: each track is a slowly drifting sinusoid
+reaching $\pm\SI{45}{\degree}$ latitude, with the three planes offset by
+\SI{120}{\degree} in longitude, and the westward walk of the non-synchronous
+period is directly visible.
+
+Figure~4 (\cref{fig:tut-ex15-pdop}) is the coverage assessment: median PDOP over
+the two sols on the left with a black contour at $\mathrm{PDOP}=6$ and Jezero
+starred, and mean number of satellites in view on the right. The verdict is
+blunt: the \textbf{global median PDOP is 6.74}, only \textbf{\SI{37}{\percent}}
+of the grid achieves a median PDOP below 6, and the grid-average number of
+satellites in view is \textbf{3.27} --- below the four needed for a fix. Nine
+satellites is a genuinely minimal fleet, and the map shows exactly where the
+gaps are: the mid-latitude band that the \SI{45}{\degree} inclination favours is
+served, the poles are not.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex15_marspnt_4.png}
+  \caption{Example~15, fourth figure: median PDOP over two sols (left, black
+           contour at PDOP 6) and mean satellites above the \SI{5}{\degree} mask
+           (right), with Jezero Crater marked.}
+  \label{fig:tut-ex15-pdop}
+\end{figure}
+
+Figure~5 (\cref{fig:tut-ex15-jezero}) is the user's experience at Jezero, in
+three panels: 3-D position error against time coloured by PDOP, the error
+cumulative distribution with the median marked, and a sky view at the
+best-geometry epoch showing the visible satellites in azimuth and elevation
+coloured by plane. A fix is available at \textbf{504 of 985 epochs}
+(\SI{51}{\percent} of the window); when it is, the \textbf{median 3-D error is
+\SI{30.0}{\meter}} with a 95th percentile of \SI{201.6}{\meter}
+(\SI{15.2}{\meter} horizontal, \SI{20.0}{\meter} vertical), at a median PDOP of
+4.84. Tens of metres from \SI{8}{\meter} ranging is exactly what a PDOP near 5
+predicts, so the two halves of the analysis agree; the binding constraint is
+availability, not accuracy.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex15_marspnt_5.png}
+  \caption{Example~15, fifth figure: pseudorange least-squares positioning at
+           Jezero Crater --- error against time coloured by PDOP, the error CDF,
+           and the sky view at the best-geometry epoch.}
+  \label{fig:tut-ex15-jezero}
+\end{figure}
+
+The non-Earth body models and gravity fields are specified in
+\cref{chap:dynamics}, the planetary body-fixed frames in
+\cref{chap:frame-conversions}, and the positioning solution in
+\cref{chap:measurements}. The underlying study is \citep{iiyama2025mars}.
+
+% ===========================================================================
+\section{Example 16: LEO PNT}
+\label{sec:tut-ex16}
+
+\textbf{Python:} \file{python/examples/ex16_leopnt.ipynb} \quad
+\textbf{C++:} \file{cpp/examples/tutorials/ex16_leopnt.cc}
+
+\paragraph{The scenario.}
+The Earth companion to \cref{sec:tut-ex15}, at the same epoch
+\textbf{2035-01-01}. A dense \textbf{Walker-delta 110/10/1} constellation --- 110
+satellites in 10 planes --- circular at \textbf{\SI{600}{\kilo\meter}}
+($a=\SI{6978}{\kilo\meter}$) and \textbf{\SI{55}{\degree}} inclination, with a
+period of \SI{96.7}{\minute} (14.9 revolutions per day). Earth gravity is EGM96
+truncated to $4\times4$, and the distinguishing force is Harris-Priester
+atmospheric drag with a ballistic coefficient
+$B = C_D A/m = \SI{0.022}{\meter\squared\per\kilogram}$ ($C_D=2.2$,
+$A=\SI{1}{\meter\squared}$, $m=\SI{100}{\kilogram}$). The fleet is propagated
+for two orbital periods (\SI{193}{\minute}, 194 epochs at \SI{60}{\second}).
+
+Unlike Mars, Earth needs no special design frame: the \code{GCRF} pole sits
+within a fraction of a degree of the spin axis, so an inclination specified in
+\code{GCRF} is the geographic inclination.
+
+\begin{lstlisting}[language=py, caption={Adding Harris-Priester drag to the force model.}, label={lst:tut-ex16-drag}]
+# python/examples/ex16_leopnt.ipynb
+CD, AREA, MASS = 2.2, 1.0, 100.0   # drag coefficient, area [m^2], mass [kg]
+BSTAR = CD * AREA / MASS           # ballistic coefficient B = CD*A/m [m^2/kg]
+earth = pnt.Body.Earth(N_GRAV, N_GRAV, gravity_file="EGM96.cof")
+
+def make_dynamics(drag=True, integrator=pnt.IntegratorType.RK4, step=30.0):
+    dyn = pnt.NBodyDynamics()
+    dyn.set_frame(GCRF)
+    dyn.set_units(pnt.SI_UNITS)
+    dyn.add_body(earth)            # Earth gravity field (incl. J2)
+    dyn.set_integrator(integrator)
+    dyn.set_time_step(step)
+    if drag:
+        dyn.set_drag_coeff(BSTAR)  # Harris-Priester atmospheric drag
+    return dyn
+\end{lstlisting}
+
+\paragraph{The computation.}
+Four studies follow. A drag-ablation propagates one satellite twice from the
+same state over five days at \SI{15}{\minute} sampling, once with and once
+without drag, using the same RK8 integrator so numerical error cancels in the
+difference. Coverage and PDOP are mapped on a \SI{4}{\degree} grid under a
+\SI{5}{\degree} mask. A user fix is computed at San Francisco with
+$\sigma=\SI{1}{\meter}$ ranging, seeded at a coarse surface point beneath the
+visible set because LEO satellites sit close overhead and an Earth-centre seed
+converges poorly. Finally, an onboard orbit-determination EKF over
+$[\vec{r},\vec{v},b,\dot b]$ estimates one nav satellite's own state from
+ionosphere-free GPS pseudoranges against a nominal Walker 24/6/2 GPS
+constellation at \SI{20200}{\kilo\meter}.
+
+\begin{lstlisting}[language=py, caption={The onboard ODTS predict step, using the native STM.}, label={lst:tut-ex16-ekf}]
+# python/examples/ex16_leopnt.ipynb
+dyn_filter = make_dynamics(drag=False)   # on-board model: gravity only (drag unmodeled)
+SIGMA_RHO = 1.0      # iono-free pseudorange noise [m]
+Q_ACC = 1e-5         # dynamics process noise (accel) [m/s^2]
+Q_CLK = 5e-4         # clock-drift random walk [m/s/sqrt(s)]
+
+xf, stm, _ = dyn_filter.propagate_stm_with_info(x[:6], TS_ODTS[k - 1], TS_ODTS[k])
+x[:6] = np.asarray(xf)
+x[6] += x[7] * DT_ODTS
+Phi = np.eye(8)
+Phi[:6, :6] = np.asarray(stm)
+Phi[6, 7] = DT_ODTS
+\end{lstlisting}
+
+\paragraph{The results.}
+Six figures.
+
+Figure~1 (\cref{fig:tut-ex16-drag}) is the motivation: the position separation
+between the drag and no-drag propagations, in kilometres against days. It grows
+super-linearly --- drag removes energy, so the unmodelled satellite falls behind
+along-track and the along-track error accumulates quadratically --- reaching
+\textbf{\SI{0.74}{\kilo\meter} after five days}. For a satellite that broadcasts
+its own predicted position, that is a direct, unacceptable contribution to every
+user's fix, which is the reason a LEO PNT operator must model drag. The printed
+budget puts it in context: at \SI{600}{\kilo\meter} the monopole is
+\SI{8.20}{\meter\per\second\squared}, $J_2$ is
+\SI{1.115e-2}{\meter\per\second\squared}, and drag only
+\SI{2.299e-7}{\meter\per\second\squared} --- and at \SI{400}{\kilo\meter} drag
+is \SI{3.277e-6}{} while at \SI{800}{\kilo\meter} it is
+\SI{2.683e-8}{\meter\per\second\squared}, a factor of 100 across
+\SI{400}{\kilo\meter} of altitude.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.72\textwidth]{tutorials/ex16_leopnt_1.png}
+  \caption{Example~16, first figure: position error accumulated by ignoring
+           Harris-Priester drag at \SI{600}{\kilo\meter} over five days.}
+  \label{fig:tut-ex16-drag}
+\end{figure}
+
+Figure~2 is the 110-satellite fleet in 3-D over one period in \code{GCRF},
+coloured by plane over a textured Earth; figure~3 shows the Earth-fixed ground
+tracks over two orbits sweeping the $\pm\SI{55}{\degree}$ band, with San
+Francisco marked. Figure~4 (\cref{fig:tut-ex16-pdop}) maps median PDOP with a
+contour at 6 and mean satellites in view: the characteristic footprint of an
+inclined Walker constellation, a strong mid-latitude service band that thins
+toward the poles. The quantitative summary over the $|\mathrm{lat}| \le
+\SI{60}{\degree}$ band is a median PDOP of \textbf{6.65} and a mean of
+\textbf{3.50} satellites in view --- again a fleet at the edge of sufficiency,
+even at 110 satellites, because each one is visible for only a few minutes from
+\SI{600}{\kilo\meter}.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex16_leopnt_4.png}
+  \caption{Example~16, fourth figure: median PDOP over two orbits (left,
+           contour at PDOP 6) and mean satellites above the \SI{5}{\degree}
+           mask (right).}
+  \label{fig:tut-ex16-pdop}
+\end{figure}
+
+Figure~5 is the San Francisco fix, in the same three panels as
+\cref{sec:tut-ex15}: error against time coloured by PDOP, the error CDF, and the
+best-epoch sky view. San Francisco sees a minimum of 2, a mean of 4.5 and a
+maximum of 6 satellites, giving a fix at \textbf{166 of 194 epochs}
+(\SI{86}{\percent}); the \textbf{median 3-D error is \SI{3.3}{\meter}} with a
+95th percentile of \SI{15.6}{\meter} (\SI{1.3}{\meter} horizontal,
+\SI{2.9}{\meter} vertical) at a median PDOP of 4.94. The contrast with
+\cref{sec:tut-ex15} is instructive: a comparable PDOP with \SI{1}{\meter}
+instead of \SI{8}{\meter} ranging gives metres instead of tens of metres, so
+ranging quality, not geometry, is what separates the two studies.
+
+Figure~6 (\cref{fig:tut-ex16-odts}) is the onboard ODTS result, in three panels:
+position error and filter $3\sigma$ on a log axis, clock-bias error with its
+$\pm3\sigma$ band, and the number of GPS satellites in view. Looking \emph{up}
+at the GPS shell from \SI{600}{\kilo\meter}, the receiver sees a minimum of 12,
+a mean of 14.0 and a maximum of 16 satellites --- far better geometry than any
+ground user. The filter converges from an initial error of
+\textbf{\SI{2.56}{\kilo\meter}} down to a steady-state position RMS of
+\textbf{\SI{0.32}{\meter}} and a clock-bias RMS of \SI{0.24}{\meter}
+(\SI{0.79}{\nano\second}), with \SI{100}{\percent} of steady-state epochs inside
+$3\sigma$. That is achieved with a filter whose dynamics model has \emph{no}
+drag term at all: the process noise $Q_\mathrm{acc}$ absorbs it, which is the
+practical answer to the problem figure~1 poses.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex16_leopnt_6.png}
+  \caption{Example~16, sixth figure: onboard GPS orbit determination ---
+           position convergence against the filter $3\sigma$, receiver clock
+           estimation, and GPS visibility from \SI{600}{\kilo\meter}.}
+  \label{fig:tut-ex16-odts}
+\end{figure}
+
+The drag model, the gravity field, and the state-transition-matrix propagation
+used by the filter are specified in \cref{chap:dynamics} and
+\cref{chap:integration}; the EKF is in \cref{chap:filters} and the GPS
+observable in \cref{chap:gnss-measurements}.
+
+% ===========================================================================
+\section{Example 17: Angles-Only OD Authored in Python}
+\label{sec:tut-ex17}
+
+\textbf{Python:} \file{python/examples/ex17_python_new_sim_example.ipynb} \quad
+\textbf{C++:} none (Python only, by construction)
+
+\paragraph{The scenario.}
+The template for prototyping a new scenario without touching C++. Both the
+measurement model and the estimator application are Python classes, driven by
+the same C++ \py{pnt.Simulation} engine as every other example, and configured
+from \file{configs/sat_bearing_odts.yaml}.
+
+Two \cpp{Spacecraft} share the lunar environment. An \emph{observer} measures
+only the bearing --- the unit line-of-sight direction --- to a \emph{target}
+whose ephemeris is treated as known, and an EKF on the observer estimates the
+observer's own six-state orbit $[\vec{r},\vec{v}]$; there is no clock state,
+because angles are clock-independent. Measurements are taken at
+\textbf{\SI{1}{\per\minute}} with a bearing noise of \textbf{2 arcseconds}, from
+an a-priori of \textbf{\SI{300}{\meter}} in position and
+\textbf{\SI{0.3}{\meter\per\second}} in velocity, with a process-noise
+acceleration of \SI{1e-6}{\meter\per\second\squared}, over a
+\textbf{\SI{6}{\hour}} arc; the notebook runs \textbf{5 Monte-Carlo trials} by
+looping the seed.
+
+Measuring a direction to a \emph{known} landmark is well posed; recovering an
+\emph{unknown} target's range from bearings alone is the classic ill-posed
+angles-only problem and is deliberately not attempted.
+
+\paragraph{The computation.}
+Three extension points are exercised: subclass \py{pnt.Measurement} and
+implement \py{compute(self, x) -> (z, H, R)}; subclass \py{pnt.Application} with
+\py{setup()} and \py{step(t)}; and register the class with
+\py{pnt.register\_application} so that the \code{application:} block of the YAML
+can name it. The predicted observable is evaluated through the same C++ base
+path a filter uses, so the same class both generates an observation (applied to
+truth, plus noise) and predicts one (applied to the filter state).
+
+\begin{lstlisting}[language=py, caption={A measurement model written in Python.}, label={lst:tut-ex17-meas}]
+# python/examples/ex17_python_new_sim_example.ipynb
+class BearingMeasurement(pnt.Measurement):
+    "Unit line-of-sight (bearing) to a known target position."
+
+    def __init__(self, sigma_rad):
+        pnt.Measurement.__init__(self)
+        self.sigma = sigma_rad
+        self.target = np.zeros(3)   # set per-epoch to the target truth position
+
+    def compute(self, x):           # -> (z = h(x), H = dh/dx, R)
+        d = self.target - x[:3]
+        rn = np.linalg.norm(d)
+        u = d / rn
+        H = np.zeros((3, 6))
+        H[:, :3] = -(np.eye(3) - np.outer(u, u)) / rn
+        return u, H, self.sigma**2 * np.eye(3)
+\end{lstlisting}
+
+\begin{lstlisting}[language=py, caption={An application written in Python, then registered and run.}, label={lst:tut-ex17-app}]
+# python/examples/ex17_python_new_sim_example.ipynb
+class PyAnglesOdtsApp(pnt.Application):
+    def __init__(self, config):
+        pnt.Application.__init__(self)
+        self.target = config["target"]
+        self.set_frequency(config.get("frequency", 1.0 / 60))
+        self.sigma = np.radians(config.get("angle_sigma_arcsec", 2.0) / 3600.0)
+        self.p0 = config.get("initial_position_sigma_m", 300.0)
+        self.v0 = config.get("initial_velocity_sigma_mps", 0.3)
+        self.qa = config.get("process_accel_sigma_mps2", 1e-6)
+
+    def setup(self):
+        pnt.Application.setup(self)  # base schedules step() at get_frequency()
+        self.dyn = make_dyn()
+        self.meas = BearingMeasurement(self.sigma)
+
+pnt.register_application("PyAnglesOdtsApp", PyAnglesOdtsApp)
+sim = pnt.Simulation(cfg)            # cfg from configs/sat_bearing_odts.yaml
+sim.run()
+app = sim.get_agent("observer").get_application()
+\end{lstlisting}
+
+The filter force model is built from Python too --- a $8\times8$ lunar field
+plus Earth and Sun, RKF45, autodiff on --- and propagated with
+\py{dyn.propagate\_stm} so the covariance uses the native state-transition
+matrix.
+
+\paragraph{The results.}
+Two figures.
+
+Figure~1 (\cref{fig:tut-ex17-conv}) has two panels. The left shows the ensemble
+position-error RMS over the five Monte-Carlo runs against time in hours,
+descending from the \SI{300}{\meter} a-priori to the metre level as bearing
+geometry accumulates; the right shows the per-axis error of one run with the
+filter's own $3\sigma$ envelope shaded, clipped to $\pm\SI{400}{\meter}$, with
+the estimate staying inside its covariance. The printed numbers are a
+\textbf{final position error of \SI{6.31}{\meter}} RMS over the ensemble and an
+\textbf{arc-wide RMS of \SI{76.84}{\meter}} --- the large arc-wide figure being
+dominated by the initial transient, which is exactly what the left panel makes
+visible.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=\textwidth]{tutorials/ex17_python_new_sim_example_1.png}
+  \caption{Example~17, first figure: ensemble convergence over five Monte-Carlo
+           runs (left) and one run's per-axis error with the filter $3\sigma$
+           bounds (right).}
+  \label{fig:tut-ex17-conv}
+\end{figure}
+
+Figure~2 (\cref{fig:tut-ex17-orbit}) plots the observer's true trajectory in the
+$X$--$Y$ plane of \code{MOON\_CI}, with the Moon drawn as a grey disk, coloured
+by the estimate-error magnitude. It shows both the orbit geometry and where
+along it the estimate is worst --- the early part of the arc --- so the reader
+can connect the convergence curve to a physical location rather than only to a
+time axis.
+
+\begin{figure}[htbp]
+  \centering
+  \datafig[width=0.55\textwidth]{tutorials/ex17_python_new_sim_example_2.png}
+  \caption{Example~17, second figure: the observer's truth orbit in
+           \code{MOON\_CI}, coloured by the Python-authored EKF's position
+           error.}
+  \label{fig:tut-ex17-orbit}
+\end{figure}
+
+The conclusion the example is built to support is that angles-only navigation
+against a \emph{known} landmark is observable and converges --- a few metres
+over a \SI{6}{\hour} arc from a \SI{300}{\meter} a-priori with 2-arcsecond
+bearings --- and that the whole scenario needed no C++ at all. The full
+authoring contract (agents, applications, measurements, the \code{world:} block,
+the event loop, and the registration mechanism in both languages) is specified
+in \cref{chap:new-simulation}.
+
+% ===========================================================================
+\section{Example Index}
+\label{sec:tut-summary}
+
+\cref{tab:tut-examples} collects the seventeen examples. Python file names are
+relative to \file{python/examples/} and C++ file names to
+\file{cpp/examples/tutorials/}; a dash marks an example with no C++ twin (the
+constellation optimiser, the Cesium and Blender tooling, and the Python-authoring
+template all live in the Python layer) or with no dedicated publication.
+
+\begin{table}[htbp]
+  \centering
+  \caption{The \lupnt{} tutorial examples, their files, and the publications
+           behind them.}
+  \label{tab:tut-examples}
+  \small
+  \begin{tabularx}{\textwidth}{@{}r L L L l@{}}
+    \toprule
+    \# & Topic & Python (\code{.ipynb}) & C++ (\code{.cc}) & Reference \\
+    \midrule
+    1  & Orbit propagation, frames, ELFO libration
+       & \file{ex1_propagate_orbit}
+       & \file{ex1_propagate_orbit}
+       & \citep{iiyama2026thesis} \\
+    2  & Relativistic time conversions
+       & \file{ex2_time_conversions}
+       & \file{ex2_time_conversions}
+       & \citep{iiyama2026thesis} \\
+    3  & GNSS interface: antennas, SP3 vs.\ BRDC
+       & \file{ex3_gnss_interface}
+       & \file{ex3_gnss_interface}
+       & \citep{iiyama2024navi} \\
+    4  & Plasmasphere / ionosphere delay and ray tracing
+       & \file{ex4_plasmasphere}
+       & \file{ex4_plasmasphere}
+       & \citep{iiyama2026gcpm,iiyama2025iono} \\
+    5  & GNSS measurement simulation, visibility, $C/N_0$
+       & \file{ex5_gnss_measurement_sim}
+       & \file{ex5_gnss_measurement_sim}
+       & \citep{iiyama2024navi} \\
+    6  & Sidelobe pseudorange + TDCP ODTS (UDU EKF)
+       & \file{ex6_gnss_odts}
+       & \file{ex6_gnss_odts}
+       & \citep{iiyama2026scud,iiyama2024navi} \\
+    7  & Ground-station (DSN) batch orbit determination
+       & \file{ex7_groundstation_odts}
+       & \file{ex7_groundstation_odts}
+       & \citep{iiyama2023dcp} \\
+    8  & Distributed ISL ODTS, Schmidt EKF
+       & \file{ex8_isl_odts}
+       & \file{ex8_isl_odts}
+       & \citep{iiyama2024contact,iiyama2026edm} \\
+    9  & Ephemeris and almanac fitting, bit budget
+       & \file{ex9_ephemeris}
+       & \file{ex9_ephemeris}
+       & \citep{iiyama2025ephemeris,cortinovis2024navi} \\
+    10 & Surface rover: IMU + LANS + DEM
+       & \file{ex10_surface_rover}
+       & \file{ex10_surface_rover}
+       & \citep{iiyama2023tdcp,coimbra2025endurance} \\
+    11 & Lander descent: IMU + altimeter + craters
+       & \file{ex11_lander_navigation}
+       & \file{ex11_lander_navigation}
+       & \citep{dai2025fullstack,dai2025iongnss} \\
+    12 & Constellation design, PDOP, phasing
+       & \file{ex12_constellation_design}
+       & ---
+       & \citep{iiyama2025constellation} \\
+    13 & Cesium / CZML visualisation
+       & \file{ex13_cesium}
+       & ---
+       & --- \\
+    14 & Optical navigation from horizon images
+       & \file{ex14_opnav}
+       & ---
+       & --- \\
+    15 & Mars PNT Walker constellation
+       & \file{ex15_marspnt}
+       & \file{ex15_marspnt}
+       & \citep{iiyama2025mars} \\
+    16 & LEO PNT with Harris-Priester drag
+       & \file{ex16_leopnt}
+       & \file{ex16_leopnt}
+       & --- \\
+    17 & Angles-only OD authored in Python
+       & \file{ex17_python_new_sim_example}
+       & ---
+       & \citep{casadesus2025lupnt} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\cref{tab:tut-results} condenses the headline result of each example into one
+line, so that a reader can find the example that already answers a question
+without opening seventeen notebooks.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Headline result of each example, as stored in the committed notebook
+           output.}
+  \label{tab:tut-results}
+  \small
+  \begin{tabularx}{\textwidth}{@{}r L@{}}
+    \toprule
+    \# & Headline result \\
+    \midrule
+    1  & Frozen ELFO elements librate but stay bounded over \SI{720}{\dayunit};
+         acceleration budget spans \SI{7.2e-1}{} (lunar monopole) to
+         \SI{3.2e-8}{\meter\per\second\squared} (SRP) \\
+    2  & Chebyshev $\TT-\TDB$ fit reproduces the DE440t kernel to picoseconds;
+         $\LT-\TT$ drifts at $\approx\SI{56}{\micro\second\per\dayunit}$ with
+         anomalistic- and synodic-month periodic terms \\
+    3  & Broadcast vs.\ precise: GPS along-track RMS \SI{0.82}{\meter}, clock
+         RMS \SI{1.02}{\nano\second}; Galileo \SI{0.31}{\meter} and
+         \SI{0.84}{\nano\second} \\
+    4  & A grazing GPS-to-lunar link carries \SI{4.97}{\TECU}, i.e.\
+         \SI{0.81}{\meter} of L1 delay; ray bending contributes
+         \SI{2e-6}{\meter} \\
+    5  & \num{844} sidelobe links over one ELFO period, mean \num{5.3} visible
+         satellites, $C/N_0$ \SIrange{20.0}{44.9}{\dBHz}, all outside the main
+         beam \\
+    6  & Sidelobe ODTS holds \SI{20}{}--\SI{25}{\meter} RTN RMS; TDCP improves
+         RMS \SI{47.3}{} $\rightarrow$ \SI{40.1}{\meter} only if its noise is
+         inflated to \SI{0.20}{\meter} \\
+    7  & DSN batch converges in 5 iterations to \SI{1.64}{\meter} against a
+         formal \SI{1.88}{\meter}; the SRIF smoother gives the honest
+         uncertainty \\
+    8  & Distributed ISL: \SI{41}{\meter} mean position (vs.\ \SI{163}{\meter}
+         without exchange) and \SI{25}{\meter} clock (vs.\ \SI{410}{\meter}
+         without stations); ground-only filter is 1.5--\SI{6.8}{\kilo\meter} \\
+    9  & \cpp{LansEphemeris} \SI{0.35}{\meter} at \SI{428}{\bit} over
+         \SI{2}{\hour}; \cpp{LansAlmanac} \SI{26.9}{\kilo\meter} at
+         \SI{754}{\bit} over \SI{15}{\dayunit} \\
+    10 & DEM constraint cuts the final vertical error from \SI{16.4}{} to
+         \SI{1.2}{\meter} (3-D: \SI{16.7}{} to \SI{6.1}{\meter}) \\
+    11 & Descent MEKF ends at \SI{5.1}{\meter}; only removing LunaNet moves it
+         (to \SI{12.2}{\meter}) \\
+    12 & Phasing alone moves $\mathrm{PDOP}<6$ availability from \SI{20.2}{} to
+         \SI{72.0}{\percent}; N-body verification drops it to
+         \SI{60.3}{\percent} \\
+    13 & Three CZML scenes; the five LCRNS ELFOs check out at
+         \SI{1.7}{}/\SI{17.4}{\kilo\meter} perilune/apolune altitude \\
+    14 & A \SI{1.05}{px} limb-fit error is a \SI{31.9}{\kilo\meter} position
+         fix; the short-arc EKF does not improve on it \\
+    15 & Mars 9/3/1: median PDOP 6.74 globally, fix available
+         \SI{51}{\percent} of the time at Jezero with a \SI{30.0}{\meter}
+         median error \\
+    16 & LEO 110/10/1: \SI{3.3}{\meter} median fix in San Francisco; onboard GPS
+         EKF converges \SI{2.56}{\kilo\meter} $\rightarrow$ \SI{0.32}{\meter}
+         with drag absorbed by process noise \\
+    17 & Python-authored angles-only EKF converges from \SI{300}{} to
+         \SI{6.3}{\meter} over \SI{6}{\hour} with 2-arcsecond bearings \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+% ===========================================================================
+\section{Examples Mapped to Publications}
+\label{sec:tut-publications}
+
+\lupnt{} is the simulation backbone for the Stanford NAV Lab's lunar PNT
+research, and most of the examples are reduced versions of a published study.
+This section maps each group of examples onto the work that specifies its
+methodology and reports its results, so that a notebook can be read alongside
+the paper it came from. The simulator itself should be cited as
+\citep{iiyama2023lupnt}, with the extended description in
+\citep{casadesus2025lupnt}.
+
+\begin{description}[leftmargin=2.4cm,style=nextline,font=\normalfont\itshape]
+  \item[\cref{sec:tut-ex1}, \cref{sec:tut-ex2} --- fundamentals]
+    The dynamics, frame, and lunicentric time-scale conventions follow
+    \citep[Ch.~2]{iiyama2026thesis} and the simulator papers
+    \citep{iiyama2023lupnt,casadesus2025lupnt}.
+  \item[\cref{sec:tut-ex3}, \cref{sec:tut-ex5}, \cref{sec:tut-ex6} --- terrestrial GNSS]
+    Lunar orbit and clock estimation from terrestrial GPS is developed in
+    \citep{iiyama2024navi} and, with the stochastic-cloning UD filter used here,
+    in \citep{iiyama2026scud}. See \cref{chap:filters} and
+    \cref{chap:gnss-measurements}.
+  \item[\cref{sec:tut-ex4} --- plasmasphere and ionosphere]
+    Ionospheric and plasmaspheric delay characterisation with the Global Core
+    Plasma Model is \citep{iiyama2026gcpm}, with the mitigation methodology in
+    \citep{iiyama2025iono}. See \cref{chap:ionosphere}.
+  \item[\cref{sec:tut-ex7}, \cref{sec:tut-ex8} --- ground-station and ISL ODTS]
+    Distributed lunar ODTS and time synchronisation are
+    \citep{iiyama2023dcp,iiyama2024contact}; ODTS with lunar surface stations is
+    \citep{casadesus2025surface}; the inter-satellite-link autonomous clock-fault
+    monitoring exercised in \cref{sec:tut-ex8} is \citep{iiyama2026edm}.
+  \item[\cref{sec:tut-ex9} --- ephemeris and almanac]
+    Ephemeris and almanac design for lunar navigation satellites is
+    \citep{iiyama2025ephemeris}, building on the earlier parameterisation studies
+    \citep{cortinovis2024navi,cortinovis2023ephemeris}. See
+    \cref{chap:ephemeris-almanac}.
+  \item[\cref{sec:tut-ex10}, \cref{sec:tut-ex11} --- surface and descent navigation]
+    Lunar surface user positioning is \citep{iiyama2023tdcp} and
+    \citep{coimbra2025endurance}; the full surface autonomy stack is
+    \citep{dai2025fullstack}, with the conference version
+    \citep{dai2025iongnss}.
+  \item[\cref{sec:tut-ex12} --- constellation design]
+    The LANS constellation trade-off analysis and staged deployment study is
+    \citep{iiyama2025constellation}.
+  \item[\cref{sec:tut-ex15} --- Mars PNT]
+    Orbit determination and time synchronisation for a future Mars relay and
+    navigation constellation is \citep{iiyama2025mars}.
+  \item[General motivation]
+    The overview article ``Can satellite-based radionavigation be extended to
+    the Moon and other extraterrestrial bodies?'' is
+    \citep{iiyama2025insidegnss}.
+\end{description}
+
+\begin{lupntnote}
+\cref{sec:tut-ex13} (Cesium visualisation), \cref{sec:tut-ex14} (optical
+navigation), \cref{sec:tut-ex16} (LEO PNT with Harris-Priester drag) and
+\cref{sec:tut-ex17} (Python authoring template) are simulator and demonstration
+examples without a dedicated publication.
+\end{lupntnote}
+
+A fuller bibliography of the group's lunar-PNT work, ordered chronologically, is
+given in \cref{chap:publications}.

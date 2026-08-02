@@ -1,0 +1,481 @@
+\chapter{Introducing \lupnt{}}
+\label{chap:introduction}
+
+This chapter states what \lupnt{} is, how the C++ library and the \pylupnt{}
+Python package fit together, and where every model documented in the rest of
+this manual lives in the source tree. It is the map: each module named here is
+specified in full in a later chapter. The library was first described in
+\citep{iiyama2023lupnt}, extended to communications and the agent-based
+simulation framework in \citep{casadesus2025lupnt}, and is used as the
+computational backbone of \citep{iiyama2026thesis}.
+
+\section{What \lupnt{} is}
+\label{sec:intro-what}
+
+\lupnt{} is an open-source C++/Python library for Lunar Positioning,
+Navigation, and Timing (PNT) research. It provides high-fidelity
+astrodynamics, signal-propagation models, measurement models, and navigation
+algorithms tailored for cislunar missions. It is released under the MIT
+License.
+
+Although the library is designed for lunar PNT analysis, nothing in its core is
+lunar-specific. The central body of a dynamics model, a frame conversion, or a
+constellation is a parameter, so the same machinery covers spacecraft orbit
+determination and navigation research for other mission scenarios --- from
+Earth orbit (LEO and GNSS) to interplanetary (Mars) --- as several of the
+bundled examples demonstrate.
+
+Three properties distinguish \lupnt{} from a general-purpose astrodynamics
+toolkit:
+
+\begin{description}[leftmargin=1.2cm,style=nextline,font=\normalfont\itshape]
+  \item[Differentiable by construction] Every state, dynamics, and measurement
+    function is templated on the scalar type \cpp{Real}, which is an
+    \code{autodiff} forward-mode dual number \citep{leal2018autodiff,
+    griewank2008}. Jacobians used by the filters are therefore machine-exact
+    rather than finite-differenced.
+  \item[Relativistically explicit] Time is not a floating-point number of
+    seconds since an arbitrary origin. \lupnt{} carries an explicit time scale
+    with every epoch --- $\TAI$, $\TT$, $\TCG$, $\TCB$, $\TDB$, $\TCL$, $\LT$,
+    $\UTC$, $\UTone$, $\GPST$ --- including the lunar scales needed for
+    cislunar timekeeping \citep{turyshev2025transformations,
+    turyshev2026cislunar}.
+  \item[Config-driven] Scenarios are described in YAML rather than in code, so
+    a new mission study is a configuration file plus, at most, one new
+    \cpp{Application} subclass.
+\end{description}
+
+\begin{lupntnote}
+\lupnt{} is installed \emph{from source only}; it is no longer distributed on
+PyPI. The legacy \pylupnt{} wheels (last published for version \code{0.0.4})
+predate the current C++/Fortran dependency stack --- OpenCV, Matplot++, the
+Fortran plasma models, HDF5 --- and are unmaintained. \cref{chap:getting-started}
+is the supported installation path.
+\end{lupntnote}
+
+\section{Architecture: agents, applications, simulations}
+\label{sec:intro-architecture}
+
+\lupnt{} is organised as a \emph{config-driven, agent-based simulation
+framework}. Three abstractions carry the whole design:
+
+\begin{description}[leftmargin=1.2cm,style=nextline,font=\normalfont\itshape]
+  \item[Agent] A physical entity with a state and a propagator: a satellite, a
+    spacecraft, a ground station, a rover, a lander, a surface station, or a
+    whole constellation. An agent owns its \emph{dynamics} (how its state
+    evolves) and its \emph{devices} (clock, IMU, camera, GNSS receiver,
+    communication terminals). Implemented in \file{cpp/lupnt/agents}.
+  \item[Application] The mission and navigation logic hosted \emph{by} an
+    agent: an orbit-determination and time-synchronisation (ODTS) filter, an
+    inter-satellite-link (ISL) estimator, a surface-rover or lander navigation
+    filter, an ephemeris or almanac generator. Applications subscribe to
+    scheduled events and produce measurements, state updates, and logs.
+    Implemented in \file{cpp/lupnt/applications}.
+  \item[Simulation] The event-scheduled engine that owns the world clock, the
+    agent registry, and the event queue, and that steps every agent and
+    application forward in a consistent time scale. Implemented in
+    \file{cpp/lupnt/simulations/simulation.cc} and
+    \file{cpp/lupnt/simulations/world.cc}.
+\end{description}
+
+Agents, their devices, their dynamics, and their applications are all
+assembled from YAML by an \emph{asset factory}
+(\file{cpp/lupnt/core/asset_factory.h}), so a new scenario is described in
+configuration rather than code. The reusable configuration fragments ship in
+\file{configs}; the end-to-end scenarios currently provided there are
+\file{configs/ephemeris.yaml}, \file{configs/ground_station_odts.yaml},
+\file{configs/isl_odts_distributed.yaml}, \file{configs/lander_nav.yaml},
+\file{configs/lunar_gnss_odts.yaml}, \file{configs/sat_bearing_odts.yaml}, and
+\file{configs/surface_rover_nav.yaml}, all layered on the shared
+\file{configs/config.yaml}. \cref{chap:new-simulation} walks through the
+architecture and the workflow for building a scenario end to end.
+
+\section{Module map}
+\label{sec:intro-modules}
+
+\cref{tab:intro-modules} is the functional view of the library: what each
+module does. \cref{tab:intro-dirs} is the physical view: which directory under
+\file{cpp/lupnt} implements it and which chapter of this manual specifies it.
+
+\begin{table}[H]
+  \centering
+  \caption{Functional module map of \lupnt{}.}
+  \label{tab:intro-modules}
+  \begin{tabularx}{\textwidth}{@{}lL@{}}
+    \toprule
+    Module & Description \\
+    \midrule
+    Agents \& Applications &
+      Config-driven agents (satellite, ground station, rover, lander, surface
+      station, constellation) that host navigation and mission
+      \emph{Applications} --- ODTS, ISL, surface-rover and lander navigation,
+      ephemeris and almanac generation --- built from YAML via an asset
+      factory. \\
+    Simulations &
+      Event-scheduled \cpp{Simulation} engine plus end-to-end scenario drivers
+      (ground-station and inter-satellite ODTS, lunar GNSS ODTS, lander and
+      surface navigation, ephemeris fitting). \\
+    Devices \& sensors &
+      Clocks, IMUs, cameras, GNSS receivers, and communication devices attached
+      to agents. \\
+    Dynamics &
+      Two-body, $N$-body, and high-fidelity force models (gravity, drag, solar
+      radiation pressure) for Earth, lunar, and arbitrary central-body orbits. \\
+    Environment &
+      Gravity fields, atmosphere, solar-system bodies, occultation, and
+      plasma/ionosphere models. \\
+    Plasma &
+      GCPM v2.4 plasmasphere \citep{gallagher2000gcpm} plus IRI ionosphere
+      \citep{bilitza2022iri} electron density; GNSS ray tracing with TEC and
+      signal delay for cislunar links (the integrated \code{pecsim} code). \\
+    GNSS &
+      GPS/GNSS signal generation, SP3- and ANTEX-backed constellations,
+      yaw-steering and attitude models, and space-user ranging. \\
+    Measurements &
+      Pseudorange, Doppler, and carrier-phase measurement models with
+      light-time, Shapiro, and optional plasma corrections. \\
+    Filters \& States &
+      Extended Kalman filter (EKF), unscented Kalman filter (UKF), square-root
+      information filter (SRIF) and smoother, $\mat{U}\mat{D}\mat{U}\transpose$
+      and Schmidt
+      variants, and batch least-squares estimators over composable state and
+      joint-state abstractions. \\
+    Interfaces &
+      Data loaders and I/O: SP3, ANTEX, RINEX navigation, TLE, SPICE kernels,
+      EOP and TAI--UTC tables, LOLA DEM and crater data, plus Cesium and
+      Matplotlib export. \\
+    Conversions &
+      Reference-frame transformations (ECI, ECEF, LVLH, Moon-centred, generic
+      body-fixed and inertial) and time-system utilities. \\
+    Numerics &
+      Numerical integration (RK4, RK8, RKF45), a Nelder--Mead optimiser,
+      Chebyshev fitting, interpolation, and matrix utilities. \\
+    Visualization &
+      Matplotlib and Plotly plotting plus interactive 3-D CesiumJS
+      (\url{https://cesium.com/platform/cesiumjs/}) scenes of constellations
+      and surface assets (\py{pnt.plot.CesiumScene}). \\
+    Python bindings &
+      Full \pylupnt{} package exposing the C++ library via pybind11 ---
+      including subclassing \cpp{Application}, \cpp{Agent}, and
+      \cpp{Measurement} in pure Python and registering them into a YAML-driven
+      \cpp{Simulation}. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Source directories under \code{cpp/lupnt} and where they are
+           specified in this manual.}
+  \label{tab:intro-dirs}
+  \begin{tabularx}{\textwidth}{@{}llL@{}}
+    \toprule
+    Directory & Specified in & Principal contents \\
+    \midrule
+    \file{agents/} & \cref{chap:new-simulation} &
+      \cpp{Agent} base class; \cpp{Satellite}, \cpp{Spacecraft},
+      \cpp{GroundStation}, \cpp{Rover}, \cpp{Lander}, \cpp{SurfaceStation};
+      \cpp{Constellation}, \cpp{GnssConstellation},
+      \cpp{LunarNavConstellation}; the \cpp{EphemerisManager},
+      \cpp{GroundStationManager}, and \cpp{SurfaceStationManager}
+      registries. \\
+    \file{applications/} & \cref{chap:new-simulation} &
+      \cpp{Application} base plus per-mission subdirectories
+      \file{ephemeris/}, \file{ground_station/}, \file{lander/},
+      \file{lunar_gnss_odts/}, \file{lunar_sat_odts/},
+      \file{lunar_station/}, \file{rover/}. \\
+    \file{simulations/} & \cref{chap:new-simulation} &
+      \file{simulation.cc}, \file{world.cc}, and the \file{ephemeris/} and
+      \file{lunar_gnss_odts/} scenario drivers. \\
+    \file{devices/} & \cref{chap:measurements} &
+      \file{device.h} base, \file{clock.cc}, \file{imu.cc}, \file{camera.cc},
+      \file{gnss_device.cc}, \file{comm_devices.cc}. \\
+    \file{dynamics/} & \cref{chap:dynamics} &
+      \file{numerical_orbit_dynamics.cc}, \file{analytical_orbit_dynamics.cc},
+      \file{attitude_dynamics.cc}, \file{clock_dynamics.cc},
+      \file{imu_dynamics.cc}, \file{joint_orbit_clock_dynamics.cc},
+      \file{parameter_dynamics.h}, \file{surface_dynamics.cc},
+      \file{dynamics_params.cc}. \\
+    \file{environment/} & \cref{chap:dynamics} &
+      \file{body.cc}, \file{forces.cc}, \file{gravity.h},
+      \file{atmosphere.cc}, \file{occultation.cc}, \file{solar_system.cc};
+      the \file{plasma/} subtree (\file{core/}, \file{env/}, \file{fortran/},
+      \file{gcpm/}, \file{igrf/}, \file{tec/}). \\
+    \file{measurements/} & \cref{chap:gnss-measurements},
+      \cref{chap:measurements} &
+      \file{measurement.h}, \file{gnss_measurement.cc},
+      \file{crosslink_measurement.cc}, \file{ground_range_measurement.cc},
+      \file{ground_station_corrections.cc}, \file{lander_measurements.cc},
+      \file{lunar_gnss_combined_measurement.cc},
+      \file{surface_measurements.cc}, \file{antenna.cc}, \file{channel.cc},
+      \file{comms_utils.cc}. \\
+    \file{attitude/} & \cref{chap:gnss-measurements} &
+      \file{gnss_attitude.cc}, \file{gnss_yaw_steering.cc}
+      \citep{kouba2009yaw, cheng2025yaw}. \\
+    \file{transmission/} & \cref{chap:link-budget} &
+      \file{transmission.cc} --- link geometry and signal transmission
+      modelling. \\
+    \file{states/} & \cref{chap:filters} &
+      \file{state.cc}, \file{joint_state.cc}, \file{params.h}. \\
+    \file{interfaces/} & \cref{chap:sp3-download} &
+      \file{sp3_loader.cc}, \file{antex_loader.cc},
+      \file{rinex_nav_loader.cc}, \file{tle.cc}, \file{eop.cc},
+      \file{tai_utc.cc}, \file{spice.cc}, \file{spice_cheby.cc},
+      \file{kernels.cc}, \file{iau_sofa.cc}, \file{dem.cc},
+      \file{lola_dem.cc}, \file{crater_data.h}, \file{cesium.cc},
+      \file{matplot.h}, \file{python.cc}, \file{yaml.h}. \\
+    \file{conversions/} & \cref{chap:time-conversions},
+      \cref{chap:frame-conversions} &
+      \file{time_conversions.cc}, \file{epoch.cc},
+      \file{frame_conversions.cc}, \file{frame_converter.cc},
+      \file{frame_converter_spice.cc}, \file{coordinate_conversions.cc},
+      \file{state_conversions.cc}, \file{state_converter.cc},
+      \file{anomaly_conversions.cc}, \file{attitude_conversions.cc},
+      \file{mean_osc_conversions.cc}. \\
+    \file{numerics/} & \cref{chap:integration}, \cref{chap:filters} &
+      \file{integrator.cc}, \file{interpolation.cc}, \file{math_utils.cc},
+      \file{cheby_fit.h}, \file{graphs.cc}, \file{vector_macros.h}; the
+      \file{filters/} subtree (\file{ekf.cc}, \file{ukf.cc}, \file{srif.cc},
+      \file{udu_filter.cc}, \file{schmidt_ekf.h}, \file{batch_filter.cc},
+      \file{adaptive_process_noise.cc}). \\
+    \file{core/} & \cref{chap:new-simulation} &
+      \file{constants.h}, \file{config.cc}, \file{definitions.cc},
+      \file{asset_factory.h}, \file{data_logger.cc}, \file{event.h},
+      \file{file.cc}, \file{logger.cc}, \file{object.h},
+      \file{progress_bar.cc}, \file{random_engine.cc},
+      \file{string_utils.cc}, \file{error.h}. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The single umbrella header \file{cpp/lupnt/lupnt.h} is generated at configure
+time by \file{cmake/WriteHeader.cmake} and includes every public header, so a
+consumer only ever writes \code{\#include <lupnt/lupnt.h>}.
+
+\section{The C++ core and the Python layer}
+\label{sec:intro-bindings}
+
+\lupnt{} is a C++20 library with a Fortran component (the legacy IRI, GCPM,
+IGRF, and \code{xform} plasma codes, compiled with
+\code{-ffixed-form -std=legacy -fno-automatic}). The CMake project therefore
+declares \code{LANGUAGES CXX Fortran}. Everything else is a thin layer on top:
+
+\begin{enumerate}[leftmargin=*]
+  \item \file{cpp/lupnt} builds the shared library target \code{lupnt}. Sources
+    are globbed (\code{file(GLOB\_RECURSE ...\ CONFIGURE\_DEPENDS)}), so adding
+    a \file{.cc} file requires no CMake edit.
+  \item \file{python/bindings} is a \emph{separate} CMake project that links
+    against \code{lupnt} and produces the pybind11 extension module
+    \code{\_pylupnt}. Its \code{pylupnt-dev} target copies the built shared
+    object into \file{python/pylupnt/} so the package is usable in place, with
+    no install step.
+  \item \file{python/pylupnt} is the Python package. \file{__init__.py}
+    re-exports the entire extension module (\code{from .\_pylupnt import *}),
+    so \py{pylupnt} symbols and C++ symbols share one namespace. The
+    pure-Python sub-packages \file{python/pylupnt/plot},
+    \file{python/pylupnt/plasma}, \file{python/pylupnt/core}, and
+    \file{python/pylupnt/interfaces} add plotting, Cesium export, plasma
+    helpers, and data-path management. A generated stub file
+    \file{python/pylupnt/_pylupnt.pyi} gives editors and \code{mypy} full
+    type information for the bound API.
+\end{enumerate}
+
+The binding layer is not read-only: \cpp{Application}, \cpp{Agent}, and
+\cpp{Measurement} are exposed with pybind11 trampolines, so they can be
+subclassed in pure Python and registered into a YAML-driven \cpp{Simulation}.
+The canonical demonstration is example~17
+(\file{python/examples/ex17_python_new_sim_example.ipynb}), an angles-only
+orbit-determination scenario whose application and measurement model are
+written entirely in Python.
+
+\subsection{External dependencies}
+\label{sec:intro-deps}
+
+Dependencies come from two places. Conda-forge packages are resolved by Pixi
+(\cref{sec:gs-install}) and found with \code{find\_package}: Eigen~3.4
+\citep{eigen2010}, \code{fmt}, \code{pybind11}, \code{yaml-cpp},
+\code{spdlog}, OpenCV, GDAL, OpenMP, HDF5, TBB, Boost, and \code{gfortran}.
+Header- and source-level dependencies are vendored at configure time by CPM
+(\file{cpp/thirdparty/CMakeLists.txt}), as listed in
+\cref{tab:intro-thirdparty}.
+
+\begin{table}[H]
+  \centering
+  \caption{Dependencies fetched by CPM at configure time.}
+  \label{tab:intro-thirdparty}
+  \begin{tabularx}{\textwidth}{@{}llL@{}}
+    \toprule
+    Package & Version & Role \\
+    \midrule
+    \code{autodiff}          & \code{v1.1.2}          & forward-mode dual numbers behind the \cpp{Real} scalar type \citep{leal2018autodiff} \\
+    \code{cspice}            & \code{master}          & NAIF SPICE toolkit: kernels, ephemerides, body-fixed frames \citep{acton1996spice} \\
+    \code{matplotplusplus}   & \code{v1.2.2}          & C++ plotting used by the C++ examples \\
+    \code{magic\_enum}       & \code{v0.9.7}          & compile-time enum reflection, used by the YAML asset factory \\
+    \code{HighFive}          & \code{v3.0.0-beta2}    & HDF5 C++ interface for the data logger \\
+    \code{crow}              & \code{v1.2.1}          & embedded HTTP server for the Cesium scene viewer \\
+    \code{PackageProject.cmake} & \code{v1.11.2}      & generates the installable \code{lupntConfig.cmake} package \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Repository layout}
+\label{sec:intro-layout}
+
+\begin{lstlisting}[language=shell, caption={Top-level layout of the repository.}, label={lst:intro-layout}]
+lupnt/
+  cpp/
+    lupnt/            # C++ library source, one directory per module
+    examples/         # C++ example programs
+      tutorials/      # C++ counterparts to the Python notebooks (ex1-ex16)
+    test/             # Catch2 / CTest suites, plus orekit/ and gmat/ fixtures
+    thirdparty/       # CPM declarations for autodiff, cspice, matplot++, ...
+  python/
+    pylupnt/          # Python package, installed in place
+      core/           # data-path and download helpers
+      plasma/         # pylupnt.plasma sub-module
+      plot/           # Matplotlib / Plotly / Cesium plotting
+      interfaces/     # Python-side data interfaces
+      _pylupnt*.so    # compiled pybind11 extension (built by `pixi run build-py`)
+      _pylupnt.pyi    # type stubs for the bound API
+    bindings/         # pybind11 binding sources (separate CMake project)
+    examples/         # tutorial notebooks ex1-ex17
+    test/             # pytest suite
+  configs/            # YAML scenario configuration
+  projects/           # research workflows, notebooks, and scripts
+  data/
+    LuPNT_data/       # runtime data, fetched automatically on the first build
+      antenna/  ephemeris/  examples/  gnss/  gravity/
+      ground_station/  planetary_coeff/  plasma/  surface/  tle/  topo/
+  scripts/            # install_kernel.py, notebook runners, format checks
+  cmake/              # CPM.cmake, FetchLuPNTData.cmake, WriteHeader.cmake, ...
+  docs/               # Sphinx / Breathe / Exhale sources (API reference site)
+  latex_docs/         # this manual: lupnt.tex, preamble.tex, chapters/, refs.bib
+  pixi.toml           # reproducible environment and task definitions
+\end{lstlisting}
+
+The bundled runtime dataset \file{data/LuPNT_data} is gitignored and roughly
+650~MB; it holds SPICE kernels and planetary ephemerides
+\citep{park2021de440}, spherical-harmonic gravity fields
+\citep{lemoine2013grgm}, GNSS antenna and clock products, EOP and TAI--UTC
+tables \citep{iers2010}, TLEs, plasma coefficient files, and lunar surface
+imagery and DEMs. It is downloaded automatically the first time the project is
+built; see \cref{sec:gs-build}.
+
+\section{Worked examples}
+\label{sec:intro-examples}
+
+A progressive set of Jupyter notebooks under \file{python/examples} teaches the
+\pylupnt{} API and reproduces \lupnt{}'s core navigation workflows, from a
+single orbit propagation up to full orbit-determination filters, constellation
+design, optical navigation, and non-lunar PNT. Each has a C++ counterpart under
+\file{cpp/examples/tutorials}. \cref{chap:tutorials} indexes them and maps each
+one to the models it exercises; the short version is
+\cref{tab:intro-examples}.
+
+\begin{table}[H]
+  \centering
+  \caption{The bundled tutorial examples.}
+  \label{tab:intro-examples}
+  \begin{tabularx}{\textwidth}{@{}clL@{}}
+    \toprule
+    \# & Example & Theme \\
+    \midrule
+     1 & \file{ex1_propagate_orbit}        & elements, frames, force models \\
+     2 & \file{ex2_time_conversions}       & $\TT$, $\TCG$, $\TCB$, $\TDB$, $\TCL$, $\LT$ \\
+     3 & \file{ex3_gnss_interface}         & TLEs, antenna gain, SP3 versus broadcast \\
+     4 & \file{ex4_plasmasphere}           & GCPM v2.4 electron density, TEC, ray-traced delay \\
+     5 & \file{ex5_gnss_measurement_sim}   & lunar-receiver visibility and $C/N_0$ \\
+     6 & \file{ex6_gnss_odts}              & weak-signal EKF for position, velocity, clock, SRP \\
+     7 & \file{ex7_groundstation_odts}     & DSN batch least squares plus SRIF/smoother \\
+     8 & \file{ex8_isl_odts}               & five parallel consider-state EKFs, surface timing \\
+     9 & \file{ex9_ephemeris}              & compressing trajectories into broadcast models \\
+    10 & \file{ex10_surface_rover}         & IMU, LCRNS pseudoranges, DEM error-state EKF \\
+    11 & \file{ex11_lander_navigation}     & powered-descent MEKF: IMU, altimeter, craters \\
+    12 & \file{ex12_constellation_design}  & ELFO Walker layout, PDOP, coverage, EIRP \\
+    13 & \file{ex13_cesium}                & interactive 3-D CesiumJS scenes \\
+    14 & \file{ex14_opnav}                 & lunar-horizon image processing to EKF fixes \\
+    15 & \file{ex15_marspnt}               & Mars gravity, frames, Walker constellation \\
+    16 & \file{ex16_leopnt}                & Earth LEO with Harris--Priester drag \citep{harris1962priester} \\
+    17 & \file{ex17_python_new_sim_example} & authoring an Application and Measurement in Python \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Quick start}
+\label{sec:intro-quickstart}
+
+All dependencies --- compiler toolchain, CMake, Ninja, Python, and every
+C++/Python package --- are provisioned by Pixi (\url{https://pixi.sh}) from
+conda-forge, so no compiler or library is installed by hand. From the
+repository root:
+
+\begin{lstlisting}[language=shell]
+# repository root
+pixi install         # provision the conda-forge environment into .pixi/
+pixi run build       # build the C++ library (target: lupnt)
+pixi run build-py    # build and deploy the Python bindings (_pylupnt)
+\end{lstlisting}
+
+The runtime dataset is downloaded on the first build.
+\cref{chap:getting-started} gives the complete procedure, including the NASA
+Earthdata credentials, the Windows/WSL path, and how to verify the install; \cref{chap:development} covers build variants, debugging, and the
+VS~Code workflow; \cref{chap:building-docs} covers building the documentation.
+
+\section{How to read this manual}
+\label{sec:intro-howtoread}
+
+This manual is a specification, not a tour. Read it as follows.
+
+\begin{itemize}[leftmargin=*]
+  \item If you want a running install, read \cref{chap:getting-started} and
+    stop there. Everything else assumes a working \code{pixi} environment.
+  \item If you want to build a scenario, read \cref{chap:new-simulation} for
+    the agent/application/simulation contract, then \cref{chap:tutorials} for
+    the closest worked example, and copy it.
+  \item If you want to know \emph{what a model actually computes} --- its
+    state and unit contract, its governing equations with every symbol
+    defined, the code that implements them, the configuration knobs that
+    change its behaviour, and the explicit statement of what it approximates
+    and omits --- go to \cref{part:math}. That part is the core of this
+    document. Its chapters are ordered so that each one depends only on the
+    ones before it: time (\cref{chap:time-conversions}), frames
+    (\cref{chap:frame-conversions}), dynamics (\cref{chap:dynamics}),
+    integration and differentiation (\cref{chap:integration},
+    \cref{chap:autodiff}), estimation (\cref{chap:filters}), then the
+    measurement and signal models (\cref{chap:gnss-measurements} onward).
+  \item If you are chasing a number rather than a method, \cref{part:verification}
+    holds the external data products, the cross-validation results against
+    GMAT \citep{gmat2023} and Orekit, and the publication list.
+\end{itemize}
+
+Throughout, \code{monospace} marks an identifier, an enum value, or a command,
+and \file{a/slashed/path} is a path relative to the repository root. Every
+listing names the source file it came from on its first line.
+
+\section{Citing \lupnt{}}
+\label{sec:intro-citing}
+
+Work that uses \lupnt{} should cite the original simulator paper
+\citep{iiyama2023lupnt} and, for the current agent-based communications and PNT
+framework, \citep{casadesus2025lupnt}. The full development history, the
+derivations behind the models in \cref{part:math}, and the mission-design
+studies built on them are collected in \citep{iiyama2026thesis}.
+
+\begin{lstlisting}[language=bibtexlang]
+@inproceedings{IiyamaCasadesus2023,
+  title     = {LuPNT: Open-Source Simulator for Lunar Positioning,
+               Navigation, and Timing},
+  author    = {Iiyama, Keidai and Casadesus Vila, Guillem and Gao, Grace},
+  booktitle = {Proceedings of the Institute of Navigation GNSS+ Conference
+               (ION GNSS+ 2023)},
+  institution = {Stanford University},
+  year      = {2023},
+  url       = {https://github.com/Stanford-NavLab/LuPNT},
+}
+\end{lstlisting}
+
+The MIT License covers \lupnt{}'s own source code only. The plasma module
+embeds third-party scientific codes that retain their original terms and
+carry their own citation requirements: IRI2007 and IRI2020
+\citep{bilitza2022iri}, GCPM v2.4 \citep{gallagher2000gcpm}, the \code{xform}
+coordinate-transformation utilities, and IGRF-14 \citep{alken2021igrf}.

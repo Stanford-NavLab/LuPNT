@@ -1,0 +1,1719 @@
+\chapter{Orbit Dynamics and Force Models}
+\label{chap:dynamics}
+
+This chapter specifies the orbit dynamics of \lupnt{}: the state vectors that may
+be propagated, the element sets they can be converted between, the force models
+that enter the equations of motion, and the interface through which a trajectory
+and its state-transition matrix are obtained. The Cartesian rate assembly is
+implemented in \file{cpp/lupnt/dynamics/numerical_orbit_dynamics.cc} (classes
+\cpp{NBodyDynamics}, \cpp{CartesianTwoBodyDynamics}, \cpp{JToCartTwoBodyDynamics},
+\cpp{J2KeplerianDynamics}, \cpp{MoonMeanDynamics}); the individual force-model
+accelerations live in \file{cpp/lupnt/environment/forces.cc} and
+\file{cpp/lupnt/environment/forces.h}; the closed-form propagators are in
+\file{cpp/lupnt/dynamics/analytical_orbit_dynamics.cc}; the element-set
+conversions are in \file{cpp/lupnt/conversions/state_conversions.cc},
+\file{cpp/lupnt/conversions/anomaly_conversions.cc}, and
+\file{cpp/lupnt/conversions/coordinate_conversions.cc}, dispatched by
+\file{cpp/lupnt/conversions/state_converter.cc}.
+
+The formulation follows \citet{montenbruck2000} for the harmonic gravity field,
+the shadow function, and the Harris--Priester drag model, and
+\citet{vallado2013} for the element-set conventions. Planetary and lunar
+ephemerides are DE440 \citep{park2021de440}; the default lunar gravity field is a
+GRAIL-derived GRGM solution \citep{lemoine2013grgm}. The design rationale for the
+cislunar force model and the fidelity levels used in the navigation studies is
+given in \citep[Ch.~2]{iiyama2026thesis}.
+
+\section{Scope and implementing sources}
+\label{sec:dyn-sources}
+
+\Cref{tab:dyn-sources} lists the files whose contents this chapter specifies.
+Every equation below is tied to one of them.
+
+\begin{table}[H]
+  \centering
+  \caption{Source files specified by this chapter.}
+  \label{tab:dyn-sources}
+  \begin{tabularx}{\textwidth}{lL}
+    \toprule
+    File & Contents \\
+    \midrule
+    \file{cpp/lupnt/dynamics/dynamics.h} & \cpp{Dynamics} base interface, \cpp{Propagate} overloads, parameter vector \\
+    \file{cpp/lupnt/dynamics/numerical_orbit_dynamics.cc} & \cpp{NumericalDynamics} and the Cartesian / element rate functions \\
+    \file{cpp/lupnt/dynamics/analytical_orbit_dynamics.cc} & \cpp{KeplerianDynamics}, \cpp{ClohessyWiltshireDynamics}, and relative-motion mappings \\
+    \file{cpp/lupnt/dynamics/joint_orbit_clock_dynamics.cc} & coupled orbit + clock state \\
+    \file{cpp/lupnt/environment/forces.cc} & harmonic gravity, point mass, SRP, shadow, drag, relativity \\
+    \file{cpp/lupnt/environment/body.cc} & body constants, gravity-field file loading and un-normalization \\
+    \file{cpp/lupnt/conversions/state_conversions.cc} & Cartesian $\leftrightarrow$ element-set conversions \\
+    \file{cpp/lupnt/conversions/anomaly_conversions.cc} & mean / eccentric / true anomaly conversions \\
+    \file{cpp/lupnt/conversions/coordinate_conversions.cc} & geodetic, topocentric, and stereographic coordinates \\
+    \file{cpp/lupnt/conversions/state_converter.cc} & shortest-path dispatch between state types \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{State, epoch, frame, and unit contract}
+\label{sec:dyn-contract}
+
+\subsection{The propagated state}
+
+The propagated Cartesian orbit state is the stacked position and velocity
+
+\begin{equation}
+  \label{eq:dyn-state}
+  \vec{x} =
+  \begin{bmatrix} \vec{r} \\ \vec{v} \end{bmatrix},
+  \qquad \vec{r}\in\mathbb{R}^3,\quad \vec{v}\in\mathbb{R}^3,
+\end{equation}
+
+with components ordered $[r_x,\ r_y,\ r_z,\ v_x,\ v_y,\ v_z]$. Every Jacobian,
+covariance, and state-transition matrix in the library uses this same ordering.
+Both $\vec{r}$ and $\vec{v}$ are referred to the origin and axes of the
+configured integration frame \code{frame\_} (a \cpp{Frame} enumerator, default
+\code{MOON\_CI}) and are expressed in the configured coherent \cpp{UnitSystem}
+\code{units\_}. Writing $L$, $T$, and $M$ for the length, time, and mass units of
+that system,
+
+\begin{equation}
+  \label{eq:dyn-dims}
+  [\vec{r}] = L, \qquad [\vec{v}] = L\,T^{-1}, \qquad [\vec{a}] = L\,T^{-2},
+  \qquad [\mu] = L^{3}T^{-2}.
+\end{equation}
+
+The model computes the right-hand side
+
+\begin{equation}
+  \label{eq:dyn-rates}
+  \dot{\vec{x}} = f(t,\vec{x}) =
+  \begin{bmatrix} \vec{v} \\ \vec{a}(t,\vec{r},\vec{v}) \end{bmatrix},
+\end{equation}
+
+which the integrators of \file{cpp/lupnt/numerics/integrator.h} advance in time.
+
+\subsection{The epoch convention}
+
+The integration variable $t$ passed to \cpp{Propagate} and \cpp{ComputeRates} is
+\emph{not} an absolute epoch. It is a simulation time offset in seconds measured
+from a global reference epoch, so that a scenario runs over $t\in[0,\,
+t_\mathrm{dur}]$. The absolute barycentric dynamical epoch used for ephemeris and
+frame queries is formed internally as
+
+\begin{equation}
+  \label{eq:dyn-epoch}
+  t_{\TDB} = t_{\mathrm{LuPNT},0} + t,
+\end{equation}
+
+where $t_{\mathrm{LuPNT},0}$ is the value returned by \cpp{GetLupntEpoch()}
+(seconds of $\TDB$ since J2000), set once per scenario and restorable through the
+\cpp{ScopedLupntEpoch} guard in \file{cpp/lupnt/core/definitions.h}. All
+ephemeris evaluations, frame rotations, and the $\TDB\rightarrow\TT$ conversion
+required by the drag model are therefore performed at $t_{\TDB}$.
+
+\begin{lupntwarning}
+  Passing an absolute epoch as \code{t0}/\code{tf} double-counts
+  $t_{\mathrm{LuPNT},0}$ and silently evaluates the ephemeris decades away from
+  the intended instant, typically outside the coverage of the loaded SPICE
+  kernels. Both arguments are plain \cpp{Real}, so nothing in the type system
+  catches the mistake; the regression that pins the convention is
+  \file{cpp/test/dynamics/test_epoch_convention.cc}.
+\end{lupntwarning}
+
+\subsection{Unit conversion at the model boundary}
+
+The historical \lupnt{} constants (\code{GM\_MOON}, \code{R\_EARTH},
+\code{SOLAR\_FLUX\_AU}, \dots) are SI-valued. When a model runs in a non-SI
+\cpp{UnitSystem}, a dimensional quantity with length power $p$, time power $q$,
+and mass power $s$ is converted by
+
+\begin{equation}
+  \label{eq:dyn-units}
+  q_\mathrm{unit} = \frac{q_\mathrm{SI}}{L^{p}\,T^{q}\,M^{s}},
+\end{equation}
+
+so that, for example,
+$\vec{r}_\mathrm{unit} = \vec{r}_\mathrm{SI}/L$,
+$\vec{v}_\mathrm{unit} = \vec{v}_\mathrm{SI}/(L/T)$, and
+$\mu_\mathrm{unit} = \mu_\mathrm{SI}/(L^3/T^2)$. Planetary ephemerides are
+evaluated in the internal $\TDB$-compatible coordinate scale and scaled to the
+requested unit system at the dynamics boundary. The scaling helpers live in the
+anonymous namespace of the dynamics translation unit.
+
+\begin{lstlisting}[language=cpp, caption={Unit scaling at the dynamics boundary.}, label={lst:dyn-units}]
+// cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: anonymous namespace
+Vec3 PositionFromSI(const Vec3& r, const UnitSystem& units) { return r / units.length; }
+Vec3 PositionToSI(const Vec3& r, const UnitSystem& units)   { return r * units.length; }
+Vec3 VelocityToSI(const Vec3& v, const UnitSystem& units) {
+  return v * (units.length / units.time);
+}
+Vec3 AccelerationFromSI(const Vec3& a, const UnitSystem& units) {
+  return a * (units.time * units.time / units.length);
+}
+Vec6 StateToSI(const Vec6& rv, const UnitSystem& units) {
+  Vec6 out;
+  out.head(3) = PositionToSI(rv.head(3), units);
+  out.tail(3) = VelocityToSI(rv.tail(3), units);
+  return out;
+}
+\end{lstlisting}
+
+The recognised unit systems are \code{SI\_UNITS} (\si{\meter}, \si{\second},
+\si{\kilogram}; YAML \code{si}, \code{mks}, \code{m\_s\_kg}) and
+\code{KM\_S\_KG\_UNITS} (\si{\kilo\meter}, \si{\second}, \si{\kilogram}; YAML
+\code{kms}, \code{km\_s\_kg}); an explicit mapping
+\code{units: \{length: ..., time: ..., mass: ...\}} is also accepted.
+
+\section{Orbital element sets}
+\label{sec:dyn-elements}
+
+A \lupnt{} \cpp{State} carries a type tag, a name and unit for each component,
+and a reference frame. \Cref{tab:dyn-elements} lists the absolute
+six-dimensional orbit representations; the relative sets follow in
+\cref{sec:dyn-relative}.
+
+\begin{table}[H]
+  \centering
+  \caption{Absolute orbit state types (\file{cpp/lupnt/states/state.h}).}
+  \label{tab:dyn-elements}
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    \cpp{StateType} & Components & Units and remarks \\
+    \midrule
+    \code{Cart6} & $x,y,z,v_x,v_y,v_z$ & $L$, $L/T$; no singularities \\
+    \code{ClassicalOE} & $a,e,i,\Omega,\omega,M$ & $L$, --, rad; singular at $e\in\{0,1\}$ and $i\in\{0,\pi\}$ \\
+    \code{QuasiNonsingularOE} & $a,u,e_x,e_y,i,\Omega$ & $L$, rad, --, --, rad, rad; regular at $e=0$ \\
+    \code{EquinoctialOE} & $a,\Psi,t_{q1},t_{q2},p_1,p_2$ & $L$, rad, --, --, --, --; regular at $e=0$ and $i=0$, singular at $i=\pi$ \\
+    \code{DelaunayOE} & $\ell,g,h,L,G,H$ & canonical Hamiltonian set \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Conversions are registered as directed edges in
+\file{cpp/lupnt/conversions/state_converter.cc} and resolved by a
+shortest-path search, so that a request for a pair that has no direct edge (for
+instance \code{Cart6} to \code{DelaunayOE}) is composed automatically through
+\code{ClassicalOE}, which is the hub of the graph.
+
+\begin{lstlisting}[language=cpp, caption={The absolute conversion graph.}, label={lst:dyn-graph}]
+// cpp/lupnt/conversions/state_converter.cc
+std::map<std::pair<StateType, StateType>, std::function<State(const State&, Real)>>
+    absolute_conversions = {
+        ABSOLUTE_CONVERSION(Cart6::TYPE, ClassicalOE::TYPE, CartToClassical),
+        ABSOLUTE_CONVERSION(ClassicalOE::TYPE, Cart6::TYPE, ClassicalToCart),
+        ABSOLUTE_CONVERSION(ClassicalOE::TYPE, QuasiNonsingularOE::TYPE, ClassicalToQuasiNonsing),
+        ABSOLUTE_CONVERSION(ClassicalOE::TYPE, EquinoctialOE::TYPE, ClassicalToEquinoctial),
+        ABSOLUTE_CONVERSION(ClassicalOE::TYPE, DelaunayOE::TYPE, ClassicalToDelaunay),
+        ABSOLUTE_CONVERSION(QuasiNonsingularOE::TYPE, ClassicalOE::TYPE, QuasiNonsingToClassical),
+        ABSOLUTE_CONVERSION(EquinoctialOE::TYPE, ClassicalOE::TYPE, EquinoctialToClassical),
+        ABSOLUTE_CONVERSION(DelaunayOE::TYPE, ClassicalOE::TYPE, DelaunayToClassical),
+};
+
+State ConvertState(const State& x, StateType type_out, Real GM) {
+  if (x.GetType() == type_out) return x;
+  std::vector<StateType> path = FindShortestPath(x.GetType(), type_out, absolute_conversions);
+  State state = x;
+  for (size_t i = 0; i < path.size() - 1; i++)
+    state = absolute_conversions[{path[i], path[i + 1]}](state, GM);
+  return state;
+}
+\end{lstlisting}
+
+When the gravitational parameter is not supplied explicitly, it is taken from the
+natural centre of the state's frame, \cpp{GetBodyGM(GetFrameCenter(x.GetFrame()))}.
+A conversion is therefore only meaningful if the state's frame is centred on the
+attracting body.
+
+\subsection{Cartesian to classical elements}
+\label{sec:dyn-cart2coe}
+
+Let $\vec{h} = \vec{r}\times\vec{v}$ be the specific angular momentum and
+$H=\lVert\vec{h}\rVert$, $R=\lVert\vec{r}\rVert$. The implementation follows the
+non-iterative construction of \citet{montenbruck2000}:
+
+\begin{align}
+  \Omega &= \atantwo\!\left(h_x,\ -h_y\right), \label{eq:dyn-coe-raan}\\
+  i &= \atantwo\!\left(\sqrt{h_x^2+h_y^2},\ h_z\right), \label{eq:dyn-coe-inc}\\
+  u &= \atantwo\!\left(z\,H,\ -x\,h_y + y\,h_x\right), \label{eq:dyn-coe-arglat}\\
+  a &= \left(\frac{2}{R} - \frac{\lVert\vec{v}\rVert^2}{\mu}\right)^{-1}, \label{eq:dyn-coe-sma}
+\end{align}
+
+where $u=\omega+\nu$ is the argument of latitude and \cref{eq:dyn-coe-sma} is the
+vis-viva relation solved for $a$. The eccentricity and the eccentric anomaly $E$
+are obtained from the two projections
+
+\begin{equation}
+  \label{eq:dyn-coe-ecosE}
+  e\cos E = 1 - \frac{R}{a},
+  \qquad
+  e\sin E = \frac{\vec{r}\transpose\vec{v}}{\sqrt{\mu a}},
+\end{equation}
+
+so that
+
+\begin{align}
+  e &= \sqrt{(e\cos E)^2 + (e\sin E)^2}, & E &= \atantwo(e\sin E,\ e\cos E), \label{eq:dyn-coe-ecc}\\
+  M &= E - e\sin E, & \nu &= \atantwo\!\left(\sqrt{1-e^2}\,e\sin E,\ e\cos E - e^2\right), \label{eq:dyn-coe-anom}
+\end{align}
+
+and finally $\omega = u - \nu$. Both $M$ and $\omega$ are wrapped to
+$(-\pi,\pi]$ by \cpp{WrapToPi}.
+
+\begin{lstlisting}[language=cpp, caption={Cartesian to classical elements.}, label={lst:dyn-cart2coe}]
+// cpp/lupnt/conversions/state_conversions.cc :: CartToClassical
+Vec3 h = r.cross(v);  // areal velocity
+Real H = h.norm();
+Real Omega = atan2(h(0), -h(1));                        // longitude of ascending node
+Real i = atan2(sqrt(h(0) * h(0) + h(1) * h(1)), h(2));  // inclination
+Real u = atan2(r(2) * H, -r(0) * h(1) + r(1) * h(0));   // argument of latitude
+Real R = r.norm();
+Real a = 1.0 / (2.0 / R - v.squaredNorm() / GM);        // semi-major axis
+Real eCosE = 1.0 - R / a;
+Real eSinE = r.dot(v) / sqrt(GM * a);
+Real e2 = eCosE * eCosE + eSinE * eSinE;
+Real e = sqrt(e2);
+Real E = atan2(eSinE, eCosE);
+Real M = WrapToPi(E - eSinE);
+Real nu = atan2(sqrt(1.0 - e2) * eSinE, eCosE - e2);
+Real omega = WrapToPi(u - nu);
+\end{lstlisting}
+
+\paragraph{Singular cases.}
+\Cref{eq:dyn-coe-raan} degenerates when $h_x=h_y=0$, i.e.\ for an equatorial
+orbit ($i=0$ or $i=\pi$): $\Omega$ is then undefined and \cpp{atan2(0,0)}
+returns $0$, which silently fixes the node at the frame's $x$-axis and moves the
+entire angular information into $\omega$. Similarly, at $e=0$ the periapsis is
+undefined, \cref{eq:dyn-coe-anom} returns $\nu\to$ an arbitrary value consistent
+with $E$, and the split of $u$ into $\omega+\nu$ is not unique. In both cases the
+sum $\Omega+\omega+M$ remains well conditioned, which is why the quasi-nonsingular
+and equinoctial sets are preferred for near-circular or near-equatorial orbits.
+For $e\ge 1$ \cref{eq:dyn-coe-sma} yields $a<0$ and the eccentric-anomaly
+relations are not valid; the only hyperbolic-capable entry point is the
+Lambert-style overload \cpp{CartToClassical(dt, r1, r2, GM)}, which switches to
+the hyperbolic anomaly
+
+\begin{equation}
+  \label{eq:dyn-coe-hyper}
+  M = e\sinh F - \ln\!\left(\sinh F + \sqrt{1+\sinh^{2} F}\right),
+  \qquad
+  \sinh F = \frac{\sqrt{(e-1)(e+1)}\ q_s}{e\,(1+q_c)},
+\end{equation}
+
+where $q_c = e\cos\nu$ and $q_s = e\sin\nu$ are the eccentricity projections
+recovered from the semi-latus rectum and the two radii, and $F$ is the hyperbolic
+anomaly.
+
+\subsection{Classical elements to Cartesian}
+\label{sec:dyn-coe2cart}
+
+The inverse map solves Kepler's equation for $E$, evaluates the state in the
+perifocal frame, and rotates it into the reference frame by the standard
+$3$--$1$--$3$ sequence:
+
+\begin{align}
+  R &= a(1-e\cos E), &
+  V &= \frac{\sqrt{\mu a}}{R}, \label{eq:dyn-cart-rv-mag}\\
+  \vec{r}_{PQW} &= \begin{bmatrix} a(\cos E - e) \\ a\sqrt{1-e^2}\,\sin E \\ 0\end{bmatrix}, &
+  \vec{v}_{PQW} &= \begin{bmatrix} -V\sin E \\ V\sqrt{1-e^2}\,\cos E \\ 0\end{bmatrix},
+  \label{eq:dyn-cart-pqw}
+\end{align}
+
+\begin{equation}
+  \label{eq:dyn-cart-rot}
+  \mat{R}_{PQW\rightarrow F} = \mat{R}_z(-\Omega)\,\mat{R}_x(-i)\,\mat{R}_z(-\omega),
+  \qquad
+  \vec{r} = \mat{R}_{PQW\rightarrow F}\,\vec{r}_{PQW},
+  \qquad
+  \vec{v} = \mat{R}_{PQW\rightarrow F}\,\vec{v}_{PQW}.
+\end{equation}
+
+\subsection{Anomaly conversions}
+\label{sec:dyn-anomaly}
+
+The three anomalies are related by Kepler's equation and the half-angle tangent
+identity:
+
+\begin{align}
+  M &= E - e\sin E, \label{eq:dyn-kepler}\\
+  \nu &= \atantwo\!\left(\sqrt{1-e^2}\,\sin E,\ \cos E - e\right), \label{eq:dyn-ecc2true}\\
+  E &= 2\arctan\!\left(\sqrt{\frac{1-e}{1+e}}\,\tan\frac{\nu}{2}\right). \label{eq:dyn-true2ecc}
+\end{align}
+
+\Cref{eq:dyn-kepler} is inverted by Newton's method with the initial guess
+$E_0=M$ wrapped to $(-\pi,\pi]$,
+
+\begin{equation}
+  \label{eq:dyn-kepler-newton}
+  E_{k+1} = E_k - \frac{E_k - e\sin E_k - M}{1 - e\cos E_k},
+\end{equation}
+
+iterated until $|E_{k+1}-E_k| < \varepsilon$ or a cap of $100$ iterations is
+reached. The orbital period used throughout is
+$T_\mathrm{orb} = 2\pi\sqrt{a^3/\mu}$.
+
+\begin{lupntnote}
+  \Cref{eq:dyn-kepler-newton} converges quadratically for the near-circular
+  orbits of interest but degrades as $e\rightarrow1$, where the denominator
+  approaches zero near periapsis. \Cref{eq:dyn-true2ecc} additionally loses a
+  branch at $\nu=\pi$ because \code{tan} diverges there; the implementation
+  returns the principal branch of \code{atan}, so callers that need a continuous
+  $E(\nu)$ across periapsis must unwrap the result themselves.
+\end{lupntnote}
+
+\subsection{Quasi-nonsingular elements}
+\label{sec:dyn-qnsoe}
+
+The quasi-nonsingular set removes the $e=0$ singularity by projecting the
+eccentricity vector onto the orbit plane and replacing $M$ by the mean argument
+of latitude:
+
+\begin{equation}
+  \label{eq:dyn-qnsoe}
+  u = \omega + M, \qquad e_x = e\cos\omega, \qquad e_y = e\sin\omega,
+\end{equation}
+
+with the inverse
+
+\begin{equation}
+  \label{eq:dyn-qnsoe-inv}
+  e = \sqrt{e_x^2+e_y^2}, \qquad \omega = \atantwo(e_y,e_x), \qquad M = u - \omega .
+\end{equation}
+
+The inclination and node are carried through unchanged, so the set remains
+singular at $i\in\{0,\pi\}$ --- hence \emph{quasi}-nonsingular.
+
+\subsection{Equinoctial elements}
+\label{sec:dyn-equinoctial}
+
+The equinoctial set is regular at both $e=0$ and $i=0$. With the longitude of
+periapsis $\tilde\omega=\Omega+\omega$ and the true anomaly $f$ obtained from $M$
+through \cref{eq:dyn-kepler-newton} and \cref{eq:dyn-ecc2true}, the conversion
+implemented by \cpp{ClassicalToEquinoctial} is
+
+\begin{align}
+  \Psi &= \tilde\omega + f, \label{eq:dyn-equi-psi}\\
+  t_{q1} &= e\cos\tilde\omega, & t_{q2} &= e\sin\tilde\omega, \label{eq:dyn-equi-tq}\\
+  p_1 &= \tan\frac{i}{2}\cos\Omega, & p_2 &= \tan\frac{i}{2}\sin\Omega, \label{eq:dyn-equi-p}
+\end{align}
+
+with $\Psi$ reduced to $(-\pi,\pi]$. The inverse is
+
+\begin{equation}
+  \label{eq:dyn-equi-inv}
+  \Omega = \atantwo(p_2,p_1),
+  \quad
+  i = 2\atantwo(p_1,\cos\Omega),
+  \quad
+  \tilde\omega = \atantwo(t_{q2},t_{q1}),
+  \quad
+  e = \sqrt{t_{q1}^2+t_{q2}^2},
+\end{equation}
+
+followed by $\omega=\tilde\omega-\Omega$, $f=\Psi-\tilde\omega$,
+$E=\atantwo\!\left(\sin f\sqrt{1-e^2},\ \cos f + e\right)$, and $M=E-e\sin E$.
+The $\tan(i/2)$ factor in \cref{eq:dyn-equi-p} diverges at $i=\pi$, so the
+retrograde-equatorial orbit remains singular; the customary remedy of switching
+to $\cot(i/2)$ for retrograde orbits is not implemented.
+
+\begin{lupntwarning}
+  The \cpp{EquinoctialOE} state advertises component names
+  $(a,h,k,p,q,\lambda)$ with the mean longitude last, but
+  \cpp{ClassicalToEquinoctial} stores $(a,\Psi,t_{q1},t_{q2},p_1,p_2)$ with the
+  angle \emph{second}. The round trip through \cpp{EquinoctialToClassical} is
+  self-consistent, but \cpp{KeplerianDynamics<EquinoctialOE>} advances element
+  index $5$ --- which under the stored layout is $p_2$, not the longitude. Do not
+  propagate an \cpp{EquinoctialOE} produced by \cpp{ClassicalToEquinoctial} with
+  the Keplerian analytic propagator; convert to \cpp{ClassicalOE} first.
+\end{lupntwarning}
+
+\subsection{Delaunay elements}
+\label{sec:dyn-delaunay}
+
+The Delaunay set is the canonical action--angle set of the Kepler problem. With
+mean motion $n=\sqrt{\mu/a^3}$ and $t=M/n$,
+
+\begin{align}
+  \ell &= M, & g &= \omega, & h &= \Omega - n t, \label{eq:dyn-delaunay-angles}\\
+  L &= \sqrt{\mu a}, & G &= L\sqrt{1-e^2}, & H &= G\cos i, \label{eq:dyn-delaunay-actions}
+\end{align}
+
+with the inverse
+
+\begin{equation}
+  \label{eq:dyn-delaunay-inv}
+  a = \frac{L^2}{\mu}, \qquad
+  e = \sqrt{1-\left(\frac{G}{L}\right)^{2}}, \qquad
+  i = \arccos\!\left(\frac{H}{G}\right), \qquad
+  \Omega = h + n t, \qquad \omega = g, \qquad M = \ell .
+\end{equation}
+
+The arc cosine in \cref{eq:dyn-delaunay-inv} is evaluated through
+\cpp{safe\_acos}, which clamps its argument to $[-1,1]$ so that round-off in
+$H/G$ cannot produce a NaN. $G=0$ (rectilinear orbit, $e=1$) and $L=0$ are
+excluded. Note that $h$ carries an explicit $-nt$ term, so the Delaunay
+representation returned here is referenced to the epoch at which the conversion
+was made and is not a pure function of the instantaneous geometry.
+
+\subsection{Relative element sets and the synodic frame}
+\label{sec:dyn-relative}
+
+Two relative representations are provided, both scaled by the chief semi-major
+axis so that all six components carry length units: \cpp{SingularROE}
+$(a\delta a,\ a\delta M,\ a\delta e,\ a\delta\omega,\ a\delta i,\
+a\delta\Omega)$ and \cpp{QuasiNonsingROE} $(a\delta a,\ a\delta\ell,\
+a\delta e_x,\ a\delta e_y,\ a\delta i_x,\ a\delta i_y)$. A relative Cartesian
+state \cpp{RelCart6} is obtained from a chief state $\vec{x}_c$ and a deputy
+state $\vec{x}_d$ by rotating into the chief's radial--transverse--normal (RTN)
+triad,
+
+\begin{equation}
+  \label{eq:dyn-rtn-basis}
+  \uvec{e}_R = \frac{\vec{r}_c}{\lVert\vec{r}_c\rVert}, \qquad
+  \uvec{e}_N = \frac{\vec{r}_c\times\vec{v}_c}{\lVert\vec{r}_c\times\vec{v}_c\rVert}, \qquad
+  \uvec{e}_T = \uvec{e}_N\times\uvec{e}_R,
+\end{equation}
+
+and removing the rotation of the triad with angular rate
+$\vec{w} = (\vec{r}_c\times\vec{v}_c)/\lVert\vec{r}_c\rVert$:
+
+\begin{equation}
+  \label{eq:dyn-rtn}
+  \vec{r}_\mathrm{syn} = \mat{R}\,(\vec{r}_d-\vec{r}_c),
+  \qquad
+  \vec{v}_\mathrm{syn} = \mat{R}\,\bigl(\vec{v}_d-\vec{v}_c-\vec{w}\times(\vec{r}_d-\vec{r}_c)\bigr),
+\end{equation}
+
+where the rows of $\mat{R}$ are $\uvec{e}_R\transpose$, $\uvec{e}_T\transpose$,
+$\uvec{e}_N\transpose$. Both \cref{eq:dyn-rtn} and its inverse are implemented in
+\cpp{InertialToSynodic} / \cpp{SynodicToInertial}.
+
+\subsection{Geodetic and topocentric coordinates}
+\label{sec:dyn-geodetic}
+
+The body-fixed Cartesian to geodetic conversion uses the ellipsoid of
+first eccentricity squared $e^2 = f(2-f)$, prime vertical radius of curvature
+$N = R_\mathrm{body}/\sqrt{1-e^2\sin^2\phi}$, and the fixed-point iteration
+
+\begin{equation}
+  \label{eq:dyn-lla}
+  \sin\phi^{(k)} = \frac{z+\Delta z^{(k)}}{\sqrt{x^2+y^2+(z+\Delta z^{(k)})^2}},
+  \qquad
+  \Delta z^{(k+1)} = N^{(k)} e^2 \sin\phi^{(k)},
+\end{equation}
+
+started from $\Delta z^{(0)} = e^2 z$ and iterated to a tolerance of
+\code{EPS} with a cap of $1000$ iterations, after which
+$\lambda=\atantwo(y,x)$, $\phi=\atantwo(z+\Delta z,\sqrt{x^2+y^2})$, and
+$h=\sqrt{x^2+y^2+(z+\Delta z)^2}-N$. Latitude and longitude are returned in
+degrees. Passing $R_\mathrm{body}=0$ selects a sphere of radius
+$\lVert\vec{r}\rVert$. The east--north--up triad and the azimuth--elevation--range
+triple follow from
+$\mat{R}_{F\rightarrow ENU} = \mat{R}_x(\pi/2-\phi)\,\mat{R}_z(\pi/2+\lambda)$,
+$\mathrm{az}=\atantwo(e,n)$, $\mathrm{el}=\arcsin(u/\rho)$,
+$\rho=\lVert(e,n,u)\rVert$. A polar stereographic projection used for lunar
+south-pole analyses is provided by \cpp{LatLonAltToStereographic} with
+$x_s = 2R\,x/(R-z)$, $y_s = 2R\,y/(R-z)$.
+
+\section{Force-model configuration}
+\label{sec:dyn-config}
+
+Every scenario declares its orbit force model with the same YAML
+\code{force\_model:} block, whether it is the shared truth model
+(\code{world.force\_model}), an agent's \code{dynamics:}, or an estimator's
+filter and truth dynamics. The block is a \code{bodies:} list plus optional
+relativity, cannonball-SRP, and drag entries, and optional integrator settings.
+
+\begin{lstlisting}[language=yamlcfg, caption={Unified force-model block.}, label={lst:dyn-yaml}]
+# configs/lunar_gnss_odts.yaml :: world.force_model (all keys shown)
+force_model:
+  integrator: RKF45         # RK4 | RK8 | RKF45 | PD45
+  dt: 30.0                  # nominal step [s]
+  abstol: 1.0e-12           # adaptive-integrator absolute tolerance
+  reltol: 1.0e-12           # adaptive-integrator relative tolerance
+  max_iter: 20
+  frame: MOON_CI            # integration frame
+  units: si                 # si | kms | {length: ..., time: ..., mass: ...}
+  autodiff: false           # required for the STM overload of Propagate
+  bodies:
+    - MOON: {n: 20, m: 20}  # spherical-harmonic gravity field to degree/order 20
+    - EARTH: {}             # third body, point mass (empty {} = no harmonics)
+    - SUN: {}               # third body, point mass
+  relativity: true          # n-body post-Newtonian correction
+  CR: 1.8                   # SRP: enables cannonball SRP with B_SRP = CR * area / mass
+  CD: 2.2                   # drag: enables drag with B_D = CD * area / mass
+  area: 0.02                # [m^2]
+  mass: 10.0                # [kg]
+\end{lstlisting}
+
+Each \code{bodies} entry is \code{BODY: \{n: <degree>, m: <order>\}} for a
+spherical-harmonic field; an empty \code{\{\}} (or omitted \code{n}/\code{m})
+selects point-mass gravity. Because \cpp{Body::Moon} and \cpp{Body::Earth} set
+\code{use\_gravity\_field = (n\_max > 1 \&\& m\_max > 1)}, a request for
+\code{\{n: 1, m: 1\}} or \code{\{n: 2, m: 0\}} also falls back to a point mass. A
+body's presence in the list is what enables its contribution to the sum in
+\cref{eq:dyn-total}.
+
+The same block feeds two consumers, so that world, agent, and filter dynamics
+stay consistent:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \cpp{NBodyDynamics(Config\&)} builds a complete dynamics object --- adding
+    each body through \cpp{Body::CreateBody}, setting the SRP and drag ballistic
+    coefficients from \code{CR}/\code{CD}, \code{area}, \code{mass}, and reading
+    \code{frame}, \code{units}, \code{autodiff}, and \code{relativity}.
+  \item \cpp{ParseForceModelSpec(const Config\&)} reads the same block into the
+    lightweight \cpp{ForceModelSpec} struct: \code{moon\_degree} and
+    \code{moon\_order} from the \code{MOON} entry, \code{include\_earth} and
+    \code{include\_sun} from the presence of those bodies, plus
+    \code{relativity} and the SRP scalars. This lets the
+    per-example dynamics builders that need their own integrator tolerances or
+    clock coupling be fed from one consistent configuration surface. Both
+    \code{relativity} and \code{use\_relativity} are accepted.
+\end{itemize}
+
+\begin{table}[H]
+  \centering
+  \caption{Force-model configuration knobs and their programmatic equivalents.}
+  \label{tab:dyn-config}
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    YAML key & Setter & Effect \\
+    \midrule
+    \code{bodies} & \cpp{AddBody} & adds a point mass or a harmonic field to the sum \\
+    \code{frame} & \cpp{SetFrame} & integration frame; must be set or \cpp{ComputeRates} aborts \\
+    \code{units} & \cpp{SetUnits} & coherent unit system; must precede \cpp{AddBody} \\
+    \code{CR}, \code{area}, \code{mass} & \cpp{SetSrpCoefficient} & sets $B_\mathrm{SRP}$ and enables SRP \\
+    \code{CD}, \code{area}, \code{mass} & \cpp{SetDragCoefficient} & sets $B_D$ and enables drag \\
+    --- & \cpp{SetSolarFlux} & mean total solar irradiance at \SI{1}{\au}, default \SI{1361}{\watt\per\meter\squared} \\
+    \code{relativity} & \cpp{SetUseRelativity} & post-Newtonian $n$-body correction; \emph{on} by default \\
+    \code{autodiff} & \cpp{SetAutodiff} & \cpp{Real} rather than \code{double} field evaluation; required for the STM \\
+    \code{integrator}, \code{dt} & \cpp{SetIntegrator}, \cpp{SetTimeStep} & integrator family and nominal step \\
+    \code{abstol}, \code{reltol}, \code{max\_iter} & \cpp{SetIntegratorParams} & adaptive step control \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The ballistic coefficients are stored in the \cpp{ParamState} parameter vector
+under the names \code{bcoeff\_srp} and \code{bcoeff\_drag}, which is what makes
+them estimable: a filter can read them with \cpp{GetParams}, perturb them, and
+obtain $\partial\vec{x}_f/\partial\vec{p}$ from \cpp{PropagateWithParams}.
+
+\section{Total acceleration}
+\label{sec:dyn-total}
+
+The acceleration assembled by \cpp{NBodyDynamics::ComputeRates} is
+
+\begin{equation}
+  \label{eq:dyn-total}
+  \vec{a} =
+  \sum_{i\in\mathcal{P}} \vec{a}_i
+  + \sum_{j\in\mathcal{G}} \vec{a}_{\mathrm{field},j}
+  + \vec{a}_\mathrm{SRP}
+  + \vec{a}_D
+  + \vec{a}_\mathrm{rel},
+\end{equation}
+
+where $\mathcal{P}$ is the set of configured bodies treated as point masses,
+$\mathcal{G}$ the set of configured bodies carrying a spherical-harmonic field,
+and each optional term is omitted when its switch is disabled or no applicable
+body is configured. The per-term decomposition of the same sum is available from
+\cpp{ComputeAccelerations}, which returns a map keyed
+\code{"<BODY>\_gravity"}, \code{"<BODY>\_nonspherical"}, \code{"<BODY>\_J<n>"},
+\code{"<BODY>\_C<n><m>"}, \code{"srp"}, \code{"drag"}, and
+\code{"relativity"}, whose values sum exactly to the acceleration block of
+\cref{eq:dyn-rates}. The harmonic decomposition exploits the linearity of the
+field in its coefficients: the contribution of a single $(n,m)$ pair is recovered
+by evaluating the field with a coefficient matrix in which only $C_{nm}$ (and
+$S_{nm}$ for $m>0$) is retained.
+
+\begin{lstlisting}[language=cpp, caption={Rate assembly.}, label={lst:dyn-rates}]
+// cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: NBodyDynamics::ComputeRates
+VecX NBodyDynamics::ComputeRates(Real t, const State& rv) const {
+  Real t_tdb = t + GetLupntEpoch();
+  LUPNT_CHECK(frame_ != Frame::UNDEFINED, "Frame not set", "NBodyDynamics");
+  Vec3 r = rv.head(3);
+  Vec3 v = rv.tail(3);
+  Vec3 a = Vec3::Zero();
+  for (const auto& body : bodies_) {
+    if (body.use_gravity_field) {
+      // ... rotate to body-fixed, evaluate the harmonic field, rotate back ...
+    } else {
+      Vec3 r_body = GetBodyPos(t_tdb, body.id, frame_, units_);
+      a += AccelerationPointMass(rv.head(3), r_body, body.GM);
+    }
+    if (use_drag_ && body.id == BodyId::EARTH) { /* ... */ }
+  }
+  if (use_srp_) a += AccelerationSrp(t_tdb, r);
+  if (use_relativity_) a += RelativisticNBodyAcceleration(t_tdb, r, v);
+  Vec6 rv_dot;
+  rv_dot << v, a;
+  return rv_dot;
+}
+\end{lstlisting}
+
+\section{Point-mass and third-body gravity}
+\label{sec:dyn-pointmass}
+
+For a perturbing body of gravitational parameter $\mu_i$ located at $\vec{s}_i$ in
+the integration frame, the acceleration of the spacecraft \emph{relative to the
+frame origin} is the difference between the direct attraction and the attraction
+of the origin itself:
+
+\begin{equation}
+  \label{eq:dyn-pointmass}
+  \vec{a}_i = -\mu_i\left(
+    \frac{\vec{r}-\vec{s}_i}{\lVert\vec{r}-\vec{s}_i\rVert^{3}}
+    + \frac{\vec{s}_i}{\lVert\vec{s}_i\rVert^{3}}
+  \right).
+\end{equation}
+
+The first term is the direct attraction; the second is the indirect (origin
+recoil) term, which removes the acceleration of the non-inertial frame origin.
+When $\vec{s}_i=\vec{0}$ --- that is, when the body \emph{is} the frame centre ---
+the indirect term is skipped and \cref{eq:dyn-pointmass} reduces to the central
+two-body acceleration
+
+\begin{equation}
+  \label{eq:dyn-twobody}
+  \vec{a}_i = -\mu_i\,\frac{\vec{r}}{\lVert\vec{r}\rVert^{3}} .
+\end{equation}
+
+\begin{lstlisting}[language=cpp, caption={Point-mass acceleration with the indirect term.}, label={lst:dyn-pointmass}]
+// cpp/lupnt/environment/forces.cc :: AccelerationPointMass
+Vec3 AccelerationPointMass(const Vec3& r, const Vec3& s, Real GM) {
+  Vec3 d = r - s;
+  Vec3 a = Vec3::Zero();
+  if (s.norm() > EPS) a += s / pow(s.norm(), 3);   // indirect (origin recoil) term
+  if (d.norm() > EPS) a += d / pow(d.norm(), 3);   // direct attraction
+  a *= -GM;
+  return a;
+}
+\end{lstlisting}
+
+The standalone two-body model \cpp{CartesianTwoBodyDynamics} implements
+\cref{eq:dyn-twobody} directly with a constant $\mu$ and no ephemeris query,
+which makes it the reference propagator for integrator and autodiff tests.
+
+Body positions $\vec{s}_i$ are read from the DE440 ephemeris
+\citep{park2021de440} through the SPICE interface, evaluated at $t_{\TDB}$ from
+\cref{eq:dyn-epoch} and expressed in \code{frame\_} and \code{units\_} by
+\cpp{GetBodyPos}.
+
+\section{Spherical-harmonic gravity}
+\label{sec:dyn-harmonics}
+
+\subsection{Potential and the body-fixed evaluation}
+
+The gravitational potential of an extended body of reference radius
+$R_\mathrm{ref}$ and gravitational parameter $\mu$, expressed at a body-fixed
+position with spherical coordinates $(r,\phi,\lambda)$, is
+
+\begin{equation}
+  \label{eq:dyn-potential}
+  U(r,\phi,\lambda) =
+  \frac{\mu}{R_\mathrm{ref}}
+  \sum_{n=0}^{n_\mathrm{max}}\ \sum_{m=0}^{\min(n,m_\mathrm{max})}
+  \bigl(C_{nm} V_{nm} + S_{nm} W_{nm}\bigr),
+\end{equation}
+
+where $C_{nm}$ and $S_{nm}$ are \emph{unnormalized} Stokes coefficients and the
+harmonic functions are
+
+\begin{equation}
+  \label{eq:dyn-vw-def}
+  V_{nm} = \left(\frac{R_\mathrm{ref}}{r}\right)^{\!n+1} P_{nm}(\sin\phi)\cos m\lambda,
+  \qquad
+  W_{nm} = \left(\frac{R_\mathrm{ref}}{r}\right)^{\!n+1} P_{nm}(\sin\phi)\sin m\lambda,
+\end{equation}
+
+with $P_{nm}$ the associated Legendre function. The acceleration is
+$\vec{a}_\mathrm{bf} = \nabla U$, evaluated in the body-fixed frame. \lupnt{}
+therefore rotates the spacecraft position into the body-fixed frame of the
+gravitating body, evaluates the field, and rotates the resulting acceleration
+back:
+
+\begin{equation}
+  \label{eq:dyn-bf-rot}
+  \vec{r}_\mathrm{bf} = \mat{T}_{F\rightarrow \mathrm{bf}}(t_{\TDB})\,\vec{r},
+  \qquad
+  \vec{a}_\mathrm{bf} = \nabla U(\vec{r}_\mathrm{bf}),
+  \qquad
+  \vec{a}_{\mathrm{field}} = \mat{R}_{\mathrm{bf}\rightarrow F}(t_{\TDB})\,\vec{a}_\mathrm{bf}.
+\end{equation}
+
+The position transform $\mat{T}$ is the full frame transform including the
+translation between frame origins; the acceleration transform uses only the
+rotation part $\mat{R}$, because an acceleration is a free vector. For the Moon
+the body-fixed frame is \code{MOON\_PA}, the DE440 principal-axis frame; for the
+Earth it is \code{ITRF}.
+
+\subsection{The Montenbruck--Gill recursion}
+
+Rather than evaluating $P_{nm}$ and its derivatives directly, \lupnt{} uses the
+Cunningham/Pines recursion in the form given by \citet{montenbruck2000}. Define
+the normalized coordinates
+
+\begin{equation}
+  \label{eq:dyn-vw-coords}
+  \rho = \frac{R_\mathrm{ref}^2}{r^2},
+  \qquad
+  x_0 = \frac{R_\mathrm{ref}\,x}{r^2},
+  \qquad
+  y_0 = \frac{R_\mathrm{ref}\,y}{r^2},
+  \qquad
+  z_0 = \frac{R_\mathrm{ref}\,z}{r^2},
+\end{equation}
+
+where $(x,y,z)=\vec{r}_\mathrm{bf}$ and $r^2 = x^2+y^2+z^2$. The recursion is
+seeded with the zonal terms
+
+\begin{equation}
+  \label{eq:dyn-vw-seed}
+  V_{00} = \frac{R_\mathrm{ref}}{r}, \qquad
+  V_{10} = z_0\,V_{00}, \qquad
+  W_{00} = W_{10} = 0,
+\end{equation}
+
+and continued along $m=0$ by
+
+\begin{equation}
+  \label{eq:dyn-vw-zonal}
+  V_{n0} = \frac{(2n-1)\,z_0\,V_{n-1,0} - (n-1)\,\rho\,V_{n-2,0}}{n},
+  \qquad W_{n0}=0,
+  \qquad n = 2,\dots,n_\mathrm{max}+1 .
+\end{equation}
+
+The sectorial (diagonal) terms follow from the previous diagonal element,
+
+\begin{align}
+  V_{mm} &= (2m-1)\bigl(x_0\,V_{m-1,m-1} - y_0\,W_{m-1,m-1}\bigr), \label{eq:dyn-vw-sect-v}\\
+  W_{mm} &= (2m-1)\bigl(x_0\,W_{m-1,m-1} + y_0\,V_{m-1,m-1}\bigr), \label{eq:dyn-vw-sect-w}
+\end{align}
+
+the first sub-diagonal element from
+
+\begin{equation}
+  \label{eq:dyn-vw-sub}
+  V_{m+1,m} = (2m+1)\,z_0\,V_{mm},
+  \qquad
+  W_{m+1,m} = (2m+1)\,z_0\,W_{mm},
+\end{equation}
+
+and the remaining tesseral terms by the vertical recursion
+
+\begin{equation}
+  \label{eq:dyn-vw-tess}
+  \begin{aligned}
+    V_{nm} &= \frac{(2n-1)\,z_0\,V_{n-1,m} - (n+m-1)\,\rho\,V_{n-2,m}}{n-m}, \\
+    W_{nm} &= \frac{(2n-1)\,z_0\,W_{n-1,m} - (n+m-1)\,\rho\,W_{n-2,m}}{n-m},
+  \end{aligned}
+  \qquad n = m+2,\dots,n_\mathrm{max}+1 .
+\end{equation}
+
+Both $V$ and $W$ are built to degree and order $n_\mathrm{max}+1$, one higher
+than the field being evaluated, because the gradient of a degree-$n$ term
+requires degree-$(n+1)$ harmonics.
+
+\subsection{Acceleration from the recursion}
+
+With the arrays in hand, the Cartesian components of the acceleration are
+accumulated term by term. For the zonal terms $m=0$,
+
+\begin{equation}
+  \label{eq:dyn-a-zonal}
+  \Delta a_x = -C_{n0}V_{n+1,1},
+  \qquad
+  \Delta a_y = -C_{n0}W_{n+1,1},
+  \qquad
+  \Delta a_z = -(n+1)\,C_{n0}V_{n+1,0},
+\end{equation}
+
+and for $m>0$, writing $C=C_{nm}$, $S=S_{nm}$, and
+$F_{nm} = \tfrac{1}{2}(n-m+1)(n-m+2)$,
+
+\begin{align}
+  \Delta a_x &= \tfrac{1}{2}\bigl(-C\,V_{n+1,m+1} - S\,W_{n+1,m+1}\bigr)
+                + F_{nm}\bigl(+C\,V_{n+1,m-1} + S\,W_{n+1,m-1}\bigr), \label{eq:dyn-a-tess-x}\\
+  \Delta a_y &= \tfrac{1}{2}\bigl(-C\,W_{n+1,m+1} + S\,V_{n+1,m+1}\bigr)
+                + F_{nm}\bigl(-C\,W_{n+1,m-1} + S\,V_{n+1,m-1}\bigr), \label{eq:dyn-a-tess-y}\\
+  \Delta a_z &= (n-m+1)\bigl(-C\,V_{n+1,m} - S\,W_{n+1,m}\bigr). \label{eq:dyn-a-tess-z}
+\end{align}
+
+The total is scaled once at the end,
+
+\begin{equation}
+  \label{eq:dyn-a-scale}
+  \vec{a}_\mathrm{bf} = \frac{\mu}{R_\mathrm{ref}^{2}}
+  \begin{bmatrix} a_x \\ a_y \\ a_z\end{bmatrix}.
+\end{equation}
+
+Because $C_{00}=1$ is stored in the coefficient matrix, the $n=m=0$ term of
+\cref{eq:dyn-a-zonal} reproduces the central two-body acceleration exactly; the
+harmonic path therefore replaces, rather than supplements, the point-mass term
+for a body in $\mathcal{G}$.
+
+\begin{lstlisting}[language=cpp, caption={Montenbruck--Gill $V_{nm}$/$W_{nm}$ recursion and the acceleration sum.}, label={lst:dyn-harmonics}]
+// cpp/lupnt/environment/forces.cc :: AccelarationGravityField<T>
+MatrixX<T> V(n_max + 2, n_max + 2);  // harmonic functions
+MatrixX<T> W(n_max + 2, n_max + 2);  // work array (0..n_max+1, 0..n_max+1)
+T r_sqr = r.squaredNorm();
+T rho = R_ref * R_ref / r_sqr;
+T x0 = R_ref * r(0) / r_sqr, y0 = R_ref * r(1) / r_sqr, z0 = R_ref * r(2) / r_sqr;
+
+V(0, 0) = R_ref / sqrt(r_sqr);   V(1, 0) = z0 * V(0, 0);
+W(0, 0) = 0.0;                   W(1, 0) = 0.0;
+for (int n = 2; n <= n_max + 1; n++) {
+  V(n, 0) = ((2 * n - 1) * z0 * V(n - 1, 0) - (n - 1) * rho * V(n - 2, 0)) / n;
+  W(n, 0) = 0.0;
+}
+for (int m = 1; m <= m_max + 1; m++) {
+  V(m, m) = (2 * m - 1) * (x0 * V(m - 1, m - 1) - y0 * W(m - 1, m - 1));
+  W(m, m) = (2 * m - 1) * (x0 * W(m - 1, m - 1) + y0 * V(m - 1, m - 1));
+  if (m <= n_max) {
+    V(m + 1, m) = (2 * m + 1) * z0 * V(m, m);
+    W(m + 1, m) = (2 * m + 1) * z0 * W(m, m);
+  }
+  for (int n = m + 2; n <= n_max + 1; n++) {
+    V(n, m) = ((2 * n - 1) * z0 * V(n - 1, m) - (n + m - 1) * rho * V(n - 2, m)) / (n - m);
+    W(n, m) = ((2 * n - 1) * z0 * W(n - 1, m) - (n + m - 1) * rho * W(n - 2, m)) / (n - m);
+  }
+}
+T ax = 0, ay = 0, az = 0;
+for (int m = 0; m <= m_max; m++)
+  for (int n = m; n <= n_max; n++)
+    if (m == 0) {
+      T C = CS(n, 0);                       // C_n,0
+      ax -= C * V(n + 1, 1);
+      ay -= C * W(n + 1, 1);
+      az -= (n + 1) * C * V(n + 1, 0);
+    } else {
+      T C = CS(n, m);                       // C_n,m
+      T S = CS(m - 1, n);                   // S_n,m
+      T Fac = 0.5 * (n - m + 1) * (n - m + 2);
+      ax += +0.5 * (-C * V(n + 1, m + 1) - S * W(n + 1, m + 1))
+            + Fac * (+C * V(n + 1, m - 1) + S * W(n + 1, m - 1));
+      ay += +0.5 * (-C * W(n + 1, m + 1) + S * V(n + 1, m + 1))
+            + Fac * (-C * W(n + 1, m - 1) + S * V(n + 1, m - 1));
+      az += (n - m + 1) * (-C * V(n + 1, m) - S * W(n + 1, m));
+    }
+Vector3<T> a = (GM / (R_ref * R_ref)) * Vector3<T>(ax, ay, az);
+\end{lstlisting}
+
+Note the storage convention: the coefficient matrix \code{CS} holds $C_{nm}$ on
+and above the diagonal and $S_{nm}$ below it, so that $S_{nm}$ is read from
+\code{CS(m - 1, n)}. The routine is templated on the scalar type: \code{Real} when
+\code{autodiff: true}, so that the field participates in the derivative tape, and
+\code{double} otherwise, which is roughly an order of magnitude faster for a
+high-degree field.
+
+\subsection{Coefficient files and un-normalization}
+
+Coefficient sets are read from GEODYN-style \code{.cof} files by
+\cpp{ReadHarmonicGravityField} in \file{cpp/lupnt/environment/body.cc}, which
+also reads $\mu$ and $R_\mathrm{ref}$ from the \code{POTFIELD} header record and
+scales them into the requested unit system. Published coefficients are
+$4\pi$-normalized; the loader converts them to the unnormalized convention
+required by \cref{eq:dyn-potential} using
+
+\begin{equation}
+  \label{eq:dyn-unnorm}
+  \begin{bmatrix} C_{nm} \\ S_{nm}\end{bmatrix}
+  = N_{nm}
+  \begin{bmatrix} \bar{C}_{nm} \\ \bar{S}_{nm}\end{bmatrix},
+  \qquad
+  N_{nm} = \sqrt{(2-\delta_{0m})(2n+1)\,\frac{(n-m)!}{(n+m)!}} ,
+\end{equation}
+
+which reduces to $N_{n0} = \sqrt{2n+1}$ for the zonal terms. The factorial ratio
+is evaluated as a running product rather than as two factorials, which keeps the
+computation finite for the high degrees available in the GRAIL fields.
+
+\begin{table}[H]
+  \centering
+  \caption{Default gravity-field files per body (\cpp{Body::CreateBody}).}
+  \label{tab:dyn-gravfields}
+  \begin{tabularx}{\textwidth}{lllL}
+    \toprule
+    Body & File & Body-fixed frame & Source \\
+    \midrule
+    Moon  & \file{grgm1200b.cof}  & \code{MOON\_PA} & GRAIL-derived GRGM solution \citep{lemoine2013grgm} \\
+    Earth & \file{EGM96.cof}      & \code{ITRF}     & EGM96 \\
+    Mars  & \file{GMM1.cof}       & \code{MARS\_FIXED} & GMM-1 \\
+    Venus & \file{MGN75HSAAP.cof} & \code{VENUS\_FIXED} & Magellan \\
+    Sun, outer planets & --- & --- & point mass only \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lupntnote}
+  The lunar field is the dominant perturbation for a low lunar orbit: the
+  Moon's $J_2$ and $C_{22}$ are of order $2\times10^{-4}$ and $2\times10^{-5}$,
+  and the field remains rough to high degree, which is why a $20\times20$
+  truncation is the default truth fidelity in the navigation scenarios of
+  \citep[Ch.~2]{iiyama2026thesis} while the onboard filter runs at $18\times18$
+  or lower.
+\end{lupntnote}
+
+\section{Zonal (\texorpdfstring{$J_2$}{J2}) models}
+\label{sec:dyn-j2}
+
+\subsection{Cartesian \texorpdfstring{$J_2$}{J2} dynamics}
+
+\cpp{JToCartTwoBodyDynamics} augments the two-body acceleration with the degree-2
+zonal term, evaluated about the body's \emph{fixed spin axis} rather than about
+the integration-frame $z$-axis. Let $F$ be the integration frame and $B$ the
+configured body-fixed frame; the two must share an origin, which is checked at
+run time. With $\vec{r}_B = \mat{R}_{FB}(t_{\TDB})\,\vec{r}_F$ and
+$r=\lVert\vec{r}_B\rVert=\lVert\vec{r}_F\rVert$,
+
+\begin{equation}
+  \label{eq:dyn-j2}
+  \vec{a}_{J_2,B} =
+  -\frac{3}{2}\,\frac{\mu J_2 R_\mathrm{body}^{2}}{r^{5}}
+  \begin{bmatrix}
+    \left(1 - 5\dfrac{z_B^{2}}{r^{2}}\right) x_B \\[8pt]
+    \left(1 - 5\dfrac{z_B^{2}}{r^{2}}\right) y_B \\[8pt]
+    \left(3 - 5\dfrac{z_B^{2}}{r^{2}}\right) z_B
+  \end{bmatrix},
+  \qquad
+  \vec{a}_{J_2,F} = \mat{R}_{FB}\transpose\,\vec{a}_{J_2,B},
+\end{equation}
+
+added to $-\mu\vec{r}/r^3$. Setting $B=F$ recovers the inertial-axis $J_2$
+convention used by some reference tools, which is how the GMAT cross-validation
+case in \file{cpp/test/gmat/test_orbit_dynamics_gmat.cc} is configured.
+
+\begin{lstlisting}[language=cpp, caption={Body-fixed $J_2$ acceleration.}, label={lst:dyn-j2}]
+// cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: JToCartTwoBodyDynamics::ComputeRates
+Real t_tdb = t + GetLupntEpoch();
+auto [R_frame_to_body_fixed, translation]
+    = GetFrameRotationTranslation(t_tdb, frame_, body_fixed_frame_);
+Vec3 r_bf = R_frame_to_body_fixed * r;
+Vec3 a_J2_bf;
+Real aux1 = -3.0 / 2.0 * GM_ * J2_ * pow(R_body_, 2.0) / pow(r_norm, 5.0);
+Real aux2 = 5.0 * pow(r_bf(2) / r_norm, 2.0);
+a_J2_bf(0) = aux1 * (1.0 - aux2) * r_bf(0);
+a_J2_bf(1) = aux1 * (1.0 - aux2) * r_bf(1);
+a_J2_bf(2) = aux1 * (3.0 - aux2) * r_bf(2);
+rv_dot.tail(3) += R_frame_to_body_fixed.transpose() * a_J2_bf;
+\end{lstlisting}
+
+\subsection{Secular \texorpdfstring{$J_2$}{J2} element rates}
+
+\cpp{J2KeplerianDynamics} integrates the classical elements directly under the
+secular $J_2$ rates. With semi-latus rectum $p=a(1-e^2)$, mean motion
+$n=\sqrt{\mu/a^3}$, and $\eta=\sqrt{1-e^2}$,
+
+\begin{equation}
+  \label{eq:dyn-j2-secular}
+  \dot{a}=\dot{e}=\dot{i}=0,
+  \quad
+  \dot{\Omega} = -\frac{3}{2}J_2\left(\frac{R_\mathrm{body}}{p}\right)^{2} n\cos i,
+  \quad
+  \dot{\omega} = \frac{3}{4}J_2\left(\frac{R_\mathrm{body}}{p}\right)^{2} n\,(5\cos^2 i - 1),
+\end{equation}
+\begin{equation}
+  \label{eq:dyn-j2-secular-M}
+  \dot{M} = n + \frac{3}{4}J_2\left(\frac{R_\mathrm{body}}{p}\right)^{2} n\,\eta\,(3\cos^2 i - 1).
+\end{equation}
+
+\cpp{MoonMeanDynamics} extends this with the third-body (Earth) secular terms for
+a lunar orbit, using the fixed constants $n_3 = \SI{2.66e-6}{\radian\per\second}$
+(Earth's apparent mean motion about the Moon), $J_2 = \num{2.03e-4}$, and
+$k=0.98785$; it produces non-zero $\dot{e}$ and $\dot{i}$ driven by
+$\sin 2\omega$ and is the model behind the frozen-orbit analyses.
+
+\begin{lupntwarning}
+  Both \cpp{J2KeplerianDynamics} and \cpp{MoonMeanDynamics} report
+  \code{Cart6::TYPE} from \cpp{GetStateType()} even though the vector they
+  integrate is a set of classical elements $(a,e,i,\Omega,\omega,M)$. The type
+  tag therefore cannot be used to tell them apart from the Cartesian models; the
+  caller is responsible for supplying an element vector.
+\end{lupntwarning}
+
+Osculating-to-mean and mean-to-osculating $J_2$ element transformations are
+available separately as \cpp{OsculatingToMean} / \cpp{MeanToOsculating} in
+\file{cpp/lupnt/conversions/mean_osc_conversions.cc}.
+
+\section{Solar radiation pressure}
+\label{sec:dyn-srp}
+
+\subsection{Cannonball acceleration}
+
+SRP is enabled by \cpp{SetUseSrp}, or implicitly by setting the ballistic
+coefficient
+
+\begin{equation}
+  \label{eq:dyn-srp-bcoeff}
+  B_\mathrm{SRP} = C_R\,\frac{A}{m},
+\end{equation}
+
+with $C_R$ the radiation-pressure coefficient ($0$ for a translucent body, $1$
+for a black body, $2$ for a perfect mirror), $A$ the effective cross-sectional
+area, and $m$ the spacecraft mass. The radiation pressure at \SI{1}{\au} is
+derived from the configured mean total solar irradiance,
+
+\begin{equation}
+  \label{eq:dyn-srp-pressure}
+  P_\odot = \frac{S_\odot}{c},
+  \qquad S_\odot = \SI{1361}{\watt\per\meter\squared} \text{ by default},
+\end{equation}
+
+and the acceleration with the Sun at $\vec{r}_\odot$ in the integration frame is
+
+\begin{equation}
+  \label{eq:dyn-srp}
+  \vec{a}_\mathrm{SRP} =
+  \nu(\vec{r},\vec{r}_\odot)\;
+  B_\mathrm{SRP}\,P_\odot\,\mathrm{AU}^{2}\,
+  \frac{\vec{r}-\vec{r}_\odot}{\lVert\vec{r}-\vec{r}_\odot\rVert^{3}} .
+\end{equation}
+
+The $\mathrm{AU}^2/\lVert\vec{r}-\vec{r}_\odot\rVert^{2}$ factor implements the
+inverse-square fall-off of the irradiance and the remaining
+$(\vec{r}-\vec{r}_\odot)/\lVert\vec{r}-\vec{r}_\odot\rVert$ is the anti-sunward
+unit vector, so $\vec{a}_\mathrm{SRP}$ pushes the spacecraft away from the Sun.
+The illumination factor $\nu\in[0,1]$ is formed multiplicatively over every
+configured body other than the Sun, each evaluated in that body's own frame:
+
+\begin{equation}
+  \label{eq:dyn-srp-illum}
+  \nu = \prod_{b\ne\odot} \nu_b\bigl(\vec{r}-\vec{r}_b,\ \vec{r}_\odot-\vec{r}_b,\ R_b\bigr).
+\end{equation}
+
+\subsection{Apparent-disk shadow function}
+
+The shadow function is the conical model of \citet[Sec.~3.4.2]{montenbruck2000},
+formulated as the overlap of the apparent solar and occulting disks. With
+$\vec{\rho}_\odot = \vec{r}_\odot-\vec{r}$ the spacecraft-to-Sun vector, define
+the apparent solar radius $\alpha$, the apparent radius of the occulting body
+$\beta$, and their apparent separation $\gamma$:
+
+\begin{equation}
+  \label{eq:dyn-shadow-angles}
+  \alpha = \arcsin\!\left(\frac{R_\odot}{\lVert\vec{\rho}_\odot\rVert}\right),
+  \qquad
+  \beta = \arcsin\!\left(\frac{R_b}{\lVert\vec{r}\rVert}\right),
+  \qquad
+  \gamma = \arccos\!\left(\frac{-\vec{r}\transpose\vec{\rho}_\odot}
+                               {\lVert\vec{r}\rVert\,\lVert\vec{\rho}_\odot\rVert}\right).
+\end{equation}
+
+Three regimes follow:
+
+\begin{equation}
+  \label{eq:dyn-shadow-cases}
+  \nu =
+  \begin{cases}
+    1, & \gamma \ge \alpha+\beta \quad\text{(full sunlight)},\\[4pt]
+    0, & \gamma \le |\beta-\alpha| \ \text{and}\ \beta \ge \alpha \quad\text{(umbra)},\\[4pt]
+    1 - \dfrac{\beta^2}{\alpha^2}, & \gamma \le |\beta-\alpha| \ \text{and}\ \beta < \alpha \quad\text{(annular transit)},\\[8pt]
+    1 - \dfrac{A_\cap}{\pi\alpha^{2}}, & \text{otherwise \quad(penumbra)} .
+  \end{cases}
+\end{equation}
+
+In the penumbral case the occulted area $A_\cap$ is the lens-shaped intersection
+of the two apparent disks,
+
+\begin{equation}
+  \label{eq:dyn-shadow-area}
+  x = \frac{\gamma^2+\alpha^2-\beta^2}{2\gamma},
+  \qquad
+  y = \sqrt{\alpha^2-x^2},
+\end{equation}
+\begin{equation}
+  \label{eq:dyn-shadow-lens}
+  A_\cap = \alpha^{2}\arccos\!\left(\frac{x}{\alpha}\right)
+         + \beta^{2}\arccos\!\left(\frac{\gamma-x}{\beta}\right)
+         - \gamma\,y .
+\end{equation}
+
+\begin{lstlisting}[language=cpp, caption={Shadow function: apparent radii and the regime tests.}, label={lst:dyn-shadow}]
+// cpp/lupnt/environment/forces.cc :: ShadowFunction
+Real a = asin(ClampUnit(R_sun / rho_sun_norm));  // apparent solar radius
+Real b = asin(ClampUnit(R_body / r_norm));       // apparent occulting-body radius
+Real c = acos(ClampUnit(-r.dot(rho_sun) / (r_norm * rho_sun_norm)));
+if (c >= a + b) return 1.0;                      // fully illuminated
+if (c <= abs(b - a)) {
+  if (b >= a) return 0.0;                        // total umbra
+  return Clamp01(1.0 - b * b / (a * a));         // annular transit
+}
+Real x = (c * c + a * a - b * b) / (2.0 * c);
+Real y2 = a * a - x * x;
+Real y = sqrt(Max(y2, 1e-20));
+Real occulted_area
+    = a * a * acos(ClampUnit(x / a)) + b * b * acos(ClampUnit((c - x) / b)) - c * y;
+return Clamp01(1.0 - occulted_area / (PI * a * a));
+\end{lstlisting}
+
+\begin{lupntnote}
+  \cpp{ClampUnit} returns the strictly interior constant $\pm(1-10^{-12})$ at the
+  domain edges of \code{asin}/\code{acos} instead of exactly $\pm1$. The
+  derivatives of \code{asin} and \code{acos} diverge at $\pm1$, so returning the
+  exact endpoint yields $0/0=\mathrm{NaN}$ in the derivative tape; returning a
+  constant strictly inside the domain makes the local derivative zero and keeps
+  it finite. The same reasoning floors $y^2$ at $10^{-20}$ in
+  \cref{eq:dyn-shadow-area}, where $\sqrt{\cdot}$ has an infinite derivative at
+  the penumbra boundary. The value perturbation is below $10^{-9}$ and
+  irrelevant; what it buys is a state-transition matrix that can be formed
+  analytically across a grazing shadow crossing (\cref{sec:dyn-stm}).
+\end{lupntnote}
+
+\section{Atmospheric drag}
+\label{sec:dyn-drag}
+
+Drag is modelled only for the Earth. The ballistic coefficient is
+
+\begin{equation}
+  \label{eq:dyn-drag-bcoeff}
+  B_D = C_D\,\frac{A}{m},
+\end{equation}
+
+with $C_D$ the drag coefficient. The atmosphere is assumed to co-rotate with the
+Earth at $\omega_\oplus = \SI{7.29212e-5}{\radian\per\second}$, so in the
+true-of-date frame the velocity relative to the atmosphere is
+
+\begin{equation}
+  \label{eq:dyn-drag-vrel}
+  \vec{v}_\mathrm{rel} = \vec{v}_\mathrm{tod} - \vec{\omega}_\oplus\times\vec{r}_\mathrm{tod},
+  \qquad
+  \vec{\omega}_\oplus = \bigl[0,\ 0,\ \omega_\oplus\bigr]\transpose,
+\end{equation}
+
+and the drag acceleration is the standard quadratic law
+
+\begin{equation}
+  \label{eq:dyn-drag}
+  \vec{a}_{D,\mathrm{tod}} = -\tfrac{1}{2}\,B_D\,\rho_\mathrm{HP}\,
+  \lVert\vec{v}_\mathrm{rel}\rVert\,\vec{v}_\mathrm{rel},
+  \qquad
+  \vec{a}_D = \mat{T}\transpose\,\vec{a}_{D,\mathrm{tod}},
+\end{equation}
+
+with $\mat{T} = \mat{N}(\mathrm{MJD}_{\TT})\,\mat{P}(\mathrm{MJD}_{J2000},
+\mathrm{MJD}_{\TT})$ the composed precession and nutation matrix from J2000 mean
+equator and equinox to true of date. The $\TDB$ epoch of \cref{eq:dyn-epoch} is
+converted to $\TT$ and expressed as a modified Julian date before evaluating
+$\mat{T}$ and the density.
+
+\subsection{Harris--Priester density}
+
+The density $\rho_\mathrm{HP}$ comes from the modified Harris--Priester model
+\citep{harris1962priester} in the form tabulated by \citet{montenbruck2000}: a
+table of $50$ altitudes from \SI{100}{\kilo\meter} to \SI{1000}{\kilo\meter} with
+a minimum and a maximum density at each level, interpolated exponentially in
+altitude and blended by a diurnal-bulge factor.
+
+Let $h$ be the geodetic altitude obtained from \cref{eq:dyn-lla} with
+$R_\oplus$ and the WGS-84 flattening $f=1/298.257223563$, and let $i$ index the
+tabulated layer with $h_i \le h < h_{i+1}$. The layer scale heights are
+
+\begin{equation}
+  \label{eq:dyn-hp-scale}
+  H_{\min} = \frac{h_i - h_{i+1}}{\ln\!\bigl(c_{\min,i+1}/c_{\min,i}\bigr)},
+  \qquad
+  H_{\max} = \frac{h_i - h_{i+1}}{\ln\!\bigl(c_{\max,i+1}/c_{\max,i}\bigr)},
+\end{equation}
+
+and the two bounding densities are
+
+\begin{equation}
+  \label{eq:dyn-hp-bounds}
+  \rho_{\min} = c_{\min,i}\,\exp\!\left(\frac{h_i-h}{H_{\min}}\right),
+  \qquad
+  \rho_{\max} = c_{\max,i}\,\exp\!\left(\frac{h_i-h}{H_{\max}}\right).
+\end{equation}
+
+The diurnal bulge is centred on a point lagging the sub-solar point by
+$\Delta\lambda_\mathrm{lag} = \SI{0.523599}{\radian}$ ($30^\circ$). With the Sun's
+right ascension $\alpha_\odot$ and declination $\delta_\odot$ from the
+low-precision solar ephemeris, the apex unit vector is
+
+\begin{equation}
+  \label{eq:dyn-hp-apex}
+  \uvec{u} =
+  \begin{bmatrix}
+    \cos\delta_\odot\cos(\alpha_\odot + \Delta\lambda_\mathrm{lag}) \\
+    \cos\delta_\odot\sin(\alpha_\odot + \Delta\lambda_\mathrm{lag}) \\
+    \sin\delta_\odot
+  \end{bmatrix},
+  \qquad
+  \cos^{2}\frac{\psi}{2} = \frac{1}{2} + \frac{1}{2}\,
+  \frac{\vec{r}_\mathrm{tod}\transpose\uvec{u}}{\lVert\vec{r}_\mathrm{tod}\rVert},
+\end{equation}
+
+where $\psi$ is the angle between the spacecraft and the bulge apex, and the
+density is
+
+\begin{equation}
+  \label{eq:dyn-hp-density}
+  \rho_\mathrm{HP} = \rho_{\min} + (\rho_{\max}-\rho_{\min})\,
+  \left(\cos^{2}\frac{\psi}{2}\right)^{\!n_p},
+  \qquad n_p = 3,
+\end{equation}
+
+returned in \si{\kilogram\per\meter\cubed} after the tabulated
+\si{\gram\per\kilo\meter\cubed} values are scaled by $10^{-9}$. The exponent
+$n_p$ selects the inclination regime: $n_p=2$ for low-inclination and $n_p=6$ for
+high-inclination orbits in the original formulation; \lupnt{} fixes $n_p=3$. The
+density is identically zero outside $100\,\text{--}\,\SI{1000}{\kilo\meter}$
+altitude, so drag simply switches off above and below the table.
+
+\begin{lstlisting}[language=cpp, caption={Drag acceleration and the density blend.}, label={lst:dyn-drag}]
+// cpp/lupnt/environment/forces.cc :: AccelerationDrag
+const Vec3 omega(0, 0, 7.29212e-5);            // Earth angular velocity [rad/s]
+Vec3 r_tod = T * rv.head(3);
+Vec3 v_tod = T * rv.tail(3);
+Vec3 v_rel = v_tod - omega.cross(r_tod);       // Earth-relative velocity
+Real v_abs = v_rel.norm();
+Real dens = DensityHarrisPriester(mjd_tt, r_tod);
+Vec3 a_tod = -0.5 * bcoeff_drag * dens * v_abs * v_rel * KM_M;
+return T.transpose() * a_tod;                  // back to the inertial frame
+
+// cpp/lupnt/environment/forces.cc :: DensityHarrisPriester
+Real c_psi2 = 0.5 + 0.5 * r_tod.dot(u) / r_tod.norm();
+Real h_min = (h(ih) - h(ih + 1)) / log(c_min(ih + 1) / c_min(ih));
+Real h_max = (h(ih) - h(ih + 1)) / log(c_max(ih + 1) / c_max(ih));
+Real d_min = c_min(ih) * exp((h(ih) - height) / h_min);
+Real d_max = c_max(ih) * exp((h(ih) - height) / h_max);
+Real density = d_min + (d_max - d_min) * pow(c_psi2, n_prm);
+return density * 1.0e-9;                       // [kg/m^3]
+\end{lstlisting}
+
+\begin{lupntwarning}
+  \cpp{AccelerationDrag} multiplies by \code{KM\_M} $=10^{-3}$ and is documented
+  as returning \si{\kilo\meter\per\second\squared}, but
+  \cpp{NBodyDynamics::ComputeRates} feeds it an SI state and passes the result
+  through \cpp{AccelerationFromSI}, i.e.\ treats the return value as
+  \si{\meter\per\second\squared}. Drag entering \cref{eq:dyn-total} is therefore
+  scaled down by a factor of $10^{3}$ relative to \cref{eq:dyn-drag}. This is
+  immaterial for the cislunar scenarios that motivate \lupnt{} --- drag is
+  identically zero above \SI{1000}{\kilo\meter} altitude --- but it makes the
+  present drag path unsuitable for low-Earth-orbit work without correction.
+\end{lupntwarning}
+
+\section{Relativistic corrections}
+\label{sec:dyn-relativity}
+
+\subsection{The \texorpdfstring{$n$}{n}-body post-Newtonian acceleration}
+
+When \code{relativity} is enabled --- which it is by default,
+\code{use\_relativity\_ = true} --- \cpp{NBodyDynamics} adds the full $n$-body
+point-mass relativistic perturbative acceleration: the parameterized
+post-Newtonian (PPN) Einstein--Infeld--Hoffmann acceleration in the
+Solar-System barycentric frame, following Moyer's DSN formulation
+\citep[Eq.~(4-26)]{moyer2000}. The leading Newtonian point-mass term is removed
+so that the quantity \emph{adds} to the Newtonian gravity already summed in
+\cref{eq:dyn-total}.
+
+Let $i$ denote the spacecraft and $j,k,l$ the configured massive bodies, with
+barycentric positions $\vec{r}$, velocities $\dot{\vec{r}}$, gravitational
+parameters $\mu$, and pairwise distances
+$r_{ij}=\lVert\vec{r}_i-\vec{r}_j\rVert$. With PPN parameters $\beta$ and
+$\gamma$ (both unity in general relativity) and the speed of light $c$,
+
+\begin{equation}
+  \label{eq:dyn-moyer}
+  \begin{aligned}
+    \vec{a}_\mathrm{rel}
+    ={}& \sum_{j\ne i}\frac{\mu_j\,(\vec{r}_j-\vec{r}_i)}{r_{ij}^3}
+      \Bigg\{
+        -\frac{2(\beta+\gamma)}{c^{2}}\sum_{l\ne i}\frac{\mu_l}{r_{il}}
+        -\frac{2\beta-1}{c^{2}}\sum_{k\ne j}\frac{\mu_k}{r_{jk}} \\
+    &\qquad\quad
+        +\gamma\frac{\lVert\dot{\vec{r}}_i\rVert^{2}}{c^{2}}
+        +(1+\gamma)\frac{\lVert\dot{\vec{r}}_j\rVert^{2}}{c^{2}}
+        -\frac{2(1+\gamma)}{c^{2}}\,\dot{\vec{r}}_i\!\cdot\!\dot{\vec{r}}_j \\
+    &\qquad\quad
+        -\frac{3}{2c^{2}}\!\left[\frac{(\vec{r}_i-\vec{r}_j)\!\cdot\!\dot{\vec{r}}_j}{r_{ij}}\right]^{2}
+        +\frac{1}{2c^{2}}(\vec{r}_j-\vec{r}_i)\!\cdot\!\ddot{\vec{r}}_j
+      \Bigg\} \\
+    &+\frac{1}{c^{2}}\sum_{j\ne i}\frac{\mu_j}{r_{ij}^{3}}
+      \Bigl\{(\vec{r}_i-\vec{r}_j)\!\cdot\!\bigl[(2+2\gamma)\dot{\vec{r}}_i-(1+2\gamma)\dot{\vec{r}}_j\bigr]\Bigr\}
+      (\dot{\vec{r}}_i-\dot{\vec{r}}_j) \\
+    &+\frac{3+4\gamma}{2c^{2}}\sum_{j\ne i}\frac{\mu_j\,\ddot{\vec{r}}_j}{r_{ij}} .
+  \end{aligned}
+\end{equation}
+
+The perturbing-body accelerations $\ddot{\vec{r}}_j$ are taken from the Newtonian
+$n$-body model,
+
+\begin{equation}
+  \label{eq:dyn-moyer-abody}
+  \ddot{\vec{r}}_j = \sum_{k\ne j}\mu_k\,\frac{\vec{r}_k-\vec{r}_j}{r_{jk}^{3}},
+\end{equation}
+
+because terms of order $c^{-4}$ are dropped, so the Newtonian value is
+sufficient. The spacecraft mass is negligible and contributes nothing to
+\cref{eq:dyn-moyer-abody}.
+
+Because \cref{eq:dyn-moyer} is written in barycentric coordinates, position
+\emph{differences} are frame-independent but the absolute velocities entering the
+$c^{-2}$ terms are not. \cpp{NBodyDynamics} therefore gathers
+Solar-System-barycentre-referenced (\code{BodyId::SSB}) states of the spacecraft
+and of every configured body before evaluating the sum.
+
+\begin{lstlisting}[language=cpp, caption={Assembling barycentric states for the relativistic term.}, label={lst:dyn-rel}]
+// cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: NBodyDynamics::RelativisticNBodyAcceleration
+PhysicalConstants constants = GetPhysicalConstants(units_);
+Vec6 rv_center = GetBodyPosVel(t_tdb, BodyId::SSB, GetFrameCenter(frame_), frame_, units_);
+Vec3 r_ssb = r + rv_center.head(3);
+Vec3 v_ssb = v + rv_center.tail(3);
+std::vector<Vec3> r_bodies, v_bodies;
+std::vector<Real> mu_bodies;
+for (const auto& body : bodies_) {
+  Vec6 rv_b = GetBodyPosVel(t_tdb, BodyId::SSB, body.id, frame_, units_);
+  r_bodies.push_back(rv_b.head(3));
+  v_bodies.push_back(rv_b.tail(3));
+  mu_bodies.push_back(body.GM);
+}
+return AccelerationRelativisticNBody(r_ssb, v_ssb, r_bodies, v_bodies, mu_bodies, constants.C);
+\end{lstlisting}
+
+\subsection{Limiting cases}
+
+For a single perturbing body at rest, \cref{eq:dyn-moyer} reduces \emph{exactly}
+to the one-body Schwarzschild isotropic form,
+
+\begin{equation}
+  \label{eq:dyn-schwarzschild}
+  \vec{a}_\mathrm{rel} =
+  \frac{\mu}{c^{2}\lVert\vec{r}\rVert^{3}}
+  \left[
+    \left(2(\beta+\gamma)\frac{\mu}{\lVert\vec{r}\rVert} - \gamma\lVert\dot{\vec{r}}\rVert^{2}\right)\vec{r}
+    + 2(1+\gamma)(\vec{r}\!\cdot\!\dot{\vec{r}})\,\dot{\vec{r}}
+  \right],
+\end{equation}
+
+which is the regression check in
+\file{cpp/test/dynamics/test_relativity_nbody.cc}. With $\beta=\gamma=1$,
+\cref{eq:dyn-schwarzschild} coincides with the central-body correction of
+\citet[Sec.~3.7.3]{montenbruck2000},
+
+\begin{equation}
+  \label{eq:dyn-mg-rel}
+  \vec{a}_\mathrm{rel} =
+  -\frac{\mu}{c^{2}\lVert\vec{r}\rVert^{3}}
+  \left[\left(\frac{4\mu}{\lVert\vec{r}\rVert} - \lVert\vec{v}\rVert^{2}\right)\vec{r}
+        + 4(\vec{r}\!\cdot\!\vec{v})\,\vec{v}\right],
+\end{equation}
+
+available separately as \cpp{AccelerationRelativisticCorrection} and used by the
+self-contained Earth-satellite model \cpp{AccelerationEarthSpacecraft}.
+Frame-dragging (Lense--Thirring) and geodesic-precession terms are \emph{not}
+included in the current dynamics model.
+
+The relativistic \emph{clock}-rate correction --- distinct from the orbit
+correction above --- is applied by \cpp{JointOrbitClockDynamics}, which selects a
+relativity centre body and adds the corresponding rate offset to the clock state;
+see \cref{sec:dyn-classes}.
+
+\section{Dynamics classes and the propagate interface}
+\label{sec:dyn-classes}
+
+\subsection{Hierarchy}
+
+All propagation models derive from the abstract \cpp{Dynamics}
+(\file{cpp/lupnt/dynamics/dynamics.h}), which owns the parameter vector
+\cpp{ParamState params\_} and declares the propagate interface. Two intermediate
+bases specialize it: \cpp{NumericalDynamics}, which owns an \cpp{ODE} functor and
+an \cpp{Integrator} and defines \cpp{ComputeRates}, and
+\cpp{AnalyticalDynamics}, which advances the state by a closed-form
+state-transition matrix evaluated at $\Delta t = t_f - t_0$.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[node distance=6mm and 8mm]
+    \node[boxnode] (dyn) {\cpp{Dynamics}};
+    \node[boxnode, below left=10mm and 26mm of dyn] (num) {\cpp{NumericalDynamics}};
+    \node[boxnode, below=10mm of dyn] (ana) {\cpp{AnalyticalDynamics}};
+    \node[boxnode, below right=10mm and 22mm of dyn] (oth)
+      {\cpp{ClockDynamics}\\\cpp{AttitudeDynamics}\\\cpp{ImuDynamics}\\\cpp{ParameterDynamics}\\\cpp{SurfaceDynamics2D}};
+    \node[boxnode, below=9mm of num] (nb)
+      {\cpp{NBodyDynamics}\\\cpp{CartesianTwoBodyDynamics}\\\cpp{JToCartTwoBodyDynamics}\\\cpp{J2KeplerianDynamics}\\\cpp{MoonMeanDynamics}\\\cpp{JointOrbitClockDynamics}};
+    \node[boxnode, below=9mm of ana] (kep)
+      {\cpp{KeplerianDynamics<T>}\\\cpp{ClohessyWiltshireDynamics}\\\cpp{YamanakaAnkersenDynamics}\\\cpp{RoeGeometricMappingDynamics}};
+    \draw[flow] (dyn) -- (num);
+    \draw[flow] (dyn) -- (ana);
+    \draw[flow] (dyn) -- (oth);
+    \draw[flow] (num) -- (nb);
+    \draw[flow] (ana) -- (kep);
+  \end{tikzpicture}
+  \caption{The dynamics class hierarchy. Arrows point from base to derived.}
+  \label{fig:dyn-hierarchy}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Concrete dynamics models and the state they propagate.}
+  \label{tab:dyn-classes}
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Class & \cpp{GetStateType()} & Model \\
+    \midrule
+    \cpp{NBodyDynamics} & \code{Cart6} & \cref{eq:dyn-total}: harmonics, third bodies, SRP, drag, relativity \\
+    \cpp{CartesianTwoBodyDynamics} & \code{Cart6} & \cref{eq:dyn-twobody} with constant $\mu$ \\
+    \cpp{JToCartTwoBodyDynamics} & \code{Cart6} & two-body plus body-fixed $J_2$, \cref{eq:dyn-j2} \\
+    \cpp{J2KeplerianDynamics} & \code{Cart6}$^{\dagger}$ & secular $J_2$ element rates, \cref{eq:dyn-j2-secular} \\
+    \cpp{MoonMeanDynamics} & \code{Cart6}$^{\dagger}$ & lunar mean-element rates with Earth third-body terms \\
+    \cpp{JointOrbitClockDynamics} & \code{JointOrbitClock} & $[\vec{r},\vec{v},b,d]$ or $[\vec{r},\vec{v},b,d,\dot{d}]$ \\
+    \cpp{KeplerianDynamics<T>} & \code{T::TYPE} & advance the anomaly-like element by $n\,\Delta t$ \\
+    \cpp{ClohessyWiltshireDynamics} & \code{RelCart6} & linearized relative motion, circular reference \\
+    \cpp{YamanakaAnkersenDynamics} & \code{ClassicalOE} & eccentric-reference relative motion (STM only) \\
+    \cpp{RoeGeometricMappingDynamics} & \code{QuasiNonsingROE} & ROE-to-RTN geometric mapping (matrix only) \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{2pt}
+  {\small $^{\dagger}$ The state vector is in fact a set of classical elements;
+  see the warning in \cref{sec:dyn-j2}.}
+\end{table}
+
+\subsection{The propagate interface}
+
+Five overloads make up the contract. All of them take \emph{relative} simulation
+times per \cref{eq:dyn-epoch}.
+
+\begin{lstlisting}[language=cpp, caption={The \cpp{Dynamics} propagate interface.}, label={lst:dyn-interface}]
+// cpp/lupnt/dynamics/dynamics.h :: Dynamics
+virtual State Propagate(const State& x0, Real t0, Real tf, const State* u = nullptr) = 0;
+virtual State Propagate(const State& x0, Real t0, Real tf, const State* u, MatXd* stm);
+virtual MatX  Propagate(const State& x0, const VecX& tfs, const State* u = nullptr);
+virtual State PropagateWithParams(const State& x0, Real t0, Real tf, const ParamState& params,
+                                  const State* u = nullptr);
+virtual State PropagateWithParams(const State& x0, Real t0, Real tf, const ParamState& params,
+                                  const State* u, MatXd* stm_state, MatXd* stm_param);
+virtual StateType GetStateType() const = 0;
+\end{lstlisting}
+
+The scalar overload is the only pure-virtual one; everything else has a default
+implementation in \file{cpp/lupnt/dynamics/dynamics.cc}. The sequence overload
+chains \cpp{Propagate} between consecutive entries of \code{tfs} and accumulates
+each result as a row, optionally driving a progress bar;
+\cpp{AnalyticalDynamics} overrides it to jump directly from \code{tfs(0)} to each
+output epoch in an OpenMP-parallel loop, which analytic propagators can do
+because they need no intermediate state.
+
+\cpp{NumericalDynamics} additionally exposes \cpp{PropagateEx} and
+\cpp{PropagateExStm}, which return a \cpp{TerminationInfo} describing whether the
+integrator reached $t_f$ or stopped early (event trigger or iteration cap), the
+time actually reached, and the number of steps taken. A truncated trajectory is
+returned as the completed leading rows only.
+
+\subsection{Bindings and configuration-driven construction}
+
+\cpp{NBodyDynamics} is registered with the asset factory
+(\code{REGISTER\_FACTORY\_CLASS(Dynamics, NBodyDynamics)}), so a YAML
+\code{dynamics:} block naming it is enough to construct a fully configured force
+model. When an agent declares no \code{dynamics:} block it inherits the shared
+\code{world.force\_model}.
+
+\section{State-transition matrix}
+\label{sec:dyn-stm}
+
+\subsection{Definition}
+
+The state-transition matrix is the sensitivity of the propagated state to its
+initial condition,
+
+\begin{equation}
+  \label{eq:dyn-stm}
+  \mat{\Phi}(t_f,t_0) = \frac{\partial\vec{x}(t_f)}{\partial\vec{x}(t_0)},
+\end{equation}
+
+which for a smooth flow satisfies the variational equation
+
+\begin{equation}
+  \label{eq:dyn-variational}
+  \dot{\mat{\Phi}} = \mat{A}(t)\,\mat{\Phi},
+  \qquad
+  \mat{A}(t) = \left.\frac{\partial f}{\partial\vec{x}}\right|_{\vec{x}(t)},
+  \qquad
+  \mat{\Phi}(t_0,t_0) = \mat{I}_{6} .
+\end{equation}
+
+Rows and columns follow the ordering of \cref{eq:dyn-state}. The composition and
+inverse properties $\mat{\Phi}(t_2,t_0)=\mat{\Phi}(t_2,t_1)\mat{\Phi}(t_1,t_0)$
+and $\mat{\Phi}(t_0,t_1)=\mat{\Phi}(t_1,t_0)^{-1}$ hold to integration accuracy
+and are exercised by the filter tests.
+
+\subsection{How it is obtained}
+
+\lupnt{} does \emph{not} integrate \cref{eq:dyn-variational} as an augmented
+$6+36$ state. Instead $\mat{\Phi}$ is obtained by forward-mode automatic
+differentiation of the propagation itself: the whole integration --- ephemeris
+lookups, frame rotations, the harmonic recursion, the shadow function --- is
+carried out in the dual-number type \cpp{Real}, and the Jacobian of the map
+$\vec{x}_0\mapsto\vec{x}_f$ is read off the tape. See \cref{chap:autodiff} for
+the type system, the seeding strategy, and the parallel Jacobian driver.
+
+\begin{lstlisting}[language=cpp, caption={The generic autodiff STM.}, label={lst:dyn-stm}]
+// cpp/lupnt/dynamics/dynamics.cc :: Dynamics::Propagate
+State Dynamics::Propagate(const State& x0, Real t0, Real tf, const State* u, MatXd* stm) {
+  if (stm == nullptr) return Propagate(x0, t0, tf, u);
+  auto func = [=, this](const VecX& x) {
+    State xs = State(x, x0.GetNames(), x0.GetUnits());
+    return Propagate(xs, t0, tf, u);
+  };
+  VecX xf_tmp;
+  VecX x0_tmp = x0.cast<double>();
+  jacobian(func, wrt(x0_tmp), at(x0_tmp), xf_tmp, *stm);
+  State xf(xf_tmp, x0.GetNames(), x0.GetUnits());
+  return xf;
+}
+\end{lstlisting}
+
+For the $n$-body model the STM overload additionally requires that autodiff be
+enabled, because with \code{autodiff: false} the harmonic field is evaluated in
+plain \code{double} and the derivative information would be silently lost:
+
+\begin{lstlisting}[language=cpp, caption={STM requires the autodiff path.}, label={lst:dyn-stm-check}]
+// cpp/lupnt/dynamics/numerical_orbit_dynamics.cc :: NBodyDynamics::Propagate
+State NBodyDynamics::Propagate(const State& x0, Real t0, Real tf, const State* u, MatXd* stm) {
+  LUPNT_CHECK(use_ad_, "Autodiff not enabled", "NBodyDynamics");
+  (void)u;
+  return NumericalDynamics::Propagate(x0, t0, tf, u, stm);
+}
+\end{lstlisting}
+
+The same mechanism yields the parameter sensitivity
+$\partial\vec{x}_f/\partial\vec{p}$: \cpp{PropagateWithParams} differentiates the
+propagation with respect to the \cpp{ParamState} vector, which is how the SRP and
+drag ballistic coefficients become estimable states in the orbit-determination
+filters.
+
+\subsection{Analytic state-transition matrices}
+
+The analytic propagators supply $\mat{\Phi}$ in closed form. For
+\cpp{KeplerianDynamics<ClassicalOE>}, only the mean anomaly advances,
+$M(t_f) = M(t_0) + n\,\Delta t$ with $n=\sqrt{\mu/a^3}$, so
+
+\begin{equation}
+  \label{eq:dyn-kep-stm}
+  \mat{\Phi} = \mat{I}_{6} + \frac{\partial M(t_f)}{\partial a}\,
+  \vec{e}_6\vec{e}_1\transpose,
+  \qquad
+  \frac{\partial M(t_f)}{\partial a} = -\frac{3}{2}\,\frac{n}{a}\,\Delta t ,
+\end{equation}
+
+with $\vec{e}_k$ the $k$-th unit vector; the $-3/2$ factor is the derivative of
+$n\propto a^{-3/2}$. \cpp{ClohessyWiltshireDynamics} returns the classical
+Clohessy--Wiltshire matrix
+$\mat{\Phi} = \mat{A}\,\mat{B}(n\Delta t)$ built from the integration constants
+solved for on the first call. STM computation is not implemented for the
+\cpp{QuasiNonsingularOE} and \cpp{EquinoctialOE} specializations of
+\cpp{KeplerianDynamics}, nor for \cpp{YamanakaAnkersenDynamics} and
+\cpp{RoeGeometricMappingDynamics}: those overloads throw.
+
+\section{Model boundaries}
+\label{sec:dyn-boundaries}
+
+This section states what the default configuration includes, what it
+approximates, and what it omits.
+
+\subsection{Defaults}
+
+\begin{table}[H]
+  \centering
+  \caption{Defaults of a freshly constructed \cpp{NBodyDynamics}.}
+  \label{tab:dyn-defaults}
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Setting & Default & Remark \\
+    \midrule
+    Integration frame & \code{MOON\_CI} & Moon-centred, ICRF-aligned axes \\
+    Unit system & \code{SI\_UNITS} & \si{\meter}, \si{\second}, \si{\kilogram} \\
+    Bodies & none & every body must be listed explicitly \\
+    Relativity & \emph{enabled} & \cref{eq:dyn-moyer}, $\beta=\gamma=1$ \\
+    SRP & disabled & enabled by \code{CR}/\code{area}/\code{mass} or \cpp{SetUseSrp} \\
+    Drag & disabled & enabled by \code{CD}/\code{area}/\code{mass}; Earth only \\
+    Autodiff & disabled & \code{double} field evaluation; no STM \\
+    Solar irradiance & \SI{1361}{\watt\per\meter\squared} & $P_\odot = S_\odot/c$ \\
+    Integrator & see \code{default\_integrator} & \code{RKF45} in the shipped configs \\
+    Nominal step & \SI{10}{\second} & \code{dt} in the YAML block \\
+    Degree/order & $0\times0$ (point mass) & shipped configs use $20\times20$ (truth) and $18\times18$ (filter) for the Moon \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The shipped lunar scenarios (\file{configs/lunar_gnss_odts.yaml},
+\file{configs/ephemeris.yaml}, \file{configs/ground_station_odts.yaml}) use a
+Moon field of degree and order $20$, $8$, or $2$ depending on the study, with the
+Earth and Sun as point masses, RKF45, and absolute/relative tolerances between
+$10^{-6}$ and $10^{-12}$.
+
+\subsection{What is approximated}
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Gravity field truncation.} The field is truncated at the
+    configured $(n,m)$. Truncating the lunar field at degree $20$ leaves the
+    residual acceleration of the omitted degrees, which for a
+    \SI{100}{\kilo\meter} circular lunar orbit is the dominant remaining error
+    source; the truncation degree, not the integrator tolerance, sets the
+    achievable propagation accuracy. Increasing the degree costs
+    $O(n_\mathrm{max}^2)$ per evaluation.
+  \item \textbf{Point-mass third bodies.} Earth and Sun enter through
+    \cref{eq:dyn-pointmass} only; the Earth's oblateness is never seen by a lunar
+    orbiter in this model. Solid-body and ocean tides, and the associated
+    time-varying Stokes coefficients, are not modelled for any body.
+  \item \textbf{Cannonball SRP.} \Cref{eq:dyn-srp} assumes a spherical spacecraft
+    with a single scalar $C_R$: no attitude dependence, no panel model, no
+    thermal re-radiation, and no albedo or infrared radiation from the central
+    body. Occulting bodies are treated as spheres of radius \code{body.R}, so
+    the shadow geometry ignores oblateness, terrain, and atmospheric refraction
+    at the terminator.
+  \item \textbf{Fixed exponent Harris--Priester.} The density model fixes
+    $n_p=3$ rather than selecting $2$ or $6$ by inclination, uses a low-precision
+    solar ephemeris for the bulge apex, and has no solar-activity ($F_{10.7}$,
+    $A_p$) dependence at all: the min/max table is static.
+  \item \textbf{Relativity.} \Cref{eq:dyn-moyer} keeps terms to $O(c^{-2})$ and
+    uses Newtonian body accelerations in the $\ddot{\vec{r}}_j$ terms. It is
+    evaluated over the \emph{configured} bodies only, so the correction changes
+    if bodies are added or removed for reasons unrelated to relativity.
+  \item \textbf{Autodiff clamping.} \cpp{ClampUnit} and the $y^2$ floor
+    (\cref{sec:dyn-srp}) perturb the shadow function by less than $10^{-9}$ in
+    value in exchange for a finite derivative. Near a grazing shadow boundary the
+    resulting $\mat{\Phi}$ is a smoothed approximation of a genuinely
+    non-differentiable map.
+\end{itemize}
+
+\subsection{What is omitted}
+
+\begin{itemize}[leftmargin=1.4em]
+  \item Frame-dragging (Lense--Thirring) and geodesic precession.
+  \item Empirical accelerations, manoeuvre and thrust models in the orbit
+    right-hand side; a control input \code{u} is accepted by the interface but
+    ignored by every orbit model.
+  \item Drag for any body other than the Earth, and any thermospheric model other
+    than Harris--Priester.
+  \item Albedo and planetary infrared radiation pressure.
+  \item Process noise: the dynamics are deterministic. Stochastic terms are
+    supplied by the filters, not by the dynamics models.
+\end{itemize}
+
+\subsection{Structural constraints}
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \cpp{SetUnits} must be called \emph{before} \cpp{AddBody}: it aborts if
+    any body is already registered, and \cpp{AddBody} rejects a body whose
+    \code{units} differ from the model's.
+  \item \cpp{ComputeRates} aborts if \code{frame\_} is \code{UNDEFINED}.
+  \item \cpp{JToCartTwoBodyDynamics} requires the integration and body-fixed
+    frames to share an origin.
+  \item A body may be added only once; \cpp{AddBody} aborts on a duplicate
+    \code{BodyId}.
+  \item The STM overload of \cpp{NBodyDynamics::Propagate} aborts unless
+    \code{autodiff: true}.
+\end{itemize}
+
+\subsection{Validation}
+
+Cross-validation drivers compare the propagated trajectory against GMAT
+\citep{gmat2023} (\file{cpp/test/gmat/test_orbit_dynamics_gmat.cc}) and
+Orekit (\file{cpp/test/orekit/test_orbit_dynamics_orekit.cc}). The Earth
+point-mass-plus-$J_2$ case agrees to a few hundred metres in position and
+\SI{0.15}{\meter\per\second} in velocity over the compared arc, the residual
+being dominated by the differing $J_2$ conventions rather than by the integrator.
+The pure two-body and $J_2$ element-rate models are additionally checked against
+their closed-form solutions, and the relativistic $n$-body term against
+\cref{eq:dyn-schwarzschild}. The accuracy actually achieved in the lunar
+orbit-determination scenarios, and its sensitivity to the truncation degree, is
+reported in \citep[Ch.~2]{iiyama2026thesis}.

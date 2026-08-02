@@ -1,0 +1,115 @@
+\chapter{Citing \lupnt{} and the Work Behind It}
+\label{chap:publications}
+
+\lupnt{} began as the simulation backbone of the Stanford NAV Lab's lunar
+Positioning, Navigation, and Timing research. Most of the models specified in \cref{part:math} exist
+because a paper needed them, and most of the tutorial examples worked through
+in \cref{chap:tutorials} are reduced versions of a published study. This
+chapter closes that loop: it gives the entry to cite for the simulator itself
+and maps each example to the peer-reviewed work behind it. A complete and
+up-to-date publication list is maintained at
+\url{https://navlab.stanford.edu/publications/conference-articles}.
+
+\section{Citing the simulator}
+\label{sec:pub-cite}
+
+Work that uses \lupnt{} should cite the original simulator paper
+\citep{iiyama2023lupnt}:
+
+\begin{lstlisting}[language=bibtexlang, caption={BibTeX entry for the \lupnt{} simulator.}, label={lst:pub-bibtex}]
+@inproceedings{IiyamaCasadesus2023,
+  title     = {LuPNT: Open-Source Simulator for Lunar Positioning,
+               Navigation, and Timing},
+  author    = {Iiyama, Keidai and Casadesus Vila, Guillem and Gao, Grace},
+  booktitle = {Proceedings of the Institute of Navigation GNSS+ conference
+               (ION GNSS+ 2023)},
+  year      = {2023},
+  url       = {https://github.com/Stanford-NavLab/LuPNT},
+}
+\end{lstlisting}
+
+For the current agent-based communications and PNT framework --- the
+architecture described in \cref{chap:new-simulation} --- cite
+\citep{casadesus2025lupnt} as well. The full development history and the
+derivations behind the models in \cref{part:math} are collected in the thesis
+\citep{iiyama2026thesis}.
+
+\section{Examples mapped to publications}
+\label{sec:pub-examples}
+
+\cref{tab:pub-examples} maps each tutorial example (and the models it drives)
+to the work it is based on, so that a notebook can be traced to the methodology
+and the results behind it.
+
+\begin{table}[H]
+  \centering
+  \caption{Tutorial examples and the publications behind them. The examples
+           themselves are described in \cref{chap:tutorials}.}
+  \label{tab:pub-examples}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.24\textwidth}L@{}}
+    \toprule
+    Example(s) & Related publication(s) \\
+    \midrule
+    \code{ex1}, \code{ex2} \newline
+      \emph{fundamentals: orbits, frames, time} &
+      The dynamics, frame, and lunicentric time-scale conventions follow the
+      thesis \citep[Ch.~2]{iiyama2026thesis} and the two simulator papers
+      \citep{iiyama2023lupnt, casadesus2025lupnt}. See
+      \cref{chap:time-conversions}. \\
+    \addlinespace
+    \code{ex3}, \code{ex5}, \code{ex6} \newline
+      \emph{terrestrial-GNSS interface, measurements, ODTS} &
+      Lunar orbit and clock estimation from terrestrial GPS
+      \citep{iiyama2024navi, iiyama2026scud}; see \cref{chap:filters} and
+      \cref{chap:gnss-measurements}. \\
+    \addlinespace
+    \code{ex4} \newline
+      \emph{plasmasphere and ionosphere delay, ray tracing} &
+      Ionospheric and plasmaspheric delay characterization with the Global Core
+      Plasma Model \citep{iiyama2026gcpm, iiyama2025iono}; see
+      \cref{chap:ionosphere}. \\
+    \addlinespace
+    \code{ex7}, \code{ex8} \newline
+      \emph{ground-station and inter-satellite-link ODTS} &
+      Distributed lunar ODTS and time synchronization
+      \citep{iiyama2023dcp, iiyama2024contact}; ODTS with lunar surface
+      stations \citep{casadesus2025surface}; the ISL-based autonomous
+      clock-fault monitoring in \code{ex8} is \citep{iiyama2026edm}. See
+      \cref{chap:filters} and \cref{chap:measurements}. \\
+    \addlinespace
+    \code{ex9} \newline
+      \emph{ephemeris and almanac fitting} &
+      Ephemeris and almanac design for lunar navigation satellites
+      \citep{iiyama2025ephemeris}, with the earlier parameterization studies
+      \citep{cortinovis2024navi, cortinovis2023ephemeris}; see
+      \cref{chap:ephemeris-almanac}. \\
+    \addlinespace
+    \code{ex10} \newline
+      \emph{surface-rover and lander navigation} &
+      Lunar surface user positioning
+      \citep{iiyama2023tdcp, coimbra2025endurance}; the full surface autonomy
+      stack is \citep{dai2025fullstack, dai2025iongnss}. See
+      \cref{chap:measurements}. \\
+    \addlinespace
+    \code{ex12} \newline
+      \emph{constellation design} &
+      LANS constellation trade-off analysis and staged deployment
+      \citep{iiyama2025constellation}. \\
+    \addlinespace
+    \code{ex15} \newline
+      \emph{Mars PNT} &
+      Orbit determination and time synchronization for a future Mars relay and
+      navigation constellation \citep{iiyama2025mars}. \\
+    \addlinespace
+    General motivation and overview &
+      ``Can satellite-based radionavigation be extended to the Moon and other
+      extraterrestrial bodies?'' \citep{iiyama2025insidegnss}. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lupntnote}
+\code{ex13} (Cesium visualization) and \code{ex16} (LEO PNT with
+Harris--Priester drag, \citep{harris1962priester}) are simulator and
+demonstration examples: they have no dedicated publication behind them.
+\end{lupntnote}

@@ -1,0 +1,803 @@
+\chapter{External Data Products}
+\label{chap:sp3-download}
+
+\lupnt{} is not self-contained: almost every model in
+Part~\ref{part:math} reads a numerical table that somebody else publishes and
+maintains. Planetary positions come from the JPL Development Ephemerides
+\citep{park2021de440} distributed as SPICE kernels \citep{acton1996spice};
+Earth orientation and leap seconds come from the IERS conventions and the IERS
+Earth Orientation Parameter (EOP) series \citep{iers2010}; spherical-harmonic
+gravity fields come from the GRAIL and EGM analyses; and GNSS orbits and
+clocks come from the IGS analysis centres, mirrored by NASA's Crustal Dynamics
+Data Information System (CDDIS).
+
+This chapter specifies the complete set of external products \lupnt{} expects,
+where each one comes from, where it must land on disk, which environment
+variable makes it findable, and which code path reads it. It then documents
+the on-demand downloaders in detail --- the SPICE kernel refresh in
+\file{cpp/lupnt/interfaces/spice.cc}, the IERS EOP refresh in
+\file{cpp/lupnt/interfaces/eop.cc}, and the CDDIS GNSS product downloaders in
+\file{cpp/lupnt/interfaces/sp3_loader.cc} and
+\file{cpp/lupnt/interfaces/rinex_nav_loader.cc} --- because the GNSS ones need
+credentials and are the most common source of first-run failures.
+
+The numerical consequences of the choices described here (which DE version,
+which EOP vintage, which lunar orientation kernel) are quantified in
+\cref{chap:cross-validation}.
+
+% ===========================================================================
+\section{The data tree and the environment variables that find it}
+\label{sec:sp3-data-tree}
+% ===========================================================================
+
+\lupnt{} resolves every data file through four functions in
+\file{cpp/lupnt/core/file.cc}. They are the only places an environment
+variable is read, so the contract is small and easy to check:
+
+\begin{lstlisting}[language=cpp, caption={Path resolution.}, label={lst:sp3-file-cc}]
+// cpp/lupnt/core/file.cc
+std::filesystem::path GetBaseDir() {           // $LUPNT_PATH
+  const char* base_path_env = std::getenv("LUPNT_PATH");
+  LUPNT_CHECK(base_path_env, "Environment variable LUPNT_PATH is not set.", "File");
+  return std::filesystem::path(base_path_env);
+}
+
+std::filesystem::path GetDataPath() { ... }    // $LUPNT_DATA_PATH, required
+
+std::filesystem::path GetOutputDir(const std::string& dirname) {
+  const char* output_path_env = std::getenv("LUPNT_OUTPUT_PATH");
+  std::filesystem::path output_path;
+  if (output_path_env == nullptr) output_path = GetDataPath() / "output";
+  else                           output_path = std::filesystem::path(output_path_env);
+  if (!dirname.empty()) output_path /= dirname;
+  if (!std::filesystem::exists(output_path)) std::filesystem::create_directories(output_path);
+  return output_path;
+}
+
+std::filesystem::path GetCspiceKernelDir() { return GetDataPath() / "ephemeris"; }
+\end{lstlisting}
+
+\cpp{GetFilePath(name)} performs a \emph{recursive} search of
+\code{\$LUPNT\_DATA\_PATH} for a file whose name or stem matches \code{name}
+(\cpp{FindFileInDir}), so most loaders name a file rather than a path: the
+EOP loader asks for \code{eopc04\_08.62-now}, the IAU/SOFA loader for
+\code{IAU\_SOFA.DAT}, and the gravity-field reader for
+\code{grgm1200b.cof}. That search is convenient but it means \emph{two files
+with the same basename anywhere under the data root are ambiguous}; keep the
+tree as shipped.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Environment variables read by \lupnt{}. The \code{[activation]}
+    block of \code{pixi.toml} sets \code{LUPNT\_DATA\_PATH},
+    \code{LUPNT\_OUTPUT\_PATH}, \code{PECSIMPY\_BASE\_PATH} and
+    \code{PYTHONPATH} automatically, so inside \code{pixi run} /
+    \code{pixi shell} only the credentials need exporting.
+    \code{LUPNT\_PATH} is not among them.}
+  \label{tab:sp3-env}
+  \small
+  \begin{tabularx}{\textwidth}{@{}l W{1.35} W{0.65}@{}}
+    \toprule
+    Variable & Meaning & Default \\
+    \midrule
+    \code{LUPNT\_PATH}         & Repository root; \cpp{GetBaseDir()}. Required only by code that resolves repo-relative assets. & none (hard error) \\
+    \code{LUPNT\_DATA\_PATH}   & Root of the reference-data tree, i.e.\ \code{data/LuPNT\_data}; \cpp{GetDataPath()}. Required by every loader. & none (hard error) \\
+    \code{LUPNT\_OUTPUT\_PATH} & Root for generated products and download caches; \cpp{GetOutputDir()}. & \file{$LUPNT_DATA_PATH/output} \\
+    \code{PECSIMPY\_BASE\_PATH}& Root of the plasma/GCPM coefficient tree, \code{data/LuPNT\_data/plasma}. & none \\
+    \code{EARTHDATA\_USERNAME} & NASA Earthdata Login user, used by the CDDIS downloaders when \code{\textasciitilde/.netrc} is absent. & unset \\
+    \code{EARTHDATA\_PASSWORD} & Matching password. & unset \\
+    \code{LUPNT\_SKIP\_SPICE\_KERNEL\_DOWNLOAD} & Truthy value forces fully offline SPICE start-up: cached kernels only. & off \\
+    \code{LUPNT\_SKIP\_SP3\_DOWNLOAD}  & Truthy value disables CDDIS SP3 fetches; only cache hits succeed. & off \\
+    \code{LUPNT\_SKIP\_BRDC\_DOWNLOAD} & Same for RINEX broadcast navigation files. & off \\
+    \code{LUPNT\_SKIP\_DEM\_DOWNLOAD}  & Same for the LOLA digital elevation models. & off \\
+    \code{LUPNT\_TEST\_FIXTURES\_DIR}  & Overrides the C++ test fixture directory. & \code{cpp/test/fixtures} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The truthy test is shared by all the \code{LUPNT\_SKIP\_*} switches: any value
+other than the empty string, \code{0}, \code{false}, \code{off} or \code{no}
+(case-insensitive) disables the corresponding download.
+
+\begin{lupntnote}
+Outside \code{pixi}, run \file{scripts/config_development.sh} once. It appends
+\code{LUPNT\_PATH}, \code{LUPNT\_DATA\_PATH} and \code{LUPNT\_OUTPUT\_PATH}
+exports to the login shell profile, anchored at the repository it is run from.
+\end{lupntnote}
+
+\subsection{Layout on disk}
+\label{sec:sp3-layout}
+
+\begin{lstlisting}[language=shell, caption={The reference-data tree and the run-time cache.}, label={lst:sp3-tree}]
+# $LUPNT_PATH is the repository root.
+data/LuPNT_data/                 # $LUPNT_DATA_PATH  (gitignored, ~650 MB)
+  ephemeris/                     #   SPICE kernels; GetCspiceKernelDir()
+    ascii/                       #   ASCII DE440 header + coefficient files
+  planetary_coeff/               #   EOP, leap seconds, IAU/SOFA CIP tables
+  gravity/{earth,luna,mars,venus}/   # spherical-harmonic .cof files
+  gnss/                          #   igs20.atx, gps_table.csv, galileo_table.xlsx
+    sp3/                         #   scenario SP3 products (scripts/download_gnss_data.py)
+    brdc/                        #   scenario RINEX navigation products
+  antenna/                       #   transmit/receive gain patterns per constellation
+  tle/<YYYY_MM_DD>/              #   dated TLE snapshots per constellation
+  ground_station/                #   ground_stations.csv
+  surface/                       #   lunar crater and PSR databases
+  topo/                          #   body surface textures for plotting
+  plasma/                        #   $PECSIMPY_BASE_PATH -- GCPM/plasmasphere tables
+  dem/LOLA_5mpp/<site>/          #   LOLA DEM tiles, downloaded on demand
+  examples/                      #   pre-computed example inputs
+
+output/                          # $LUPNT_OUTPUT_PATH
+  gnss_files/sp3/                #   GetOutputDir("gnss_files") -- SP3 download cache
+  gnss_files/brdc/               #   RINEX navigation download cache
+  ...                            #   one directory per application
+\end{lstlisting}
+
+The \file{data/LuPNT_data} tree is \emph{not} in version control. It is
+published as a single \code{LuPNT\_data.zip} archive and pulled by whichever
+front end runs first:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \file{cmake/FetchLuPNTData.cmake} downloads and extracts it during
+    CMake configuration unless \code{LUPNT\_FETCH\_DATA} is \code{OFF}. It uses
+    \file{data/LuPNT_data/gnss/igs20.atx} as the presence marker, so a partial
+    tree missing that file triggers a re-download.
+  \item \file{python/pylupnt/core/download_data.py} does the same from Python,
+    keyed on \code{\$LUPNT\_DATA\_PATH/ephemeris} existing.
+  \item \file{scripts/publish_lupnt_data.sh} pushes a new archive. The version
+    string (\code{DATA\_VERSION} / \code{LUPNT\_DATA\_VERSION}) appears in
+    three places and must be bumped together.
+\end{itemize}
+
+% ===========================================================================
+\section{What \lupnt{} expects, and where it comes from}
+\label{sec:sp3-products}
+% ===========================================================================
+
+\cref{tab:sp3-products} is the authoritative inventory. ``Refresh'' records
+whether \lupnt{} tries to update the file from the network at run time
+(\emph{auto}), whether a helper script fetches it on request (\emph{script}),
+or whether it only ever arrives with the bundle (\emph{bundle}).
+
+\begin{table}[htbp]
+  \centering
+  \caption{External data products, their provenance, and their location
+    relative to \code{\$LUPNT\_DATA\_PATH} (or \code{\$LUPNT\_OUTPUT\_PATH}
+    where marked).}
+  \label{tab:sp3-products}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{@{}L L l l@{}}
+    \toprule
+    Product (file) & Provenance & Location & Refresh \\
+    \midrule
+    \multicolumn{4}{@{}l}{\textit{SPICE kernels} \citep{acton1996spice}} \\
+    \midrule
+    Leap-second kernel \code{naif0012.tls} & NAIF generic kernels, \code{lsk/} & \code{ephemeris/} & bundle \\
+    Planetary/lunar ephemeris \code{de440.bsp} & JPL DE440 \citep{park2021de440}, NAIF \code{spk/planets/} & \code{ephemeris/} & bundle \\
+    Time ephemeris \code{de440t.bsp} & DE440t; adds NAIF body \code{1000000001}, the integrated $\TT-\TDB$ at the geocentre & \code{ephemeris/} & bundle \\
+    Text PCK \code{pck00011.tpc} & NAIF planetary constants (radii, low-accuracy poles) & \code{ephemeris/} & bundle \\
+    Earth orientation \code{earth\_latest\_high\_prec.bpc} & NAIF \code{pck/}; reconstructed $+$ short-term predicted ITRF93 & \code{ephemeris/} & auto \\
+    Lunar orientation \code{moon\_pa\_de440\_200625.bpc} & NAIF \code{pck/}; DE440 principal-axes (PA) orientation & \code{ephemeris/} & auto \\
+    Lunar frame kernel \code{moon\_de440\_250416.tf} & NAIF \code{fk/satellites/}; defines \code{MOON\_PA\_DE440} / \code{MOON\_ME\_DE440} & \code{ephemeris/} & auto \\
+    \code{moon\_assoc\_pa.tf} & NAIF \code{fk/satellites/}; makes PA the default lunar body-fixed frame for legacy SPICE APIs & \code{ephemeris/} & auto \\
+    Legacy fallbacks \code{earth\_000101\_241014\_240722.bpc}, \code{earth\_200101\_990825\_predict.bpc} & NAIF \code{pck/}, older snapshots & \code{ephemeris/} & bundle \\
+    Older ephemerides \code{de405.bsp}, \code{mar097.bsp} & JPL/NAIF & \code{ephemeris/} & bundle \\
+    ASCII DE440 (\code{header.440}, \code{ascp*.440}) & JPL ASCII distribution, read by \code{cpp/lupnt/interfaces/kernels.cc} & \code{ephemeris/ascii/de440/} & bundle \\
+    \midrule
+    \multicolumn{4}{@{}l}{\textit{Earth orientation, leap seconds, precession-nutation} \citep{iers2010}} \\
+    \midrule
+    Bundled EOP series \code{eopc04\_08.62-now} & IERS EOP 14 C04 (IAU1980) & \code{planetary\_coeff/} & bundle \\
+    Latest EOP series \code{eopc04\_iers\_latest.txt} & \code{datacenter.iers.org}, \code{EOP\_14\_C04\_IAU1980\_one\_file\_1962-now.txt} & \code{planetary\_coeff/} & auto (on request) \\
+    Leap-second table \code{tai-utc.dat} & IERS/USNO $\TAI-\UTC$ step table & \code{planetary\_coeff/} & bundle \\
+    CIP/CIO table \code{IAU\_SOFA.DAT} & Tabulated IAU/SOFA $X$, $Y$, $s$ & \code{planetary\_coeff/} & bundle \\
+    \midrule
+    \multicolumn{4}{@{}l}{\textit{Gravity fields}} \\
+    \midrule
+    \code{grgm1200b.cof} (default lunar), \code{grgm900c.cof}, \code{LP165P.cof} & GRAIL-derived lunar fields \citep{lemoine2013grgm} & \code{gravity/luna/} & bundle \\
+    \code{EGM96.cof} (default Earth), \code{JGM2.cof}, \code{JGM3.cof} & Earth geopotential models & \code{gravity/earth/} & bundle \\
+    \code{GMM1.cof} (default Mars), \code{MGN75HSAAP.cof} (default Venus) & Mars/Venus geopotential models & \code{gravity/mars/}, \code{gravity/venus/} & bundle \\
+    \midrule
+    \multicolumn{4}{@{}l}{\textit{GNSS products}} \\
+    \midrule
+    SP3 precise orbits \code{COD0MGXFIN\_*\_01D\_05M\_ORB.SP3} & CDDIS \code{gnss/products/}; CODE MGEX final & \code{output/gnss\_files/sp3/} (cache) or \code{gnss/sp3/} (scenario) & script/auto \\
+    RINEX~3 broadcast navigation \code{BRDC00IGS\_R\_*\_01D\_MN.rnx} & CDDIS \code{gnss/data/daily/}; IGS multi-GNSS merged & \code{output/gnss\_files/brdc/} or \code{gnss/brdc/} & script/auto \\
+    ANTEX phase centres \code{igs20.atx} & IGS antenna exchange file, frame \code{IGS20} & \code{gnss/} & bundle \\
+    Constellation tables \code{gps\_table.csv}, \code{galileo\_table.xlsx} & Per-satellite block/PRN metadata & \code{gnss/} & bundle \\
+    TLE snapshots \code{gps\_<date>.txt}, \code{galileo\_<date>.txt}, \code{glonass\_<date>.txt}, \code{beidou\_<date>.txt}, \code{qzss\_<date>.txt}, \code{gnss\_<date>.txt} & Space-Track/CelesTrak two-line elements & \code{tle/2025\_01\_01/} and similar & bundle \\
+    Antenna patterns & Per-constellation transmit and receive gain tables & \code{antenna/<name>/} & bundle \\
+    \midrule
+    \multicolumn{4}{@{}l}{\textit{Environment and surface}} \\
+    \midrule
+    LOLA 5\,m/px DEM tiles & \code{pgda.gsfc.nasa.gov/data/LOLA\_5mpp}; per-site GeoTIFF & \code{dem/LOLA\_5mpp/<site>/} & auto \\
+    Kp index series & GFZ Potsdam JSON service & \code{plasma/} & auto \\
+    GCPM/plasmasphere coefficients & Global Core Plasma Model tables & \code{plasma/data/} & bundle \\
+    Ground-station catalogue \code{ground\_stations.csv} & Curated DSN/ESTRACK-style site list & \code{ground\_station/} & bundle \\
+    Lunar crater / PSR databases & USGS crater database, LRO PSR list & \code{surface/} & bundle \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lupntnote}
+The Mars ephemeris is furnished under either of the two spellings in
+circulation. NAIF ships the file --- and the \lupnt{} data bundle contains it
+--- as \code{mar097.bsp}; the loader's existence check formerly tested only for
+\code{mars097.bsp}, which never matched, so the kernel was silently never
+furnished and Mars-centred states fell back on whatever \code{de440.bsp} alone
+provides. The guard now iterates over both names and furnishes the first that
+exists (\cref{sec:sp3-kernels}). Because the failure mode was a missing
+\code{furnsh\_c} rather than an error, nothing in the log distinguished it from
+a successful load, which is the general hazard of guarding a
+\code{furnsh\_c} with a filename test.
+\end{lupntnote}
+
+% ===========================================================================
+\section{SPICE kernels and the auto-refresh policy}
+\label{sec:sp3-kernels}
+% ===========================================================================
+
+\cpp{spice::LoadSpiceKernel()} in \file{cpp/lupnt/interfaces/spice.cc} runs
+once per process. It changes the working directory to
+\cpp{GetCspiceKernelDir()} --- so every \cpp{furnsh\_c} argument below is a
+bare filename resolved inside \file{data/LuPNT_data/ephemeris} --- and loads,
+in order:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item \code{naif0012.tls}, the leap-second kernel. Without it no
+    $\UTC$-based SPICE call works at all.
+  \item \code{de440.bsp}, the planetary and lunar ephemeris
+    \citep{park2021de440}. Its Chebyshev segments are additionally extracted
+    into \lupnt{}'s own evaluator (\cpp{spk\_extract}, see
+    \file{cpp/lupnt/interfaces/spice_cheby.cc}) so that body positions can be
+    evaluated inside OpenMP regions without entering CSPICE, which is not
+    thread safe.
+  \item \code{de440t.bsp} \emph{if present}. This is DE440 plus one extra
+    segment, NAIF body \code{1000000001}, holding the numerically integrated
+    $\TT-\TDB$ at the geocentre. \lupnt{} prefers it over CSPICE's truncated
+    analytic series in \cpp{unitim\_c}; the two differ by up to
+    ${\sim}\SI{30}{\micro\second}$. If the file is absent a warning is emitted
+    and the analytic series is used instead (see \cref{chap:time-conversions}).
+  \item \code{pck00011.tpc}, the text planetary constants kernel. It only
+    supplies the low-accuracy \code{IAU\_EARTH}/\code{IAU\_MOON} body-fixed
+    frames, whose errors reach ${\sim}\SI{0.06}{\degree}$
+    (${\sim}\SI{6}{\kilo\meter}$) for the Earth and ${\sim}\SI{0.005}{\degree}$
+    (${\sim}\SI{155}{\meter}$) for the Moon.
+  \item The high-accuracy orientation kernels, described next.
+  \item The Mars ephemeris, \emph{if present}. The loader tries
+    \code{mar097.bsp} and then \code{mars097.bsp}, furnishing the first that
+    exists, and does nothing if neither does. Accepting both spellings is
+    deliberate: NAIF publishes the file as \code{mar097.bsp}, but the longer
+    form circulates widely enough that a guard on one name alone silently
+    dropped the kernel.
+\end{enumerate}
+
+\begin{lstlisting}[language=cpp, caption={Furnishing the Mars ephemeris under either spelling.}, label={lst:sp3-mars}]
+// cpp/lupnt/interfaces/spice.cc :: LoadSpiceKernel
+for (const char* mars_bsp : {"mar097.bsp", "mars097.bsp"}) {
+  if (std::filesystem::exists(mars_bsp)) {
+    furnsh_c(mars_bsp);
+    CheckSpiceFailure(fmt::format("Loading {}", mars_bsp));
+    break;
+  }
+}
+\end{lstlisting}
+
+\subsection{Refreshing the orientation kernels}
+\label{sec:sp3-orientation}
+
+High-accuracy body-fixed frames --- \code{ITRF93} for the Earth and
+\code{MOON\_PA\_DE440}/\code{MOON\_ME\_DE440} for the Moon --- require binary
+PCKs that NAIF republishes as new data becomes available. \lupnt{} resolves
+them at start-up rather than pinning versions:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Earth.} NAIF publishes the current reconstructed plus
+    short-term-predicted orientation under the stable name
+    \code{earth\_latest\_high\_prec.bpc}, so \cpp{RefreshAndLoadKernel} simply
+    re-downloads it every start-up. On failure the cached copy is used; if
+    there is no cached copy, the older
+    \code{earth\_200101\_990825\_predict.bpc} and
+    \code{earth\_000101\_241014\_240722.bpc} are furnished instead.
+  \item \textbf{Moon.} There is no stable name: each new ephemeris produces a
+    new pair such as \code{moon\_pa\_de440\_200625.bpc} (binary PCK, NAIF
+    \code{pck/}) and \code{moon\_de440\_250416.tf} (frame kernel, NAIF
+    \code{fk/satellites/}). \lupnt{} fetches the two directory listings,
+    matches the names against the regular expressions
+    \code{moon\_pa\_de\textbackslash d+\_[0-9]\{6\}\textbackslash.bpc} and
+    \code{moon\_de\textbackslash d+\_[0-9]\{6\}\textbackslash.tf}, and takes
+    the lexicographically largest match --- the file names embed zero-padded DE
+    numbers and dates, so lexicographic order is chronological order. If the
+    listing cannot be retrieved, the newest locally cached match is used. The
+    binary PCK must be loaded \emph{before} the frame kernel, since the FK is
+    what binds the frame name to the orientation data.
+  \item \code{moon\_assoc\_pa.tf} is then loaded so that the legacy
+    (pre-N0062) SPICE APIs --- \code{LSPCN}, \code{ET2LST}, \code{ILLUM},
+    \code{SRFXPT}, \code{SUBPT}, \code{SUBSOL} --- treat PA rather than ME as
+    the lunar body-fixed frame.
+\end{itemize}
+
+Set \code{LUPNT\_SKIP\_SPICE\_KERNEL\_DOWNLOAD=1} to suppress all four network
+lookups and run from the cache alone. This is the correct setting for
+reproducible batch runs, because an auto-refreshed Earth kernel changes the
+predicted portion of the orientation from week to week.
+
+The distinction between the mean-Earth/polar-axis (ME) and principal-axes (PA)
+lunar frames, and the rotation that connects them, is specified in
+\cref{chap:frame-conversions}; \cref{chap:cross-validation} measures what the
+choice is worth in metres.
+
+% ===========================================================================
+\section{Earth orientation parameters and leap seconds}
+\label{sec:sp3-eop}
+% ===========================================================================
+
+The EOP table drives both the $\UTone-\UTC$ used by
+\cref{chap:time-conversions} and the polar-motion and sidereal-rotation
+matrices used by \cref{chap:frame-conversions}. It is loaded lazily by
+\cpp{GetEopFileData()} / \cpp{GetEopData(mjd\_utc)} in
+\file{cpp/lupnt/interfaces/eop.cc}, from
+\cpp{GetFilePath(EOP\_FILENAME)} where \code{EOP\_FILENAME} is
+\code{"eopc04\_08.62-now"} (declared in \file{cpp/lupnt/core/constants.h}).
+
+The file is an IERS EOP 14 C04 (IAU1980) series: fourteen header lines
+followed by whitespace-separated columns holding the year, month, day, MJD in
+$\UTC$, the pole coordinates $x_p$ and $y_p$, $\UTone-\UTC$, the length of day,
+the nutation corrections $\delta\psi$ and $\delta\epsilon$, and the formal
+error of each. Values are interpolated with a third-order Lagrange rule;
+outside the tabulated span the nearest endpoint is held constant rather than
+extrapolated.
+
+\begin{lstlisting}[language=cpp, caption={On-demand refresh from the IERS data centre.}, label={lst:sp3-eop}]
+// cpp/lupnt/interfaces/eop.cc :: LoadLatestEopFromIers
+static const std::string url
+    = "https://datacenter.iers.org/data/latestVersion/"
+      "EOP_14_C04_IAU1980_one_file_1962-now.txt";
+std::filesystem::path dest_path = GetDataPath() / "planetary_coeff" / "eopc04_iers_latest.txt";
+if (DownloadFile(url, dest_path)) { LoadEopFileData(dest_path, force); return true; }
+// otherwise: warn and fall back to the bundled snapshot
+\end{lstlisting}
+
+\begin{lupntwarning}
+\cpp{LoadLatestEopFromIers} replaces the global EOP table for the whole
+process. The GMAT and Orekit cross-validation tolerances in
+\cref{chap:cross-validation} are calibrated against the \emph{bundled}
+vintage, which is why \code{data.eop\_latest\_iers} restores
+\cpp{GetFilePath(EOP\_FILENAME)} before it returns. Anything that refreshes
+EOP mid-run and then compares against a fixture will see tens of milliseconds
+of $\UTone$ shift, i.e.\ hundreds of metres at geostationary radius.
+\end{lupntwarning}
+
+The separate \code{tai-utc.dat} table gives the integer $\TAI-\UTC$ steps and
+\code{IAU\_SOFA.DAT} the tabulated CIP coordinates $X$, $Y$ and the CIO locator
+$s$; both are read through the same \cpp{GetFilePath} name lookup.
+
+% ===========================================================================
+\section{GNSS products: SP3, clocks, RINEX navigation, ANTEX}
+\label{sec:sp3-gnss}
+% ===========================================================================
+
+\subsection{What the products are}
+\label{sec:sp3-formats}
+
+\paragraph{SP3 (Standard Product 3).} A plain-text tabulation of GNSS
+satellite positions --- and, in the \code{c}/\code{d} variants, clock offsets
+--- on a uniform epoch grid. Each epoch begins with a line
+\code{* yyyy mm dd hh mm ss.sssssss} in GPS time, followed by one
+\code{P<sv>} record per satellite giving $x$, $y$, $z$ in kilometres in the
+terrestrial (ECEF) frame and the clock offset in microseconds, in fixed
+columns. The value \code{999999.999999} is the SP3 sentinel for
+``clock unavailable''. \lupnt{}'s parser converts positions to metres,
+converts the epoch from GPS to $\TAI$, and maps any clock above
+\num{999990} to NaN:
+
+\begin{lstlisting}[language=cpp, caption={SP3 record parsing.}, label={lst:sp3-parse}]
+// cpp/lupnt/interfaces/sp3_loader.cc :: Sp3Loader::ParseFile
+current_epoch = ConvertTime(GregorianToTime(year, month, day, hour, minute, second),
+                            Time::GPS, Time::TAI);
+double x = std::stod(line.substr(4, 14)) * 1000.0;   // km -> m
+double y = std::stod(line.substr(18, 14)) * 1000.0;  // km -> m
+double z = std::stod(line.substr(32, 14)) * 1000.0;  // km -> m
+double clock_us = std::stod(line.substr(46, 14));
+double clock = (clock_us > kSp3ClockSentinelUs) ? std::numeric_limits<double>::quiet_NaN()
+                                                : clock_us * 1e-6;
+\end{lstlisting}
+
+\paragraph{Clocks.} \lupnt{} does \emph{not} consume separate RINEX clock
+(\code{.CLK}) products. Satellite clock offsets are taken from the fourth
+column of the SP3 position records, at the SP3 sampling interval
+(\SI{300}{\second} for the CODE MGEX final product). Sub-\SI{300}{\second}
+clock structure --- which a \SI{30}{\second} \code{.CLK} product would
+resolve --- is therefore not modelled.
+
+\paragraph{RINEX navigation (broadcast ephemeris).} The Keplerian-plus-
+correction parameter sets broadcast by the satellites themselves, in RINEX~3
+mixed-navigation form (\code{MN}). These are what a real receiver would use;
+comparing them against SP3 is the standard way to visualise broadcast orbit
+and clock error, and \file{python/examples/ex3_gnss_interface.ipynb} does
+exactly that.
+
+\paragraph{ANTEX.} Antenna phase-centre offsets and variations, per satellite
+block and per frequency, in the IGS \code{ANTEX} format. \lupnt{} ships
+\file{data/LuPNT_data/gnss/igs20.atx} (frame \code{IGS20}) and reads it with
+\cpp{AntexLoader}; a phase-centre offset is what converts the SP3
+centre-of-mass position into the antenna phase-centre position that the
+observation equation actually needs.
+
+\subsection{Provider and naming conventions}
+\label{sec:sp3-naming}
+
+Both downloaders derive a canonical product name from the query epoch. The
+epoch is first converted to GPS time, the GPS week and day-of-week are
+computed from the GPS epoch 1980-01-06, and the calendar year and day-of-year
+are taken from the corresponding Modified Julian Date:
+
+\begin{lstlisting}[language=cpp, caption={Product naming.}, label={lst:sp3-naming}]
+// cpp/lupnt/interfaces/sp3_loader.cc :: BuildSp3ProductInfo
+info.gps_week   = (int)std::floor(delta / kSecsWeek);              // delta = t_gps - t_gps_epoch
+info.day_of_week= (int)std::floor((delta - info.gps_week * kSecsWeek) / SECS_DAY);
+LUPNT_CHECK(info.gps_week >= 1962, "... modern CDDIS COD/MGEX `.SP3.gz` products only", "Sp3Loader");
+info.filename = fmt::format("COD0MGXFIN_{:04d}{:03d}0000_01D_05M_ORB.SP3", info.year, info.doy);
+info.zipped_filename = info.filename + ".gz";
+info.url = fmt::format("https://cddis.nasa.gov/archive/gnss/products/{:04d}/{}",
+                       info.gps_week, info.zipped_filename);
+\end{lstlisting}
+
+\begin{table}[htbp]
+  \centering
+  \caption{CDDIS products \lupnt{} downloads, with the naming template and the
+    archive path. \code{YYYY} is the calendar year, \code{DDD} the
+    zero-padded day of year, \code{YY} the two-digit year, and \code{WWWW}
+    the zero-padded GPS week.}
+  \label{tab:sp3-naming}
+  \small
+  \begin{tabularx}{\textwidth}{@{}l L L@{}}
+    \toprule
+    Product & File name template & CDDIS URL \\
+    \midrule
+    Precise orbits (SP3) &
+      \code{COD0MGXFIN\_YYYYDDD0000\_01D\_05M\_ORB.SP3.gz} &
+      \code{https://cddis.nasa.gov/archive/gnss/products/WWWW/} \\
+    Broadcast navigation (RINEX~3), primary &
+      \code{BRDC00IGS\_R\_YYYYDDD0000\_01D\_MN.rnx.gz} &
+      \code{.../archive/gnss/data/daily/YYYY/DDD/YYp/} \\
+    Broadcast navigation, fallback &
+      same &
+      \code{.../archive/gnss/data/daily/YYYY/brdc/} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Decoding the SP3 template: \code{COD} is the CODE analysis centre (Center for
+Orbit Determination in Europe, Bern), \code{0} the solution number,
+\code{MGX} the multi-GNSS experiment campaign (GPS, GLONASS, Galileo, BeiDou
+and QZSS in one file), \code{FIN} the final --- as opposed to rapid or
+ultra-rapid --- product, \code{01D} the one-day file span, \code{05M} the
+\SI{300}{\second} sampling, and \code{ORB} the orbit content. The
+\code{BRDC00IGS\_R} template is the IGS merged multi-GNSS broadcast file,
+\code{R} marking a data-centre-generated (rather than station) product and
+\code{MN} mixed navigation.
+
+Two constraints follow from the naming scheme. Epochs before the GPS epoch are
+rejected outright, and epochs before GPS week 1962 are rejected because the
+long-form CDDIS naming convention (and the MGEX final product) does not exist
+that far back. Products are daily, so a request is quantised to a calendar
+day; helper scripts anchor at 12:00 to keep a midnight rollover from selecting
+the neighbouring file.
+
+\begin{lupntnote}
+Both loaders accept several files at once. \cpp{Sp3Loader::LoadFile} sorts and
+de-duplicates the merged epoch table per satellite: at a day boundary the same
+epoch appears in two files, typically with the sentinel clock in the earlier
+file and the real value in the later one, so the record with a valid clock
+wins and, failing that, the later file wins. A run that crosses midnight
+should load both days.
+\end{lupntnote}
+
+% ===========================================================================
+\section{NASA Earthdata credentials}
+\label{sec:sp3-earthdata}
+% ===========================================================================
+
+CDDIS is behind NASA's Earthdata Login (URS). Before the first download:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item Create an account at \url{https://urs.earthdata.nasa.gov}.
+  \item Review the Earthdata Login API and integration notes at
+    \url{https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/earthdata-login-api}.
+  \item Store the credentials in \file{~/.netrc} --- the file is
+    \code{.netrc} in the \emph{home} directory, not \code{./netrc} in the
+    repository:
+\end{enumerate}
+
+\begin{lstlisting}[language=shell, caption={Credential setup.}, label={lst:sp3-netrc}]
+touch ~/.netrc
+chmod 0600 ~/.netrc
+cat >> ~/.netrc <<'EOF'
+machine urs.earthdata.nasa.gov
+  login YOUR_EARTHDATA_USERNAME
+  password YOUR_EARTHDATA_PASSWORD
+EOF
+\end{lstlisting}
+
+The \code{0600} mode matters: many HTTP clients refuse a world-readable
+\code{.netrc}. If this is the first scripted CDDIS access, sign in through a
+browser once and approve the CDDIS application-access prompt --- an
+unapproved application yields a login page rather than a file, which is the
+failure mode described in \cref{sec:sp3-troubleshooting}.
+
+For short tests the loaders also accept credentials from the environment:
+
+\begin{lstlisting}[language=shell]
+export EARTHDATA_USERNAME="YOUR_EARTHDATA_USERNAME"
+export EARTHDATA_PASSWORD="YOUR_EARTHDATA_PASSWORD"
+\end{lstlisting}
+
+Prefer \file{~/.netrc} for routine use, so the password is not exposed in
+shell history, process environments, or terminal logs.
+
+\subsection{How the transfer is actually performed}
+\label{sec:sp3-curl}
+
+The downloaders shell out to \code{curl} rather than linking an HTTP client:
+
+\begin{lstlisting}[language=cpp, caption={The CDDIS fetch.}, label={lst:sp3-curl}]
+// cpp/lupnt/interfaces/sp3_loader.cc :: DownloadToFileEarthdata
+const bool has_env_auth = std::getenv("EARTHDATA_USERNAME") != nullptr
+                          && std::getenv("EARTHDATA_PASSWORD") != nullptr;
+std::string auth_arg;
+if (has_env_auth) auth_arg = "-u \"$EARTHDATA_USERNAME:$EARTHDATA_PASSWORD\" ";
+// The URS OAuth login redirects cddis -> urs.earthdata -> cddis/proxyauth -> original URL and
+// hands off session state via a cookie.  Without -c/-b persisting that cookie across the
+// redirect chain the final hop restarts the OAuth dance and loops until curl's 50-redirect
+// limit, even with correct credentials.
+std::string cmd = fmt::format(
+    "curl -fsSL --netrc-optional -c {0} -b {0} {1}--connect-timeout 10 --max-time 600 -o {2} {3}",
+    ShellQuote(cookie_jar), auth_arg, ShellQuote(tmp_path.string()), ShellQuote(url));
+\end{lstlisting}
+
+The cookie jar is \file{~/.urs_cookies} when \code{HOME} is set, otherwise
+\code{.urs\_cookies} beside the destination. Downloads land in a
+\code{.part} temporary and are renamed only after a non-empty transfer, so an
+interrupted download never leaves a truncated product in the cache. The
+gzipped product is then expanded with \code{gzip -dc} and the archive removed.
+Both \code{curl} and \code{gzip} must be on \code{PATH}.
+
+Before decompressing, \cpp{LooksLikeHtml} inspects the first 256 bytes: if
+they begin with \code{<!doctype html} or \code{<html},
+the download is deleted and an explicit error is raised, because CDDIS
+returned the Earthdata Login page instead of the file.
+
+% ===========================================================================
+\section{Download scripts and pixi tasks}
+\label{sec:sp3-scripts}
+% ===========================================================================
+
+\begin{table}[htbp]
+  \centering
+  \caption{The download entry points that exist in the repository, and where
+    each one writes.}
+  \label{tab:sp3-scripts}
+  \small
+  \begin{tabularx}{\textwidth}{@{}L L L@{}}
+    \toprule
+    Entry point & Purpose & Destination \\
+    \midrule
+    \code{scripts/download\_gnss\_data.py} &
+      Scenario data for \code{configs/lunar\_gnss\_odts.yaml} and the
+      \code{ex6\_gnss\_odts} examples. Defaults to the epoch in the YAML and
+      fetches \code{--days} consecutive daily products (default 2). &
+      \code{data/LuPNT\_data/gnss/sp3}, \code{data/LuPNT\_data/gnss/brdc} \\
+    \code{scripts/download\_gnss\_test\_fixtures.py} \newline
+      (\code{pixi run download-gnss-test-data}) &
+      The fixtures the C++ suite parses: SP3 for 2026-01-14 and 2026-01-15,
+      BRDC for 2026-01-14. Uses the loaders' \emph{default} cache directory. &
+      \code{output/gnss\_files/sp3}, \code{output/gnss\_files/brdc} \\
+    \code{python/pylupnt/core/download\_data.py} &
+      Fetches and unpacks the whole \code{LuPNT\_data.zip} bundle. &
+      \code{data/LuPNT\_data} \\
+    \code{cmake/FetchLuPNTData.cmake} &
+      Same bundle, during CMake configuration
+      (\code{-DLUPNT\_FETCH\_DATA=OFF} to disable). &
+      \code{data/LuPNT\_data} \\
+    \code{scripts/publish\_lupnt\_data.sh} &
+      Publishes a new bundle version (maintainers). & --- \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lstlisting}[language=shell, caption={Typical first-run sequence.}, label={lst:sp3-run}]
+# 1. Reference-data bundle (also happens automatically at CMake configure time).
+pixi run python -c "import pylupnt"          # triggers download_data.py if needed
+
+# 2. GNSS products for the shipped scenario (needs Earthdata credentials).
+pixi run python scripts/download_gnss_data.py
+pixi run python scripts/download_gnss_data.py --epoch 2026-01-01T02:00:00 --days 2
+
+# 3. GNSS fixtures for the C++ test suite.
+pixi run download-gnss-test-data
+
+# 4. Examples that download on demand.
+pixi run build-examples                      # builds cpp/examples/tutorials/ex3, ex5
+\end{lstlisting}
+
+The two GNSS destinations are deliberately different.
+\file{output/gnss_files} is the loaders' own cache --- it is what
+\cpp{GetOutputDir("gnss\_files")} returns and what the \cpp{GnssFilesDir()}
+helper in \file{cpp/test/interfaces/test_sp3_loader.cc} resolves to --- while
+\file{data/LuPNT_data/gnss/sp3} and \file{data/LuPNT_data/gnss/brdc} are the
+scenario input directories referenced from the YAML configuration. A file fetched into either is reusable
+by both the C++ and Python interfaces, because the Python bindings are the C++
+loaders.
+
+The tests that need those fixtures are excluded from the CI subset
+(\code{pixi run test-cpp-ci}), so a machine without Earthdata credentials
+still gets a green run; \code{pixi run test-cpp} runs them.
+
+\begin{lupntwarning}
+The Sphinx page this chapter derives from refers to
+\code{pixi run download-sp3-example} and
+\code{pixi run download-sp3-example-cpp}. No such tasks exist in
+\file{pixi.toml}. The equivalents that do exist are
+\code{pixi run download-gnss-test-data} and the notebooks
+\file{python/examples/ex3_gnss_interface.ipynb} and
+\file{python/examples/ex5_gnss_measurement_sim.ipynb}, whose C++ counterparts
+are \file{cpp/examples/tutorials/ex3_gnss_interface.cc} and
+\file{cpp/examples/tutorials/ex5_gnss_measurement_sim.cc}.
+\end{lupntwarning}
+
+% ===========================================================================
+\section{Using the loaders}
+\label{sec:sp3-api}
+% ===========================================================================
+
+The download helpers are static: they compute the product name, fetch and
+cache the file if it is missing, and return the local path. Parsing is then a
+constructor call. \cpp{Sp3Loader} additionally exposes
+\cpp{FilenameForEpoch} and \cpp{UrlForEpoch}, which do the naming arithmetic
+without touching the network --- useful for dry runs and for building an
+offline mirror.
+
+\begin{lstlisting}[language=py, caption={Python interface.}, label={lst:sp3-python}]
+# python/examples/ex3_gnss_interface.ipynb (condensed)
+import pylupnt as pnt
+
+# A TAI epoch whose daily product we want.
+t_tai = pnt.convert_time(
+    pnt.gregorian_to_time(2026, 1, 1, 12, 0, 0), pnt.Time.TDB, pnt.Time.TAI
+)
+
+# Download + cache the CODE MGEX final SP3 (Earthdata Login required), then parse it.
+sp3_path = pnt.Sp3Loader.download_file_for_epoch(t_tai, pnt.Time.TAI)
+sp3 = pnt.Sp3Loader(sp3_path)
+
+print(sp3.get_satellites()[:8])          # ['C06', 'C07', ..., 'E02', ...]
+print(sp3.get_time_span("G01"))          # (t_first_tai, t_last_tai)
+rv_ecef, clock_bias_s = sp3.get_pos_vel_clock("G01", t_tai)   # [m, m/s], [s]
+
+# Broadcast ephemeris and antenna phase centres use the same pattern.
+brdc = pnt.RinexNavLoader(pnt.RinexNavLoader.download_file_for_epoch(t_tai, pnt.Time.TAI))
+antex = pnt.AntexLoader(pnt.get_file_path("igs20.atx"))
+\end{lstlisting}
+
+The optional third argument of \py{download\_file\_for\_epoch} is a cache
+directory; passing one is how \file{scripts/download_gnss_data.py} redirects
+the fetch into \file{data/LuPNT_data/gnss}.
+
+\begin{lstlisting}[language=cpp, caption={C++ interface.}, label={lst:sp3-cpp}]
+// cpp/examples/tutorials/ex5_gnss_measurement_sim.cc (condensed)
+#include <lupnt/lupnt.h>
+using namespace lupnt;
+
+Real base_day_tai = ConvertTime(GregorianToTime(2026, 1, 14, 12, 0, 0.0), Time::TDB, Time::TAI);
+
+std::vector<std::filesystem::path> sp3_paths;
+for (int d = 0; d < 2; ++d)
+  sp3_paths.push_back(Sp3Loader::DownloadFileForEpoch(base_day_tai + d * 86400.0, Time::TAI));
+
+Sp3Loader loader(sp3_paths);          // merges, sorts and de-duplicates both days
+const auto& sats = loader.GetSatellites();
+\end{lstlisting}
+
+\begin{lupntnote}
+\cpp{Sp3Loader::GetPosVelClock} does not simply interpolate the tabulated
+samples. Positions are fitted with per-satellite Chebyshev segments (segment
+length $8\times$ the minimum sample step, up to 12 coefficients), and the
+segments are sampled from the tabulated arc with a local high-order Lagrange
+interpolant rather than a linear one --- over a \SI{300}{\second} product
+interval a GNSS arc is curved enough that linear sampling would inject
+kilometre-level chord error that the Chebyshev fit would then reproduce
+faithfully. Clocks are interpolated linearly at query time, deliberately, to
+avoid Gibbs-like ringing at day boundaries.
+\end{lupntnote}
+
+% ===========================================================================
+\section{Troubleshooting}
+\label{sec:sp3-troubleshooting}
+% ===========================================================================
+
+\begin{table}[htbp]
+  \centering
+  \caption{Common failures and their causes.}
+  \label{tab:sp3-troubleshooting}
+  \small
+  \begin{tabularx}{\textwidth}{@{}L L@{}}
+    \toprule
+    Symptom & Cause and remedy \\
+    \midrule
+    ``CDDIS returned an Earthdata Login HTML page instead of the requested SP3 file'' &
+      The request reached URS but was not authenticated. Check that
+      \code{\textasciitilde/.netrc} exists in the home directory (not the repository), that
+      the machine entry is exactly \code{urs.earthdata.nasa.gov}, that the
+      mode is \code{0600}, that the credentials are correct, and that CDDIS
+      application access has been approved in a browser. \\
+    ``Maximum (50) redirects followed'' &
+      The URS cookie is not being persisted. \lupnt{}'s own \code{curl}
+      invocation passes \code{-c}/\code{-b}; a hand-written command must do
+      the same. \\
+    ``Failed to download SP3 file from CDDIS'' with no HTML &
+      Network, proxy, or timeout (\code{--connect-timeout 10},
+      \code{--max-time 600}), or \code{LUPNT\_SKIP\_SP3\_DOWNLOAD} is set. \\
+    ``C++ SP3 download helper supports modern CDDIS COD/MGEX \code{.SP3.gz} products (GPS week $\geq$ 1962) only'' &
+      The requested epoch predates the long-form naming convention. Supply the
+      file manually and construct \cpp{Sp3Loader} from the path. \\
+    ``Environment variable LUPNT\_DATA\_PATH is not set'' &
+      Running a binary outside \code{pixi}. Export the variables in
+      \cref{tab:sp3-env} or run \code{scripts/config\_development.sh}. \\
+    \code{File not found: <name>} from \cpp{GetFilePath} &
+      The bundle is missing or partial. Delete \code{data/LuPNT\_data} and let
+      CMake or \code{download\_data.py} re-fetch it. \\
+    SPICE warns that \code{de440t.bsp} was not found &
+      $\TT \leftrightarrow \TDB$ silently degrades to the analytic series;
+      see \cref{chap:time-conversions}. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The credential path can be tested independently of \lupnt{}:
+
+\begin{lstlisting}[language=shell]
+# -L follows the Earthdata redirect chain, -n reads ~/.netrc,
+# -c/-b persist the URS session cookie across the chain.
+curl -L -n -c ~/.urs_cookies -b ~/.urs_cookies -O \
+  "https://cddis.nasa.gov/archive/gnss/products/2399/COD0MGXFIN_20260010000_01D_05M_ORB.SP3.gz"
+\end{lstlisting}
+
+% ===========================================================================
+\section{Model boundaries}
+\label{sec:sp3-boundaries}
+% ===========================================================================
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{One SP3 product only.} The downloader hard-codes the CODE
+    MGEX \emph{final} product. Rapid and ultra-rapid products, other analysis
+    centres, and the legacy short file names are not supported by
+    \cpp{BuildSp3ProductInfo}; such files can still be parsed by passing an
+    explicit path.
+  \item \textbf{No separate clock products.} Clocks come from the SP3 records
+    at \SI{300}{\second}. Applications sensitive to shorter-term clock
+    behaviour need an external \code{.CLK} source.
+  \item \textbf{No SP3 velocity records.} Only \code{P} records are parsed;
+    velocities are obtained by differentiating the Chebyshev position fit, not
+    from \code{V} records.
+  \item \textbf{Ephemeris version is fixed by the bundle.} \lupnt{} evaluates
+    DE440 \citep{park2021de440}. A comparison against a tool that evaluated a
+    different DE version would carry the full inter-ephemeris difference, so
+    the cross-validation avoids it by pointing GMAT at \lupnt{}'s own
+    \file{de440.bsp}: with every tool on DE440 no DE-version offset remains,
+    as quantified in \cref{chap:cross-validation}.
+  \item \textbf{Orientation kernels are time-varying inputs.} The Earth binary
+    PCK is re-downloaded at every start-up and its predicted tail changes
+    between releases. Pin the data by setting
+    \code{LUPNT\_SKIP\_SPICE\_KERNEL\_DOWNLOAD=1} when bit-reproducibility
+    matters.
+  \item \textbf{EOP outside the table is held, not extrapolated.} Epochs
+    beyond the last tabulated day reuse the endpoint values, so polar motion
+    and $\UTone-\UTC$ freeze rather than diverge --- convenient, but the error
+    grows without any diagnostic. Refresh the series for far-future epochs.
+  \item \textbf{Linear interpolation across leap seconds.} The daily
+    $\UTone-\UTC$ column is interpolated straight through the \SI{1}{\second}
+    step, which corrupts $\UTone$ within roughly a day of an insertion. The
+    measured size of the effect, and the way the cross-validation tests handle
+    it, are given in \cref{chap:cross-validation}.
+  \item \textbf{External tooling assumed.} \code{curl} and \code{gzip} must be
+    installed; there is no in-process HTTP or inflate implementation.
+\end{itemize}

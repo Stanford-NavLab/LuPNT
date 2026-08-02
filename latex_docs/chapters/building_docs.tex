@@ -1,0 +1,704 @@
+\chapter{Building the Documentation}
+\label{chap:building-docs}
+
+\lupnt{} ships two documents built from the same repository: the Sphinx
+website under \file{docs/}, which combines narrative pages, the executed
+tutorial notebooks, the Python API, and a Doxygen-derived C++ API; and this
+LaTeX manual under \file{latex_docs/}, which carries the mathematical
+specifications in full. This chapter specifies how each is produced, which
+files configure it, what the build writes where, and how to extend either one.
+It expands \file{docs/builddocs.rst} with the contents of
+\file{docs/make\_docs.py}, \file{docs/conf.py}, \file{docs/index.rst},
+\file{docs/CMakeLists.txt}, \file{docs/Doxyfile}, and the LaTeX sources
+themselves.
+
+The developer environment that supplies the toolchain --- Pixi, its tasks, and
+the CI pipeline that publishes the site --- is specified in
+\cref{chap:development}.
+
+\section{The documentation toolchain}
+\label{sec:bd-toolchain}
+
+The narrative documentation and the Python API pages are written in
+reStructuredText and rendered by Sphinx. The tutorial pages come from two
+sources: the Python example notebooks, included through \code{nbsphinx} and
+\code{nbsphinx-link}, and the C++ example programs, included with
+\code{literalinclude}. The C++ API reference is generated from Doxygen
+comments in the public headers and pulled into Sphinx by the Breathe and Exhale
+extensions. The generated HTML is GitHub Pages-ready.
+
+\begin{table}[H]
+  \centering
+  \caption{Documentation toolchain components and where they are configured.}
+  \label{tab:bd-toolchain}
+  \small
+  \begin{tabularx}{\textwidth}{@{}l L L@{}}
+    \toprule
+    Component & Role & Configured in \\
+    \midrule
+    Sphinx           & site generator, HTML builder & \file{docs/conf.py} \\
+    \code{furo}      & HTML theme (light and dark logos) & \file{docs/conf.py} \\
+    \code{autodoc}, \code{autosummary}, \code{napoleon}
+                     & Python API extraction, Google/NumPy docstrings & \file{docs/conf.py} \\
+    \code{nbsphinx}, \code{nbsphinx-link}
+                     & renders \file{.ipynb} tutorials from stored outputs
+                     & \file{docs/conf.py}, \file{docs/tutorial/Python/*.nblink} \\
+    Doxygen          & parses the C++ headers into XML
+                     & \code{exhaleDoxygenStdin} in \file{docs/conf.py} \\
+    \code{breathe}   & bridges Doxygen XML into the Sphinx C++ domain & \file{docs/conf.py} \\
+    \code{exhale}    & generates the C++ API page tree & \file{docs/conf.py} \\
+    \code{pandoc}    & notebook markdown conversion for \code{nbsphinx} & Pixi dependency \\
+    \code{tectonic}  & builds this LaTeX manual & \file{latex_docs/build.sh} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The layout of \file{docs/} is:
+
+\begin{lstlisting}[language=shell]
+docs/
+  index.rst              # root toctree, and the MAKE_DOCS python-api markers
+  conf.py                # Sphinx configuration (incl. the Doxygen stdin config)
+  make_docs.py           # the build driver invoked by `pixi run build-docs`
+  make.bat               # Windows convenience wrapper around sphinx-build
+  requirements.txt       # pip requirements for a non-pixi build
+  Doxyfile               # standalone Doxygen config, used by docs/CMakeLists.txt
+  CMakeLists.txt         # the GenerateDocs (m.css) target
+  .nojekyll              # copied into the published site
+  introduction.rst  getting_started.rst  development.rst  builddocs.rst
+  initialization.rst  roadmap.md
+  pages/                 # new_simulation, sp3_download, cross_validation,
+                         #   related_publications, about.dox
+  math/                  # the mathematical specification pages (index + 11 pages)
+  tutorial/
+    Python/              # one .nblink per python/examples/exN_*.ipynb
+    C++/                 # one .rst per cpp/examples tutorial program
+  _static/               # logos, background images, generated cesium scenes
+  latex/                 # THIS manual (see the last section of this chapter)
+\end{lstlisting}
+
+\section{Building with Pixi}
+\label{sec:bd-pixi}
+
+One task builds everything:
+
+\begin{lstlisting}[language=shell]
+pixi run build-docs
+\end{lstlisting}
+
+The task is defined as \code{python docs/make\_docs.py} with
+\code{depends-on = ["build-py"]}. The dependency matters: the Python API
+generator \emph{imports} \pylupnt{} to enumerate its classes and functions, so
+the compiled extension must exist. If \file{python/pylupnt/\_pylupnt*.so} is
+missing --- which only happens on a manual, non-Pixi build --- build the
+bindings first:
+
+\begin{lstlisting}[language=shell]
+pixi run build-py
+\end{lstlisting}
+
+\subsection{What \file{make\_docs.py} does}
+\label{sec:bd-makedocs}
+
+\file{docs/make\_docs.py} descends from the Open3D documentation driver,
+modified to use Breathe and Exhale for the C++ API. Running it performs the
+following steps, in order, with the working directory set to \file{docs/}:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item Create or clear the staging directory \file{docs/\_out}.
+  \item Remove \file{docs/\_static/C++/build} if present.
+  \item With \code{--clean} (the default), remove \file{docs/\_out},
+    \file{docs/cpp\_api}, \file{docs/python\_api}, and \file{docs/\_build}.
+  \item Read \file{docs/index.rst} and collect the modules to document from the
+    \code{MAKE\_DOCS/python\_api/...} markers (\cref{sec:bd-pythonapi}).
+  \item For every such module, generate one \file{.rst} file per class, per
+    function, and one summary page per submodule, into \file{docs/python\_api}.
+  \item Invoke \code{sphinx-build -b html -j <jobs> . \_out/html}. Exhale runs
+    Doxygen from inside this call and generates \file{docs/cpp\_api}.
+  \item With \code{--copy} (the default), delete \file{build/docs}, copy
+    \file{docs/\_out/html} there, remove the \file{.doctrees} directory, and
+    copy \file{docs/.nojekyll} into it.
+  \item Clean the staging directories again.
+\end{enumerate}
+
+The final site is therefore the repository-level \file{build/docs} directory,
+not anything under \file{docs/}. The \file{.nojekyll} marker is what makes
+GitHub Pages serve generated directories whose names begin with an underscore,
+such as \file{\_static}, instead of filtering them through Jekyll.
+
+Sphinx parallelism defaults to \code{multiprocessing.cpu\_count()} and is
+overridden by the environment variable \code{LUPNT\_DOCS\_JOBS}:
+
+\begin{lstlisting}[language=shell]
+LUPNT_DOCS_JOBS=4 pixi run build-docs
+\end{lstlisting}
+
+The CI \code{pages} job sets exactly this variable to \code{4}
+(\cref{sec:bd-ci}).
+
+\begin{lupntnote}
+\file{make\_docs.py} hard-codes the \code{html} builder. To produce any other
+output --- \code{latex}, \code{linkcheck}, \code{dirhtml} --- call
+\code{sphinx-build} directly from \file{docs/}, after generating the Python API
+pages at least once so the \code{python\_api/*} toctree entries resolve.
+\end{lupntnote}
+
+\subsection{Sphinx configuration}
+\label{sec:bd-conf}
+
+\file{docs/conf.py} inserts \file{<repo>/python} at the front of
+\code{sys.path} so \code{import pylupnt} resolves from the source tree exactly
+as it does under Pixi activation, then declares:
+
+\begin{lstlisting}[language=py]
+# docs/conf.py
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
+    "breathe",
+    "exhale",
+    "nbsphinx",
+    "nbsphinx_link",
+]
+
+html_theme = "furo"
+html_title = "LuPNT"
+html_static_path = ["_static"]
+html_favicon = "_static/lupnt_mark.svg"
+html_theme_options = {
+    "light_logo": "lupnt_logo_horizontal.svg",
+    "dark_logo": "lupnt_logo_horizontal_dark.svg",
+}
+
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": True,
+    "inherited-members": True,
+}
+autosummary_generate = True
+napoleon_google_docstring = True
+napoleon_numpy_docstring = True
+nbsphinx_execute = "never"
+
+primary_domain = "cpp"
+highlight_language = "cpp"
+\end{lstlisting}
+
+Because \code{primary\_domain} and \code{highlight\_language} are both
+\code{cpp}, an unqualified code role or code block in a \file{.rst} page is
+interpreted and highlighted as C++; Python snippets must say so explicitly.
+
+\subsection{The C++ API: Breathe and Exhale}
+\label{sec:bd-cppapi}
+
+Exhale, not the committed \file{docs/Doxyfile}, drives the Doxygen run used by
+the website. \code{exhaleUseDoxyfile} is \code{False} and
+\code{exhaleExecutesDoxygen} is \code{True}, so the configuration is supplied
+inline:
+
+\begin{lstlisting}[language=py]
+# docs/conf.py
+breathe_projects = {"lupnt": str(DOCS_DIR / "_build" / "doxygen" / "xml")}
+breathe_default_project = "lupnt"
+
+exhale_args = {
+    "containmentFolder": "./cpp_api",
+    "rootFileName": "cpp_library_root.rst",
+    "rootFileTitle": "C++ API",
+    "doxygenStripFromPath": str(REPO_ROOT / "cpp" / "lupnt"),
+    "createTreeView": True,
+    "exhaleExecutesDoxygen": True,
+    "exhaleUseDoxyfile": False,
+    "exhaleDoxygenStdin": """
+PROJECT_NAME = LuPNT
+INPUT = <repo>/cpp/lupnt
+RECURSIVE = YES
+FILE_PATTERNS = *.h
+EXCLUDE_PATTERNS = */environment/plasma/fortran/*
+GENERATE_XML = YES
+GENERATE_HTML = NO
+GENERATE_LATEX = NO
+XML_OUTPUT = xml
+EXTRACT_ALL = YES
+EXTRACT_ANON_NSPACES = NO
+HIDE_UNDOC_MEMBERS = NO
+HIDE_UNDOC_CLASSES = NO
+QUIET = YES
+""",
+}
+\end{lstlisting}
+
+Two of these settings encode deliberate decisions:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \code{FILE\_PATTERNS = *.h} with \code{EXTRACT\_ANON\_NSPACES = NO}
+    documents only the public headers. Implementation files hold internal
+    anonymous-namespace helpers that Doxygen would otherwise surface as
+    \code{lupnt::@<number>} namespaces in the API listing; the public API lives
+    in the headers.
+  \item \code{EXCLUDE\_PATTERNS} drops
+    \file{cpp/lupnt/environment/plasma/fortran}, whose legacy fixed-form
+    Fortran sources are not meaningfully documentable by Doxygen.
+\end{itemize}
+
+The generated pages land in \file{docs/cpp\_api}, rooted at
+\file{cpp\_api/cpp\_library\_root.rst}, and the Doxygen XML in
+\file{docs/\_build/doxygen/xml}. Both are regenerated from scratch on every
+build and are removed by the clean steps of \cref{sec:bd-makedocs}, so neither
+is committed.
+
+To document a new C++ symbol on the website, no documentation file is needed:
+add a Doxygen comment to its declaration in a header under \file{cpp/lupnt},
+and it appears in the tree on the next build.
+
+\subsection{The Python API pages}
+\label{sec:bd-pythonapi}
+
+Which Python modules get API pages is declared in a comment block inside
+\file{docs/index.rst}. \file{make\_docs.py} parses lines matching
+\code{MAKE\_DOCS/python\_api/<module> <type>}; the optional second field is
+\code{python\_only} for pure-Python modules, and is omitted for
+pybind11-backed ones. The distinction changes the member-discovery rule:
+\code{python\_only} modules are scanned for classes and functions whose
+\code{\_\_module\_\_} equals the module name, while binding modules are scanned
+for classes belonging to the module or a submodule and for built-in functions.
+
+\begin{lstlisting}[language=py]
+# docs/index.rst (inside a comment block)
+MAKE_DOCS/python_api/pylupnt
+MAKE_DOCS/python_api/pylupnt.plot python_only
+MAKE_DOCS/python_api/pylupnt.core.pylupnt_utils python_only
+MAKE_DOCS/python_api/pylupnt.plasma.kp_loader python_only
+\end{lstlisting}
+
+The same four modules are listed again, without the marker prefix, in the
+\emph{Python API} toctree so that the generated pages are actually reachable:
+
+\begin{lstlisting}[language=py]
+# docs/index.rst
+.. toctree::
+    :maxdepth: 1
+    :caption: Python API
+
+    python_api/pylupnt
+    python_api/pylupnt.plot
+    python_api/pylupnt.core.pylupnt_utils
+    python_api/pylupnt.plasma.kp_loader
+\end{lstlisting}
+
+Adding a module to the Python API therefore requires editing both places: the
+marker block (so the pages are generated) and the toctree (so they are linked).
+Forgetting the first yields a broken toctree entry; forgetting the second
+yields orphaned pages and a Sphinx warning.
+
+\subsection{The site toctrees}
+
+\file{docs/index.rst} groups the pages into four captioned toctrees, plus the
+Python and C++ API ones above:
+
+\begin{table}[H]
+  \centering
+  \caption{Top-level structure of \file{docs/index.rst}.}
+  \label{tab:bd-toctrees}
+  \small
+  \begin{tabularx}{\textwidth}{lL}
+    \toprule
+    Caption & Entries \\
+    \midrule
+    Getting Started & \file{introduction}, \file{getting\_started},
+      \file{development}, \file{pages/new\_simulation}, \file{builddocs},
+      \file{pages/sp3\_download}, \file{pages/cross\_validation} \\
+    Tutorial & \file{tutorial/Python/index}, \file{tutorial/C++/index},
+      \file{pages/related\_publications} \\
+    Math Specs & \file{math/index} \\
+    Python API / C++ API & the generated trees of
+      \cref{sec:bd-pythonapi,sec:bd-cppapi} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+This is the same ordering the LaTeX manual follows in its four parts, so a page
+added to one document has an obvious home in the other.
+
+\section{Previewing locally}
+\label{sec:bd-preview}
+
+Serve the generated site rather than opening the HTML files from disk:
+
+\begin{lstlisting}[language=shell]
+python -m http.server 8000 --directory build/docs
+\end{lstlisting}
+
+then open \url{http://localhost:8000}. A local server is required for in-page
+search and for the interactive visualizations to load; opening
+\file{build/docs/index.html} directly leaves both broken because of the
+browser's file-origin restrictions.
+
+\section{Tutorial outputs}
+\label{sec:bd-notebooks}
+
+\code{nbsphinx} is configured with \code{nbsphinx\_execute = "never"}. The
+rendered notebooks therefore display the outputs \emph{stored in} each
+\file{.ipynb}; the documentation build never re-runs them. This is a
+deliberate trade: the docs build stays fast and needs no runtime data bundle,
+at the cost of the stored outputs being a committed artefact that can go stale.
+
+After changing an example, or an API an example depends on, refresh those
+stored outputs in place:
+
+\begin{lstlisting}[language=shell]
+pixi run render-notebooks                 # all notebooks
+pixi run render-notebooks -- --only ex16  # a subset
+pixi run render-tutorials                 # render, then optimize the PNGs
+\end{lstlisting}
+
+The \code{nbstripout} pre-commit hook is configured to preserve outputs for
+exactly these files (\file{python/examples/exN\_*.ipynb}) and to strip every
+other notebook in the repository; see \cref{sec:dev-style}.
+
+Three classes of output behave differently once published:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Static Matplotlib figures} are embedded as images and always
+    render, offline included.
+  \item \textbf{Plotly figures} (examples \code{ex12}, \code{ex14} through
+    \code{ex16}) pull \code{plotly.js} from a CDN at view time, so a network
+    connection is required to see them.
+  \item \textbf{Cesium scenes} (example \code{ex13}) are written as
+    self-contained HTML into \file{docs/\_static/cesium\_scenes} and linked
+    from the page; they pull CesiumJS from a CDN.
+\end{itemize}
+
+The headless-Chrome prerequisite for the static Plotly renders, and the
+system libraries it needs on a minimal Linux image, are documented in
+\cref{sec:dev-notebooks}.
+
+\section{Manual build without Pixi}
+\label{sec:bd-manual}
+
+If Pixi is not available, build the C++ library and the Python bindings first
+(\cref{sec:dev-bindings}), then install the documentation dependencies and run
+the driver:
+
+\begin{lstlisting}[language=shell]
+cd docs
+pip install -r requirements.txt
+brew install doxygen pandoc          # macOS
+sudo apt-get install doxygen pandoc  # Linux
+python make_docs.py
+\end{lstlisting}
+
+\file{docs/requirements.txt} lists \code{notebook}, \code{sphinx},
+\code{sphinx-rtd-theme}, \code{furo}, \code{exhale}, \code{breathe},
+\code{nbsphinx}, \code{nbsphinx-link}, \code{jinja2}, and
+\code{lxml\_html\_clean}; Doxygen and pandoc are not pip-installable and must
+come from a system package manager or conda-forge. As with the Pixi build, the
+generated HTML is written to the repository-level \file{build/docs} folder.
+
+\begin{lupntwarning}
+A manual build must be able to \code{import pylupnt}. Either run it inside a
+shell where \code{PYTHONPATH} contains \file{python/}, or install the package;
+otherwise the Python API generation step of \cref{sec:bd-makedocs} raises an
+import error before Sphinx is ever invoked.
+\end{lupntwarning}
+
+\section{The standalone Doxygen target}
+\label{sec:bd-doxygen}
+
+Independently of the Sphinx site, \file{docs/CMakeLists.txt} defines a
+\code{lupnt\_docs} CMake project with a \code{GenerateDocs} target that renders
+Doxygen through \code{m.css} for a standalone, more richly styled C++ reference:
+
+\begin{lstlisting}[language=shell]
+cmake -S docs -B build-docs-cmake -GNinja
+cmake --build build-docs-cmake --target GenerateDocs
+\end{lstlisting}
+
+The project fetches \code{mosra/m.css} at a pinned commit through CPM, adds the
+\file{cpp} project as a dependency, configures \file{docs/Doxyfile} and
+\file{docs/conf.py} into the binary directory, and runs
+\code{m.css/documentation/doxygen.py} on the configured \file{conf.py},
+writing to \code{<binary dir>/doxygen}. The variables substituted into the
+\file{Doxyfile} are \code{DOXYGEN\_PROJECT\_NAME},
+\code{DOXYGEN\_PROJECT\_VERSION}, \code{DOXYGEN\_PROJECT\_ROOT}, and
+\code{DOXYGEN\_OUTPUT\_DIRECTORY}.
+
+\begin{lupntnote}
+The committed \file{docs/Doxyfile} (project name \code{"LuPNT (C++ API)"},
+\code{OUTPUT\_DIRECTORY = doxygen}) is used by this target only. The website's
+C++ API uses the inline Doxygen configuration of \cref{sec:bd-cppapi} instead,
+so changing the \file{Doxyfile} has no effect on \code{pixi run build-docs}.
+\end{lupntnote}
+
+\section{Publishing from CI}
+\label{sec:bd-ci}
+
+The \code{pages} job in \file{.github/workflows/} is the only job in the
+\code{docs} stage and runs only on the default branch:
+
+\begin{lstlisting}[language=yamlcfg]
+# .github/workflows/
+pages:
+  extends: .build_template
+  stage: docs
+  variables:
+    LUPNT_DOCS_JOBS: "4"
+  script:
+    - *download_lupnt_data
+    - pixi run build-docs
+    - rm -rf public
+    - mv build/docs public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+\end{lstlisting}
+
+It downloads the runtime data bundle first, because \code{build-docs} depends
+on \code{build-py} and the import of \pylupnt{} performed by the Python API
+generator touches data paths. The site is then renamed to \file{public}, which
+is where GitHub Pages expects it, and published as a job artifact. The
+\file{.nojekyll} file that \file{make\_docs.py} copies makes the same tree
+serve correctly from GitHub Pages.
+
+\section{This manual: \file{latex_docs}}
+\label{sec:bd-latex}
+
+The LaTeX manual is a separate document with a separate build, and it lives at
+the repository root rather than under \file{docs/}. That placement is
+deliberate: the manual is a self-contained reference, so \file{docs/} may
+eventually be retired, and the manual is designed to survive that. It reads nothing from \file{docs/} --- the
+\code{\textbackslash graphicspath} entry for \file{docs/_static} is an optional
+fallback, not a dependency.
+
+It carries the mathematical specifications as full derivations, unit contracts,
+and inline implementing code, together with the bibliography behind the models
+--- of which the primary reference is \citep{iiyama2026thesis}. What only the
+Sphinx site provides is the auto-generated API reference and the executed
+notebooks; those are generated artefacts and are not duplicated here.
+
+\subsection{Layout}
+
+\begin{table}[H]
+  \centering
+  \caption{Files under \file{latex_docs}.}
+  \label{tab:bd-latex-layout}
+  \small
+  \begin{tabularx}{\textwidth}{lL}
+    \toprule
+    Path & Role \\
+    \midrule
+    \file{lupnt.tex}    & the master document: class options, title page, front
+      matter, the four \code{\textbackslash part} divisions, and one
+      \code{\textbackslash include} per chapter \\
+    \file{preamble.tex} & every package, listing style, TikZ style, admonition
+      environment, and macro available to a chapter --- the only place
+      \code{\textbackslash usepackage} may appear \\
+    \file{chapters/}    & one \file{.tex} fragment per chapter, each
+      \code{\textbackslash include}d by \file{lupnt.tex} \\
+    \file{refs.bib}     & the bibliography database; the only source of
+      citation keys \\
+    \file{build.sh}     & the build driver; also resolves
+      \code{LUPNT\_DATA\_PATH} and writes \file{figpath.tex} \\
+    \file{STYLE.md}     & the chapter style contract every fragment must follow \\
+    \file{build/}       & generated output, including \file{build/lupnt.pdf} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Building}
+
+No system LaTeX installation is required. \file{build.sh} uses \code{tectonic},
+which downloads the packages it needs on demand and runs BibTeX itself, so a
+single invocation produces a document with resolved citations and cross
+references:
+
+\begin{lstlisting}[language=shell]
+cd latex_docs
+./build.sh            # full build into ./build
+./build.sh --keep     # keep .aux/.bbl intermediates for debugging
+\end{lstlisting}
+
+The script prefers a \code{tectonic} already on \code{PATH} and otherwise falls
+back to \code{pixi exec}, which fetches it into a throwaway environment ---
+nothing is added to \file{pixi.toml} or the lockfile:
+
+\begin{lstlisting}[language=shell]
+# latex_docs/build.sh, in effect
+if command -v tectonic >/dev/null 2>&1; then
+  RUNNER=(tectonic)
+elif command -v pixi >/dev/null 2>&1; then
+  RUNNER=(pixi exec --spec tectonic tectonic)
+fi
+"${RUNNER[@]}" --outdir build lupnt.tex
+\end{lstlisting}
+
+Without the \code{--keep} flag the script deletes the \code{.aux}, \code{.log},
+\code{.out}, \code{.toc}, \code{.bbl}, \code{.blg}, and \code{.bcf}
+intermediates, leaving only \file{build/lupnt.pdf}. Equivalent invocations, if
+either tool is preferred directly:
+
+\begin{lstlisting}[language=shell]
+# tectonic, directly
+tectonic --outdir build lupnt.tex
+
+# or a classic TeX Live toolchain
+pdflatex lupnt && bibtex lupnt && pdflatex lupnt && pdflatex lupnt
+\end{lstlisting}
+
+\begin{lupntnote}
+\file{refs.bib} must sit beside \file{lupnt.tex}, which is why it is committed
+in \file{latex_docs} rather than generated or symlinked from elsewhere:
+tectonic resolves the bibliography relative to the main file.
+\end{lupntnote}
+
+The manual is not built by \code{pixi run build-docs} and is not published by
+the \code{pages} job. It is built on demand.
+
+\subsection{Adding a chapter}
+\label{sec:bd-newchapter}
+
+Three steps, in order:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item Write \file{latex_docs/chapters/foo.tex} as a \emph{fragment}. It must
+    not contain \code{\textbackslash documentclass},
+    \code{\textbackslash usepackage}, \code{\textbackslash begin\{document\}},
+    or a bibliography --- \file{preamble.tex} has already been read by the time
+    the fragment is included. It opens with a
+    \code{\textbackslash chapter\{...\}} and its label:
+\begin{lstlisting}
+% latex_docs/chapters/foo.tex
+\chapter{Time Systems and Conversions}
+\label{chap:time-conversions}
+
+Opening paragraph: what this chapter specifies, which source files
+implement it, and which references it follows.
+
+\section{...}
+\label{sec:tc-...}
+\end{lstlisting}
+  \item Add \code{\textbackslash include\{chapters/foo\}} to
+    \file{lupnt.tex}, inside the \code{\textbackslash part} it belongs to. The
+    order of the \code{\textbackslash include} lines is the order of the
+    document; there is no separate table of contents to maintain.
+  \item Follow \file{STYLE.md}. It is the contract, not a suggestion; the
+    points it fixes are summarised below.
+\end{enumerate}
+
+If a new package is genuinely needed, add it to \file{preamble.tex} rather than
+to the chapter, so that every chapter stays compilable in isolation via
+\code{\textbackslash includeonly}.
+
+\subsection{The style contract in brief}
+
+\file{STYLE.md} is authoritative; this is an index of what it fixes.
+
+{\small
+  \begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.40\textwidth}
+                      >{\raggedright\arraybackslash}p{0.54\textwidth}@{}}
+    \caption{Macros and environments a chapter may use, from
+             \file{preamble.tex}.}
+    \label{tab:bd-style} \\
+    \toprule
+    Construct & Use for \\
+    \midrule
+    \endfirsthead
+    \toprule
+    Construct & Use for \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endlastfoot
+    \code{\textbackslash code\{x\}} & identifier, enum value, CLI flag, short
+      expression \\
+    \code{\textbackslash cpp\{X\}}, \code{\textbackslash py\{x\}} & a C++ or
+      Python symbol \\
+    \code{\textbackslash file\{cpp/lupnt/x.cc\}} & a repository path (breaks at
+      \code{/} and the underscore) \\
+    \code{\textbackslash lupnt\{\}}, \code{\textbackslash pylupnt\{\}} & the
+      library name, the Python package \\
+    \code{\textbackslash vec}, \code{\textbackslash mat},
+      \code{\textbackslash uvec} & 3-vector, matrix, unit vector \\
+    \code{\textbackslash dd}, \code{\textbackslash transpose} & upright
+      differential, transpose superscript \\
+    \code{\textbackslash diag}, \code{\textbackslash atantwo},
+      \code{\textbackslash argmin}, \code{\textbackslash Tr},
+      \code{\textbackslash erf} & operators \\
+    \code{\textbackslash TT}, \code{\textbackslash TAI},
+      \code{\textbackslash TDB}, \ldots & time scales, in math mode \\
+    \code{\textbackslash SI}, \code{\textbackslash si},
+      \code{\textbackslash num} & units, via \code{siunitx}; extra units
+      \code{\textbackslash yr}, \code{\textbackslash dayunit},
+      \code{\textbackslash bit}, \code{\textbackslash dB},
+      \code{\textbackslash dBHz}, \code{\textbackslash dBW},
+      \code{\textbackslash dBi}, \code{\textbackslash TECU},
+      \code{\textbackslash au} \\
+    \code{lupntnote}, \code{lupntwarning} & replace the reStructuredText
+      \code{.. note::} and \code{.. warning::} \\
+    \code{lstlisting} & languages \code{cpp}, \code{py}, \code{yamlcfg},
+      \code{shell}, \code{bibtexlang} \\
+    \code{booktabs}, \code{tabularx} with the ragged-right \code{L} column &
+      tables \\
+    TikZ styles \code{tsnode}, \code{boxnode} and edge classes
+      \code{constant}, \code{table}, \code{linear}, \code{model},
+      \code{integral}, \code{flow} & diagrams \\
+  \end{longtable}
+}
+
+Four rules are easy to violate and worth restating:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Labels are prefixed by kind and scope}: \code{chap:<slug>},
+    \code{sec:<slug>-<name>}, \code{eq:<slug>-<name>},
+    \code{tab:<slug>-<name>}, \code{fig:<slug>-<name>},
+    \code{lst:<slug>-<name>}. Reference them with
+    \code{\textbackslash cref} or \code{\textbackslash Cref}, never with a
+    hard-coded number.
+  \item \textbf{Citations use keys that already exist in \file{refs.bib}}. Add
+    an entry rather than inventing a key. Chapter and equation numbers in the
+    thesis are cited as
+    \code{\textbackslash citep[Ch.~6.2]\{iiyama2026thesis\}}.
+  \item \textbf{Listings are ASCII only} --- no arrows, Greek letters, or en
+    dashes --- and every listing names the file it came from on its first
+    line. The same applies to prose: non-ASCII characters belong in math mode,
+    as \code{\$\textbackslash mu\$} or \code{\$\textbackslash approx\$}, never
+    bare.
+  \item \textbf{Chapters are specifications, not summaries.} Each model states
+    the state, unit, and time-scale contract it assumes; the governing
+    equations, numbered, with every symbol defined; the implementing code with
+    its source path; the configuration knobs that change its behaviour; and an
+    explicit \emph{model boundaries} section covering what is approximated,
+    what is omitted, and what accuracy is expected.
+\end{itemize}
+
+\subsection{Keeping the two documents consistent}
+
+The Sphinx site and this manual are written from the same repository but are
+not generated from one another. Consequences worth planning around:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item A change to a \file{.rst} page does not propagate to the corresponding
+    chapter, and vice versa. The mapping is one chapter per page, with the
+    filenames deliberately kept parallel
+    (\file{docs/development.rst} $\leftrightarrow$
+    \file{latex_docs/chapters/development.tex}).
+  \item The manual has no CI job. A LaTeX error is caught only when someone
+    runs \file{build.sh}; there is no equivalent of the \code{pages} job to
+    fail the pipeline.
+  \item Undefined cross references and missing citations are warnings, not
+    errors, under tectonic. Check the build log for
+    \code{LaTeX Warning: Reference ... undefined} and
+    \code{Citation ... undefined} before considering a chapter finished.
+  \item Notebook outputs and the API references appear only on the website. The
+    manual draws its own figures in TikZ instead, so that they add no binary
+    weight to the repository and cannot drift out of sync with the prose.
+  \item \file{latex_docs} is \textbf{text only}; its \file{.gitignore} rejects
+    images and PDFs. Assets shared with the Sphinx site are read from
+    \file{docs/_static}, and generated or large artefacts from
+    \file{\$LUPNT_DATA_PATH/docs}, included with \code{\textbackslash datafig}
+    so that a clone without the fetched data directory still builds --- the
+    figure degrades to a placeholder rather than failing.
+\end{itemize}

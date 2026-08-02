@@ -1,0 +1,1149 @@
+\chapter{Development Environment and Workflow}
+\label{chap:development}
+
+This chapter specifies the developer-facing side of \lupnt{}: how the build
+environment is provisioned, which build targets exist and what each one
+produces, how the \pylupnt{} extension module is compiled and where its
+artefacts land, how the test suites are laid out and executed, which coding
+conventions are mechanically enforced, and what the continuous-integration
+pipeline runs on every push. It is the LaTeX counterpart of
+\file{docs/development.rst}, expanded with the contents of the files that
+actually define the workflow: \file{pixi.toml}, \file{CMakePresets.json},
+\file{cpp/CMakeLists.txt}, \file{python/bindings/CMakeLists.txt},
+\file{cpp/test/CMakeLists.txt}, \file{.pre-commit-config.yaml},
+\file{.clang-format}, \file{.clang-tidy}, and \file{.github/workflows/}.
+
+Installation for \emph{users} (as opposed to developers) is covered in
+\cref{chap:getting-started}; the library and its scope are introduced in
+\cref{chap:introduction}. Building the documentation --- including this manual
+--- is covered separately in \cref{chap:building-docs}.
+
+\section{The Pixi environment}
+\label{sec:dev-environment}
+
+\lupnt{} does not ask the developer to assemble a toolchain by hand. Every
+compiler, every C++ dependency, the Python interpreter, and all Python packages
+are provisioned by \emph{Pixi} (\url{https://pixi.sh}) from conda-forge, pinned
+by \file{pixi.lock}. There is no conda or mamba environment to create, no
+\code{environment.yml} to activate, and no system package manager involvement
+except for the handful of shared libraries headless Chrome needs
+(\cref{sec:dev-notebooks}).
+
+The manifest \file{pixi.toml} declares a workspace named \code{lupnt} at
+version \code{0.1.0}, drawing from the \code{conda-forge} channel and
+supporting the platforms \code{linux-64} and \code{osx-arm64}. Windows is not
+a supported Pixi platform for this repository.
+
+\subsection{Dependency groups}
+\label{sec:dev-deps}
+
+The \code{[dependencies]} table splits into three logical groups, listed in
+\cref{tab:dev-deps}. The \code{[pypi-dependencies]} table adds the pure-Python
+stack that has no conda-forge counterpart in use here: \code{bpy} (pinned to
+\code{4.5.11}), \code{fastapi}, \code{h5py}, \code{ipykernel}, \code{kaleido},
+\code{matplotlib}, \code{nbformat}, \code{numba}, \code{pandas},
+\code{plotly}, \code{pre-commit}, \code{pymoo}, \code{pytest},
+\code{pytest-cov}, \code{gcovr}, \code{requests}, \code{scikit-learn},
+\code{sphinx}, \code{sphinx-rtd-theme}, \code{furo}, \code{exhale},
+\code{breathe}, \code{nbsphinx}, \code{nbsphinx-link},
+\code{lxml\_html\_clean}, \code{tqdm}, and \code{uvicorn}. The documentation
+toolchain therefore comes with the ordinary environment: no separate
+documentation install step is needed inside Pixi.
+
+\begin{table}[H]
+  \centering
+  \caption{Dependency groups declared in \file{pixi.toml}.}
+  \label{tab:dev-deps}
+  \small
+  \begin{tabularx}{\textwidth}{lL}
+    \toprule
+    Group & Packages (with pins where they matter) \\
+    \midrule
+    Build tools &
+      \code{cmake >= 3.21}, \code{ninja}, \code{make}, \code{compilers},
+      \code{git}, \code{clang-format 18.*}, \code{cmake-format},
+      \code{python-build} \\
+    Python &
+      \code{python 3.11.*}, \code{numpy < 2.0.0}, \code{pybind11},
+      \code{mypy} (supplies \code{stubgen}) \\
+    C++ libraries &
+      \code{boost-cpp}, \code{eigen 3.4.0.*}, \code{fmt}, \code{hdf5},
+      \code{llvm-openmp}, \code{tbb}, \code{tbb-devel},
+      \code{nlohmann\_json}, \code{spdlog}, \code{yaml-cpp},
+      \code{libjpeg-turbo}, \code{libjxl 0.11.*}, \code{libtiff},
+      \code{gdal}, \code{libopencv}, \code{ffmpeg}, \code{libcxx 18.*},
+      \code{gfortran}, \code{gtsam}, \code{doxygen}, \code{pandoc} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lupntwarning}
+\code{libjxl} is pinned to \code{0.11.*} deliberately. The conda-forge image
+stack (\code{libtiff}, \code{libopencv}, \code{gdal}) links
+\code{libjxl.so.0.11}; letting the solver pick \code{0.12} produces an
+environment in which \code{import pylupnt} fails on Linux with
+\code{libjxl.so.0.11: cannot open shared object file}. Do not relax the pin
+without re-solving the whole image stack.
+\end{lupntwarning}
+
+\subsection{Activation and environment variables}
+\label{sec:dev-activation}
+
+The \code{[activation]} table exports four variables into every
+\code{pixi shell} and \code{pixi run} invocation. \code{\$PIXI\_PROJECT\_ROOT}
+is the repository root.
+
+\begin{table}[H]
+  \centering
+  \caption{Environment variables exported by Pixi activation.}
+  \label{tab:dev-envvars}
+  \small
+  \begin{tabularx}{\textwidth}{lL}
+    \toprule
+    Variable & Value and purpose \\
+    \midrule
+    \code{LUPNT\_DATA\_PATH} &
+      \file{$PIXI_PROJECT_ROOT/data/LuPNT_data} --- root of the runtime data
+      bundle (SPICE kernels, gravity fields, EOP, GNSS products). \\
+    \code{LUPNT\_OUTPUT\_PATH} &
+      \file{$PIXI_PROJECT_ROOT/output} --- default destination for simulation
+      output and generated figures. \\
+    \code{PECSIMPY\_BASE\_PATH} &
+      \file{$PIXI_PROJECT_ROOT/data/LuPNT_data/plasma} --- data root for the
+      plasmasphere/ionosphere models. \\
+    \code{PYTHONPATH} &
+      \file{$PIXI_PROJECT_ROOT/python} --- makes \pylupnt{} importable directly
+      from the source tree, without an editable install. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Enter an interactive shell with the environment applied:
+
+\begin{lstlisting}[language=shell]
+# from the repository root
+pixi shell
+\end{lstlisting}
+
+or run a single command without entering a shell:
+
+\begin{lstlisting}[language=shell]
+pixi run <task-or-command>
+\end{lstlisting}
+
+\code{pixi run} accepts both the named tasks of \cref{sec:dev-tasks} and
+arbitrary commands, so \code{pixi run python -c "..."} and
+\code{pixi run ctest ...} work as expected.
+
+\subsection{The \code{dev} environment}
+\label{sec:dev-envs}
+
+Two Pixi environments are declared, sharing one solve group so their common
+packages resolve to identical versions:
+
+\begin{lstlisting}[language=yamlcfg]
+# pixi.toml
+[feature.orekit.dependencies]
+orekit = "*"
+
+[environments]
+default = { solve-group = "default" }
+dev     = { features = ["orekit"], solve-group = "default" }
+\end{lstlisting}
+
+\code{orekit} is a JVM-based astrodynamics library reached through the JCC
+Python wrapper. It is needed only to \emph{regenerate} the reference vectors
+consumed by the \code{*\_orekit\_reference*} tests, never to run them, so it is
+isolated in its own feature to keep the default environment small:
+
+\begin{lstlisting}[language=shell]
+pixi run -e dev python cpp/test/data/orekit/gen_orekit_reference.py
+\end{lstlisting}
+
+\section{Pixi tasks}
+\label{sec:dev-tasks}
+
+Every routine operation has a named task. The tasks are the contract shared by
+developers and CI: \cref{sec:dev-ci} shows that the pipeline invokes exactly
+the same \code{pixi run <task>} commands a developer types locally, so a green
+pipeline is reproducible on a laptop. \Cref{tab:dev-tasks} enumerates them,
+grouped by purpose; \code{depends-on} relations are stated explicitly because
+they determine what gets rebuilt implicitly.
+
+\begin{table}[H]
+  \centering
+  \caption{Tasks defined in the \code{[tasks]} table of \file{pixi.toml}.}
+  \label{tab:dev-tasks}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{lL}
+    \toprule
+    Task & Command, build directory, and dependencies \\
+    \midrule
+    \multicolumn{2}{l}{\textit{Library builds --- configure \file{cpp/} with Ninja and build the \code{lupnt} target}} \\
+    \code{build}        & \code{Release} into \file{build} \\
+    \code{build-debug}  & \code{Debug} into \file{build-debug} \\
+    \code{build-reldbg} & \code{RelWithDebInfo} into \file{build-reldbg} \\
+    \midrule
+    \multicolumn{2}{l}{\textit{Python bindings --- configure \file{python/bindings} and build the \code{pylupnt-dev} target}} \\
+    \code{build-py}        & \code{Release} into \file{build-py} \\
+    \code{build-py-debug}  & \code{Debug} into \file{build-py-debug} \\
+    \code{build-py-reldbg} & \code{RelWithDebInfo} into \file{build-py-reldbg} \\
+    \midrule
+    \multicolumn{2}{l}{\textit{Tests and coverage}} \\
+    \code{configure-test-cpp} & configure \file{cpp/test} into \file{build-cpp-test-pixi} (\code{Release}) \\
+    \code{build-test-cpp}     & build target \code{lupnt\_tests}; depends on \code{configure-test-cpp} \\
+    \code{test-cpp}           & \code{ctest --output-on-failure}; depends on \code{build-test-cpp} \\
+    \code{test-cpp-ci}        & as \code{test-cpp} but excludes the network/data-gated tests
+                                (\cref{sec:dev-testing}) \\
+    \code{test-py}            & \code{pytest python/test}; depends on \code{build-py} \\
+    \code{test}               & depends on \code{test-cpp} and \code{test-py} \\
+    \code{cov-cpp}            & reconfigure \file{cpp/test} into \file{build-cov} with
+                                \code{-DENABLE\_TEST\_COVERAGE=ON}, run the CI subset, emit
+                                \file{coverage-cpp.xml} via \code{gcovr} \\
+    \code{cov-py}             & \code{pytest --cov=pylupnt --cov-report=xml:coverage-py.xml};
+                                depends on \code{build-py} \\
+    \midrule
+    \multicolumn{2}{l}{\textit{Examples, install, packaging}} \\
+    \code{build-examples} & configure \file{cpp/examples} into \file{build-examples-pixi},
+                            build \code{all\_examples} \\
+    \code{install-test}   & install into \file{install/} and assert that
+                            \file{install/lib/cmake/lupnt/lupntConfig.cmake} and
+                            \file{install/include/lupnt-0.1.0} exist \\
+    \midrule
+    \multicolumn{2}{l}{\textit{Notebooks, kernels, documentation}} \\
+    \code{install-kernel}         & \code{python scripts/install\_kernel.py}; depends on
+                                    \code{build-py} \\
+    \code{install-plotly-chrome}  & \code{plotly\_get\_chrome -y} (idempotent) \\
+    \code{run-notebooks}          & execute every \file{python/examples/ex*.ipynb} and report
+                                    pass/fail; outputs \emph{not} written back \\
+    \code{render-notebooks}       & execute every notebook and write outputs back \emph{in place} \\
+    \code{render-tutorials}       & \code{render-notebooks} followed by
+                                    \code{scripts/optimize\_notebook\_images.py} \\
+    \code{build-docs}             & \code{python docs/make\_docs.py}; depends on \code{build-py} \\
+    \midrule
+    \multicolumn{2}{l}{\textit{Style and data}} \\
+    \code{format-check}            & \code{python scripts/check\_format.py} \\
+    \code{download-gnss-test-data} & fetch the SP3/BRDC fixtures the loader tests expect;
+                                     depends on \code{build-py} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The three notebook tasks all depend on \code{build-py}, \code{install-kernel},
+and \code{install-plotly-chrome}, so a bare \code{pixi run render-notebooks}
+on a fresh checkout will build the bindings, register the Jupyter kernel, and
+fetch headless Chrome before executing anything.
+
+Note that the build directories are disjoint per configuration. Switching
+between \code{Release} and \code{Debug} therefore never invalidates the other
+tree, at the cost of disk space:
+
+\begin{lstlisting}[language=shell]
+# what each task leaves behind
+build/                  # Release library
+build-debug/            # Debug library
+build-reldbg/           # RelWithDebInfo library
+build-py/               # Release bindings
+build-py-debug/         # Debug bindings
+build-py-reldbg/        # RelWithDebInfo bindings
+build-cpp-test-pixi/    # C++ test binary + CTest database
+build-cov/              # gcov-instrumented test build
+build-examples-pixi/    # C++ tutorial programs
+build-install-pixi/     # staging tree for `pixi run install-test`
+install/                # the installed package, checked by install-test
+\end{lstlisting}
+
+\section{The CMake build}
+\label{sec:dev-cmake}
+
+\subsection{Project structure}
+
+The repository holds four independent CMake projects rather than one
+super-project; each is configured with \code{cmake -S <dir> -B <builddir>} and
+pulls the others in through CPM when it needs them.
+
+\begin{table}[H]
+  \centering
+  \caption{CMake projects in the repository.}
+  \label{tab:dev-cmake-projects}
+  \small
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Source directory & Project & Produces \\
+    \midrule
+    \file{cpp}             & \code{lupnt}        & the shared library \code{liblupnt} and its
+                                                    install/export set \\
+    \file{python/bindings} & \code{lupnt\_python}& the \code{\_pylupnt} extension module and the
+                                                    \code{pylupnt-dev} convenience target \\
+    \file{cpp/test}        & \code{lupnt\_tests} & the Catch2 test executable and its CTest
+                                                    registrations \\
+    \file{docs}            & \code{lupnt\_docs}  & the \code{GenerateDocs} target
+                                                    (\cref{chap:building-docs}) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Shared CMake helper modules live in \file{cmake/} at the repository root and
+are \code{include()}d by \file{cpp/CMakeLists.txt}:
+
+\begin{table}[H]
+  \centering
+  \caption{Helper modules under \file{cmake/}.}
+  \label{tab:dev-cmake-modules}
+  \small
+  \begin{tabularx}{\textwidth}{lL}
+    \toprule
+    Module & Role \\
+    \midrule
+    \file{CondaAware.cmake}   & derives \code{CMAKE\_PREFIX\_PATH} from \code{CONDA\_PREFIX} so
+                                \code{find\_package} resolves inside the Pixi environment \\
+    \file{CPM.cmake}          & CPM package manager entry point (vendored copy
+                                \file{cmake/CPM\_0.40.2.cmake}) \\
+    \file{WriteHeader.cmake}  & generates the umbrella header \file{cpp/lupnt/lupnt.h} from the
+                                headers found by globbing \\
+    \file{FetchLuPNTData.cmake} & downloads and version-checks the \file{LuPNT\_data} bundle \\
+    \file{RegisterJupyterKernel.cmake} & registers the Jupyter kernel used by the notebooks \\
+    \file{Tools.cmake}        & optional developer tooling, included by \file{cpp/test} if present \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Library configuration}
+
+\file{cpp/CMakeLists.txt} sets the compilation contract for the whole library.
+The salient settings, in the order they appear:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \code{project(lupnt LANGUAGES CXX Fortran)} --- Fortran is required
+    because the plasma models under
+    \file{cpp/lupnt/environment/plasma/fortran} are legacy fixed-form sources.
+    With GNU Fortran they are compiled with
+    \code{-ffixed-form -std=legacy -fno-automatic}.
+  \item \code{CMAKE\_CXX\_STANDARD 20}, required, with
+    \code{CMAKE\_POSITION\_INDEPENDENT\_CODE ON} so the archive can be linked
+    into the Python extension.
+  \item \code{ccache} is used as the compiler launcher when found on
+    \code{PATH}.
+  \item In-source builds are rejected with a fatal error.
+  \item \code{\$HOME/anaconda3} and \code{\$LUPNT\_PYTHON\_PATH} are added to
+    \code{CMAKE\_IGNORE\_PREFIX\_PATH}, so a stray Anaconda installation cannot
+    shadow the Pixi environment's headers.
+  \item Sources and headers are globbed with \code{CONFIGURE\_DEPENDS} from
+    \file{cpp/lupnt}; the version comes from \file{cpp/lupnt/version.txt},
+    parsed for \code{MAJOR}, \code{MINOR}, and \code{PATCH}.
+  \item The target is a \code{SHARED} library with an embedded relative
+    \code{INSTALL\_RPATH} --- \code{@loader\_path} on macOS, \code{\$ORIGIN} on
+    Linux, plus \code{\$CONDA\_PREFIX/lib} --- so that \code{liblupnt} finds
+    \code{libiri2007\_lib} when both are deployed next to each other in
+    \file{python/lib}.
+\end{itemize}
+
+Three compile definitions are set \code{PUBLIC} before precompiled headers are
+generated, and are part of the ABI contract for anything linking the library:
+
+\begin{lstlisting}[language=cpp]
+// cpp/CMakeLists.txt :: target_compile_definitions(lupnt PUBLIC ...)
+MAGIC_ENUM_RANGE_MIN=0
+MAGIC_ENUM_RANGE_MAX=1024
+AUTODIFF_ENABLE_IMPLICIT_CONVERSION
+AUTODIFF_ENABLE_IMPLICIT_CONVERSION_REAL
+OPENCV_EIGEN_TENSOR_SUPPORT
+\end{lstlisting}
+
+The \code{MAGIC\_ENUM} range widening is what allows the large enumerations
+(bodies, frames, GNSS signals) to be reflected by name; the \code{AUTODIFF}
+implicit-conversion switches are what make \cpp{Real} interoperate with
+\cpp{double} in the dynamics code (see \cref{chap:autodiff}).
+
+Precompiled headers cover the five heaviest includes:
+
+\begin{lstlisting}[language=cpp]
+// cpp/CMakeLists.txt :: target_precompile_headers(lupnt PUBLIC ...)
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <autodiff/forward/real.hpp>
+#include <yaml-cpp/yaml.h>
+#include <nlohmann/json.hpp>
+#include <magic_enum/magic_enum.hpp>
+\end{lstlisting}
+
+Dependencies split between CPM-provided sources (\code{matplot},
+\code{autodiff}, \code{magic\_enum}, \code{cspice}, added through a
+\code{target\_link\_libraries\_system} helper that marks their include
+directories \code{SYSTEM} to silence third-party warnings) and packages found
+in the Pixi environment: \code{Eigen3}, \code{fmt}, \code{pybind11},
+\code{yaml-cpp}, \code{spdlog}, \code{OpenCV}, \code{GDAL}, and \code{OpenMP}.
+Warnings on the library's own sources are enabled with
+\code{-Wall -Wextra -Wpedantic -Wno-sign-compare} for GCC and Clang, and
+\code{/W4} for MSVC.
+
+Installation goes through \code{packageProject}, which writes
+\code{lupntConfig.cmake} into \file{lib/cmake/lupnt}, installs headers into
+\file{include/lupnt-<version>}, generates \file{lupnt/version.h}, and declares
+\code{SameMajorVersion} compatibility under the \code{lupnt::} namespace. This
+is exactly what \code{pixi run install-test} asserts:
+
+\begin{lstlisting}[language=shell]
+pixi run install-test
+# configures cpp/ into build-install-pixi with
+#   -DCMAKE_INSTALL_PREFIX=$PIXI_PROJECT_ROOT/install
+# builds the `install` target, then checks
+#   install/lib/cmake/lupnt/lupntConfig.cmake
+#   install/include/lupnt-0.1.0
+\end{lstlisting}
+
+\subsection{CMake presets}
+\label{sec:dev-presets}
+
+\file{CMakePresets.json} (schema version 6, minimum CMake 3.21) declares a
+hidden \code{pixi-base} preset that fixes the generator to Ninja and nothing
+else, plus three configure presets and three matching build presets:
+
+\begin{table}[H]
+  \centering
+  \caption{Presets in \file{CMakePresets.json}.}
+  \label{tab:dev-presets}
+  \small
+  \begin{tabularx}{\textwidth}{@{}l l W{0.95} W{1.05}@{}}
+    \toprule
+    Preset & \code{CMAKE\_BUILD\_TYPE} & \code{binaryDir} & Intent \\
+    \midrule
+    \code{release}        & \code{Release}        & \file{build}        & fastest runtime, no debug symbols \\
+    \code{debug}          & \code{Debug}          & \file{build-debug}  & full symbols, LLDB friendly \\
+    \code{relwithdebinfo} & \code{RelWithDebInfo} & \file{build-reldbg} & optimised with symbols, for profiling \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{lupntnote}
+The base preset deliberately contains no \code{\$env\{\}} expansions.
+VS~Code expands those in its own shell \emph{before} the Pixi wrapper runs,
+which would capture the wrong conda environment. Compilers (\code{CC},
+\code{CXX}, \code{FC}) and package paths are instead resolved at
+CMake-configure time from the environment that \file{cmake-pixi.sh} activates.
+\end{lupntnote}
+
+\section{Building the Python bindings}
+\label{sec:dev-bindings}
+
+\subsection{What \code{build-py} does}
+
+The task \code{build-py} configures \file{python/bindings} and builds the
+custom target \code{pylupnt-dev}:
+
+\begin{lstlisting}[language=shell]
+pixi run build-py          # Release bindings
+pixi run build-py-reldbg   # RelWithDebInfo bindings
+pixi run build-py-debug    # Debug bindings
+\end{lstlisting}
+
+\code{pylupnt-dev} is not a compiled target itself; it is a driver that
+performs four steps in order:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item build the \code{\_pylupnt} extension (which transitively builds
+    \code{lupnt::lupnt}, brought in by
+    \code{CPMAddPackage(NAME lupnt SOURCE\_DIR ../../cpp)} when the target does
+    not already exist);
+  \item copy \code{\$<TARGET\_FILE:\_pylupnt>} into \file{python/pylupnt};
+  \item run \code{stubgen -m \_pylupnt -o python/pylupnt} from the Pixi
+    environment, producing \file{python/pylupnt/\_pylupnt.pyi} so that IDEs can
+    autocomplete the compiled module;
+  \item as a \code{POST\_BUILD} step of \code{\_pylupnt} itself, copy
+    \code{liblupnt} (and \code{libiri2007\_lib}, when that target exists) into
+    \file{python/lib} and re-sync the extension into \file{python/pylupnt}.
+\end{enumerate}
+
+The resulting layout is what makes \code{import pylupnt} work straight from the
+source tree, given the \code{PYTHONPATH} of \cref{tab:dev-envvars}:
+
+\begin{lstlisting}[language=shell]
+python/
+  pylupnt/
+    __init__.py
+    _pylupnt.cpython-311-x86_64-linux-gnu.so   # the extension, copied here
+    _pylupnt.pyi                               # stubgen output
+    core/  plasma/  plot/                      # pure-Python subpackages
+    lander_guidance.py  montecarlo.py
+  lib/
+    liblupnt.so                                # the C++ library
+    libiri2007_lib.so                          # SHARED Fortran ionosphere lib
+\end{lstlisting}
+
+Loading works without \code{LD\_LIBRARY\_PATH} because \code{\_pylupnt} is
+linked with the RPATH \longid{\$ORIGIN;\$ORIGIN/../lib;\$CONDA_PREFIX/lib} on
+Linux and the \code{@loader\_path} equivalent on macOS.
+
+\subsection{Extension module composition}
+
+\file{python/bindings/CMakeLists.txt} globs every \code{.cc} in the directory
+into a single \longid{pybind11_add_module(_pylupnt MODULE ...)} target linked
+against \code{lupnt::lupnt}, \code{TBB::tbb}, and \code{TBB::tbbmalloc}.
+Notable target properties:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \code{CXX\_STANDARD 20}, matching the library;
+  \item \code{-fno-sanitize=all} on both compile and link (except link on
+    macOS): Python cannot import a module built with sanitizers, and this flag
+    overrides any globally enabled sanitizer setting;
+  \item \code{-fvisibility=hidden} plus \code{-fvisibility-inlines-hidden} on
+    Clang, and \longid{-undefined dynamic_lookup} on macOS;
+  \item \longid{PYBIND11_FINDPYTHON ON}, so the modern \code{FindPython} module
+    is used instead of the deprecated \code{FindPythonInterp} /
+    \code{FindPythonLibs};
+  \item \longid{CMAKE_IGNORE_PREFIX_PATH} set to
+    \longid{/opt/homebrew;/usr/local} so Homebrew and MacPorts cannot leak into
+    the build;
+  \item \longid{LUPNT_WITH_PYTHON} is forced \code{OFF} in the cache: the
+    library itself does not embed a Python interpreter when it is being wrapped.
+\end{itemize}
+
+The module's translation units are one file per subsystem, each exposing an
+\longid{Init<Subsystem>(py::module&)} function that
+\file{python/bindings/py\_main.cc} calls from the single
+\code{PYBIND11\_MODULE} block:
+
+\begin{lstlisting}[language=cpp]
+// python/bindings/py_main.cc
+PYBIND11_MODULE(_pylupnt, m) {
+  InitAutodiff(m);
+  InitConstants(m);
+  InitTimeConverter(m);
+  InitFrameConverter(m);
+  InitDynamics(m);
+  InitConversions(m);
+  // InitAgents(m);          // currently disabled
+  InitAntenna(m);
+  InitTle(m);
+  InitKernels(m);
+  InitMathUtils(m);
+  InitFile(m);
+  InitConfig(m);
+  InitLogger(m);
+  InitDem(m);
+  InitPlasma(m);
+  InitGnss(m);
+  InitEop(m);
+  InitSimulation(m);
+  InitIslOdts(m);
+  InitGroundStationOdts(m);
+  InitEphemeris(m);
+  InitGnssOdts(m);
+  InitSurfaceNav(m);
+  InitLanderNav(m);
+  InitEpoch(m);
+  init_spice_interface(m);   // exposes the pnt.spice submodule
+}
+\end{lstlisting}
+
+Adding a new binding file therefore means: create
+\file{python/bindings/py\_<subsystem>.cc} with an \code{Init<Subsystem>}
+function, forward-declare it at the top of \file{py\_main.cc}, and call it
+inside \code{PYBIND11\_MODULE}. No CMake edit is needed --- the glob picks the
+file up on the next configure. Shared helpers live in
+\file{python/bindings/py\_eigen.h}, \file{py\_real.h}, \file{py\_pybind11.h},
+\file{py\_yaml.h}, and \file{py\_vectorized\_macros.h}.
+
+\subsection{Verifying the build}
+
+Inside \code{pixi shell} the package is already importable:
+
+\begin{lstlisting}[language=shell]
+python -c "import pylupnt as pnt; print(pnt.R_MOON)"
+\end{lstlisting}
+
+Outside Pixi activation --- for example a Jupyter or VS~Code kernel launched
+directly by the IDE, which never runs the activation hook --- register the
+LuPNT kernel once. \code{scripts/install\_kernel.py} bakes \code{PYTHONPATH},
+\code{LUPNT\_DATA\_PATH} and the rest of \cref{tab:dev-envvars} into the kernel
+specification, deriving all paths from the repository layout so the result is
+correct per machine on both macOS and Linux/WSL:
+
+\begin{lstlisting}[language=shell]
+pixi run install-kernel   # creates the "LuPNT (pixi)" Jupyter kernel
+\end{lstlisting}
+
+Re-run it after moving the repository or switching machines.
+
+\section{VS~Code setup}
+\label{sec:dev-vscode}
+
+Two committed files wire the editor to the Pixi environment.
+\file{cmake-pixi.sh} is a wrapper that routes every CMake invocation through
+\code{pixi run}, so compilers, libraries, and \code{CONDA\_PREFIX} are always
+the Pixi ones no matter which shell VS~Code inherited:
+
+\begin{lstlisting}[language=shell]
+# cmake-pixi.sh
+cd "$(dirname "${BASH_SOURCE[0]}")"
+exec ~/.pixi/bin/pixi run cmake "$@"
+\end{lstlisting}
+
+The \code{cd} is load-bearing: VS~Code calls the wrapper with the working
+directory set to \code{/}, not the workspace root, and \code{pixi run} must be
+executed where \file{pixi.toml} lives.
+
+\file{.vscode/settings.json} points the CMake Tools extension at that wrapper
+and forces preset-driven configuration:
+
+\begin{lstlisting}[language=py]
+// .vscode/settings.json
+{
+  "cmake.cmakePath": "${workspaceFolder}/cmake-pixi.sh",
+  "cmake.useCMakePresets": "always",
+  "cmake.options.statusBarVisibility": "visible",
+  "python-envs.defaultEnvManager": "ms-python.python:system",
+  "python-envs.pythonProjects": [],
+  "pixi-code.pixiExecutable": "~/.pixi/bin/pixi"
+}
+\end{lstlisting}
+
+For the Python extension, select the Pixi interpreter explicitly: open the
+Command Palette, choose \emph{Python: Select Interpreter}, and pick
+\file{.pixi/envs/default/bin/python}. The active CMake preset
+(\cref{tab:dev-presets}) is switchable from the status bar.
+
+\section{Rendering the tutorial notebooks}
+\label{sec:dev-notebooks}
+
+The documentation renders the example notebooks with \code{nbsphinx}
+configured as \code{nbsphinx\_execute = "never"}: the published pages show
+whatever outputs are \emph{stored} in each \file{.ipynb}, and the docs build
+never re-runs them. After changing an example, or an API an example depends on,
+refresh the stored outputs:
+
+\begin{lstlisting}[language=shell]
+pixi run run-notebooks       # execute all, report pass/fail, discard outputs
+pixi run render-notebooks    # execute all, write outputs back IN PLACE
+pixi run render-tutorials    # render-notebooks, then optimize embedded PNGs
+\end{lstlisting}
+
+Extra arguments are forwarded after \code{--}:
+
+\begin{lstlisting}[language=shell]
+pixi run render-notebooks -- --only ex1 ex4
+pixi run run-notebooks -- --only ex1 --timeout 600
+pixi run render-notebooks -- --allow-errors
+\end{lstlisting}
+
+Order matters for \code{render-tutorials}: a render regenerates full-size
+figures, so \code{scripts/optimize\_notebook\_images.py} must run afterwards.
+This also interacts with the pre-commit size limit of \cref{sec:dev-style} ---
+unoptimised notebooks routinely exceed it.
+
+Plotly 3-D figures are converted to static PNGs through \code{kaleido}
+(\file{python/examples/\_doc\_assets.py}), which needs a headless Chrome.
+\code{install-plotly-chrome} fetches one via \code{plotly\_get\_chrome} and is
+a fast no-op once installed, but Chrome itself needs shared libraries that a
+minimal Linux image does not ship. If \code{plotly\_get\_chrome} succeeds and
+Chrome then fails immediately with, for example,
+\code{error while loading shared libraries: libnspr4.so: cannot open shared
+object file}, install them:
+
+\begin{lstlisting}[language=shell]
+sudo apt-get install -y \
+  ca-certificates fonts-liberation libasound2t64 libatk-bridge2.0-0 libatk1.0-0 \
+  libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgbm1 \
+  libglib2.0-0 libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0 \
+  libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 \
+  libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 \
+  lsb-release wget xdg-utils
+\end{lstlisting}
+
+On older Ubuntu releases use \code{libasound2} and \code{libxtst1} in place of
+the \code{t64} and \code{6} variants.
+
+\begin{lupntnote}
+Cesium globes have no static-render equivalent. \py{embed\_cesium\_scene} saves
+the interactive scene under \file{output/python\_examples/cesium\_scenes} and
+notes in the rendered page that it must be viewed by running the notebook
+locally.
+\end{lupntnote}
+
+\section{Debugging}
+\label{sec:dev-debugging}
+
+\subsection{Mixed Python/C++ sessions}
+
+Install the \emph{Python C++ Debugger} extension
+(\code{benjamin-simmonds.pythoncpp-debug}) to step from Python into the
+compiled extension in one session; its marketplace page documents the Windows
+and \code{gdb} variants. On Apple silicon --- and generally on macOS --- also
+install \emph{CodeLLDB} (\code{vadimcn.vscode-lldb}) for the C++ side, then
+create \file{.vscode/launch.json} with the three configurations below. The path
+to \file{cpp/eigenlldb.py} must be edited to match the local checkout; it
+enables pretty-printing of Eigen and \lupnt{} matrix types
+(\cref{sec:dev-prettyprint}).
+
+\begin{lstlisting}[language=py]
+// .vscode/launch.json
+{
+    "configurations": [
+        {
+            "name": "* C++ Attach",
+            "type": "lldb",
+            "request": "attach",
+            "pid": "",
+            "initCommands": [
+                // ***** CHANGE THIS *****
+                "command script import \"YOUR-PATH-TO-LUPNT/LuPNT/eigenlldb.py\"",
+                // ***** CHANGE THIS *****
+            ],
+        },
+        {
+            "name": "* Python",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "cwd": "${fileDirname}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "* Python/C++ Debugger",
+            "type": "pythoncpp",
+            "request": "launch",
+            "pythonLaunchName": "* Python Debugger: Current File",
+            "cppAttachName": "* Attach",
+        },
+    ],
+}
+\end{lstlisting}
+
+The \code{pythoncpp} configuration starts an ordinary Python debug session and
+hands the process PID to the C++ debugger, so breakpoints on both sides of the
+pybind11 boundary are hit in the same run. Build the bindings with
+\code{build-py-debug} or \code{build-py-reldbg} first: the \code{Release}
+extension carries no usable line information.
+
+\subsection{Pure C++ targets}
+
+To debug a C++ target launched by the CMake Tools extension, set
+\code{cmake.debugConfig} in \file{.vscode/settings.json}:
+
+\begin{lstlisting}[language=py]
+// .vscode/settings.json
+{
+    "cmake.debugConfig": {
+        "name": "* C++ Launch",
+        "type": "lldb",
+        "request": "launch",
+        "initCommands": [
+            // ***** CHANGE THIS *****
+            "command script import \"YOUR-PATH-TO-LUPNT/LuPNT/eigenlldb.py\"",
+            // ***** CHANGE THIS *****
+        ],
+    },
+}
+\end{lstlisting}
+
+\subsection{Pretty printing Eigen types}
+\label{sec:dev-prettyprint}
+
+\file{cpp/eigenlldb.py} is an LLDB formatter script for Eigen and \lupnt{}
+matrix types. It needs NumPy inside LLDB's own Python: open the Command
+Palette (\code{Cmd/Ctrl + Shift + P}), select \code{LLDB: Command Prompt}, and
+run \code{pip install numpy}.
+
+In the debug console, \code{p <variable>} prints a formatted value and
+\code{? <variable>} shows the raw contents. Given
+
+\begin{lstlisting}[language=cpp]
+Vec3 r(4338.99, -4338.99, -0.0757297);
+Body moon = Body::Moon();
+\end{lstlisting}
+
+the console shows
+
+\begin{lstlisting}[language=shell]
+p r
+(lupnt::Vec3) (3,1) (static,static)
+[[ 4338.99     ]
+ [-4338.99     ]
+ [   -0.0757297]]
+
+? moon
+{id:MOON, name:"MOON", GM:4902.8001180000001, R:1737.4, ...}
+    id = MOON
+    name = "MOON"
+    GM = 4902.8001180000001
+    R = 1737.4000000000001
+    fixed_frame = MOON_PA
+    inertial_frame = MOON_CI
+    use_gravity_field = true
+\end{lstlisting}
+
+\section{Test layout and execution}
+\label{sec:dev-testing}
+
+\subsection{C++ tests}
+
+The C++ suite is a single Catch2 v3 executable, \code{lupnt\_tests}, built from
+every \code{.cc} found recursively under \file{cpp/test} --- about 170 files
+across the subdirectories of \cref{tab:dev-testdirs}. Catch2 is fetched by CPM
+at version 3.6.0, and \code{catch\_discover\_tests} registers each
+\code{TEST\_CASE} with CTest individually, so tests can be selected by name and
+run in parallel.
+
+\begin{table}[H]
+  \centering
+  \caption{Subdirectories of \file{cpp/test} and the approximate number of
+           translation units in each.}
+  \label{tab:dev-testdirs}
+  \small
+  \begin{tabularx}{\textwidth}{lrL}
+    \toprule
+    Directory & Files & Covers \\
+    \midrule
+    \file{conversions}  & 21 & time-scale and coordinate conversions \\
+    \file{dynamics}     & 21 & force models, propagators, dynamics interfaces \\
+    \file{interfaces}   & 19 & SPICE, SP3, RINEX navigation, ANTEX, file loaders \\
+    \file{environment}  & 15 & gravity fields, atmosphere, plasma, DEM \\
+    \file{core}         & 13 & math utilities, containers, logging, configuration \\
+    \file{measurements} & 12 & GNSS and radiometric observables \\
+    \file{agents}       & 11 & spacecraft, ground stations, constellations \\
+    \file{filters}      &  9 & EKF/UKF/SRIF estimators \\
+    \file{numerics}     &  9 & integrators, root finding, interpolation \\
+    \file{devices}      &  6 & antennas, transmitters, receivers \\
+    \file{physics}      &  6 & physical models and constants \\
+    \file{data}         &  6 & EOP and data-product handling \\
+    \file{applications} &  4 & ODTS and navigation applications \\
+    \file{states}       &  4 & orbit-state representations, TLE \\
+    \file{orekit}       &  4 & cross-validation against Orekit references \\
+    \file{gmat}         &  3 & cross-validation against GMAT references \\
+    \file{simulations}  &  2 & end-to-end simulation drivers \\
+    \file{transmission} &  1 & link and transmission models \\
+    \file{fixtures}     & -- & committed data fixtures (not compiled) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Two details in \file{cpp/test/CMakeLists.txt} are worth knowing:
+
+\begin{lstlisting}[language=cpp]
+// cpp/test/CMakeLists.txt
+target_compile_definitions(lupnt_tests PRIVATE
+  LUPNT_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
+
+catch_discover_tests(lupnt_tests PROPERTIES SKIP_RETURN_CODE 4)
+\end{lstlisting}
+
+\code{LUPNT\_TEST\_FIXTURES\_DIR} gives loader tests an absolute path to the
+small trimmed GNSS products committed under \file{cpp/test/fixtures}, so they
+run in CI without downloading anything. \code{SKIP\_RETURN\_CODE 4} maps
+Catch2's exit code for a skipped \code{TEST\_CASE} (raised by \code{SKIP()})
+onto CTest's \emph{skipped} status; without it a data-gated test --- for
+instance a DEM-backed rover or lander integration test whose data is absent
+from the downloaded bundle --- would be reported as a failure.
+
+The test project also pulls \code{TheLartians/Format.cmake@1.7.3}, which
+provides the \code{check-format}, \code{fix-format},
+\code{check-clang-format}, \code{fix-clang-format}, \code{check-cmake-format},
+and \code{fix-cmake-format} targets in the \code{format} folder.
+
+Running the suite:
+
+\begin{lstlisting}[language=shell]
+pixi run test-cpp        # configure + build + ctest --output-on-failure
+pixi run build-test-cpp  # build only
+pixi run test-cpp-ci     # the CI subset (see below)
+
+# re-run an already-built binary directly
+pixi run ctest --test-dir build-cpp-test-pixi --output-on-failure
+\end{lstlisting}
+
+\begin{lupntwarning}
+The full suite requires a NASA Earthdata Login in \file{~/.netrc}, because
+several tests fetch or parse live CDDIS GNSS and EOP products. Run
+\code{pixi run download-gnss-test-data} once beforehand to pre-fetch the
+SP3/BRDC files that \longid{interfaces.sp3_loader},
+\longid{interfaces.rinex_nav_loader}, and
+\longid{agents.gnss_constellation.setup_from_files} expect on disk. Without
+Earthdata credentials, use \code{pixi run test-cpp-ci}.
+\end{lupntwarning}
+
+\code{test-cpp-ci} is \code{test-cpp} with a CTest exclusion regular
+expression covering exactly the network- and credential-dependent cases:
+
+\begin{lstlisting}[language=shell]
+# pixi.toml :: task test-cpp-ci (regex shown one alternative per line)
+ctest --test-dir build-cpp-test-pixi --output-on-failure -E '
+  data.eop_latest_iers
+  devices.space_comms
+  agents.gnss_constellation.setup_from_files
+  interfaces.antex_loader
+  interfaces.rinex_nav_loader
+  interfaces.sp3_loader
+  measurements.gnss_measurements.visibility
+  states.tle '
+\end{lstlisting}
+
+In the manifest these eight names are a single alternation joined by
+\code{|} on one line.
+
+\subsection{Cross-validation tests}
+
+\file{cpp/test/orekit} and \file{cpp/test/gmat} compare \lupnt{}'s time-scale
+conversions, frame conversions, ephemerides, orbit propagation, and force
+models against reference values pre-computed with Orekit and with GMAT R2026a
+(the latter pointed at \lupnt{}'s own DE440 ephemeris). The references
+are committed as \file{cpp/test/orekit/data/orekit\_reference.json} and
+\file{cpp/test/gmat/data/gmat\_reference.json}, so the tests need neither tool
+installed. Regenerating the Orekit references requires the \code{dev}
+environment of \cref{sec:dev-envs}. \Cref{chap:cross-validation} discusses the
+comparisons themselves.
+
+\subsection{Python tests}
+
+\code{pytest python/test} runs 22 modules that exercise the bindings and the
+pure-Python layer: \file{test\_bodies.py}, \file{test\_constants.py},
+\file{test\_conversions.py}, \file{test\_frames.py},
+\file{test\_frame\_converter.py}, \file{test\_time.py},
+\file{test\_dynamics.py}, \file{test\_orbital\_mechanics.py},
+\file{test\_gnss.py}, \file{test\_math\_utils.py}, \file{test\_logger.py},
+\file{test\_montecarlo.py}, \file{test\_plasma\_module.py},
+\file{test\_kp\_loader.py}, \file{test\_lander\_guidance.py},
+\file{test\_cesium.py}, \file{test\_plot\_mpl.py},
+\file{test\_plot\_plotly.py}, \file{test\_authoring.py},
+\file{test\_core\_base.py}, \file{test\_core\_utils.py},
+\file{test\_pylupnt\_utils.py}, with shared helpers in \file{utils.py}.
+
+\begin{lstlisting}[language=shell]
+pixi run test-py    # builds the bindings first, then pytest python/test
+pixi run test       # test-cpp and test-py
+\end{lstlisting}
+
+\begin{lupntnote}
+If another conda or Anaconda environment is active and CMake picks up headers
+from it, deactivate it before running any Pixi task. The
+\code{CMAKE\_IGNORE\_PREFIX\_PATH} entries of \cref{sec:dev-cmake} guard the
+common cases but not every layout.
+\end{lupntnote}
+
+\subsection{Coverage}
+
+Coverage is instrumented per language and emitted as Cobertura XML:
+
+\begin{lstlisting}[language=shell]
+pixi run cov-cpp   # gcov build in build-cov, CI test subset, coverage-cpp.xml
+pixi run cov-py    # pytest --cov=pylupnt, coverage-py.xml
+\end{lstlisting}
+
+\code{cov-cpp} configures \file{cpp/test} in \code{Debug} with
+\code{-DENABLE\_TEST\_COVERAGE=ON}, which appends
+\code{-O0 -g -fprofile-arcs -ftest-coverage} to the \code{lupnt} target's
+compile and link options, runs the CI test subset (tolerating failures so a
+report is always produced), and then filters the \code{gcovr} report to
+\file{cpp/lupnt/}. It requires GCC and \code{gcov}, so it is a Linux workflow.
+
+\section{Coding conventions and pre-commit}
+\label{sec:dev-style}
+
+\subsection{C++ formatting}
+
+\file{.clang-format} is the single source of truth for C++ layout. It is
+Google style with the deviations of \cref{tab:dev-clangformat}; the pinned
+formatter in the Pixi environment is \code{clang-format 18.*}.
+
+\begin{table}[H]
+  \centering
+  \caption{Deviations from Google style declared in \file{.clang-format}.}
+  \label{tab:dev-clangformat}
+  \small
+  \begin{tabularx}{\textwidth}{lL}
+    \toprule
+    Option & Value and effect \\
+    \midrule
+    \code{ColumnLimit}    & \code{100} --- lines wrap at 100 columns, not 80 \\
+    \code{IndentWidth}    & \code{2} \\
+    \code{AccessModifierOffset} & \code{-2} --- \code{public:} sits flush with the class \\
+    \code{NamespaceIndentation} & \code{All} --- namespace bodies are indented \\
+    \code{BreakBeforeBraces} & \code{Attach} \\
+    \code{BreakBeforeBinaryOperators} & \code{All} --- operators start the continuation line \\
+    \code{BreakBeforeTernaryOperators} & \code{true} \\
+    \code{AllowAllParametersOfDeclarationOnNextLine} & \code{false} \\
+    \code{AllowShortCaseLabelsOnASingleLine} & \code{true} \\
+    \code{AlwaysBreakTemplateDeclarations} & \code{No} \\
+    \code{AlignTrailingComments} & \code{true} \\
+    \code{ConstructorInitializerAllOnOneLineOrOnePerLine} & \code{true} \\
+    \code{IncludeBlocks}  & \code{Regroup} --- include blocks are re-sorted and regrouped \\
+    \code{IndentPPDirectives} & \code{AfterHash} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+CMake files are formatted by \code{cmake-format}, configured in
+\file{.cmake-format} at the repository root.
+
+\subsection{clang-tidy}
+
+\file{.clang-tidy} exists but disables every check:
+
+\begin{lstlisting}[language=yamlcfg]
+# .clang-tidy
+Checks: '-*'
+\end{lstlisting}
+
+The file is present so that IDEs and language servers which auto-discover a
+\file{.clang-tidy} do not apply their own default check set and flood the
+codebase with diagnostics. No static-analysis gate runs in CI; correctness is
+enforced by the test suites and by the compiler warnings of
+\cref{sec:dev-cmake} instead. Enabling checks is therefore a deliberate,
+repository-wide decision, not something to switch on in a single directory.
+
+\subsection{Pre-commit hooks}
+
+\lupnt{} uses \code{pre-commit} (\url{https://pre-commit.com/}). The hooks run
+automatically on \code{git commit}; run them over the whole tree with
+
+\begin{lstlisting}[language=shell]
+pixi run pre-commit run --all-files
+\end{lstlisting}
+
+A failing check rejects the commit. \code{git commit --no-verify} bypasses the
+hooks when work in progress must be committed, but CI re-checks formatting
+(\cref{sec:dev-ci}), so the bypass only defers the fix.
+
+\begin{table}[H]
+  \centering
+  \caption{Hooks configured in \file{.pre-commit-config.yaml}.}
+  \label{tab:dev-precommit}
+  \small
+  \begin{tabularx}{\textwidth}{llL}
+    \toprule
+    Hook & Rev & Configuration \\
+    \midrule
+    \code{clang-format}   & \code{v19.1.7} & \code{--style=file}, applied to C, C++, and CUDA \\
+    \code{cmake-format}   & \code{v0.6.13} & formats \code{CMakeLists.txt} and \code{*.cmake} \\
+    \code{check-yaml}     & \code{v5.0.0}  & parses every YAML file \\
+    \code{end-of-file-fixer}  & \code{v5.0.0} & excludes \file{cpp/test/fixtures/} \\
+    \code{trailing-whitespace}& \code{v5.0.0} & excludes \file{cpp/test/fixtures/} \\
+    \code{mixed-line-ending}  & \code{v5.0.0} & excludes \file{cpp/test/fixtures/} \\
+    \code{check-added-large-files} & \code{v5.0.0} & \code{--maxkb=1536}, with grandfathered
+                                                     exclusions \\
+    \code{nbqa-black}     & \code{v1.9.1}  & \code{black 24.8.0}, \code{--target-version=py310},
+                                             with \code{BLACK\_DISABLE\_MYPYC=1} \\
+    \code{black}          & \code{v25.1.0} & \code{--line-length=100} \\
+    \code{nbstripout}     & \code{v0.8.1}  & strips outputs \emph{except} for
+                                             \file{python/examples/exN\_*.ipynb} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Three of these exclusions encode real constraints and must not be simplified
+away:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \file{cpp/test/fixtures/} holds fixed-column data products (SP3,
+    RINEX navigation, ANTEX). Stripping trailing whitespace or rewriting line
+    endings corrupts their column layout, so all three whitespace-normalising
+    hooks skip that directory.
+  \item \code{nbstripout} deliberately keeps the outputs of the tutorial
+    notebooks \file{python/examples/exN\_*.ipynb}, because
+    \code{nbsphinx\_execute = "never"} means those stored figures and tables
+    \emph{are} the rendered documentation. Every other notebook --- under
+    \file{projects/}, GNSS helpers, subdirectories --- is still stripped.
+  \item \code{check-added-large-files} caps files at 1536~kB.
+    Grandfathered exceptions are \file{docs/\_static/LuPNT\_background.png},
+    \file{docs/\_static/LuPNT\_square.png}, and the notebooks
+    \file{ex3\_gnss\_interface.ipynb}, \file{ex15\_marspnt.ipynb},
+    \file{ex16\_leopnt.ipynb} --- the latter two are genuinely data-dense 3-D
+    trajectory plots that stay over the limit even at \code{scale=1}.
+\end{itemize}
+
+\begin{lupntnote}
+The pre-commit hook pins \code{clang-format v19.1.7} while the Pixi
+environment --- and therefore \code{pixi run format-check} and the CI
+\code{style} job --- pins \code{clang-format 18.*}. The two versions agree on
+this configuration in practice, but a formatting disagreement between a local
+hook run and CI is the expected symptom if that ever changes.
+\end{lupntnote}
+
+\subsection{The incremental format check}
+
+CI does not reformat the world; it checks only what a branch touched.
+\file{scripts/check\_format.py} takes a Git base reference, collects files
+changed with \code{git diff --name-only --diff-filter=ACMRT <base>} plus
+untracked files from \code{git ls-files --others --exclude-standard}, splits
+them by extension, and runs the two formatters in check mode:
+
+\begin{lstlisting}[language=shell]
+# scripts/check_format.py, in effect
+clang-format  --dry-run --Werror <changed .c .cc .cpp .cxx .h .hh .hpp .hxx>
+cmake-format  --check           <changed CMakeLists.txt and *.cmake>
+\end{lstlisting}
+
+The base reference is the first positional argument, falling back to the
+environment variable \code{FORMAT\_BASE\_REF} and then to \code{HEAD}. Locally:
+
+\begin{lstlisting}[language=shell]
+pixi run format-check                 # against HEAD
+pixi run format-check origin/master   # against a branch point
+\end{lstlisting}
+
+\section{Continuous integration}
+\label{sec:dev-ci}
+
+The public CI runs on \textbf{GitHub Actions}; the workflows under
+\file{.github/workflows/} each invoke the same Pixi tasks a developer runs
+locally, so any pipeline failure reproduces verbatim on a developer machine.
+
+\begin{table}[H]
+  \centering
+  \caption{GitHub Actions workflows.}
+  \label{tab:dev-ci}
+  \small
+  \begin{tabularx}{\textwidth}{@{}l l L@{}}
+    \toprule
+    Workflow & Command & Notes \\
+    \midrule
+    \code{style}    & \code{pixi run format-check} & clang-format / black / notebook style \\
+    \code{ubuntu}, \code{macos}, \code{windows} & \code{pixi run test-cpp-ci} & C++ build + unit tests, one workflow per platform \\
+    \code{python}   & \code{pixi run test-py}       & Python test suite \\
+    \code{examples} & \code{pixi run build-examples}& builds the C++ examples (no data download needed) \\
+    \code{install}  & \code{pixi run install-test}  & install + downstream \code{find\_package} smoke test \\
+    \code{coverage} & \code{pixi run cov-cpp}, \code{cov-py} & C++ and Python coverage \\
+    \code{docs}     & \code{pixi run build-docs}    & Sphinx site, deployed to GitHub Pages on the default branch \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The reference-data bundle (\file{data/LuPNT\_data/}) is fetched from a public
+GitHub Release by \file{cmake/FetchLuPNTData.cmake} (or \file{download\_data.py})
+and cached between runs; the download is unauthenticated. \code{LUPNT\_DATA\_TAG}
+in \file{cmake/FetchLuPNTData.cmake}, \code{DATA\_TAG} in
+\file{python/pylupnt/core/download\_data.py}, and the \code{LUPNT\_DATA\_TAG}
+repository variable read by the workflows must all name the same release tag;
+bump them together whenever a new bundle is published.
+
+
+\section{Workflow boundaries}
+\label{sec:dev-boundaries}
+
+What this workflow does \emph{not} do is worth stating explicitly, since each
+item is a place where a reasonable expectation fails.
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Platforms.} Only \code{linux-64} and \code{osx-arm64} are
+    declared as Pixi platforms in \file{pixi.toml}; there is no Windows Pixi
+    environment (build under WSL2 instead), and Intel macOS is not a declared
+    platform either.
+  \item \textbf{Static analysis.} \code{clang-tidy} is configured to run no
+    checks, and no analysis job exists in CI.
+  \item \textbf{Coverage.} The \code{.coverage} job is disabled; coverage
+    numbers are only produced on demand, locally, with \code{cov-cpp} and
+    \code{cov-py}.
+  \item \textbf{Test completeness in CI.} \code{test-cpp-ci} excludes eight
+    test groups that need CDDIS credentials or live network access, so a green
+    pipeline does not exercise the SP3, RINEX-navigation, ANTEX, TLE, EOP, or
+    GNSS-visibility paths. Those must be run locally with Earthdata
+    credentials.
+  \item \textbf{Notebook execution.} The documentation build never executes
+    notebooks. If \code{render-notebooks} is not run after an API change, the
+    published tutorials silently show stale outputs; nothing in CI detects this.
+  \item \textbf{Source globbing.} Both the library and the test executable glob
+    their sources. \code{CONFIGURE\_DEPENDS} makes Ninja re-glob on build, but
+    a newly added file that is not picked up is almost always a stale build
+    directory --- reconfigure rather than debug the glob.
+  \item \textbf{Formatter version skew.} The pre-commit \code{clang-format} is
+    v19 while the Pixi and CI one is v18 (\cref{sec:dev-style}).
+\end{itemize}

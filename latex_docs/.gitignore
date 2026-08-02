@@ -1,0 +1,21 @@
+# This directory is TEXT ONLY: .tex, .bib, .sh, .md. Binary artefacts belong in
+# $LUPNT_DATA_PATH/docs (generated/large) or docs/_static (shared with Sphinx).
+build/
+figpath.tex
+
+# Stray intermediates, if someone runs pdflatex in place rather than build.sh.
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+*.lof
+*.lot
+*.synctex.gz
+
+# Belt and braces: never let an image or a built PDF land here by accident.
+*.png
+*.jpg
+*.jpeg
+*.pdf

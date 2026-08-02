@@ -1,0 +1,1335 @@
+\chapter{Building a New Simulation}
+\label{chap:new-simulation}
+
+This chapter specifies how a scenario is assembled in \lupnt{}: the object model
+(\cpp{Simulation}, \cpp{World}, \cpp{Agent}, \cpp{Application}, \cpp{Device},
+\cpp{Measurement}, \cpp{Dynamics}, \cpp{State}), the discrete-event engine that
+schedules them, the YAML schema that instantiates them through a string-keyed
+asset factory, and the two supported authoring paths --- a factory-registered
+C++ class, or a pure-Python subclass injected through the \code{pybind11}
+trampolines. The implementing sources are
+\file{cpp/lupnt/simulations/simulation.h}, \file{cpp/lupnt/simulations/world.h},
+\file{cpp/lupnt/core/event.h}, \file{cpp/lupnt/core/asset_factory.h},
+\file{cpp/lupnt/agents/agent.h}, \file{cpp/lupnt/applications/application.h},
+\file{cpp/lupnt/measurements/measurement.h}, the shipped scenarios under
+\file{configs/}, and the Python binding layer
+\file{python/bindings/py_simulation.cc}. The design follows the agent-based
+architecture described in \citep{iiyama2023lupnt,casadesus2025lupnt} and
+\citep{iiyama2026thesis}.
+
+\section{One engine, one path}
+\label{sec:sim-one-engine}
+
+Every scenario in \lupnt{} is built from a YAML configuration by the same generic
+event-driven engine, \cpp{lupnt::Simulation}
+(\file{cpp/lupnt/simulations/simulation.cc}). There is no ``monolithic''
+alternative: nothing in the repository subclasses \cpp{Simulation} or hand-writes
+a \cpp{Run()} loop. Agents, applications, devices, dynamics, channels, and
+filters are all assembled by name through factories; a top-level \code{world:}
+block defines the shared read-only environment (epoch, integration frame, force
+model) that both the truth agents and the estimators draw from; and any new
+mission or navigation logic goes into a factory-registered \cpp{Application} that
+self-drives from that environment.
+
+The ground-station ODTS, GNSS ODTS, inter-satellite-link (ISL) ODTS (centralized
+\emph{and} distributed), ephemeris, surface-rover, and lander scenarios all run
+this one way; see \file{configs/ground_station_odts.yaml},
+\file{configs/lunar_gnss_odts.yaml}, \file{configs/isl_odts_distributed.yaml},
+\file{configs/ephemeris.yaml}, \file{configs/surface_rover_nav.yaml},
+\file{configs/lander_nav.yaml}, and \file{configs/sat_bearing_odts.yaml}.
+
+A configuration is launched from Python with \py{pnt.Simulation(yaml\_or\_dict)}
+--- the pattern used by every \file{python/examples/exN_run_*.py} driver script
+--- or from a small C++ driver such as the tutorials under
+\file{cpp/examples/tutorials/}, which merely load the YAML, construct a
+\cpp{Simulation}, and call \cpp{Run()}:
+
+\begin{lstlisting}[language=cpp, caption={The complete C++ driver for a scenario.}, label={lst:sim-cpp-driver}]
+// cpp/examples/tutorials/ex7_groundstation_odts.cc :: main
+YAML::Node config = YAML::LoadFile(config_path);
+Simulation sim(config);          // Setup() runs inside the constructor
+sim.Run();                       // drains the event queue
+
+// The manager agent's application owns the centralized OD solution.
+Agent* mgr_agent = sim.GetAgent("gs_manager");
+auto mgr = std::dynamic_pointer_cast<GroundStationManagerApp>(mgr_agent->GetApplication());
+LUPNT_CHECK(mgr && mgr->HasSolved(), "GroundStationManagerApp did not solve", "ex7");
+\end{lstlisting}
+
+The only real design choice left to the scenario author is \emph{how to decompose
+the per-epoch logic across applications}. Four shapes recur, and every shipped
+scenario is one of them:
+
+\begin{description}[leftmargin=1.2cm,style=nextline,font=\normalfont\itshape]
+  \item[Sensor / estimator split] Separate sensor applications generate
+    observations and push them to a manager application that estimates. Ground
+    station OD: \cpp{GroundStationTrackingApp} on each \cpp{GroundStation}, all
+    feeding one \cpp{GroundStationManagerApp} on a \cpp{GroundStationManager}
+    agent.
+  \item[Single coordinator application] One manager agent hosts an application
+    that runs the whole estimator itself. Centralized ground ODTS:
+    \cpp{SurfaceStationManager} $+$ \cpp{GroundOdtsApp}, a single EKF over all
+    surface-station beacon observations.
+  \item[Fully distributed] Every platform is its own agent running its own
+    application, exchanging state over the \cpp{Publish} / \cpp{Subscribe} bus.
+    Distributed ISL ODTS: \cpp{Spacecraft} $+$ \cpp{SatelliteOdtsApp}, alongside
+    \cpp{SurfaceStation} $+$ \cpp{StationBeaconSensor} feeding
+    \cpp{SurfaceStationManager} $+$ \cpp{GroundOdtsApp}.
+  \item[Several applications on one platform] One physical agent hosts multiple
+    applications in an \code{applications:} list, run in insertion order and
+    sharing the agent's truth state. Lander descent: a guidance
+    \cpp{LanderGncApp} that owns the truth trajectory, plus a navigation
+    \cpp{LanderNavApp} multiplicative extended Kalman filter (MEKF) that reads it,
+    resolved through \cpp{GetApplicationByName}.
+\end{description}
+
+A heavyweight engine needs no rewrite to fit. From its \cpp{Step}, the
+application \cpp{LunarGnssOdtsApp} calls
+\cpp{RunLunarGnssODTSMonteCarlo} directly, so an existing batch or
+Monte-Carlo solver can be dropped inside a single application unchanged.
+
+\section{The object model}
+\label{sec:sim-object-model}
+
+\Cref{tab:sim-blocks} lists the eight building blocks and the header that defines
+each one; \cref{fig:sim-object-model} shows containment and the per-step call
+flow.
+
+\begin{table}[H]
+  \centering
+  \caption{The building blocks of a \lupnt{} scenario. Paths are relative to
+           \texttt{cpp/lupnt/}.}
+  \label{tab:sim-blocks}
+  \begin{tabularx}{\textwidth}{@{}l L L@{}}
+    \toprule
+    Block & Base class (header) & Role \\
+    \midrule
+    Simulation & \cpp{Simulation} (\file{simulations/simulation.h}) &
+      Discrete-event engine: a time-ordered \cpp{std::priority\_queue<Event>},
+      \cpp{Schedule} / \cpp{Run} / publish--subscribe, and the \cpp{agents\_},
+      \cpp{channels\_}, \cpp{constellations\_} registries built from config. Owns
+      the \cpp{World}. \\
+    World & \cpp{World} (\file{simulations/world.h}) &
+      The shared, read-only physical environment built from the top-level
+      \code{world:} block: epoch, integration \code{frame}, one force model,
+      an optional point-mass \code{gravity:}, an optional \code{dem:} terrain
+      service, and an optional \code{plasma:} block. \cpp{MakeDynamics()} hands
+      out a fresh \cpp{NBodyDynamics} from that one force model. It never
+      propagates agents. \\
+    Agent & \cpp{Agent} $\rightarrow$ \cpp{AgentWithDynamics}
+      (\file{agents/agent.h}) &
+      A platform (satellite, ground station, rover, lander, surface station).
+      Owns a \cpp{Dynamics}, \cpp{Device}s, a \cpp{State}, and hosts one or more
+      \cpp{Application}s. Answers \cpp{GetStateAt(t)} for measurement geometry. \\
+    Application & \cpp{Application} (\file{applications/application.h}) &
+      The mission / navigation logic run per step. Builds \cpp{Measurement}s and
+      runs a \cpp{Filter}. \\
+    Device & \cpp{Device} (\file{devices/device.h}) &
+      A sensor or component on an agent (\cpp{Clock}, \cpp{Imu}, \cpp{Camera},
+      \cpp{Transmitter} / \cpp{Receiver} / \cpp{Transponder},
+      \cpp{GnssTransmitter} / \cpp{GnssReceiver}). Steps on its own schedule; read
+      by applications through \cpp{GetDevice(name)}. \\
+    Measurement & \cpp{Measurement} / \cpp{ErrorStateMeasurement}
+      (\file{measurements/measurement.h}) &
+      The observable model. \cpp{Compute(x, H)} returns the predicted value, its
+      covariance, and the Jacobian $\mat{H} = \partial \vec{h} / \partial \vec{x}$;
+      \cpp{CreateFunction()} wires it into a \cpp{Filter}. \\
+    Dynamics & \cpp{Dynamics} (\file{dynamics/dynamics.h}) &
+      The propagation model. \cpp{Propagate(x0,t0,tf[,u][,stm])} advances a
+      \cpp{State} and optionally its state-transition matrix
+      $\mat{\Phi} = \partial \vec{x}_f / \partial \vec{x}_0$. \\
+    State & \cpp{State}, \cpp{JointState} (\file{states/state.h},
+      \file{states/joint_state.h}) &
+      A labeled Eigen vector with a type, per-element names and units, and a
+      frame. \cpp{JointState} composes orbit $+$ clock ($+$ parameters) into one
+      filter state. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[node distance=9mm and 12mm]
+    % --- engine layer -------------------------------------------------------
+    \node[boxnode, minimum width=3.6cm] (sim)
+      {\textbf{Simulation}\\[1pt]\scriptsize priority queue of Events\\
+       \scriptsize agents, channels, constellations};
+    \node[boxnode, left=16mm of sim, minimum width=3.0cm] (world)
+      {\textbf{World}\\[1pt]\scriptsize epoch, frame, force model\\
+       \scriptsize gravity, DEM, plasma};
+
+    % --- agent layer --------------------------------------------------------
+    \node[boxnode, below=16mm of sim, xshift=-26mm, minimum width=3.0cm] (agentA)
+      {\textbf{Agent} (truth)\\[1pt]\scriptsize Dynamics, Devices, State};
+    \node[boxnode, below=16mm of sim, xshift=26mm, minimum width=3.0cm] (agentB)
+      {\textbf{Agent} (host)\\[1pt]\scriptsize Devices, State};
+
+    % --- application layer --------------------------------------------------
+    \node[boxnode, below=14mm of agentB, minimum width=3.4cm] (app)
+      {\textbf{Application}\\[1pt]\scriptsize Setup / Step / Log};
+
+    % --- model layer --------------------------------------------------------
+    \node[boxnode, below=14mm of app, xshift=-24mm, minimum width=2.6cm] (meas)
+      {\textbf{Measurement}\\[1pt]\scriptsize $z=h(x)$, $H$, $R$};
+    \node[boxnode, below=14mm of app, xshift=24mm, minimum width=2.6cm] (filt)
+      {\textbf{Filter}\\[1pt]\scriptsize EKF / UKF / SRIF / batch};
+    \node[boxnode, below=12mm of meas, xshift=24mm, minimum width=3.4cm] (state)
+      {\textbf{JointState} $+$ \textbf{Dynamics}\\[1pt]\scriptsize $\Phi$, process noise};
+
+    % --- edges --------------------------------------------------------------
+    \draw[flow] (sim) -- node[above,font=\scriptsize\sffamily] {owns} (world);
+    \draw[flow] (sim) -- node[left,pos=0.55,font=\scriptsize\sffamily] {Step (AGENT)} (agentA);
+    \draw[flow] (sim) -- node[right,pos=0.55,font=\scriptsize\sffamily] {Step (AGENT)} (agentB);
+    \draw[flow] (agentB) -- node[right,font=\scriptsize\sffamily] {hosts} (app);
+    \draw[flow] (app) -- node[left,font=\scriptsize\sffamily] {builds} (meas);
+    \draw[flow] (app) -- node[right,font=\scriptsize\sffamily] {drives} (filt);
+    \draw[flow] (meas) -- (state);
+    \draw[flow] (filt) -- (state);
+    \draw[flow, dashed] (app.west) to[out=170,in=-100]
+      node[left,pos=0.6,font=\scriptsize\sffamily] {GetStateAt$(t)$} (agentA.south);
+    \draw[flow, dashed] (world.south) to[out=-90,in=170]
+      node[left,pos=0.35,font=\scriptsize\sffamily] {MakeDynamics} (agentA.west);
+  \end{tikzpicture}
+  \caption{Object model and per-step call flow. Solid arrows are ownership or
+           scheduling; dashed arrows are read-only queries. The engine pops due
+           events, agents self-propagate their truth, devices advance, and the
+           hosted application reads truth through \cpp{GetStateAt}, forms a
+           measurement, and runs one filter cycle.}
+  \label{fig:sim-object-model}
+\end{figure}
+
+\subsection{Simulation --- the engine}
+\label{sec:sim-engine}
+
+\cpp{Simulation} is a discrete-event engine backed by a
+\cpp{std::priority\_queue<Event>}. An \cpp{Event} (\file{cpp/lupnt/core/event.h})
+is a \code{\{time, frequency, priority, callback\}} tuple:
+
+\begin{lstlisting}[language=cpp, caption={The event record and its ordering.}, label={lst:sim-event}]
+// cpp/lupnt/core/event.h :: Event
+struct Event {
+  Real time;
+  Real frequency;
+  Real priority = 0.0;
+  std::function<void(Real)> callback;
+  bool operator<(const Event& e) const {
+    return time > e.time || (time == e.time && priority > e.priority);
+  }
+  enum Priority {
+    LOW = 0, MEDIUM = 1, HIGH = 2,
+    LOGGING = LOW, APPLICATION = LOW,
+    DEVICE = MEDIUM,
+    DYNAMICS = HIGH, AGENT = HIGH,
+  };
+  constexpr static Real SINGLE_EVENT = -1.0;
+};
+\end{lstlisting}
+
+The comparator inverts \cpp{operator<} on \code{time}, so the
+\cpp{std::priority\_queue} (a max-heap) pops the \emph{earliest} event first ---
+the intended behaviour. The tie-break on \code{priority} is written in the same
+direction, so at equal time the numerically \emph{lower} priority value is popped
+first: \code{APPLICATION} $=$ \code{LOGGING} $(0)$, then \code{DEVICE} $(1)$, then
+\code{DYNAMICS} $=$ \code{AGENT} $(2)$.
+
+\begin{lupntnote}
+The enum names suggest the opposite intent (dynamics before devices before
+applications). In practice the ordering is benign, because an application never
+reads a cached agent state: \cpp{AgentWithDynamics::GetStateAt(t)} propagates a
+\emph{copy} of \code{state\_} from \code{time\_} to $t$ without mutating the
+agent, so the truth an application sees at time $t$ is correct whether or not the
+agent's own \cpp{Step} has already fired at that epoch. Applications that depend
+on a device having advanced first (an IMU sample, a clock realization) should
+read the device through its own accessor rather than relying on event order.
+\end{lupntnote}
+
+The main loop pops the earliest event, sets the simulation clock, invokes the
+callback, and --- if the event carries a non-zero \code{frequency} --- reschedules
+it at $t + 1/f$, which is how periodic \cpp{Step} callbacks recur:
+
+\begin{lstlisting}[language=cpp, caption={The engine loop.}, label={lst:sim-run-loop}]
+// cpp/lupnt/simulations/simulation.cc :: Simulation::Run
+running_ = true;
+while (!queue_.empty() && queue_.top().time <= duration_ + EPS) {
+  Event e = queue_.top();
+  queue_.pop();
+  time_ = e.time;
+  e.callback(e.time);                 // Agent / Device / Application Step, or a Publish
+  if (e.frequency > 0.0) {            // periodic -> reschedule
+    Real time_next = e.time + 1.0 / e.frequency;
+    if (time_next <= duration_ + EPS) { e.time = time_next; queue_.push(e); }
+  }
+}
+DataLogger::Flush();
+\end{lstlisting}
+
+\cpp{Schedule(time, callback, freq, priority)} adds events. \cpp{Subscribe(topic,
+callback)} and \cpp{Publish(time, topic, message)} provide a topic-based message
+bus; a \cpp{Publish} does not call subscribers inline but schedules one
+single-shot \code{APPLICATION}-priority event per subscriber at the given time,
+which is what gives the distributed ISL scenario its one-interval message latency.
+\cpp{GetAgent(name)} and \cpp{GetChannel(name)} accept either a bare name or the
+fully-qualified \code{<simname>/<name>} key under which the object was registered.
+
+\subsection{World --- the shared environment}
+\label{sec:sim-world}
+
+\cpp{Simulation::Setup} builds a single \cpp{World} from the top-level
+\code{world:} block \emph{after} the epoch is set and \emph{before} any agents, so
+every agent and application can pull the shared force model and truth facade
+during its own \cpp{Setup}. Reach it from anywhere with \cpp{Agent::GetWorld()}
+(equivalently \cpp{GetSimulation()->GetWorld()}).
+
+The \cpp{World} recognizes the keys in \cref{tab:sim-world-keys}. All of them are
+optional; a scenario with no \code{world:} block simply has
+\cpp{GetWorld() == nullptr}.
+
+\begin{table}[H]
+  \centering
+  \caption{Keys parsed by \cpp{World::World} in \texttt{cpp/lupnt/simulations/world.cc}.}
+  \label{tab:sim-world-keys}
+  \begin{tabularx}{\textwidth}{@{}l l L@{}}
+    \toprule
+    Key & Default & Meaning \\
+    \midrule
+    \code{frame} & \code{MOON\_CI} & Integration / environment reference frame. \\
+    \code{force\_model} & --- & An \cpp{NBodyDynamics}-style force-model block
+      (see \cref{sec:sim-force-model}); enables \cpp{MakeDynamics()},
+      \cpp{MakeTruthDynamics()} and \cpp{HasForceModel()}. \\
+    \code{gravity.body} & \code{MOON} & Central body whose point-mass $GM$ backs
+      \cpp{Gravity(r)}, used by surface inertial-navigation mechanization. \\
+    \code{dem.site\_lat\_deg}, \code{dem.site\_lon\_deg} & required in
+      \code{dem:} & Site centre of the LOLA digital elevation model, and the
+      origin of the local east--north--up (ENU) tangent frame. \\
+    \code{dem.half\_width\_m} & \num{5000} & Half-width of the loaded DEM tile
+      [\si{\meter}]. \\
+    \code{dem.max\_res\_m} & \num{20} & Target DEM resolution [\si{\meter}]. \\
+    \code{dem.dem\_file} & --- & Explicit GeoTIFF to crop instead of downloading
+      a tile (used by tests and small fixtures). \\
+    \code{plasma} & --- & Ionosphere / plasmasphere signal-delay environment; a
+      shared truth property, read by the GNSS ODTS application. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The epoch is not a \code{world:} key: it is taken from the global \lupnt{} epoch,
+which \cpp{Simulation::Setup} sets from the scenario-level \code{epoch:} string
+before constructing the \cpp{World}.
+
+Three factory methods hand out dynamics built from the one shared force model:
+
+\begin{lstlisting}[language=cpp, caption={\cpp{World} dynamics factories.}, label={lst:sim-world-dyn}]
+// cpp/lupnt/simulations/world.cc
+Ptr<NBodyDynamics> World::MakeDynamics() const {        // for ESTIMATORS
+  Config cfg = force_model_;
+  auto dynamics = MakePtr<NBodyDynamics>(cfg);
+  dynamics->SetFrame(frame_);
+  dynamics->SetAutodiff(true);      // analytic state-transition matrix
+  return dynamics;
+}
+Ptr<NBodyDynamics> World::MakeDynamics(double cr, double area_m2, double mass_kg) const;
+Ptr<NBodyDynamics> World::MakeTruthDynamics() const {   // same model, SetAutodiff(false)
+  auto dynamics = MakeDynamics();
+  dynamics->SetAutodiff(false);     // truth propagation needs no STM
+  return dynamics;
+}
+\end{lstlisting}
+
+An application that reuses \cpp{MakeDynamics()} for \emph{both} the truth grid and
+the filter has no truth/filter model mismatch by construction. The \cpp{World} is
+strictly read-only: it \emph{provides} the environment and a truth facade
+(\cpp{World::GetStateAt(name, t)}, which forwards to
+\cpp{Simulation::GetAgent(name)->GetStateAt(t)}), but each
+\cpp{AgentWithDynamics} still self-propagates through its own \code{dynamics\_}.
+
+\begin{lupntnote}
+An agent that declares no \code{dynamics:} block of its own inherits the shared
+\code{world.force\_model} as its truth dynamics. \cpp{Simulation::Setup} injects a
+copy of that block into the agent's config, defaulting \code{class} to
+\code{NBodyDynamics}, inheriting \code{world.frame}, and forcing
+\code{autodiff: false}. Fixed agents (ground and surface stations, which use a
+\cpp{StaticDynamics}) and manager agents ignore the injected block.
+\end{lupntnote}
+
+\subsection{Agent --- a platform}
+\label{sec:sim-agent}
+
+\cpp{Agent} owns \code{name\_}, a back-pointer to the \cpp{Simulation}, a
+\cpp{State}, a map of \cpp{Device}s, and one or more \cpp{Application}s. Its
+pure-virtual
+
+\begin{equation}
+  \label{eq:sim-getstateat}
+  \cpp{Cart6 GetStateAt(Real t) const}
+  \quad\longmapsto\quad
+  \vec{x}(t) = \begin{bmatrix}\vec{r}(t)\\ \vec{v}(t)\end{bmatrix}
+\end{equation}
+
+is the contract every concrete agent must answer --- \emph{``where am I at time
+$t$?''} --- and is what measurement models call for light-time geometry. The
+returned state is Cartesian position and velocity in the agent's dynamics frame.
+
+Almost every physical agent derives from \cpp{AgentWithDynamics}, which adds a
+\cpp{Ptr<Dynamics>}, an \cpp{AttitudeDynamics}, a \cpp{Cart6 state\_}, an
+\cpp{Attitude attitude\_}, and a \cpp{State control\_}. Its \cpp{Step(t)} calls
+\cpp{Propagate(t)} --- integrating the dynamics in place from \code{time\_} to $t$
+with the current \code{control\_} --- and then \cpp{Log(t)}. Its
+\cpp{GetStateAt(t)} returns the cached \code{state\_} if $|t - \code{time\_}| <
+\code{EPS}$, and otherwise propagates a non-mutating copy.
+
+\Cref{tab:sim-agent-classes} lists the concrete agents registered with the
+factory. Applications are attached with the \code{application:} map (a single app)
+or the \code{applications:} sequence (several, run in insertion order); retrieve
+them with \cpp{GetApplication()}, \cpp{GetApplications()}, or
+\cpp{GetApplicationByName("...")}, which matches any app whose (agent-prefixed)
+name \emph{ends with} the argument.
+
+\begin{table}[H]
+  \centering
+  \caption{Agent classes registered with \cpp{AgentFactory} (the string is the
+           YAML \code{class:} value).}
+  \label{tab:sim-agent-classes}
+  \begin{tabularx}{\textwidth}{@{}l l L@{}}
+    \toprule
+    \code{class:} & Source & Role \\
+    \midrule
+    \cpp{Satellite} & \file{agents/satellite.cc} &
+      Orbit-only truth from a \code{ClassicalOE} initial state; self-propagates
+      its \code{dynamics:} block. \\
+    \cpp{Spacecraft} & \file{agents/spacecraft.cc} &
+      Joint orbit $+$ clock 8-state truth
+      $[\vec{r}, \vec{v}, b, d]$ with a \code{clock:} model; accepts
+      \code{r0\_m}/\code{v0\_mps} or a \code{ClassicalOE} block. \\
+    \cpp{GroundStation} & \file{agents/ground_station.cc} &
+      Earth station from \code{latitude\_deg} / \code{longitude\_deg} /
+      \code{altitude\_m}, or from SPICE (\code{spice\_name}, \code{spice\_id},
+      \code{spice\_frame}, \code{spice\_kernel(s)}). \\
+    \cpp{GroundStationManager} & \file{agents/ground_station_manager.cc} &
+      Massless ground-segment host for a centralized estimator application. \\
+    \cpp{SurfaceStation} & \file{agents/surface_station.cc} &
+      Lunar surface beacon / station. \\
+    \cpp{SurfaceStationManager} & \file{agents/surface_station_manager.cc} &
+      Host for the centralized ground filter in the ISL scenario. \\
+    \cpp{Rover} & \file{agents/rover.cc} &
+      Surface rover driven by \cpp{SurfaceDynamics2D} with a control input. \\
+    \cpp{Lander} & \file{agents/lander.cc} &
+      Thin descent platform; carries the guidance and navigation applications. \\
+    \cpp{EphemerisManager} & \file{agents/ephemeris_manager.cc} &
+      Host for the ephemeris-generation application. \\
+    \cpp{LunarNavConstellation} & \file{agents/lunar_nav_constellation.cc} &
+      Group generator: one \code{agents:} entry expands into $N$ child
+      \cpp{Spacecraft}, from an explicit \code{satellites:} list or a symmetric
+      \code{walker:} spec. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\cpp{LunarNavConstellation} deserves a note because it removes the need to declare
+one agent per navigation satellite. Its \code{walker:} block takes
+\code{n\_planes}, \code{sats\_per\_plane}, the common frozen-orbit elements
+\code{a}, \code{e}, \code{i}, \code{omega}, and the phasing keys
+\code{raan0\_deg}, \code{m0\_deg}, \code{phase\_deg}, plus \code{frame} (default
+\code{MOON\_OP}) and \code{name\_prefix} (default \code{SV}). Right ascension of
+the ascending node for plane $p$ and mean anomaly for satellite $s$ of that plane
+are
+
+\begin{align}
+  \Omega_p &= \Omega_0 + p\,\frac{360^\circ}{n_\text{planes}},
+  & p &= 0,\dots,n_\text{planes}-1, \label{eq:sim-walker-raan}\\
+  M_{p,s} &= M_0 + s\,\frac{360^\circ}{n_\text{sat/plane}} + p\,\Delta\phi,
+  & s &= 0,\dots,n_\text{sat/plane}-1, \label{eq:sim-walker-anomaly}
+\end{align}
+
+with $\Delta\phi$ the inter-plane phasing \code{phase\_deg}. The surface-rover
+example sources its relay truth from such a constellation via
+\cpp{GetSatelliteStateAt(j, t)}. A separate top-level \code{constellations:} block
+builds \cpp{Constellation} / \cpp{GnssConstellation} objects, which are registered
+and set up alongside agents.
+
+\subsection{Application --- the mission logic}
+\label{sec:sim-application}
+
+\cpp{Application} holds a back-pointer to its owning \cpp{Agent} and a copy of its
+\code{application:} config block. The base constructor reads only two keys,
+\code{name} (defaulting to the object id) and \code{frequency} [\si{\hertz}];
+everything else is the derived class's business. The base \cpp{Setup()} schedules
+the periodic step and nothing more:
+
+\begin{lstlisting}[language=cpp, caption={The \cpp{Application} lifecycle.}, label={lst:sim-app-lifecycle}]
+// cpp/lupnt/applications/application.cc
+Application::Application(Config& config) {
+  name_ = config["name"] ? config["name"].as<std::string>() : GetId();
+  config_ = config;
+  if (config["frequency"]) frequency_ = config["frequency"].as<Real>();
+}
+
+void Application::Setup() {
+  if (frequency_ > 0.0) {
+    agent_->GetSimulation()->Schedule(
+        0.0, [this](Real t) { Step(t); }, frequency_, Event::Priority::APPLICATION);
+  } else {
+    Logger::Warn(fmt::format("No frequency set for {}", name_), "Agent");
+  }
+}
+
+virtual void Step(Real t) = 0;     // pure virtual: one predict/update cycle
+virtual void Log(Real t);          // called from Agent::Log
+\end{lstlisting}
+
+So the three overridable virtuals are \cpp{Setup()} (resolve target agents, reach
+the environment, seed the filter state and covariance, then call the base to keep
+the scheduling), the pure-virtual \cpp{Step(Real t)} (one predict/update cycle),
+and \cpp{Log(Real t)} (record results; \cpp{Agent::Log} forwards to it).
+
+Logic can also be composed \emph{within} one application through the sub-application
+pattern: \cpp{LunaNetSatApp} holds a \cpp{std::vector<Ptr<LunaNetSubApp>>} and fans
+its \cpp{Step} out to each sub-application (\cpp{IslOdtsApp},
+\cpp{EphemerisGenApp}).
+
+\begin{table}[H]
+  \centering
+  \caption{Application classes registered with \cpp{ApplicationFactory}.}
+  \label{tab:sim-app-classes}
+  \begin{tabularx}{\textwidth}{@{}l L@{}}
+    \toprule
+    \code{class:} & Role \\
+    \midrule
+    \cpp{GroundStationTrackingApp} & Sensor on each \cpp{GroundStation}:
+      visibility-gated range and range-rate, with optional troposphere,
+      ionosphere, Shapiro, and solid Earth tide corrections, pushed to a manager. \\
+    \cpp{GroundStationManagerApp} & Centralized batch (weighted least squares) plus
+      square-root information filter (SRIF) and smoother, with configurable filter
+      dynamics. \\
+    \cpp{LunarGnssOdtsApp} & GNSS ODTS; calls the Monte-Carlo engine from its
+      \cpp{Step}. \\
+    \cpp{SatelliteOdtsApp} & Per-satellite onboard Schmidt EKF for the distributed
+      ISL scenario; exchanges consider-states over publish--subscribe. \\
+    \cpp{StationBeaconSensor} & Surface-station sensor pushing
+      \cpp{IslStationObs} records to the ground filter. \\
+    \cpp{GroundOdtsApp} & Centralized station-only EKF over every satellite's joint
+      orbit $+$ clock 8-state. \\
+    \cpp{EphemerisApp}, \cpp{LunaNetSatApp} & Ephemeris fitting; the latter hosts
+      sub-applications (\cpp{IslOdtsApp}, \cpp{EphemerisGenApp}). \\
+    \cpp{SurfaceStationApp} & Surface-station logic. \\
+    \cpp{SurfaceRoverNavApp} & Rover inertial navigation aided by a
+      \cpp{LunarNavConstellation}. \\
+    \cpp{LanderGncApp} & Guidance / control: owns the powered-descent truth
+      trajectory and writes the lander state. \\
+    \cpp{LanderNavApp} & Error-state inertial navigation MEKF fusing IMU,
+      altimeter, crater bearings, and LunaNet pseudoranges. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Device, Measurement, Dynamics, State}
+\label{sec:sim-models}
+
+\paragraph{Device.} Created from the agent's \code{devices:} block, stored in
+\cpp{Agent::devices\_} under \code{<agent>/<device>}, and stepped independently on
+its own \code{DEVICE}-priority events, so its internal state is current when an
+application reads it with \cpp{GetDevice(name)} (which accepts the bare or the
+prefixed name). Registered devices: \cpp{Clock}, \cpp{Imu}, \cpp{Camera},
+\cpp{Transmitter}, \cpp{Receiver}, \cpp{Transponder}, \cpp{GnssTransmitter},
+\cpp{GnssReceiver}.
+
+\paragraph{Measurement.} The observable contract is one method:
+
+\begin{equation}
+  \label{eq:sim-meas}
+  \cpp{MeasData Compute(const State\& x, MatXd* H) const},
+\end{equation}
+which returns
+\begin{equation}
+  \label{eq:sim-meas-terms}
+  \vec{z} = \vec{h}(\vec{x}), \qquad
+  \mat{H} = \frac{\partial \vec{h}}{\partial \vec{x}}, \qquad
+  \mat{R} = \operatorname{Cov}\!\left[\vec{z}\right].
+\end{equation}
+
+\cpp{MeasData} carries \code{timestamp}, the stacked observable \code{value}
+($\vec{z}$), and \code{covariance} ($\mat{R}$, sized $n_z \times n_z$, diagonal by
+convention). \code{H} is filled only when the caller passes a non-null pointer.
+Derive from \cpp{MeasurementClone<Derived>}, a CRTP helper that supplies the
+required polymorphic \cpp{Clone()}. \cpp{CreateFunction()} adapts the model to a
+\cpp{FilterMeasurementFunction} suitable for
+\cpp{Filter::SetMeasurementFunction} by capturing a \cpp{Clone()} of itself:
+
+\begin{lstlisting}[language=cpp, caption={Adapting a measurement model to a filter.}, label={lst:sim-meas-fn}]
+// cpp/lupnt/measurements/measurement.h :: Measurement::CreateFunction
+virtual FilterMeasurementFunction CreateFunction() const {
+  Ptr<Measurement> self = Clone();
+  return [self](const State& x, MatXd* H, MatXd* R) -> VecXd {
+    MeasData md = self->Compute(x, H);
+    if (R != nullptr) *R = md.covariance;
+    return md.value;
+  };
+}
+\end{lstlisting}
+
+Error-state (inertial navigation) observables use the parallel
+\cpp{ErrorStateMeasurement} base instead. Its Jacobian is taken with respect to
+the navigation \emph{error} state
+$\delta\vec{x} = [\delta\vec{r}, \delta\vec{v}, \delta\vec{\theta},
+\delta\vec{b}_a, \delta\vec{b}_g, \delta b, \delta d]$ and depends on the nominal
+attitude, so the model consumes a \cpp{NavErrorContext}
+($\vec{r}$, $\vec{v}$, $\mat{R}_{b \to n}$, clock bias and drift, error-state
+size) rather than a flat \cpp{State}, and there is no \cpp{Filter} integration ---
+the hosting application drives the Joseph-form update directly.
+
+\paragraph{Dynamics.} The \cpp{Propagate} family is the contract. The
+state-transition-matrix overload is what filters use for covariance propagation;
+if a subclass does not provide one, the base computes it by automatic
+differentiation. Concrete classes registered with \cpp{DynamicsFactory}:
+\cpp{NBodyDynamics}, \cpp{JointOrbitClockDynamics}, \cpp{StaticDynamics},
+\cpp{SurfaceDynamics2D}; \cpp{ClockDynamics} has its own registry, and
+\cpp{FixedAttitudeDynamics} / \cpp{FixedPointingDynamics} register as
+\cpp{AttitudeDynamics}.
+
+\paragraph{State.} A labeled vector (\cpp{Cart6}, \cpp{ClassicalOE},
+\cpp{ClockState2}, \cpp{ImuState}, \dots). \cpp{JointState} concatenates
+(\cpp{State}, \cpp{Dynamics}, \cpp{ParamState}, estimation types, $\tau_q$) triples
+and exposes the combined dynamics, state-transition-matrix, and process-noise
+functions the \cpp{Filter} consumes --- this is how orbit $+$ clock ($+$ estimated
+or consider parameters) become one filter state.
+
+\section{Per-step data flow}
+\label{sec:sim-dataflow}
+
+At a given epoch the engine runs all due callbacks, and the following work
+happens (\cref{fig:sim-object-model}):
+
+\begin{enumerate}[leftmargin=*]
+  \item \cpp{AgentWithDynamics::Step} advances each physical agent's \emph{truth}
+        state by \cpp{Propagate}, then logs it.
+  \item \cpp{Device::Step} advances clocks, IMUs, cameras, and radios.
+  \item \cpp{Application::Step} reads other agents' truth via \cpp{GetStateAt(t)}
+        or \cpp{World::GetStateAt(name, t)} and its own devices via
+        \cpp{GetDevice(...)}, forms one or more \cpp{Measurement}s
+        ($\vec{z}, \mat{H}, \mat{R}$), and runs a filter predict (using the
+        \cpp{Dynamics} / \cpp{JointState} state-transition matrix and process
+        noise) followed by an update.
+  \item Results are logged through \cpp{Application::Log}, reached from
+        \cpp{Agent::Log}. Periodic events reschedule themselves.
+\end{enumerate}
+
+In pseudocode, an agent step and a navigation application step are:
+
+\begin{lstlisting}[language=cpp, caption={Truth propagation and one navigation cycle (pseudocode).}, label={lst:sim-step-pseudocode}]
+// AgentWithDynamics::Step(t)          (priority AGENT) -- advance the truth state
+state_, attitude_ = dynamics_.Propagate(state_, time_, t, control_);
+time_ = t;  Log(t);
+
+// A navigation Application::Step(t)   (priority APPLICATION)
+for (tx : visible_transmitters(t)) {          // geometry via tx.GetStateAt(t)
+  z, H, R = measurement(tx, receiver = agent_).Compute(x_hat, &H);
+  stack(z, H, R);
+}
+filter.Predict(t);                            // x_hat, P via Dynamics/JointState STM + Q
+filter.Update(z, H, R);                       // innovation, gain, covariance update
+Log(t);
+\end{lstlisting}
+
+\section{Configuration and the asset factory}
+\label{sec:sim-factory}
+
+Classes are instantiated by name through \cpp{AssetFactory<Base, Config\&>}
+(\file{cpp/lupnt/core/asset_factory.h}). A class opts in with one macro at file
+scope:
+
+\begin{lstlisting}[language=cpp, caption={Factory registration.}, label={lst:sim-register}]
+// cpp/lupnt/core/asset_factory.h :: REGISTER_FACTORY_CLASS(BASE, DERIVED)
+// registers a creator  [](Config& config) { return std::make_shared<DERIVED>(config); }
+// under the string "DERIVED", via a file-scope static registrar object.
+
+REGISTER_FACTORY_CLASS(Application, MyApp)    // at file scope in my_app.cc
+\end{lstlisting}
+
+The YAML \code{class:} value must match that string exactly; if it does not, the
+factory aborts with a message listing every registered class name. Typed aliases
+exist for each base: \cpp{AgentFactory}, \cpp{DeviceFactory},
+\cpp{ApplicationFactory}, \cpp{DynamicsFactory}, \cpp{ChannelFactory}. Each
+registry is defined in exactly one translation unit and explicitly instantiated,
+so a single registry is shared across library boundaries.
+
+\subsection{The scenario schema}
+\label{sec:sim-schema}
+
+\cpp{Simulation::Setup} reads the scenario-level keys in
+\cref{tab:sim-top-keys}, in that order, then hands each \code{agents:} entry to
+the factory named by its \code{class:}. The agent constructor in turn builds its
+\code{dynamics:}, \code{attitude\_dynamics:}, \code{initial\_state:},
+\code{devices:}, and \code{application:} (or \code{applications:}) sub-blocks
+through the matching factories. Names are made unique by prefixing:
+a channel, agent, or constellation named \code{X} in a simulation named \code{S}
+is registered under \code{S/X}; a device \code{d} on agent \code{A} under
+\code{A/d}; an application under \code{A/<name>}, defaulting to
+\code{A/application} for the singular form and to \code{A/<class>} for each entry
+of an \code{applications:} list.
+
+\begin{table}[H]
+  \centering
+  \caption{Top-level scenario keys parsed by \cpp{Simulation::Setup}.}
+  \label{tab:sim-top-keys}
+  \begin{tabularx}{\textwidth}{@{}l L@{}}
+    \toprule
+    Key & Meaning \\
+    \midrule
+    \code{name} & Scenario name; also the output directory and the
+      \code{<name>.h5} log file, and the registry prefix. \\
+    \code{log\_level} & One of the \cpp{Logger::LogLevel} enum names
+      (e.g.\ \code{DEBUG}, \code{INFO}, \code{WARNING}). \\
+    \code{cesium\_port} & If present, starts a \cpp{CesiumViewer} on that port. \\
+    \code{epoch} & Gregorian string, e.g.\ \code{"2027-03-01T00:00:00"}; sets the
+      global \lupnt{} epoch for $t = 0$. \\
+    \code{duration} & \code{HH:MM:SS(.sss)}; parsed to seconds and used as the
+      event-loop horizon. \\
+    \code{world} & The shared environment (\cref{tab:sim-world-keys}). \\
+    \code{channels} & Map of \cpp{Channel} configs. \\
+    \code{agents} & Map of agent configs, each with a \code{class:}. \\
+    \code{constellations} & Map of \cpp{Constellation} configs. \\
+    \code{seed} & Monte-Carlo seed, propagated as the default to every agent and
+      its application. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+An abridged scenario, from \file{configs/ground_station_odts.yaml}:
+
+\begin{lstlisting}[language=yamlcfg, caption={A complete scenario skeleton, abridged from \texttt{configs/ground\_station\_odts.yaml}.}, label={lst:sim-yaml-gsodts}]
+# configs/ground_station_odts.yaml
+name: ground_station_odts
+epoch: "2026-01-01T00:00:00"
+duration: "36:00:00"          # 36 h (~2.7 ELFO orbits)
+log_level: INFO
+
+world:                        # shared, read-only environment
+  frame: MOON_CI
+  force_model:                # 2x2 Moon + Earth/Sun + SRP
+    integrator: RKF45
+    dt: 10.0
+    max_iter: 1000
+    abstol: 1.0e-6
+    reltol: 1.0e-10
+    autodiff: true            # analytic STM for the estimator
+    mass: 10.0                # [kg]   } SRP: CR * area / mass
+    area: 0.02                # [m^2]  }
+    CR: 1.8
+    bodies:
+      - MOON: { n: 2, m: 2 }
+      - EARTH: {}
+      - SUN: {}
+
+agents:
+  sat:                              # truth target
+    class: Satellite
+    frequency: 0.0033333333333333   # 1/300 Hz truth logging
+    # No `dynamics:` block -> inherits world.force_model (autodiff forced off).
+    initial_state:
+      class: ClassicalOE
+      frame: MOON_OP
+      a: 6541400.0                  # [m]
+      e: 0.6
+      i: 56.2                       # [deg]
+      Omega: 0.0
+      omega: 90.0
+      M: 0.0
+
+  gs_manager:                       # centralized OD estimator
+    class: GroundStationManager
+    application:
+      class: GroundStationManagerApp
+      target: sat
+      obs_interval_s: 300.0
+      seed: 42
+      initial_position_sigma_m: 2000.0
+      initial_velocity_sigma_mps: 0.5
+      batch_max_iterations: 10
+      batch_convergence_tol: 1.0e-3
+      run_srif: true
+      srif_use_process_noise: true
+      srif_accel_psd: 3.0e-13
+
+  DSS14:                            # a tracking station (sensor)
+    class: GroundStation
+    latitude_deg: 35.426456
+    longitude_deg: 243.110461
+    altitude_m: 1001.39
+    application:
+      class: GroundStationTrackingApp
+      frequency: 0.0033333333333333
+      target: sat                   # resolved via GetSimulation()->GetAgent("sat")
+      manager: gs_manager           # where observations are pushed
+      elevation_mask_deg: 10.0
+      use_range: true
+      use_range_rate: true
+      range_sigma_m: 10.0
+      range_rate_sigma_mps: 1.0e-3
+      apply_troposphere: true       # Saastamoinen zenith delay + 1/sin(el) mapping
+      apply_ionosphere: true        # thin-shell VTEC delay 40.3*STEC/f^2
+      apply_shapiro: true           # relativistic light-time delay
+      apply_solid_earth_tide: true  # degree-2 station displacement
+\end{lstlisting}
+
+\begin{lupntwarning}
+\code{yaml-cpp} does not support YAML merge keys (\code{<<:}), so repeated station
+blocks must be written out in full. Anchors and aliases (\code{\&id}, \code{*id})
+\emph{are} supported and are used in
+\file{configs/isl_odts_distributed.yaml} to share the station list across
+satellites.
+\end{lupntwarning}
+
+\subsection{One force-model schema everywhere}
+\label{sec:sim-force-model}
+
+Every place that specifies an orbit force model --- the shared
+\code{world: force\_model:}, a physical agent's \code{dynamics:}, and an
+estimator's filter force model --- uses the \emph{same} block, parsed by
+\cpp{ParseForceModelSpec} (\file{cpp/lupnt/dynamics/numerical_orbit_dynamics.cc}).
+There is no separate \code{moon\_gravity\_degree\_*} / \code{include\_earth}
+dialect. The keys are:
+
+\begin{table}[H]
+  \centering
+  \caption{The shared force-model block.}
+  \label{tab:sim-force-model}
+  \begin{tabularx}{\textwidth}{@{}l L@{}}
+    \toprule
+    Key & Meaning \\
+    \midrule
+    \code{bodies} & Sequence of single-key maps \code{BODY: \{ n, m \}}. For
+      \code{MOON}, \code{n}/\code{m} are the spherical-harmonic degree and order
+      (default $0$, i.e.\ point mass); \code{EARTH} and \code{SUN} are third-body
+      point masses and take \code{\{\}}. \\
+    \code{relativity} & Enable the relativistic correction. The spelling
+      \code{use\_relativity} is accepted as an alias. \\
+    \code{CR}, \code{area}, \code{mass} & Solar-radiation-pressure ballistic
+      coefficient $C_R A / m$; SRP is enabled only when \code{CR} is present. \\
+    \code{CD} & Drag coefficient (with \code{area} and \code{mass}). \\
+    \code{integrator}, \code{dt}, \code{abstol}, \code{reltol}, \code{max\_iter} &
+      Integrator selection and step/tolerance controls. \\
+    \code{autodiff} & Whether the model carries an analytic state-transition
+      matrix. Estimators need \code{true}; truth propagation does not. \\
+    \code{frame} & Reference frame; inherited from \code{world.frame} when
+      omitted in an injected block. \\
+    \code{units} & Optional non-dimensional unit system. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Different dynamics for truth and filter}
+\label{sec:sim-truth-filter}
+
+Truth and filter dynamics are independent knobs, so a realistic orbit-determination
+study can run the estimator against a deliberately mismodeled truth.
+
+\emph{Truth} is whatever propagates the physical agent: a self-propagating
+\cpp{AgentWithDynamics} integrates its own \code{dynamics:} block (or the injected
+\code{world.force\_model}), and an application reads that truth through
+\cpp{GetStateAt(t)} or \cpp{World::GetStateAt(name, t)}.
+
+\emph{Filter} dynamics are built \emph{inside} the estimator \cpp{Application} ---
+either by reusing \cpp{World::MakeDynamics()} or from application-specific config.
+Whatever the filter uses also supplies its state-transition matrix, so keep
+\code{autodiff: true} on that model.
+
+\emph{Same model (no mismatch).} Omit the target agent's \code{dynamics:} block so
+it inherits \code{world: force\_model:}, and have the application build its filter
+from \cpp{World::MakeDynamics()}. This is exactly what
+\file{configs/ground_station_odts.yaml} and \file{configs/sat_bearing_odts.yaml}
+do.
+
+\emph{Different models (mismatch).} Configure the two sides separately. In the
+distributed ISL scenario the truth is propagated from \code{world: force\_model:}
+--- inherited by every \cpp{Spacecraft} --- at $16 \times 16$ lunar gravity, while
+each onboard \cpp{SatelliteOdtsApp} runs its EKF at $8 \times 8$:
+
+\begin{lstlisting}[language=yamlcfg, caption={Deliberate truth/filter force-model mismatch.}, label={lst:sim-yaml-mismatch}]
+# configs/isl_odts_distributed.yaml
+world:
+  force_model:                            # truth propagated at 16x16 lunar gravity
+    integrator: RKF45
+    dt: 60.0
+    autodiff: false
+    bodies:
+      - MOON: { n: 16, m: 16 }
+      - EARTH: {}
+      - SUN: {}
+
+# ... every Spacecraft inherits that truth force model; the onboard app filters
+# coarser using the SAME force_model schema:
+application:
+  class: SatelliteOdtsApp
+  force_model:                            # EKF runs at 8x8 -> intentional mismatch
+    bodies:
+      - MOON: { n: 8, m: 8 }
+      - EARTH: {}
+      - SUN: {}
+    relativity: true
+  integration_step_s: 60.0
+  process_accel_sigma_mps2: 1.0e-08
+\end{lstlisting}
+
+More generally: give the truth agent a high-fidelity \code{dynamics:} block (more
+third bodies, higher gravity degree and order, SRP, drag) and point the filter at
+a coarser model. An estimator application can also expose the filter model as
+config: \cpp{GroundStationManagerApp} accepts an optional \code{filter\_dynamics:}
+block applied to \emph{both} its batch and its sequential SRIF/smoother filters,
+or \code{batch\_dynamics:} / \code{sequential\_dynamics:} to set each
+independently. Absent those, both inherit \code{world: force\_model:} --- truth
+equals filter, the default. In a custom application, simply build two
+\cpp{Dynamics} objects instead of sharing one.
+
+\section{Authoring a new scenario}
+\label{sec:sim-authoring}
+
+The reference template is \file{configs/ground_station_odts.yaml} together with
+\file{python/examples/ex7_run_odts.py}. The steps, in increasing order of effort:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Add the shared environment.} Write a \code{world:} block
+    (\code{frame} $+$ \code{force\_model}, or a \code{gravity:} / \code{dem:}
+    block for surface scenarios). Both truth and estimator dynamics derive from
+    it.
+  \item \textbf{Reuse existing classes.} List \code{agents:} with
+    already-registered \code{class:} values
+    (\cref{tab:sim-agent-classes}), each with an \code{initial\_state:}, an
+    optional \code{dynamics:} block, optional \code{devices:}, and an
+    \code{application:} block. Launch with \py{pnt.Simulation(config)}. Nothing
+    else is needed if the physics and the observables already exist.
+  \item \textbf{New Application} --- the most common extension. Subclass
+    \cpp{Application}, implement \cpp{MyApp(Config\&)}, \cpp{Setup()}, and
+    \cpp{Step(Real)}; add \cpp{REGISTER\_FACTORY\_CLASS(Application, MyApp)}.
+    Reference: \file{cpp/lupnt/applications/ground_station/ground_station_manager_app.cc}.
+  \item \textbf{New Measurement} --- only for a new observable. Subclass
+    \cpp{MeasurementClone<MyMeas>} (or \cpp{ErrorStateMeasurement}) and implement
+    \cpp{Compute(const State\&, MatXd*)}. Wire it into a filter with
+    \cpp{CreateFunction()}. Reference:
+    \file{cpp/lupnt/measurements/crosslink_measurement.cc}.
+  \item \textbf{New Dynamics} --- only for new physics. Subclass
+    \cpp{NumericalDynamics} (implementing \cpp{ComputeRates}, \cpp{Propagate},
+    \cpp{GetStateType}) or \cpp{Dynamics} directly, and add
+    \cpp{REGISTER\_FACTORY\_CLASS(Dynamics, MyDyn)}. The state-transition matrix is
+    supplied by automatic differentiation if you do not provide one.
+  \item \textbf{New Agent} --- only for a new platform kind. Subclass
+    \cpp{AgentWithDynamics}, implement \cpp{GetStateAt}, optionally override
+    \cpp{Propagate} / \cpp{Setup}, and add
+    \cpp{REGISTER\_FACTORY\_CLASS(Agent, MyAgent)}. Reference:
+    \file{cpp/lupnt/agents/satellite.cc}, \file{cpp/lupnt/agents/rover.cc}.
+\end{enumerate}
+
+The skeleton of the two most common C++ extensions:
+
+\begin{lstlisting}[language=cpp, caption={A new application and a new observable in C++.}, label={lst:sim-cpp-skeleton}]
+// --- A new navigation application ---------------------------------------
+class MyOdtsApp : public Application {
+ public:
+  MyOdtsApp(Config& cfg) : Application(cfg) {
+    target_ = cfg["target"].as<std::string>();       // agent name to track
+    sigma_  = cfg["range_sigma_m"].as<double>();
+  }
+  void Setup() override {
+    Application::Setup();                            // schedules Step at frequency_
+    target_agent_ = GetAgent()->GetSimulation()->GetAgent(target_);
+    dyn_ = GetAgent()->GetWorld()->MakeDynamics();    // filter model, STM enabled
+    // seed filter_ state x_hat_ and covariance P_ here
+  }
+  void Step(Real t) override {
+    Cart6 x_tx = target_agent_->GetStateAt(t);       // truth geometry
+    MatXd H; MyMeasurement meas(BuildConfig(x_tx));
+    MeasData zHR = meas.Compute(x_hat_, &H);         // z = h(x), R, and H
+    filter_.Predict(t);                              // STM + process noise
+    filter_.Update(zHR.value, H, zHR.covariance);    // innovation, gain, update
+    Log(t);
+  }
+};
+REGISTER_FACTORY_CLASS(Application, MyOdtsApp)       // YAML: class: MyOdtsApp
+
+// --- A new observable ---------------------------------------------------
+class MyMeasurement : public MeasurementClone<MyMeasurement> {
+ public:
+  MeasData Compute(const State& x, MatXd* H = nullptr) const override {
+    VecXd z(1);   z(0) = /* h(x): range, Doppler, ... */;
+    if (H) { H->resize(1, x.size()); *H = /* dh/dx */; }
+    return MeasData{timestamp_, z, R_};              // value, covariance
+  }
+};
+\end{lstlisting}
+
+\begin{lupntwarning}
+\cpp{Simulation(config)} calls \cpp{Setup()} inside its constructor, so every
+agent and application is fully built and set up before \cpp{Run()} is reachable.
+Any state that a host must inject \emph{after} construction (for example the
+lander guidance application's reference trajectory) should therefore be applied
+through a lazy \cpp{Initialize} inside the application's first \cpp{Step}.
+\end{lupntwarning}
+
+\section{Working in Python}
+\label{sec:sim-python}
+
+The whole simulation lifecycle is driven from Python. A scenario is just a
+\py{dict} (or a loaded YAML document), so it can be built, mutated, and swept
+programmatically:
+
+\begin{lstlisting}[language=py, caption={Composing, mutating, and running a scenario from Python.}, label={lst:sim-py-run}]
+# python/examples/ex7_run_odts.py (pattern)
+import copy, yaml, pylupnt as pnt
+
+cfg = yaml.safe_load(open("configs/ground_station_odts.yaml"))
+cfg["agents"]["gs_manager"]["application"]["srif_accel_psd"] = 1e-13
+
+sim = pnt.Simulation(cfg)     # builds World + agents + apps from the `class:` keys
+sim.run()                     # runs the event loop
+app = sim.get_agent("gs_manager").get_application()   # downcasts to the concrete app
+\end{lstlisting}
+
+\cpp{pnt.Simulation} accepts either a path string or a config dict. The bound
+surface is deliberately small: \py{run()}, \py{get\_agent(name)},
+\py{get\_world()}, \py{get\_duration()}, \py{get\_time()} on the simulation;
+\py{get\_name()}, \py{get\_state\_at(t)}, \py{get\_application()},
+\py{get\_applications()}, \py{get\_application\_by\_name(name)}, \py{get\_world()} on
+an agent; and \py{get\_epoch()}, \py{get\_frame()}, \py{has\_force\_model()},
+\py{get\_gm()}, \py{gravity(r)}, the DEM accessors, and \py{get\_state\_at(name, t)}
+on the world. Each concrete application binds its own result accessors in its own
+binding file (\file{python/bindings/py_ground_station_odts.cc},
+\file{python/bindings/py_isl_odts.cc}, and so on).
+
+\subsection{Authoring an Application in Python}
+\label{sec:sim-py-application}
+
+\cpp{Application}, \cpp{Agent}, and \cpp{Measurement} are exposed as polymorphic
+bases with \code{pybind11} trampolines (\cpp{PyApplication}, \cpp{PyAgent},
+\cpp{PyMeasurement} in \file{python/bindings/py_simulation.cc}), so a pure-Python
+subclass can be driven by the C++ engine with no C++ build.
+\Cref{tab:sim-trampolines} gives the dispatch contract.
+
+\begin{table}[H]
+  \centering
+  \caption{Python override points exposed by the trampolines in
+           \texttt{python/bindings/py\_simulation.cc}.}
+  \label{tab:sim-trampolines}
+  \begin{tabularx}{\textwidth}{@{}l l L@{}}
+    \toprule
+    Base & Python method & Contract \\
+    \midrule
+    \py{pnt.Application} & \py{step(self, t)} & \textbf{Required.} $t$ arrives as
+      a plain Python \py{float} (not an autodiff \cpp{Real}), so ordinary
+      arithmetic works. \\
+    & \py{setup(self)} & Optional. Call
+      \py{pnt.Application.setup(self)} to keep the base's frequency-based
+      scheduling of \py{step}. \\
+    & \py{log(self, t)} & Optional; falls back to the C++ base. \\
+    \py{pnt.Agent} & \py{get\_state\_at(self, t)} & \textbf{Required.} Must return a
+      numpy 6-vector $[\vec{r}; \vec{v}]$; the trampoline checks the size. \\
+    & \py{setup}, \py{step}, \py{log} & Optional; fall back to the C++ base. \\
+    \py{pnt.Measurement} & \py{compute(self, x)} & \textbf{Required.} Returns the
+      tuple $(\vec{z}, \mat{H} = \partial \vec{h}/\partial \vec{x}, \mat{R})$, all
+      numpy. \py{evaluate(x)} runs it through the C++ base --- the same path a
+      filter uses. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Register the class with \py{pnt.register\_application(name, cls)} and reference it
+by \code{class: name} in a config. The factory constructs it as
+\py{cls(config\_dict)}, where the dict is the \code{application:} block converted
+recursively from YAML (integers, floats --- including scientific notation such as
+\code{1.0e-8} --- booleans, strings, lists, dicts). The returned Python object is
+kept alive for the simulation's lifetime and
+\py{sim.get\_agent(...).get\_application()} hands back the \emph{same} object, so
+results stored on \py{self} survive the run.
+
+\begin{lstlisting}[language=py, caption={An estimator application authored entirely in Python.}, label={lst:sim-py-app}]
+# python/examples/ex17_python_new_sim_example.ipynb
+import numpy as np, yaml, pylupnt as pnt
+
+def make_dyn():
+    d = pnt.NBodyDynamics()
+    for b in (pnt.Body.Moon(8, 8), pnt.Body.Earth(), pnt.Body.Sun()):
+        d.add_body(b)
+    d.set_frame(pnt.Frame.MOON_CI)
+    d.set_integrator(pnt.IntegratorType.RKF45)
+    d.set_autodiff(True)          # analytic STM for the filter
+    return d
+
+class PyAnglesOdtsApp(pnt.Application):
+    def __init__(self, config):                      # config = the `application:` block
+        pnt.Application.__init__(self)
+        self.target = config["target"]
+        self.set_frequency(config.get("frequency", 1.0 / 60))
+        self.sigma = np.radians(config.get("angle_sigma_arcsec", 2.0) / 3600.0)
+        self.p0 = config.get("initial_position_sigma_m", 300.0)
+        self.v0 = config.get("initial_velocity_sigma_mps", 0.3)
+        self.qa = config.get("process_accel_sigma_mps2", 1e-6)
+        self.rng = np.random.default_rng(config.get("seed", 42))
+        self.times, self.est, self.truth, self.sig = [], [], [], []
+        self._init = False
+
+    def setup(self):
+        pnt.Application.setup(self)   # base schedules step() at get_frequency()
+        self.dyn = make_dyn()
+        self.meas = BearingMeasurement(self.sigma)
+
+    def step(self, t):
+        if not self._init:                                   # seed once
+            self.obs = np.asarray(self.get_agent().get_state_at(0.0))
+            self.tgt = np.asarray(
+                self.get_agent().get_world().get_state_at(self.target, 0.0))
+            self.x = self.obs + np.r_[self.rng.normal(0, self.p0, 3),
+                                      self.rng.normal(0, self.v0, 3)]
+            self.P = np.diag(np.r_[[self.p0**2] * 3, [self.v0**2] * 3])
+            self._init, self._t = True, t
+            return
+        dt = t - self._t
+        xf, F = self.dyn.propagate_stm(self.x, float(self._t), float(t))
+        self.x = np.asarray(xf).ravel(); F = np.asarray(F); self._t = t
+        Q = self.qa**2 * np.block([[dt**3 / 3 * np.eye(3), dt**2 / 2 * np.eye(3)],
+                                   [dt**2 / 2 * np.eye(3), dt * np.eye(3)]])
+        self.P = F @ self.P @ F.T + Q                        # predict
+        self.meas.target = self.tgt[:3]
+        z = self.meas.evaluate(self.obs)[0] + self.rng.normal(0, self.sigma, 3)
+        u, H, R = self.meas.evaluate(self.x)                 # predict the observable
+        S = H @ self.P @ H.T + R
+        K = self.P @ H.T @ np.linalg.inv(S)
+        self.x = self.x + K @ (z - u)                        # update
+        IKH = np.eye(6) - K @ H
+        self.P = IKH @ self.P @ IKH.T + K @ R @ K.T          # Joseph form
+        self.times.append(t); self.est.append(self.x.copy())
+
+pnt.register_application("PyAnglesOdtsApp", PyAnglesOdtsApp)
+cfg = yaml.safe_load(open("configs/sat_bearing_odts.yaml"))
+sim = pnt.Simulation(cfg); sim.run()
+est = np.array(sim.get_agent("observer").get_application().est)   # results off `self`
+\end{lstlisting}
+
+The scenario it runs is \file{configs/sat_bearing_odts.yaml}, an ordinary config
+whose only unusual feature is that its \code{class:} names a Python type:
+
+\begin{lstlisting}[language=yamlcfg, caption={A config whose application class is authored in Python.}, label={lst:sim-yaml-bearing}]
+# configs/sat_bearing_odts.yaml (abridged)
+observer:
+  class: Spacecraft
+  frequency: 0.016666666666666666
+  initial_state:
+    class: ClassicalOE
+    frame: MOON_OP
+    a: 1837400.0                    # [m] ~100 km altitude circular
+    e: 0.001
+    i: 30.0
+    Omega: 0.0
+    omega: 0.0
+    M: 0.0
+  application:
+    class: PyAnglesOdtsApp          # registered by pnt.register_application
+    target: target
+    frequency: 0.016666666666666666
+    dt_s: 60.0
+    angle_sigma_arcsec: 2.0         # star-tracker class bearing noise
+    seed: 42
+    force_model:                    # filter force model, same schema as world
+      bodies:
+        - MOON: { n: 8, m: 8 }
+        - EARTH: {}
+        - SUN: {}
+      relativity: false
+    process_accel_sigma_mps2: 1.0e-6
+    initial_position_sigma_m: 300.0
+    initial_velocity_sigma_mps: 0.3
+\end{lstlisting}
+
+\subsection{Authoring a Measurement in Python}
+\label{sec:sim-py-measurement}
+
+A \py{pnt.Measurement} subclass implements
+\py{compute(self, x) -> (z, H, R)}. Because \py{evaluate(x)} routes through the
+C++ base --- the same path a \cpp{Filter} uses --- the \emph{same} Python class
+both \emph{generates} an observation (apply it to a truth state and add noise) and
+\emph{predicts} one (apply it to the filter state). The bearing model of
+Example~17 is the unit line of sight $\uvec{u}$ from the observer at $\vec{r}$ to a
+known target at $\vec{p}$:
+
+\begin{align}
+  \vec{d} &= \vec{p} - \vec{r}, \qquad \rho = \lVert \vec{d} \rVert, \qquad
+  \uvec{u} = \vec{d}/\rho, \label{eq:sim-bearing}\\
+  \frac{\partial \uvec{u}}{\partial \vec{r}}
+    &= -\frac{1}{\rho}\left(\mat{I}_3 - \uvec{u}\,\uvec{u}\transpose\right),
+  \qquad
+  \frac{\partial \uvec{u}}{\partial \vec{v}} = \mat{0}_{3\times 3},
+  \qquad
+  \mat{R} = \sigma^2 \mat{I}_3. \label{eq:sim-bearing-jac}
+\end{align}
+
+\begin{lstlisting}[language=py, caption={A measurement model authored in Python.}, label={lst:sim-py-meas}]
+# python/examples/ex17_python_new_sim_example.ipynb
+class BearingMeasurement(pnt.Measurement):
+    "Unit line-of-sight (bearing) to a known target position."
+
+    def __init__(self, sigma_rad):
+        pnt.Measurement.__init__(self)
+        self.sigma = sigma_rad
+        self.target = np.zeros(3)    # set per-epoch to the target truth position
+
+    def compute(self, x):            # -> (z = h(x), H = dh/dx, R)
+        d = self.target - x[:3]
+        rn = np.linalg.norm(d)
+        u = d / rn
+        H = np.zeros((3, 6))
+        H[:, :3] = -(np.eye(3) - np.outer(u, u)) / rn
+        return u, H, self.sigma**2 * np.eye(3)
+
+m = BearingMeasurement(np.radians(2 / 3600))
+m.target = tgt_truth[:3]
+z = m.evaluate(obs_truth)[0] + rng.normal(0, m.sigma, 3)   # GENERATE from truth
+u, Hx, R = m.evaluate(x_hat)                               # PREDICT at the filter state
+\end{lstlisting}
+
+\subsection{Authoring an Agent in Python}
+\label{sec:sim-py-agent}
+
+A platform whose truth trajectory is defined in Python --- an analytic ephemeris, a
+scripted path --- subclasses \py{pnt.Agent}, implements \py{get\_state\_at(self, t)},
+and is registered with \py{pnt.register\_agent(name, cls)}:
+
+\begin{lstlisting}[language=py, caption={A physical platform whose truth is an analytic Python ephemeris.}, label={lst:sim-py-agent}]
+class PyEphemeris(pnt.Agent):
+    def __init__(self, config):
+        pnt.Agent.__init__(self)
+        self.a = config["radius_m"]
+        self.w = (pnt.GM_MOON / self.a**3) ** 0.5
+    def get_state_at(self, t):                 # must return a numpy [r; v] 6-vector
+        c, s = np.cos(self.w * t), np.sin(self.w * t)
+        return np.array([self.a * c, self.a * s, 0.0,
+                         -self.a * self.w * s, self.a * self.w * c, 0.0])
+
+pnt.register_agent("PyEphemeris", PyEphemeris)
+# config:  {class: PyEphemeris, radius_m: 2.0e6}
+\end{lstlisting}
+
+A complete, converging example --- the angles-only orbit-determination EKF of
+\cref{lst:sim-py-app} and \cref{lst:sim-py-meas}, reaching the metre level over a
+\SI{6}{\hour} arc from a \SI{300}{\meter} a-priori with \SI{2}{arcsecond} bearings
+--- is Example~17, \file{python/examples/ex17_python_new_sim_example.ipynb}.
+
+\subsection{Monte-Carlo trials}
+\label{sec:sim-montecarlo}
+
+Monte-Carlo settings live at the \emph{simulation} level, not on an agent or an
+application: a trial is one independent \py{pnt.Simulation} run built from a deep
+copy of the config with a distinct top-level \code{seed:}, which
+\cpp{Simulation::Setup} propagates as the default to every agent and every
+application. \py{pnt.run\_monte\_carlo} (\file{python/pylupnt/montecarlo.py})
+parallelizes across \emph{processes} --- the C++ engine stays serial, and a
+\code{spawn} context gives each worker a clean interpreter so the thread-local C++
+random engine starts fresh:
+
+\begin{lstlisting}[language=py, caption={Parallel Monte-Carlo over a scenario config.}, label={lst:sim-py-montecarlo}]
+# python/pylupnt/montecarlo.py
+import pylupnt as pnt
+
+def final_error(sim):                     # must be a top-level (picklable) function
+    app = sim.get_agent("gs_manager").get_application()
+    return float(app.est_central()[-1, 0])
+
+summaries = pnt.run_monte_carlo(config, n_runs=16, extract=final_error,
+                                n_workers=8, seed0=0, output_root="output/mc")
+# trial i uses seed = seed0 + i; every nested `output_dir` key is redirected to
+# <output_root>/run_<i> so parallel trials never overwrite each other.
+\end{lstlisting}
+
+For a scenario with an expensive \emph{shared} precompute, the GNSS ODTS engine
+also offers an in-configuration \code{monte\_carlo\_runs:} knob (one precompute,
+then \code{seed = base\_seed + i} per run); see
+\file{python/examples/ex6_gnss_odts.ipynb}.
+
+\section{Model boundaries}
+\label{sec:sim-boundaries}
+
+This section states what the YAML front end can express on its own, what still
+requires code, and which behaviours are approximations of the engine rather than
+of the physics.
+
+\subsection{What the YAML front end supports}
+
+\begin{itemize}[leftmargin=*]
+  \item The full scenario skeleton: \code{name}, \code{epoch}, \code{duration},
+    \code{log\_level}, \code{cesium\_port}, \code{seed}, \code{world},
+    \code{channels}, \code{agents}, \code{constellations}
+    (\cref{tab:sim-top-keys}).
+  \item Any composition of already-registered agents, devices, dynamics,
+    channels, and applications, selected by string (\cref{tab:sim-agent-classes},
+    \cref{tab:sim-app-classes}); every constructor knob of those classes is a
+    config key.
+  \item The complete force-model specification (\cref{tab:sim-force-model}),
+    used identically for the shared environment, per-agent truth, and per-filter
+    fidelity --- so a truth/filter mismatch study is a pure configuration change.
+  \item Multi-application platforms (\code{applications:}), constellation
+    expansion (\code{walker:} or an explicit \code{satellites:} list), and
+    seed-driven Monte-Carlo sweeps.
+  \item Any class authored in \emph{Python} and registered with
+    \py{pnt.register\_application} or \py{pnt.register\_agent} before
+    \py{pnt.Simulation} is constructed --- these are indistinguishable from C++
+    classes to the config.
+\end{itemize}
+
+\subsection{What still requires code}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{New physics.} A new \cpp{Dynamics} class must be C++: there is no
+    \cpp{PyDynamics} trampoline, so a Python author reuses
+    \py{pnt.NBodyDynamics} (built and propagated with state-transition matrix from
+    Python) rather than writing a new propagator.
+  \item \textbf{New devices and channels.} \cpp{Device} and \cpp{Channel} have no
+    Python trampoline either; new hardware models are C++ subclasses with
+    \cpp{REGISTER\_FACTORY\_CLASS}.
+  \item \textbf{Error-state observables.} \cpp{ErrorStateMeasurement} is not bound
+    to Python; only the state-vector \cpp{Measurement} base is. Inertial-navigation
+    observables are therefore C++.
+  \item \textbf{New filters.} The \cpp{Filter} family (\cpp{EKF}, \cpp{SRIF},
+    \cpp{UDUEKF}, \cpp{UDUStochasticCloningEKF}) is registered but not
+    Python-subclassable; a Python application implements its own estimator in
+    numpy, as \cref{lst:sim-py-app} does.
+  \item \textbf{Cross-application data structures.} An application that must hand
+    typed records to another (for example \cpp{IslStationObs} from
+    \cpp{StationBeaconSensor} to \cpp{GroundOdtsApp}) needs a C++ struct and an
+    accessor; the generic escape hatch is the \cpp{Publish} / \cpp{Subscribe} bus,
+    which carries a \cpp{std::any}.
+  \item \textbf{New initial-state parameterizations.} \cpp{Satellite} accepts only
+    a \code{ClassicalOE} block; \cpp{Spacecraft} accepts \code{ClassicalOE} or
+    explicit \code{r0\_m}/\code{v0\_mps}. Anything else is a constructor change.
+\end{itemize}
+
+\subsection{Engine approximations and expected behaviour}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Tie-breaking.} At equal event time the numerically lower priority
+    value runs first, so applications may execute before the agents' own
+    \cpp{Step} at that epoch. This is safe because \cpp{GetStateAt(t)}
+    self-propagates a copy; it is \emph{not} safe for logic that assumes a device
+    has already been advanced.
+  \item \textbf{Horizon.} \cpp{Run} stops when the queue is empty or the next event
+    exceeds \code{duration\_} $+$ \code{EPS}, and a periodic event is not
+    rescheduled past that horizon. The final epoch of a run is therefore the last
+    multiple of $1/f$ within the duration, not the duration itself.
+  \item \textbf{Truth propagation carries no state-transition matrix.} Inherited
+    world dynamics are injected with \code{autodiff: false}, and both
+    \cpp{Spacecraft} and \cpp{World::MakeTruthDynamics} force it off. An
+    application that needs an STM must build its own dynamics with
+    \code{autodiff: true}.
+  \item \textbf{The \cpp{World} is read-only and never propagates.} It provides
+    the environment and the \cpp{GetStateAt} facade; every
+    \cpp{AgentWithDynamics} self-propagates. There is no central integrator and no
+    global synchronization of agent epochs.
+  \item \textbf{Setup runs in the constructor.} There is no window between
+    construction and \cpp{Run()} in which the engine will call back into a
+    partially built application, so post-construction injection must be deferred
+    to the first \cpp{Step}.
+  \item \textbf{Determinism.} A run is reproducible for a fixed top-level
+    \code{seed:} on a fixed build; parallel Monte-Carlo uses one process per trial
+    precisely because the C++ random engine is thread-local, and per-trial
+    \code{output\_dir} redirection is required to keep file outputs from
+    colliding.
+  \item \textbf{Python overhead.} A Python-authored application acquires the GIL on
+    every \py{step}, \py{setup}, \py{log}, \py{get\_state\_at}, and \py{compute}
+    call. This is acceptable at the \SI{1}{\per\minute} cadences used by the
+    orbit-determination examples and is not appropriate for high-rate
+    (\si{\kilo\hertz}) inertial mechanization, which stays in C++.
+\end{itemize}
