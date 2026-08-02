@@ -10,6 +10,14 @@
 get_filename_component(LUPNT_REPO_ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
 set(LUPNT_DATA_DIR "${LUPNT_REPO_ROOT}/data/LuPNT_data")
 
+# The bundle is hosted as a GitHub Release asset. To publish a new bundle, upload LuPNT_data.zip to
+# a release and bump LUPNT_DATA_TAG to match (keep it in sync with DATA_TAG in
+# python/pylupnt/core/download_data.py).
+set(LUPNT_DATA_TAG "data-2026-07-30")
+set(LUPNT_DATA_URL
+    "https://github.com/Stanford-NavLab/LuPNT/releases/download/${LUPNT_DATA_TAG}/LuPNT_data.zip"
+)
+
 option(
   LUPNT_FETCH_DATA
   "Automatically download data/LuPNT_data (ephemeris/GNSS/plasma/TLE reference data) if missing" ON
@@ -26,7 +34,7 @@ if(LUPNT_FETCH_DATA)
 
     set(LUPNT_DATA_ZIP "${CMAKE_BINARY_DIR}/LuPNT_data.zip")
     file(
-      DOWNLOAD "https://bit.ly/LuPNT_data" "${LUPNT_DATA_ZIP}"
+      DOWNLOAD "${LUPNT_DATA_URL}" "${LUPNT_DATA_ZIP}"
       SHOW_PROGRESS
       STATUS LUPNT_DATA_DOWNLOAD_STATUS
     )
@@ -38,7 +46,7 @@ if(LUPNT_FETCH_DATA)
       message(
         WARNING
           "LuPNT data: download failed (${LUPNT_DATA_DOWNLOAD_MSG}). Download it manually from "
-          "https://bit.ly/LuPNT_data and extract its LuPNT_data/ folder into "
+          "${LUPNT_DATA_URL} and extract its LuPNT_data/ folder into "
           "${LUPNT_REPO_ROOT}/data/, or configure with -DLUPNT_FETCH_DATA=OFF to silence this check."
       )
     else()

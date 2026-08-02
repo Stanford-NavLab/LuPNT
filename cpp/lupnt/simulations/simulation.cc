@@ -2,13 +2,18 @@
 
 #include <fmt/format.h>
 
+#include <cctype>
 #include <cstdlib>
+#include <filesystem>
+#include <string>
 
 #include "lupnt/conversions/time_conversions.h"
 #include "lupnt/core/asset_factory.h"
 #include "lupnt/core/data_logger.h"
+#include "lupnt/core/error.h"
 #include "lupnt/core/file.h"
 #include "lupnt/core/logger.h"
+#include "lupnt/interfaces/eop.h"
 #include "lupnt/measurements/channel.h"
 
 namespace lupnt {
@@ -39,6 +44,44 @@ namespace lupnt {
           enum_cast<Logger::LogLevel>(config_["log_level"].as<std::string>()).value());
       Logger::Info(fmt::format("Log level set to {}", config_["log_level"].as<std::string>()),
                    "Simulation");
+    }
+
+    // Earth orientation source. Set before anything can touch Earth orientation (World builds a
+    // force model and agents do frame conversions), because the EOP table is loaded lazily on
+    // first use and a later selection would be ignored.
+    //
+    //   eop: finals                  # shorthand
+    //   eop: {source: finals, path: /path/to/finals.all}
+    //
+    // Defaults to C04 -- reproducible, but retrospective, so any run at a present-day or future
+    // epoch should say `finals` here (see SetEopSource).
+    if (config_["eop"]) {
+      YAML::Node eop_node = config_["eop"];
+      std::string source_str
+          = eop_node.IsScalar() ? eop_node.as<std::string>()
+                                : (eop_node["source"] ? eop_node["source"].as<std::string>() : "");
+      std::string lowered;
+      for (char c : source_str) lowered += static_cast<char>(std::tolower(c));
+
+      EopSource source;
+      if (lowered == "c04") {
+        source = EopSource::C04;
+      } else if (lowered == "finals" || lowered == "bulletin_a") {
+        source = EopSource::Finals;
+      } else {
+        LUPNT_CHECK(false,
+                    fmt::format("Unknown eop source '{}' in config; expected 'c04' or 'finals'",
+                                source_str),
+                    "Simulation");
+        source = EopSource::C04;  // unreachable; keeps the compiler happy
+      }
+
+      std::filesystem::path path;
+      if (!eop_node.IsScalar() && eop_node["path"]) {
+        path = eop_node["path"].as<std::string>();
+      }
+      SetEopSource(source, path);
+      Logger::Info(fmt::format("EOP source set to {}", source_str), "Simulation");
     }
 
     // Cesium

@@ -42,8 +42,11 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", default=str(repo / "configs" / "ground_station_odts.yaml"))
     ap.add_argument("--outdir", default=str(repo / "output" / "python_examples" / "ex7_data"))
-    ap.add_argument("--duration", default=None,
-                    help="Override the scenario duration, e.g. 12:00:00 (default: config value)")
+    ap.add_argument(
+        "--duration",
+        default=None,
+        help="Override the scenario duration, e.g. 12:00:00 (default: config value)",
+    )
     args = ap.parse_args()
 
     sys.path.insert(0, str((repo / "python").resolve()))
@@ -59,8 +62,7 @@ def main() -> None:
     station_order = [n for n in cfg["agents"] if cfg["agents"][n]["class"] == "GroundStation"]
     track_cfg = cfg["agents"][station_order[0]]["application"]
 
-    print(f"Running ground-station ODTS: duration={cfg['duration']}, "
-          f"stations={station_order}")
+    print(f"Running ground-station ODTS: duration={cfg['duration']}, " f"stations={station_order}")
     sim = pnt.Simulation(cfg)
     sim.run()
 
@@ -77,28 +79,37 @@ def main() -> None:
     cov_cols = [f"{r}{c}" for r in range(6) for c in range(6)]
 
     grid = {"t_s": t_grid}
-    for pre, arr in [("tr", mgr.truth_state()), ("es", mgr.estimated_state()),
-                     ("sf", mgr.srif_filtered_state()), ("ss", mgr.srif_smoothed_state())]:
+    for pre, arr in [
+        ("tr", mgr.truth_state()),
+        ("es", mgr.estimated_state()),
+        ("sf", mgr.srif_filtered_state()),
+        ("ss", mgr.srif_smoothed_state()),
+    ]:
         A = np.asarray(arr).reshape(N, 6)
         for j, c in enumerate(comp):
             grid[f"{pre}_{c}"] = A[:, j]
-    for pre, arr in [("ec", mgr.estimated_covariance()), ("sfc", mgr.srif_filtered_covariance()),
-                     ("ssc", mgr.srif_smoothed_covariance())]:
+    for pre, arr in [
+        ("ec", mgr.estimated_covariance()),
+        ("sfc", mgr.srif_filtered_covariance()),
+        ("ssc", mgr.srif_smoothed_covariance()),
+    ]:
         A = np.asarray(arr).reshape(N, 36)
         for j, c in enumerate(cov_cols):
             grid[f"{pre}_{c}"] = A[:, j]
     pd.DataFrame(grid).to_csv(outdir / "grid.csv", index=False)
 
     # ---- Batch iteration history ----
-    pd.DataFrame({
-        "iter": np.arange(mgr.num_iterations()),
-        "pos_error_m": np.asarray(mgr.iteration_pos_error()).reshape(-1),
-        "vel_error_mps": np.asarray(mgr.iteration_vel_error()).reshape(-1),
-        "correction_norm": np.asarray(mgr.iteration_correction_norm()).reshape(-1),
-        "weighted_rms": np.asarray(mgr.iteration_weighted_rms()).reshape(-1),
-        "rms_range_m": np.asarray(mgr.iteration_rms_range()).reshape(-1),
-        "rms_range_rate_mps": np.asarray(mgr.iteration_rms_range_rate()).reshape(-1),
-    }).to_csv(outdir / "iterations.csv", index=False)
+    pd.DataFrame(
+        {
+            "iter": np.arange(mgr.num_iterations()),
+            "pos_error_m": np.asarray(mgr.iteration_pos_error()).reshape(-1),
+            "vel_error_mps": np.asarray(mgr.iteration_vel_error()).reshape(-1),
+            "correction_norm": np.asarray(mgr.iteration_correction_norm()).reshape(-1),
+            "weighted_rms": np.asarray(mgr.iteration_weighted_rms()).reshape(-1),
+            "rms_range_m": np.asarray(mgr.iteration_rms_range()).reshape(-1),
+            "rms_range_rate_mps": np.asarray(mgr.iteration_rms_range_rate()).reshape(-1),
+        }
+    ).to_csv(outdir / "iterations.csv", index=False)
 
     # ---- Per-station observation series (long format) ----
     elev_rows, meas_rows = [], []
@@ -110,20 +121,29 @@ def main() -> None:
         mt = np.asarray(app.measurement_time())
         mr, mrr = np.asarray(app.measurement_range()), np.asarray(app.measurement_range_rate())
         for t, r, rr in zip(mt, mr, mrr):
-            meas_rows.append({"station": n, "t_s": float(t),
-                              "range_m": float(r), "range_rate_mps": float(rr)})
+            meas_rows.append(
+                {"station": n, "t_s": float(t), "range_m": float(r), "range_rate_mps": float(rr)}
+            )
     pd.DataFrame(elev_rows).to_csv(outdir / "elevation.csv", index=False)
     pd.DataFrame(meas_rows).to_csv(outdir / "measurements.csv", index=False)
 
     # ---- Epoch solution + covariance ----
-    pd.DataFrame({
-        "which": ["true", "initial_guess", "estimated"],
-        **{c: [np.asarray(mgr.x0_true()).reshape(-1)[j],
-               np.asarray(mgr.x0_initial_guess()).reshape(-1)[j],
-               np.asarray(mgr.x0_estimated()).reshape(-1)[j]] for j, c in enumerate(comp)},
-    }).to_csv(outdir / "epoch_solution.csv", index=False)
+    pd.DataFrame(
+        {
+            "which": ["true", "initial_guess", "estimated"],
+            **{
+                c: [
+                    np.asarray(mgr.x0_true()).reshape(-1)[j],
+                    np.asarray(mgr.x0_initial_guess()).reshape(-1)[j],
+                    np.asarray(mgr.x0_estimated()).reshape(-1)[j],
+                ]
+                for j, c in enumerate(comp)
+            },
+        }
+    ).to_csv(outdir / "epoch_solution.csv", index=False)
     pd.DataFrame(np.asarray(mgr.covariance()).reshape(6, 6), columns=comp, index=comp).to_csv(
-        outdir / "covariance.csv")
+        outdir / "covariance.csv"
+    )
 
     # ---- Scalars + config metadata ----
     labels = {"DSS14": "DSS14 (Goldstone)", "DSS43": "DSS43 (Canberra)", "DSS63": "DSS63 (Madrid)"}
@@ -144,10 +164,13 @@ def main() -> None:
         json.dump(meta, f, indent=2)
 
     print(f"Wrote CSVs to {outdir}")
-    print(f"  converged={meta['converged']} iters={meta['num_iterations']} "
-          f"measurements={meta['num_measurements']}")
-    pe = np.linalg.norm(np.asarray(mgr.x0_estimated()).reshape(-1)[:3]
-                        - np.asarray(mgr.x0_true()).reshape(-1)[:3])
+    print(
+        f"  converged={meta['converged']} iters={meta['num_iterations']} "
+        f"measurements={meta['num_measurements']}"
+    )
+    pe = np.linalg.norm(
+        np.asarray(mgr.x0_estimated()).reshape(-1)[:3] - np.asarray(mgr.x0_true()).reshape(-1)[:3]
+    )
     print(f"  final position error: {pe:.3f} m")
 
 

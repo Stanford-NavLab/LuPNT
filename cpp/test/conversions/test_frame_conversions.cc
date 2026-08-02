@@ -178,7 +178,14 @@ TEST_CASE("conversions.frame_conversions.spice_fit") {
       Real t_utc = ConvertTime(t_tdb, Time::TDB, Time::UTC);
       Real t_ut1 = t_utc + p.ut1_utc;
       Real theta_era = EarthRotationAngle(t_ut1);
-      Real sp = -47e-6 * RAD_ARCSEC * (t_tt / DAYS_CENTURY);
+      // TIO locator s' = -47 uas * T with T in JULIAN CENTURIES of TT; t_tt is
+      // seconds from J2000, hence the SECS_DAY as well as DAYS_CENTURY. This
+      // must match TioLocator() in frame_conversions.cc: s' cancels in this
+      // round-trip (ComputeEopFromSpice removes it, RotPolarMotion re-applies
+      // it), so a mismatch here shows up as a pure rotation error about the
+      // polar axis. The magnitude of s' itself is checked separately by
+      // conversions.frame_conversions_extra.tio_locator_magnitude.
+      Real sp = -47e-6 * RAD_ARCSEC * (t_tt / (DAYS_CENTURY * SECS_DAY));
 
       Mat3 R_po = RotX(-p.y_pole) * RotY(-p.x_pole) * RotZ(sp);
       Mat3 R_s = RotZ(theta_era);

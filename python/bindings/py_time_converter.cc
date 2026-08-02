@@ -113,6 +113,95 @@ void InitTimeConverter(py::module& m) {
   //   m.DEF_REAL("tcb_to_tdb", TcbToTdb, "t_tcb");
   //   m.DEF_REAL("tt_to_tcb", TtToTcb, "t_tdb");
 
+  // ---------------------------------------------------------------------
+  // TT <-> TDB models
+  // ---------------------------------------------------------------------
+  py::enum_<TtTdbModel>(m, "TtTdbModel", "TT<->TDB computation selected by set_tt_tdb_model.")
+      .value("ANALYTIC", TtTdbModel::ANALYTIC,
+             "Two-term analytic series (fast, ~30 us vs DE440t). Always returns the series.")
+      .value("DE440_INTEGRAL", TtTdbModel::DE440_INTEGRAL,
+             "DE440 Eq. (3) relativistic integral (Park et al. 2021); integrates from T_0.")
+      .value("FITTED", TtTdbModel::FITTED,
+             "Piecewise Chebyshev fit of DE440t (default). Uses an initialised or "
+             "auto-fit model; falls back to the series only if none can be built.");
+
+  m.def("set_tt_tdb_model", &SetTtTdbModel, py::arg("model"),
+        "Select the TT<->TDB computation (ANALYTIC / DE440_INTEGRAL / FITTED).");
+  m.def("get_tt_tdb_model", &GetTtTdbModel, "Current TT<->TDB model.");
+  m.def("set_de440_tt_tdb_step", &SetDe440TtTdbStep, py::arg("step_s"),
+        "Trapezoidal step [s] for the DE440 Eq. (3) integral (default 864 s = 0.01 day).");
+  m.def("get_de440_tt_tdb_step", &GetDe440TtTdbStep,
+        "Trapezoidal step [s] for the DE440 Eq. (3) integral.");
+
+  m.def("set_tt_tdb_auto_fit", &SetTtTdbAutoFit, py::arg("enable"),
+        "Build a DE440t Chebyshev fit on demand when none covers the requested epoch "
+        "(default: True). Makes the DEFAULT TT<->TDB accuracy ~0.4 ps instead of the "
+        "~17 us analytic series, for convert_time, Epoch and the offset APIs alike. "
+        "Set False for the historical behaviour or to avoid touching SPICE.");
+  m.def("get_tt_tdb_auto_fit", &GetTtTdbAutoFit, "Whether TT<->TDB auto-fitting is enabled.");
+
+  m.def("init_tdb_minus_tcl_fit", &InitTdbMinusTclFit, py::arg("t_start_tdb"), py::arg("t_end_tdb"),
+        py::arg("segment_length") = 4.0 * 86400.0, py::arg("num_coeffs") = 13,
+        "Fit TDB-TCL over a window with piecewise Chebyshev polynomials.");
+  m.def("clear_tdb_minus_tcl_fit", &ClearTdbMinusTclFit, "Clear the fitted TDB-TCL model.");
+  m.def("has_fitted_tdb_minus_tcl", &HasFittedTdbMinusTcl, py::arg("t_tdb"),
+        "Whether a fitted TDB-TCL model covers this epoch.");
+  m.def("set_tdb_tcl_auto_fit", &SetTdbTclAutoFit, py::arg("enable"),
+        "Build a TDB-TCL Chebyshev fit on demand (default: True). Without it, each "
+        "TdbMinusTcl call integrates from T_0 (1977), ~12 s per call.");
+  m.def("get_tdb_tcl_auto_fit", &GetTdbTclAutoFit, "Whether TDB<->TCL auto-fitting is enabled.");
+
+  m.def("tdb_minus_tt_de440", py::overload_cast<Real>(&TdbMinusTtDe440), py::arg("t_tdb"),
+        "TDB - TT [s] at the geocenter from DE440 Eq. (3) (Park et al. 2021, AJ 161:105).");
+  m.def("tdb_minus_tt_de440", py::overload_cast<const VecX&>(&TdbMinusTtDe440), py::arg("t_tdb"),
+        "Vectorized geocentric TDB - TT [s] from DE440 Eq. (3). Uses one sorted sweep of the "
+        "integral instead of re-integrating from T_0 per epoch -- strongly preferred for arrays.");
+  m.def("tdb_minus_tt_de440", py::overload_cast<Real, const Vec3&>(&TdbMinusTtDe440),
+        py::arg("t_tdb"), py::arg("x_bcrs"),
+        "TDB - TT [s] from DE440 Eq. (3) for a station at BCRS position `x_bcrs` [m].");
+
+  // --- Offset accessors: avoid the absolute-epoch ULP floor ----------------
+  // At |t| ~ 1e9 s one ULP is ~0.25 us, so `convert(t) - t` snaps a small
+  // time-scale difference to that grid. These return the difference directly.
+  m.def("tt_minus_tdb", py::overload_cast<Real>(&TtMinusTdb), py::arg("t_tdb"),
+        "TT - TDB [s] under the active model/fit, as a full-precision offset "
+        "(no absolute epoch is formed, so no ~0.25 us ULP floor).");
+  m.def("tt_minus_tdb", py::overload_cast<const VecX&>(&TtMinusTdb), py::arg("t_tdb"),
+        "Vectorized TT - TDB [s] offset.");
+  m.def("tdb_minus_tcl", py::overload_cast<Real>(&TdbMinusTcl), py::arg("t_tdb"),
+        "TDB - TCL [s] at the lunar centre, as a full-precision offset.");
+  m.def("tdb_minus_tcl", py::overload_cast<const VecX&>(&TdbMinusTcl), py::arg("t_tdb"),
+        "Vectorized TDB - TCL [s] offset.");
+  m.def("tdb_minus_lt", py::overload_cast<Real>(&TdbMinusLt), py::arg("t_tdb"),
+        "TDB - TL [s] as a full-precision offset (uses the active TT<->TDB model).");
+  m.def("tdb_minus_lt", py::overload_cast<const VecX&>(&TdbMinusLt), py::arg("t_tdb"),
+        "Vectorized TDB - TL [s] offset.");
+
+  m.def("tdb_to_tt", py::overload_cast<Real>(&TDBToTt), py::arg("t_tdb"),
+        "Convert TDB to TT [s] using the active TT<->TDB model / Chebyshev fit.");
+  m.def("tt_to_tdb", py::overload_cast<Real>(&TtToTdb), py::arg("t_tt"),
+        "Convert TT to TDB [s] using the active TT<->TDB model / Chebyshev fit.");
+
+  // ---------------------------------------------------------------------
+  // TT - TDB Chebyshev fit (sampled from the DE440t TT-TDB ephemeris)
+  // ---------------------------------------------------------------------
+  m.def("init_tt_minus_tdb_fit", &InitTtMinusTdbFit, py::arg("t_start_tdb"), py::arg("t_end_tdb"),
+        py::arg("segment_length") = 16.0 * 86400.0, py::arg("num_coeffs") = 13,
+        "Fit TT-TDB(TDB) over a window with piecewise Chebyshev polynomials sampled from the "
+        "DE440t TT-TDB ephemeris. Afterwards tdb_to_tt/tt_to_tdb evaluate the fit (no SPICE).");
+  m.def("clear_tt_minus_tdb_fit", &ClearTtMinusTdbFit,
+        "Clear the fitted TT-TDB model (revert to the analytic series).");
+  m.def("has_fitted_tt_minus_tdb", &HasFittedTtMinusTdb, py::arg("t"),
+        "True if a fitted TT-TDB model covers epoch `t`.");
+
+  // TL - TT fit controls (Turyshev 2026 Eq. 57)
+  m.def("init_lt_minus_tt_fit", &InitLtMinusTtFit, py::arg("t_start_tdb"), py::arg("t_end_tdb"),
+        py::arg("segment_length") = 86400.0, py::arg("num_coeffs") = 13,
+        "Fit TL-TT(TDB) over a window with piecewise Chebyshev polynomials.");
+  m.def("clear_lt_minus_tt_fit", &ClearLtMinusTtFit, "Clear the fitted TL-TT model.");
+  m.def("tdb_to_lt_minus_tt", py::overload_cast<Real>(&TdbToLtMinusTt), py::arg("t_tdb"),
+        "TL - TT [s] as a function of TDB (Turyshev 2026 Eq. 57).");
+
   m.DEF_REAL("mjd_to_time", MjdToTime, "mjd");
   m.DEF_REAL("time_to_mjd", TimeToMjd, "t");
   //   m.DEF_REAL("jd_to_time", JdToTime, "jd");

@@ -126,10 +126,11 @@ namespace lupnt {
     /// time-derivative of `R_b2w` (via autodiff) using `RotToAngularVelocity`.
     ///
     /// @param qw  Initial attitude state at `t0` (only its frame is used).
-    /// @param t0  Initial epoch [s, TDB since J2000] (unused; attitude is computed
-    ///            directly at `tf`).
-    /// @param tf  Final epoch [s, TDB since J2000] at which to evaluate the
-    ///            pointing attitude.
+    /// @param t0  Initial time [s, RELATIVE to `GetLupntEpoch()`] (unused;
+    ///            attitude is computed directly at `tf`).
+    /// @param tf  Final time [s, relative to `GetLupntEpoch()`] at which to
+    ///            evaluate the pointing attitude. The body directions are taken
+    ///            at the absolute epoch `GetLupntEpoch() + tf`.
     /// @param rv  Object's Cartesian position/velocity state (`Cart6`); must share
     ///            the same frame as `qw` and have position in `rv.head(3)`.
     /// @return    Attitude state (quaternion + body angular velocity) realizing the

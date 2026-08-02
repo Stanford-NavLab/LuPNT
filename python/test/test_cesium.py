@@ -127,8 +127,13 @@ def test_add_satellite_dashed_and_inertial_and_offsets():
     pos = _circular_orbit(_pnt.R_EARTH, 500e3, n=8)
     offs = np.linspace(0.0, 5400.0, 8)
     s.add_satellite(
-        "LEO", pos, offsets_s=offs, color=(1, 2, 3), full_orbit=False,
-        dashed=True, reference_frame="INERTIAL",
+        "LEO",
+        pos,
+        offsets_s=offs,
+        color=(1, 2, 3),
+        full_orbit=False,
+        dashed=True,
+        reference_frame="INERTIAL",
     )
     pk = s._entities[-1]
     assert pk["position"]["referenceFrame"] == "INERTIAL"
@@ -242,8 +247,14 @@ def test_add_body_trajectory_full_options():
     offs = np.linspace(0.0, 2360000.0, 8)
     quat = np.tile(np.array([0.0, 0.0, 0.0, 1.0]), (8, 1))
     s.add_body_trajectory(
-        "MOON", pos, offsets_s=offs, radius=_pnt.R_MOON, orientation_quat=quat,
-        texture=True, path=True, reference_frame="INERTIAL",
+        "MOON",
+        pos,
+        offsets_s=offs,
+        radius=_pnt.R_MOON,
+        orientation_quat=quat,
+        texture=True,
+        path=True,
+        reference_frame="INERTIAL",
     )
     pk = s._entities[-1]
     assert pk["id"] == "body/MOON"
@@ -320,9 +331,18 @@ def test_to_html_is_valid_and_substitutes_tokens():
     html = s.to_html()
     assert html.lstrip().startswith("<!doctype html>")
     # all template tokens must be replaced
-    for tok in ("__VER__", "__CZML__", "__CAMERA_RANGE__", "__BODY_REACH__",
-                "__BODY_TEXTURE__", "__BASE_LAYER__", "__GLOBE__",
-                "__BASE_COLOR__", "__ATMOSPHERE__", "__INERTIAL_VIEW__"):
+    for tok in (
+        "__VER__",
+        "__CZML__",
+        "__CAMERA_RANGE__",
+        "__BODY_REACH__",
+        "__BODY_TEXTURE__",
+        "__BASE_LAYER__",
+        "__GLOBE__",
+        "__BASE_COLOR__",
+        "__ATMOSPHERE__",
+        "__INERTIAL_VIEW__",
+    ):
         assert tok not in html
     assert cesium.CESIUM_VERSION in html
     # embedded CZML round-trips back to JSON

@@ -205,10 +205,16 @@ namespace lupnt {
   //                        TL  = TCL − L_L·(TCL−T_0)
   static constexpr double L_B = 1.550519768e-8;   // TCB→TDB rate  (IAU 2006 B3)
   static constexpr double L_G = 6.969290134e-10;  // TCG→TT  rate  (IAU 1997 B1.9, defining)
-  static constexpr double L_L = 3.13905e-11;      // TCL→TL  rate  (Turyshev 2026, selenoid)
-  static constexpr double L_H = 1.48253624e-8;    // TCL−TCB mean rate
-  static constexpr double L_M = 1.485675290e-8;   // TL−TCB  mean rate
-  static constexpr double L_EM = 1.7093906e-11;   // TL−TT   mean rate [s/s TDB]
+  // Turyshev et al. 2025 (ApJ 985:140) Table 2 / Eq.(35), R_MQ = 1738.0 km.
+  // Keep all quoted digits: truncating to 3.13905e-11 costs 4e-17 s/s (1.3 ns/yr) in TL.
+  static constexpr double L_L = 3.139054e-11;    // TCL→TL  rate  (Turyshev 2025, selenoid)
+  static constexpr double L_H = 1.48253624e-8;   // TCL−TCB mean rate
+  static constexpr double L_M = 1.485675290e-8;  // TL−TCB  mean rate
+  // L_EM = L_H - L_C (Turyshev et al. 2025, Table 2 and Eq.(76)).
+  // Currently unused: TdbToLtMinusTt() integrates this quantity from the
+  // ephemeris rather than reading the constant. Kept correct for a future
+  // closed-form fast path.
+  static constexpr double L_EM = 1.709385e-11;  // TL−TT   mean rate [s/s TDB]
   // DE405 TDB offset: TDB_0 = −65.5 μs  (Turyshev 2026, Table 1)
   static constexpr double TDB_0 = -65.5e-6;  // [s]
 
@@ -391,11 +397,23 @@ namespace lupnt {
   static constexpr double GM_URANUS_SYSTEM = 5794556.400000e9;     // [m^3/s^2]
   static constexpr double GM_NEPTUNE_SYSTEM = 6836527.100580e9;    // [m^3/s^2]
   static constexpr double GM_PLUTO_SYSTEM = 977.000000e9;          // [m^3/s^2]
-  static constexpr double GM_MARS = 0.4282837566395650e14;         // [m^3/s^2]
-  static constexpr double GM_JUPITER = 0.1267127646799999e17;      // [m^3/s^2]
-  static constexpr double GM_SATURN = 0.3794058480000000e16;       // [m^3/s^2]
-  static constexpr double GM_URANUS = 0.5794556400000000e15;       // [m^3/s^2]
-  static constexpr double GM_NEPTUNE = 0.6836527100580000e15;      // [m^3/s^2]
+  // Planet-only mass parameters (JPL SSD planetary physical parameters).
+  //
+  // A planet-only GM is ~0.9996x its system GM -- the moons are only ~4e-4 of
+  // the system mass -- so each value below sits just under the corresponding
+  // *_SYSTEM constant above. A value one tenth of its *_SYSTEM counterpart is
+  // wrong by a decimal place.
+  //
+  // Which to use: DE440 supplies only *system barycenters* for the outer
+  // planets, so a potential or third-body term evaluated at the position
+  // returned for BodyId::JUPITER etc. should be paired with the *_SYSTEM
+  // value. Use these planet-only values only when the planet centre itself is
+  // meant.
+  static constexpr double GM_MARS = 0.4282837566395650e14;  // [m^3/s^2]
+  static constexpr double GM_JUPITER = 126686531.900e9;     // [m^3/s^2]
+  static constexpr double GM_SATURN = 37931206.234e9;       // [m^3/s^2]
+  static constexpr double GM_URANUS = 5793951.256e9;        // [m^3/s^2]
+  static constexpr double GM_NEPTUNE = 6835099.970e9;       // [m^3/s^2]
 
   static constexpr double GM_CERES = 62.62890e9;   // [m^3/s^2]
   static constexpr double GM_VESTA = 17.288245e9;  // [m^3/s^2]
@@ -452,6 +470,13 @@ namespace lupnt {
   static constexpr double C22_MOON
       = 3.470983013194e-5;  // Sectorial value adjusted for perm. tide - Rigid C22
   static constexpr double J2_MARS = 1.96045e-3;  // J2 value for Mars
+  // Unnormalized second-degree zonal harmonic of the Sun, as estimated in
+  // DE440 (Park et al. 2021, AJ 161:105). Used by the solar-oblateness
+  // potential term w_LE in the DE440 Eq. (3) TDB-TT relation.
+  static constexpr double J2_SUN = 2.246e-7;
+  // Mean obliquity of the ecliptic at J2000 (Park et al. 2021, Eq. 24 at T=0):
+  // 84381".448. Used to obtain the heliocentric ecliptic latitude of Earth.
+  static constexpr double OBLIQUITY_J2000 = 84381.448 / 3600.0 * PI / 180.0;  // [rad]
 
   // Transformations Between GCRF and Mean Equator and Equinox at J2000
   static constexpr double FRAME_BIAS_XI0 = -16.6170e-3 * RAD_ARCSEC;   // [rad]
@@ -459,11 +484,51 @@ namespace lupnt {
   static constexpr double FRAME_BIAS_DALPHA0 = -14.6e-3 * RAD_ARCSEC;  // [rad]
 
   // Solar Radiation Pressure Constants
-  static constexpr double AU = 149597970e3;      // AU [m]
-  static constexpr double SOLAR_FLUX_AU = 1367;  // Mean Solar Flux at 1 AU [W/m^2]
-  static constexpr double C = 299792458;         // Light speed [m/s]
-  static constexpr double P_SUN
-      = SOLAR_FLUX_AU / C;  // Solar radiation pressure at 1 AU [N/m^2] = 4.56e-6 N/m^2
+  /// Astronomical unit [m]. Exact by the IAU (2012) definition.
+  static constexpr double AU = 149597870700.0;
+
+  // --- Small-body populations that DE440 integrates but for which LuPNT carries
+  // --- no ephemerides. Modelled as uniform circular rings (see RingPotential()).
+  //
+  // Values are taken from DE440's own integration header (header.440t), not from
+  // independently published masses: DE440 fitted these during the integration, so
+  // they are what reproduces its TT-TDB. LuPNT has no ephemerides for the bodies,
+  // so each population is modelled as one uniform circular ring.
+  //
+  // Main asteroid belt: the 343 discrete asteroids DE440 integrates, summed from
+  // its own header (header.440t, MA0001..MA1467 plus 14 extras). MA0001 is Ceres
+  // at 6.2629e10 m^3/s^2. Total 1.7053e11 m^3/s^2 = 12.85e-10 Msun -- 1.05x the
+  // independently published belt mass (Pitjeva EPM2014, 12.25e-10 Msun).
+  static constexpr double GM_ASTEROID_BELT = 1.7053e11;  // [m^3/s^2]
+  static constexpr double A_ASTEROID_BELT = 2.7 * AU;    // [m] mean belt radius
+  // Kuiper belt: DE440's OWN constants, from the DE440/LE440 integration header
+  // (header.440t, GROUP 1041), converted from AU^3/day^2 (factor 4.484859e23):
+  //
+  //   MA8201..MA8236  36 equal point masses forming the circular ring at 44 au,
+  //                   0.552276997169882142e-12 each  ->  8.9168e12 m^3/s^2
+  //   MA8001..MA8030  the 30 individual KBOs         ->  2.3154e12 m^3/s^2
+  //                                           total  ->  1.1232e13 m^3/s^2
+  //
+  // These are the values DE440 actually integrated, so they are what reproduces
+  // its TT-TDB. An independent published Kuiper-belt mass does not: Pitjeva &
+  // Pitjev 2018 give 1.97e-2 M_Earth = 7.85e12, 1.43x smaller, because DE440
+  // *fitted* its ring mass rather than adopting a published total.
+  //
+  // The 30 discrete KBOs are lumped in at the ring radius since LuPNT has no
+  // ephemerides for them; several orbit beyond 44 au, so this slightly
+  // overestimates their potential.
+  static constexpr double GM_KUIPER_BELT = 1.1232e13;  // [m^3/s^2]
+  static constexpr double A_KUIPER_BELT = 44.0 * AU;   // [m] DE440 ring radius
+  /// Default mean total solar irradiance at 1 AU [W/m^2].
+  ///
+  /// 1360.8 +/- 0.5 is the measured TSI (Kopp & Lean 2011, SORCE/TIM); the value varies by
+  /// ~0.1% over the solar cycle. The widely quoted 1367 predates TIM-era radiometry and is
+  /// ~0.5% high. Missions usually specify their own figure -- override it per force model
+  /// with `NBodyDynamics::SetSolarFlux()` rather than relying on this default.
+  static constexpr double SOLAR_FLUX_AU = 1361;
+  static constexpr double C = 299792458;  // Light speed [m/s]
+  /// Solar radiation pressure at 1 AU [N/m^2] for `SOLAR_FLUX_AU`.
+  static constexpr double P_SUN = SOLAR_FLUX_AU / C;
 
   /**
    * @brief Common physical constants scaled into one coherent unit system.
@@ -694,6 +759,10 @@ namespace lupnt {
   // File Path *******************************************************************
   static constexpr std::string_view TAI_UTC_FILENAME = "tai-utc.dat";
   static constexpr std::string_view EOP_FILENAME = "eopc04_08.62-now";
+  // IERS finals ("Bulletin A") cache, written by LoadLatestEopFinalsFromIers and the default
+  // path for EopSource::Finals. Unlike EOP_FILENAME this is not bundled -- it has to be
+  // downloaded or supplied, since predictions go stale by construction.
+  static constexpr std::string_view EOP_FINALS_FILENAME = "finals.all.iau1980.txt";
   static constexpr std::string_view IAU_SOFA_FILENAME = "IAU_SOFA.DAT";
 
   static constexpr std::string_view UNDEFINED = "Unknown";  // Used for unknown values
@@ -741,18 +810,18 @@ namespace lupnt {
   double GetBodyRadius(BodyId body);
 
   enum class Time {
-    UT1,     // Universal Time 1
-    UTC,     // Coordinated Universal Time
-    TAI,     // International Atomic Time
-    TDB,     // Barycentric Dynamical Time
-    TT,      // Terrestrial Time
-    TCG,     // Geocentric Coordinate Time
-    TCB,     // Barycentric Coordinate Time
-    GPS,     // Global Positioning System Time
-    JD_TT,   // Julian Date relative to TT
-    JD_TDB,  // Julian Date relative to TDB
-    TCL,     // Lunar Coordinate Time
-    LT,      // Lunar Time
+    UT1,  // Universal Time 1
+    UTC,  // Coordinated Universal Time
+    TAI,  // International Atomic Time
+    TDB,  // Barycentric Dynamical Time
+    TT,   // Terrestrial Time
+    TCG,  // Geocentric Coordinate Time
+    TCB,  // Barycentric Coordinate Time
+    GPS,  // Global Positioning System Time
+    // A Julian Date is a *representation* of an instant, not a time scale, so it
+    // does not belong here. Use JdToTime()/TimeToJd() with the relevant scale.
+    TCL,  // Lunar Coordinate Time
+    LT,   // Lunar Time
   };
 
 }  // namespace lupnt

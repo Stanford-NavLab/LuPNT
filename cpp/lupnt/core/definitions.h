@@ -192,6 +192,47 @@ namespace lupnt {
   /// @param epoch Reference epoch to install [s, TDB since J2000]
   void SetLupntEpoch(Real epoch);
 
+  /// @brief RAII guard that temporarily installs a global LuPNT epoch and
+  /// restores the previous value on scope exit -- including when the scope is
+  /// left via an exception.
+  ///
+  /// Subsystems that time-keep in *absolute* TDB have to neutralise the global
+  /// epoch while they call into the dynamics (which add it to their relative
+  /// time argument), or the epoch is double-counted and the ephemeris is
+  /// queried decades away -- typically outside the loaded kernels. Doing that
+  /// by hand,
+  ///
+  ///     Real saved = GetLupntEpoch();
+  ///     SetLupntEpoch(0.0);
+  ///     DoWork();                 // throws -> the 0.0 leaks process-wide
+  ///     SetLupntEpoch(saved);
+  ///
+  /// leaves the global corrupted for every later caller if `DoWork` throws.
+  /// Use this instead:
+  ///
+  ///     ScopedLupntEpoch guard(0.0);
+  ///     DoWork();
+  ///
+  /// @note This is a mitigation, not a cure: the underlying issue is that the
+  /// reference epoch is global mutable state, which is also not thread-safe.
+  /// Prefer passing an explicit reference epoch where you can.
+  class ScopedLupntEpoch {
+  public:
+    explicit ScopedLupntEpoch(Real epoch) : saved_(GetLupntEpoch()) { SetLupntEpoch(epoch); }
+    ~ScopedLupntEpoch() { SetLupntEpoch(saved_); }
+
+    ScopedLupntEpoch(const ScopedLupntEpoch&) = delete;
+    ScopedLupntEpoch& operator=(const ScopedLupntEpoch&) = delete;
+    ScopedLupntEpoch(ScopedLupntEpoch&&) = delete;
+    ScopedLupntEpoch& operator=(ScopedLupntEpoch&&) = delete;
+
+    /// @brief The epoch that will be restored on scope exit.
+    Real saved() const { return saved_; }
+
+  private:
+    Real saved_;
+  };
+
 }  // namespace lupnt
 
 template <> struct fmt::formatter<lupnt::Real> : fmt::formatter<double> {

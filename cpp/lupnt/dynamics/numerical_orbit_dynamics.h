@@ -171,6 +171,17 @@ namespace lupnt {
     /// spacecraft state in the integration frame `frame_` (coherent units).
     Vec3 RelativisticNBodyAcceleration(Real t_tdb, const Vec3& r, const Vec3& v) const;
 
+    /// @brief Cannonball solar-radiation-pressure acceleration on the spacecraft.
+    ///
+    /// A single term for the spacecraft as a whole: the Sun direction is taken in the
+    /// integration frame `frame_` (same origin as `r`), and every non-Sun body in the model
+    /// contributes a shadow factor, combined multiplicatively. `t_tdb` is absolute TDB; `r`
+    /// is the spacecraft position in `frame_` (coherent units).
+    Vec3 AccelerationSrp(Real t_tdb, const Vec3& r) const;
+
+    /// Mean total solar irradiance at 1 AU [W/m^2], always SI regardless of `units_`.
+    double solar_flux_ = SOLAR_FLUX_AU;
+
   public:
     NBodyDynamics();
     /**
@@ -187,8 +198,10 @@ namespace lupnt {
      * @brief Propagate a Cartesian state and optionally compute the STM.
      *
      * @param x0 Initial Cartesian state in the configured frame and unit system.
-     * @param t0 Initial TDB epoch in seconds.
-     * @param tf Final TDB epoch in seconds.
+     * @param t0 Initial time [s, RELATIVE to `GetLupntEpoch()`, not an absolute
+     *           epoch]. The force models convert internally via
+     *           `t_tdb = t + GetLupntEpoch()`.
+     * @param tf Final time [s, relative to `GetLupntEpoch()`].
      * @param u Optional control input.
      * @param stm Optional state transition matrix output.
      * @return Final Cartesian state in the configured frame and unit system.
@@ -271,6 +284,14 @@ namespace lupnt {
     void SetDragCoeff(Real bcoeff);
     /// @brief Set SRP coefficient from reflectivity coefficient, area, and mass.
     void SetSrpCoefficient(Real CR, Real area, Real mass);
+    /// @brief Set the mean total solar irradiance at 1 AU [W/m^2] used by the SRP model.
+    ///
+    /// Defaults to `SOLAR_FLUX_AU`. Set it when a mission specifies its own figure: the
+    /// cannonball acceleration is directly proportional to it, so a 0.5% difference in flux
+    /// is a 0.5% difference in SRP. Always SI (W/m^2), independent of the unit system.
+    void SetSolarFlux(double flux) { solar_flux_ = flux; }
+    /// @brief Mean total solar irradiance at 1 AU currently in use [W/m^2].
+    double GetSolarFlux() const { return solar_flux_; }
     /// @brief Set drag coefficient from drag coefficient, area, and mass.
     void SetDragCoefficient(Real CD, Real area, Real mass);
     /// @brief Enable or disable solar radiation pressure.

@@ -191,6 +191,33 @@ namespace lupnt {
     /// @return          `t` converted to `to_time` [s]
     Real ConvertTime(Real t, Time from_time, Time to_time);
 
+    /// NAIF ids of the scalar "time ephemeris" SPK segments (see
+    /// GetTimeEphemerisOffset).
+    constexpr int kNaifTtMinusTdb = 1000000001;   ///< TT  - TDB (de440t.bsp)
+    constexpr int kNaifTdbMinusTcl = 1000000005;  ///< TDB - TCL (lunar time ephemeris)
+    constexpr int kNaifTdbMinusTl = 1000000006;   ///< TDB - TL  (lunar time ephemeris)
+
+    /// @brief Read a scalar "time ephemeris" offset [s] at a TDB epoch from a
+    /// loaded SPK time-ephemeris segment.
+    ///
+    /// JPL-style time ephemerides store a scalar time difference as the
+    /// x-component of the position of a pseudo-body relative to NAIF body
+    /// 1000000000. Known ids:
+    ///   - 1000000001 : TT  - TDB  (bundled with `de440t.bsp`)
+    ///   - 1000000005 : TDB - TCL  (lunar time ephemeris, e.g.
+    ///                              `LTE_DE440_TDBmTCL.bsp`)
+    ///   - 1000000006 : TDB - TL   (lunar time ephemeris, e.g.
+    ///                              `LTE_DE440_TDBmTL.bsp`)
+    ///
+    /// The containing kernel must already be loaded (the DE440t segment is
+    /// loaded by `LoadSpiceKernel`; others via `LoadSpiceKernel(filepath)`).
+    ///
+    /// @param t_tdb   Epoch [s, TDB seconds since J2000] (the segments'
+    ///                independent variable)
+    /// @param naif_id NAIF id of the time-ephemeris pseudo-body
+    /// @return        The stored time difference [s]
+    Real GetTimeEphemerisOffset(Real t_tdb, int naif_id);
+
     /// @brief Get the inertial (J2000) position and velocity of `target`
     /// relative to `center` at `t_tdb`, via the cached Chebyshev SPK segments
     /// extracted by `LoadSpiceKernel`.

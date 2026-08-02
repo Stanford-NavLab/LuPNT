@@ -58,11 +58,18 @@ def _print_summary(summary, app_cfg):
 
 def main():
     parser = argparse.ArgumentParser(description="Run the agent-based ex6 lunar GNSS ODTS EKF.")
-    parser.add_argument("--progress-epochs", type=int, default=None,
-                        help="Override run_progress_interval_epochs (0 = C++ default cadence).")
-    parser.add_argument("--require-cache", action="store_true",
-                        help="Require the Stage 1/2 precompute cache to exist (else the EKF "
-                             "computes links in-memory, single-threaded).")
+    parser.add_argument(
+        "--progress-epochs",
+        type=int,
+        default=None,
+        help="Override run_progress_interval_epochs (0 = C++ default cadence).",
+    )
+    parser.add_argument(
+        "--require-cache",
+        action="store_true",
+        help="Require the Stage 1/2 precompute cache to exist (else the EKF "
+        "computes links in-memory, single-threaded).",
+    )
     args = parser.parse_args()
 
     # ex6_gnss_odts_config sets LUPNT_DATA_PATH + sys.path before importing pylupnt.

@@ -24,6 +24,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import zipfile
 from pathlib import Path
 from urllib.request import urlretrieve
@@ -37,6 +38,79 @@ GM_EARTH = 398600.435507e9  # [m^3/s^2]
 GM_MOON = 4902.800118e9  # [m^3/s^2]
 R_EARTH = 6378.137e3  # [m]
 J2_EARTH = 1.08262668e-3  # [-]
+
+# Gravity coefficient files (basenames resolved by LuPNT's GetFilePath under
+# LUPNT_DATA_PATH/gravity, and by the C++ tests via ReadHarmonicGravityField).
+# The generator parses the *same* file to build the Orekit field, so both sides
+# use identical C_nm/S_nm, GM and R -- isolating the harmonic *algorithm* the
+# same way lupnt_j2_earth.cof isolates J2.
+EARTH_GRAVITY_COF = "EGM96.cof"
+EARTH_GRAVITY_NM = 8
+MOON_GRAVITY_COF = "grgm1200b.cof"
+MOON_GRAVITY_NM = 12
+
+_FLOAT_RE = re.compile(r"[-+]?\d*\.?\d+(?:[EeDd][-+]?\d+)?")
+
+
+def _floats(s: str) -> list[float]:
+    return [float(x.replace("D", "E").replace("d", "e")) for x in _FLOAT_RE.findall(s)]
+
+
+def parse_cof(cof_basename: str, nmax: int):
+    """Parse a LuPNT `.cof` gravity file the way body.cc does.
+
+    Returns (GM, R, cbar, sbar) where cbar/sbar are lists-of-lists of the
+    **geodesy-normalized** coefficients up to degree/order `nmax` (cbar[n][m]),
+    exactly as stored in the file -- so writing them straight into an Orekit
+    ICGEM file reproduces LuPNT's field with no conversion.
+    """
+    data_path = Path(os.environ["LUPNT_DATA_PATH"])
+    # LuPNT resolves gravity files by basename under gravity/<body>/; search it.
+    matches = list((data_path / "gravity").rglob(cof_basename))
+    if not matches:
+        raise FileNotFoundError(f"{cof_basename} not found under {data_path/'gravity'}")
+    path = matches[0]
+
+    GM = R = None
+    cbar = [[0.0] * (i + 1) for i in range(nmax + 1)]
+    sbar = [[0.0] * (i + 1) for i in range(nmax + 1)]
+    cbar[0][0] = 1.0
+    with open(path) as f:
+        for line in f:
+            if line.startswith("POTFIELD"):
+                hdr = _floats(line[14:])
+                GM, R = hdr[1], hdr[2]
+            elif line.startswith("RECOEF"):
+                n_in = int(line[8:11])
+                m_in = int(line[11:14])
+                vals = _floats(line[14:])
+                if n_in >= nmax + 1:
+                    break
+                if m_in >= nmax + 1:
+                    continue
+                cbar[n_in][m_in] = vals[0]
+                sbar[n_in][m_in] = vals[1] if m_in > 0 else 0.0
+    if GM is None:
+        raise ValueError(f"no POTFIELD header in {path}")
+    return GM, R, cbar, sbar
+
+
+def write_icgem(gfc_path: Path, GM: float, R: float, cbar, sbar, nmax: int) -> None:
+    """Write the parsed normalized coefficients as an Orekit-readable ICGEM file."""
+    with open(gfc_path, "w") as fp:
+        fp.write("product_type                gravity_field\n")
+        fp.write("modelname                   lupnt_crossval\n")
+        fp.write(f"earth_gravity_constant      {GM:.14e}\n")
+        fp.write(f"radius                      {R:.14e}\n")
+        fp.write(f"max_degree                  {nmax}\n")
+        fp.write("errors                      no\n")
+        fp.write("norm                        fully_normalized\n")
+        fp.write("tide_system                 tide_free\n")
+        fp.write("end_of_head\n")
+        for n in range(nmax + 1):
+            for m in range(n + 1):
+                fp.write(f"gfc {n:5d} {m:5d} {cbar[n][m]: .14e} {sbar[n][m]: .14e}\n")
+
 
 # Epochs used for the scalar (time-scale / sidereal) sections. The list
 # deliberately brackets the 2012-06-30 and 2016-12-31 leap seconds so the
@@ -105,15 +179,27 @@ def main() -> None:
 
     from org.hipparchus.geometry.euclidean.threed import Vector3D
     from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
-    from org.orekit.bodies import CelestialBodyFactory
-    from org.orekit.forces.gravity import J2OnlyPerturbation, NewtonianAttraction
+    from org.orekit.bodies import CelestialBodyFactory, OneAxisEllipsoid
+    from org.orekit.data import DataContext, DirectoryCrawler
+    from org.orekit.forces.gravity import (
+        HolmesFeatherstoneAttractionModel,
+        J2OnlyPerturbation,
+        NewtonianAttraction,
+        ThirdBodyAttraction,
+    )
+    from org.orekit.forces.gravity.potential import GravityFieldFactory, ICGEMFormatReader
+    from org.orekit.forces.radiation import (
+        IsotropicRadiationSingleCoefficient,
+        SolarRadiationPressure,
+    )
     from org.orekit.frames import FramesFactory
     from org.orekit.orbits import CartesianOrbit, KeplerianOrbit, OrbitType, PositionAngleType
     from org.orekit.propagation import SpacecraftState
     from org.orekit.propagation.analytical import KeplerianPropagator
     from org.orekit.propagation.numerical import NumericalPropagator
     from org.orekit.time import AbsoluteDate, TimeScalesFactory
-    from org.orekit.utils import IERSConventions, PVCoordinates, PVCoordinatesProvider
+    from org.orekit.utils import Constants, IERSConventions, PVCoordinates, PVCoordinatesProvider
+    from java.io import File
 
     UTC = TimeScalesFactory.getUTC()
     TAI = TimeScalesFactory.getTAI()
@@ -157,15 +243,17 @@ def main() -> None:
     time_scales = []
     for y, mo, d, h, mi, s, near_leap in TIME_EPOCHS:
         t0 = AbsoluteDate(y, mo, d, h, mi, s, UTC)
+        # Orekit 13.1's offsetFromTAI returns a TimeOffset; .toDouble() gives seconds.
+        off = lambda scale: scale.offsetFromTAI(t0).toDouble()
         time_scales.append(
             {
                 "epoch_utc": epoch_str(y, mo, d, h, mi, s),
                 "near_leap_second": near_leap,
-                "tai_minus_utc": -UTC.offsetFromTAI(t0),
-                "tt_minus_tai": TT.offsetFromTAI(t0),
-                "tdb_minus_tai": TDB.offsetFromTAI(t0),
-                "gps_minus_tai": GPS.offsetFromTAI(t0),
-                "ut1_minus_utc": UT1.offsetFromTAI(t0) - UTC.offsetFromTAI(t0),
+                "tai_minus_utc": -off(UTC),
+                "tt_minus_tai": off(TT),
+                "tdb_minus_tai": off(TDB),
+                "gps_minus_tai": off(GPS),
+                "ut1_minus_utc": off(UT1) - off(UTC),
             }
         )
     out["time_scales"] = time_scales
@@ -457,6 +545,168 @@ def main() -> None:
             )
         j2_propagation.append(case)
     out["j2_propagation"] = j2_propagation
+
+    # ------------------------------------------------------------------
+    # Spherical-harmonic gravity (formula-level, body-fixed)
+    #
+    # Both sides use the *same* LuPNT `.cof` coefficient file: this script
+    # parses it and writes an Orekit-readable ICGEM copy, so the comparison
+    # isolates the harmonic recursion + normalization convention rather than
+    # the adopted coefficients. Orekit's HolmesFeatherstoneAttractionModel
+    # gradient() returns the non-central part; the two-body term is added back
+    # to match LuPNT's AccelarationGravityField (full field, C00 = 1).
+    # ------------------------------------------------------------------
+    def gravity_section(cof_basename, nmax, radii):
+        GM, R, cbar, sbar = parse_cof(cof_basename, nmax)
+        gfc_dir = OUTPUT_PATH.parent
+        gfc_path = gfc_dir / f"_crossval_{cof_basename}.gfc"
+        write_icgem(gfc_path, GM, R, cbar, sbar, nmax)
+        DataContext.getDefault().getDataProvidersManager().addProvider(
+            DirectoryCrawler(File(str(gfc_dir)))
+        )
+        GravityFieldFactory.clearPotentialCoefficientsReaders()
+        GravityFieldFactory.addPotentialCoefficientsReader(ICGEMFormatReader(gfc_path.name, False))
+        provider = GravityFieldFactory.getNormalizedProvider(nmax, nmax)
+        # GCRF as the "body frame" arg: gradient() consumes the body-fixed
+        # position directly, so no Earth-orientation/EOP data is involved.
+        hf = HolmesFeatherstoneAttractionModel(FramesFactory.getGCRF(), provider)
+
+        # A spread of body-fixed directions, deliberately NOT axis-aligned:
+        # Orekit's HolmesFeatherstone gradient() is singular (returns NaN) exactly
+        # on the polar axis, and an equatorial point zeroes the zonal contribution
+        # to a component. Generic directions exercise the sectoral/tesseral terms
+        # and avoid both degeneracies.
+        dirs = [
+            (1.0, 0.15, 0.10),
+            (0.3, 1.0, 0.2),
+            (0.2, 0.3, 1.0),
+            (0.6, 0.6, 0.5),
+            (0.9, 0.1, 0.4),
+            (0.25, 0.7, 0.85),
+        ]
+        cases = []
+        for rad in radii:
+            for dx, dy, dz in dirs:
+                d = np.array([dx, dy, dz], float)
+                p = rad * d / np.linalg.norm(d)
+                pos = Vector3D(float(p[0]), float(p[1]), float(p[2]))
+                grad = hf.gradient(AbsoluteDate.J2000_EPOCH, pos, GM)
+                a_tb = -GM * p / np.linalg.norm(p) ** 3
+                a_full = a_tb + np.array([grad[0], grad[1], grad[2]])
+                cases.append({"r_bf": list(p), "a_bf": list(a_full)})
+        gfc_path.unlink(missing_ok=True)
+        return {
+            "cof_file": cof_basename,
+            "n_max": nmax,
+            "m_max": nmax,
+            "GM": GM,
+            "R": R,
+            "cases": cases,
+        }
+
+    import numpy as np  # local: only needed for these sections
+
+    out["gravity_acceleration"] = {
+        "EARTH": gravity_section(EARTH_GRAVITY_COF, EARTH_GRAVITY_NM, [6.6e6, 7.0e6, 1.5e7, 4.2e7]),
+        "MOON": gravity_section(MOON_GRAVITY_COF, MOON_GRAVITY_NM, [1.8e6, 2.0e6, 3.0e6]),
+    }
+
+    # ------------------------------------------------------------------
+    # Third-body point-mass perturbation (Orekit ThirdBodyAttraction)
+    #
+    # Earth-centred satellite perturbed by the Sun and the Moon, and a
+    # Moon-centred satellite perturbed by the Earth and the Sun. The perturber
+    # position (Orekit DE440, in the central-body-centred inertial frame) is
+    # stored so the C++ side feeds LuPNT's AccelerationPointMass the *same*
+    # position -- decoupling the ephemeris (checked separately by the
+    # `ephemerides` section) from the perturbation formula.
+    # ------------------------------------------------------------------
+    def third_body_cases(center_frame, center_body_name, sat_states, perturbers):
+        cases = []
+        for r_vec, v_vec in sat_states:
+            r_sat = Vector3D(*[float(x) for x in r_vec])
+            v_sat = Vector3D(*[float(x) for x in v_vec])
+            gm_c = {"EARTH": GM_EARTH, "MOON": GM_MOON}[center_body_name]
+            orbit = CartesianOrbit(PVCoordinates(r_sat, v_sat), center_frame, t0, gm_c)
+            state = SpacecraftState(orbit).withMass(500.0)
+            entry = {"center": center_body_name, "r": list(r_vec), "perturbers": []}
+            for body, name in perturbers:
+                force = ThirdBodyAttraction(body)
+                drivers = force.getParametersDrivers()
+                params = JArray_double([drivers.get(i).getValue() for i in range(drivers.size())])
+                a = force.acceleration(state, params)
+                a_ore = [a.getX(), a.getY(), a.getZ()]
+                s_pv = body.getPVCoordinates(t0, center_frame).getPosition()
+                entry["perturbers"].append(
+                    {
+                        "body": name,
+                        "GM": body.getGM(),
+                        "s": [s_pv.getX(), s_pv.getY(), s_pv.getZ()],
+                        "a": a_ore,
+                    }
+                )
+            cases.append(entry)
+        return cases
+
+    earth_sat_states = [
+        ([7.0e6, 2.0e6, 1.0e6], [-1.0e3, 6.5e3, 2.0e3]),
+        ([-4.2e7, 1.0e7, 3.0e6], [-0.8e3, -3.0e3, 0.1e3]),
+    ]
+    out["third_body_acceleration"] = {
+        "EARTH_CENTERED": third_body_cases(
+            GCRF, "EARTH", earth_sat_states, [(sun, "SUN"), (moon, "MOON")]
+        ),
+    }
+
+    # ------------------------------------------------------------------
+    # Solar radiation pressure, cannonball, fully sunlit (Orekit
+    # SolarRadiationPressure with no occulting body reached -> lighting = 1).
+    #
+    # Orekit's reference pressure at 1 AU is its own adopted constant; the C++
+    # test uses the same P0 (stored here) so the comparison isolates the
+    # cannonball formula and its sign/AU convention, not the flux value. Each
+    # case stores the Sun position (DE440) so LuPNT is fed the same geometry.
+    # ------------------------------------------------------------------
+    Cr, area, mass = 1.5, 4.0, 500.0
+    radiation = IsotropicRadiationSingleCoefficient(area, Cr)
+    itrf = FramesFactory.getITRF(IERSConventions.IERS_2010, True)
+    earth_ellipsoid = OneAxisEllipsoid(R_EARTH, 1.0 / 298.257223563, itrf)
+    srp = SolarRadiationPressure(sun, earth_ellipsoid, radiation)
+    AU = Constants.IAU_2012_ASTRONOMICAL_UNIT
+    srp_cases = []
+    for r_vec, v_vec in [
+        ([7.0e7, 2.0e7, 1.0e7], [0.0, 3.0e3, 0.0]),
+        ([-5.0e7, 6.0e7, 2.0e7], [1.0e3, 0.5e3, 0.0]),
+        ([3.0e7, -4.0e7, 5.0e7], [0.0, 0.0, 2.5e3]),
+    ]:
+        r_sat = Vector3D(*[float(x) for x in r_vec])
+        v_sat = Vector3D(*[float(x) for x in v_vec])
+        orbit = CartesianOrbit(PVCoordinates(r_sat, v_sat), GCRF, t0, GM_EARTH)
+        state = SpacecraftState(orbit).withMass(mass)
+        assert srp.getLightingRatio(state) == 1.0, "case must be fully sunlit"
+        drivers = srp.getParametersDrivers()
+        params = JArray_double([drivers.get(i).getValue() for i in range(drivers.size())])
+        a = srp.acceleration(state, params)
+        a_ore = np.array([a.getX(), a.getY(), a.getZ()])
+        s_pv = sun.getPVCoordinates(t0, GCRF).getPosition()
+        s = np.array([s_pv.getX(), s_pv.getY(), s_pv.getZ()])
+        r = np.array(r_vec)
+        d = np.linalg.norm(r - s)
+        bcoeff = Cr * area / mass
+        p0_eff = np.linalg.norm(a_ore) * d**2 / (bcoeff * AU**2)
+        srp_cases.append(
+            {
+                "r": list(r),
+                "r_sun": [s_pv.getX(), s_pv.getY(), s_pv.getZ()],
+                "Cr": Cr,
+                "area": area,
+                "mass": mass,
+                "P0": p0_eff,
+                "AU": AU,
+                "a": list(a_ore),
+            }
+        )
+    out["srp_acceleration"] = {"epoch_utc": "2024-03-15T12:00:00.000000", "cases": srp_cases}
 
     OUTPUT_PATH.write_text(json.dumps(out, indent=2) + "\n")
     print(f"Wrote {OUTPUT_PATH}")

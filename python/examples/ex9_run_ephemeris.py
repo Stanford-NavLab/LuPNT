@@ -88,8 +88,10 @@ def main() -> None:
         cfg = copy.deepcopy(base_cfg)
         acfg = cfg["agents"]["EphemerisManager"]["application"]
         acfg.update(overrides)
-        print(f"Running ephemeris study ({tag}): "
-              f"duration_days={acfg['duration_days']}, windows={acfg['fit_window_minutes']}")
+        print(
+            f"Running ephemeris study ({tag}): "
+            f"duration_days={acfg['duration_days']}, windows={acfg['fit_window_minutes']}"
+        )
         sim = pnt.Simulation(cfg)
         sim.run()
         app = sim.get_agent("EphemerisManager").get_application()
@@ -107,22 +109,26 @@ def main() -> None:
 
         cart = res.cartesian_results
         alm = res.almanac_results
-        print(f"  {tag}: cart p95 pos [m] = {[round(r.pos_p95_m, 4) for r in cart]}, "
-              f"alm p95 pos [m] = {[round(r.pos_p95_m, 1) for r in alm]}")
+        print(
+            f"  {tag}: cart p95 pos [m] = {[round(r.pos_p95_m, 4) for r in cart]}, "
+            f"alm p95 pos [m] = {[round(r.pos_p95_m, 1) for r in alm]}"
+        )
 
         if tag == "eph":
             oc = acfg["orbit"]
-            meta.update({
-                "start_epoch_utc": acfg["start_epoch_utc"],
-                "orbit": oc,
-                "output_frame": acfg["output_frame"],
-                "cartesian_poly_order": acfg["cartesian_poly_order"],
-                "almanac_poly_order": acfg["almanac_poly_order"],
-                "almanac_num_fourier_terms": acfg["almanac_num_fourier_terms"],
-                "datasize_precision_m": acfg["datasize_precision_m"],
-                "num_windows": acfg["num_windows"],
-                "eph_sample_dt_s": acfg["sample_dt_s"],
-            })
+            meta.update(
+                {
+                    "start_epoch_utc": acfg["start_epoch_utc"],
+                    "orbit": oc,
+                    "output_frame": acfg["output_frame"],
+                    "cartesian_poly_order": acfg["cartesian_poly_order"],
+                    "almanac_poly_order": acfg["almanac_poly_order"],
+                    "almanac_num_fourier_terms": acfg["almanac_num_fourier_terms"],
+                    "datasize_precision_m": acfg["datasize_precision_m"],
+                    "num_windows": acfg["num_windows"],
+                    "eph_sample_dt_s": acfg["sample_dt_s"],
+                }
+            )
         if tag == "alm":
             meta["alm_sample_dt_s"] = acfg["sample_dt_s"]
 

@@ -43,6 +43,13 @@ namespace pecsim {
     int ihr = datetime.hour, imin = datetime.min, isec = datetime.sec;
     itime[1] = int((ihr * 3600 + imin * 60 + isec) * 1000);  // Milliseconds of the day
 
+    // Future-epoch robustness: the bundled IRI solar-index data ends ~2024 with only a
+    // short projection, so for later epochs the IRI-based density paths (ne_iri_ps_trough,
+    // ne_iri_cap) return the no-data NaN sentinel. gcpm_v24_fortran already steps the year
+    // back for this reason; do the same here, once, so every downstream call below uses a
+    // year the data covers. Without this the C++ GCPM returns NaN for epochs from ~2027 on.
+    itime = iri_valid_solar_itime(itime);
+
     // Constants
     const double re = RE;  // Earth radius in km
     double clat, al, aheight;

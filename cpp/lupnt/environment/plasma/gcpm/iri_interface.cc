@@ -106,6 +106,8 @@ namespace pecsim {
 
   void set_iri2007_option(const IRI2007Option& option) {
     iri_option_2007.R12 = option.R12;
+    iri_option_2007.compute_teti = option.compute_teti;
+    iri_option_2007.compute_ni = option.compute_ni;
     iri_option_2007.update_jf_2007();  // Update the Fortran options
   }
 
@@ -144,6 +146,12 @@ namespace pecsim {
     } else {
       throw std::runtime_error("Invalid value for R12");
     }
+
+    // jf(2)=temperatures, jf(3)=ion composition. Off by default so the GCPM
+    // density path skips them (it uses only Ne/hmF2/F10.7); these two are among
+    // the most expensive IRI sub-models and their outputs are otherwise discarded.
+    jf[1] = compute_teti;
+    jf[2] = compute_ni;
 
     for (int i = 0; i < 30; i++) {
       jf2007[i] = jf[i];  // initialize all to true
@@ -219,6 +227,9 @@ namespace pecsim {
                                IRI2007Option op) {
     // set version to IRI 2007
     set_iri_model(IRIModel::IRI_2007);
+    // This accessor returns the IRI ion densities, so ion composition must be
+    // computed regardless of the (GCPM-oriented) default.
+    op.compute_ni = true;
     set_iri2007_option(op);  // Set the IRI options
 
     // Convert to itime
@@ -279,6 +290,29 @@ namespace pecsim {
     }
 
     return params;
+  }
+
+  std::array<int, 2> iri_valid_solar_itime(const std::array<int, 2>& itime) {
+    int yyyy = itime[0] / 1000;
+    int ddd = itime[0] - yyyy * 1000;
+    double dhour = static_cast<double>(itime[1]) / 3600000.0 + 25.0;
+    // The solar-index coverage limit is a function of year, not location, so probe at a
+    // fixed mid-latitude F-region point and apply iri_sm's no-data test (F10.7 <= 0 or a
+    // non-finite electron density). iri_sm masks this internally, so gcpm_v24 cannot detect
+    // it from an iri_sm call -- it must probe the raw iri_sub, as done here.
+    const double blatd = 0.0, blongd = 0.0, aheight = 350.0;
+    const int jmag = 0;
+    // The F-region electron density at this probe point is always strongly positive for a
+    // covered epoch; IRI's no-data sentinel there is a non-positive (zero/negative) or
+    // non-finite value. Testing F10.7 is unreliable because a user-forced R12 makes F10.7
+    // positive even past the data (which is exactly why iri_sm's own guard misses this case).
+    IRIParams p = iri_sub(jmag, blatd, blongd, yyyy, -ddd, dhour, aheight, aheight, DELH);
+    int back = 0;
+    while (back < 30 && !(p.neiri > 0.0)) {
+      ++back;
+      p = iri_sub(jmag, blatd, blongd, yyyy - back, -ddd, dhour, aheight, aheight, DELH);
+    }
+    return {(yyyy - back) * 1000 + ddd, itime[1]};
   }
 
   // This subroutine is used to call the IRI model from GCPM

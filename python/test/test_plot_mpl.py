@@ -81,7 +81,7 @@ def test_check_occultation():
 
 def test_plot_visible():
     p = _surface_plot()
-    line, = p.ax.plot([0.0], [0.0], [0.0])
+    (line,) = p.ax.plot([0.0], [0.0], [0.0])
     p.points = [line]
     p.data = [np.random.default_rng(1).standard_normal((5, 3)) * 3000]
     p.plot_visible(p.azim, p.elev)
@@ -99,7 +99,7 @@ def test_rotate_ignores_other_axes():
 
 def test_rotate_matching_axis_calls_plot_visible():
     p = _surface_plot()
-    line, = p.ax.plot([0.0], [0.0], [0.0])
+    (line,) = p.ax.plot([0.0], [0.0], [0.0])
     p.points = [line]
     p.data = [np.random.default_rng(8).standard_normal((5, 3)) * 3000]
 

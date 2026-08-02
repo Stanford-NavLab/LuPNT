@@ -15,7 +15,7 @@ using namespace Catch::Matchers;
 // ============================================================================
 // Cross-validation against GMAT
 //
-// The reference values below were generated once via GMAT (R2022a) and
+// The reference values below were generated once via GMAT (R2026a) and
 // checked into `cpp/test/gmat/data/gmat_reference.json` by
 // `cpp/test/gmat/gen_gmat_reference.py`. This test does **not** require
 // GMAT to run -- see `cpp/test/gmat/README.md` for how the fixture was

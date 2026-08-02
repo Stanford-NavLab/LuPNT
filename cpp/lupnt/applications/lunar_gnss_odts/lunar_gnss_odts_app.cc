@@ -47,10 +47,11 @@ namespace lupnt {
     // double-count the epoch and request ephemerides far outside the loaded kernels. Reset the
     // epoch to 0 for the precompute (matching RunAll and the standalone struct path), then
     // restore it so the rest of the run is unaffected.
-    Real saved_epoch = GetLupntEpoch();
-    SetLupntEpoch(0.0);
+    // RAII: restores the previous epoch even if PrecomputeLunarGnssODTSLinks
+    // throws. The former hand-rolled save/restore leaked the 0.0 process-wide
+    // on any exception.
+    ScopedLupntEpoch epoch_guard(Real(0.0));
     PrecomputeLunarGnssODTSLinks(cfg_);
-    SetLupntEpoch(saved_epoch);
   }
 
   void LunarGnssOdtsApp::RunAll() {

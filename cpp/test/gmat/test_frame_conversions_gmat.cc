@@ -13,7 +13,7 @@ using namespace Catch::Matchers;
 // ============================================================================
 // Cross-validation against GMAT
 //
-// The reference values below were generated once via GMAT (R2022a) and
+// The reference values below were generated once via GMAT (R2026a) and
 // checked into `cpp/test/gmat/data/gmat_reference.json` by
 // `cpp/test/gmat/gen_gmat_reference.py`. This test does **not** require
 // GMAT to run -- see `cpp/test/gmat/README.md` for how the fixture was
@@ -97,10 +97,15 @@ TEST_CASE("conversions.frame_conversions_gmat_reference") {
 // ----------------------------------------------------------------------------
 // Moon-centered frames
 //
-// GMAT R2022a ships DE405/DE421/DE424 (no DE440); the fixture was generated
-// with DE421, the closest to LuPNT's DE440. The dominant difference in both
-// comparisons below is therefore the DE421 vs DE440 lunar-ephemeris offset
-// (observed ~55-85 m in the 2024-2025 epochs), not a frame-modeling error.
+// GMAT R2026a still ships only up to DE424 (no DE440), so it is pointed at
+// LuPNT's own de440.bsp via SPICE
+// (SolarSystem.EphemerisSource='SPICE'; SolarSystem.SPKFilename=<de440.bsp>).
+// Both sides therefore evaluate the same DE440 lunar ephemeris, so the former
+// DE421-vs-DE440 offset is gone: the residual in both comparisons below is now
+// at the ephemeris distribution / interpolation level (GMAT's SPICE reader vs
+// LuPNT's), the same class as the Orekit MOON_CI comparison, not a DE-version
+// or frame-modeling error. The 200 m / 300 m tolerances below are unchanged
+// and now pass with extra margin.
 // ----------------------------------------------------------------------------
 TEST_CASE("conversions.moon_frames_gmat_reference") {
   nlohmann::json data = LoadTestJson("gmat/data/gmat_reference.json");
@@ -115,11 +120,12 @@ TEST_CASE("conversions.moon_frames_gmat_reference") {
 
     DYNAMIC_SECTION("epoch " << epoch << ", r_moon_ci = " << rv_moon_ci_ref.head<3>().transpose()) {
       // GCRF -> MOON_CI is a pure translation by the Earth->Moon ephemeris
-      // vector: LuPNT evaluates DE440, GMAT evaluated DE421, and the two
-      // ephemerides differ by ~55-85 m (position) / ~2e-4 m/s (velocity)
-      // at these epochs. 200 m / 1e-3 m/s gives ~2.5-5x margin while still
-      // catching any real error (wrong center, wrong frame, km-vs-m),
-      // which would show up at 1e3-1e8 m scale.
+      // vector: LuPNT and GMAT now both evaluate DE440 (GMAT reads LuPNT's
+      // de440.bsp through SPICE), so the two Earth->Moon vectors agree at the
+      // ephemeris distribution / interpolation level rather than a DE-version
+      // offset. 200 m / 1e-3 m/s leaves ample margin while still catching any
+      // real error (wrong center, wrong frame, km-vs-m), which would show up
+      // at 1e3-1e8 m scale.
       Vec6 rv_moon_ci = ConvertFrame(t_tdb, rv_gcrf, Frame::GCRF, Frame::MOON_CI);
       for (int i = 0; i < 3; i++) {
         RequireNear(rv_moon_ci(i), rv_moon_ci_ref(i), 200.0);         // [m]
@@ -132,12 +138,12 @@ TEST_CASE("conversions.moon_frames_gmat_reference") {
 
       // GMAT's Luna "BodyFixed" axes use a DE-era lunar *principal axes*
       // frame (GMAT loads a SPICE Luna frame kernel), so it is compared
-      // against LuPNT's MOON_PA (DE440 principal axes). The observed
-      // difference (~55-90 m, ~1e-3 m/s) is dominated by the same DE421 vs
-      // DE440 translation as the MOON_CI comparison above, i.e. the PA
-      // *orientations* agree at the sub-arcsecond level. Note: comparing
-      // against LuPNT's MOON_ME instead fails by ~10-40x more
-      // (~0.6-3.4 km), confirming GMAT's Luna BodyFixed is the
+      // against LuPNT's MOON_PA (DE440 principal axes). With both sides now on
+      // DE440 the Moon-position translation agrees at the ephemeris
+      // distribution / interpolation level, and the PA *orientations* agree at
+      // the sub-arcsecond level, so the residual is well under the 300 m
+      // tolerance. Note: comparing against LuPNT's MOON_ME instead fails by
+      // ~10-40x more (~0.6-3.4 km), confirming GMAT's Luna BodyFixed is the
       // principal-axes frame, complementary to the Orekit comparison
       // (which validates MOON_ME against the IAU model).
       Vec6 rv_moon_pa = ConvertFrame(t_tdb, rv_gcrf, Frame::GCRF, Frame::MOON_PA);

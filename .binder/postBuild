@@ -1,5 +1,5 @@
 # Get LuPNT data
-curl -L https://bit.ly/LuPNT_data -o LuPNT_data.zip
+curl -L https://github.com/Stanford-NavLab/LuPNT/releases/download/data-2026-07-30/LuPNT_data.zip -o LuPNT_data.zip
 unzip LuPNT_data.zip
 rm LuPNT_data.zip
 

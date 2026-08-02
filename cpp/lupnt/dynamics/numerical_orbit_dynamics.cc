@@ -33,6 +33,24 @@ namespace lupnt {
   using BodyFactory = AssetFactory<Body, YAML::Node&>;
 
   namespace {
+    /// @brief Indirect (frame-origin) acceleration of a third body.
+    ///
+    /// A frame-relative acceleration is the difference between the acceleration of the
+    /// spacecraft and that of the frame's centre. When an attracting body is *not* that
+    /// centre it pulls on the centre too, so the direct term must be corrected by
+    /// `-GM s / |s|^3`, with `s` the body's position in the integration frame. This is the
+    /// second half of the classical third-body formula that `AccelerationPointMass`
+    /// already applies; the spherical-harmonic path needs it just as much, and omitting it
+    /// there costs `GM / |s|^2` -- for Earth seen from a Moon-centred frame,
+    /// 2.7e-3 m/s^2, eight orders of magnitude above the J2 term the harmonics add.
+    ///
+    /// Returns zero when the body *is* the frame centre (`s = 0`), which is the common
+    /// case of a central body carrying its own gravity field.
+    Vec3 IndirectTerm(const Vec3& s, Real GM) {
+      if (s.norm() <= EPS) return Vec3::Zero();
+      return -GM * s / pow(s.norm(), 3);
+    }
+
     std::string LowerUnitName(std::string value) {
       std::transform(value.begin(), value.end(), value.begin(),
                      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
@@ -546,6 +564,29 @@ namespace lupnt {
     return AccelerationRelativisticNBody(r_ssb, v_ssb, r_bodies, v_bodies, mu_bodies, constants.C);
   }
 
+  Vec3 NBodyDynamics::AccelerationSrp(Real t_tdb, const Vec3& r) const {
+    PhysicalConstants constants = GetPhysicalConstants(units_);
+
+    // Radiation pressure from the configured irradiance rather than the built-in default.
+    // `solar_flux_` and `C` are SI, so the SI pressure is scaled into `units_` here.
+    Real p_sun = units_.Pressure(solar_flux_ / C);
+
+    // The Sun's position must share an origin with `r` (the integration frame's centre) for
+    // the Sun->spacecraft direction to be correct.
+    Vec3 r_sun = GetBodyPos(t_tdb, BodyId::SUN, frame_, units_);
+
+    // Any body other than the Sun can occult it. Shadowing is multiplicative across
+    // occulters, and each body's illumination must be evaluated in that body's own frame.
+    Real illumination = 1.0;
+    for (const auto& body : bodies_) {
+      if (body.id == BodyId::SUN) continue;
+      Vec3 r_body = GetBodyPos(t_tdb, body.id, frame_, units_);  // zero for the frame centre
+      illumination *= Illumination(r - r_body, r_sun - r_body, body.R);
+    }
+
+    return illumination * AccelerationSolarRadiation(r, r_sun, GetSrpCoeff(), p_sun, constants.AU);
+  }
+
   VecX NBodyDynamics::ComputeRates(Real t, const State& rv) const {
     Real t_tdb = t + GetLupntEpoch();
     LUPNT_CHECK(frame_ != Frame::UNDEFINED, "Frame not set", "NBodyDynamics");
@@ -573,22 +614,13 @@ namespace lupnt {
         auto [R_bf_to_frame, translation]
             = GetFrameRotationTranslation(t_tdb, body.fixed_frame, frame_);
         (void)translation;
-        Vec3 ai = R_bf_to_frame * a_bf;
+        Vec3 r_body = GetBodyPos(t_tdb, body.id, frame_, units_);
+        Vec3 ai = R_bf_to_frame * a_bf + IndirectTerm(r_body, grav.GM);
         a += ai;
       } else {
         Vec3 r_body = GetBodyPos(t_tdb, body.id, frame_, units_);
         Vec3 ai = AccelerationPointMass(rv.head(3), r_body, body.GM);
         a += ai;
-      }
-
-      // Solar radiation pressure
-      if (use_srp_ && body.id != BodyId::SUN) {
-        Vec3 r_sun = GetBodyPos(t_tdb, body.id, BodyId::SUN, frame_, units_);
-        PhysicalConstants constants = GetPhysicalConstants(units_);
-        Vec3 a_srp
-            = Illumination(r, r_sun, body.R)
-              * AccelerationSolarRadiation(r, r_sun, GetSrpCoeff(), constants.P_SUN, constants.AU);
-        a += a_srp;
       }
 
       // Atmospheric drag
@@ -603,6 +635,9 @@ namespace lupnt {
         a += AccelerationFromSI(a_drag_si, units_);
       }
     }
+
+    // Solar radiation pressure: one term for the spacecraft, not one per body.
+    if (use_srp_) a += AccelerationSrp(t_tdb, r);
 
     if (use_relativity_) {
       a += RelativisticNBodyAcceleration(t_tdb, r, v);
@@ -623,7 +658,6 @@ namespace lupnt {
 
     std::map<std::string, Vec3> acc;
 
-    Vec3 a_srp = Vec3::Zero();
     Vec3 a_drag = Vec3::Zero();
 
     for (const auto& body : bodies_) {
@@ -637,7 +671,11 @@ namespace lupnt {
         auto [R_bf_to_frame, translation]
             = GetFrameRotationTranslation(t_tdb, body.fixed_frame, frame_);
         (void)translation;
-        acc[body.name + "_gravity"] = R_bf_to_frame * a_bf_central;
+        // The central term carries the indirect (frame-origin) contribution, so
+        // `<body>_gravity` matches what the point-mass branch reports for the same body
+        // and the `_Jn`/`_Cnm`/`_nonspherical` keys stay purely non-spherical.
+        Vec3 r_body = GetBodyPos(t_tdb, body.id, frame_, units_);
+        acc[body.name + "_gravity"] = R_bf_to_frame * a_bf_central + IndirectTerm(r_body, grav.GM);
 
         if (decompose_gravity) {
           // The gravity-field acceleration is linear in the spherical-harmonic
@@ -666,15 +704,6 @@ namespace lupnt {
         acc[body.name + "_gravity"] = AccelerationPointMass(r, r_body, body.GM);
       }
 
-      // Solar radiation pressure
-      if (use_srp_ && body.id != BodyId::SUN) {
-        Vec3 r_sun = GetBodyPos(t_tdb, body.id, BodyId::SUN, frame_, units_);
-        PhysicalConstants constants = GetPhysicalConstants(units_);
-        a_srp
-            += Illumination(r, r_sun, body.R)
-               * AccelerationSolarRadiation(r, r_sun, GetSrpCoeff(), constants.P_SUN, constants.AU);
-      }
-
       // Atmospheric drag
       if (use_drag_ && body.id == BodyId::EARTH) {
         Real tt = ConvertTime(t_tdb, Time::TDB, Time::TT);
@@ -687,7 +716,8 @@ namespace lupnt {
       }
     }
 
-    if (use_srp_) acc["srp"] = a_srp;
+    // Solar radiation pressure: one term for the spacecraft, not one per body.
+    if (use_srp_) acc["srp"] = AccelerationSrp(t_tdb, r);
     if (use_drag_) acc["drag"] = a_drag;
 
     if (use_relativity_) {

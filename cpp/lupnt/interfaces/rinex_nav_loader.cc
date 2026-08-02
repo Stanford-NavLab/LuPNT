@@ -118,9 +118,19 @@ namespace lupnt {
       std::string auth_arg;
       if (has_env_auth) auth_arg = "-u \"$EARTHDATA_USERNAME:$EARTHDATA_PASSWORD\" ";
 
+      // See the identical comment in sp3_loader.cc's DownloadToFileEarthdata: NASA's URS OAuth
+      // redirect chain hands off session state via a cookie, so without -c/-b persisting it
+      // across redirects, the final hop loops back to an unauthenticated request and restarts
+      // the OAuth dance until curl's 50-redirect limit is hit -- even with correct credentials.
+      const char* home = std::getenv("HOME");
+      std::string cookie_jar = home != nullptr
+                                   ? std::string(home) + "/.urs_cookies"
+                                   : (dest_path.parent_path() / ".urs_cookies").string();
+
       std::string cmd = fmt::format(
-          "curl -fsSL --netrc-optional {}--connect-timeout 10 --max-time 600 -o {} {}", auth_arg,
-          ShellQuote(tmp_path.string()), ShellQuote(url));
+          "curl -fsSL --netrc-optional -c {0} -b {0} {1}--connect-timeout 10 --max-time 600 -o "
+          "{2} {3}",
+          ShellQuote(cookie_jar), auth_arg, ShellQuote(tmp_path.string()), ShellQuote(url));
 
       bool ok = RunShellCommand(cmd) && std::filesystem::exists(tmp_path)
                 && std::filesystem::file_size(tmp_path) > 0;

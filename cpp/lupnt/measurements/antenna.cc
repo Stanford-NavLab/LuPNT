@@ -10,6 +10,7 @@
  */
 #include "lupnt/measurements/antenna.h"
 
+#include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <sstream>
@@ -171,6 +172,32 @@ namespace lupnt {
   }
 
   VEC_IMP_REAL_REAL(Antenna::ComputeGain)
+
+  Real Antenna::ComputeGainAzimuthAveraged(Real phi) const {
+    if (n_dim_ == 0) return 0.0;                    // Omni-directional
+    if (n_dim_ == 1) return ComputeGain(0.0, phi);  // Already azimuth-symmetric
+
+    Real phi_deg = WrapToPi(phi) * DEG;
+    if (phi_deg > phi_max_ || phi_deg < -phi_max_) return NAN;  // Outside coverage
+
+    // Average over the stored azimuth grid in *linear* power (the EIRP-preserving
+    // average), dropping a duplicated 360-deg endpoint if the grid wraps.
+    int m = static_cast<int>(theta_.size());
+    if (m >= 2 && std::abs(theta_(m - 1) - 360.0) < 1e-6 && std::abs(theta_(0)) < 1e-6) m -= 1;
+    Real sum_lin = 0.0;
+    int n = 0;
+    for (int j = 0; j < m; ++j) {
+      Real g = ComputeGain(theta_(j) * RAD, phi);
+      if (std::isfinite(g.val())) {
+        sum_lin += pow(10.0, g / 10.0);
+        ++n;
+      }
+    }
+    if (n == 0) return NAN;
+    return 10.0 * log10(sum_lin / Real(n));
+  }
+
+  VEC_IMP_REAL(Antenna::ComputeGainAzimuthAveraged)
 
   Real Antenna::ComputeGain(const Vec3& direction) const {
     Vec3 dir = direction.normalized();

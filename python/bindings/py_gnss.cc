@@ -401,7 +401,17 @@ void InitGnss(py::module& m) {
       .def_readwrite("L_ad", &GnssReceiverParams::L_ad, "A/D converter loss [dB]")
       .def_readwrite("L_pol", &GnssReceiverParams::L_pol, "Polarization loss [dB]")
       .def_readwrite("L_atm", &GnssReceiverParams::L_atm, "Atmospheric loss [dB]")
-      .def_readwrite("T_eff", &GnssReceiverParams::T_eff, "Effective noise temperature [K]");
+      .def_readwrite("T_eff", &GnssReceiverParams::T_eff, "Effective noise temperature [K]")
+      .def_readwrite(
+          "sigma_pr_eph_m", &GnssReceiverParams::sigma_pr_eph_m,
+          "GNSS broadcast ephemeris pseudorange error, 1-sigma [m] (RSS'd with DLL noise)")
+      .def_readwrite("sigma_pr_clk_m", &GnssReceiverParams::sigma_pr_clk_m,
+                     "GNSS broadcast clock pseudorange error, 1-sigma [m] (RSS'd with DLL noise)")
+      .def_readwrite(
+          "allan_deviation", &GnssReceiverParams::allan_deviation,
+          "Reference-oscillator Allan deviation [-] (carrier-phase noise, RSS'd with PLL)")
+      .def_readwrite("sigma_vib_deg", &GnssReceiverParams::sigma_vib_deg,
+                     "Vibration-induced carrier-phase noise, 1-sigma [deg] (RSS'd with PLL noise)");
 
   // ---- GnssOccludingBody -----------------------------------------------------
 
@@ -438,42 +448,56 @@ void InitGnss(py::module& m) {
 
   // ---- GnssMeasurementOptions ------------------------------------------------
 
-  py::class_<GnssMeasurementOptions>(
-      m, "GnssMeasurementOptions",
-      "Configuration for GNSS measurement construction: frames, time "
-      "scales, and light-time/relativity/visibility/CN0 modeling "
-      "toggles used by BuildChannels()/Compute()")
-      .def(py::init<>(), "Construct with default measurement options")
-      .def_readwrite("frame", &GnssMeasurementOptions::frame,
-                     "Frame in which receiver and transmitter states are expressed")
-      .def_readwrite("receive_time_scale", &GnssMeasurementOptions::receive_time_scale,
-                     "Time scale of the receiver signal-reception epochs passed to "
-                     "Compute()/Precompute()")
-      .def_readwrite("ephemeris_time_scale", &GnssMeasurementOptions::ephemeris_time_scale,
-                     "Time scale in which the constellation ephemeris epochs are represented")
-      .def_readwrite("solve_light_time", &GnssMeasurementOptions::solve_light_time,
-                     "Iteratively solve the transmit epoch for signal light-time delay")
-      .def_readwrite("apply_transmitter_relativity",
-                     &GnssMeasurementOptions::apply_transmitter_relativity,
-                     "Apply the transmitter special-relativistic clock correction")
-      .def_readwrite("apply_shapiro_delay", &GnssMeasurementOptions::apply_shapiro_delay,
-                     "Apply the Shapiro (gravitational) signal-propagation delay [m]")
-      .def_readwrite("apply_visibility", &GnssMeasurementOptions::apply_visibility,
-                     "Drop channels occluded by the configured occluding bodies")
-      .def_readwrite("apply_cn0_threshold", &GnssMeasurementOptions::apply_cn0_threshold,
-                     "Drop channels whose CN0 falls below the acquisition/tracking thresholds")
-      .def_readwrite("cn0_threshold_dbhz", &GnssMeasurementOptions::cn0_threshold_dbhz,
-                     "Deprecated single CN0 threshold [dBHz]; use the acquisition/tracking "
-                     "thresholds below")
-      .def_readwrite("cn0_acquisition_threshold_dbhz",
-                     &GnssMeasurementOptions::cn0_acquisition_threshold_dbhz,
-                     "Min CN0 to acquire a new satellite [dBHz]")
-      .def_readwrite("cn0_tracking_threshold_dbhz",
-                     &GnssMeasurementOptions::cn0_tracking_threshold_dbhz,
-                     "Min CN0 to maintain an existing lock [dBHz]")
-      .def_readwrite("apply_ionosphere_plasma_delay",
-                     &GnssMeasurementOptions::apply_ionosphere_plasma_delay,
-                     "Apply the ionosphere/plasmasphere signal delay [m]");
+  auto py_gnss_meas_opts
+      = py::class_<GnssMeasurementOptions>(
+            m, "GnssMeasurementOptions",
+            "Configuration for GNSS measurement construction: frames, time "
+            "scales, and light-time/relativity/visibility/CN0 modeling "
+            "toggles used by BuildChannels()/Compute()")
+            .def(py::init<>(), "Construct with default measurement options")
+            .def_readwrite("frame", &GnssMeasurementOptions::frame,
+                           "Frame in which receiver and transmitter states are expressed")
+            .def_readwrite("receive_time_scale", &GnssMeasurementOptions::receive_time_scale,
+                           "Time scale of the receiver signal-reception epochs passed to "
+                           "Compute()/Precompute()")
+            .def_readwrite("ephemeris_time_scale", &GnssMeasurementOptions::ephemeris_time_scale,
+                           "Time scale in which the constellation ephemeris epochs are represented")
+            .def_readwrite("solve_light_time", &GnssMeasurementOptions::solve_light_time,
+                           "Iteratively solve the transmit epoch for signal light-time delay")
+            .def_readwrite("apply_transmitter_relativity",
+                           &GnssMeasurementOptions::apply_transmitter_relativity,
+                           "Apply the transmitter special-relativistic clock correction")
+            .def_readwrite("apply_shapiro_delay", &GnssMeasurementOptions::apply_shapiro_delay,
+                           "Apply the Shapiro (gravitational) signal-propagation delay [m]")
+            .def_readwrite("apply_visibility", &GnssMeasurementOptions::apply_visibility,
+                           "Drop channels occluded by the configured occluding bodies")
+            .def_readwrite(
+                "apply_cn0_threshold", &GnssMeasurementOptions::apply_cn0_threshold,
+                "Drop channels whose CN0 falls below the acquisition/tracking thresholds")
+            .def_readwrite("cn0_threshold_dbhz", &GnssMeasurementOptions::cn0_threshold_dbhz,
+                           "Deprecated single CN0 threshold [dBHz]; use the acquisition/tracking "
+                           "thresholds below")
+            .def_readwrite("cn0_acquisition_threshold_dbhz",
+                           &GnssMeasurementOptions::cn0_acquisition_threshold_dbhz,
+                           "Min CN0 to acquire a new satellite [dBHz]")
+            .def_readwrite("cn0_tracking_threshold_dbhz",
+                           &GnssMeasurementOptions::cn0_tracking_threshold_dbhz,
+                           "Min CN0 to maintain an existing lock [dBHz]")
+            .def_readwrite("apply_ionosphere_plasma_delay",
+                           &GnssMeasurementOptions::apply_ionosphere_plasma_delay,
+                           "Apply the ionosphere/plasmasphere signal delay [m]")
+            .def_readwrite("tx_gain_model", &GnssMeasurementOptions::tx_gain_model,
+                           "Transmitter antenna-gain model for the C/N0 link budget: FULL_2D "
+                           "(yaw-steered 2D pattern) or AZIMUTH_AVERAGED (off-boresight-only, "
+                           "for unknown-yaw scenarios)");
+
+  py::enum_<GnssMeasurementOptions::TxGainModel>(
+      py_gnss_meas_opts, "TxGainModel",
+      "Transmitter antenna-gain model used to evaluate G_tx in the C/N0 link budget")
+      .value("FULL_2D", GnssMeasurementOptions::TxGainModel::FULL_2D,
+             "Full 2D pattern at the yaw-steered off-boresight/azimuth angles")
+      .value("AZIMUTH_AVERAGED", GnssMeasurementOptions::TxGainModel::AZIMUTH_AVERAGED,
+             "Azimuth-averaged pattern (off-boresight only); unknown-yaw scenarios");
 
   // ---- GnssChannel -----------------------------------------------------------
 
@@ -486,9 +510,9 @@ void InitGnss(py::module& m) {
       .def_readwrite("prn", &GnssChannel::prn, "Transmitter satellite PRN")
       .def_readwrite("frequency", &GnssChannel::frequency, "Carrier frequency band of this channel")
       .def_readwrite("receive_time", &GnssChannel::receive_time,
-                     "Signal-reception epoch [s] in receive_time_scale")
+                     "Signal-reception Epoch (carries its own time scale)")
       .def_readwrite("transmit_time", &GnssChannel::transmit_time,
-                     "Signal-transmission epoch [s] in transmit_time_scale")
+                     "Signal-transmission Epoch (carries its own time scale)")
       .def_property(
           "tx_state", [](const GnssChannel& ch) -> VecXd { return ch.tx_state.cast<double>(); },
           [](GnssChannel& ch, const VecXd& v) { ch.tx_state = v.cast<Real>(); },
@@ -511,7 +535,7 @@ void InitGnss(py::module& m) {
                                     "channels plus their stacked observable values/Jacobian")
       .def(py::init<>(), "Construct an empty measurement epoch")
       .def_readwrite("receive_time", &GNSSMeasurementsEpoch::receive_time,
-                     "Receiver signal-reception epoch [s] in receive_time_scale")
+                     "Receiver signal-reception Epoch (carries its own time scale)")
       .def_readwrite("channels", &GNSSMeasurementsEpoch::channels,
                      "Visible/usable GNSS channels at this epoch");
 
@@ -588,7 +612,17 @@ void InitGnss(py::module& m) {
           [](const GnssConstellation& gc, int prn, GnssFreq freq) -> double {
             return static_cast<double>(gc.GetTransmitPowerDbw(prn, freq));
           },
-          py::arg("prn"), py::arg("freq"), "Transmit power [dB-W] for `prn` and `freq`");
+          py::arg("prn"), py::arg("freq"), "Transmit power [dB-W] for `prn` and `freq`")
+      .def("set_transmitter_antenna", &GnssConstellation::SetTransmitterAntenna, py::arg("prn"),
+           py::arg("freq"), py::arg("antenna"),
+           "Override the transmit antenna pattern for `prn`/`freq` (after setup_transmitters)")
+      .def(
+          "set_transmit_power_dbw",
+          [](GnssConstellation& gc, int prn, GnssFreq freq, double power_dbw) {
+            gc.SetTransmitPower(prn, freq, Real(power_dbw));
+          },
+          py::arg("prn"), py::arg("freq"), py::arg("power_dbw"),
+          "Override the transmit power [dB-W] for `prn`/`freq` (after setup_transmitters)");
 
   // ---- GNSSMeasurements ------------------------------------------------------
 

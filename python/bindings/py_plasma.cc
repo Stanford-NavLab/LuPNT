@@ -81,6 +81,27 @@ static void bind_time(py::module& m) {
         "Convert longitude [rad] to local time [hours].");
   m.def("lt_to_long", &lt_to_long, py::arg("amlt"),
         "Convert magnetic local time [hours] to longitude [rad].");
+
+  // Solar-magnetic <-> geographic (Earth-fixed) Cartesian, positions in Earth radii.
+  // itime = [year*1000+doy, milliseconds-of-day] (see datetime_to_itime).
+  m.def(
+      "sm_to_geo",
+      [](std::array<int, 2> itime, std::array<double, 3> pos_sm) {
+        std::array<double, 3> pos_geo;
+        sm_to_geo(itime, pos_sm, pos_geo);
+        return pos_geo;
+      },
+      py::arg("itime"), py::arg("pos_sm"),
+      "Convert a solar-magnetic position [RE] to geographic/ECEF [RE] at the given itime.");
+  m.def(
+      "geo_to_sm",
+      [](std::array<int, 2> itime, std::array<double, 3> pos_geo) {
+        std::array<double, 3> pos_sm;
+        geo_to_sm(itime, pos_geo, pos_sm);
+        return pos_sm;
+      },
+      py::arg("itime"), py::arg("pos_geo"),
+      "Convert a geographic/ECEF position [RE] to solar-magnetic [RE] at the given itime.");
 }
 
 // ---- bind_gcpm ------------------------------------------------------------
@@ -95,12 +116,28 @@ static void set_iri_model_(const std::string& model_name) {
   }
 }
 
+static void set_iono_model_(const std::string& model_name) {
+  if (model_name == "GCPM") {
+    set_iono_model(IonoModel::GCPM);
+  } else if (model_name == "NeQuickG" || model_name == "NEQUICK_G") {
+    set_iono_model(IonoModel::NEQUICK_G);
+  } else if (model_name == "NEDM2020" || model_name == "NEDM") {
+    set_iono_model(IonoModel::NEDM2020);
+  } else {
+    throw std::invalid_argument("Invalid iono model name. Available: GCPM, NeQuickG, NEDM2020.");
+  }
+}
+
 static void bind_gcpm(py::module& m) {
   py::class_<IRI2007Option>(m, "IRI2007Option", "Configuration flags for the IRI-2007 model.")
       .def(py::init<>())
       .def_readwrite("R12", &IRI2007Option::R12,
                      "R12 sunspot index; >0 uses the value, -1 historical/projected (with storm "
                      "model), -2 without storm model.")
+      .def_readwrite("compute_teti", &IRI2007Option::compute_teti,
+                     "Compute electron/ion temperatures (default false; GCPM does not use them).")
+      .def_readwrite("compute_ni", &IRI2007Option::compute_ni,
+                     "Compute ion composition (default false; GCPM does not use it).")
       .def("update_jf_2007", &IRI2007Option::update_jf_2007,
            "Rebuild the internal IRI-2007 jf option flags from the current fields.");
 
@@ -123,6 +160,29 @@ static void bind_gcpm(py::module& m) {
   m.def("set_iri_model", &set_iri_model_, py::arg("model_name") = "IRI2007",
         "Select the IRI ionosphere model (\"IRI2007\" or \"IRI2020\").");
   m.def("get_iri_model", &get_iri_model_str, "Name of the currently selected IRI model.");
+  m.def("set_iono_model", &set_iono_model_, py::arg("model_name") = "GCPM",
+        "Select the electron-density backend for ray tracing (\"GCPM\", \"NeQuickG\", or "
+        "\"NEDM2020\"). NeQuickG requires building LuPNT with -DLUPNT_ENABLE_NEQUICK=ON.");
+  m.def("get_iono_model", &get_iono_model_str,
+        "Name of the currently selected electron-density backend "
+        "(\"GCPM\", \"NeQuickG\", or \"NEDM2020\").");
+  // NEDM2020 sub-models (geographic lat/lon [deg], doy, decimal UT [h], F10.7 [sfu]).
+  // Only exposed when the separately-gated NEDM backend is compiled in
+  // (-DLUPNT_ENABLE_NEDM=ON); excluded from the default (MIT) build.
+#ifdef LUPNT_HAS_NEDM
+  m.def("nedm_ne", &nedm::nedm_ne, py::arg("lat_deg"), py::arg("lon_deg"), py::arg("h_km"),
+        py::arg("doy"), py::arg("ut_hour"), py::arg("f107"),
+        "NEDM2020 ionospheric electron density [m^-3] (E-layer + F-layer Chapman).");
+  m.def("nedm_ntcm_vtec", &nedm::ntcm_vtec, py::arg("lat_deg"), py::arg("lon_deg"), py::arg("doy"),
+        py::arg("ut_hour"), py::arg("f107"), "NTCM-GL vertical TEC [TECU].");
+  m.def("nedm_nmf2", &nedm::npdm_nmf2, py::arg("lat_deg"), py::arg("lon_deg"), py::arg("doy"),
+        py::arg("ut_hour"), py::arg("f107"), "NPDM peak F2 electron density NmF2 [m^-3].");
+  m.def("nedm_hmf2", &nedm::nphm_hmf2, py::arg("lat_deg"), py::arg("lon_deg"), py::arg("doy"),
+        py::arg("ut_hour"), py::arg("f107"), "NPHM peak F2 height hmF2 [km].");
+  m.def("nedm_plasmasphere_ne", &nedm::plasmasphere_ne, py::arg("lat_deg"), py::arg("lon_deg"),
+        py::arg("h_km"), py::arg("doy"), py::arg("ut_hour"), py::arg("f107"),
+        "NPSM plasmasphere electron density [m^-3] (Path-B surrogate).");
+#endif  // LUPNT_HAS_NEDM
   m.def("set_iri2007_option", &set_iri2007_option, py::arg("option"),
         "Set the global IRI-2007 configuration.");
   m.def("set_iri2020_option", &set_iri2020_option, py::arg("option"),
@@ -185,6 +245,20 @@ static void bind_orbit(py::module& m) {
 // ---- bind_tec -------------------------------------------------------------
 
 static void bind_tec(py::module& m) {
+  py::enum_<NeQuickAzMode>(m, "NeQuickAzMode",
+                           "How NeQuick-G Effective Ionisation Level Az is set.")
+      .value("FROM_F107", NeQuickAzMode::FROM_F107, "Az = F10.7 from the IRI/GCPM pipeline.")
+      .value("EXPLICIT", NeQuickAzMode::EXPLICIT, "Az from az_sfu, or ai[] at the point's MODIP.");
+
+  py::class_<NeQuickSolarConfig>(m, "NeQuickSolarConfig",
+                                 "Solar-activity driver for the NeQuick-G backend.")
+      .def(py::init<>())
+      .def_readwrite("mode", &NeQuickSolarConfig::mode, "Az selection mode (NeQuickAzMode).")
+      .def_readwrite("az_sfu", &NeQuickSolarConfig::az_sfu,
+                     "Constant Az [sfu] used when mode=EXPLICIT and >= 0.")
+      .def_readwrite("ai", &NeQuickSolarConfig::ai,
+                     "Broadcast-style ai0/ai1/ai2 (Az vs MODIP), used when az_sfu < 0.");
+
   py::class_<RayTraceConfig>(m, "RayTraceConfig", "Configuration for ionospheric ray tracing.")
       .def(py::init<>())
       .def_readwrite("freq_Hz", &RayTraceConfig::freq_Hz, "Signal frequency [Hz].")
@@ -208,7 +282,14 @@ static void bind_tec(py::module& m) {
                      "Compute second-order (and higher) delays.")
       .def_readwrite("use_adaptive_step", &RayTraceConfig::use_adaptive_step,
                      "Use adaptive step-size control.")
-      .def_readwrite("straight_ray", &RayTraceConfig::straight_ray, "Assume a straight ray path.");
+      .def_readwrite("straight_ray", &RayTraceConfig::straight_ray, "Assume a straight ray path.")
+      .def_readwrite("nequick_solar", &RayTraceConfig::nequick_solar,
+                     "Solar-activity driver used when the NeQuickG backend is selected.")
+      .def_readwrite("nedm_f107", &RayTraceConfig::nedm_f107,
+                     "F10.7 [sfu] for the NEDM2020 backend; <0 uses the shared IRI F10.7.")
+      .def_readwrite("use_gcpm_surrogate", &RayTraceConfig::use_gcpm_surrogate,
+                     "Use the fast GCPM interpolation surrogate (requires rz12>0 and the "
+                     "gcpm_surrogate.bin table; falls back to full GCPM otherwise).");
 
   py::class_<PathProfile>(m, "PathProfile",
                           "Result of tracing a ray: per-step samples plus summary quantities.")

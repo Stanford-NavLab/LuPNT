@@ -198,4 +198,3 @@ observables:
        Real shapiro_m = channel.shapiro_delay_m;
        Real plasma_m = channel.ionosphere_plasma_delay_m;
      }
-

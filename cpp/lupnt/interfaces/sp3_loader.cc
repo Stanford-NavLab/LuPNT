@@ -101,9 +101,21 @@ namespace lupnt {
       std::string auth_arg;
       if (has_env_auth) auth_arg = "-u \"$EARTHDATA_USERNAME:$EARTHDATA_PASSWORD\" ";
 
+      // NASA's URS OAuth login redirects (cddis.nasa.gov -> urs.earthdata.nasa.gov ->
+      // cddis.nasa.gov/proxyauth -> back to the original URL) hand off session state via a
+      // cookie, not just the netrc-authenticated request. Without -c/-b persisting that
+      // cookie across the redirect chain, the final hop arrives back at cddis.nasa.gov with
+      // no session and restarts the OAuth dance -- an infinite loop that only stops at curl's
+      // 50-redirect limit ("Maximum (50) redirects followed"), even with correct credentials.
+      const char* home = std::getenv("HOME");
+      std::string cookie_jar = home != nullptr
+                                   ? std::string(home) + "/.urs_cookies"
+                                   : (dest_path.parent_path() / ".urs_cookies").string();
+
       std::string cmd = fmt::format(
-          "curl -fsSL --netrc-optional {}--connect-timeout 10 --max-time 600 -o {} {}", auth_arg,
-          ShellQuote(tmp_path.string()), ShellQuote(url));
+          "curl -fsSL --netrc-optional -c {0} -b {0} {1}--connect-timeout 10 --max-time 600 -o "
+          "{2} {3}",
+          ShellQuote(cookie_jar), auth_arg, ShellQuote(tmp_path.string()), ShellQuote(url));
 
       bool ok = RunShellCommand(cmd) && std::filesystem::exists(tmp_path)
                 && std::filesystem::file_size(tmp_path) > 0;

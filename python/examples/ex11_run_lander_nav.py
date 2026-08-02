@@ -38,20 +38,29 @@ def find_repo_root() -> Path:
 def series_frame(app) -> pd.DataFrame:
     d = {"t_s": np.asarray(app.time_s()).reshape(-1)}
     v3 = {
-        "pos_err": app.pos_err_enu(), "pos_sigma": app.pos_sigma_enu(),
-        "accel_bias_err": app.accel_bias_err(), "accel_bias_sigma": app.accel_bias_sigma(),
-        "gyro_bias_err": app.gyro_bias_err(), "gyro_bias_sigma": app.gyro_bias_sigma(),
-        "att_err_deg": app.att_err_deg(), "att_sigma_deg": app.att_sigma_deg(),
-        "traj_truth": app.traj_enu_truth(), "traj_est": app.traj_enu_est(),
+        "pos_err": app.pos_err_enu(),
+        "pos_sigma": app.pos_sigma_enu(),
+        "accel_bias_err": app.accel_bias_err(),
+        "accel_bias_sigma": app.accel_bias_sigma(),
+        "gyro_bias_err": app.gyro_bias_err(),
+        "gyro_bias_sigma": app.gyro_bias_sigma(),
+        "att_err_deg": app.att_err_deg(),
+        "att_sigma_deg": app.att_sigma_deg(),
+        "traj_truth": app.traj_enu_truth(),
+        "traj_est": app.traj_enu_est(),
     }
     for name, arr in v3.items():
         A = np.asarray(arr).reshape(-1, 3)
         for j, c in enumerate(["x", "y", "z"]):
             d[f"{name}_{c}"] = A[:, j]
-    for name, arr in [("pos_err_norm", app.pos_err_norm()), ("vel_err_norm", app.vel_err_norm()),
-                      ("clock_bias_err", app.clock_bias_err()),
-                      ("clock_bias_sigma", app.clock_bias_sigma()),
-                      ("alt_truth", app.alt_truth()), ("alt_est", app.alt_est())]:
+    for name, arr in [
+        ("pos_err_norm", app.pos_err_norm()),
+        ("vel_err_norm", app.vel_err_norm()),
+        ("clock_bias_err", app.clock_bias_err()),
+        ("clock_bias_sigma", app.clock_bias_sigma()),
+        ("alt_truth", app.alt_truth()),
+        ("alt_est", app.alt_est()),
+    ]:
         d[name] = np.asarray(arr).reshape(-1)
     d["n_visible_sat"] = np.asarray(app.n_visible_sat()).reshape(-1)
     d["n_craters"] = np.asarray(app.n_craters()).reshape(-1)
@@ -92,7 +101,8 @@ def main() -> None:
     if args.duration:
         cfg["duration"] = args.duration
         _app_of_class(cfg["agents"]["Lander"], "LanderGncApp")["duration_s"] = _hms_to_s(
-            args.duration)
+            args.duration
+        )
 
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -103,7 +113,8 @@ def main() -> None:
     series_frame(app).to_csv(outdir / "series_all.csv", index=False)
     craters = np.asarray(app.crater_enu()).reshape(-1, 2)
     pd.DataFrame({"east_m": craters[:, 0], "north_m": craters[:, 1]}).to_csv(
-        outdir / "craters.csv", index=False)
+        outdir / "craters.csv", index=False
+    )
     np.save(outdir / "dem_x.npy", np.asarray(app.dem_x()))
     np.save(outdir / "dem_y.npy", np.asarray(app.dem_y()))
     np.save(outdir / "dem_elevation.npy", np.asarray(app.dem_elevation()))
@@ -111,9 +122,11 @@ def main() -> None:
 
     # ---- Sensor ablation: disable one aiding source at a time ----
     abl = [("all sensors", {})]
-    abl += [("no craters", {"enable_craters": False}),
-            ("no altimeter", {"enable_altimeter": False}),
-            ("no LunaNet", {"enable_lunanet": False})]
+    abl += [
+        ("no craters", {"enable_craters": False}),
+        ("no altimeter", {"enable_altimeter": False}),
+        ("no LunaNet", {"enable_lunanet": False}),
+    ]
     rows = []
     for label, over in abl:
         c = yaml.safe_load(yaml.safe_dump(cfg))

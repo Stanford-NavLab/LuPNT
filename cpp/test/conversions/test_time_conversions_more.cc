@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <cmath>
 #include <string>
 
 #include "../utils.cc"
@@ -26,20 +27,29 @@ TEST_CASE("conversions.time_conversions_more.convert_time_identity") {
 TEST_CASE("conversions.time_conversions_more.convert_time_matches_direct_chains") {
   Real t = 2.5e7;
 
+  // ConvertTime now delegates to Epoch, which composes small offsets and only
+  // materialises an absolute epoch at the end; the hand-rolled chains below form
+  // an absolute at every step. Both are correct, but they round differently, so
+  // they can only agree to the ABSOLUTE-EPOCH ULP -- 5.5 ns at t = 2.5e7 s. The
+  // old 1e-9 tolerance was below the representable resolution and passed only
+  // because the two routes happened to round identically.
+  const double kUlp = std::abs(t.val()) * 2.220446049250313e-16;
+  const double kTol = std::max(1.0e-9, 4.0 * kUlp);
+
   SECTION("TT -> TDB equals the direct TtToTdb") {
-    REQUIRE_THAT(ConvertTime(t, Time::TT, Time::TDB).val(), WithinAbs(TtToTdb(t).val(), 1e-9));
+    REQUIRE_THAT(ConvertTime(t, Time::TT, Time::TDB).val(), WithinAbs(TtToTdb(t).val(), kTol));
   }
   SECTION("TAI -> TDB equals TtToTdb(TaiToTt)") {
     REQUIRE_THAT(ConvertTime(t, Time::TAI, Time::TDB).val(),
-                 WithinAbs(TtToTdb(TaiToTt(t)).val(), 1e-9));
+                 WithinAbs(TtToTdb(TaiToTt(t)).val(), kTol));
   }
   SECTION("GPS -> TT equals TaiToTt(GpsToTai)") {
     REQUIRE_THAT(ConvertTime(t, Time::GPS, Time::TT).val(),
-                 WithinAbs(TaiToTt(GpsToTai(t)).val(), 1e-9));
+                 WithinAbs(TaiToTt(GpsToTai(t)).val(), kTol));
   }
   SECTION("TCG -> TAI equals TtToTai(TcgToTt)") {
     REQUIRE_THAT(ConvertTime(t, Time::TCG, Time::TAI).val(),
-                 WithinAbs(TtToTai(TcgToTt(t)).val(), 1e-9));
+                 WithinAbs(TtToTai(TcgToTt(t)).val(), kTol));
   }
   SECTION("TCB -> GPS equals routing through TDB/TT/TAI") {
     Real via = TaiToGps(TtToTai(TDBToTt(TcbToTdb(t))));

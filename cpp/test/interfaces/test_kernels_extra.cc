@@ -77,3 +77,28 @@ TEST_CASE("interfaces.kernels_extra.tt_tdb_difference_not_implemented") {
   // GetTtTdbDifference is a declared-but-unimplemented stub; it must throw.
   REQUIRE_THROWS(GetTtTdbDifference(0.0));
 }
+
+// The vectorized GetLunarMantleData must agree row-for-row with the scalar
+// overload it delegates to. It previously divided the scalar result by M_KM a
+// second time, so every vectorized libration angle came out 1000x too small.
+// The bug was latent -- nothing in-tree called the vector overload -- but it is
+// public API in kernels.h.
+TEST_CASE("interfaces.kernels_extra.lunar_mantle_vector_matches_scalar") {
+  Real t = Epoch();
+
+  VecX ts(3);
+  ts << t, t + 3600.0, t + 7200.0;
+
+  MatX6 rows = GetLunarMantleData(ts);
+  for (int i = 0; i < ts.size(); ++i) {
+    Vec6 one = GetLunarMantleData(Real(ts(i)));
+    INFO("row " << i << " vector=" << rows(i, 0).val() << " scalar=" << one(0).val());
+    for (int j = 0; j < 6; ++j) {
+      REQUIRE(rows(i, j).val() == Approx(one(j).val()).epsilon(1e-12));
+    }
+  }
+
+  // The libration angles are radians of order unity, not milliradians: a
+  // second division by M_KM would put them near 1e-3 of this.
+  REQUIRE(std::abs(rows(0, 0).val()) > 1e-3);
+}

@@ -16,7 +16,9 @@
 #include "lupnt/environment/plasma/env/time_utils.h"
 #include "lupnt/environment/plasma/gcpm/constants_gcpm.h"
 #include "lupnt/environment/plasma/gcpm/gcpm_interface.h"
+#include "lupnt/environment/plasma/gcpm/gcpm_surrogate.h"
 #include "lupnt/environment/plasma/igrf/igrf_interface.h"
+#include "lupnt/environment/plasma/tec/iono_model.h"
 #include "lupnt/environment/plasma/tec/neldermead.h"
 
 namespace pecsim {
@@ -49,6 +51,16 @@ namespace pecsim {
   }
 
   double compute_ne(double t_j2000, const Vec3d& pos_geo, RayTraceConfig config, bool debug) {
+    // Dispatch to the electron-density backend selected via set_iono_model().
+    switch (get_iono_model()) {
+      case IonoModel::GCPM: return compute_ne_gcpm(t_j2000, pos_geo, config, debug);
+      case IonoModel::NEQUICK_G: return compute_ne_nequick(t_j2000, pos_geo, config, debug);
+      case IonoModel::NEDM2020: return compute_ne_nedm(t_j2000, pos_geo, config, debug);
+    }
+    return compute_ne_gcpm(t_j2000, pos_geo, config, debug);
+  }
+
+  double compute_ne_gcpm(double t_j2000, const Vec3d& pos_geo, RayTraceConfig config, bool debug) {
     // Extract configuration parameters
     double kp = config.kp;  // Kp index for the ionosphere model
     if (kp < 0) {
@@ -75,6 +87,19 @@ namespace pecsim {
     cart_to_pol(pos_sm, alatr, along, r);
     double amlt = 12.0 + along / AMLTRAD;
     if (amlt > 24.0) amlt -= 24.0;
+
+    // Fast hybrid path (opt-in): use the interpolation surrogate above the
+    // ionosphere (r >= kGcpmSurrogateRMin), where GCPM is plasmasphere-organized
+    // and interpolates cleanly, and fall through to full GCPM below, where the
+    // sharp, geographic F-region is not representable by an SM-coordinate grid.
+    // Needs a positive R12 in the sampled range and the table file present.
+    constexpr double kGcpmSurrogateRMin = 1.15;  // ~955 km altitude
+    if (config.use_gcpm_surrogate && config.rz12 > 0 && r >= kGcpmSurrogateRMin
+        && GcpmSurrogate::instance().loaded()) {
+      double ut = datetime.hour + datetime.min / 60.0 + datetime.sec / 3600.0;
+      return GcpmSurrogate::instance().eval(r, alatr * RAD2DEG, amlt, ut, kp, config.rz12,
+                                            datetime.doy);
+    }
 
     std::vector<double> out;
 

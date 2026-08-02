@@ -82,3 +82,14 @@ docs/cpp_api/
 docs/python_api/
 docs/_out/
 docs/_preview/
+
+# Private manuscript sources — kept local, never committed to the public repo.
+projects/papers/
+
+# Generated coverage report (pytest-cov Cobertura output)
+coverage-py.xml
+coverage-*.xml
+
+# Stale root-level copy of the data bundle (the live one is data/LuPNT_data, ignored above).
+# Untracked + unignored, it made `git status`/`git add` walk ~859 MB and hang.
+/LuPNT_data/

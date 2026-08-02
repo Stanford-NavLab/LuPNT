@@ -82,12 +82,12 @@ agents:
       receiver_app:
         rate_hz: 1.0
       constellation:
-        sp3_directory: data/LuPNT_data/ephemeris/gnsslibpy/sp3
+        sp3_directory: data/LuPNT_data/gnss/sp3
         antex_file: data/LuPNT_data/gnss/igs20.atx
         auto_select_sp3: true
         use_all_gps: true
         include_galileo: true
-        brdc_directory: data/LuPNT_data/ephemeris/gnsslibpy/brdc
+        brdc_directory: data/LuPNT_data/gnss/brdc
         use_broadcast_ephemeris: true
         debias_broadcast_clock: true
         debias_qzss_radial: true

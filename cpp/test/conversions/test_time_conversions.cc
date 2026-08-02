@@ -199,6 +199,19 @@ TEST_CASE("conversions.lt_minus_tt") {
   }
 
   SECTION("TT and TL agree through Eq.57 and TCB/TCL paths") {
+    // The checks below compare *absolute* epochs of magnitude ~7.3e8 s, where
+    // one double ULP is |t|*2^-52 ~ 1.6e-7 s. A 1 ns tolerance is therefore
+    // below the representable resolution of the values being compared: it can
+    // only be satisfied when both sides happen to round to the same double,
+    // which makes the assertion a coin flip rather than a measurement.
+    //
+    // Compare at a few ULP instead. The underlying physics is verified at the
+    // nanosecond level by the offset-based routines (TdbToLtMinusTt,
+    // TdbMinusLt, TdbMinusTcl), which never materialise an absolute epoch and
+    // so are not subject to this floor.
+    const double kEpochUlp = std::abs(t0_tdb.val()) * 2.220446049250313e-16;
+    const double kEpochTol = 4.0 * kEpochUlp;  // ~6.4e-7 s
+
     for (double days : {1.0, 7.0, 30.0}) {
       Real t_tt = t0_tdb + days * SECS_DAY;
       Real t_tdb_guess = TtToTdb(t_tt);
@@ -213,7 +226,7 @@ TEST_CASE("conversions.lt_minus_tt") {
       Real t_lt_tcb = TclToLt(TcbToTcl(t_tcb, x_moon));
 
       INFO("days = " << days);
-      REQUIRE_THAT(t_lt_tcb.val(), WithinAbs(t_lt_eq57.val(), 1.0e-9));
+      REQUIRE_THAT(t_lt_tcb.val(), WithinAbs(t_lt_eq57.val(), kEpochTol));
 
       Real t_tdb_from_lt = t_tdb;
       for (int iter = 0; iter < 10; ++iter) {
@@ -227,8 +240,8 @@ TEST_CASE("conversions.lt_minus_tt") {
       Real t_tt_eq57 = TDBToTt(t_tdb_from_lt, x_earth_rt);
       Real t_tt_tcb = TcbToTt(TclToTcb(LtToTcl(t_lt_eq57), x_moon), x_earth);
 
-      REQUIRE_THAT(t_tt_eq57.val(), WithinAbs(t_tt.val(), 1.0e-9));
-      REQUIRE_THAT(t_tt_tcb.val(), WithinAbs(t_tt.val(), 1.0e-9));
+      REQUIRE_THAT(t_tt_eq57.val(), WithinAbs(t_tt.val(), kEpochTol));
+      REQUIRE_THAT(t_tt_tcb.val(), WithinAbs(t_tt.val(), kEpochTol));
     }
   }
 

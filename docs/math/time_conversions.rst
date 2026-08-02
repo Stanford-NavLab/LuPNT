@@ -49,23 +49,100 @@ scales:
 .. math::
 
    \texttt{UT1},\ \texttt{UTC},\ \texttt{TAI},\ \texttt{TDB},\ \texttt{TT},\
-   \texttt{TCG},\ \texttt{TCB},\ \texttt{GPS},\ \texttt{JD\_TT},\
-   \texttt{JD\_TDB},\ \texttt{TCL},\ \texttt{LT}.
+   \texttt{TCG},\ \texttt{TCB},\ \texttt{GPS},\ \texttt{TCL},\ \texttt{LT}.
+
+A Julian Date is a *representation* of an instant rather than a time scale, so
+it is not a member of the enum; use ``JdToTime``/``TimeToJd`` with the relevant
+scale.
 
 Conversion Graph
 -------------------------------------------------------------------
 
-``ConvertTime(t, from, to)`` (``time_conversions.cc :: ConvertTime``) routes
-any pair through the canonical chain, with TAI/TT as the two hubs.  The
-vectorized overload ``ConvertTime(VecX, from, to)`` maps element-wise,
-with special handling for the position-dependent lunar scales.  The
-Python bindings expose exactly this:
+The time-scale relationships live in ``Epoch`` (``conversions/epoch.cc``) as a
+registered set of directed edges.  Each edge returns the **offset**
+:math:`(\text{to}-\text{from})` in seconds, given the epoch's reading in the
+``from`` scale.  A conversion finds the shortest registered route
+(``numerics/graphs.h :: FindShortestPath``) and sums the offsets along it.
+
+.. math::
+
+   \Delta_{A\to B}(t) \;=\; \sum_{k} \delta_{s_k \to s_{k+1}}\!\left(t_k\right),
+   \qquad s_0 = A,\; s_n = B .
+
+Because only small offsets are summed, two large absolute epochs are never
+differenced and the result carries full double precision.
+
+Edge costs span many orders of magnitude, which is why the route matters:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Class
+     - Edges
+     - Cost
+   * - constant
+     - TAI↔TT, TAI↔GPS
+     - arithmetic
+   * - table
+     - TAI↔UTC (leap seconds), UTC↔UT1 (EOP)
+     - lookup
+   * - linear
+     - TT↔TCG, TDB↔TCB, TCL↔LT
+     - rescaling by :math:`L\sim10^{-8}`
+   * - model
+     - TT↔TDB
+     - Chebyshev fit / analytic series
+   * - integral
+     - TDB↔TCL
+     - trapezoidal sweep from :math:`T_0`
+
+TCL↔LT and TDB↔TCB are single linear edges and are reached without touching the
+TDB↔TCL integral.  The search minimises hops, which coincides with minimum cost
+for this edge set because the one expensive edge is also the only bridge to the
+lunicentric scales.
+
+Precision contract
+~~~~~~~~~~~~~~~~~~~
+
+An absolute epoch is a ``float64`` count of seconds from J2000, so at
+present-day dates :math:`|t|\sim10^{9}` s one unit in the last place is
+
+.. math::
+
+   |t|\,2^{-52} \;\approx\; 2.45\times10^{-7}\ \mathrm{s} \;\approx\; 245\ \mathrm{ns}
+   \;\approx\; 73\ \mathrm{m}\times c .
+
+This bounds any API that *returns* an absolute epoch:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Entry point
+     - Returns
+     - Accuracy (TDB↔TT, 2020–2035)
+   * - ``Epoch::To`` / ``TimeScaleOffset``
+     - offset
+     - :math:`\sim3\times10^{-4}` ns
+   * - ``TtMinusTdb``, ``TdbMinusTcl``, ``TdbMinusLt``
+     - offset
+     - :math:`\sim4\times10^{-4}` ns
+   * - ``ConvertTime``
+     - absolute epoch
+     - :math:`\sim38` ns rms, 115 ns peak
+
+``ConvertTime(t, from, to)`` delegates to ``Epoch``; its floor is a property of
+the return type, not of the model.  Work that multiplies a time by :math:`c`, or
+that differences two epochs, must use ``Epoch`` or the offset accessors.
 
 .. code-block:: python
 
    import pylupnt as pnt
-   t_tt = pnt.convert_time(t_tai, pnt.Time.TAI, pnt.Time.TT)   # scalar
-   t    = pnt.convert_time(t_vec, pnt.Time.GPS, pnt.Time.TDB)  # VecX
+
+   e     = pnt.Epoch.from_seconds(t_tai, pnt.Time.TAI)
+   e_tdb = e.to(pnt.Time.TDB)                          # exact
+   dt    = pnt.time_scale_offset(e, pnt.Time.TCL)      # offset, sub-ps
+
+   t_tt  = pnt.convert_time(t_tai, pnt.Time.TAI, pnt.Time.TT)   # ~245 ns floor
 
 Proper vs. Coordinate Time
 -------------------------------------------------------------------
@@ -203,24 +280,48 @@ secular rate:
 
      \mathrm{TDB} = \mathrm{TT} + 0.001658\sin M_E + 0.000014\sin 2M_E\ \text{s} .
 
-* Inverse ``TDBToTt`` (no position) uses the NAIF single-term expansion
-  :math:`\mathrm{TT} = \mathrm{TDB} - k\sin E`, with :math:`k=1.657\times10^{-3}`,
-  eccentric anomaly :math:`E = M + e_b\sin M`,
-  :math:`M = 6.239996 + 1.99096871\times10^{-7}\,t_\mathrm{TDB}`.
+TT <-> TDB model chain
+~~~~~~~~~~~~~~~~~~~~~~~
+
+``TtMinusTdb(t)`` is the single implementation of the TT–TDB relation; both
+``TtToTdb`` and ``TDBToTt`` delegate to it, so the pair round-trips exactly
+whichever model is active.  It selects, in order:
+
+1. **Chebyshev fit of the DE440t TT–TDB ephemeris.**  ``InitTtMinusTdbFit``
+   samples the ``de440t.bsp`` time-ephemeris segment as a clean offset and fits
+   piecewise Chebyshev segments (16-day segments, degree 12).  Reproduces the
+   kernel to :math:`\sim4\times10^{-4}` ns.
+
+2. **DE440 Eq. (3) relativistic integral**, opt-in via
+   ``SetTtTdbModel(TtTdbModel::DE440_INTEGRAL)``.  Trapezoidal sweep of the
+   :math:`c^{-2}` and :math:`c^{-4}` integrands from :math:`T_0`; agrees with the
+   DE440t ephemeris to :math:`\sim7` ns rms with a :math:`+0.14` ns/yr secular
+   term (see :ref:`model-boundaries`).
+
+3. **Auto-fit**: if no fit covers the requested epoch, one decade-wide window is
+   built on demand (``SetTtTdbAutoFit``, default on).  This is what makes the
+   *default* accuracy :math:`\sim4\times10^{-4}` ns.
+
+4. **Analytic fallback**, used only when the DE440t segment is unavailable — the
+   two-term IAU/IERS TN 36 series
+
+   .. math::
+
+      \mathrm{TDB}-\mathrm{TT} = 0.001658\sin g + 0.000014\sin 2g,\qquad
+      g = 357.53^\circ + 0.9856003^\circ\, d_\mathrm{J2000},
+
+   good to :math:`\lesssim2` ms.
 
 .. note::
 
-   The scalar TT<->TDB pair is a periodic approximation good to
-   :math:`\lesssim 2` ms (thesis: "deviates by a periodic oscillation of
-   less than 2 milliseconds").  The **position-aware** overloads
-   ``TtToTdb(t, x_bcrs)`` / ``TDBToTt(t, x_bcrs)`` instead evaluate the full
-   GCRS<->BCRS 4-D transform (thesis Eq. 2.35, Turyshev Eq. 21/22): a
-   trapezoidal integral of :math:`c^{-2}` and :math:`c^{-4}` integrands built
-   from the Earth's barycentric velocity and the external Solar-System
-   potential :math:`w_\mathrm{ext}=\sum_{B\neq E} GM_B/r_{EB}`, plus a
-   position term :math:`-v_E\!\cdot\!r_E/c^2`.  ``TtToTdb(t, x_bcrs)`` inverts
-   this by 10-step Newton iteration.  See
-   ``TdbToTtMinusTdbEq21`` / ``IntegrateTdbToTtTerms``.
+   The **position-aware** overloads ``TtToTdb(t, x_bcrs)`` /
+   ``TDBToTt(t, x_bcrs)`` evaluate the full GCRS↔BCRS 4-D transform
+   (Turyshev Eq. 21/22): a trapezoidal integral of the :math:`c^{-2}` and
+   :math:`c^{-4}` integrands built from the Earth's barycentric velocity and the
+   external Solar-System potential
+   :math:`w_\mathrm{ext}=\sum_{B\neq E} GM_B/r_{EB}`, plus a position term
+   :math:`-v_E\!\cdot\!r_E/c^2`.  ``TtToTdb(t, x_bcrs)`` inverts by 10-step
+   Newton iteration.
 
 Lunicentric Coordinate Scales (TCL, LT)
 -------------------------------------------------------------------
@@ -252,7 +353,7 @@ iteration.
 
 **TCL <-> LT** is the lunar analogue of TCG->TT, a defining rate on the
 selenoid (thesis Eqs. 2.48-2.49) with
-:math:`L_L = 3.13905\times10^{-11}`:
+:math:`L_L = 3.139054\times10^{-11}`:
 
 .. math::
 
@@ -269,7 +370,7 @@ selenoid (thesis Eqs. 2.48-2.49) with
 .. note::
 
    :math:`L_L` is not yet internationally standardized; the code uses the
-   Turyshev selenoid value :math:`3.13905\times10^{-11}` (potential
+   Turyshev selenoid value :math:`3.139054\times10^{-11}` (potential
    :math:`\Phi_L = 2.82123744381\times10^{6}\ \mathrm{m^2/s^2}`), whereas
    Kopeikin adopts :math:`3.14027\times10^{-11}` (thesis Ch. 2.3.5).
 
@@ -332,6 +433,8 @@ factor).
    case CoordinateScale::TT:  return 1.0 - L_G;
    case CoordinateScale::TL:  return 1.0 - L_L;
 
+.. _model-boundaries:
+
 Model Boundaries
 -------------------------------------------------------------------
 
@@ -339,11 +442,19 @@ Model Boundaries
   goes through ``GregorianToTime`` / ``TimeToGregorianString``.
 * Only GPS is implemented among GNSS scales; GLONASS/Galileo/BeiDou offsets
   are documented but not exposed.
-* The scalar TT<->TDB and TDB->TT paths are periodic approximations
-  (:math:`\lesssim 2` ms); sub-microsecond and position-dependent work must
-  use the ``x_bcrs`` overloads via ``ConvertCoordinateTime``.
-* TCL/TDB position-aware transforms integrate from :math:`T_0` per call
-  unless a Chebyshev fit window is installed (LT only, via
-  ``InitLtMinusFit``).
+* ``ConvertTime``/``ConvertCoordinateTime`` return absolute epochs and are
+  therefore bounded at :math:`\sim245` ns regardless of model quality.  Use
+  ``Epoch`` or the offset accessors below that level.
+* The DE440 Eq. (3) integral carries a :math:`+0.14` ns/yr secular difference
+  against the DE440t ephemeris.  ``w_{0E}`` sums the ten ephemeris bodies plus
+  ring models of the main asteroid belt and the Kuiper belt
+  (``GM_ASTEROID_BELT``, ``GM_KUIPER_BELT``); DE440 integrates those populations
+  as 343 + 30 discrete bodies, and the published masses account for
+  :math:`\sim80\%` of the difference.  Use the Chebyshev fit when absolute
+  agreement with JPL matters.
+* ``TdbMinusTcl`` and ``TdbToLtMinusTt`` integrate from :math:`T_0` per call.
+  Both auto-fit a decade-wide Chebyshev window on demand
+  (``SetTdbTclAutoFit``, ``InitLtMinusTtFit``); with auto-fitting disabled a
+  single lunar conversion costs seconds.
 * :math:`L_L` (and hence LT) is provisional pending international
   standardization.

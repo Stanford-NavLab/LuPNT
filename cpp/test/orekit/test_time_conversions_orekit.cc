@@ -20,6 +20,15 @@ using namespace Catch::Matchers;
 // ============================================================================
 
 TEST_CASE("conversions.time_conversions_orekit_reference") {
+  // GMAT and Orekit both use an analytic (Fairhead-Bretagnon style) TT<->TDB
+  // series. LuPNT's default is now the integrated DE440t model, which differs
+  // from those series by ~20-30 us -- LuPNT is the more accurate of the two, so
+  // this is not a LuPNT error. To keep this a like-for-like check of the
+  // *algorithm*, compare against LuPNT's analytic series here.
+  const bool autofit_was = GetTtTdbAutoFit();
+  SetTtTdbAutoFit(false);
+  ClearTtMinusTdbFit();
+
   nlohmann::json data = LoadTestJson("orekit/data/orekit_reference.json");
 
   for (const auto& tc : data["time_scales"]) {
@@ -77,6 +86,8 @@ TEST_CASE("conversions.time_conversions_orekit_reference") {
       }
     }
   }
+
+  SetTtTdbAutoFit(autofit_was);
 }
 
 // ----------------------------------------------------------------------------

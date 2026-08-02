@@ -2,9 +2,9 @@
 // YAML block (bodies list + relativity + SRP) into scalar `ForceModelSpec` fields, used so every
 // scenario specifies dynamics the same way.
 #include <lupnt/dynamics/numerical_orbit_dynamics.h>
+#include <yaml-cpp/yaml.h>
 
 #include <catch2/catch_test_macros.hpp>
-#include <yaml-cpp/yaml.h>
 
 #include "../utils.cc"
 

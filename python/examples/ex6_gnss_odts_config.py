@@ -20,21 +20,42 @@ if _PYTHON in sys.path:
     sys.path.remove(_PYTHON)
 sys.path.insert(0, _PYTHON)
 
-DATA_DIR = (_REPO / "data" / "LuPNT_data").resolve()
-# Force LUPNT_DATA_PATH to this repo's data BEFORE importing pylupnt. pylupnt runs a
+# LUPNT_DATA_LOCAL lets a long run redirect the data to fast local (non-iCloud) storage; the
+# repo's own data/ is the default otherwise.
+_data_override = os.environ.get("LUPNT_DATA_LOCAL")
+if _data_override and (Path(_data_override) / "ephemeris").is_dir():
+    DATA_DIR = Path(_data_override).resolve()
+else:
+    DATA_DIR = (_REPO / "data" / "LuPNT_data").resolve()
+# Force LUPNT_DATA_PATH to this data dir BEFORE importing pylupnt. pylupnt runs a
 # download-on-import (pylupnt/core/download_data.py) that dumps a fresh LuPNT_data/ into the
 # current working directory unless LUPNT_DATA_PATH already points at a dir containing
 # `ephemeris/`. Setting it here (not setdefault -- override any stale value) keeps the data
-# at the repo root and stops that stray download.
+# at the chosen root and stops that stray download.
 if (DATA_DIR / "ephemeris").is_dir():
     os.environ["LUPNT_DATA_PATH"] = str(DATA_DIR)
 
 import yaml  # noqa: E402
 import pylupnt as pnt  # noqa: E402
 
+from _example_data import seed_example_output  # noqa: E402
+
 # Cache/output dir, anchored at the repo root (output/python_examples/) so the notebook
-# (cwd = examples/) and the script (any cwd) always agree on the location.
-OUTPUT_DIR = _REPO / "output" / "python_examples" / "ex6_gnss_odts_data"
+# (cwd = examples/) and the script (any cwd) always agree on the location. Seeded from the
+# shipped data/LuPNT_data/examples/ex6_gnss_odts_data cache on first use (see
+# _example_data.py) so a fresh checkout doesn't have to pay for the Stage 1/2 precompute
+# (link geometry + plasma ray-trace) just to view this notebook -- the C++ engine's own
+# cache-fingerprint check (precomputed_links.csv.meta / precomputed_delays.csv.meta) then
+# treats it exactly like a locally-generated cache and skips recomputation.
+OUTPUT_DIR = seed_example_output(
+    "ex6_gnss_odts_data",
+    markers=(
+        "precomputed_links.csv",
+        "precomputed_links.csv.meta",
+        "precomputed_delays.csv",
+        "precomputed_delays.csv.meta",
+    ),
+)
 
 # Agent-based scenario config (world: + a physical `receiver` Spacecraft hosting a LunarGnssOdtsApp). The
 # EKF run is driven from this via ``pnt.Simulation``; its scalar values mirror build_config()
@@ -65,7 +86,11 @@ def _truth_from_yaml():
     # bodies: a list of single-key maps, e.g. [{MOON: {n: 20, m: 20}}, {EARTH: {}}, {SUN: {}}]
     bodies = {next(iter(b)): (b[next(iter(b))] or {}) for b in dyn.get("bodies", [])}
     moon = bodies.get("MOON", {})
-    mass, area, cr = float(dyn.get("mass", 1.0)), float(dyn.get("area", 0.0)), float(dyn.get("CR", 0.0))
+    mass, area, cr = (
+        float(dyn.get("mass", 1.0)),
+        float(dyn.get("area", 0.0)),
+        float(dyn.get("CR", 0.0)),
+    )
     return dict(
         start_epoch_utc=scen.get("epoch", sim.get("start_epoch_utc")),
         seed=int(sim.get("seed", 42)),
@@ -105,7 +130,9 @@ def build_config():
 
     # --- Timing + truth receiver orbit/clock: read from the YAML (single source) ---
     cfg.monte_carlo_runs = 1
-    cfg.start_epoch_utc = _T["start_epoch_utc"]  # COD MGEX SP3 (Galileo); offset fits its 1-day span
+    cfg.start_epoch_utc = _T[
+        "start_epoch_utc"
+    ]  # COD MGEX SP3 (Galileo); offset fits its 1-day span
     cfg.seed = _T["seed"]
     cfg.dt_s = _T["dt_s"]
     cfg.ephemeris_dt_s = _T["ephemeris_dt_s"]
@@ -133,7 +160,7 @@ def build_config():
     cfg.clock_drift_rate_sps2 = 0.0  # initial truth drift-rate [s/s^2] (3-state truth only)
 
     # --- GPS + Galileo constellation; auto-select the covering SP3 for the epoch ---
-    sp3_dir = (DATA_DIR / "ephemeris" / "gnsslibpy" / "sp3").resolve()
+    sp3_dir = (DATA_DIR / "gnss" / "sp3").resolve()
     cfg.constellation.sp3_directory = str(sp3_dir)
     cfg.constellation.antex_file = str((DATA_DIR / "gnss" / "igs20.atx").resolve())
     cfg.constellation.auto_select_sp3 = True
@@ -147,7 +174,7 @@ def build_config():
     # constellation systematic clock offset and (for QZSS) the per-satellite radial orbit offset
     # are removed (Montenbruck & Steigenberger, J. Navigation, 2018). BRDC files must cover the
     # epoch (download alongside the SP3, e.g. via pnt.RinexNavLoader.download_file_for_epoch).
-    cfg.constellation.brdc_directory = str((DATA_DIR / "ephemeris" / "gnsslibpy" / "brdc").resolve())
+    cfg.constellation.brdc_directory = str((DATA_DIR / "gnss" / "brdc").resolve())
     cfg.constellation.use_broadcast_ephemeris = True
     cfg.constellation.debias_broadcast_clock = True
     cfg.constellation.debias_qzss_radial = True
@@ -250,9 +277,9 @@ def load_scenario():
     app["pipeline"]["links_file"] = str(OUTPUT_DIR / "precomputed_links.csv")
     app["pipeline"]["delays_file"] = str(OUTPUT_DIR / "precomputed_delays.csv")
     c = app["constellation"]
-    c["sp3_directory"] = str((DATA_DIR / "ephemeris" / "gnsslibpy" / "sp3").resolve())
+    c["sp3_directory"] = str((DATA_DIR / "gnss" / "sp3").resolve())
     c["antex_file"] = str((DATA_DIR / "gnss" / "igs20.atx").resolve())
-    c["brdc_directory"] = str((DATA_DIR / "ephemeris" / "gnsslibpy" / "brdc").resolve())
+    c["brdc_directory"] = str((DATA_DIR / "gnss" / "brdc").resolve())
 
     # --- Link-cache fingerprint compatibility -------------------------------------------------
     # The Stage 1/2 precompute (ex6_precompute.py) keys its link cache on a fingerprint of the

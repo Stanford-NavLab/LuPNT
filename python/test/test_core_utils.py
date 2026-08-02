@@ -26,8 +26,12 @@ def test_get_hash_varies_with_args():
 # --------------------------------------------------------------------------- base.convert_title_case
 @pytest.mark.parametrize(
     "s,expected",
-    [("hello_world", "Hello World"), ("lunar_gnss_odts", "Lunar Gnss Odts"),
-     ("single", "Single"), ("", "")],
+    [
+        ("hello_world", "Hello World"),
+        ("lunar_gnss_odts", "Lunar Gnss Odts"),
+        ("single", "Single"),
+        ("", ""),
+    ],
 )
 def test_convert_title_case(s, expected):
     assert base.convert_title_case(s) == expected

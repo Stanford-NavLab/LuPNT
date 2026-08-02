@@ -38,6 +38,14 @@ namespace pecsim {
                         // -1: use historical or projected R12 (with storm model)
                         // -2: no storm model, use historical or projected R12
 
+    // GCPM consumes only the IRI electron density, hmF2, and F10.7/R12, never
+    // the ion temperatures or ion composition. These default to false so the
+    // GCPM density path (and compute_ne) skips those expensive IRI sub-models;
+    // the standalone iri_2007() accessor forces them back on where its returned
+    // ion densities require them.
+    bool compute_teti = false;  // jf(2): electron/ion temperatures
+    bool compute_ni = false;    // jf(3): ion composition (H+/He+/O+)
+
     int jf2007[30];  // Fortran IRI 2007 options
 
     IRI2007Option() { update_jf_2007(); }
@@ -78,6 +86,13 @@ namespace pecsim {
 
   // This routine is used to call the IRI model from GCPM
   IRIParams iri_sm(double alatr, double along, double r, const std::array<int, 2>& itime);
+
+  // Steps the year of `itime` back to the most recent one the bundled IRI solar-index data
+  // (apf107.dat / ig_rz.dat) covers, so downstream GCPM/IRI density paths return finite
+  // values instead of the no-data NaN sentinel for future epochs. Self-adjusting (no
+  // hard-coded cutoff year); returns `itime` unchanged when it is already covered. Assumes
+  // the IRI data directory is the current working path (as gcpm_v24 sets it).
+  std::array<int, 2> iri_valid_solar_itime(const std::array<int, 2>& itime);
 
   // This subroutine is used to call the IRI model from GCPM
   IRIParams iri_sub(int jmag, double blatd, double blongd, int yyyy, int ddd, double dhour,

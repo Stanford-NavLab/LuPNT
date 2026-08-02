@@ -176,6 +176,9 @@ void InitGnssOdts(py::module& m) {
                      "Explicit GPS PRN list (used when use_all_gps is false)")
       .def_readwrite("galileo_prns", &ConstellationSourceConfig::galileo_prns,
                      "Explicit Galileo PRN list")
+      .def_readwrite("include_qzss", &ConstellationSourceConfig::include_qzss,
+                     "Include QZSS satellites (L1/L5)")
+      .def_readwrite("qzss_prns", &ConstellationSourceConfig::qzss_prns, "Explicit QZSS PRN list")
       .def_property(
           "brdc_directory",
           [](const ConstellationSourceConfig& c) { return c.brdc_directory.string(); },
@@ -202,6 +205,15 @@ void InitGnssOdts(py::module& m) {
                      "Truth constellation source: 'sp3_brdc' (default, precise SP3 + BRDC error, "
                      "past epochs only) or 'almanac' (seed Keplerian elements from a YUMA almanac "
                      "or BRDC, numerically propagate with J2 + Sun/Moon -> runs at future epochs)")
+      .def_readwrite("almanac_seed", &ConstellationSourceConfig::almanac_seed,
+                     "Seed for the future-epoch ('almanac') path: 'sp3' (default) seeds from the "
+                     "latest available precise SP3 (real constellation, cm level) then numerically "
+                     "propagates; 'yuma'/'brdc' seed from a coarse almanac / broadcast message "
+                     "instead. An explicit almanac_file forces the YUMA seed.")
+      .def_readwrite("propagation_model", &ConstellationSourceConfig::propagation_model,
+                     "Force model for the future-epoch numerical propagation: 'full' (default, "
+                     "Earth 8x8 + Sun + Moon) or 'j2' (Earth + J2 zonal only). Both use RK8, which "
+                     "preserves the semi-major axis over multi-month spans.")
       .def_property(
           "almanac_file",
           [](const ConstellationSourceConfig& c) { return c.almanac_file.string(); },
@@ -286,6 +298,14 @@ void InitGnssOdts(py::module& m) {
                      "while the filter stays 2-state")
       .def_readwrite("clock_drift_rate_sps2", &LunarGnssODTSConfig::clock_drift_rate_sps2,
                      "Initial truth clock drift-rate [s/s^2] (3-state truth clock only)")
+      .def_readwrite("use_three_state_clock_filter",
+                     &LunarGnssODTSConfig::use_three_state_clock_filter,
+                     "Estimate a 3-state [bias,drift,drift-rate] clock in the filter (matches the "
+                     "manuscript); default is the 2-state [bias,drift] filter")
+      .def_readwrite(
+          "initial_clock_drift_rate_sigma_sps2",
+          &LunarGnssODTSConfig::initial_clock_drift_rate_sigma_sps2,
+          "Initial 1-sigma for the filter clock drift-rate [s/s^2] (3-state filter only)")
       .def_readwrite("moon_gravity_degree_truth", &LunarGnssODTSConfig::moon_gravity_degree_truth,
                      "Moon gravity field degree for receiver truth propagation")
       .def_readwrite("moon_gravity_order_truth", &LunarGnssODTSConfig::moon_gravity_order_truth,

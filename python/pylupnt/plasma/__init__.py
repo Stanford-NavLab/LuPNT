@@ -78,6 +78,8 @@ try:
         mjd_to_tj2000,
         long_to_lt,
         lt_to_long,
+        sm_to_geo,
+        geo_to_sm,
         # IRI / GCPM
         IRI2007Option,
         IRI2020Option,
@@ -88,6 +90,11 @@ try:
         get_kp_index,
         gcpm_v24,
         gcpm_v24_fortran,
+        # electron-density backend selection + NeQuick-G solar config
+        set_iono_model,
+        get_iono_model,
+        NeQuickAzMode,
+        NeQuickSolarConfig,
         # orbit utilities
         Satellite,
         wrap2pi,
@@ -127,6 +134,8 @@ try:
         "mjd_to_tj2000",
         "long_to_lt",
         "lt_to_long",
+        "sm_to_geo",
+        "geo_to_sm",
         # IRI / GCPM
         "IRI2007Option",
         "IRI2020Option",
@@ -137,6 +146,11 @@ try:
         "get_kp_index",
         "gcpm_v24",
         "gcpm_v24_fortran",
+        # electron-density backend selection + NeQuick-G solar config
+        "set_iono_model",
+        "get_iono_model",
+        "NeQuickAzMode",
+        "NeQuickSolarConfig",
         # orbit utilities
         "Satellite",
         "wrap2pi",

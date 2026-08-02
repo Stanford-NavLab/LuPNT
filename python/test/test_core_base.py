@@ -39,9 +39,7 @@ def test_wait_for_key_posix_branch(monkeypatch):
 
     events = []
     monkeypatch.setattr(termios, "tcgetattr", lambda fd: "OLD")
-    monkeypatch.setattr(
-        termios, "tcsetattr", lambda fd, when, old: events.append(("restore", old))
-    )
+    monkeypatch.setattr(termios, "tcsetattr", lambda fd, when, old: events.append(("restore", old)))
     monkeypatch.setattr(tty, "setraw", lambda fd: events.append(("setraw", fd)))
 
     class _FakeStdin:

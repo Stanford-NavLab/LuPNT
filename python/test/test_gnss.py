@@ -567,9 +567,7 @@ def test_rinex_download_helper_filename():
 def test_download_file_for_epoch_returns_cached_path():
     """When the product is already cached, download_file_for_epoch returns that
     path without hitting the network (so it runs offline once fixtures exist)."""
-    sp3_file = os.path.join(
-        _gnss_files_dir(), "sp3", "COD0MGXFIN_20260140000_01D_05M_ORB.SP3"
-    )
+    sp3_file = os.path.join(_gnss_files_dir(), "sp3", "COD0MGXFIN_20260140000_01D_05M_ORB.SP3")
     if not os.path.isfile(sp3_file):
         pytest.skip(f"SP3 fixture not cached at {sp3_file}")
 
@@ -578,9 +576,7 @@ def test_download_file_for_epoch_returns_cached_path():
     assert os.path.isfile(path)
     assert os.path.basename(path) == "COD0MGXFIN_20260140000_01D_05M_ORB.SP3"
 
-    brdc_file = os.path.join(
-        _gnss_files_dir(), "brdc", "BRDC00IGS_R_20260140000_01D_MN.rnx"
-    )
+    brdc_file = os.path.join(_gnss_files_dir(), "brdc", "BRDC00IGS_R_20260140000_01D_MN.rnx")
     if os.path.isfile(brdc_file):
         bpath = pnt.RinexNavLoader.download_file_for_epoch(t, pnt.Time.TAI)
         assert os.path.isfile(bpath)

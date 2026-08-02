@@ -33,7 +33,10 @@ void InitDynamics(py::module &m) {
   py::enum_<IntegratorType>(m, "IntegratorType",
                             "Selects which numerical integrator NumericalOrbitDynamics uses.")
       .value("RK4", IntegratorType::RK4, "Classical 4th-order fixed-step Runge-Kutta.")
-      .value("RK8", IntegratorType::RK8, "8th-order fixed-step Runge-Kutta.")
+      .value("RK8", IntegratorType::RK8,
+             "10-stage fixed-step Runge-Kutta. Despite the name this is a 7th-order "
+             "method: an explicit Runge-Kutta method needs at least 11 stages for "
+             "order 8, so 7 is optimal at this stage count.")
       .value("RKF45", IntegratorType::RKF45, "Runge-Kutta-Fehlberg 4(5) adaptive-step.")
       .value("PD45", IntegratorType::PD45, "Dormand-Prince 4(5) adaptive-step.")
       .export_values();
@@ -224,6 +227,11 @@ void InitDynamics(py::module &m) {
       .def("set_srp_coeff", py::overload_cast<Real, Real, Real>(&NBodyDynamics::SetSrpCoefficient),
            py::arg("CR"), py::arg("area"), py::arg("mass"),
            "Set the SRP coefficient from reflectivity CR [-], area [m^2], and mass [kg].")
+      .def("set_solar_flux", &NBodyDynamics::SetSolarFlux, py::arg("flux"),
+           "Set the mean total solar irradiance at 1 AU [W/m^2] used by the SRP model. "
+           "Defaults to SOLAR_FLUX_AU; set it when a mission specifies its own value.")
+      .def("get_solar_flux", &NBodyDynamics::GetSolarFlux,
+           "Mean total solar irradiance at 1 AU currently in use [W/m^2].")
       .def("set_drag_coeff", py::overload_cast<Real>(&NBodyDynamics::SetDragCoeff),
            py::arg("bcoeff"), "Set the drag ballistic coefficient directly [m^2/kg].")
       .def(
@@ -265,12 +273,12 @@ void InitDynamics(py::module &m) {
       "A celestial body: gravity parameter, radius, rotation rate, frames, optional gravity field.")
       .def(py::init<>())
       .def_static("Moon", py::overload_cast<int, int, std::string>(&Body::Moon), py::arg("n") = 0,
-                  py::arg("m") = 0, py::arg("gravity_file") = "grgm900c.cof",
+                  py::arg("m") = 0, py::arg("gravity_file") = "grgm1200b.cof",
                   "Create the Moon, optionally loading an n x m spherical-harmonic gravity field.")
       .def_static(
           "Moon", py::overload_cast<const UnitSystem &, int, int, std::string>(&Body::Moon),
           py::arg("units"), py::arg("n") = 0, py::arg("m") = 0,
-          py::arg("gravity_file") = "grgm900c.cof",
+          py::arg("gravity_file") = "grgm1200b.cof",
           "Create the Moon in the given unit system, optionally with an n x m gravity field.")
       .def_static("Earth", py::overload_cast<int, int, std::string>(&Body::Earth), py::arg("n") = 0,
                   py::arg("m") = 0, py::arg("gravity_file") = "EGM96.cof",

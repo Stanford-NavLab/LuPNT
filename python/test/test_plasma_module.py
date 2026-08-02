@@ -22,8 +22,7 @@ def test_kp_loader_functions_reexported():
 
 
 def test_all_lists_kp_and_freq_symbols():
-    for name in ("update_kp", "update_kp_table", "convert_to_csv",
-                 "freq_L1", "freq_L2", "freq_L5"):
+    for name in ("update_kp", "update_kp_table", "convert_to_csv", "freq_L1", "freq_L2", "freq_L5"):
         assert name in plasma.__all__
 
 
@@ -38,8 +37,14 @@ def test_km_constants_present_but_not_in_all():
 
 
 def test_pybind_symbols_reexported():
-    for name in ("trace_ray", "compute_ne", "gcpm_v24", "Satellite",
-                 "get_plasma_base_path", "set_plasma_base_path"):
+    for name in (
+        "trace_ray",
+        "compute_ne",
+        "gcpm_v24",
+        "Satellite",
+        "get_plasma_base_path",
+        "set_plasma_base_path",
+    ):
         assert hasattr(plasma, name)
     for name in ("trace_ray", "compute_ne", "gcpm_v24", "Satellite"):
         assert name in plasma.__all__

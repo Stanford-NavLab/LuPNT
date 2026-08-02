@@ -6,6 +6,15 @@ duration: 12:00:00.000 # hh:mm:ss.sss
 
 # Logging
 log_level: INFO # [DEBUG, INFO, WARN, ERROR]
+
+# Earth orientation source. [c04, finals]; also accepts {source: finals, path: ...}.
+# c04 (default) is the IERS final series: reproducible, but retrospective by months, and
+# beyond its last row the values are held constant rather than extrapolated. finals is
+# IERS Bulletin A -- current to within days, plus ~1 year of predictions -- and must be
+# downloaded first (pnt.load_latest_eop_finals_from_iers()). Use finals for any run at a
+# present-day or future epoch; a stale c04 table is worth tens of metres of Earth-surface
+# error there, and refreshing it does not help.
+# eop: finals
 # cesium_port: 8080
 rerun: "save" # [spawn, server, save]
 

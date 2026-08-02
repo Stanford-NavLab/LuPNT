@@ -8,6 +8,7 @@ void InitConstants(py::module& m);
 void InitFrameConverter(py::module& m);
 void InitTimeConverter(py::module& m);
 void InitDynamics(py::module& m);
+void InitScUdFilter(py::module& m);
 void InitConversions(py::module& m);
 void InitAgents(py::module& m);
 void InitAntenna(py::module& m);
@@ -28,6 +29,14 @@ void InitEphemeris(py::module& m);
 void InitGnssOdts(py::module& m);
 void InitSurfaceNav(py::module& m);
 void InitLanderNav(py::module& m);
+void InitEpoch(py::module& m);
+// Defined in py_spice_interface.cc (snake_case to match that file).
+void init_spice_interface(py::module& m);
+// Defined in py_forces.cc (snake_case to match that file). Exposes the
+// free-function acceleration models (gravity field, point mass, SRP,
+// relativistic correction, shadow/illumination) for scripting and for
+// cross-validating force models from Python.
+void init_forces(py::module& m);
 
 PYBIND11_MODULE(_pylupnt, m) {
   InitAutodiff(m);
@@ -35,6 +44,7 @@ PYBIND11_MODULE(_pylupnt, m) {
   InitTimeConverter(m);
   InitFrameConverter(m);
   InitDynamics(m);
+  InitScUdFilter(m);
   InitConversions(m);
   // InitAgents(m);
   InitAntenna(m);
@@ -55,4 +65,10 @@ PYBIND11_MODULE(_pylupnt, m) {
   InitGnssOdts(m);
   InitSurfaceNav(m);
   InitLanderNav(m);
+  InitEpoch(m);
+  // Exposes the `pnt.spice` submodule (kernel loading, SPICE-based frame/time
+  // conversions, and the scalar time-ephemeris accessor used to read the
+  // DE440t TT-TDB and the lunar TDB-TCL / TDB-TL kernels).
+  init_spice_interface(m);
+  init_forces(m);
 }

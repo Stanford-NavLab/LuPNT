@@ -13,38 +13,54 @@ namespace lupnt {
   UniquePtr<IauSofaFileData> iau_sofa;
   std::mutex iau_sofa_mutex;
 
+  namespace {
+    // Unlocked core of LoadIauSofaFileData -- caller must already hold iau_sofa_mutex. Split
+    // out so GetIauSofaData can perform its "is it loaded yet" check and the load itself under
+    // a single critical section (an unlocked check-then-load-then-read raced with concurrent
+    // callers, e.g. BuildConstellations's per-frequency OpenMP threads: one thread could observe
+    // a non-null `iau_sofa` pointer while another was still mid-populate, reading
+    // not-yet-resized/partially-written Eigen vectors -- this is what caused
+    // simulations.lunar_gnss_odts_sp3's SIGSEGV).
+    void LoadIauSofaFileDataLocked(const std::filesystem::path& filepath) {
+      if (iau_sofa) return;  // Data already loaded
+
+      size_t n_lines = CountLines(filepath.string());
+      std::ifstream file = OpenFile<std::ifstream>(filepath);
+
+      iau_sofa = MakeUnique<IauSofaFileData>();
+      iau_sofa->jd_tt.resize(n_lines);
+      iau_sofa->X.resize(n_lines);
+      iau_sofa->Y.resize(n_lines);
+      iau_sofa->s.resize(n_lines);
+
+      size_t row = 0;
+      std::string line;
+      double jd_tt, X, Y, s;
+      // Read data lines
+      while (std::getline(file, line)) {
+        std::istringstream iss(line);
+        iss >> jd_tt >> X >> Y >> s;
+        iau_sofa->jd_tt(row) = jd_tt;
+        iau_sofa->X(row) = X;
+        iau_sofa->Y(row) = Y;
+        iau_sofa->s(row) = s;
+        ++row;
+      }
+      file.close();
+      return;
+    }
+  }  // namespace
+
   void LoadIauSofaFileData(const std::filesystem::path& filepath) {
     std::lock_guard<std::mutex> lock(iau_sofa_mutex);
-    if (iau_sofa) return;  // Data already loaded
-
-    size_t n_lines = CountLines(filepath.string());
-    std::ifstream file = OpenFile<std::ifstream>(filepath);
-
-    iau_sofa = MakeUnique<IauSofaFileData>();
-    iau_sofa->jd_tt.resize(n_lines);
-    iau_sofa->X.resize(n_lines);
-    iau_sofa->Y.resize(n_lines);
-    iau_sofa->s.resize(n_lines);
-
-    size_t row = 0;
-    std::string line;
-    double jd_tt, X, Y, s;
-    // Read data lines
-    while (std::getline(file, line)) {
-      std::istringstream iss(line);
-      iss >> jd_tt >> X >> Y >> s;
-      iau_sofa->jd_tt(row) = jd_tt;
-      iau_sofa->X(row) = X;
-      iau_sofa->Y(row) = Y;
-      iau_sofa->s(row) = s;
-      ++row;
-    }
-    file.close();
-    return;
+    LoadIauSofaFileDataLocked(filepath);
   }
 
   IauSofaData GetIauSofaData(Real jd_tt) {
-    if (!iau_sofa) LoadIauSofaFileData(GetFilePath(IAU_SOFA_FILENAME));
+    // Locked for the whole function (load-if-needed AND the reads below) -- see the comment on
+    // LoadIauSofaFileDataLocked for why the load alone being locked isn't sufficient.
+    std::lock_guard<std::mutex> lock(iau_sofa_mutex);
+    if (!iau_sofa) LoadIauSofaFileDataLocked(GetFilePath(IAU_SOFA_FILENAME));
 
     IauSofaData data;
 

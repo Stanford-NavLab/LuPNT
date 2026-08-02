@@ -36,13 +36,14 @@ TEST_CASE("measurements.gnss_measurement_extra.channel_ephemeris") {
     ch.tx_state << 1.0e7, 0.0, 0.0, 0.0, 3.0e3, 0.0;
     REQUIRE_FALSE(ch.HasEphemeris());
     // GetTransmitState falls back to the snapshot when there is no ephemeris.
-    Vec6 s = ch.GetTransmitState(Real(123.0));
+    Vec6 s = ch.GetTransmitState(Epoch::FromSeconds(Real(123.0), ch.transmit_time.scale()));
     for (int i = 0; i < 6; ++i) REQUIRE_THAT(s(i).val(), WithinAbs(ch.tx_state(i).val(), 1e-9));
   }
 
   SECTION("sampled state history is linearly interpolated") {
     GnssChannel ch;
-    ch.transmit_time = 0.0;  // keep query epoch away from the tx_state shortcut
+    ch.transmit_time = Epoch::FromSeconds(
+        Real(0.0), Time::TAI);  // keep query epoch away from the tx_state shortcut
     VecXd times(2);
     times << 0.0, 100.0;
     MatXd states(2, 6);
@@ -54,20 +55,20 @@ TEST_CASE("measurements.gnss_measurement_extra.channel_ephemeris") {
     REQUIRE(ch.HasEphemeris());
 
     // Midpoint: exactly halfway between the two samples.
-    Vec6 mid = ch.GetTransmitState(Real(50.0));
+    Vec6 mid = ch.GetTransmitState(Epoch::FromSeconds(Real(50.0), ch.transmit_time.scale()));
     REQUIRE_THAT(mid(0).val(), WithinAbs(50.0, 1e-9));
     REQUIRE_THAT(mid(1).val(), WithinAbs(100.0, 1e-9));
     REQUIRE_THAT(mid(2).val(), WithinAbs(-25.0, 1e-9));
     REQUIRE_THAT(mid(4).val(), WithinAbs(1.0, 1e-9));
 
     // Endpoints recover the samples.
-    Vec6 end = ch.GetTransmitState(Real(100.0));
+    Vec6 end = ch.GetTransmitState(Epoch::FromSeconds(Real(100.0), ch.transmit_time.scale()));
     for (int i = 0; i < 6; ++i) REQUIRE_THAT(end(i).val(), WithinAbs(states(1, i), 1e-9));
   }
 
   SECTION("query exactly at transmit_time returns the stored snapshot") {
     GnssChannel ch;
-    ch.transmit_time = 42.0;
+    ch.transmit_time = Epoch::FromSeconds(Real(42.0), Time::TAI);
     ch.tx_state << 7.0, 8.0, 9.0, 0.1, 0.2, 0.3;
     // Even with an ephemeris present, an exact transmit_time hit short-circuits.
     VecXd times(2);
@@ -76,7 +77,7 @@ TEST_CASE("measurements.gnss_measurement_extra.channel_ephemeris") {
     ch.ephemeris_times = times;
     ch.ephemeris_tx_states = states;
 
-    Vec6 s = ch.GetTransmitState(Real(42.0));
+    Vec6 s = ch.GetTransmitState(Epoch::FromSeconds(Real(42.0), ch.transmit_time.scale()));
     for (int i = 0; i < 6; ++i) REQUIRE_THAT(s(i).val(), WithinAbs(ch.tx_state(i).val(), 1e-12));
   }
 }

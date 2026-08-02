@@ -14,7 +14,7 @@
 // app.
 //
 // Data note: a real run needs the SP3 precise ephemerides
-// (data/LuPNT_data/ephemeris/gnsslibpy/sp3) and, ideally, the Stage 1 link +
+// (data/LuPNT_data/gnss/sp3) and, ideally, the Stage 1 link +
 // Stage 2 plasma-delay precompute caches (see python/examples/ex6_precompute.py
 // and docs/pages/sp3_download). Absent the data the program prints an
 // informative note and exits cleanly, so it always compiles and runs; with the
@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
   } catch (const std::exception& e) {
     std::cout << "\n[skipped] ODTS inputs unavailable: " << e.what() << "\n"
               << "This example needs the SP3 precise ephemerides under\n"
-              << "data/LuPNT_data/ephemeris/gnsslibpy/sp3 and (ideally) the Stage 1/2\n"
+              << "data/LuPNT_data/gnss/sp3 and (ideally) the Stage 1/2\n"
               << "precompute caches. Build them with python/examples/ex6_precompute.py;\n"
               << "see docs/pages/sp3_download. The program compiled and ran; it skipped\n"
               << "the ODTS run because the inputs are absent.\n";

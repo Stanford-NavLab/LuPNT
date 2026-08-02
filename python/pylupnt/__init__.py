@@ -83,6 +83,13 @@ try:
 except Exception as e:  # pragma: no cover - keep `import pylupnt` robust
     Logger.warn(f"Skipping .lander_guidance: {e}", name="PyLuPNT")
 
+# Scenario/configuration builders (e.g. the lunar GNSS setup). Exposed as a
+# submodule: `pylupnt.config.LunarGnssConfig` / `pylupnt.config.lunar_gnss_measurements`.
+try:
+    from . import config  # noqa: F401
+except Exception as e:  # pragma: no cover - keep `import pylupnt` robust
+    Logger.warn(f"Skipping .config: {e}", name="PyLuPNT")
+
 # Monte-Carlo driver: run N independent pnt.Simulation trials in parallel (multiprocessing),
 # one distinct top-level `seed` per trial. Pure Python; exposed as `pnt.run_monte_carlo`.
 try:

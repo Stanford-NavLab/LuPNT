@@ -132,9 +132,9 @@ TEST_CASE("physics.orbit_state.utils") {
   res1.lod = 0.0017230;
   res1.dpsi = 0.064261 * RAD_ARCSEC;
   res1.deps = 0.006067 * RAD_ARCSEC;
-  res1.dx_pole = 0.030000 * RAD_ARCSEC;
-  res1.dy_pole = 0.030000 * RAD_ARCSEC;
-  res1.tai_utc = 0.0020000;
+  res1.sigma_x_pole = 0.030000 * RAD_ARCSEC;
+  res1.sigma_y_pole = 0.030000 * RAD_ARCSEC;
+  res1.sigma_ut1_utc = 0.0020000;
 
   EopData res2;
   res2.x_pole = -0.015900 * RAD_ARCSEC;
@@ -143,9 +143,9 @@ TEST_CASE("physics.orbit_state.utils") {
   res2.lod = 0.0016690;
   res2.dpsi = 0.063979 * RAD_ARCSEC;
   res2.deps = 0.006290 * RAD_ARCSEC;
-  res2.dx_pole = 0.030000 * RAD_ARCSEC;
-  res2.dy_pole = 0.030000 * RAD_ARCSEC;
-  res2.tai_utc = 0.0020000;
+  res2.sigma_x_pole = 0.030000 * RAD_ARCSEC;
+  res2.sigma_y_pole = 0.030000 * RAD_ARCSEC;
+  res2.sigma_ut1_utc = 0.0020000;
 
   // Interpolation
   Real s = 0.4;
@@ -160,9 +160,9 @@ TEST_CASE("physics.orbit_state.utils") {
   RequireNear(result.lod, interp(res1.lod, res2.lod, s), eps);
   RequireNear(result.dpsi, interp(res1.dpsi, res2.dpsi, s), eps);
   RequireNear(result.deps, interp(res1.deps, res2.deps, s), eps);
-  RequireNear(result.dx_pole, interp(res1.dx_pole, res2.dx_pole, s), eps);
-  RequireNear(result.dy_pole, interp(res1.dy_pole, res2.dy_pole, s), eps);
-  RequireNear(result.tai_utc, interp(res1.tai_utc, res2.tai_utc, s), eps);
+  RequireNear(result.sigma_x_pole, interp(res1.sigma_x_pole, res2.sigma_x_pole, s), eps);
+  RequireNear(result.sigma_y_pole, interp(res1.sigma_y_pole, res2.sigma_y_pole, s), eps);
+  RequireNear(result.sigma_ut1_utc, interp(res1.sigma_ut1_utc, res2.sigma_ut1_utc, s), eps);
 
   s = 0.2;
   mjd_utc = mjd_utc_1 + s * (mjd_utc_2 - mjd_utc_1);
@@ -173,9 +173,9 @@ TEST_CASE("physics.orbit_state.utils") {
   RequireNear(result.lod, res1.lod, eps);
   RequireNear(result.dpsi, res1.dpsi, eps);
   RequireNear(result.deps, res1.deps, eps);
-  RequireNear(result.dx_pole, res1.dx_pole, eps);
-  RequireNear(result.dy_pole, res1.dy_pole, eps);
-  RequireNear(result.tai_utc, res1.tai_utc, eps);
+  RequireNear(result.sigma_x_pole, res1.sigma_x_pole, eps);
+  RequireNear(result.sigma_y_pole, res1.sigma_y_pole, eps);
+  RequireNear(result.sigma_ut1_utc, res1.sigma_ut1_utc, eps);
 
   s = 0.8;
   mjd_utc = mjd_utc_1 + s * (mjd_utc_2 - mjd_utc_1);
@@ -186,9 +186,9 @@ TEST_CASE("physics.orbit_state.utils") {
   RequireNear(result.lod, res2.lod, eps);
   RequireNear(result.dpsi, res2.dpsi, eps);
   RequireNear(result.deps, res2.deps, eps);
-  RequireNear(result.dx_pole, res2.dx_pole, eps);
-  RequireNear(result.dy_pole, res2.dy_pole, eps);
-  RequireNear(result.tai_utc, res2.tai_utc, eps);
+  RequireNear(result.sigma_x_pole, res2.sigma_x_pole, eps);
+  RequireNear(result.sigma_y_pole, res2.sigma_y_pole, eps);
+  RequireNear(result.sigma_ut1_utc, res2.sigma_ut1_utc, eps);
 
   // Ground station
   Real lon_gs = 11;

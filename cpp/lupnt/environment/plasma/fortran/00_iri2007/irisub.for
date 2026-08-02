@@ -807,6 +807,14 @@ C
       if(.not.rzin.and..not.rzino.and..not.igin.and..not.igino) then
           IF(sam_mon.AND.(nmonth.EQ.nmono).and.sam_yea) GOTO 4292
           IF(sam_mon) GOTO 4293
+      else
+c  User-supplied R12/IG12: the CCIR/URSI coefficient files depend only on the
+c  month, so cache the expensive per-call file reads and re-blend the solar-
+c  activity coefficients FF0 at 4291 for the current R12/IG12. rzar/arig are
+c  recomputed each call above (tcon + RZIN/IGIN override), so FF0 stays correct
+c  even if R12 changes. Without this, user-R12 mode re-reads ccirXX.asc on every
+c  call, making user-R12 GCPM ~30x slower than historical mode.
+          IF(sam_mon.AND.(nmonth.EQ.nmono).and.sam_yea) GOTO 4291
           endif
 c
 c the program expects the coefficients files in ASCII format; if you

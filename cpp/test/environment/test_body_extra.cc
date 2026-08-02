@@ -103,13 +103,24 @@ TEST_CASE("environment.body.gravity_field") {
     REQUIRE_THROWS(Body::Moon(400, 400, "grgm900c.cof"));
   }
 
-  SECTION("low degree/order requests stay point-mass") {
-    // n or m <= 1 disables the field (use_gravity_field == n_max>1 && m_max>1).
+  SECTION("low degree requests stay point-mass") {
+    // n_max <= 1 has no harmonics beyond the central term, so it stays point-mass
+    // (use_gravity_field == n_max > 1).
     Body moon0 = Body::Moon(0, 0, "grgm900c.cof");
     Body moon1 = Body::Moon(1, 1, "grgm900c.cof");
     REQUIRE_FALSE(moon0.use_gravity_field);
     REQUIRE_FALSE(moon1.use_gravity_field);
     REQUIRE_THAT(moon0.GM.val(), WithinRel(GM_MOON, kEps));
+  }
+
+  SECTION("zonal-only request (order 0) still engages J2") {
+    // A degree-2 / order-0 request is the J2 (C20) zonal field: it must use the
+    // spherical-harmonic path, NOT silently fall back to point-mass. Regression test for the
+    // former `m_max > 1` gate that wrongly disabled all zonal-only (m_max == 0) fields.
+    Body moon20 = Body::Moon(2, 0, "grgm900c.cof");
+    REQUIRE(moon20.use_gravity_field);
+    REQUIRE(moon20.gravity_field.n == 2);
+    REQUIRE(moon20.gravity_field.m == 0);
   }
 
   SECTION("kilometer units scale the loaded gravity field consistently") {

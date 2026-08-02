@@ -15,6 +15,14 @@
 #include "lupnt/environment/plasma/gcpm/iri_interface.h"
 #include "lupnt/environment/plasma/gcpm/ne_iri.h"
 #include "lupnt/environment/plasma/igrf/igrf_interface.h"
+// The NEDM2020 backend (plasma/nedm/) is separately gated and excluded from the
+// default (MIT) build. It is only present when LuPNT is configured with
+// -DLUPNT_ENABLE_NEDM=ON, which defines LUPNT_HAS_NEDM. compute_ne_nedm still
+// has an always-compiled fallback in tec/nedm_stub.cc so the dispatcher links.
+#ifdef LUPNT_HAS_NEDM
+#  include "lupnt/environment/plasma/nedm/nedm.h"
+#endif
+#include "lupnt/environment/plasma/tec/iono_model.h"
 #include "lupnt/environment/plasma/tec/klobuchar.h"
 #include "lupnt/environment/plasma/tec/neldermead.h"
 #include "lupnt/environment/plasma/tec/raytrace.h"

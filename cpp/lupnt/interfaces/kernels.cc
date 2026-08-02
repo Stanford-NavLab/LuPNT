@@ -431,7 +431,9 @@ namespace lupnt {
   MatX6 GetLunarMantleData(VecX t_tdb, bool compute_vel) {
     MatX6 rv(t_tdb.size(), 6);
     for (int i = 0; i < t_tdb.size(); i++) {
-      rv.row(i) = GetLunarMantleData(t_tdb(i), compute_vel) / M_KM;
+      // No `/ M_KM` here: the scalar overload above already applies it, and
+      // dividing again made every vectorized libration angle 1000x too small.
+      rv.row(i) = GetLunarMantleData(t_tdb(i), compute_vel);
     }
     return rv;
   }

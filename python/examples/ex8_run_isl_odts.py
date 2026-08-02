@@ -47,8 +47,11 @@ def _hms_to_s(s: str) -> float:
 
 
 def sat_names(cfg) -> list:
-    return [n for n, a in cfg["agents"].items()
-            if a.get("application", {}).get("class") == "SatelliteOdtsApp"]
+    return [
+        n
+        for n, a in cfg["agents"].items()
+        if a.get("application", {}).get("class") == "SatelliteOdtsApp"
+    ]
 
 
 def apply_variant(cfg, sat_over: dict, drop_stations: bool = False):
@@ -69,14 +72,14 @@ def extract(sim, names) -> dict:
     apps = [sim.get_agent(sn).get_application() for sn in names]
     d = {
         "t_s": np.asarray(apps[0].time_grid()).reshape(-1),
-        "truth_states": np.stack([np.asarray(a.truth_state()) for a in apps]),   # [n_sat, N, 8]
-        "own_est": np.stack([np.asarray(a.own_estimate()) for a in apps]),       # [n_sat, N, 8]
+        "truth_states": np.stack([np.asarray(a.truth_state()) for a in apps]),  # [n_sat, N, 8]
+        "own_est": np.stack([np.asarray(a.own_estimate()) for a in apps]),  # [n_sat, N, 8]
         "own_cov_full": np.stack([np.asarray(a.own_cov_full()) for a in apps]),  # [n_sat, N, 64]
         "n_sat": np.asarray(len(names)),
     }
     try:
         g = sim.get_agent("gs_manager").get_application()
-        d["est_central"] = np.asarray(g.est_central())                          # [N, 8*n_sat]
+        d["est_central"] = np.asarray(g.est_central())  # [N, 8*n_sat]
         d["cov_central_full"] = np.stack([np.asarray(c) for c in g.cov_central_full()])
     except Exception:
         pass  # `nost` variant has no ground manager
@@ -111,19 +114,44 @@ def main() -> None:
         "full": ({}, False),
         "noex": ({"consider_exchange_interval_s": 0.0}, False),
         "nost": ({}, True),
-        "ci": ({"exchange_use_covariance_intersection": True, "exchange_ci_weight": 0.95,
-                "process_accel_sigma_mps2": 1.0e-3}, False),
-        "tf_rr": ({**ci, "enable_two_way_time_transfer": False,
-                   "enable_two_way_frequency_transfer": False}, False),
-        "tf_tt": ({**ci, "enable_two_way_time_transfer": True,
-                   "enable_two_way_frequency_transfer": False}, False),
-        "tf_ttft": ({**ci, "enable_two_way_time_transfer": True,
-                     "enable_two_way_frequency_transfer": True}, False),
+        "ci": (
+            {
+                "exchange_use_covariance_intersection": True,
+                "exchange_ci_weight": 0.95,
+                "process_accel_sigma_mps2": 1.0e-3,
+            },
+            False,
+        ),
+        "tf_rr": (
+            {
+                **ci,
+                "enable_two_way_time_transfer": False,
+                "enable_two_way_frequency_transfer": False,
+            },
+            False,
+        ),
+        "tf_tt": (
+            {
+                **ci,
+                "enable_two_way_time_transfer": True,
+                "enable_two_way_frequency_transfer": False,
+            },
+            False,
+        ),
+        "tf_ttft": (
+            {**ci, "enable_two_way_time_transfer": True, "enable_two_way_frequency_transfer": True},
+            False,
+        ),
     }
 
     names = sat_names(base_cfg)
-    meta = {"satellite_names": names, "n_sat": len(names), "n_links": len(names) - 1,
-            "duration": base_cfg["duration"], "C_mps": float(pnt.C)}
+    meta = {
+        "satellite_names": names,
+        "n_sat": len(names),
+        "n_links": len(names) - 1,
+        "duration": base_cfg["duration"],
+        "C_mps": float(pnt.C),
+    }
     for tag, (sat_over, drop_st) in variants.items():
         cfg = copy.deepcopy(base_cfg)
         if dur_s is not None:
@@ -138,8 +166,10 @@ def main() -> None:
         np.savez_compressed(outdir / f"results_{tag}.npz", **d)
 
         # Console summary: final onboard own position error per satellite.
-        final = [float(np.linalg.norm(d["own_est"][j, -1, :3] - d["truth_states"][j, -1, :3]))
-                 for j in range(len(names))]
+        final = [
+            float(np.linalg.norm(d["own_est"][j, -1, :3] - d["truth_states"][j, -1, :3]))
+            for j in range(len(names))
+        ]
         meta[f"final_pos_err_{tag}"] = final
         print(f"  mean final own pos err ({tag}): {np.mean(final):.1f} m")
 

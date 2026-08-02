@@ -90,6 +90,37 @@ namespace lupnt {
       return P_.topLeftCorner(base_state_size_, base_state_size_);
     }
 
+    /// @brief Seed the backward pass with the final BASE-state posterior.
+    ///
+    /// Unlike `EKF::InitializeSmootherState`, which seeds with the full filter state, this
+    /// stores only the leading (current-epoch) block, matching the base-state convention of
+    /// `UpdateSmoother` below.
+    void InitializeSmootherState() override;
+
+    /// @brief One backward step of the delayed-state (stochastic-cloning) fixed-interval
+    /// smoother.
+    ///
+    /// The standard RTS recursion inherited from `EKF` is **invalid** when time-differenced
+    /// measurements are present: a TDCP measurement at epoch `k+1` depends on both `x_{k+1}`
+    /// and `x_k`, so conditioning on `x_{k+1}` no longer blocks information flow from later
+    /// measurements and the RTS gain, which accounts only for the process correlation through
+    /// the STM, misses the measurement-induced posterior correlation.
+    ///
+    /// Cloning restores the Markov property for the augmented pair, so the smoothed estimate
+    /// follows from the joint posterior the filter already carries at epoch `k+1`,
+    /// `[x_{k+1|k+1}; x_{k|k+1}]` with blocks `P_{k+1|k+1}`, `P_{k+1,k|k+1}`, `P_{k|k+1}`:
+    ///
+    ///     J_k      = P_{k+1,k|k+1}^T P_{k+1|k+1}^{-1}
+    ///     x_{k|N}  = x_{k|k+1} + J_k (x_{k+1|N} - x_{k+1|k+1})
+    ///     P_{k|N}  = P_{k|k+1} + J_k (P_{k+1|N} - P_{k+1|k+1}) J_k^T
+    ///
+    /// `x_sm_[k]` / `P_sm_[k]` therefore hold BASE-sized (n, n x n) quantities, not the
+    /// augmented 2n the forward filter carries. `J_k` is obtained by an LDL^T solve rather
+    /// than an explicit inverse.
+    ///
+    /// @param tidx  Time index to smooth (must be `< max_tidx_ - 1`)
+    void UpdateSmoother(int tidx) override;
+
   private:
     int base_state_size_ = 0;
 

@@ -43,6 +43,14 @@ namespace lupnt {
 
     bool spice_loaded = false;
 
+    // True once the DE440t TT-TDB time ephemeris (NAIF body 1000000001) has
+    // been loaded, enabling the high-fidelity TDB<->TT path in ConvertTime.
+    static bool tt_tdb_kernel_loaded = false;
+
+    // Base NAIF id that all time-ephemeris segments are referenced to. The
+    // segment ids themselves (kNaifTtMinusTdb, ...) live in spice.h.
+    static constexpr int kNaifTdb = 1000000000;
+
     void CheckSpiceFailure(const std::string& context) {
       if (!failed_c()) return;
 
@@ -228,6 +236,25 @@ namespace lupnt {
       CheckSpiceFailure("Loading naif0012.tls");
       furnsh_c("de440.bsp");  // planetary ephemeris
       CheckSpiceFailure("Loading de440.bsp");
+
+      // High-fidelity TT-TDB time ephemeris. de440t.bsp is de440.bsp plus a
+      // Chebyshev segment (NAIF body 1000000001) giving the integrated
+      // TT - TDB difference at the geocenter. ConvertTime uses it for TDB<->TT
+      // in place of the truncated analytic series in unitim_c (the two differ
+      // by up to ~30 us). The extra planetary segments duplicate de440.bsp and
+      // are harmless (SPICE gives precedence to the last-loaded file).
+      if (std::filesystem::exists("de440t.bsp")) {
+        furnsh_c("de440t.bsp");
+        CheckSpiceFailure("Loading de440t.bsp");
+        tt_tdb_kernel_loaded = true;
+      } else {
+        Logger::Warn(
+            "SPICE: de440t.bsp not found in the kernel directory; ConvertTime "
+            "TDB<->TT will fall back to the lower-fidelity analytic series "
+            "(unitim_c) instead of the DE440t TT-TDB ephemeris",
+            "Spice");
+      }
+
       furnsh_c("pck00011.tpc");  // planetary constants
       CheckSpiceFailure("Loading pck00011.tpc");
 
@@ -322,10 +349,15 @@ namespace lupnt {
       const std::string kMoonAssocPa = "moon_assoc_pa.tf";
       RefreshAndLoadKernel(kMoonAssocPa, kLunarFkUrl + kMoonAssocPa, kernel_dir);
 
-      // Mars
-      if (std::filesystem::exists("mars097.bsp")) {
-        furnsh_c("mars097.bsp");
-        CheckSpiceFailure("Loading mars097.bsp");
+      // Mars. NAIF ships this as "mar097.bsp"; the guard previously tested for
+      // "mars097.bsp", which never matched, so the kernel was silently never
+      // furnished. Both spellings are accepted so that either bundle works.
+      for (const char* mars_bsp : {"mar097.bsp", "mars097.bsp"}) {
+        if (std::filesystem::exists(mars_bsp)) {
+          furnsh_c(mars_bsp);
+          CheckSpiceFailure(fmt::format("Loading {}", mars_bsp));
+          break;
+        }
       }
 
       // Load Chebyshev coefficients
@@ -762,9 +794,80 @@ namespace lupnt {
      * @param to  to time system
      * @return real     out time in seconds
      */
+    /// @brief Read TT - TDB [s] at a TDB epoch from the DE440t time ephemeris.
+    ///
+    /// The difference is stored as the x-component of the position of NAIF
+    /// body 1000000001 ("TT-TDB") relative to 1000000000. The ephemeris is
+    /// parameterized by TDB; not thread-safe, so callers guard `spkgeo_c` with
+    /// an omp-critical section.
+    static double TtMinusTdbFromKernel(double et_tdb) {
+      SpiceDouble state[6];
+      SpiceDouble lt;
+      spkgeo_c(kNaifTtMinusTdb, et_tdb, "J2000", kNaifTdb, state, &lt);
+      CheckSpiceFailure("Reading DE440t TT-TDB ephemeris");
+      return state[0];  // TT - TDB [s]
+    }
+
+    Real GetTimeEphemerisOffset(Real t_tdb, int naif_id) {
+      if (!spice_loaded) LoadSpiceKernel();
+      double offset = 0.0;
+      bool failed = false;
+      // Capture the failure flag rather than throwing inside the critical
+      // region: an exception must not escape an OpenMP structured block.
+#pragma omp critical
+      {
+        SpiceDouble state[6];
+        SpiceDouble lt;
+        spkgeo_c(naif_id, t_tdb.val(), "J2000", kNaifTdb, state, &lt);
+        failed = failed_c();
+        if (failed) {
+          reset_c();
+        } else {
+          offset = state[0];
+        }
+      }
+      LUPNT_CHECK(!failed,
+                  fmt::format("Could not read time ephemeris for NAIF id {} at t_tdb={} "
+                              "(is the containing kernel loaded?)",
+                              naif_id, t_tdb.val()),
+                  "Spice");
+      return offset;
+    }
+
     Real ConvertTime(Real t, Time from, Time to) {
       if (!spice_loaded) LoadSpiceKernel();
       if (from == to) return t;
+
+      // High-fidelity TT<->TDB via the DE440t TT-TDB ephemeris. unitim_c uses
+      // a truncated analytic series (Fairhead & Bretagnon) for this leg; the
+      // integrated DE440t difference is more accurate by up to ~30 us. Route
+      // any TDB-involving conversion through TT so the TT<->TDB leg uses the
+      // kernel while the remaining (leap-second / linear) legs use unitim_c.
+      if (tt_tdb_kernel_loaded && (from == Time::TDB || to == Time::TDB) && from != to) {
+        if (from == Time::TDB && to == Time::TT) {
+          double offset;
+#pragma omp critical
+          {
+            offset = TtMinusTdbFromKernel(t.val());
+          }
+          return t + offset;  // t is TDB -> TT
+        }
+        if (from == Time::TT && to == Time::TDB) {
+          // The ephemeris is parameterized by TDB; using the TT epoch as the
+          // lookup argument adds < 1e-12 s error (|TT-TDB| < 2 ms, rate ~3e-10).
+          double offset;
+#pragma omp critical
+          {
+            offset = TtMinusTdbFromKernel(t.val());
+          }
+          return t - offset;  // t is TT -> TDB
+        }
+        if (from == Time::TDB)
+          return spice::ConvertTime(spice::ConvertTime(t, Time::TDB, Time::TT), Time::TT, to);
+        if (to == Time::TDB)
+          return spice::ConvertTime(spice::ConvertTime(t, from, Time::TT), Time::TT, Time::TDB);
+      }
+
       SpiceDouble t_in = t.val();
       SpiceDouble t_out_spice;
 #pragma omp critical

@@ -11,7 +11,7 @@ using namespace Catch::Matchers;
 // ============================================================================
 // Cross-validation against GMAT
 //
-// The reference values below were generated once via GMAT (R2022a) and
+// The reference values below were generated once via GMAT (R2026a) and
 // checked into `cpp/test/gmat/data/gmat_reference.json` by
 // `cpp/test/gmat/gen_gmat_reference.py`. This test does **not** require
 // GMAT to run -- see `cpp/test/gmat/README.md` for how the fixture was
@@ -23,6 +23,15 @@ using namespace Catch::Matchers;
 // ============================================================================
 
 TEST_CASE("conversions.time_conversions_gmat_reference") {
+  // GMAT and Orekit both use an analytic (Fairhead-Bretagnon style) TT<->TDB
+  // series. LuPNT's default is now the integrated DE440t model, which differs
+  // from those series by ~20-30 us -- LuPNT is the more accurate of the two, so
+  // this is not a LuPNT error. To keep this a like-for-like check of the
+  // *algorithm*, compare against LuPNT's analytic series here.
+  const bool autofit_was = GetTtTdbAutoFit();
+  SetTtTdbAutoFit(false);
+  ClearTtMinusTdbFit();
+
   nlohmann::json data = LoadTestJson("gmat/data/gmat_reference.json");
 
   for (const auto& tc : data["time_scales"]) {
@@ -62,4 +71,6 @@ TEST_CASE("conversions.time_conversions_gmat_reference") {
       RequireNear(t_tdb - t_tai, Real(tc["tdb_minus_tai"].get<double>()), 1e-5);
     }
   }
+
+  SetTtTdbAutoFit(autofit_was);
 }

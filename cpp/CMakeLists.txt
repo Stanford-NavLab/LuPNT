@@ -17,6 +17,20 @@ endif()
 
 option(LUPNT_WITH_PYTHON "Build with Python interpreter." OFF)
 
+# Galileo NeQuick-G electron-density backend. OFF by default: the plasma/nequick/ module is licensed
+# separately (not MIT) and is excluded from MIT release builds. See
+# cpp/lupnt/environment/plasma/nequick/LICENSE.
+option(LUPNT_ENABLE_NEQUICK "Build the Galileo NeQuick-G ionosphere backend (separately licensed)."
+       OFF
+)
+
+# Neustrelitz NEDM2020 electron-density backend. OFF by default: the plasma/nedm/ module is not
+# distributed with the public (MIT) release and is excluded from default builds. Enable only when
+# the plasma/nedm/ module is present in the tree.
+option(LUPNT_ENABLE_NEDM "Build the Neustrelitz NEDM2020 ionosphere backend (separately provided)."
+       OFF
+)
+
 foreach(_prefix "$ENV{HOME}/anaconda3" "$ENV{LUPNT_PYTHON_PATH}")
   if(IS_DIRECTORY "${_prefix}")
     list(APPEND CMAKE_IGNORE_PREFIX_PATH "${_prefix}")
@@ -52,6 +66,19 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lupnt/environment/plasma/fortran)
 # automatically. Keep that in mind when changing files, or explicitly mention them here.
 file(GLOB_RECURSE headers CONFIGURE_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/lupnt/*.h)
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/lupnt/*.cc)
+
+# The separately-licensed NeQuick-G backend (plasma/nequick/) is never auto-globbed; it is added
+# conditionally below only when LUPNT_ENABLE_NEQUICK=ON. This keeps its sources out of the default
+# (MIT) build even when the directory is present in the tree.
+list(FILTER headers EXCLUDE REGEX "/plasma/nequick/")
+list(FILTER sources EXCLUDE REGEX "/plasma/nequick/")
+
+# The NEDM2020 backend (plasma/nedm/) is handled the same way: never auto-globbed, added
+# conditionally below only when LUPNT_ENABLE_NEDM=ON. compute_ne_nedm always has a fallback
+# definition in plasma/tec/nedm_stub.cc so the dispatcher links in the default build.
+list(FILTER headers EXCLUDE REGEX "/plasma/nedm/")
+list(FILTER sources EXCLUDE REGEX "/plasma/nedm/")
+
 write_header(${CMAKE_CURRENT_LIST_DIR}/lupnt)
 
 # message(STATUS "Headers:") foreach(h ${headers}) file(RELATIVE_PATH rel_h
@@ -105,6 +132,51 @@ target_compile_definitions(
   PUBLIC MAGIC_ENUM_RANGE_MIN=0 MAGIC_ENUM_RANGE_MAX=1024 AUTODIFF_ENABLE_IMPLICIT_CONVERSION
          AUTODIFF_ENABLE_IMPLICIT_CONVERSION_REAL OPENCV_EIGEN_TENSOR_SUPPORT
 )
+
+# ---- Optional NeQuick-G backend (separately licensed) ----
+if(LUPNT_ENABLE_NEQUICK)
+  set(NEQUICK_DIR ${CMAKE_CURRENT_LIST_DIR}/lupnt/environment/plasma/nequick)
+  if(NOT EXISTS ${NEQUICK_DIR}/nequick_interface.cc)
+    message(FATAL_ERROR "LUPNT_ENABLE_NEQUICK=ON but the plasma/nequick/ module is missing. "
+                        "Restore the module or reconfigure with -DLUPNT_ENABLE_NEQUICK=OFF."
+    )
+  endif()
+  file(GLOB_RECURSE NEQUICK_SOURCES CONFIGURE_DEPENDS ${NEQUICK_DIR}/*.cc)
+  file(GLOB_RECURSE NEQUICK_HEADERS CONFIGURE_DEPENDS ${NEQUICK_DIR}/*.h)
+  target_sources(${PROJECT_NAME} PRIVATE ${NEQUICK_SOURCES} ${NEQUICK_HEADERS})
+  target_compile_definitions(${PROJECT_NAME} PUBLIC LUPNT_HAS_NEQUICK)
+  # NeQuick MODIP grid + CCIR maps ship with the LuPNT_data bundle at
+  # <LUPNT_DATA_DIR>/plasma/nequick (fetched by FetchLuPNTData.cmake) -- they are NOT vendored in
+  # the source tree. The model loads them at runtime from <PECSIMPY_BASE_PATH>/nequick (see
+  # nequick_interface.cc). Warn at configure time if the bundle is missing them.
+  if(NOT EXISTS ${LUPNT_DATA_DIR}/plasma/nequick/modip/modip2001_wrapped.asc)
+    message(
+      WARNING "NeQuick-G enabled but its data is not in the LuPNT_data bundle at "
+              "${LUPNT_DATA_DIR}/plasma/nequick. Update and republish LuPNT_data (see "
+              "scripts/publish_lupnt_data.sh), or point LUPNT_NEQUICK_DATA at the data at runtime."
+    )
+  endif()
+  message(STATUS "LuPNT: NeQuick-G backend ENABLED (separately licensed; not for MIT release)")
+else()
+  message(STATUS "LuPNT: NeQuick-G backend disabled (default)")
+endif()
+
+# ---- Optional NEDM2020 backend (separately provided) ----
+if(LUPNT_ENABLE_NEDM)
+  set(NEDM_DIR ${CMAKE_CURRENT_LIST_DIR}/lupnt/environment/plasma/nedm)
+  if(NOT EXISTS ${NEDM_DIR}/nedm.cc)
+    message(FATAL_ERROR "LUPNT_ENABLE_NEDM=ON but the plasma/nedm/ module is missing. "
+                        "Restore the module or reconfigure with -DLUPNT_ENABLE_NEDM=OFF."
+    )
+  endif()
+  file(GLOB_RECURSE NEDM_SOURCES CONFIGURE_DEPENDS ${NEDM_DIR}/*.cc)
+  file(GLOB_RECURSE NEDM_HEADERS CONFIGURE_DEPENDS ${NEDM_DIR}/*.h)
+  target_sources(${PROJECT_NAME} PRIVATE ${NEDM_SOURCES} ${NEDM_HEADERS})
+  target_compile_definitions(${PROJECT_NAME} PUBLIC LUPNT_HAS_NEDM)
+  message(STATUS "LuPNT: NEDM2020 backend ENABLED (separately provided; not for MIT release)")
+else()
+  message(STATUS "LuPNT: NEDM2020 backend disabled (default)")
+endif()
 
 # Enable precompiled headers for faster compilation
 target_precompile_headers(

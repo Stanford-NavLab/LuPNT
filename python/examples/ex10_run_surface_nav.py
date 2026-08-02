@@ -38,23 +38,31 @@ def series_frame(app) -> pd.DataFrame:
     """Flatten a SurfaceRoverNavApp's result accessors into a tidy per-epoch DataFrame."""
     d = {"t_s": np.asarray(app.time_s()).reshape(-1)}
     v3 = {
-        "pos_err": app.pos_err_enu(), "pos_sigma": app.pos_sigma_enu(),
-        "accel_bias_err": app.accel_bias_err(), "accel_bias_sigma": app.accel_bias_sigma(),
-        "gyro_bias_err": app.gyro_bias_err(), "gyro_bias_sigma": app.gyro_bias_sigma(),
-        "att_err_deg": app.att_err_deg(), "att_sigma_deg": app.att_sigma_deg(),
+        "pos_err": app.pos_err_enu(),
+        "pos_sigma": app.pos_sigma_enu(),
+        "accel_bias_err": app.accel_bias_err(),
+        "accel_bias_sigma": app.accel_bias_sigma(),
+        "gyro_bias_err": app.gyro_bias_err(),
+        "gyro_bias_sigma": app.gyro_bias_sigma(),
+        "att_err_deg": app.att_err_deg(),
+        "att_sigma_deg": app.att_sigma_deg(),
     }
     for name, arr in v3.items():
         A = np.asarray(arr).reshape(-1, 3)
         for j, c in enumerate(["x", "y", "z"]):
             d[f"{name}_{c}"] = A[:, j]
-    for name, arr in [("pos_err_norm", app.pos_err_norm()),
-                      ("clock_bias_err", app.clock_bias_err()),
-                      ("clock_bias_sigma", app.clock_bias_sigma()),
-                      ("rover_alt_truth", app.rover_alt_truth())]:
+    for name, arr in [
+        ("pos_err_norm", app.pos_err_norm()),
+        ("clock_bias_err", app.clock_bias_err()),
+        ("clock_bias_sigma", app.clock_bias_sigma()),
+        ("rover_alt_truth", app.rover_alt_truth()),
+    ]:
         d[name] = np.asarray(arr).reshape(-1)
     d["n_visible"] = np.asarray(app.n_visible()).reshape(-1)
-    for name, arr in [("track_truth", app.rover_track_enu_truth()),
-                      ("track_est", app.rover_track_enu_est())]:
+    for name, arr in [
+        ("track_truth", app.rover_track_enu_truth()),
+        ("track_est", app.rover_track_enu_est()),
+    ]:
         A = np.asarray(arr).reshape(-1, 2)
         d[f"{name}_e"], d[f"{name}_n"] = A[:, 0], A[:, 1]
     return pd.DataFrame(d)

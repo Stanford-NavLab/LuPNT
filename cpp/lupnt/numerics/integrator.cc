@@ -171,7 +171,16 @@ namespace lupnt {
   }
 
   /**
-   * @brief One step of 8th order Runge-Kutta Integration
+   * @brief One step of the 10-stage Shanks-type Runge-Kutta method.
+   *
+   * @note Despite the class name, this is a **7th order** method. Butcher's
+   * barrier requires at least 11 stages for an explicit Runge-Kutta method to
+   * attain order 8, and this one has 10, so order 7 is the best attainable at
+   * this stage count -- the implementation is optimal, the name overstates it.
+   * Measured in exact rational arithmetic the local truncation error is
+   * O(h^8), i.e. global order 7; see cpp/test/numerics/test_integrator_order.cc.
+   * The name is retained because IntegratorType::RK8 is public API and is
+   * exposed in the Python bindings.
    *
    * @param f  The ODE function to propagate
    * @param t  Time
@@ -216,9 +225,14 @@ namespace lupnt {
     State k_7 = f(t6, x6) * dt;
 
     // 8
+    // The leading coefficient is -231, not -234: the row must sum to c_8 = 1
+    // (the consistency condition c_i = sum_j a_ij), and
+    // (-231 + 81 - 1164 + 656 - 122 + 800)/20 = 1 exactly, whereas -234 gives
+    // 17/20 and silently drops the method to 3rd order. See
+    // cpp/test/numerics/test_integrator_order.cc.
     Real t7 = t + dt;
     State x7
-        = x + (1.0 / 20) * (-234 * k_1 + 81 * k_3 - 1164 * k_4 + 656 * k_5 - 122 * k_6 + 800 * k_7);
+        = x + (1.0 / 20) * (-231 * k_1 + 81 * k_3 - 1164 * k_4 + 656 * k_5 - 122 * k_6 + 800 * k_7);
     State k_8 = f(t7, x7) * dt;
 
     // 9
@@ -278,11 +292,14 @@ namespace lupnt {
     bool within_tolerance = true;
     double max_error = 0.0;
 
-    // Non-conservative acceptance threshold
+    // Non-conservative acceptance threshold. J.C. Butcher, Numerical Methods
+    // for Ordinary Differential Equations, p291.
+    //
+    // The exponent must be evaluated in floating point: `order_` is an int, so
+    // `(order_ + 1) / order_` is integer division and collapses to 1 for every
+    // order >= 1, giving 5 instead of 5^1.25 ~ 7.48 for RKF45.
     double accept_thresh
-        = std::pow(order_ + 1,
-                   (order_ + 1) / order_);  // J.C. Butcher, Numerical Methods for
-                                            // Ordinary Differential Equations, p291
+        = std::pow(order_ + 1, static_cast<double>(order_ + 1) / static_cast<double>(order_));
 
     for (size_t i = 0; i < x_new_low.size(); ++i) {
       error = abs(x_new_high(i) - x_new_low(i));
@@ -366,10 +383,19 @@ namespace lupnt {
       k[0] = dt * f(t, x);
       for (int i = 1; i < stages; ++i) {
         State sum = State::Zero(x.size());
+        // The stage time is the ROW SUM c_i = sum_j a_ij, not the first column
+        // A_[i][0]. Deriving it here rather than storing a separate c_ array
+        // keeps the two consistent by construction. Using A_[i][0] put stages
+        // 4 and 5 at t + 2.95*dt and t + 2.85*dt -- outside the step -- which
+        // is invisible for an autonomous RHS but drops the method to 1st order
+        // as soon as f depends on t, as orbit dynamics with ephemeris terms
+        // does. See cpp/test/numerics/test_integrator_order.cc.
+        double c_i = 0.0;
         for (int j = 0; j < i; ++j) {
           sum += A_[i][j] * k[j];
+          c_i += A_[i][j];
         }
-        k[i] = dt * f(t + A_[i][0] * dt, x + sum);
+        k[i] = dt * f(t + c_i * dt, x + sum);
       }
 
       // Compute the high-order and low-order solutions

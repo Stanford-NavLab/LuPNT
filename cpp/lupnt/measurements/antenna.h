@@ -48,6 +48,23 @@ namespace lupnt {
     Real ComputeGain(Real theta, Real phi) const;
     VEC_DEF_REAL_REAL(ComputeGain)
 
+    /// @brief Azimuth-averaged antenna gain at a given off-boresight angle.
+    ///
+    /// Averages the 2D gain pattern over all azimuth angles (in linear power)
+    /// at a fixed off-boresight angle `phi`, collapsing `G(theta, phi)` to a
+    /// 1D pattern `G(phi)`. This is the transmit-gain model used when the GNSS
+    /// satellite yaw orientation is unknown (e.g. future-epoch lunar scenarios),
+    /// per Mina et al. (2025): the block-average ACE/GRAP patterns are averaged
+    /// over azimuth for each off-boresight angle. Selected via
+    /// `GnssMeasurementOptions::TxGainModel::AZIMUTH_AVERAGED`.
+    ///
+    /// @param phi Off-boresight angle [rad], wrapped to [-pi, pi]
+    /// @return    Azimuth-averaged gain [dB]; 0 for omni, NaN if `phi` exceeds
+    ///            the pattern's coverage. A 1D pattern is already azimuthally
+    ///            symmetric and is returned unchanged.
+    Real ComputeGainAzimuthAveraged(Real phi) const;
+    VEC_DEF_REAL(ComputeGainAzimuthAveraged)
+
     /// @brief Name of the loaded antenna pattern (e.g. "Block-IIR_ACE"); empty for
     /// omni-directional.
     std::string GetName() { return name_; }

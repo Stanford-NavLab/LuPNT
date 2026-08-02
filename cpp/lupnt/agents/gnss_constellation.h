@@ -53,6 +53,22 @@ namespace lupnt {
     Real L_pol = 1.0;     // [dB] Polarization loss
     Real L_atm = 0.0;     // [dB] Atmospheric loss
     Real T_eff = 167.98;  // [K] Effective noise temperature
+
+    // Additional measurement-error sources root-sum-squared with the tracking-loop
+    // (DLL/PLL) noise to form the reported pseudorange / carrier-phase sigmas
+    // (Mina et al. 2025, Eqs. 50/54). All default to 0 -> tracking-loop noise only.
+    //
+    // IMPORTANT -- keep these at 0 for a "true" measurement simulation in which the truth
+    // orbit comes from a precise product (SP3 + antenna PCO) while the receiver uses the
+    // broadcast ephemeris/clock: there the ephemeris/clock error is ALREADY realized in the
+    // measurement geometry (truth - broadcast), so adding these sigmas would double-count it.
+    // Set them nonzero ONLY when that pairing is unavailable -- e.g. a future epoch with no
+    // SP3/broadcast product -- to inject the broadcast-ephemeris/clock and oscillator/vibration
+    // error budget statistically instead.
+    Real sigma_pr_eph_m = 0.0;   // [m] GNSS broadcast ephemeris pseudorange error (1-sigma)
+    Real sigma_pr_clk_m = 0.0;   // [m] GNSS broadcast clock pseudorange error (1-sigma)
+    Real allan_deviation = 0.0;  // [-] reference-oscillator Allan deviation (e.g. 5e-13)
+    Real sigma_vib_deg = 0.0;    // [deg] vibration-induced carrier-phase noise (1-sigma)
   };
 
   /// @brief A spherical body that can occlude the line of sight between a
@@ -221,6 +237,18 @@ namespace lupnt {
 
     /// @brief Transmit power [dB-W] for `prn` and `freq`.
     Real GetTransmitPowerDbw(int prn, GnssFreq freq) const;
+
+    /// @brief Override the transmit antenna pattern for `prn`/`freq` (after
+    /// `SetupTransmitters`) -- e.g. to swap the default per-SVN pattern for a
+    /// block-average ACE pattern to reproduce a reference simulator.
+    void SetTransmitterAntenna(int prn, GnssFreq freq, const Antenna& antenna) {
+      antennas_[prn][freq] = antenna;
+    }
+
+    /// @brief Override the transmit power [dB-W] for `prn`/`freq` (after
+    /// `SetupTransmitters`) -- e.g. to apply a lower per-block EIRP-normalization
+    /// power than the default.
+    void SetTransmitPower(int prn, GnssFreq freq, Real power_dbw) { P_tx_[prn][freq] = power_dbw; }
 
     /// @brief Compute the GNSS attitude frame (ex, ey, ez) of a satellite at
     /// position `r_sat_eci`, given the Sun position `r_sun_eci` (same frame).

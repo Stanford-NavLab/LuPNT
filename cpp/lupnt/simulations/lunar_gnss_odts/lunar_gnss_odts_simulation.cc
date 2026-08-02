@@ -105,6 +105,12 @@ namespace lupnt {
       AppendFingerprintField(oss, "include_galileo", cfg.constellation.include_galileo);
       AppendFingerprintVector(oss, "gps_prns", cfg.constellation.gps_prns);
       AppendFingerprintVector(oss, "galileo_prns", cfg.constellation.galileo_prns);
+      // Appended ONLY when QZSS is enabled, so a GPS(+Galileo) fingerprint stays byte-identical
+      // to before this feature existed and pre-existing link caches remain valid.
+      if (cfg.constellation.include_qzss) {
+        AppendFingerprintField(oss, "include_qzss", cfg.constellation.include_qzss);
+        AppendFingerprintVector(oss, "qzss_prns", cfg.constellation.qzss_prns);
+      }
       AppendFingerprintField(oss, "design_name", cfg.design.name);
       AppendFingerprintField(oss, "setup_transmitters", cfg.design.setup_transmitters);
       AppendFingerprintField(oss, "receiver_antenna_name", cfg.design.receiver_antenna_name);
@@ -132,6 +138,8 @@ namespace lupnt {
       // synthetic-SISE magnitudes key the almanac cache.)
       if (IsAlmanacSource(cfg)) {
         AppendFingerprintField(oss, "source", cfg.constellation.source);
+        AppendFingerprintField(oss, "almanac_seed", cfg.constellation.almanac_seed);
+        AppendFingerprintField(oss, "propagation_model", cfg.constellation.propagation_model);
         AppendFingerprintField(oss, "almanac_file",
                                cfg.constellation.almanac_file.lexically_normal().string());
         AppendFingerprintField(oss, "almanac_brdc_seed",
@@ -707,6 +715,18 @@ namespace lupnt {
 
     bool EstimateSrp(const LunarGnssODTSConfig& cfg) { return cfg.estimate_srp_coefficient; }
 
+    // Number of clock states carried by the FILTER: 2 = [bias, drift], 3 = [bias, drift,
+    // drift-rate] (the manuscript's model). Independent of the truth clock dimension.
+    int NumFilterClockStates(const LunarGnssODTSConfig& cfg) {
+      return cfg.use_three_state_clock_filter ? 3 : 2;
+    }
+    // Orbit(6) + clock(2 or 3). SRP, if estimated, is appended after this.
+    int OrbitClockDim(const LunarGnssODTSConfig& cfg) { return 6 + NumFilterClockStates(cfg); }
+    // Full filter state dimension: orbit + clock (+ SRP coefficient).
+    int FilterStateDim(const LunarGnssODTSConfig& cfg) {
+      return OrbitClockDim(cfg) + (EstimateSrp(cfg) ? 1 : 0);
+    }
+
     bool UseFilterSrp(const LunarGnssODTSConfig& cfg) {
       return cfg.use_srp_filter || cfg.estimate_srp_coefficient;
     }
@@ -797,33 +817,69 @@ namespace lupnt {
 
     VecXd SampleInitialError(const LunarGnssODTSConfig& cfg);
 
-    JointOrbitClockState ExtractJointOrbitClockState(const State& x) {
-      if (x.size() == 8) return JointOrbitClockState(x);
-      LUPNT_CHECK(x.size() == 9, "GNSS filter state must be orbit/clock or orbit/clock/SRP",
-                  "LunarGnssODTS");
-      State x_joint(8);
-      x_joint = x.head(8);
+    // Orbit + clock state names/units for a 2- or 3-state clock (oc_dim = 8 or 9).
+    void OrbitClockNamesUnits(int oc_dim, std::vector<std::string>* names,
+                              std::vector<std::string>* units) {
+      *names = {"r_x", "r_y", "r_z", "v_x", "v_y", "v_z", "b", "d"};
+      *units = {"m", "m", "m", "m/s", "m/s", "m/s", "m", "m/s"};
+      if (oc_dim == 9) {
+        names->push_back("dr");
+        units->push_back("m/s^2");  // range-equivalent drift-rate
+      }
+    }
+
+    // Extract the orbit+clock joint state (first `oc_dim` elements) from a possibly
+    // SRP-augmented filter state. `oc_dim` is 8 (2-state clock) or 9 (3-state clock).
+    JointOrbitClockState ExtractJointOrbitClockState(const State& x, int oc_dim) {
+      LUPNT_CHECK(x.size() == oc_dim || x.size() == oc_dim + 1,
+                  "GNSS filter state must be orbit/clock or orbit/clock/SRP", "LunarGnssODTS");
+      if (x.size() == oc_dim) return JointOrbitClockState(x);
+      State x_joint(oc_dim);
+      x_joint = x.head(oc_dim);
       x_joint.SetFrame(x.GetFrame());
       x_joint.SetName("JointOrbitClock");
-      x_joint.SetNames({"r_x", "r_y", "r_z", "v_x", "v_y", "v_z", "b", "d"});
-      x_joint.SetUnits({"m", "m", "m", "m/s", "m/s", "m/s", "m", "m/s"});
+      std::vector<std::string> names, units;
+      OrbitClockNamesUnits(oc_dim, &names, &units);
+      x_joint.SetNames(names);
+      x_joint.SetUnits(units);
       return JointOrbitClockState(x_joint);
     }
 
     State MakeAugmentedSrpState(const State& joint_state, double srp_coeff_m2_kg) {
-      State x(9);
-      x.head(8) = joint_state.head(8);
-      x(8) = srp_coeff_m2_kg;
+      const int oc = static_cast<int>(joint_state.size());  // 8 or 9
+      State x(oc + 1);
+      x.head(oc) = joint_state.head(oc);
+      x(oc) = srp_coeff_m2_kg;
       x.SetFrame(joint_state.GetFrame());
       x.SetName("JointOrbitClockSrp");
-      x.SetNames({"r_x", "r_y", "r_z", "v_x", "v_y", "v_z", "b", "d", "bcoeff_srp"});
-      x.SetUnits({"m", "m", "m", "m/s", "m/s", "m/s", "m", "m/s", "m^2/kg"});
+      std::vector<std::string> names, units;
+      OrbitClockNamesUnits(oc, &names, &units);
+      names.push_back("bcoeff_srp");
+      units.push_back("m^2/kg");
+      x.SetNames(names);
+      x.SetUnits(units);
       return x;
     }
 
     State MakeInitialEstimateState(const State& truth0, const LunarGnssODTSConfig& cfg) {
-      State x0 = EstimateSrp(cfg) ? MakeAugmentedSrpState(truth0, cfg.initial_srp_coeff_m2_kg)
-                                  : State(truth0);
+      // Build the filter's orbit+clock state from the truth orbit and truth clock, padding or
+      // truncating the clock to the filter's clock dimension (drift-rate -> 0 when the truth
+      // clock has none). This decouples the filter clock dimension from the truth's.
+      const int oc = OrbitClockDim(cfg);
+      State joint(oc);
+      joint.head(6) = truth0.head(6);
+      joint(6) = truth0(6);                                                  // bias
+      joint(7) = truth0(7);                                                  // drift
+      if (oc == 9) joint(8) = (truth0.size() >= 9 ? truth0(8) : Real(0.0));  // drift-rate
+      joint.SetFrame(truth0.GetFrame());
+      joint.SetName("JointOrbitClock");
+      std::vector<std::string> names, units;
+      OrbitClockNamesUnits(oc, &names, &units);
+      joint.SetNames(names);
+      joint.SetUnits(units);
+
+      State x0
+          = EstimateSrp(cfg) ? MakeAugmentedSrpState(joint, cfg.initial_srp_coeff_m2_kg) : joint;
       x0 += SampleInitialError(cfg).cast<Real>();
       return x0;
     }
@@ -838,8 +894,9 @@ namespace lupnt {
                               const LunarGnssODTSConfig& cfg, MatXd* F) {
       const bool estimate_srp = EstimateSrp(cfg);
       const bool use_srp = estimate_srp || cfg.use_srp_filter;
-      const double srp_coeff = estimate_srp ? x0(8).val() : cfg.srp_coeff_filter_m2_kg;
-      JointOrbitClockState x_joint = ExtractJointOrbitClockState(x0);
+      const int oc = OrbitClockDim(cfg);  // 8 (2-state clock) or 9 (3-state clock)
+      const double srp_coeff = estimate_srp ? x0(oc).val() : cfg.srp_coeff_filter_m2_kg;
+      JointOrbitClockState x_joint = ExtractJointOrbitClockState(x0, oc);
       State xf_state;
 
       if (F != nullptr) {
@@ -849,14 +906,14 @@ namespace lupnt {
           MatXd stm_param;
           xf_state = dynamics.PropagateWithParams(x_joint, t0, tf, SrpParamState(srp_coeff),
                                                   nullptr, &stm_state, &stm_param);
-          F->block(0, 0, 8, 8) = stm_state;
-          if (estimate_srp) F->block(0, 8, 8, 1) = stm_param.col(0);
+          F->block(0, 0, oc, oc) = stm_state;
+          if (estimate_srp) F->block(0, oc, oc, 1) = stm_param.col(0);
         } else {
           xf_state = dynamics.Propagate(x_joint, t0, tf, nullptr, &stm_state);
-          F->block(0, 0, 8, 8) = stm_state;
+          F->block(0, 0, oc, oc) = stm_state;
         }
         if (estimate_srp) {
-          (*F)(8, 8) = 1.0;
+          (*F)(oc, oc) = 1.0;
         }
       } else if (use_srp) {
         xf_state = dynamics.PropagateWithParams(x_joint, t0, tf, SrpParamState(srp_coeff), nullptr);
@@ -895,11 +952,19 @@ namespace lupnt {
         const double dt = std::abs((tf - t0).val());
         const int n = static_cast<int>(x.size());
 
-        // Correlated blocks: position/velocity (SNC) and 2-state clock.
+        // Correlated blocks: position/velocity (SNC) and the 2- or 3-state clock.
+        const int nc = NumFilterClockStates(cfg);
         Mat3d Q_acc = std::pow(cfg.process_accel_sigma_mps2, 2) * Mat3d::Identity();
         MatXd Q_rv = ProcessNoisePosVel(Q_acc, dt);  // 6x6, dense
-        MatXd Q_clk
-            = ClockDynamics::TwoStateNoise(clock_model, dt, ClockBiasUnit::METERS).cast<double>();
+        // Fixed-size Mat2/Mat3 cannot share a ternary; assign each into the dynamic MatXd.
+        MatXd Q_clk;
+        if (nc == 3) {
+          Q_clk = ClockDynamics::ThreeStateNoise(clock_model, dt, ClockBiasUnit::METERS)
+                      .cast<double>();
+        } else {
+          Q_clk
+              = ClockDynamics::TwoStateNoise(clock_model, dt, ClockBiasUnit::METERS).cast<double>();
+        }
 
         // Factor each correlated block as U diag(D) U^T: D -> diagonal Q, U -> mapping G.
         MatXd G = MatXd::Identity(n, n);
@@ -910,12 +975,12 @@ namespace lupnt {
         G.block(0, 0, 6, 6) = du_rv.second;
 
         VecMatPair du_clk = UDUDecomposition(Q_clk);
-        Q_diag.segment(6, 2) = du_clk.first;
-        G.block(6, 6, 2, 2) = du_clk.second;
+        Q_diag.segment(6, nc) = du_clk.first;
+        G.block(6, 6, nc, nc) = du_clk.second;
 
         // SRP coefficient: scalar noise, already diagonal (identity mapping).
         if (EstimateSrp(cfg)) {
-          Q_diag(8) = std::pow(cfg.process_srp_coeff_sigma_m2_kg_sqrt_s, 2) * dt;
+          Q_diag(6 + nc) = std::pow(cfg.process_srp_coeff_sigma_m2_kg_sqrt_s, 2) * dt;
         }
 
         filter->SetProcessNoiseMappingMatrix(G);
@@ -924,18 +989,23 @@ namespace lupnt {
     }
 
     MatXd InitialCovariance(const LunarGnssODTSConfig& cfg) {
-      const int n = EstimateSrp(cfg) ? 9 : 8;
+      const int nc = NumFilterClockStates(cfg);
+      const int oc = OrbitClockDim(cfg);
+      const int n = FilterStateDim(cfg);
       MatXd P = MatXd::Zero(n, n);
       P.block(0, 0, 3, 3) = std::pow(cfg.initial_position_sigma_m, 2) * Mat3d::Identity();
       P.block(3, 3, 3, 3) = std::pow(cfg.initial_velocity_sigma_mps, 2) * Mat3d::Identity();
       P(6, 6) = std::pow(C * cfg.initial_clock_bias_sigma_s, 2);
       P(7, 7) = std::pow(C * cfg.initial_clock_drift_sigma_sps, 2);
-      if (EstimateSrp(cfg)) P(8, 8) = std::pow(cfg.initial_srp_coeff_sigma_m2_kg, 2);
+      if (nc == 3) P(8, 8) = std::pow(C * cfg.initial_clock_drift_rate_sigma_sps2, 2);
+      if (EstimateSrp(cfg)) P(oc, oc) = std::pow(cfg.initial_srp_coeff_sigma_m2_kg, 2);
       return P;
     }
 
     VecXd SampleInitialError(const LunarGnssODTSConfig& cfg) {
-      VecXd err(EstimateSrp(cfg) ? 9 : 8);
+      const int nc = NumFilterClockStates(cfg);
+      const int oc = OrbitClockDim(cfg);
+      VecXd err(FilterStateDim(cfg));
       err.setZero();
       err(0) = SampleNormal(0.0, cfg.initial_position_sigma_m).val();
       err(1) = SampleNormal(0.0, cfg.initial_position_sigma_m).val();
@@ -945,7 +1015,8 @@ namespace lupnt {
       err(5) = SampleNormal(0.0, cfg.initial_velocity_sigma_mps).val();
       err(6) = SampleNormal(0.0, C * cfg.initial_clock_bias_sigma_s).val();
       err(7) = SampleNormal(0.0, C * cfg.initial_clock_drift_sigma_sps).val();
-      if (EstimateSrp(cfg)) err(8) = SampleNormal(0.0, cfg.initial_srp_coeff_sigma_m2_kg).val();
+      if (nc == 3) err(8) = SampleNormal(0.0, C * cfg.initial_clock_drift_rate_sigma_sps2).val();
+      if (EstimateSrp(cfg)) err(oc) = SampleNormal(0.0, cfg.initial_srp_coeff_sigma_m2_kg).val();
       return err;
     }
 
@@ -984,21 +1055,23 @@ namespace lupnt {
     // irrelevant to a capability demo whose point is realistic constellation geometry, not a
     // precise ephemeris. Cost is dominated by the number of integration steps (per-eval overhead),
     // so the step is deliberately coarse for a smooth MEO orbit.
-    Ptr<NBodyDynamics> CreateGnssEarthDynamics() {
+    // Selectable force model (`constellation.propagation_model`). `full`: Earth 8x8 + Sun + Moon
+    // (physically complete). `j2`: Earth central + degree-2 zonal (C20 = J2) only, no third bodies
+    // -- it regresses the node (~14.6 deg/yr for GPS) while holding SMA (J2 has no secular a term).
+    // Both use a fixed-step RK8 integrator at 1200 s: unlike RK4 (which decays the orbit ~2.5 %/yr
+    // at this step), RK8's truncation is ~1e6x smaller, so SMA is preserved to <1 km over a
+    // multi-month seed->grid span.
+    Ptr<NBodyDynamics> CreateGnssEarthDynamics(const std::string& model) {
       auto dyn = MakePtr<NBodyDynamics>();
       dyn->SetFrame(Frame::GCRF);
-      dyn->AddBody(Body::Earth(4, 4));
-      dyn->AddBody(Body::Sun());
-      dyn->AddBody(Body::Moon());
-      dyn->SetIntegrator(IntegratorType::RK4);
-      // 1200 s (~36 RK4 steps per ~12 h MEO orbit) is the largest fixed step that stays
-      // numerically STABLE over the full ~1-year single seed->grid propagation segment: at 1500 s
-      // the orbit decays ~9 %/yr and at >=1800 s RK4 diverges outright (the state blows up to
-      // ~1e8 km, which then makes the downstream light-time solve query the ephemeris Chebyshev
-      // fit far out of range -> "interpolation time is out of range" crash). At 1200 s the
-      // along-track/energy error is ~2.5 %/yr -- far below the (deliberate) multi-month
-      // extrapolation error, so it is irrelevant to a geometry-only capability demo. Cost is
-      // dominated by the step count, so this is as coarse as stability allows (~10 s/sat/year).
+      if (model == "j2") {
+        dyn->AddBody(Body::Earth(2, 0));  // central + J2 zonal only
+      } else {
+        dyn->AddBody(Body::Earth(8, 8));  // "full": 8x8 gravity + Sun + Moon
+        dyn->AddBody(Body::Sun());
+        dyn->AddBody(Body::Moon());
+      }
+      dyn->SetIntegrator(IntegratorType::RK8);
       dyn->SetTimeStep(1200.0);
       return dyn;
     }
@@ -1009,7 +1082,8 @@ namespace lupnt {
     // (GPS+Galileo) the almanac setup time versus propagating per frequency.
     void PropagateAlmanacConstellation(GnssConst gnss_const, const std::vector<int>& prns_in,
                                        const VecXd& ephem_times_tai, const RinexNavLoader& seed,
-                                       const AntexLoader& antex, std::vector<int>& built_prns,
+                                       const AntexLoader& antex, const std::string& prop_model,
+                                       std::vector<int>& built_prns,
                                        std::vector<MatXd>& rv_eci_list) {
       const std::string letter = AntexLoader::GnssLetter(gnss_const);
       // PRN list: explicit, else every PRN of this constellation present in BOTH the seed almanac
@@ -1028,7 +1102,7 @@ namespace lupnt {
       // Ephemeris grid in TDB (the NBody time scale; the engine time-keeps in absolute TDB).
       VecXd ephem_times_tdb = ConvertTimeVector(ephem_times_tai, Time::TAI, Time::TDB);
       const int n_epochs = static_cast<int>(ephem_times_tdb.size());
-      auto dyn = CreateGnssEarthDynamics();
+      auto dyn = CreateGnssEarthDynamics(prop_model);
       for (int prn : prns) {
         const std::string sat_id = AntexLoader::SatId(gnss_const, prn);
         if (!seed.HasSatellite(sat_id)) continue;
@@ -1084,53 +1158,182 @@ namespace lupnt {
       return {constellation, frequency};
     }
 
+    // Seed each PRN from a precise SP3 ephemeris at `seed_tai` and numerically propagate to the
+    // run grid (ECI). SP3 gives the real constellation at cm level; no GPS-week rollover snap is
+    // needed (the seed epoch is the SP3 file's own date). Mirrors PropagateAlmanacConstellation.
+    void PropagateSp3SeededConstellation(GnssConst gnss_const, const std::vector<int>& prns_in,
+                                         const VecXd& ephem_times_tai, const Sp3Loader& sp3,
+                                         double seed_tai, const AntexLoader& antex,
+                                         const std::string& prop_model,
+                                         std::vector<int>& built_prns,
+                                         std::vector<MatXd>& rv_eci_list) {
+      const std::string letter = AntexLoader::GnssLetter(gnss_const);
+      std::vector<int> prns = prns_in;
+      if (prns.empty()) {
+        for (const std::string& sat_id : sp3.GetSatellites()) {
+          if (sat_id.size() == 3 && sat_id[0] == letter[0]) {
+            const int prn = std::stoi(sat_id.substr(1));
+            if (antex.HasSatellite(gnss_const, prn)) prns.push_back(prn);
+          }
+        }
+        std::sort(prns.begin(), prns.end());
+      }
+      VecXd ephem_times_tdb = ConvertTimeVector(ephem_times_tai, Time::TAI, Time::TDB);
+      const int n_epochs = static_cast<int>(ephem_times_tdb.size());
+      auto dyn = CreateGnssEarthDynamics(prop_model);
+      const Real seed_tdb = ConvertTime(Real(seed_tai), Time::TAI, Time::TDB);
+      for (int prn : prns) {
+        const std::string sat_id = AntexLoader::SatId(gnss_const, prn);
+        if (!sp3.HasSatellite(sat_id)) continue;
+        try {
+          const Vec6 rv_ecef_seed = sp3.GetPosVel(sat_id, Real(seed_tai));
+          const Vec6 rv_eci_seed
+              = ConvertFrame(seed_tdb, rv_ecef_seed, Frame::ECEF, Frame::GCRF, false);
+          VecXd ts(n_epochs + 1);
+          ts(0) = seed_tdb.val();
+          ts.tail(n_epochs) = ephem_times_tdb;
+          const MatX traj = dyn->Propagate(Vec6(rv_eci_seed), ts.cast<Real>());
+          MatXd rv_eci(n_epochs, 6);
+          for (int k = 0; k < n_epochs; ++k) {
+            Vec6 rv_gcrf = traj.row(k + 1).transpose();
+            const Vec6 rv_eci_k
+                = ConvertFrame(Real(ephem_times_tdb(k)), rv_gcrf, Frame::GCRF, Frame::ECI, false);
+            for (int c = 0; c < 6; ++c) rv_eci(k, c) = rv_eci_k(c).val();
+          }
+          built_prns.push_back(prn);
+          rv_eci_list.push_back(rv_eci);
+        } catch (const std::exception& e) {
+          Logger::Warn("SP3-seed propagation failed for " + sat_id + " (" + e.what() + "); skipped",
+                       "LunarGnssODTS");
+        }
+      }
+      LUPNT_CHECK(!built_prns.empty(),
+                  "SP3 seed produced no satellites for " + GnssConstName(gnss_const)
+                      + "; check the SP3 seed and ANTEX files",
+                  "LunarGnssODTS");
+    }
+
+    // Acquire the latest available precise SP3 to seed a future-epoch constellation, and its
+    // seed epoch (TAI). Uses explicit `sp3_files` if given; otherwise downloads from CDDIS,
+    // searching backward (weekly) from a recent date until one resolves.
+    double AcquireLatestSp3(const ConstellationSourceConfig& c, double run_epoch_tai,
+                            Sp3Loader& sp3_out) {
+      if (!c.sp3_files.empty()) {
+        sp3_out = Sp3Loader(c.sp3_files);
+        double latest = -std::numeric_limits<double>::infinity();
+        for (const std::string& sat : sp3_out.GetSatellites())
+          latest = std::max(latest, sp3_out.GetTimeSpan(sat).second);
+        return latest - 12.0 * 3600.0;  // ~mid of the last covered day
+      }
+      const double kDay = 86400.0;
+      // "now" in seconds past J2000 (UTC); 946728000 s = unix time at 2000-01-01 12:00 UTC.
+      const double now_utc = static_cast<double>(std::time(nullptr)) - 946728000.0;
+      const double now_tai = ConvertTime(Real(now_utc), Time::UTC, Time::TAI).val();
+      const double start = std::min(run_epoch_tai, now_tai - 14.0 * kDay);  // 14 d SP3 latency
+      for (int i = 0; i < 80; ++i) {
+        const double epoch = start - i * 7.0 * kDay;
+        try {
+          const auto path = Sp3Loader::DownloadFileForEpoch(Real(epoch), Time::TAI);
+          sp3_out = Sp3Loader(path);
+          return epoch;
+        } catch (const std::exception&) {
+          // try an earlier week
+        }
+      }
+      LUPNT_CHECK(false, "Could not acquire any precise SP3 to seed the future-epoch constellation",
+                  "LunarGnssODTS");
+      return 0.0;  // unreachable
+    }
+
     std::vector<RuntimeConstellation> BuildAlmanacConstellations(const LunarGnssODTSConfig& cfg,
                                                                  const VecXd& ephem_times_tai) {
-      Logger::Info(
-          "Setting up GNSS constellations from ALMANAC seed + numerical propagation "
-          "(J2 + Sun/Moon)...",
-          "LunarGnssODTS");
       LUPNT_CHECK(std::filesystem::exists(cfg.constellation.antex_file),
                   "GNSS ANTEX file not found: " + cfg.constellation.antex_file.string(),
                   "LunarGnssODTS");
-      RinexNavLoader seed;
-      if (!cfg.constellation.almanac_file.empty()) {
-        LUPNT_CHECK(std::filesystem::exists(cfg.constellation.almanac_file),
-                    "Almanac (YUMA) file not found: " + cfg.constellation.almanac_file.string(),
-                    "LunarGnssODTS");
-        seed.LoadYumaFile(cfg.constellation.almanac_file);
-      } else {
-        const auto brdc_files = ResolveBrdcFiles(cfg.constellation);
-        LUPNT_CHECK(!brdc_files.empty(),
-                    "Almanac source needs a seed: set constellation.almanac_file (YUMA) or "
-                    "constellation.brdc_directory/brdc_files (BRDC)",
-                    "LunarGnssODTS");
-        for (const auto& f : brdc_files) seed.LoadFile(f);
-      }
       AntexLoader antex(cfg.constellation.antex_file);
 
-      // Propagate each constellation's orbits once, then build both frequency channels from them.
+      // Choose the seed. Default (`almanac_seed == sp3`, no explicit YUMA file): seed from the
+      // latest available precise SP3 -- the real constellation at cm level. Otherwise fall back
+      // to the coarse YUMA/BRDC seed.
+      const bool use_sp3_seed
+          = (cfg.constellation.almanac_seed == "sp3" && cfg.constellation.almanac_file.empty());
+
+      std::vector<int> gps_prns, gal_prns, qzs_prns;
+      std::vector<MatXd> gps_rv, gal_rv, qzs_rv;
+      if (use_sp3_seed) {
+        Logger::Info(
+            "Setting up GNSS constellations from latest-SP3 seed + numerical propagation "
+            "(Earth 8x8 + Sun/Moon)...",
+            "LunarGnssODTS");
+        Sp3Loader sp3;
+        const double seed_tai = AcquireLatestSp3(cfg.constellation, ephem_times_tai(0), sp3);
+        PropagateSp3SeededConstellation(GnssConst::GPS, cfg.constellation.gps_prns, ephem_times_tai,
+                                        sp3, seed_tai, antex, cfg.constellation.propagation_model,
+                                        gps_prns, gps_rv);
+        if (cfg.constellation.include_galileo) {
+          PropagateSp3SeededConstellation(GnssConst::GALILEO, cfg.constellation.galileo_prns,
+                                          ephem_times_tai, sp3, seed_tai, antex,
+                                          cfg.constellation.propagation_model, gal_prns, gal_rv);
+        }
+        if (cfg.constellation.include_qzss) {
+          PropagateSp3SeededConstellation(GnssConst::QZSS, cfg.constellation.qzss_prns,
+                                          ephem_times_tai, sp3, seed_tai, antex,
+                                          cfg.constellation.propagation_model, qzs_prns, qzs_rv);
+        }
+      } else {
+        Logger::Info(
+            "Setting up GNSS constellations from ALMANAC/BRDC seed + numerical "
+            "propagation (J2 + Sun/Moon)...",
+            "LunarGnssODTS");
+        RinexNavLoader seed;
+        if (!cfg.constellation.almanac_file.empty()) {
+          LUPNT_CHECK(std::filesystem::exists(cfg.constellation.almanac_file),
+                      "Almanac (YUMA) file not found: " + cfg.constellation.almanac_file.string(),
+                      "LunarGnssODTS");
+          seed.LoadYumaFile(cfg.constellation.almanac_file);
+        } else {
+          const auto brdc_files = ResolveBrdcFiles(cfg.constellation);
+          LUPNT_CHECK(!brdc_files.empty(),
+                      "Almanac seed needs a source: set constellation.almanac_seed=sp3, or "
+                      "constellation.almanac_file (YUMA), or brdc_directory/brdc_files (BRDC)",
+                      "LunarGnssODTS");
+          for (const auto& f : brdc_files) seed.LoadFile(f);
+        }
+        PropagateAlmanacConstellation(GnssConst::GPS, cfg.constellation.gps_prns, ephem_times_tai,
+                                      seed, antex, cfg.constellation.propagation_model, gps_prns,
+                                      gps_rv);
+        if (cfg.constellation.include_galileo) {
+          PropagateAlmanacConstellation(GnssConst::GALILEO, cfg.constellation.galileo_prns,
+                                        ephem_times_tai, seed, antex,
+                                        cfg.constellation.propagation_model, gal_prns, gal_rv);
+        }
+        if (cfg.constellation.include_qzss) {
+          PropagateAlmanacConstellation(GnssConst::QZSS, cfg.constellation.qzss_prns,
+                                        ephem_times_tai, seed, antex,
+                                        cfg.constellation.propagation_model, qzs_prns, qzs_rv);
+        }
+      }
+
+      // Build both frequency channels from the (shared) propagated orbits.
       std::vector<RuntimeConstellation> out;
-      std::vector<int> gps_prns;
-      std::vector<MatXd> gps_rv;
-      PropagateAlmanacConstellation(GnssConst::GPS, cfg.constellation.gps_prns, ephem_times_tai,
-                                    seed, antex, gps_prns, gps_rv);
       out.push_back(MakeAlmanacRuntimeConstellation(GnssConst::GPS, GnssFreq::L1, cfg,
                                                     ephem_times_tai, gps_prns, gps_rv));
       out.push_back(MakeAlmanacRuntimeConstellation(GnssConst::GPS, GnssFreq::L5, cfg,
                                                     ephem_times_tai, gps_prns, gps_rv));
       if (cfg.constellation.include_galileo) {
-        std::vector<int> gal_prns;
-        std::vector<MatXd> gal_rv;
-        PropagateAlmanacConstellation(GnssConst::GALILEO, cfg.constellation.galileo_prns,
-                                      ephem_times_tai, seed, antex, gal_prns, gal_rv);
         out.push_back(MakeAlmanacRuntimeConstellation(GnssConst::GALILEO, GnssFreq::E1, cfg,
                                                       ephem_times_tai, gal_prns, gal_rv));
         out.push_back(MakeAlmanacRuntimeConstellation(GnssConst::GALILEO, GnssFreq::E5a, cfg,
                                                       ephem_times_tai, gal_prns, gal_rv));
       }
-      Logger::Info(std::to_string(out.size()) + " GNSS constellation-frequency set(s) ready "
-                       + "(almanac source)",
+      if (cfg.constellation.include_qzss) {
+        out.push_back(MakeAlmanacRuntimeConstellation(GnssConst::QZSS, GnssFreq::L1, cfg,
+                                                      ephem_times_tai, qzs_prns, qzs_rv));
+        out.push_back(MakeAlmanacRuntimeConstellation(GnssConst::QZSS, GnssFreq::L5, cfg,
+                                                      ephem_times_tai, qzs_prns, qzs_rv));
+      }
+      Logger::Info(std::to_string(out.size()) + " GNSS constellation-frequency set(s) ready ("
+                       + (use_sp3_seed ? "SP3 seed" : "almanac/BRDC seed") + ")",
                    "LunarGnssODTS");
       return out;
     }
@@ -1173,6 +1376,11 @@ namespace lupnt {
         const std::vector<int> galileo_prns = cfg.constellation.galileo_prns;
         specs.push_back({GnssConst::GALILEO, GnssFreq::E1, galileo_prns});
         specs.push_back({GnssConst::GALILEO, GnssFreq::E5a, galileo_prns});
+      }
+      if (cfg.constellation.include_qzss) {
+        const std::vector<int> qzss_prns = cfg.constellation.qzss_prns;
+        specs.push_back({GnssConst::QZSS, GnssFreq::L1, qzss_prns});
+        specs.push_back({GnssConst::QZSS, GnssFreq::L5, qzss_prns});
       }
 
       const int n_specs = static_cast<int>(specs.size());
@@ -1763,7 +1971,7 @@ namespace lupnt {
 
     GnssChannel ConvertChannelToMoonCi(const GnssChannel& channel) {
       GnssChannel out = channel;
-      Real t_tx_tdb = ConvertTime(channel.transmit_time, channel.transmit_time_scale, Time::TDB);
+      Real t_tx_tdb = channel.transmit_time.To(Time::TDB).ToSeconds();
       out.tx_state = ConvertFrame(t_tx_tdb, channel.tx_state, channel.frame, Frame::MOON_CI);
       out.frame = Frame::MOON_CI;
       out.ephemeris_chebyshev = ChebyshevFitModel{};
@@ -1786,9 +1994,7 @@ namespace lupnt {
         const std::vector<Real>& receive_times, const std::vector<State>& truth_states) {
       std::vector<GNSSMeasurementsEpoch> combined(receive_times.size());
       for (size_t i = 0; i < receive_times.size(); ++i) {
-        combined[i].receive_time = receive_times[i];
-        combined[i].time = receive_times[i];
-        combined[i].receive_time_scale = Time::TDB;
+        combined[i].receive_time = Epoch::FromSeconds(receive_times[i], Time::TDB);
       }
 
       // Parallelize across constellations (GPS L1/L5, Galileo E1/E5a): each is fully
@@ -1927,9 +2133,7 @@ namespace lupnt {
 
       std::vector<GNSSMeasurementsEpoch> epochs(times_tdb.size());
       for (int i = 0; i < times_tdb.size(); ++i) {
-        epochs[i].receive_time = times_tdb(i);
-        epochs[i].time = times_tdb(i);
-        epochs[i].receive_time_scale = Time::TDB;
+        epochs[i].receive_time = Epoch::FromSeconds(times_tdb(i), Time::TDB);
       }
 
       int n_links = 0;
@@ -1948,10 +2152,10 @@ namespace lupnt {
             = static_cast<GnssConst>(std::stoi(CsvColumn(row, idx, "gnss_const_id")));
         channel.prn = std::stoi(CsvColumn(row, idx, "prn"));
         channel.frequency = static_cast<GnssFreq>(std::stoi(CsvColumn(row, idx, "frequency_id")));
-        channel.receive_time = std::stod(CsvColumn(row, idx, "t_tdb"));
-        channel.receive_time_scale = Time::TDB;
-        channel.transmit_time = std::stod(CsvColumn(row, idx, "transmit_time_tdb"));
-        channel.transmit_time_scale = Time::TDB;
+        channel.receive_time
+            = Epoch::FromSeconds(Real(std::stod(CsvColumn(row, idx, "t_tdb"))), Time::TDB);
+        channel.transmit_time = Epoch::FromSeconds(
+            Real(std::stod(CsvColumn(row, idx, "transmit_time_tdb"))), Time::TDB);
         channel.ephemeris_time_scale = Time::TDB;
         channel.frame = Frame::MOON_CI;
         channel.tx_state << std::stod(CsvColumn(row, idx, "tx_x_mci_m")),
@@ -2021,7 +2225,7 @@ namespace lupnt {
 
       int link_id = 0;
       for (int k = 0; k < static_cast<int>(epochs.size()); ++k) {
-        const Real t_tdb = epochs[k].receive_time;
+        const Real t_tdb = epochs[k].receive_time.To(Time::TDB).ToSeconds();
         const Real t_utc = ConvertTime(t_tdb, Time::TDB, Time::UTC);
         Vec3 rx_mci = truth_states[k].head(3);
         Vec3 rx_eci = ConvertFrame(t_tdb, rx_mci, Frame::MOON_CI, Frame::ECI);
@@ -2030,8 +2234,7 @@ namespace lupnt {
           Vec3 tx_eci
               = ConvertFrame(t_tdb, Vec3(channel.tx_state.head(3)), channel.frame, Frame::ECI);
           Vec3 tx_ecef = ConvertFrame(t_tdb, tx_eci, Frame::ECI, Frame::ECEF);
-          Real transmit_time_tdb
-              = ConvertTime(channel.transmit_time, channel.transmit_time_scale, Time::TDB);
+          Real transmit_time_tdb = channel.transmit_time.To(Time::TDB).ToSeconds();
           auto [tangent_radius_m, tangent_altitude_m]
               = EarthTangentRadiusAltitude(rx_ecef, tx_ecef);
           double tx_boresight_angle_deg = TransmitterBoresightAngleDeg(t_tdb, rx_mci, channel);
@@ -2241,8 +2444,7 @@ namespace lupnt {
               if (it == cache.end()) {
                 Vec3 dr;
                 Real dc;
-                const Real t_tx_tai
-                    = ConvertTime(ch.transmit_time, ch.transmit_time_scale, Time::TAI);
+                const Real t_tx_tai = ch.transmit_time.To(Time::TAI).ToSeconds();
                 if (!broadcast_error_->GetDebiasedDelta(ch.gnss_const, ch.prn, ch.frequency,
                                                         t_tx_tai, dr, dc))
                   continue;  // no broadcast message -> leave this satellite on the precise state
@@ -2310,12 +2512,13 @@ namespace lupnt {
         Vec3d dv = (context_.truth_states[k].segment(3, 3) - x_est.segment(3, 3)).cast<double>();
         const double pos_err = dr.norm();
         const double vel_err = dv.norm();
+        const int oc = OrbitClockDim(context_.cfg);  // SRP index (8 for 2-state, 9 for 3-state)
         const double clk_b_err_m = (context_.truth_states[k](6) - x_est(6)).val();
         const double clk_d_err_mps = (context_.truth_states[k](7) - x_est(7)).val();
-        const double srp_est
-            = EstimateSrp(context_.cfg) ? x_est(8).val() : std::numeric_limits<double>::quiet_NaN();
+        const double srp_est = EstimateSrp(context_.cfg) ? x_est(oc).val()
+                                                         : std::numeric_limits<double>::quiet_NaN();
         const double srp_err = EstimateSrp(context_.cfg)
-                                   ? (x_est(8).val() - TruthSrpCoeff(context_.cfg))
+                                   ? (x_est(oc).val() - TruthSrpCoeff(context_.cfg))
                                    : std::numeric_limits<double>::quiet_NaN();
 
         MatXd P = CurrentFilterCovariance(filter_->GetCovariance(), context_.cfg);
@@ -2327,7 +2530,7 @@ namespace lupnt {
         const double svz = 3.0 * std::sqrt(std::max(0.0, P(5, 5)));
         const double sb = 3.0 * std::sqrt(std::max(0.0, P(6, 6)));
         const double sd = 3.0 * std::sqrt(std::max(0.0, P(7, 7)));
-        const double ssrp = EstimateSrp(context_.cfg) ? 3.0 * std::sqrt(std::max(0.0, P(8, 8)))
+        const double ssrp = EstimateSrp(context_.cfg) ? 3.0 * std::sqrt(std::max(0.0, P(oc, oc)))
                                                       : std::numeric_limits<double>::quiet_NaN();
         const Mat3d R_rtn = RotCartToRtn(context_.truth_states[k].head(3).cast<double>(),
                                          context_.truth_states[k].segment(3, 3).cast<double>());
@@ -2501,6 +2704,14 @@ namespace lupnt {
       params.L_pol = ReadYaml(node, "polarization_loss_db", params.L_pol);
       params.L_atm = ReadYaml(node, "atmospheric_loss_db", params.L_atm);
       params.T_eff = ReadYaml(node, "effective_noise_temperature_k", params.T_eff);
+      // Optional broadcast-ephemeris/clock and oscillator/vibration error terms. Default 0:
+      // a true SP3-truth + broadcast-receiver run already realizes the ephemeris/clock error
+      // in the geometry, so leave these unset for that case (see GnssReceiverParams). Populate
+      // them only for future-epoch runs that lack an SP3/broadcast pair.
+      params.sigma_pr_eph_m = ReadYaml(node, "sigma_pr_eph_m", params.sigma_pr_eph_m);
+      params.sigma_pr_clk_m = ReadYaml(node, "sigma_pr_clk_m", params.sigma_pr_clk_m);
+      params.allan_deviation = ReadYaml(node, "allan_deviation", params.allan_deviation);
+      params.sigma_vib_deg = ReadYaml(node, "sigma_vib_deg", params.sigma_vib_deg);
     }
 
     void ApplyDesignNode(const YAML::Node& node, LunarGnssODTSConfig& cfg) {
@@ -2642,6 +2853,10 @@ namespace lupnt {
 
     const YAML::Node constellation = root["constellation"];
     cfg.constellation.source = ReadYaml(constellation, "source", cfg.constellation.source);
+    cfg.constellation.almanac_seed
+        = ReadYaml(constellation, "almanac_seed", cfg.constellation.almanac_seed);
+    cfg.constellation.propagation_model
+        = ReadYaml(constellation, "propagation_model", cfg.constellation.propagation_model);
     cfg.constellation.almanac_file
         = ResolvePath(config_dir, ReadYaml<std::string>(constellation, "almanac_file",
                                                         cfg.constellation.almanac_file.string()));
@@ -2667,6 +2882,8 @@ namespace lupnt {
         = ReadYaml(constellation, "use_all_gps", cfg.constellation.use_all_gps);
     cfg.constellation.include_galileo
         = ReadYaml(constellation, "include_galileo", cfg.constellation.include_galileo);
+    cfg.constellation.include_qzss
+        = ReadYaml(constellation, "include_qzss", cfg.constellation.include_qzss);
     cfg.constellation.gps_prns = ReadYaml(constellation, "gps_prns", cfg.constellation.gps_prns);
     cfg.constellation.galileo_prns
         = ReadYaml(constellation, "galileo_prns", cfg.constellation.galileo_prns);
@@ -2744,6 +2961,10 @@ namespace lupnt {
     const YAML::Node filter = root["filter"];
     cfg.estimate_srp_coefficient
         = ReadYaml(filter, "estimate_srp_coefficient", cfg.estimate_srp_coefficient);
+    cfg.use_three_state_clock_filter
+        = ReadYaml(filter, "use_three_state_clock_filter", cfg.use_three_state_clock_filter);
+    cfg.initial_clock_drift_rate_sigma_sps2 = ReadYaml(
+        filter, "initial_clock_drift_rate_sigma_sps2", cfg.initial_clock_drift_rate_sigma_sps2);
     cfg.initial_srp_coeff_m2_kg
         = ReadYaml(filter, "initial_srp_coeff_m2_kg", cfg.initial_srp_coeff_m2_kg);
     cfg.initial_position_sigma_m

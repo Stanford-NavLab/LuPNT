@@ -204,9 +204,9 @@ TEST_CASE("measurements.gnss_measurements.manager") {
 
   REQUIRE(epoch.channels.size() == 1);
   REQUIRE(epoch.channels[0].prn == 1);
-  REQUIRE(epoch.receive_time_scale == Time::TAI);
-  REQUIRE(epoch.channels[0].receive_time_scale == Time::TAI);
-  REQUIRE(epoch.channels[0].transmit_time_scale == Time::TAI);
+  REQUIRE(epoch.receive_time.scale() == Time::TAI);
+  REQUIRE(epoch.channels[0].receive_time.scale() == Time::TAI);
+  REQUIRE(epoch.channels[0].transmit_time.scale() == Time::TAI);
   REQUIRE(epoch.channels[0].transmit_time < epoch.channels[0].receive_time);
   REQUIRE(epoch.channels[0].HasEphemeris());
   REQUIRE(std::isfinite(epoch.channels[0].relativistic_correction_s.val()));
@@ -270,7 +270,7 @@ TEST_CASE("measurements.gnss_measurements.moon_ci") {
   std::vector<GNSSMeasurementsEpoch> precomputed = manager.Precompute(receive_times, states, true);
 
   REQUIRE(precomputed.size() == 1);
-  REQUIRE(precomputed[0].receive_time_scale == Time::TDB);
+  REQUIRE(precomputed[0].receive_time.scale() == Time::TDB);
   REQUIRE(precomputed[0].channels.size() == 1);
   REQUIRE(precomputed[0].channels[0].frame == Frame::MOON_CI);
   REQUIRE(precomputed[0].channels[0].ephemeris_time_scale == Time::TAI);

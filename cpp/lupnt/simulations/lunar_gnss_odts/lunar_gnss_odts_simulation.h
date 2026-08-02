@@ -64,20 +64,41 @@ namespace lupnt {
     // individual along-track phase is an extrapolation. The precise broadcast error is
     // unavailable, so a modeled synthetic SISE (below) is injected instead.
     std::string source = "sp3_brdc";
-    // Optional YUMA almanac seed file for `source == almanac`. When empty the almanac source
-    // seeds from the resolved BRDC (`brdc_files` / `brdc_directory`) instead. Not date-specific
-    // in the SP3 sense: it is only the orbital-slot seed for the numerical propagation, so any
-    // recent almanac (ideally the freshest, to minimize extrapolation) works for any run epoch.
+    // Seed for the future-epoch (`source == almanac`) propagation path. Default `sp3`:
+    // seed each PRN from the LATEST AVAILABLE precise SP3 ephemeris (the real constellation
+    // at cm level) and numerically propagate to the run grid -- the highest-fidelity seed for
+    // a future epoch. `yuma`/`brdc`: seed from a coarse YUMA almanac (`almanac_file`) or the
+    // BRDC navigation message instead. An explicit `almanac_file` forces the YUMA seed
+    // regardless. Note: any real-ephemeris seed reproduces the constellation *design* but not
+    // another sim's specific per-satellite realization (RAAN/phase).
+    std::string almanac_seed = "sp3";
+    // Force model for the future-epoch numerical propagation (all seeds). `full` (default):
+    // Earth 8x8 gravity + Sun + Moon third bodies -- the physically complete model. `j2`:
+    // Earth central + J2 zonal only (no third bodies) -- faster, and, since J2 has no secular
+    // semi-major-axis term, it holds SMA at the seed value (a proxy for a station-kept orbit).
+    // Both use a fixed-step RK8 integrator, which preserves the SMA over multi-month spans
+    // (a coarse RK4 does not). Selectable so users can trade fidelity for speed.
+    std::string propagation_model = "full";
+    // Optional YUMA almanac seed file for `source == almanac` (used when `almanac_seed != sp3`
+    // or when explicitly set). When empty the YUMA path seeds from the resolved BRDC
+    // (`brdc_files` / `brdc_directory`) instead. Not date-specific in the SP3 sense: it is only
+    // the orbital-slot seed for the numerical propagation, so any recent almanac works.
     std::filesystem::path almanac_file;
 
-    std::filesystem::path sp3_directory = "../../data/LuPNT_data/ephemeris/gnsslibpy/sp3";
+    std::filesystem::path sp3_directory = "../../data/LuPNT_data/gnss/sp3";
     bool auto_select_sp3 = true;
     std::vector<std::filesystem::path> sp3_files;
     std::filesystem::path antex_file = "../../data/LuPNT_data/gnss/igs20.atx";
     bool use_all_gps = true;
     bool include_galileo = false;
+    // QZSS (L1/L5). Transmit antenna patterns and EIRP for the QZS block live in
+    // `GnssTransmitter::InitQzss`, so this only needs the constellation to be built. Off by
+    // default; when off, nothing about the link cache changes (the fingerprint fields below are
+    // appended only when it is on, so pre-existing caches stay valid).
+    bool include_qzss = false;
     std::vector<int> gps_prns;
     std::vector<int> galileo_prns;
+    std::vector<int> qzss_prns;
 
     // Modeled broadcast signal-in-space error (SISE) for `source == almanac`, replacing the
     // measured broadcast-minus-precise error (no precise reference exists in almanac mode). A
@@ -138,6 +159,10 @@ namespace lupnt {
     bool use_three_state_clock_truth = false;
     // Initial truth clock drift-rate [s/s^2] (only used when use_three_state_clock_truth).
     double clock_drift_rate_sps2 = 0.0;
+    // Estimate a three-state clock [bias, drift, drift-rate] in the FILTER (matching the
+    // manuscript). Default keeps the two-state [bias, drift] filter. Independent of the truth
+    // clock dimension: a 3-state filter can run against a 2-state truth and vice versa.
+    bool use_three_state_clock_filter = false;
 
     int moon_gravity_degree_truth = 20;
     int moon_gravity_order_truth = 20;
@@ -188,6 +213,9 @@ namespace lupnt {
     double initial_velocity_sigma_mps = 0.1;
     double initial_clock_bias_sigma_s = 1.0e-6;
     double initial_clock_drift_sigma_sps = 1.0e-9;
+    // Initial 1-sigma for the clock drift-rate state [s/s^2]; only used when
+    // use_three_state_clock_filter. Default ~ a space OCXO aging uncertainty.
+    double initial_clock_drift_rate_sigma_sps2 = 1.0e-13;
     double initial_srp_coeff_sigma_m2_kg = 1.0e-3;
     double process_accel_sigma_mps2 = 1.0e-7;
     // Small random-walk floor (not a physical model): keeps the estimated SRP-coefficient

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "lupnt/agents/gnss_constellation.h"
+#include "lupnt/conversions/epoch.h"
 #include "lupnt/dynamics/clock_dynamics.h"
 #include "lupnt/environment/plasma/gcpm/iri_interface.h"
 #include "lupnt/environment/plasma/tec/raytrace.h"
@@ -43,6 +44,20 @@ namespace lupnt {
       DEDICATED,
     };
 
+    /// Transmitter antenna-gain model used when evaluating `G_tx` in the C/N0
+    /// link budget.
+    enum class TxGainModel {
+      /// Full 2D pattern evaluated at the yaw-steered off-boresight/azimuth
+      /// angles `(theta_tx, phi_tx)` (`Antenna::ComputeGain`). Default.
+      FULL_2D,
+      /// Azimuth-averaged pattern evaluated at the off-boresight angle only
+      /// (`Antenna::ComputeGainAzimuthAveraged`). Appropriate when the GNSS
+      /// satellite yaw orientation is unknown (e.g. future-epoch lunar
+      /// scenarios); matches the block-average, azimuth-averaged ACE/GRAP EIRP
+      /// convention of Mina et al. (2025).
+      AZIMUTH_AVERAGED,
+    };
+
     std::vector<GnssObservable> observables
         = {GnssObservable::PSEUDORANGE, GnssObservable::DOPPLER, GnssObservable::CARRIER_PHASE};
     GnssMeasurementStateIndices indices;
@@ -51,6 +66,11 @@ namespace lupnt {
     /// Transmitter yaw-steering model for the C/N0 antenna-gain geometry. Default
     /// `NOMINAL` reproduces the canonical Sun-pointing frame bit-for-bit.
     TxYawModel tx_yaw_model = TxYawModel::NOMINAL;
+
+    /// Transmitter antenna-gain model for the C/N0 link budget. Default
+    /// `FULL_2D` uses the yaw-steered 2D pattern; `AZIMUTH_AVERAGED` collapses
+    /// it to an off-boresight-only pattern (unknown-yaw scenarios).
+    TxGainModel tx_gain_model = TxGainModel::FULL_2D;
 
     /// Epochs passed to `GNSSMeasurements::Compute` / `Precompute` are
     /// receiver signal-reception epochs in this time scale.
@@ -91,10 +111,14 @@ namespace lupnt {
     GnssConst gnss_const = GnssConst::GPS;
     int prn = 0;
     GnssFreq frequency = GnssFreq::L1;
-    Real receive_time = 0.0;
-    Time receive_time_scale = Time::TAI;
-    Real transmit_time = 0.0;
-    Time transmit_time_scale = Time::TAI;
+    /// Signal-reception epoch. `Epoch` carries its own time scale, so the
+    /// former `receive_time_scale` companion field is part of the value now.
+    /// Storing epochs split (exact integer seconds + fraction) keeps the
+    /// sub-microsecond light-time quantities meaningful: a bare `Real` epoch at
+    /// present-day dates has a ~0.25 us ULP, i.e. ~75 m of range.
+    Epoch receive_time;
+    /// Signal-transmission epoch (scale carried in the value).
+    Epoch transmit_time;
     Time ephemeris_time_scale = Time::TAI;
     Frame frame = Frame::ECI;
 
@@ -141,7 +165,7 @@ namespace lupnt {
     ///
     /// @param t Evaluation epoch, in `ephemeris_time_scale` [s]
     /// @return  Transmitter Cartesian state `[r; v]` [m, m/s] in `frame`
-    Vec6 GetTransmitState(Real t) const;
+    Vec6 GetTransmitState(const Epoch& t) const;
 
     /// @brief Total transmitter clock bias to apply to the pseudorange,
     /// combining the raw clock bias, the special-relativistic periodic
@@ -184,10 +208,8 @@ namespace lupnt {
   };
 
   struct GNSSMeasurementsEpoch {
-    /// Receiver signal-reception epoch.
-    Real receive_time = 0.0;
-    Time receive_time_scale = Time::TAI;
-    Real time = 0.0;  // Backward-compatible alias of `receive_time`.
+    /// Receiver signal-reception epoch (carries its own time scale).
+    Epoch receive_time;
 
     std::vector<GnssChannel> channels;
     VecXd values;

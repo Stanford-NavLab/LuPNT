@@ -92,9 +92,7 @@ def test_earth_sun_distance_is_about_one_au():
 
 def test_get_body_pos_vel_shape_and_consistency():
     _skip_if_no_spice()
-    rv = np.asarray(
-        pnt.get_body_pos_vel(T_TDB, pnt.BodyId.EARTH, pnt.BodyId.MOON, pnt.Frame.ECI)
-    )
+    rv = np.asarray(pnt.get_body_pos_vel(T_TDB, pnt.BodyId.EARTH, pnt.BodyId.MOON, pnt.Frame.ECI))
     assert rv.shape == (6,)
     r = np.asarray(pnt.get_body_pos(T_TDB, pnt.BodyId.EARTH, pnt.BodyId.MOON, pnt.Frame.ECI))
     np.testing.assert_allclose(rv[:3], r, atol=1.0)
@@ -105,7 +103,5 @@ def test_get_body_pos_vel_shape_and_consistency():
 def test_get_body_pos_vel_vectorized():
     _skip_if_no_spice()
     t = T_TDB + np.arange(3) * 3600.0
-    rv = np.asarray(
-        pnt.get_body_pos_vel(t, pnt.BodyId.EARTH, pnt.BodyId.MOON, pnt.Frame.ECI)
-    )
+    rv = np.asarray(pnt.get_body_pos_vel(t, pnt.BodyId.EARTH, pnt.BodyId.MOON, pnt.Frame.ECI))
     assert rv.shape == (3, 6)

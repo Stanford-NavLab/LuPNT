@@ -4,7 +4,8 @@ This directory holds the Orekit cross-validation tests and their
 **pre-generated, checked-in fixture** (`data/orekit_reference.json`), used to
 cross-check LuPNT's time-scale conversions, sidereal/Earth-rotation angles,
 frame conversions (Earth and Moon), Sun/Moon ephemerides, two-body Keplerian
-propagation, and J2 acceleration/propagation against
+propagation, J2 acceleration/propagation, and the spherical-harmonic gravity,
+third-body point-mass and solar-radiation-pressure force models against
 [Orekit](https://www.orekit.org/) (v13.1).
 
 **Normal users and CI never need Orekit/Java.** The tests in this directory:
@@ -14,6 +15,8 @@ propagation, and J2 acceleration/propagation against
 - `test_ephemeris_orekit.cc` -- Sun/Moon DE440 ephemerides
 - `test_orbit_dynamics_orekit.cc` -- Kepler propagation, J2 acceleration and
   propagation
+- `test_force_models_orekit.cc` -- spherical-harmonic gravity, third-body
+  point-mass and SRP accelerations (formula level)
 
 only read `data/orekit_reference.json` (via `LoadTestJson()` in
 `cpp/test/utils.cc`) and run as part of the regular `pixi run test-cpp`
@@ -35,6 +38,24 @@ documentation page [`docs/pages/cross_validation.rst`](../../../docs/pages/cross
 | `kepler`          | Six `ClassicalOE` cases -- four Earth orbits (MEO-HEO, LEO, GEO, Molniya) and two lunar orbits (LLO, ELFO, with `GM_MOON`) -- with the initial Cartesian state, eccentric/true anomalies, orbital period, and the propagated state at 0.25/0.5/0.75/1.5 orbital periods via Orekit's `KeplerianOrbit`/`KeplerianPropagator`. | `test_orbit_dynamics_orekit.cc` (`dynamics.kepler_orekit_reference`) |
 | `j2_acceleration` | For five sample positions, the J2 perturbing acceleration from Orekit's `J2OnlyPerturbation.computeAccelerationInJ2Frame`. | `test_orbit_dynamics_orekit.cc` (`dynamics.j2_acceleration_orekit_reference`) |
 | `j2_propagation`  | Three cases (MEO-HEO, LEO, Molniya) numerically propagated with `NumericalPropagator` + `NewtonianAttraction` + `J2OnlyPerturbation` with **GCRF** as the J2 frame -- the same inertial-Z-axis modeling choice as LuPNT's `JToCartTwoBodyDynamics`, so this comparison isolates pure numerical-integration differences (unlike the GMAT one, which exposes the body-fixed-vs-inertial J2 modeling difference). | `test_orbit_dynamics_orekit.cc` (`dynamics.j2_propagation_orekit_reference`) |
+| `gravity_acceleration` | Spherical-harmonic gravity acceleration, **formula level**. Keyed by body (`EARTH`, 8x8 EGM96; `MOON`, 12x12 GRGM1200B); each holds `cof_file`/`n_max`/`m_max`/`GM`/`R` and `cases[]` of `{r_bf, a_bf}` (body-fixed position and Orekit's `HolmesFeatherstoneAttractionModel` full-field acceleration, with the two-body term added back). Both sides use the **same** LuPNT `.cof`: the generator parses it and writes an Orekit-readable ICGEM copy, so the check isolates the harmonic recursion + normalization convention, not the coefficients. | `test_force_models_orekit.cc` (`dynamics.gravity_field_orekit_reference`) |
+| `third_body_acceleration` | Third-body point-mass acceleration, **formula level**. `EARTH_CENTERED[]` of `{center, r, perturbers[]}`; each perturber is `{body, GM, s, a}` -- the perturber's DE440 position `s` (in the central-body inertial frame) and Orekit's `ThirdBodyAttraction` acceleration `a`. Storing `s` decouples the ephemeris (checked by `ephemerides`) from the perturbation formula. Sun and Moon on two Earth orbits (4 cases). | `test_force_models_orekit.cc` (`dynamics.third_body_orekit_reference`) |
+| `srp_acceleration` | Cannonball solar-radiation-pressure acceleration, **formula level**, fully sunlit (Orekit `SolarRadiationPressure`, lighting ratio asserted `== 1`). `cases[]` of `{r, r_sun, Cr, area, mass, P0, AU, a}`; `P0` is Orekit's reference pressure at 1 AU (stored so LuPNT uses the same value), so the check isolates the cannonball formula and its Sun-direction / inverse-square / AU^2 convention, not the flux. | `test_force_models_orekit.cc` (`dynamics.srp_orekit_reference`) |
+
+The last three sections are **formula-level** force-model checks: LuPNT's
+`AccelarationGravityField`, `AccelerationPointMass` and
+`AccelerationSolarRadiation` are fed the exact inputs Orekit's force models used
+and the acceleration vector is compared directly, so there is no integrator or
+frame noise -- only the force-model algorithm is exercised. This is the same
+style as `j2_acceleration`, and it complements the GMAT force-model checks in
+`cpp/test/gmat/`, which are propagation-level (GMAT reports states, not
+accelerations). The observed worst-case agreements are at machine precision:
+
+| Section | Orekit model | Observed | Tolerance |
+|---------|--------------|----------|-----------|
+| `gravity_acceleration` (Earth 8x8 EGM96, Moon 12x12 GRGM1200B, 42 cases) | `HolmesFeatherstoneAttractionModel` | 6.2e-15 m/s^2 | 1e-9 m/s^2 |
+| `third_body_acceleration` (Sun + Moon, 4 cases) | `ThirdBodyAttraction` | 1.9e-18 m/s^2 | 1e-12 m/s^2 |
+| `srp_acceleration` (cannonball, sunlit, 3 cases) | `SolarRadiationPressure` | 6.7e-24 m/s^2 | 1e-15 m/s^2 |
 
 ## Regenerating the fixture (developers only)
 
@@ -99,3 +120,10 @@ test files themselves and summarized (with the observed magnitudes) in
 - **Numerical-integration differences** (j2_propagation): observed ~1e-5 m
   over 1.5 orbits between LuPNT's fixed-step RK4 (1 s) and Orekit's
   adaptive DP853.
+- **Force-model formulas** (gravity_acceleration, third_body_acceleration,
+  srp_acceleration): matched inputs on both sides (the shared `.cof`/ICGEM
+  coefficients for gravity, the stored perturber position for third body, the
+  stored `P0` for SRP), so the residual is pure floating-point evaluation of
+  the same algorithm: observed 6.2e-15 / 1.9e-18 / 6.7e-24 m/s^2, with
+  1e-9 / 1e-12 / 1e-15 m/s^2 tolerances -- far above the observed values yet
+  still many orders of magnitude below any real force-model error.

@@ -158,6 +158,8 @@ void InitConstants(py::module& m) {
 
   // Coordinate system constants
   m.attr("GM_SUN") = py::float_(GM_SUN);
+  m.attr("GM_ASTEROID_BELT") = GM_ASTEROID_BELT;
+  m.attr("GM_KUIPER_BELT") = GM_KUIPER_BELT;
   m.attr("GM_MERCURY") = py::float_(GM_MERCURY);
   m.attr("GM_VENUS") = py::float_(GM_VENUS);
   m.attr("GM_EARTH") = py::float_(GM_EARTH);
@@ -181,6 +183,8 @@ void InitConstants(py::module& m) {
 
   m.attr("AU") = py::float_(AU);
   m.attr("C") = py::float_(C);
+  m.attr("SOLAR_FLUX_AU") = py::float_(SOLAR_FLUX_AU);
+  m.attr("P_SUN") = py::float_(P_SUN);
 
   py::enum_<BodyId>(m, "BodyId", "NAIF-style identifier for a solar-system body or barycenter.")
       .value("SSB", BodyId::SSB, "Solar system barycenter.")
@@ -215,8 +219,6 @@ void InitConstants(py::module& m) {
       .value("TCG", Time::TCG, "Geocentric Coordinate Time.")
       .value("TCB", Time::TCB, "Barycentric Coordinate Time.")
       .value("GPS", Time::GPS, "GPS Time.")
-      .value("JD_TT", Time::JD_TT, "Julian Date in TT.")
-      .value("JD_TDB", Time::JD_TDB, "Julian Date in TDB.")
       .value("TCL", Time::TCL, "Lunar Coordinate Time.")
       .value("LT", Time::LT, "Lunar Time.")
       .export_values();

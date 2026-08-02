@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "lupnt/attitude/gnss_attitude.h"
 #include "lupnt/attitude/gnss_yaw_steering.h"
@@ -63,22 +64,25 @@ namespace lupnt {
         return channel.GetTransmitState(channel.transmit_time);
       }
 
-      Real t_rx_ephem = ConvertGnssEpoch(channel.receive_time, channel.receive_time_scale,
-                                         channel.ephemeris_time_scale);
-      Real t_tx_ephem = t_rx_ephem;
-      Vec6 rv_tx = channel.GetTransmitState(t_tx_ephem);
+      Epoch t_rx_ephem = channel.receive_time.To(channel.ephemeris_time_scale);
+      // Solve for the light-time OFFSET dtau = t_tx - t_rx (a small, ~0.08 s
+      // full-precision quantity), holding the absolute receive epoch fixed.
+      // Iterating on t_tx = t_rx - rho/C directly would subtract rho/C from an
+      // ~8e8 s epoch and lose ~1e-7 s (~30 m) of light time to the double ULP;
+      // carrying the offset avoids that cancellation entirely. The absolute
+      // transmit epoch (t_rx + dtau) is only ever used to *evaluate* the
+      // ephemeris, where the residual ULP maps to sub-mm position error.
+      Real dtau = Real(0.0);
+      Vec6 rv_tx = channel.GetTransmitState(t_rx_ephem);
       if (!options.solve_light_time) return rv_tx;
 
       for (int iter = 0; iter < options.light_time_max_iterations; iter++) {
         Real rho = (r_rx - rv_tx.head(3)).norm();
-        Real t_next = t_rx_ephem - rho / Real(C);
-        if (abs(t_next - t_tx_ephem) < options.light_time_tolerance_s) {
-          t_tx_ephem = t_next;
-          rv_tx = channel.GetTransmitState(t_tx_ephem);
-          break;
-        }
-        t_tx_ephem = t_next;
-        rv_tx = channel.GetTransmitState(t_tx_ephem);
+        Real dtau_next = -rho / Real(C);
+        bool converged = abs(dtau_next - dtau) < options.light_time_tolerance_s;
+        dtau = dtau_next;
+        rv_tx = channel.GetTransmitState(t_rx_ephem + dtau);
+        if (converged) break;
       }
       return rv_tx;
     }
@@ -117,15 +121,31 @@ namespace lupnt {
            && ephemeris_tx_states.cols() == 6;
   }
 
-  Vec6 GnssChannel::GetTransmitState(Real t) const {
-    if (std::isfinite(t.val()) && std::isfinite(transmit_time.val())
-        && abs(t - transmit_time) <= Real(1.0e-9)) {
-      return tx_state;
-    }
+  Vec6 GnssChannel::GetTransmitState(const Epoch& t) const {
+    // Cached-state fast path: return the stored state when `t` is the same
+    // instant as `transmit_time`.
+    //
+    // With `Epoch` this comparison is *exact* -- the split representation
+    // resolves far below the ~0.25 us ULP of an absolute seconds-from-J2000
+    // double. The previous `Real` version needed an epoch-magnitude-scaled
+    // tolerance, because any fixed tolerance below one ULP could only ever fire
+    // on bit-equality, making the branch rounding-dependent. Carrying the scale
+    // in the value also means a same-numeric-value-different-scale epoch no
+    // longer aliases onto the cache.
+    if (t == transmit_time) return tx_state;
     if (!HasEphemeris()) return tx_state;
+
+    // The ephemeris tables are numeric and indexed in `ephemeris_time_scale`,
+    // so collapse to seconds here. That collapse is lossy (it reintroduces the
+    // epoch ULP), but only for the *evaluation argument*: at ~km/s transmitter
+    // speeds a 0.25 us epoch error maps to sub-millimetre position error. The
+    // light time itself is carried as an offset by the caller and never goes
+    // through this step.
+    const Real t_sec = t.ToSeconds();
+
     if (!ephemeris_chebyshev.segments.empty()) {
       VecX state_x;
-      LUPNT_CHECK(ephemeris_chebyshev.Eval(t, &state_x, nullptr),
+      LUPNT_CHECK(ephemeris_chebyshev.Eval(t_sec, &state_x, nullptr),
                   "GNSS channel transmit time is outside the Chebyshev ephemeris window",
                   "GnssChannel");
       return Vec6(state_x);
@@ -134,7 +154,7 @@ namespace lupnt {
     Vec6 state;
     for (int k = 0; k < 6; k++) {
       VecXd col = ephemeris_tx_states.col(k);
-      state(k) = LinearInterp1d(ephemeris_times, col, t.val());
+      state(k) = LinearInterp1d(ephemeris_times, col, t_sec.val());
     }
     return state;
   }
@@ -295,7 +315,7 @@ namespace lupnt {
 
   MeasData GnssMeasurement::Compute(const State& x, MatXd* H) const {
     MeasData md;
-    md.timestamp = channel_.receive_time;
+    md.timestamp = channel_.receive_time.ToSeconds();
     md.value = ComputeVector(x, H, options_);
     md.covariance = MatXd::Zero(md.value.size(), md.value.size());
     for (int i = 0; i < md.value.size(); i++) {
@@ -356,25 +376,31 @@ namespace lupnt {
     const auto& idx = options_.indices;
     Vec3 r_rx = user_state.segment(idx.position, 3);
 
-    Real t_rx_ephem = ConvertGnssEpoch(receive_time, options_.receive_time_scale,
-                                       options_.ephemeris_time_scale);
-    Real t_tx_ephem = t_rx_ephem;
+    Epoch t_rx_ephem = Epoch::FromSeconds(receive_time, options_.receive_time_scale)
+                           .To(options_.ephemeris_time_scale);
+    // Solve for the light-time OFFSET dtau = t_tx - t_rx (small, full precision)
+    // with the absolute receive epoch fixed. Carried on an `Epoch` the offset
+    // lives in the fractional second, so it is never absorbed into the epoch's
+    // ~0.25 us ULP the way `t_rx - rho/C` on a bare double would be (~30 m of
+    // light time). The absolute transmit epoch is formed only to evaluate the
+    // ephemeris, where the residual maps to sub-mm position error.
+    Real dtau = Real(0.0);
+    Epoch t_tx_ephem = t_rx_ephem;
     Vec6 rv_tx = ConvertEciTransmitStateToMeasurementFrame(
-        constellation->GetSatelliteStateEci(prn, t_tx_ephem), t_tx_ephem, options_);
+        constellation->GetSatelliteStateEci(prn, t_tx_ephem.ToSeconds()), t_tx_ephem.ToSeconds(),
+        options_);
 
     if (options_.solve_light_time) {
       for (int iter = 0; iter < options_.light_time_max_iterations; iter++) {
         Real rho = (r_rx - rv_tx.head(3)).norm();
-        Real t_next = t_rx_ephem - rho / Real(C);
-        if (abs(t_next - t_tx_ephem) < options_.light_time_tolerance_s) {
-          t_tx_ephem = t_next;
-          rv_tx = ConvertEciTransmitStateToMeasurementFrame(
-              constellation->GetSatelliteStateEci(prn, t_tx_ephem), t_tx_ephem, options_);
-          break;
-        }
-        t_tx_ephem = t_next;
+        Real dtau_next = -rho / Real(C);
+        bool converged = abs(dtau_next - dtau) < options_.light_time_tolerance_s;
+        dtau = dtau_next;
+        t_tx_ephem = t_rx_ephem + dtau;
         rv_tx = ConvertEciTransmitStateToMeasurementFrame(
-            constellation->GetSatelliteStateEci(prn, t_tx_ephem), t_tx_ephem, options_);
+            constellation->GetSatelliteStateEci(prn, t_tx_ephem.ToSeconds()),
+            t_tx_ephem.ToSeconds(), options_);
+        if (converged) break;
       }
     }
 
@@ -382,10 +408,8 @@ namespace lupnt {
     channel.gnss_const = constellation->GetGnssConst();
     channel.prn = prn;
     channel.frequency = frequency;
-    channel.receive_time = receive_time;
-    channel.receive_time_scale = options_.receive_time_scale;
+    channel.receive_time = Epoch::FromSeconds(receive_time, options_.receive_time_scale);
     channel.transmit_time = t_tx_ephem;
-    channel.transmit_time_scale = options_.ephemeris_time_scale;
     channel.ephemeris_time_scale = options_.ephemeris_time_scale;
     channel.frame = options_.frame;
     channel.tx_state = rv_tx;
@@ -534,8 +558,11 @@ namespace lupnt {
     Real theta_tx = atan2(u_tx2rx_gcrf.dot(ey), u_tx2rx_gcrf.dot(ex));
     Real phi_rx = safe_acos(u_rx2body.dot(u_rx2tx));
 
-    Real G_tx = constellation->GetTransmitterAntenna(channel.prn, channel.frequency)
-                    .ComputeGain(theta_tx, phi_tx);
+    const Antenna& tx_antenna
+        = constellation->GetTransmitterAntenna(channel.prn, channel.frequency);
+    Real G_tx = (options_.tx_gain_model == GnssMeasurementOptions::TxGainModel::AZIMUTH_AVERAGED)
+                    ? tx_antenna.ComputeGainAzimuthAveraged(phi_tx)
+                    : tx_antenna.ComputeGain(theta_tx, phi_tx);
     Real G_rx = rx_antenna_.ComputeGain(0.0, phi_rx);
     Real P_tx = constellation->GetTransmitPowerDbw(channel.prn, channel.frequency);
 
@@ -556,7 +583,12 @@ namespace lupnt {
     params.Tc = Tc;
     params.B_fe = rx_params_.b * Rc;
 
-    return SigmaDll(params, CN0_w) * (Real(C) * Tc);
+    // DLL (code-tracking) thermal noise, root-sum-squared with the optional
+    // broadcast ephemeris/clock pseudorange error terms (Mina et al. 2025, Eq. 50).
+    Real sigma_dll = SigmaDll(params, CN0_w) * (Real(C) * Tc);
+    Real sigma_eph = rx_params_.sigma_pr_eph_m;
+    Real sigma_clk = rx_params_.sigma_pr_clk_m;
+    return sqrt(sigma_dll * sigma_dll + sigma_eph * sigma_eph + sigma_clk * sigma_clk);
   }
 
   Real GNSSMeasurements::ComputeSigmaRangeRate(Real cn0_dbhz, GnssFreq freq) const {
@@ -579,7 +611,16 @@ namespace lupnt {
     params.B_pll = rx_params_.Bp;
     params.T_i = rx_params_.T;
 
-    return lambda / (2.0 * PI) * SigmaPll(params, CN0_w);
+    // PLL (carrier-tracking) thermal noise, root-sum-squared with the optional
+    // oscillator Allan-deviation and vibration-induced phase-noise terms
+    // (Mina et al. 2025, Eqs. 54-55). All extra terms default to 0.
+    Real sigma_pll_m = lambda / (2.0 * PI) * SigmaPll(params, CN0_w);
+    // Second-order-PLL Allan-deviation phase error, expressed in meters (Eq. 55).
+    Real sigma_ad_m = rx_params_.allan_deviation > 0.0
+                          ? Real(C) / (360.0 * 144.0) * rx_params_.allan_deviation / rx_params_.Bp
+                          : Real(0.0);
+    Real sigma_vib_m = lambda / 360.0 * rx_params_.sigma_vib_deg;
+    return sqrt(sigma_pll_m * sigma_pll_m + sigma_ad_m * sigma_ad_m + sigma_vib_m * sigma_vib_m);
   }
 
   std::vector<GnssChannel> GNSSMeasurements::BuildChannels(Real receive_time,
@@ -665,9 +706,7 @@ namespace lupnt {
     const int n_rows = n_obs * static_cast<int>(channels.size());
 
     GNSSMeasurementsEpoch epoch;
-    epoch.receive_time = receive_time;
-    epoch.receive_time_scale = options_.receive_time_scale;
-    epoch.time = receive_time;
+    epoch.receive_time = Epoch::FromSeconds(receive_time, options_.receive_time_scale);
     epoch.channels = channels;
     epoch.values.resize(n_rows);
     epoch.jacobian.setZero(n_rows, user_state.size());

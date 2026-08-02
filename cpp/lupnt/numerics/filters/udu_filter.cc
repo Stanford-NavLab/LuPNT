@@ -259,6 +259,68 @@ namespace lupnt {
     Sigma_dx_ = MatXd::Zero(x_.size(), x_.size());
   }
 
+  /******************************************************************************
+   * Delayed-state (stochastic-cloning) fixed-interval smoothing
+   ******************************************************************************/
+
+  void UDUStochasticCloningEKF::InitializeSmootherState() {
+    const int n = base_state_size_;
+    LUPNT_CHECK(n > 0, "(Smoother) Base state size is not set", "UDU");
+    LUPNT_CHECK(x_post_.size() == 2 * n, "(Smoother) Posterior state is not the cloned size",
+                "UDU");
+    // Seed with the BASE-state posterior at the final epoch: x_{N|N}, P_{N|N}.
+    x_sm_[sm_tidx_] = x_post_.head(n);
+    P_sm_[sm_tidx_] = P_post_.topLeftCorner(n, n);
+    time_log_[sm_tidx_] = t_;
+  }
+
+  void UDUStochasticCloningEKF::UpdateSmoother(int tidx) {
+    const int k = tidx;
+    const int n = base_state_size_;
+    LUPNT_CHECK(n > 0, "(Smoother) Base state size is not set", "UDU");
+    LUPNT_CHECK(k + 1 < max_tidx_, "(Smoother) tidx must be < max_tidx_ - 1", "UDU");
+
+    // Augmented posterior at epoch k+1: [x_{k+1|k+1}; x_{k|k+1}] with covariance blocks
+    //   [ P_{k+1|k+1}    P_{k+1,k|k+1} ]
+    //   [ P_{k+1,k|k+1}^T  P_{k|k+1}   ].
+    // Everything the delayed-state smoother needs is already in this one block -- no
+    // state-transition matrix enters, because the correlation being exploited is
+    // measurement-induced, not process-induced.
+    const VecXd& x_aug = x_pos_log_[k + 1];
+    const MatXd& P_aug = P_pos_log_[k + 1];
+    LUPNT_CHECK(x_aug.size() == 2 * n && P_aug.rows() == 2 * n,
+                "(Smoother) Logged posterior at k+1 is not the cloned size", "UDU");
+
+    const VecXd x_k1k1 = x_aug.head(n);                 // x_{k+1|k+1}
+    const VecXd x_kk1 = x_aug.tail(n);                  // x_{k|k+1}: the cloned (delayed) state
+    const MatXd P_k1k1 = P_aug.topLeftCorner(n, n);     // P_{k+1|k+1}
+    const MatXd P_cross = P_aug.topRightCorner(n, n);   // P_{k+1,k|k+1}
+    const MatXd P_kk1 = P_aug.bottomRightCorner(n, n);  // P_{k|k+1}
+
+    // J_k = P_{k+1,k|k+1}^T P_{k+1|k+1}^{-1}, i.e. solve J_k P_{k+1|k+1} = P_cross^T.
+    // P_{k+1|k+1} is symmetric positive definite, so use an LDL^T solve rather than forming
+    // the inverse. Transposing turns the right-multiplied solve into a standard one:
+    //   J_k^T = P_{k+1|k+1}^{-1} P_cross  (P_{k+1|k+1} symmetric).
+    const Eigen::LDLT<MatXd> ldlt(P_k1k1);
+    LUPNT_CHECK(ldlt.info() == Eigen::Success, "(Smoother) LDL^T of P_{k+1|k+1} failed", "UDU");
+    const MatXd J_k = ldlt.solve(P_cross).transpose();
+    LUPNT_CHECK(!J_k.hasNaN(), "(Smoother) Smoother gain has NaN", "UDU");
+
+    x_sm_[k] = x_kk1 + J_k * (x_sm_[k + 1] - x_k1k1);
+    P_sm_[k] = P_kk1 + J_k * (P_sm_[k + 1] - P_k1k1) * J_k.transpose();
+
+    // Symmetrize to suppress the accumulation of asymmetry over a long backward pass.
+    P_sm_[k] = 0.5 * (P_sm_[k] + P_sm_[k].transpose()).eval();
+
+    LUPNT_CHECK(!x_sm_[k].hasNaN(), "(Smoother) Smoothed state has NaN", "UDU");
+    LUPNT_CHECK(!P_sm_[k].hasNaN(), "(Smoother) Smoothed covariance has NaN", "UDU");
+    LUPNT_CHECK((P_sm_[k].diagonal().array() >= 0).all(),
+                "(Smoother) Smoothed covariance has negative diagonal", "UDU");
+
+    sm_tidx_ = tidx;
+    t_ = time_log_[k];
+  }
+
   REGISTER_FACTORY_CLASS(Filter, UDUStochasticCloningEKF)
 
 }  // namespace lupnt

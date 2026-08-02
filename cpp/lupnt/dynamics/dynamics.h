@@ -63,9 +63,18 @@ namespace lupnt {
     /// per integration/measurement step by simulation drivers in applications/ and
     /// by agents/ to advance an object's true or estimated state.
     ///
+    /// @note **`t0`/`tf` are RELATIVE simulation times, not absolute epochs.**
+    /// They are seconds measured from the global reference epoch, so a scenario
+    /// runs `t = 0 .. duration`. Implementations that need an absolute instant
+    /// convert internally, e.g. `NBodyDynamics` computes
+    /// `t_tdb = t + GetLupntEpoch()`. Passing an absolute epoch here
+    /// double-counts the reference epoch and silently evaluates the ephemeris
+    /// at the wrong time (typically decades off, often outside kernel
+    /// coverage). Because both are plain `Real`, nothing catches the mistake.
+    ///
     /// @param x0  Initial state at time `t0` (layout/units defined by the subclass).
-    /// @param t0  Initial epoch [s, TDB since J2000 for orbit/attitude dynamics].
-    /// @param tf  Final epoch [s, TDB since J2000 for orbit/attitude dynamics].
+    /// @param t0  Initial time [s, relative to `GetLupntEpoch()`].
+    /// @param tf  Final time [s, relative to `GetLupntEpoch()`].
     /// @param u   Optional control/forcing input (e.g. thrust, RTN reference state);
     ///            nullptr if unused.
     /// @return    Propagated state at time `tf`.

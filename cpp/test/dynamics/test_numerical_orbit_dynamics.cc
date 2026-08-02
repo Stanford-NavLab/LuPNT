@@ -149,4 +149,41 @@ TEST_CASE("dynamics.numerical_orbit_dynamics") {
       REQUIRE_THAT(actual(i).val(), WithinRel(expected(i).val(), 1.0e-8));
     }
   }
+
+  SECTION("Gravity-field third body carries the indirect (frame-origin) term") {
+    // A body added with a spherical-harmonic field must produce the *same* third-body
+    // acceleration as the point-mass path once its harmonics are switched off. Before the
+    // indirect term was added to the gravity-field branch, Earth (2,0) in a Moon-centred
+    // integration silently dropped GM_EARTH / r_EM^2 ~ 2.7e-3 m/s^2 -- eight orders of
+    // magnitude larger than the J2 term it was meant to introduce.
+    Real t = 0.0;
+    Cart6 state(Vec3(1.0e6, 5.0e5, 3.0e5), Vec3(0.0, 1.0e3, 0.0), Frame::MOON_CI);
+
+    NBodyDynamics dyn_pm;
+    dyn_pm.SetFrame(Frame::MOON_CI);
+    dyn_pm.SetUseRelativity(false);
+    dyn_pm.AddBody(CreateBody(BodyId::EARTH));
+
+    NBodyDynamics dyn_sph;
+    dyn_sph.SetFrame(Frame::MOON_CI);
+    dyn_sph.SetUseRelativity(false);
+    dyn_sph.AddBody(CreateBody(BodyId::EARTH, 2, 0));
+
+    Vec3 a_pm = dyn_pm.ComputeRates(t, state).tail(3);
+    Vec3 a_sph = dyn_sph.ComputeRates(t, state).tail(3);
+
+    // What is left is J2 alone: ~1.5 J2 (R_E / r)^2 of the direct term, i.e. parts in 10^7
+    // of a ~10^-4 m/s^2 acceleration at this range. Anything near 10^-3 m/s^2 is the
+    // missing indirect term.
+    Vec3 diff = a_sph - a_pm;
+    REQUIRE(diff.norm().val() < 1.0e-8);
+    REQUIRE(a_pm.norm().val() > 1.0e-5);
+
+    // The decomposition must agree with the rates it explains.
+    auto acc = dyn_sph.ComputeAccelerations(t, state, false);
+    Vec3 total = acc.at("EARTH_gravity") + acc.at("EARTH_nonspherical");
+    for (int i = 0; i < 3; ++i) {
+      REQUIRE_THAT((total(i) - a_sph(i)).val(), WithinAbs(0.0, 1.0e-12));
+    }
+  }
 }

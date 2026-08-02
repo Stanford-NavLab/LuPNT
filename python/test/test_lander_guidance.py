@@ -132,9 +132,7 @@ def test_convex_descent_auto_falls_back_to_scipy_without_cvxpy():
     v0 = np.zeros(3)
     rf = np.zeros(3)
     vf = np.zeros(3)
-    traj = lg.convex_descent_trajectory(
-        r0, v0, rf, vf, T=50.0, dt=1.0, n_nodes=6, solver="auto"
-    )
+    traj = lg.convex_descent_trajectory(r0, v0, rf, vf, T=50.0, dt=1.0, n_nodes=6, solver="auto")
     assert traj.r.shape[0] == 51
     np.testing.assert_allclose(traj.r[-1], rf, atol=2.0)
 
@@ -208,9 +206,7 @@ def test_convex_descent_cvxpy_path_with_fake_solver(monkeypatch):
     v0 = np.zeros(3)
     rf = np.zeros(3)
     vf = np.zeros(3)
-    traj = lg.convex_descent_trajectory(
-        r0, v0, rf, vf, T=50.0, dt=1.0, n_nodes=6, solver="cvxpy"
-    )
+    traj = lg.convex_descent_trajectory(r0, v0, rf, vf, T=50.0, dt=1.0, n_nodes=6, solver="cvxpy")
     assert traj.r.shape == (51, 3)
     assert np.all(np.isfinite(traj.a))
 
@@ -219,5 +215,12 @@ def test_convex_cvxpy_raises_when_solver_leaves_no_value(monkeypatch):
     monkeypatch.setitem(sys.modules, "cvxpy", _make_fake_cvxpy(leave_value=False))
     with pytest.raises(RuntimeError, match="cvxpy solve failed"):
         lg._convex_cvxpy(
-            np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3), T=50.0, g=1.625, a_max=5.0, n_nodes=6
+            np.zeros(3),
+            np.zeros(3),
+            np.zeros(3),
+            np.zeros(3),
+            T=50.0,
+            g=1.625,
+            a_max=5.0,
+            n_nodes=6,
         )

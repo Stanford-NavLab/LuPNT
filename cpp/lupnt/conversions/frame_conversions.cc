@@ -45,6 +45,21 @@ namespace lupnt {
     Real Y = iau_data.Y * RAD_ARCSEC;
     Real s = iau_data.s * RAD_ARCSEC;
 
+    // IERS celestial-pole offsets (IERS Conventions 2010 eq. 5.14): observed VLBI corrections to
+    // the IAU 2006/2000A model that IAU_SOFA.DAT tabulates. They are ~0.3 mas rms -- about 1 cm at
+    // the Earth's surface -- so they matter only for cm-level work, but the tabulated model is
+    // otherwise exact and this is the sole observational input to precession-nutation.
+    //
+    // Guarded because the offsets are identically zero for the default C04 source (which carries
+    // dpsi/deps instead) and no perturbation: skipping the lookup keeps the common path free of
+    // an extra EOP interpolation in what is a frame-conversion inner loop.
+    if (EopHasCelestialPoleOffsets()) {
+      Real t_utc = ConvertTime(t_tdb, Time::TDB, Time::UTC);
+      EopData eop = GetEopData(TimeToMjd(t_utc));
+      X += eop.dX;
+      Y += eop.dY;
+    }
+
     Real a = 1. / (1. + sqrt(1. - X * X - Y * Y));
     Mat3 mat{{1. - a * X * X, -a * X * Y, -X},
              {-a * X * Y, 1. - a * Y * Y, -Y},
@@ -111,6 +126,26 @@ namespace lupnt {
     return RotZdot(theta_era, w_E);
   }
 
+  namespace {
+    /// @brief TIO locator s' [rad].
+    ///
+    /// IERS Conventions (2010) Eq. (5.13): s' = -47 uas * T, with T in
+    /// **Julian centuries** of TT. LuPNT carries `t_tt` as seconds from J2000,
+    /// so the conversion divides by DAYS_CENTURY * SECS_DAY. Dividing by
+    /// DAYS_CENTURY alone treats seconds as days and inflates s' by a factor
+    /// of 86400 -- about 5e-6 rad by the mid-2020s, or ~31 m of spurious
+    /// rotation about the polar axis at the equator.
+    ///
+    /// Shared by RotPolarMotion (which applies s') and ComputeEopFromSpice
+    /// (which removes it again when inverting for the ERA); they must use the
+    /// same expression, which is why it lives in one place.
+    /// Templated on the scalar type so the `Real` caller keeps its autodiff
+    /// derivative and the `double` caller stays plain arithmetic.
+    template <typename T> inline T TioLocator(const T& t_tt) {
+      return -47e-6 * RAD_ARCSEC * (t_tt / (DAYS_CENTURY * SECS_DAY));
+    }
+  }  // namespace
+
   /// @note Astrodynamics Convention & Modeling Reference, Version 1.1, Page 36
   ///
   /// If InitFrameConversionFromSpice has fitted a SPICE-derived EOP model
@@ -127,7 +162,7 @@ namespace lupnt {
       xp = eop.x_pole;
       yp = eop.y_pole;
     }
-    Real sp = -47e-6 * RAD_ARCSEC * (t_tt / DAYS_CENTURY);
+    Real sp = TioLocator(t_tt);
 
     Mat3 R_po = RotX(-yp) * RotY(-xp) * RotZ(sp);
     return R_po;
@@ -366,7 +401,9 @@ namespace lupnt {
       SpiceDouble et = t_tdb;
       double xform[6][6];
 #pragma omp critical
-      { sxform_c(from_frame.c_str(), to_frame.c_str(), et, xform); }
+      {
+        sxform_c(from_frame.c_str(), to_frame.c_str(), et, xform);
+      }
       Mat3d R;
       for (int i = 0; i < 3; i++)
         for (int j = 0; j < 3; j++) R(i, j) = xform[i][j];
@@ -423,7 +460,7 @@ namespace lupnt {
     double psi = std::atan2(M(0, 1), M(0, 0));  // = sp + theta_era
 
     double t_tt = ConvertTime(t_tdb, Time::TDB, Time::TT).val();
-    double sp = -47e-6 * RAD_ARCSEC * (t_tt / DAYS_CENTURY);
+    double sp = TioLocator(t_tt);
     double theta_era = std::atan2(std::sin(psi - sp), std::cos(psi - sp));
 
     // Invert EarthRotationAngle(t_ut1) for t_ut1 by linearizing about

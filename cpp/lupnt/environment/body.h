@@ -97,15 +97,15 @@ namespace lupnt {
                       std::string gravity_file = "EGM96.cof");
 
     /// @brief Create the Moon as a `Body`, in SI units, optionally loading an
-    /// `n`x`m` spherical-harmonic gravity field (default GRGM900C) from `gravity_file`.
+    /// `n`x`m` spherical-harmonic gravity field (default GRGM1200B) from `gravity_file`.
     ///
     /// See `Earth()` for the role of the gravity-field parameters; used the same
     /// way by `Body::CreateBody`/`NBodyDynamics::AddBody` for Moon-centered or
     /// Moon-perturbation dynamics.
-    static Body Moon(int n = 0, int m = 0, std::string gravity_file = "grgm900c.cof");
+    static Body Moon(int n = 0, int m = 0, std::string gravity_file = "grgm1200b.cof");
     /// @brief Unit-system overload of `Moon()`: create the Moon in the requested unit system.
     static Body Moon(const UnitSystem& units, int n = 0, int m = 0,
-                     std::string gravity_file = "grgm900c.cof");
+                     std::string gravity_file = "grgm1200b.cof");
 
     /// @brief Create Venus as a `Body`, in SI units, optionally loading an `n`x`m`
     /// spherical-harmonic gravity field (default MGN75HSAAP) from `gravity_file`.
@@ -171,7 +171,7 @@ namespace lupnt {
   /// converted to unnormalized form on load.
   ///
   /// @param filename   Coefficient file name, resolved via the LuPNT data path (e.g. "EGM96.cof",
-  /// "grgm900c.cof")
+  /// "grgm1200b.cof")
   /// @param n          Max degree to retain (must be <= the field's stored n_max)
   /// @param m          Max order to retain (must be <= the field's stored m_max)
   /// @param normalized True if the file's stored coefficients are normalized and should be

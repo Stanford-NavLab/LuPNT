@@ -19,6 +19,7 @@
 #include "lupnt/environment/plasma/gcpm/constants_gcpm.h"
 #include "lupnt/environment/plasma/gcpm/conversions.h"
 #include "lupnt/environment/plasma/gcpm/gcpm_interface.h"
+#include "lupnt/environment/plasma/tec/iono_model.h"
 
 namespace pecsim {
 
@@ -45,6 +46,9 @@ namespace pecsim {
     bool compute_higher_order = true;        // Compute second-order delays
     bool use_adaptive_step = true;           // Use adaptive step size for ray tracing
     bool straight_ray = false;               // Assume straight ray path
+    NeQuickSolarConfig nequick_solar;        // Solar driver when IonoModel::NEQUICK_G
+    double nedm_f107 = -1.0;          // F10.7 [sfu] for IonoModel::NEDM2020; <0 uses IRI F10.7
+    bool use_gcpm_surrogate = false;  // GCPM: use the fast interpolation surrogate (needs rz12>0)
   };
 
   struct PathProfile {
@@ -101,15 +105,52 @@ namespace pecsim {
   Vec2d unitvec_to_azel(const Vec3d& x);
 
   /**
-   * @brief Compute the refractive index of the ionosphere at a given position
+   * @brief Compute the electron density of the ionosphere at a given position.
+   *
+   * Central choke point for all electron-density lookups in the ray tracer.
+   * Dispatches to the backend selected by get_iono_model() (see
+   * tec/iono_model.h). Returns density in cm^-3 (callers convert to m^-3).
+   *
    * @param t_j2000 Time in seconds since J2000 epoch
    * @param pos_geo Position in geocentric coordinates (ECEF)
    * @param config Ray trace configuration
    * @param debug Debug flag to print additional information
-   * @return Refractive index at the given position
+   * @return Electron density at the given position [cm^-3]
    */
   double compute_ne(double t_j2000, const Vec3d& pos_geo, RayTraceConfig config,
                     bool debug = false);
+
+  /**
+   * @brief GCPM backend for compute_ne (electron density in cm^-3).
+   * @see compute_ne
+   */
+  double compute_ne_gcpm(double t_j2000, const Vec3d& pos_geo, RayTraceConfig config,
+                         bool debug = false);
+
+  /**
+   * @brief NeQuick-G backend for compute_ne (electron density in cm^-3).
+   *
+   * Defined by the gated plasma/nequick/ module when built with
+   * -DLUPNT_ENABLE_NEQUICK=ON. Otherwise a stub definition (nequick_stub.cc)
+   * throws a runtime error explaining how to enable it.
+   * @see compute_ne
+   */
+  double compute_ne_nequick(double t_j2000, const Vec3d& pos_geo, RayTraceConfig config,
+                            bool debug = false);
+
+  /**
+   * @brief NEDM2020 backend for compute_ne (electron density in cm^-3).
+   *
+   * Neustrelitz Electron Density Model 2020 (E-layer + F-layer Chapman).
+   * The real implementation lives in the separately-provided plasma/nedm/
+   * module and is only compiled when LuPNT is configured with
+   * -DLUPNT_ENABLE_NEDM=ON (which defines LUPNT_HAS_NEDM). Otherwise the
+   * always-compiled fallback in tec/nedm_stub.cc satisfies this declaration
+   * and raises a runtime error if IonoModel::NEDM2020 is selected.
+   * @see compute_ne
+   */
+  double compute_ne_nedm(double t_j2000, const Vec3d& pos_geo, RayTraceConfig config,
+                         bool debug = false);
 
   /**
    * @brief Compute the ionospheric parameters at a given time in J2000 format

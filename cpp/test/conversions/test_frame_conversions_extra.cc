@@ -1,6 +1,7 @@
 #include <lupnt/conversions/frame_conversions.h>
 #include <lupnt/conversions/frame_converter.h>
 #include <lupnt/conversions/time_conversions.h>
+#include <lupnt/interfaces/spice.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -277,4 +278,35 @@ TEST_CASE("conversions.frame_conversions_extra.planet_iau") {
     Vec3 offset = PlanetCiToIcrf(t_tdb, Vec3(0.0, 0.0, 0.0), BodyId::MARS);
     REQUIRE(offset.norm().val() > 1.5e11);  // Mars is >1 AU from the SSB
   }
+}
+
+// The TIO locator s' (IERS Conventions 2010, Eq. 5.13) is s' = -47 uas * T
+// with T in JULIAN CENTURIES of TT. LuPNT holds times as seconds from J2000,
+// so the conversion must divide by DAYS_CENTURY * SECS_DAY. Dividing by
+// DAYS_CENTURY alone inflated s' by 86400x -- ~5e-6 rad by the mid-2020s,
+// which is ~31 m of spurious rotation about the polar axis at the equator.
+//
+// s' is not exposed directly, so it is recovered from the polar-motion matrix:
+// R_po = RotX(-yp) * RotY(-xp) * RotZ(sp), whose (0,1) entry is sp to first
+// order in the three small angles.
+TEST_CASE("conversions.frame_conversions_extra.tio_locator_magnitude") {
+  spice::LoadSpiceKernel();
+
+  // ~2025: T ~ 0.25 Julian centuries, so |s'| ~ 47e-6 * 0.25 arcsec ~ 6e-11 rad.
+  Real t_tdb = GregorianToTime(2025, 1, 1, 0, 0, 0.0);
+  Mat3 R_po = RotPolarMotion(t_tdb);
+
+  double sp = R_po(0, 1).val();
+  INFO("recovered s' = " << sp << " rad");
+
+  // Correct magnitude is ~6e-11 rad; the defect gave ~5e-6 rad. A 1e-8 bound
+  // separates the two by orders of magnitude without over-fitting the value.
+  REQUIRE(std::abs(sp) < 1e-8);
+
+  // s' grows linearly with T and must stay negative (the -47 uas coefficient).
+  Real t_2075 = GregorianToTime(2075, 1, 1, 0, 0, 0.0);
+  double sp_2075 = RotPolarMotion(t_2075)(0, 1).val();
+  INFO("s'(2075) = " << sp_2075 << " rad");
+  REQUIRE(sp_2075 < sp);  // more negative later
+  REQUIRE(std::abs(sp_2075) < 1e-8);
 }

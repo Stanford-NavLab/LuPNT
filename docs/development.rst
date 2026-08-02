@@ -65,6 +65,44 @@ data paths resolve:
 
    pixi run install-kernel     # bakes PYTHONPATH / LUPNT_DATA_PATH into the "LuPNT (pixi)" kernel
 
+Rendering the tutorial notebooks
+---------------------------------
+
+After changing an example or the underlying API, refresh the stored notebook
+outputs the docs render (``nbsphinx_execute = "never"`` — the docs show whatever
+is already saved in each ``.ipynb``, they don't re-run them):
+
+.. code-block:: bash
+
+   pixi run render-notebooks   # re-execute every python/examples/ex*.ipynb in place
+   pixi run render-tutorials   # render-notebooks, then optimize the embedded PNGs
+
+Plotly 3-D figures (``pnt.plot.CesiumScene`` is separate — see below) are
+rendered to a static PNG via ``kaleido`` (``python/examples/_doc_assets.py``),
+which needs a headless Chrome. ``pixi run render-notebooks`` fetches one
+automatically (``plotly_get_chrome``, idempotent — a fast no-op if already
+installed), but Chrome itself needs a handful of system shared libraries not
+present on a minimal Linux install. If ``plotly_get_chrome`` succeeds but Chrome
+then fails immediately with an error like
+``error while loading shared libraries: libnspr4.so: cannot open shared object
+file``, install the missing libraries (Debian/Ubuntu):
+
+.. code-block:: bash
+
+   sudo apt-get install -y \
+     ca-certificates fonts-liberation libasound2t64 libatk-bridge2.0-0 libatk1.0-0 \
+     libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgbm1 \
+     libglib2.0-0 libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0 \
+     libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 \
+     libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 \
+     lsb-release wget xdg-utils
+
+(On older Ubuntu releases, use ``libasound2``/``libxtst1`` instead of the
+``t64``/``6`` variants above.) Cesium globes have no static-render equivalent —
+``embed_cesium_scene`` just saves the interactive scene under
+``output/python_examples/cesium_scenes/`` and notes in the docs that it must be
+viewed by running the notebook locally.
+
 Debugging
 ---------
 

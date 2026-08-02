@@ -41,7 +41,7 @@ namespace lupnt {
   Body Body::Moon(const UnitSystem& units, int n_max, int m_max, std::string gravity_file) {
     Body moon;
     PopulateBodyFromData(moon, GetBodyData(BodyId::MOON, units));
-    moon.use_gravity_field = (n_max > 1 && m_max > 1);
+    moon.use_gravity_field = (n_max > 1);  // zonal J2 (deg-2, m=0) needs only n_max>=2
     if (moon.use_gravity_field)
       moon.gravity_field = ReadHarmonicGravityField<Real>(gravity_file, n_max, m_max, true, units);
     return moon;
@@ -56,7 +56,7 @@ namespace lupnt {
   Body Body::Earth(const UnitSystem& units, int n_max, int m_max, std::string gravity_file) {
     Body earth;
     PopulateBodyFromData(earth, GetBodyData(BodyId::EARTH, units));
-    earth.use_gravity_field = (n_max > 1 && m_max > 1);
+    earth.use_gravity_field = (n_max > 1);  // zonal J2 (deg-2, m=0) needs only n_max>=2
     if (earth.use_gravity_field)
       earth.gravity_field = ReadHarmonicGravityField<Real>(gravity_file, n_max, m_max, true, units);
 
@@ -83,7 +83,7 @@ namespace lupnt {
   Body Body::Mars(const UnitSystem& units, int n_max, int m_max, std::string gravity_file) {
     Body mars;
     PopulateBodyFromData(mars, GetBodyData(BodyId::MARS, units));
-    mars.use_gravity_field = (n_max > 1 && m_max > 1);
+    mars.use_gravity_field = (n_max > 1);  // zonal J2 (deg-2, m=0) needs only n_max>=2
     if (mars.use_gravity_field)
       mars.gravity_field = ReadHarmonicGravityField<Real>(gravity_file, n_max, m_max, true, units);
     return mars;
@@ -98,7 +98,7 @@ namespace lupnt {
   Body Body::Venus(const UnitSystem& units, int n_max, int m_max, std::string gravity_file) {
     Body venus;
     PopulateBodyFromData(venus, GetBodyData(BodyId::VENUS, units));
-    venus.use_gravity_field = (n_max > 1 && m_max > 1);
+    venus.use_gravity_field = (n_max > 1);  // zonal J2 (deg-2, m=0) needs only n_max>=2
     if (venus.use_gravity_field)
       venus.gravity_field = ReadHarmonicGravityField<Real>(gravity_file, n_max, m_max, true, units);
     return venus;
@@ -425,5 +425,16 @@ namespace lupnt {
     file.close();
     return gravity_field;
   }
+
+  // Explicit instantiations so the public ReadHarmonicGravityField overloads
+  // link from other translation units (e.g. the Orekit force-model tests),
+  // not only from the Body::Earth/Moon calls inside this file.
+  template GravityField<Real> ReadHarmonicGravityField<Real>(const std::string&, int, int, bool);
+  template GravityField<Real> ReadHarmonicGravityField<Real>(const std::string&, int, int, bool,
+                                                             const UnitSystem&);
+  template GravityField<double> ReadHarmonicGravityField<double>(const std::string&, int, int,
+                                                                 bool);
+  template GravityField<double> ReadHarmonicGravityField<double>(const std::string&, int, int, bool,
+                                                                 const UnitSystem&);
 
 }  // namespace lupnt
